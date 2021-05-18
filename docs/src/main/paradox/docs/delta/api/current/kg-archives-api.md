@@ -20,7 +20,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
-## Archive lifecycle
+## Lifecycle
 
 Contrarily to the rest of the platform resources, archives are not persisted resources, given their nature. Therefore 
 there are no update, tag or deprecation operations available on archive resources.
@@ -28,7 +28,7 @@ there are no update, tag or deprecation operations available on archive resource
 An archive resource will be automatically erased from the system after certain after certain time. This time is 
 configurable (config property `app.archives.cache-invalidate-after`) and it defaults to 5 hours.
 
-## Archive format
+## Payload
 
 ```
 {
@@ -39,6 +39,7 @@ configurable (config property `app.archives.cache-invalidate-after`) and it defa
             "project": "{project}",
             "path": "{path}",
             "originalSource": "{originalSource}",
+            "format": "{format}",
             "rev": "{rev}",
             "tag": "{tag}"
         },
@@ -60,10 +61,18 @@ where...
 - `{resource_id}`: Iri - the @id value of the resource to be added to the archive.
 - `{project}`: String - the project (in the format 'myorg/myproject') where the specified resource belongs. This field 
   is optional. It defaults to the current project.
-- `{path}`: Path - the relative path on the archive where this resource is going to stored. This field is optional. It 
-  defaults to `{project}/{resourceId}.json` for a Resource type and `{project}/{filename}` for File type.
-- `{originalSource}`: Boolean - flag to decide the whether to fetch the original payload or the payload with metadata 
-  and JSON-LD algorithm applied. This field optional and is only allowed for Resource type. It defaults to true.
+- `{path}`: Path - the relative path on the archive where this resource is going to stored
+    * Optional / defaults to `{project}/{resourceId}.json` for a Resource type and `{project}/{filename}` for File type.
+    * The provided filename should not exceed 99 characters.
+- `{originalSource}`: Boolean - flag to decide the whether to fetch the original payload or its compacted form. 
+    * Only allowed for Resource type
+    * Optional and defaults to false
+    * Can not be present at the same time as `format` field.
+- `{format}`: String - the format we expect for the resource in the archive.
+    * Only allowed for Resource type
+    * Optional and defaults to compacted
+    * Accepts the following values: source (to get the original payload), compacted, expanded, n-triples, dot
+    * Can not be present at the same time as `originalSource` field.
 - `{rev}`: Long - the revision of the resource. This field is optional. It defaults to the latest revision.
 - `{tag}`: String - the tag of the resource. This field is optional. This field cannot be present at the same time as 
   `rev` field.
@@ -74,7 +83,7 @@ possibilities:
 - `Resource`: targets a resource
 - `File`: targets a file
 
-## Create an archive using POST
+## Create using POST
 
 This endpoint is used to describe the archive and to subsequently consume it.
 ```
@@ -98,13 +107,13 @@ The following example shows how to create an archive containing 3 files. 2 of th
 As a response, the tarball will be offered.
 
 Request
-:   @@snip [archive.sh](assets/archives/archive.sh)
+:   @@snip [archive.sh](assets/archives/create.sh)
 
 Payload
-:   @@snip [archive.json](assets/archives/archive.json)
+:   @@snip [archive.json](assets/archives/payload.json)
 
 
-## Create an archive using PUT
+## Create using PUT
 
 This alternative endpoint to create an archive is useful in case you want to split the creation of the archive resource 
 and the consumption of it. 
@@ -119,17 +128,17 @@ PUT /v1/archives/{org_label}/{project_label}/{archive_id}
 **Example**
 
 Request
-:   @@snip [archive-put.sh](assets/archives/archive-put.sh)
+:   @@snip [create-put.sh](assets/archives/create-put.sh)
 
 Payload
-:   @@snip [archive.json](assets/archives/archive.json)
+:   @@snip [payload.json](assets/archives/payload.json)
 
 Response
-:   @@snip [archive-created.json](assets/archives/archive-created.json)
+:   @@snip [created.json](assets/archives/created.json)
 
 Note that if the payload contains an @id different from the `{archive_id}`, the request will fail.
 
-## Fetch an archive
+## Fetch
 
 When fetching an archive, the response format can be chosen through HTTP content negotiation.
 In order to fetch the archive metadata, the client can use any of the @ref:[following MIME types](content-negotiation.md#supported-mime-types).
@@ -142,10 +151,10 @@ GET /v1/archives/{org_label}/{project_label}/{archive_id}
 **Example**
 
 Request (tarball)
-:   @@snip [archive-fetch.sh](assets/archives/archive-fetch.sh)
+:   @@snip [fetch.sh](assets/archives/fetch.sh)
 
 Request (metadata)
-:   @@snip [archive-fetch-meta.sh](assets/archives/archive-fetch-meta.sh)
+:   @@snip [fetchMeta.sh](assets/archives/fetchMeta.sh)
 
 Response
-:   @@snip [archive-fetched-meta.json](assets/archives/archive-fetched-meta.json)
+:   @@snip [fetched.json](assets/archives/fetched.json)

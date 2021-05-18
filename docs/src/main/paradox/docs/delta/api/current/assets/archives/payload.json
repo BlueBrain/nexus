@@ -2,18 +2,18 @@
     "resources" : [
         {
             "@type": "Resource",
-            "resourceId": "https://nexus.example.com/resource1",
+            "resourceId": "http://localhost:8080/resource1",
             "rev": 2
         },
         {
             "@type": "Resource",
-            "resourceId": "https://nexus.example.com/resource2",
+            "resourceId": "http://localhost:8080/resource2",
             "project": "myorg/myproject2",
-            "originalSource": false
+            "format": "expanded"
         },
         {
             "@type": "File",
-            "resourceId": "https://nexus.example.com/resource2",
+            "resourceId": "http://localhost:8080/resource2",
             "project": "myorg/myproject2",
             "path": "my/custom/path/resource2.json"
         }

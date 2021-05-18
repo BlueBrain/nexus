@@ -1,0 +1,37 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/archives.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/archives/myorg/myproj/myarchive",
+  "@type": "Archive",
+  "resources" : [
+    {
+      "@type": "Resource",
+      "resourceId": "http://localhost:8080/resource1",
+      "rev": 2
+    },
+    {
+      "@type": "Resource",
+      "resourceId": "http://localhost:8080/resource2",
+      "project": "myorg/myproject2",
+      "format": "expanded"
+    },
+    {
+      "@type": "File",
+      "resourceId": "http://localhost:8080/resource2",
+      "project": "myorg/myproject2",
+      "path": "my/custom/path/resource2.json"
+    }
+  ],
+  "_self": "http://localhost:8080/v1/archives/myorg/myproj/myarchive",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/archives.json",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "2021-05-17T14:54:42.939Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+  "_updatedAt": "2021-05-17T14:54:42.939Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+  "_expiresInSeconds": 17530
+}
