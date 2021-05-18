@@ -262,11 +262,11 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
           }
         }
 
-        /**
-          * Initial behavior, ready to process ''Evaluate'' and ''DryRun'' messages.
-          * Before evaluating a command we need the state, so we ask the stateActor for it and move our behavior to fetchingState.
-          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor.
-          */
+        /*
+         * Initial behavior, ready to process ''Evaluate'' and ''DryRun'' messages.
+         * Before evaluating a command we need the state, so we ask the stateActor for it and move our behavior to fetchingState.
+         * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor.
+         */
         def active(): Behavior[ProcessorCommand] =
           checkEntityId {
             case AggregateRequest.Evaluate(_, Command(subCommand), replyTo) =>
@@ -302,12 +302,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
 
           }
 
-        /**
-          * The second behavior, ready to process ''StateResponseInternal'' messages.
-          * Once received, we trigger command Evaluation/DryRun and move our behavior to evaluating.
-          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
-          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
-          */
+        /*
+         * The second behavior, ready to process ''StateResponseInternal'' messages.
+         * Once received, we trigger command Evaluation/DryRun and move our behavior to evaluating.
+         * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+         * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+         */
         def fetchingState(
             subCommand: Command,
             replyTo: ActorRef[AggregateResponse.EvaluationResult],
@@ -341,14 +341,14 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.unhandled
           }
 
-        /**
-          * The third behavior, ready to process evaluation results ''EvaluationResult'' messages.
-          * If the evaluation succeeded and we are not on a ''DryRun'', we will send an ''Append'' message to the stateActor
-          * with the computed event and move to the appending behavior.
-          * Otherwise we return the ''EvaluationResult'' to the client and unstash other messages while moving to active behavior.
-          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
-          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
-          */
+        /*
+         * The third behavior, ready to process evaluation results ''EvaluationResult'' messages.
+         * If the evaluation succeeded and we are not on a ''DryRun'', we will send an ''Append'' message to the stateActor
+         * with the computed event and move to the appending behavior.
+         * Otherwise we return the ''EvaluationResult'' to the client and unstash other messages while moving to active behavior.
+         * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+         * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+         */
         def evaluating(
             replyTo: ActorRef[AggregateResponse.EvaluationResult],
             dryRun: Boolean
@@ -377,12 +377,12 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
               Behaviors.unhandled
           }
 
-        /**
-          * The fourth behavior, ready to process ''AppendResult'' messages, which confirm correct append on the event log from the stateActor.
-          * After that we reply to the client and unstash other messages while moving to active behavior.
-          * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
-          * while any other ''Evaluate'' or ''DryRun'' will be stashed.
-          */
+        /*
+         * The fourth behavior, ready to process ''AppendResult'' messages, which confirm correct append on the event log from the stateActor.
+         * After that we reply to the client and unstash other messages while moving to active behavior.
+         * ''RequestState'' and ''RequestLastSeqNr'' messages will be processed by forwarding them to the state actor,
+         * while any other ''Evaluate'' or ''DryRun'' will be stashed.
+         */
         def appending(replyTo: ActorRef[AggregateResponse.EvaluationResult]): Behavior[ProcessorCommand] =
           checkEntityId {
             case ChildActorResponse.AppendResult(Event(event), State(state)) =>
