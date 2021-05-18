@@ -1,0 +1,38 @@
+name: Release
+on:
+  release:
+    types: [published]
+jobs:
+  release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI_RELEASE: publishSigned
+      RELEASE_TO_SONATYPE: true
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+      PGP_SECRET: ${{ secrets.PGP_SECRET }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set Version
+        run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
+      - name: Build Images
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            app/Docker/publishLocal \
+            storage/Docker/publishLocal \
+            cli/Docker/publishLocal
+      - name: Publish To DockerHub
+        run: |
+          docker tag bluebrain/nexus-cli:latest bluebrain/nexus-cli:${{ env.VERSION }}
+          docker tag bluebrain/nexus-delta:latest bluebrain/nexus-delta:${{ env.VERSION }}
+          docker tag bluebrain/nexus-storage:latest bluebrain/nexus-storage:${{ env.VERSION }}
+          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
+          docker push bluebrain/nexus-cli:${{ env.VERSION }}
+          docker push bluebrain/nexus-delta:${{ env.VERSION }}
+          docker push bluebrain/nexus-storage:${{ env.VERSION }}
+      - name: Publish To Sonatype
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
