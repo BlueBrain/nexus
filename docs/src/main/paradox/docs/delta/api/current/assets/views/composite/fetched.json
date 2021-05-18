@@ -1,1 +1,128 @@
-{"@context":["https://bluebrain.github.io/nexus/contexts/composite-views.json","https://bluebrain.github.io/nexus/contexts/metadata.json"],"@id":"http://music.com/composite_view","@type":["View","CompositeView"],"projections":[{"@id":"http://music.com/es","@type":"ElasticSearchProjection","context":{"@base":"http://music.com/","@vocab":"http://music.com/"},"includeDeprecated":false,"includeMetadata":false,"mapping":{"dynamic":false,"properties":{"@id":{"type":"keyword"},"@type":{"type":"keyword"},"album":{"properties":{"title":{"type":"text"}},"type":"nested"},"genre":{"type":"keyword"},"name":{"type":"keyword"},"start":{"type":"integer"}}},"permission":"views/query","query":"prefix music: <http://music.com/> CONSTRUCT {{resource_id} music:name ?bandName ; music:genre      ?bandGenre ; music:start      ?bandStartYear ; music:album      ?albumId . ?albumId music:title ?albumTitle . } WHERE {{resource_id}   music:name       ?bandName ; music:start ?bandStartYear; music:genre ?bandGenre . OPTIONAL {{resource_id} ^music:by ?albumId . ?albumId        music:title   ?albumTitle . } }","resourceSchemas":[],"resourceTypes":["http://music.com/Band"],"_uuid":"4af5a80c-bac1-4d81-9c00-006da383716f"},{"@id":"http://music.com/sparql","@type":"SparqlProjection","includeDeprecated":false,"includeMetadata":false,"permission":"views/query","query":"prefix xsd: <http://www.w3.org/2001/XMLSchema#> prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(xsd:integer(?songLength)) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }","resourceSchemas":[],"resourceTypes":["http://music.com/Album"],"_uuid":"a741d874-90d6-48b5-84c2-f87ecd689043"}],"rebuildStrategy":{"@type":"Interval","value":"3 minutes"},"sources":[{"@id":"http://music.com/source_bands","@type":"ProjectEventStream","includeDeprecated":false,"resourceSchemas":[],"resourceTypes":["http://music.com/Band"],"_uuid":"df5ea885-f0c8-4e8b-8dd2-9ed0bd715ec0"},{"@id":"http://music.com/source_albums","@type":"CrossProjectEventStream","identities":[{"@id":"http://localhost:8080/v1/anonymous","@type":"Anonymous"}],"includeDeprecated":false,"project":"myorg/albums","resourceSchemas":[],"resourceTypes":["http://music.com/Album"],"_uuid":"eccca1d3-3044-4494-bde6-6c79f56fa649"},{"@id":"http://music.com/source_songs","@type":"RemoteProjectEventStream","endpoint":"http://localhost:8080/v1","includeDeprecated":false,"project":"myorg/songs","resourceSchemas":[],"resourceTypes":["http://music.com/Song"],"_uuid":"aa788720-8e0c-4504-8d54-24c597e261e5"}],"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/views.json","_createdAt":"2021-05-17T14:43:41.763Z","_createdBy":"http://localhost:8080/v1/anonymous","_deprecated":false,"_incoming":"http://localhost:8080/v1/views/myorg/bands/composite_view/incoming","_outgoing":"http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing","_project":"http://localhost:8080/v1/projects/myorg/bands","_rev":3,"_self":"http://localhost:8080/v1/views/myorg/bands/composite_view","_updatedAt":"2021-05-17T14:58:28.483Z","_updatedBy":"http://localhost:8080/v1/anonymous","_uuid":"4b6fe5bf-675c-40bf-88ac-2b26575236c9"}
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/composite-views.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://music.com/composite_view",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
+  "projections": [
+    {
+      "@id": "http://music.com/es",
+      "@type": "ElasticSearchProjection",
+      "context": {
+        "@base": "http://music.com/",
+        "@vocab": "http://music.com/"
+      },
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "mapping": {
+        "dynamic": false,
+        "properties": {
+          "@id": {
+            "type": "keyword"
+          },
+          "@type": {
+            "type": "keyword"
+          },
+          "album": {
+            "properties": {
+              "title": {
+                "type": "text"
+              }
+            },
+            "type": "nested"
+          },
+          "genre": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword"
+          },
+          "start": {
+            "type": "integer"
+          }
+        }
+      },
+      "permission": "views/query",
+      "query": "prefix music: <http://music.com/> CONSTRUCT {{resource_id} music:name ?bandName ; music:genre      ?bandGenre ; music:start      ?bandStartYear ; music:album      ?albumId . ?albumId music:title ?albumTitle . } WHERE {{resource_id}   music:name       ?bandName ; music:start ?bandStartYear; music:genre ?bandGenre . OPTIONAL {{resource_id} ^music:by ?albumId . ?albumId        music:title   ?albumTitle . } }",
+      "resourceSchemas": [],
+      "resourceTypes": [
+        "http://music.com/Band"
+      ],
+      "_uuid": "4af5a80c-bac1-4d81-9c00-006da383716f"
+    },
+    {
+      "@id": "http://music.com/sparql",
+      "@type": "SparqlProjection",
+      "includeDeprecated": false,
+      "includeMetadata": false,
+      "permission": "views/query",
+      "query": "prefix xsd: <http://www.w3.org/2001/XMLSchema#> prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(xsd:integer(?songLength)) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
+      "resourceSchemas": [],
+      "resourceTypes": [
+        "http://music.com/Album"
+      ],
+      "_uuid": "a741d874-90d6-48b5-84c2-f87ecd689043"
+    }
+  ],
+  "rebuildStrategy": {
+    "@type": "Interval",
+    "value": "3 minutes"
+  },
+  "sources": [
+    {
+      "@id": "http://music.com/source_bands",
+      "@type": "ProjectEventStream",
+      "includeDeprecated": false,
+      "resourceSchemas": [],
+      "resourceTypes": [
+        "http://music.com/Band"
+      ],
+      "_uuid": "df5ea885-f0c8-4e8b-8dd2-9ed0bd715ec0"
+    },
+    {
+      "@id": "http://music.com/source_albums",
+      "@type": "CrossProjectEventStream",
+      "identities": [
+        {
+          "@id": "http://localhost:8080/v1/anonymous",
+          "@type": "Anonymous"
+        }
+      ],
+      "includeDeprecated": false,
+      "project": "myorg/albums",
+      "resourceSchemas": [],
+      "resourceTypes": [
+        "http://music.com/Album"
+      ],
+      "_uuid": "eccca1d3-3044-4494-bde6-6c79f56fa649"
+    },
+    {
+      "@id": "http://music.com/source_songs",
+      "@type": "RemoteProjectEventStream",
+      "endpoint": "http://localhost:8080/v1",
+      "includeDeprecated": false,
+      "project": "myorg/songs",
+      "resourceSchemas": [],
+      "resourceTypes": [
+        "http://music.com/Song"
+      ],
+      "_uuid": "aa788720-8e0c-4504-8d54-24c597e261e5"
+    }
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-05-17T14:43:41.763Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_incoming": "http://localhost:8080/v1/views/myorg/bands/composite_view/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/bands",
+  "_rev": 3,
+  "_self": "http://localhost:8080/v1/views/myorg/bands/composite_view",
+  "_updatedAt": "2021-05-17T14:58:28.483Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "4b6fe5bf-675c-40bf-88ac-2b26575236c9"
+}

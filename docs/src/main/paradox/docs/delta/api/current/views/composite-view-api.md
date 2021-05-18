@@ -49,7 +49,7 @@ where...
 
 This source reads events in a streaming fashion from the defined project event log in the current Nexus Delta deployment.
 
-The specified list of identities will be used to retrieve the resources from the project. The target project must have `events/read` permissions in order to read events.
+The specified list of identities will be used to retrieve the resources from the project. The identities must have `events/read` permission on the target project in order to read events.
 
 The events are offered to the projections stage.
 
@@ -409,7 +409,7 @@ PUT /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
 
 @@@ note { .warning }
 
-Updating a view creates a new Elasticsearch index and deletes the existing one. The indexing process will start from the
+Updating a view creates new Elasticsearch indices and Blazegraph namespaces and deletes the existing ones. The indexing process will start from the
 beginning.
 
 @@@
@@ -458,13 +458,13 @@ Response
 
 ## Deprecate
 
-Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes the underlying index.
+Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes all the underlying Elasticsearch indices and Blazegraph namespaces.
 
 Deprecating a view is considered to be an update as well.
 
 @@@ note { .warning }
 
-Deprecating a view deletes the view index, making the view not searchable.
+Deprecating a view deletes all the underlying Elasticsearch indices and Blazegraph namespaces, making the view not searchable.
 
 @@@
 
