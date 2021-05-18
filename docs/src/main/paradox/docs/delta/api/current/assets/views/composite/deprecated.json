@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/composite-views-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://music.com/composite_view",
+  "@type": [
+    "View",
+    "CompositeView"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-05-17T14:43:41.763Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": true,
+  "_incoming": "http://localhost:8080/v1/views/myorg/bands/composite_view/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/myorg/bands/composite_view/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/bands",
+  "_rev": 4,
+  "_self": "http://localhost:8080/v1/views/myorg/bands/composite_view",
+  "_updatedAt": "2021-05-17T15:50:39.555Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "4b6fe5bf-675c-40bf-88ac-2b26575236c9"
+}

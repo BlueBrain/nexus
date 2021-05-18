@@ -1,0 +1,64 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/offset.json"
+  ],
+  "_total": 6,
+  "_results": [
+    {
+      "sourceId": "http://music.com/source_albums",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:37:06.919Z",
+        "value": "5abccf70-b71d-11eb-89c5-49f1ca92ec51"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_albums",
+      "projectionId": "http://music.com/sparql",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:37:06.919Z",
+        "value": "5abccf70-b71d-11eb-89c5-49f1ca92ec51"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_bands",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:58:28.484Z",
+        "value": "569c1c40-b720-11eb-89c5-49f1ca92ec51"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_bands",
+      "projectionId": "http://music.com/sparql",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:58:28.484Z",
+        "value": "569c1c40-b720-11eb-89c5-49f1ca92ec51"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_songs",
+      "projectionId": "http://music.com/es",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:37:38.513Z",
+        "value": "6d91ac10-b71d-11eb-89c5-49f1ca92ec51"
+      }
+    },
+    {
+      "sourceId": "http://music.com/source_songs",
+      "projectionId": "http://music.com/sparql",
+      "offset": {
+        "@type": "TimeBasedOffset",
+        "instant": "2021-05-17T14:37:38.513Z",
+        "value": "6d91ac10-b71d-11eb-89c5-49f1ca92ec51"
+      }
+    }
+  ]
+}
