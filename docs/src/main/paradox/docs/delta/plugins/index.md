@@ -64,7 +64,7 @@ libraryDependencies += "ch.epfl.bluebrain.nexus" %% "delta-sdk-views" % deltaVer
 
 Delta uses @link:[distage library](https://izumi.7mind.io/distage/basics.html#quick-start){ open=new }  for dependency injection.
 Each plugin must define `ModuleDef` to create instances of its own classes.
-All the dependencies provided by `ModuleDef`s defined in @link:[Delta modules](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring){ open=new }, 
+All the dependencies provided by `ModuleDef`s defined in @link:[Delta modules](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring){ open=new }, 
 as well as other plugins can be used here.
 
 The plugin can also define instances of following traits/classes, which will be used in Delta:
@@ -107,11 +107,11 @@ Plugins should include their config inside `plugins.{plugin_name}` namespace in 
 
 Currently, following Delta functionality is provided by plugins:
 
-- archives @ref:[API Reference](../api/current/kg-archives-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/archive/src){ open=new }
-- SPARQL views @ref:[API Reference](../api/current/views/sparql-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/blazegraph/src){ open=new }
-- Elasticsearch views @ref:[API Reference](../api/current/views/elasticsearch-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src){ open=new }
-- composite views @ref:[API Reference](../api/current/views/composite-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/composite-views/src){ open=new }
-- files and storages @ref:[API Reference](../api/current/kg-files-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/storage/src){ open=new }
+- archives @ref:[API Reference](../api/current/kg-archives-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/archive/src){ open=new }
+- SPARQL views @ref:[API Reference](../api/current/views/sparql-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/blazegraph/src){ open=new }
+- Elasticsearch views @ref:[API Reference](../api/current/views/elasticsearch-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/elasticsearch/src){ open=new }
+- composite views @ref:[API Reference](../api/current/views/composite-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/composite-views/src){ open=new }
+- files and storages @ref:[API Reference](../api/current/kg-files-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/storage/src){ open=new }
 
 Elasticsearch plugin is required in order to provide listings in the API, other plugins can be excluded if their functionality is not needed.
 All the above plugins are included in the Delta @link:[Docker image](https://hub.docker.com/r/bluebrain/nexus-delta/){ open=new }.    

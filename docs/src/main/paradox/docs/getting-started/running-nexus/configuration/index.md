@@ -1,6 +1,6 @@
 # Nexus configuration
 
-Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
+Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
 
 There are 2 ways to modify the default configuration:
 
