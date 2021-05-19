@@ -17,9 +17,9 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.5.0** released on **17.05.2021**.
+The latest stable release is **v1.5.0** released on **19.05.2021**.
 
-## v1.5.0 (17.05.2021)
+## v1.5.0 (19.05.2021)
 
 The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected -
 please see the @ref:[release notes](v1.5-release-notes.md) for the exact changes). If you're upgrading from v1.4.x

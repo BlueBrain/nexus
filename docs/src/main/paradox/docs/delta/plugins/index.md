@@ -15,14 +15,14 @@ Plugins are still an experimental feature and Delta SDKs and dependent modules(r
 Plugins used by Delta need to be packaged as a `.jar` file containing the plugin code with all its dependencies.
 Delta loads plugins from `.jar` files located in a directory specified by `DELTA_PLUGINS` environment variable.
 
-Plugins must define exactly one class which extends @link:[PluginDef](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/plugin/PluginDef.scala){ open=new } trait.
+Plugins must define exactly one class which extends @link:[PluginDef](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/plugin/PluginDef.scala){ open=new } trait.
 
 The class must define following methods:
 
 ```scala
 def info: PluginDescription
 ```
-this method returns instance of @link:[PluginDescription](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ComponentDescription.scala#L50){ open=new } which defines the plugin name and version.
+this method returns instance of @link:[PluginDescription](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ComponentDescription.scala#L50){ open=new } which defines the plugin name and version.
 
 ```scala
 def initialize(locator: Locator): Task[Plugin]
@@ -64,22 +64,22 @@ libraryDependencies += "ch.epfl.bluebrain.nexus" %% "delta-sdk-views" % deltaVer
 
 Delta uses @link:[distage library](https://izumi.7mind.io/distage/basics.html#quick-start){ open=new }  for dependency injection.
 Each plugin must define `ModuleDef` to create instances of its own classes.
-All the dependencies provided by `ModuleDef`s defined in @link:[Delta modules](https://github.com/BlueBrain/nexus/tree/master/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring){ open=new }, 
+All the dependencies provided by `ModuleDef`s defined in @link:[Delta modules](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring){ open=new }, 
 as well as other plugins can be used here.
 
 The plugin can also define instances of following traits/classes, which will be used in Delta:
 
-  - @link:[PriorityRoute](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala){ open=new } - allows the plugin to define @link:[Akka HTTP Route](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html){ open=new } with priority. The priority is used
+  - @link:[PriorityRoute](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala){ open=new } - allows the plugin to define @link:[Akka HTTP Route](https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html){ open=new } with priority. The priority is used
     by Delta to prioritize route evaluation
-  - @link:[ScopeInitialization](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala){ open=new } - allows the plugin to define hooks which will be run on organization and project creation. 
-  - @link:[EventExchange](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/EventExchange.scala){ open=new }  - enables Delta to exchange plugin events for their different representation. Needs to be defined by the plugin in order for resources created by the plugin to be indexed or available via SSE endpoints.
-  - @link:[ReferenceExchange](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ReferenceExchange.scala){ open=new } - enables Delta to exchange a resource reference for a JSON-LD value allowing Delta to handle multiple resources in a uniform way 
-  - @link:[MetadataContextValue](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala){ open=new } - registers metadata context of this plugin into global metadata context 
-  - @link:[RemoteContextResolution](https://github.com/BlueBrain/nexus/blob/master/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala){ open=new } - enables Delta to resolve static contexts defined by the plugin
-  - @link:[ServiceDependency](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala){ open=new } - allows the plugin to define dependencies which will be displayed in `/version` endpoint.
-  - @link:[ApiMappings](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/projects/ApiMappings.scala){ open=new } - allows the plugin to define default API mappings used to shorten URLs
-  - @link:[ResourceToSchemaMappings](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala){ open=new } - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through `/resources` endpoints.
-  - @link:[EntityType](https://github.com/BlueBrain/nexus/blob/master/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/EntityType.scala){ open=new } - allows plugin to define its entity type in order to create Akka Persistence `persistence_id`s. 
+  - @link:[ScopeInitialization](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala){ open=new } - allows the plugin to define hooks which will be run on organization and project creation. 
+  - @link:[EventExchange](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/EventExchange.scala){ open=new }  - enables Delta to exchange plugin events for their different representation. Needs to be defined by the plugin in order for resources created by the plugin to be indexed or available via SSE endpoints.
+  - @link:[ReferenceExchange](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ReferenceExchange.scala){ open=new } - enables Delta to exchange a resource reference for a JSON-LD value allowing Delta to handle multiple resources in a uniform way 
+  - @link:[MetadataContextValue](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala){ open=new } - registers metadata context of this plugin into global metadata context 
+  - @link:[RemoteContextResolution](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala){ open=new } - enables Delta to resolve static contexts defined by the plugin
+  - @link:[ServiceDependency](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala){ open=new } - allows the plugin to define dependencies which will be displayed in `/version` endpoint.
+  - @link:[ApiMappings](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/projects/ApiMappings.scala){ open=new } - allows the plugin to define default API mappings used to shorten URLs
+  - @link:[ResourceToSchemaMappings](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala){ open=new } - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through `/resources` endpoints.
+  - @link:[EntityType](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/EntityType.scala){ open=new } - allows plugin to define its entity type in order to create Akka Persistence `persistence_id`s. 
 
 
 ### Class loading
@@ -107,11 +107,11 @@ Plugins should include their config inside `plugins.{plugin_name}` namespace in 
 
 Currently, following Delta functionality is provided by plugins:
 
-- archives @ref:[API Reference](../api/current/kg-archives-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/archive/src){ open=new }
-- SPARQL views @ref:[API Reference](../api/current/views/sparql-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/blazegraph/src){ open=new }
-- Elasticsearch views @ref:[API Reference](../api/current/views/elasticsearch-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/elasticsearch/src){ open=new }
-- composite views @ref:[API Reference](../api/current/views/composite-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/composite-views/src){ open=new }
-- files and storages @ref:[API Reference](../api/current/kg-files-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/storage/src){ open=new }
+- archives @ref:[API Reference](../api/current/kg-archives-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/archive/src){ open=new }
+- SPARQL views @ref:[API Reference](../api/current/views/sparql-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/blazegraph/src){ open=new }
+- Elasticsearch views @ref:[API Reference](../api/current/views/elasticsearch-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src){ open=new }
+- composite views @ref:[API Reference](../api/current/views/composite-view-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/composite-views/src){ open=new }
+- files and storages @ref:[API Reference](../api/current/kg-files-api.md) | @link:[code](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/storage/src){ open=new }
 
 Elasticsearch plugin is required in order to provide listings in the API, other plugins can be excluded if their functionality is not needed.
 All the above plugins are included in the Delta @link:[Docker image](https://hub.docker.com/r/bluebrain/nexus-delta/){ open=new }.    
