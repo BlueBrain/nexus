@@ -17,6 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Coursier Cache
+        uses: coursier/cache-action@v6
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
       - name: Set Version
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: Build Images
