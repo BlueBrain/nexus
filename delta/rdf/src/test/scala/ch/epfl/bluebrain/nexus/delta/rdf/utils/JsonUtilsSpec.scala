@@ -151,6 +151,26 @@ class JsonUtilsSpec extends AnyWordSpecLike with Matchers with Fixtures with Ins
           """
       json.mapAllKeys("key2", _ => "mapped".asJson) shouldEqual expected
     }
+
+    "add key and value only if NonEmpty" in {
+      json"""{"k": "v"}""".addIfNonEmpty("k2", List(1, 2)) shouldEqual json"""{"k": "v", "k2": [1,2]}"""
+      json"""{"k": "v"}""".addIfNonEmpty("k2", List.empty[String]) shouldEqual json"""{"k": "v"}"""
+    }
+    "add key and value only if exists" in {
+      json"""{"k": "v"}""".addIfExists("k2", Some("v2")) shouldEqual json"""{"k": "v", "k2": "v2"}"""
+      json"""{"k": "v"}""".addIfExists[String]("k2", None) shouldEqual json"""{"k": "v"}"""
+    }
+  }
+
+  "A Json object" should {
+    "add key and value only if NonEmpty" in {
+      jobj"""{"k": "v"}""".addIfNonEmpty("k2", List(1, 2)) shouldEqual jobj"""{"k": "v", "k2": [1,2]}"""
+      jobj"""{"k": "v"}""".addIfNonEmpty("k2", List.empty[String]) shouldEqual jobj"""{"k": "v"}"""
+    }
+    "add key and value only if exists" in {
+      jobj"""{"k": "v"}""".addIfExists("k2", Some("v2")) shouldEqual jobj"""{"k": "v", "k2": "v2"}"""
+      jobj"""{"k": "v"}""".addIfExists[String]("k2", None) shouldEqual jobj"""{"k": "v"}"""
+    }
   }
 
   "A Json cursor" should {

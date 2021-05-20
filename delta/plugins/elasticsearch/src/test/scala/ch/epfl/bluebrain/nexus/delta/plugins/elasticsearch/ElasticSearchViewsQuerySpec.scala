@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -239,7 +240,7 @@ class ElasticSearchViewsQuerySpec
         ResourcesSearchParams(),
         ResourcesSearchParams(
           schema = Some(Latest(schemas.resources)),
-          types = List(tpe1),
+          types = List(IncludedType(tpe1)),
           deprecated = Some(false),
           createdBy = Some(Anonymous),
           updatedBy = Some(Anonymous)
@@ -274,7 +275,7 @@ class ElasticSearchViewsQuerySpec
       val params   = List(
         ResourcesSearchParams(),
         ResourcesSearchParams(
-          types = List(tpe1),
+          types = List(IncludedType(tpe1)),
           deprecated = Some(false),
           createdBy = Some(Anonymous),
           updatedBy = Some(Anonymous)
@@ -294,8 +295,9 @@ class ElasticSearchViewsQuerySpec
       val params   = List(
         ResourcesSearchParams(id = Some(defaultViewId / "0")),
         ResourcesSearchParams(rev = Some(0)),
-        ResourcesSearchParams(types = List(nxv + "0")),
-        ResourcesSearchParams(id = Some(defaultViewId / "0"), rev = Some(0), types = List(nxv + "0"))
+        ResourcesSearchParams(types = List(IncludedType(nxv + "0"))),
+        ResourcesSearchParams(types = List(ExcludedType(nxv + "1"), ExcludedType(nxv + "2"))),
+        ResourcesSearchParams(id = Some(defaultViewId / "0"), rev = Some(0), types = List(IncludedType(nxv + "0")))
       )
       val expected = createDocuments(defaultView).head.asObject.value
       forAll(params) { filter =>
