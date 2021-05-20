@@ -384,6 +384,10 @@ class StoragesSpec
         val payload = s3FieldsJson.map(_ deepMerge Json.obj(keywords.id -> s3Id.asJson))
         storages.create("s3-storage", projectRef, payload).accepted shouldEqual
           resourceFor(s3Id, projectRef, s3Val, payload, createdBy = bob, updatedBy = bob)
+
+        val previousDefault = storages.fetch(dId, projectRef).accepted
+        previousDefault.value.default shouldEqual false
+        previousDefault.updatedBy shouldEqual StoragesSetup.serviceAccount.subject
       }
 
       "succeed with the passed id" in {
