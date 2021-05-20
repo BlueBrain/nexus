@@ -85,7 +85,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
       "query" -> Json.obj(
         "bool" -> Json
           .obj(eval -> mustTerms.asJson)
-          .addIfExists("must_not", Option.when(mustNotTerms.nonEmpty)(mustNotTerms))
+          .addIfNonEmpty("must_not", mustNotTerms)
       )
     )
   }
