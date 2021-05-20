@@ -47,10 +47,30 @@ object ArchiveRejection {
   /**
     * Rejection returned when there's at least a path collision in the archive.
     *
-    * @param paths the offending paths
+    * @param duplicates the paths that have been repeated
+    * @param invalids   the paths that are invalids
+    * @param longIds    long ids for which a path must be defined
     */
-  final case class DuplicateResourcePath(paths: Set[AbsolutePath])
-      extends ArchiveRejection(s"The paths '${paths.mkString(", ")}' have been used multiple times in the archive.")
+  final case class InvalidResourceCollection(
+      duplicates: Set[AbsolutePath],
+      invalids: Set[AbsolutePath],
+      longIds: Set[Iri]
+  ) extends ArchiveRejection(
+        (Option.when(duplicates.nonEmpty)(
+          s"The paths '${duplicates.mkString(", ")}' have been used multiple times in the archive."
+        ) ++
+          Option.when(invalids.nonEmpty)(
+            s"The paths '${invalids.mkString(", ")}' must have a file path prefix less than 154 characters long and a file path name less than 99 characters long."
+          ) ++
+          Option.when(longIds.nonEmpty)(
+            s"The resource ids '${longIds.mkString(", ")}' generate a file name exceeding 99 characters, please define a path for each of them."
+          )).mkString("\n")
+      )
+
+  final case class FilenameTooLong(id: Iri, project: ProjectRef, fileName: String)
+      extends ArchiveRejection(
+        s"File '$id' in project '$project' has a file name '$fileName' exceeding the 100 character limit for a tar file."
+      )
 
   /**
     * Rejection returned when an archive doesn't exist.
@@ -158,16 +178,18 @@ object ArchiveRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case ArchiveEvaluationError(EvaluationFailure(C(cmd), _)) =>
+        case ArchiveEvaluationError(EvaluationFailure(C(cmd), _))     =>
           val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}'"
           JsonObject(keywords.tpe -> "ArchiveEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case ArchiveEvaluationError(EvaluationTimeout(C(cmd), t)) =>
+        case ArchiveEvaluationError(EvaluationTimeout(C(cmd), t))     =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for archive '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ArchiveEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
-        case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
-        case _: ArchiveNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                    => obj
+        case InvalidResourceCollection(duplicates, invalids, longIds) =>
+          obj.add("duplicates", duplicates.asJson).add("invalids", invalids.asJson).add("longIds", longIds.asJson)
+        case WrappedProjectRejection(rejection)                       => rejection.asJsonObject
+        case InvalidJsonLdFormat(_, rdf)                              => obj.add("rdf", rdf.asJson)
+        case _: ArchiveNotFound                                       => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                                        => obj
       }
     }
 
@@ -179,7 +201,8 @@ object ArchiveRejection {
   implicit final val archiveResponseFields: HttpResponseFields[ArchiveRejection] =
     HttpResponseFields {
       case ResourceAlreadyExists(_, _)        => StatusCodes.Conflict
-      case DuplicateResourcePath(_)           => StatusCodes.BadRequest
+      case InvalidResourceCollection(_, _, _) => StatusCodes.BadRequest
+      case FilenameTooLong(_, _, _)           => StatusCodes.BadRequest
       case ArchiveNotFound(_, _)              => StatusCodes.NotFound
       case InvalidArchiveId(_)                => StatusCodes.BadRequest
       case WrappedProjectRejection(rejection) => rejection.status
