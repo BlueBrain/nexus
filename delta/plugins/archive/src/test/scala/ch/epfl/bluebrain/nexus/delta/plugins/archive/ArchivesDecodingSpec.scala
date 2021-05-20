@@ -179,12 +179,38 @@ class ArchivesDecodingSpec
         val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
+
+      "an id exceeds 100 characters but a valid path is provided" in {
+        val id         = iri"http://localhost/${genString()}"
+        val resourceId = iri"http://localhost/${genString(100)}"
+        val path       = AbsolutePath(Paths.get("/a/b")).rightValue
+        val source     =
+          json"""{
+              "@id": $id,
+              "resources": [
+                {
+                  "@type": "Resource",
+                  "resourceId": $resourceId,
+                  "path": "/a/b"
+                }
+              ]
+            }"""
+
+        val (decodedId, value) = decoder(project, source).accepted
+        decodedId shouldEqual id
+        value.resources shouldEqual NonEmptySet.of(
+          ResourceReference(Latest(resourceId), None, Some(path), None)
+        )
+      }
     }
 
-    "fail when it can't be parse as json-ld" in {
-      val list = List(
-        // the resourceId is not an absolute iri
-        json"""{
+    "fail" when {
+
+      "it can't be parse as json-ld" in {
+
+        val list = List(
+          // the resourceId is not an absolute iri
+          json"""{
           "resources": [
             {
               "@type": "File",
@@ -192,8 +218,8 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // the resourceId is not a valid iri
-        json"""{
+          // the resourceId is not a valid iri
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -201,19 +227,21 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-      )
+        )
 
-      forAll(list) { source =>
-        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        forAll(list) { source =>
+          decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        }
       }
-    }
 
-    "fail to be decoded" in {
-      val resourceId = iri"http://localhost/${genString()}"
-      val fileId     = iri"http://localhost/${genString()}"
-      val list       = List(
-        // the path is not absolute
-        json"""{
+      "it can't be decoded" in {
+        val resourceId   = iri"http://localhost/${genString()}"
+        val fileId       = iri"http://localhost/${genString()}"
+        val invalidPath1 = s"${genString(155)}/name"
+        val invalidPath2 = s"/filePrefix/${genString(100)}"
+        val list         = List(
+          // the path is not absolute
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -222,8 +250,8 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // both tag and rev are present
-        json"""{
+          // both tag and rev are present
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -234,8 +262,8 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // both tag and rev are present
-        json"""{
+          // both tag and rev are present
+          json"""{
           "resources": [
             {
               "@type": "File",
@@ -246,8 +274,8 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // both originalSource and format are present
-        json"""{
+          // both originalSource and format are present
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -257,8 +285,8 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // there's an unknown format
-        json"""{
+          // there's an unknown format
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -267,12 +295,27 @@ class ArchivesDecodingSpec
             }
           ]
         }""",
-        // the references is empty
-        json"""{
+          // the references is empty
+          json"""{
           "resources": []
         }""",
-        // there are path collisions
-        json"""{
+          // the path are invalid
+          json"""{
+          "resources": [
+            {
+              "@type": "Resource",
+              "resourceId": $resourceId,
+              "path": $invalidPath1
+            },
+            {
+              "@type": "File",
+              "resourceId": $fileId,
+              "path": $invalidPath2
+            }
+          ]
+        }""",
+          // there are path collisions
+          json"""{
           "resources": [
             {
               "@type": "Resource",
@@ -286,18 +329,19 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-      )
+        )
 
-      forAll(list) { source =>
-        decoder(project, source).rejectedWith[DecodingFailed]
+        forAll(list) { source =>
+          decoder(project, source).rejectedWith[DecodingFailed]
+        }
       }
-    }
 
-    "fail to match a provided id with the source one" in {
-      val sourceId   = iri"http://localhost/${genString()}"
-      val providedId = iri"http://localhost/${genString()}"
-      val resourceId = iri"http://localhost/${genString()}"
-      val source     = json"""{
+      "it matches a provided id with the source one" in {
+        val sourceId   = iri"http://localhost/${genString()}"
+        val providedId = iri"http://localhost/${genString()}"
+        val resourceId = iri"http://localhost/${genString()}"
+        val source     =
+          json"""{
           "@id": $sourceId,
           "resources": [
             {
@@ -306,12 +350,13 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-      decoder(project, providedId, source).rejectedWith[UnexpectedArchiveId]
-    }
+        decoder(project, providedId, source).rejectedWith[UnexpectedArchiveId]
+      }
 
-    "fail to parse a source as an ExpandedJsonLd" in {
-      val resourceId = iri"http://localhost/${genString()}"
-      val source     = json"""{
+      "parsing a source as an ExpandedJsonLd" in {
+        val resourceId = iri"http://localhost/${genString()}"
+        val source     =
+          json"""{
            "@context": "http://schema.org/",
           "resources": [
             {
@@ -320,7 +365,8 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-      decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+      }
     }
   }
 

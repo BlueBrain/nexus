@@ -281,17 +281,17 @@ class ArchiveRoutesSpec
               label = Some(encodedFileId.replaceAll("%3A", ":"))
             )
           result.keySet shouldEqual Set(
-            s"${project.ref}/file.txt",
-            s"${project.ref}/${UrlUtils.encode(fileId.toString)}.json"
+            s"${project.ref}/file/file.txt",
+            s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
           )
 
           val expectedContent = content
-          val actualContent   = result.get(s"${project.ref}/file.txt").value
+          val actualContent   = result.get(s"${project.ref}/file/file.txt").value
           actualContent shouldEqual expectedContent
 
           val expectedMetadata = metadata
           val actualMetadata   =
-            parse(result.get(s"${project.ref}/${UrlUtils.encode(fileId.toString)}.json").value).rightValue
+            parse(result.get(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json").value).rightValue
           actualMetadata shouldEqual expectedMetadata
         }
       }
