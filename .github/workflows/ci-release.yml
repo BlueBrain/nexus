@@ -23,22 +23,12 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
-      - name: Set Version
-        run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
-      - name: Build Images
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false \
-            app/Docker/publishLocal \
-            storage/Docker/publishLocal \
-            cli/Docker/publishLocal
-      - name: Publish To DockerHub
-        run: |
-          docker tag bluebrain/nexus-cli:latest bluebrain/nexus-cli:${{ env.VERSION }}
-          docker tag bluebrain/nexus-delta:latest bluebrain/nexus-delta:${{ env.VERSION }}
-          docker tag bluebrain/nexus-storage:latest bluebrain/nexus-storage:${{ env.VERSION }}
-          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-cli:${{ env.VERSION }}
-          docker push bluebrain/nexus-delta:${{ env.VERSION }}
-          docker push bluebrain/nexus-storage:${{ env.VERSION }}
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
+      - name: Publish To Dockerhub
+        run: |
+          echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            app/Docker/publish \
+            storage/Docker/publish \
+            cli/Docker/publish
