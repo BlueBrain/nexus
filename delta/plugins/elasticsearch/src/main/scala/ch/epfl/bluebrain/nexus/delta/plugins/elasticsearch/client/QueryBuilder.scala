@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
@@ -56,20 +57,37 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   /**
     * Filters by the passed ''params''
     */
-  def withFilters(params: ResourcesSearchParams)(implicit baseUri: BaseUri): QueryBuilder =
+  def withFilters(params: ResourcesSearchParams)(implicit baseUri: BaseUri): QueryBuilder = {
+    val (includeTypes, excludeTypes) = params.types.partition(_.include)
     QueryBuilder(
-      query deepMerge baseQuery(
-        terms = params.types.map(term(keywords.tpe, _)) ++ params.id.map(term(keywords.id, _)) ++ params.q
-          .map(`match`(allFields, _)) ++ params.schema.map(term(nxv.constrainedBy.prefix, _)) ++ params.deprecated
-          .map(term(nxv.deprecated.prefix, _)) ++ params.rev.map(term(nxv.rev.prefix, _)) ++ params.createdBy
-          .map(term(nxv.createdBy.prefix, _)) ++ params.updatedBy.map(term(nxv.updatedBy.prefix, _)),
+      query deepMerge queryPayload(
+        mustTerms = includeTypes.map(tpe => term(keywords.tpe, tpe.value)) ++
+          params.id.map(term(keywords.id, _)) ++
+          params.q.map(`match`(allFields, _)) ++
+          params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
+          params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
+          params.rev.map(term(nxv.rev.prefix, _)) ++
+          params.createdBy.map(term(nxv.createdBy.prefix, _)) ++
+          params.updatedBy.map(term(nxv.updatedBy.prefix, _)),
+        mustNotTerms = excludeTypes.map(tpe => term(keywords.tpe, tpe.value)),
         withScore = params.q.isDefined
       )
     )
+  }
 
-  private def baseQuery(terms: List[JsonObject], withScore: Boolean): JsonObject = {
+  private def queryPayload(
+      mustTerms: List[JsonObject],
+      mustNotTerms: List[JsonObject],
+      withScore: Boolean
+  ): JsonObject = {
     val eval = if (withScore) "must" else "filter"
-    JsonObject("query" -> Json.obj("bool" -> Json.obj(eval -> terms.asJson)))
+    JsonObject(
+      "query" -> Json.obj(
+        "bool" -> Json
+          .obj(eval -> mustTerms.asJson)
+          .addIfExists("must_not", Option.when(mustNotTerms.nonEmpty)(mustNotTerms))
+      )
+    )
   }
 
   private def term[A: Encoder](k: String, value: A): JsonObject    =

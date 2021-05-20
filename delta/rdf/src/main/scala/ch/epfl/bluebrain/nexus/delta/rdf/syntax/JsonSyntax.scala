@@ -291,4 +291,10 @@ final class JsonOps(private val json: Json) extends AnyVal {
     */
   def getIgnoreSingleArrayOr[A: Decoder](key: String)(defaultValue: => A): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArrayOr(json, key)(defaultValue)
+
+  /**
+    * Adds to the current json object the passed ''key'' and ''valueOpt'' when the value is a Some
+    */
+  def addIfExists[A: Encoder](key: String, valueOpt: Option[A]): Json =
+    valueOpt.fold(json)(value => json deepMerge Json.obj(key -> value.asJson))
 }
