@@ -55,7 +55,7 @@ This is particularly handy if your organization is running some kind of distribu
 Gluster, GPFS, Lustre, ...) that you don't want to mount directly on the system where Nexus Delta runs.
 
 While there's no formal specification for this service, you can check out or deploy our own implementation:
-@link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/master/storage){ open=new }.
+@link:[Nexus remote storage service](https://github.com/BlueBrain/nexus/tree/v1.5.0/storage){ open=new }.
 
 In order to be able to use this storage, the configuration flag `plugins.storage.storages.remote-disk.enabled` should be set to `true`.
 
