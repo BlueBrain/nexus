@@ -41,4 +41,4 @@ You can customize the Header of Nexus Fusion by setting up the following environ
 - `LOGO_LINK`: Url for the logo, for example, `https://www.epfl.ch`
 - If you use Nexus Forge, it is possible to include a `Forge templates` button by providing the url as `FORGE_LINK`, for example, `https://some-url.hi`
 
-The full list of environment variables can be found [here](https://github.com/BlueBrain/nexus-web).
+The full list of environment variables can be found @link[here](https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list).
