@@ -1,0 +1,29 @@
+a.md-logo {
+    border-radius: 50%;
+    background-color: #fff;
+    padding: 8px;
+}
+
+.md-header {
+    background: #050A56 !important;
+}
+
+.md-footer-nav {
+    background: #2d2f38f0 radial-gradient(ellipse at center -70%, #18334f 0, #18334f 18%, #192532 57%, #2d2f38f0 100%);
+}
+
+.md-version {
+    display: none !important;
+}
+
+.half {
+    width: 50%;
+}
+
+.three-quarters {
+    width: 75%;
+}
+
+.center {
+    margin: 0 auto;
+}
