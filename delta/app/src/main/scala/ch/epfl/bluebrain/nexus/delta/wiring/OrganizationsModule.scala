@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
+import ch.epfl.bluebrain.nexus.delta.service.organizations.{OrganizationEventExchange, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -77,6 +77,11 @@ object OrganizationsModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: OrganizationsRoutes) => PriorityRoute(pluginsMaxPriority + 6, route.routes) }
+
+  make[OrganizationEventExchange].from { (projects: Organizations, base: BaseUri) =>
+    new OrganizationEventExchange(projects)(base)
+  }
+  many[EventExchange].ref[OrganizationEventExchange]
 
 }
 // $COVERAGE-ON$

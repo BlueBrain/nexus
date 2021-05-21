@@ -1,7 +1,7 @@
-data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationUpdated","description":"updated","_instant":"1970-01-01T00:00:00Z","_label":"org1","_organizationId":"http://localhost/v1/orgs/org1","_rev":2,"_subject":"http://localhost/v1/anonymous","_uuid":"{{uuid}}"}
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationUpdated","description":"updated","_instant":"1970-01-01T00:00:00Z","_label":"org1","_organizationId":"http://localhost/v1/orgs/org1","_resourceId":"http://localhost/v1/orgs/org1","_rev":2,"_subject":"http://localhost/v1/anonymous","_uuid":"{{uuid}}"}
 event:OrganizationUpdated
 id:3
 
-data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationDeprecated","_instant":"1970-01-01T00:00:00Z","_label":"org2","_organizationId":"http://localhost/v1/orgs/org2","_rev":2,"_subject":"http://localhost/v1/realms/wonderland/users/alice","_uuid":"{{uuid}}"}
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/organizations.json"],"@type":"OrganizationDeprecated","_instant":"1970-01-01T00:00:00Z","_label":"org2","_organizationId":"http://localhost/v1/orgs/org2","_resourceId":"http://localhost/v1/orgs/org2","_rev":2,"_subject":"http://localhost/v1/realms/wonderland/users/alice","_uuid":"{{uuid}}"}
 event:OrganizationDeprecated
 id:4
