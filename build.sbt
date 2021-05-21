@@ -199,7 +199,8 @@ lazy val docs = project
       "https://movies.com/movieId/1".r,
       "https://sandbox.bluebrainnexus.io.*".r,
       "https://link.springer.com/.*".r,
-      "https://shacl.org/.*".r
+      "https://shacl.org/.*".r,
+      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
     ),
     Paradox / sourceDirectory        := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxMaterialTheme   := {
