@@ -38,7 +38,7 @@ object OrganizationGen extends OptionValues {
 
   def resourceFor(
       organization: Organization,
-      rev: Long,
+      rev: Long = 1L,
       subject: Subject = Identity.Anonymous,
       deprecated: Boolean = false
   ): OrganizationResource =

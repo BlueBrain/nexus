@@ -121,6 +121,7 @@ object OrganizationEvent {
       deriveConfiguredEncoder[OrganizationEvent]
         .encodeObject(event)
         .add("_organizationId", ResourceUris.organization(event.label).accessUri.asJson)
+        .add(nxv.resourceId.prefix, ResourceUris.organization(event.label).accessUri.asJson)
         .add(keywords.context, context.value)
     }
   }
