@@ -1,0 +1,33 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/c581fdd4-6151-4430-aa33-f97ab6aa0b38",
+  "@type": "File",
+  "_bytes": 8615,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+  "_createdAt": "2021-05-12T07:28:30.472Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_digest": {
+    "_algorithm": "SHA-256",
+    "_value": "057a3811ecfbeb99506c538d42474d1916f1d9b66965b9e9378a00eab1bb913a"
+  },
+  "_filename": "myfile.jpg",
+  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/incoming",
+  "_mediaType": "image/jpeg",
+  "_origin": "Client",
+  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_rev": 1,
+  "_self": "http://localhost:8080/v1/files/myorg/myproject/c581fdd4-6151-4430-aa33-f97ab6aa0b38",
+  "_storage": {
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault",
+    "@type": "DiskStorage",
+    "_rev": 1
+  },
+  "_updatedAt": "2021-05-12T07:28:30.472Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "9af35be9-b2f2-4734-9646-c3423a62685d"
+}

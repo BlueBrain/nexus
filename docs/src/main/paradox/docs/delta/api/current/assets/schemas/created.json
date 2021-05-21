@@ -1,0 +1,16 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/resource.json",
+  "@id": "http://localhost:8080/v1/resources/myorg/myproj/e1729302-35b8-4d80-97b2-d63c984e2b5c",
+  "@type": "Schema",
+  "_incoming": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/incoming",
+  "_outgoing": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c/outgoing",
+  "_self": "http://localhost:8080/v1/schemas/myorg/myproj/base:e1729302-35b8-4d80-97b2-d63c984e2b5c",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/shacl-20170720.ttl",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdAt": "2021-04-17T14:54:42.939Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+  "_updatedAt": "2021-04-17T14:54:42.939Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+}

@@ -1,0 +1,1 @@
+curl "http://localhost:8080/v1/views/myorg/bands/composite_view/offset"

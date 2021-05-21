@@ -1,0 +1,123 @@
+{
+  "hits": {
+    "hits": [
+      {
+        "_id": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+        "_index": "delta_7e737b83-30a0-4ea3-b6c9-cd1ed481d743_3",
+        "_score": 0.8566987,
+        "_source": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
+          "@type": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+          "_createdAt": "2021-05-12T09:44:22.259Z",
+          "_createdBy": "http://localhost:8080/v1/realms/internal/users/delta",
+          "_deprecated": false,
+          "_incoming": "http://localhost:8080/v1/views/myorg/myproj/documents/incoming",
+          "_original_source": "{\"resourceSchemas\":[],\"resourceTypes\":[],\"sourceAsText\":true,\"includeMetadata\":true,\"includeDeprecated\":true,\"permission\":\"views/query\",\"@type\":\"ElasticSearchView\",\"@id\":\"https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex\"}",
+          "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/documents/outgoing",
+          "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+          "_rev": 1,
+          "_self": "http://localhost:8080/v1/views/myorg/myproj/documents",
+          "_updatedAt": "2021-05-12T09:44:22.259Z",
+          "_updatedBy": "http://localhost:8080/v1/realms/internal/users/delta",
+          "_uuid": "a1147f0f-1650-49f2-8704-30ad97be8f31"
+        },
+        "_type": "_doc"
+      },
+      {
+        "_id": "http://localhost:8080/v1/resources/myorg/myproj/_/386a8c21-3acf-4f10-90ab-329466f5e04c",
+        "_index": "delta_7e737b83-30a0-4ea3-b6c9-cd1ed481d743_3",
+        "_score": 0.8566987,
+        "_source": {
+          "@id": "http://localhost:8080/v1/resources/myorg/myproj/_/386a8c21-3acf-4f10-90ab-329466f5e04c",
+          "@type": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+          "_createdAt": "2021-05-12T09:44:35.609Z",
+          "_createdBy": "http://localhost:8080/v1/anonymous",
+          "_deprecated": false,
+          "_incoming": "http://localhost:8080/v1/views/myorg/myproj/386a8c21-3acf-4f10-90ab-329466f5e04c/incoming",
+          "_original_source": "{\"@type\":[\"ElasticSearchView\"],\"mapping\":{\"dynamic\":false,\"properties\":{\"@id\":{\"type\":\"keyword\"},\"@type\":{\"type\":\"keyword\"},\"name\":{\"type\":\"keyword\"},\"number\":{\"type\":\"long\"},\"bool\":{\"type\":\"boolean\"}}},\"includeMetadata\":true,\"includeDeprecated\":true,\"sourceAsText\":true,\"resourceSchemas\":[],\"resourceTypes\":[]}",
+          "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/386a8c21-3acf-4f10-90ab-329466f5e04c/outgoing",
+          "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+          "_rev": 1,
+          "_self": "http://localhost:8080/v1/views/myorg/myproj/386a8c21-3acf-4f10-90ab-329466f5e04c",
+          "_updatedAt": "2021-05-12T09:44:35.609Z",
+          "_updatedBy": "http://localhost:8080/v1/anonymous",
+          "_uuid": "ea4b3858-c1ac-4afb-ac94-13fdb1b53681"
+        },
+        "_type": "_doc"
+      },
+      {
+        "_id": "http://localhost:8080/v1/resources/myorg/myproj/_/indexing1",
+        "_index": "delta_7e737b83-30a0-4ea3-b6c9-cd1ed481d743_3",
+        "_score": 0.8566987,
+        "_source": {
+          "@id": "http://localhost:8080/v1/resources/myorg/myproj/_/indexing1",
+          "@type": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+          "_createdAt": "2021-05-12T09:53:32.704Z",
+          "_createdBy": "http://localhost:8080/v1/anonymous",
+          "_deprecated": false,
+          "_incoming": "http://localhost:8080/v1/views/myorg/myproj/indexing1/incoming",
+          "_original_source": "{\"@type\":[\"ElasticSearchView\"],\"mapping\":{\"dynamic\":false,\"properties\":{\"@id\":{\"type\":\"keyword\"},\"@type\":{\"type\":\"keyword\"},\"name\":{\"type\":\"keyword\"},\"number\":{\"type\":\"long\"},\"bool\":{\"type\":\"boolean\"}}},\"includeMetadata\":true,\"includeDeprecated\":true,\"sourceAsText\":true,\"resourceSchemas\":[],\"resourceTypes\":[]}",
+          "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/indexing1/outgoing",
+          "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+          "_rev": 1,
+          "_self": "http://localhost:8080/v1/views/myorg/myproj/indexing1",
+          "_updatedAt": "2021-05-12T09:53:32.704Z",
+          "_updatedBy": "http://localhost:8080/v1/anonymous",
+          "_uuid": "ab97491a-0f30-4616-9906-28b92a8c0b79"
+        },
+        "_type": "_doc"
+      },
+      {
+        "_id": "http://localhost:8080/v1/resources/myorg/myproj/_/myview",
+        "_index": "delta_7e737b83-30a0-4ea3-b6c9-cd1ed481d743_3",
+        "_score": 0.8566987,
+        "_source": {
+          "@id": "http://localhost:8080/v1/resources/myorg/myproj/_/myview",
+          "@type": [
+            "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
+            "https://bluebrain.github.io/nexus/vocabulary/View"
+          ],
+          "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+          "_createdAt": "2021-05-12T09:54:28.171Z",
+          "_createdBy": "http://localhost:8080/v1/anonymous",
+          "_deprecated": false,
+          "_incoming": "http://localhost:8080/v1/views/myorg/myproj/myview/incoming",
+          "_original_source": "{\"@type\":[\"ElasticSearchView\"],\"mapping\":{\"dynamic\":false,\"properties\":{\"@id\":{\"type\":\"keyword\"},\"@type\":{\"type\":\"keyword\"},\"name\":{\"type\":\"keyword\"},\"number\":{\"type\":\"long\"},\"bool\":{\"type\":\"boolean\"}}},\"includeMetadata\":true,\"includeDeprecated\":true,\"sourceAsText\":true,\"resourceSchemas\":[],\"resourceTypes\":[]}",
+          "_outgoing": "http://localhost:8080/v1/views/myorg/myproj/myview/outgoing",
+          "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+          "_rev": 3,
+          "_self": "http://localhost:8080/v1/views/myorg/myproj/myview",
+          "_updatedAt": "2021-05-12T09:58:20.507Z",
+          "_updatedBy": "http://localhost:8080/v1/anonymous",
+          "_uuid": "7e737b83-30a0-4ea3-b6c9-cd1ed481d743"
+        },
+        "_type": "_doc"
+      }
+    ],
+    "max_score": 0.8566987,
+    "total": {
+      "relation": "eq",
+      "value": 4
+    }
+  },
+  "timed_out": false,
+  "took": 10,
+  "_shards": {
+    "failed": 0,
+    "skipped": 0,
+    "successful": 1,
+    "total": 1
+  }
+}

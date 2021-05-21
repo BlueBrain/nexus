@@ -5,6 +5,7 @@
 - @ref:[Studio](studio.md)
 - @ref:[Search](search.md)
 - @ref:[Admin](admin.md)
+- @ref:[Workflow](workflow.md)
 - @ref:[Add your Own App](add-your-own-app.md)
 
 @@@

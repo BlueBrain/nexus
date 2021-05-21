@@ -199,7 +199,8 @@ lazy val docs = project
       "https://movies.com/movieId/1".r,
       "https://sandbox.bluebrainnexus.io.*".r,
       "https://link.springer.com/.*".r,
-      "https://shacl.org/.*".r
+      "https://shacl.org/.*".r,
+      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
     ),
     Paradox / sourceDirectory        := sourceDirectory.value / "main" / "paradox",
     Paradox / paradoxMaterialTheme   := {
@@ -215,7 +216,7 @@ lazy val docs = project
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-                         |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+                         |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
     Paradox / paradoxNavigationDepth := 4,

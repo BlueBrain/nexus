@@ -4,13 +4,13 @@ This view is composed by multiple `sources` and `projections`.
 
 ## Processing pipeline
 
-An asynchronous process gets trigger for every view. This process can be visualized as a pipeline with different stages. 
+An asynchronous process gets triggered for every view. This process can be visualized as a pipeline with different stages. 
 
 The first stage is the input of the pipeline: a stream of sources.
 
 The last stage takes the resulting output from the pipeline and index it on the configured projection.
 
-[![CompositeView pipeline](../assets/views/compositeview_pipeline.png "CompositeView pipeline")](../assets/views/compositeview_pipeline.png)
+[![CompositeView pipeline](../assets/views/composite/pipeline.png "CompositeView pipeline")](../assets/views/composite/pipeline.png)
 
 ## Sources
 
@@ -47,9 +47,9 @@ where...
 
 ### CrossProjectEventStream
 
-This source reads events in a streaming fashion from the defined project event log in the current Nexus deployment.
+This source reads events in a streaming fashion from the defined project event log in the current Nexus Delta deployment.
 
-The specified list of identities will be used to retrieve the resources from the project. The target project must have `resources/read` permissions in order to read events.
+The specified list of identities will be used to retrieve the resources from the project. The identities must have `events/read` permission on the target project in order to read events.
 
 The events are offered to the projections stage.
 
@@ -82,7 +82,8 @@ where...
 
 ### RemoteProjectEventStream
 
-This source reads events in a streaming fashion from the defined project event log in a remote Nexus deployment.
+This source reads events in a streaming fashion from the defined project event log in a remote Nexus Delta deployment.
+The provided `token` must have `events/read` permissions on the target project in order to read events.
 
 The events are offered to the projections stage.
 
@@ -122,13 +123,13 @@ where...
 After the events are gathered from each source, the following steps are executed:
 
 1. Convert event into a resource.
-2. Discard undesired resources.
+2. Discard undesired resources (resources not matching the source `resourceSchemas`, `resourceTypes` or `resourceTag`).
 3. Store the RDF triple representation of a resource in an intermediate Sparql space. This space will be used by the 
    projections in the following pipeline steps.
 
 ## Projections
 
-A projection defines the type of indexing and a query to transform the data. It is the output of the pipeline.
+A projection defines the type of indexing and the query to transform the data. It is the output of the pipeline.
 
 There are 2 types of projections available
 
@@ -136,8 +137,8 @@ There are 2 types of projections available
 
 This projection executes the following steps:
 
-1. Discard undesired resources.
-2. Transform the resource by executing an SPARQL construct query against the intermediate Sparql space.
+1. Discard undesired resources (resources not matching the projection `resourceSchemas`, `resourceTypes` or `resourceTag`).
+2. Transform the resource by executing an SPARQL @link:[construct query](https://www.w3.org/TR/rdf-sparql-query/#construct){ open=new } against the intermediate Sparql space.
 3. Convert the resulting RDF triples into JSON using the provided JSON-LD context.
 4. Stores the resulting JSON as a Document in an ElasticSearch index.
 
@@ -148,13 +149,15 @@ This projection executes the following steps:
          "@id": "{projectionId}",
          "@type": "ElasticSearchProjection",
          "mapping": _elasticsearch mapping_,
+         "settings": _elasticsearch settings_,
          "query": "{query}",
          "context": _context_,
          "resourceSchemas": [ "{resourceSchema}", ...],
          "resourceTypes": [ "{resourceType}", ...],
          "resourceTag": "{tag}",
          "includeMetadata": {includeMetadata},
-         "includeDeprecated": {includeDeprecated}
+         "includeDeprecated": {includeDeprecated},
+         "permission": {permission}
       }
    ],
    ...
@@ -166,17 +169,20 @@ where...
 - `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated 
   Iri will be assigned.
 - `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the 
-  @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping){ open=new }.
+  @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html){ open=new }.
+- `_elasticsearch settings_`: Json object - Defines the indexing configuration, as stated at the 
+  @link:[ElasticSearch settings documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings){ open=new }.
+- `_context_`: Json - the JSON-LD context value applied to the query results.
+- `{query}`: @link:[Sparql Construct Query](https://www.w3.org/TR/rdf-sparql-query/#construct){ open=new } - Defines the Sparql query to execute against the
+  intermediate Sparql space for each target resource.
 - `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri to perform the 
   query. This field is optional.
 - `{resourceType}`: Iri - Select only resources of the provided type Iri to perform the query. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag to perform the query. This field is optional.
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
-  stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
+  included in the ElasticSearch document. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
-- `{query}`: [Sparql Query](https://www.w3.org/TR/rdf-sparql-query/) - Defines the Sparql query to execute against the 
-  intermediate Sparql space for each target resource.
-- `_context_`: Json - the JSON-LD context value applied to the query results.
+- `{permission}`: String - the permission necessary to query this projection. Defaults to `views/query`.
 
 ### SparqlProjection
 
@@ -197,7 +203,8 @@ This projection executes the following steps:
          "resourceTypes": [ "{resourceType}", ...],
          "resourceTag": "{tag}",
          "includeMetadata": {includeMetadata},
-         "includeDeprecated": {includeDeprecated}
+         "includeDeprecated": {includeDeprecated},
+        "permission": "{permission}"
       }
    ],
    ...
@@ -215,8 +222,9 @@ where...
 - `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be 
   stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
 - `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
-- `{query}`: @link:[Sparql Query](https://www.w3.org/TR/rdf-sparql-query/){ open=new } - Defines the Sparql query to 
+- `{query}`: @link:[Sparql Construct Query](https://www.w3.org/TR/rdf-sparql-query/#construct){ open=new } - Defines the Sparql query to 
   execute against the intermediate Sparql space for each target resource.
+- `{permission}`: String - the permission necessary to query this projection. Defaults to `views/query`. 
 
 
 ## Payload
@@ -224,7 +232,7 @@ where...
 ```json
 {
   "@id": "{someid}",
-  "@type": ["CompositeView", "Beta"],
+  "@type": "CompositeView",
   "sources": [ _source_, ...],
   "projections": [ _projection_, ...],
   "rebuildStrategy": {
@@ -238,8 +246,7 @@ where...
 
 - `_source_`: Json - The source definition.
 - `_projection_`: Json - The projection definition.
-- `{interval_value}`: String - The maximum interval delay for a resource to be present in a projection, in a human 
-  readable format (e.g.: 10 minutes). 
+- `{interval_value}`: String - The maximum interval delay for a resource to be present in a projection, in a human-readable format (e.g.: 10 minutes). 
 
 Note: The `rebuildStrategy` block is optional. If missing, the view won't be automatically restarted.
 
@@ -249,169 +256,302 @@ The following example creates a Composite view containing 3 sources and 2 projec
 
 The incoming data from each of the sources is stored as RDF triples in the intermediate Sparql space . 
 
-The ElasticSearch projection `http://music.com/bands` is only going to query the Sparql space with the provided query 
-when the current resource in the pipeline has the type `http://music.com/Band`.
+The ElasticSearch projection `http://music.com/es` queries the Sparql intermediate namespace when the current resource in the pipeline has the type `http://music.com/Band`.
 
-The ElasticSearch projection `http://music.com/albums` is only going to query the Sparql space with the provided query 
-when the current resource in the pipeline has the type `http://music.com/Album`.
+The Sparql projection `http://music.com/sparql` queries the Sparql intermediate namespace when the current resource in the pipeline has the type `http://music.com/Album`.
 
-The view is going to be restarted every 10 minutes if there are new resources in any of the sources since the last time 
-the view was restarted. This allows to deal with partial graph visibility issues.
+The view is restarted every 10 minutes if there are new resources in any of the sources since the last time it was restarted. This allows to deal with partial graph visibility issues.
 
 ```json
 {
-  "@type": ["CompositeView", "Beta"],
+  "@type": "CompositeView",
   "sources": [
     {
-      "@id": "http://music.com/sources/local",
-      "@type": "ProjectEventStream"
+      "@id": "http://music.com/source_bands",
+      "@type": "ProjectEventStream",
+      "resourceTypes": [ "http://music.com/Band" ]
     },
     {
-      "@id": "http://music.com/sources/albums",
+      "@id": "http://music.com/source_albums",
       "@type": "CrossProjectEventStream",
-      "project": "demo/albums",
+      "project": "myorg/albums",
       "identities": {
-          "realm": "myrealm",
-          "group": "mygroup"
-      }
+        "@type": "Anonymous"
+      },
+      "resourceTypes": [ "http://music.com/Album" ]
     },
     {
-      "@id": "http://music.com/sources/songs",
+      "@id": "http://music.com/source_songs",
       "@type": "RemoteProjectEventStream",
-      "project": "remote_demo/songs",
-      "endpoint": "https://example2.nexus.com",
-      "token": "mytoken"
-    }    
+      "endpoint": "http://localhost:8080/v1",
+      "project": "myorg/songs",
+      "resourceTypes": [ "http://music.com/Song" ]
+    }
   ],
   "projections": [
     {
-      "@id": "http://music.com/bands",
+      "@id": "http://music.com/es",
       "@type": "ElasticSearchProjection",
       "mapping": {
         "properties": {
           "@type": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
+            "type": "keyword"
           },
           "@id": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
+            "type": "keyword"
           },
           "name": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
+            "type": "keyword"
           },
           "genre": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
+            "type": "keyword"
+          },
+          "start": {
+            "type": "integer"
           },
           "album": {
             "type": "nested",
             "properties": {
               "title": {
-                "type": "keyword",
-                "copy_to": "_all_fields"
-              },
-              "released": {
-                "type": "date",
-                "copy_to": "_all_fields"
-              },
-              "song": {
-                "type": "nested",
-                "properties": {
-                  "title": {
-                    "type": "keyword",
-                    "copy_to": "_all_fields"
-                  },
-                  "number": {
-                    "type": "long",
-                    "copy_to": "_all_fields"
-                  },
-                  "length": {
-                    "type": "long",
-                    "copy_to": "_all_fields"
-                  }
-                }
+                "type": "text"
               }
             }
-          },
-          "_all_fields": {
-            "type": "text"
           }
         },
         "dynamic": false
       },
-      "query": "prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT {{resource_id}   music:name       ?bandName ; music:genre      ?bandGenre ; music:album      ?albumId . ?albumId        music:released   ?albumReleaseDate ; music:song       ?songId . ?songId         music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } WHERE {{resource_id}   music:name       ?bandName ; music:genre      ?bandGenre . OPTIONAL {{resource_id} ^music:by        ?albumId . ?albumId        music:released   ?albumReleaseDate . OPTIONAL {?albumId         ^music:on        ?songId . ?songId          music:title      ?songTitle ; music:number     ?songNumber ; music:length     ?songLength } } } ORDER BY(?songNumber)",
+      "query": "prefix music: <http://music.com/> CONSTRUCT {{resource_id} music:name ?bandName ; music:genre      ?bandGenre ; music:start      ?bandStartYear ; music:album      ?albumId . ?albumId music:title ?albumTitle . } WHERE {{resource_id}   music:name       ?bandName ; music:start ?bandStartYear; music:genre ?bandGenre . OPTIONAL {{resource_id} ^music:by ?albumId . ?albumId        music:title   ?albumTitle . } }",
       "context": {
         "@base": "http://music.com/",
         "@vocab": "http://music.com/"
       },
-      "resourceTypes": [
-        "http://music.com/Band"
-      ]
+      "resourceTypes": [ "http://music.com/Band" ]
     },
     {
-      "@id": "http://music.com/albums",
-      "@type": "ElasticSearchProjection",
-      "mapping": {
-        "properties": {
-          "@type": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
-          },
-          "@id": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
-          },
-          "name": {
-            "type": "keyword",
-            "copy_to": "_all_fields"
-          },
-          "length": {
-            "type": "long",
-            "copy_to": "_all_fields"
-          },
-          "numberOfSongs": {
-            "type": "long",
-            "copy_to": "_all_fields"
-          },
-          "_all_fields": {
-            "type": "text"
-          }
-        },
-        "dynamic": false
-      },
-      "query": "prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT {{resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(?songLength) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
+      "@id": "http://music.com/sparql",
+      "@type": "SparqlProjection",
+      "query": "prefix xsd: <http://www.w3.org/2001/XMLSchema#> prefix music: <http://music.com/> prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/> CONSTRUCT { {resource_id}             music:name               ?albumTitle ; music:length             ?albumLength ; music:numberOfSongs      ?numberOfSongs } WHERE {SELECT ?albumReleaseDate ?albumTitle (sum(xsd:integer(?songLength)) as ?albumLength) (count(?albumReleaseDate) as ?numberOfSongs) WHERE {OPTIONAL { {resource_id}           ^music:on / music:length   ?songLength } {resource_id} music:released             ?albumReleaseDate ; music:title                ?albumTitle . } GROUP BY ?albumReleaseDate ?albumTitle }",
       "context": {
         "@base": "http://music.com/",
         "@vocab": "http://music.com/"
       },
-      "resourceTypes": [
-        "http://music.com/Album"
-      ]
+      "resourceTypes": [ "http://music.com/Album" ]
     }
   ],
   "rebuildStrategy": {
     "@type": "Interval",
-    "value": "10 minutes"
-  }  
+    "value": "10 minute"
+  }
 }
 ```
 
-## Endpoints
 
-The following sections describe the endpoints that are specific to a CompositeView.
+## Create using POST
 
-The general view endpoints are described on the @ref:[parent page](index.md#endpoints).
+```
+POST /v1/views/{org_label}/{project_label}
+  {...}
+```
 
-### Search Documents in a projection
+The json payload:
+
+- If the `@id` value is found on the payload, this `@id` will be used.
+- If the `@id` value is not found on the payload, an `@id` will be generated as follows: `base:{UUID}`. The `base` is the
+  `prefix` defined on the resource's project (`{project_label}`).
+
+**Example**
+
+Request
+:   @@snip [create.sh](../assets/views/composite/create.sh)
+
+Payload
+:   @@snip [payload.json](../assets/views/composite/payload.json)
+
+Response
+:   @@snip [created.json](../assets/views/composite/created.json)
+
+## Create using PUT
+
+This alternative endpoint to create a view is useful in case the json payload does not contain an `@id` but you want to
+specify one. The `@id` will be specified in the last segment of the endpoint URI.
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}
+  {...}
+```
+
+Note that if the payload contains an `@id` different from the `{view_id}`, the request will fail.
+
+**Example**
+
+Request
+:   @@snip [create-put.sh](../assets/views/composite/create-put.sh)
+
+Payload
+:   @@snip [payload.json](../assets/views/composite/payload.json)
+
+Response
+:   @@snip [created-put.json](../assets/views/composite/created-put.json)
+
+## Update
+
+This operation overrides the payload.
+
+In order to ensure a client does not perform any changes to a resource without having had seen the previous revision of
+the view, the last revision needs to be passed as a query parameter.
+
+```
+PUT /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
+  {...}
+```
+
+... where `{previous_rev}` is the last known revision number for the view.
+
+@@@ note { .warning }
+
+Updating a view creates new Elasticsearch indices and Blazegraph namespaces and deletes the existing ones. The indexing process will start from the
+beginning.
+
+@@@
+
+**Example**
+
+Request
+:   @@snip [update.sh](../assets/views/composite/update.sh)
+
+Payload
+:   @@snip [payload.json](../assets/views/composite/payload.json)
+
+Response
+:   @@snip [updated.json](../assets/views/composite/updated.json)
+
+## Tag
+
+Links a view revision to a specific name.
+
+Tagging a view is considered to be an update as well.
+
+```
+POST /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={previous_rev}
+  {
+    "tag": "{name}",
+    "rev": {rev}
+  }
+```
+
+... where
+
+- `{previous_rev}`: is the last known revision number for the resource.
+- `{name}`: String - label given to the view at specific revision.
+- `{rev}`: Number - the revision to link the provided `{name}`.
+
+**Example**
+
+Request
+:   @@snip [tag.sh](../assets/views/composite/tag.sh)
+
+Payload
+:   @@snip [tag.json](../assets/tag.json)
+
+Response
+:   @@snip [tagged.json](../assets/views/composite/tagged.json)
+
+## Deprecate
+
+Locks the view, so no further operations can be performed. It also stops indexing any more resources into it and deletes all the underlying Elasticsearch indices and Blazegraph namespaces.
+
+Deprecating a view is considered to be an update as well.
+
+@@@ note { .warning }
+
+Deprecating a view deletes all the underlying Elasticsearch indices and Blazegraph namespaces, making the view not searchable.
+
+@@@
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}?rev={previous_rev}
+```
+
+... where `{previous_rev}` is the last known revision number for the view.
+
+**Example**
+
+Request
+:   @@snip [deprecate.sh](../assets/views/composite/deprecate.sh)
+
+Response
+:   @@snip [deprecated.json](../assets/views/composite/deprecated.json)
+
+## Fetch
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}?rev={rev}&tag={tag}
+```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+  `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetch.sh](../assets/views/composite/fetch.sh)
+
+Response
+:   @@snip [fetched.json](../assets/views/composite/fetched.json)
+
+## Fetch original payload
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&tag={tag}
+```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+  `{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchSource.sh](../assets/views/composite/fetch-source.sh)
+
+Response
+:   @@snip [fetched.json](../assets/views/composite/payload.json)
+
+
+## Fetch tags
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/tags?rev={rev}&tag={tag}
+```
+
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetch_tags.sh](../assets/views/composite/tags.sh)
+
+Response
+:   @@snip [tags.json](../assets/tags.json)
+
+## Search Documents in projection(s)
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/_search
   {...}
 ```
 
-where `{projection_id}` is the @id value of the target `ElasticSearch` projection. 
+where `{projection_id}` is the @id value of the target `ElasticSearch` projection. The reserved value `_`  means "every projection".
 
 The supported payload is defined on the 
 @link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }
@@ -420,38 +560,16 @@ The supported payload is defined on the
 **Example**
 
 Request
-:   @@snip [composite-view-es-id-search.sh](../assets/views/composite-view-es-id-search.sh)
+:   @@snip [es-query.sh](../assets/views/composite/es-query.sh)
 
 Payload
-:   @@snip [composite-view-es-payload.json](../assets/views/composite-view-es-search-payload.json)
+:   @@snip [es-query.json](../assets/views/composite/es-query.json)
 
 Response
-:   @@snip [composite-view-es-search.json](../assets/views/composite-view-es-search.json)
-
-### Search Documents in all projections
-
-```
-POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/_search
-  {...}
-```
-
-The supported payload is defined on the 
-@link:[ElasticSearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-body.html){ open=new }
+:   @@snip [es-query-response.json](../assets/views/composite/es-query-response.json)
 
 
-**Example**
-
-Request
-:   @@snip [composite-view-es-search.sh](../assets/views/composite-view-es-search.sh)
-
-Payload
-:   @@snip [composite-view-es-payload.json](../assets/views/composite-view-es-search-payload.json)
-
-Response
-:   @@snip [composite-view-es-search.json](../assets/views/composite-view-es-search.json)
-
-
-### SPARQL query in a projection
+## SPARQL query in projection(s)
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql
@@ -462,48 +580,30 @@ POST /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/sparql?query={query}
 ```
 
-In both endpoints, `{query}` is defined by the 
-@link:[SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns){ open=new }
-
-where `{projection_id}` is the @id value of the target `Sparql` projection.
-
-The `Content-Type` HTTP header for POST request is `application/sparql-query`.
-
-
-**Example**
-
-Request
-:   @@snip [composite-view-sparql-search.sh](../assets/views/composite-view-sparql-id-search.sh)
-
-Response
-:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
-
-### SPARQL query in all projections
-
-```
-POST /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql
-  {query}
-```
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/sparql?query={query}
-```
+where `{projection_id}` is the @id value of the target `Sparql` projection. The reserved value `_`  means "every projection".
 
 In both endpoints, `{query}` is defined by the 
 @link:[SPARQL documentation](https://www.w3.org/TR/rdf-sparql-query/#basicpatterns){ open=new }
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
+From Delta 1.5, we have added support for multiple Content Negotiation types when querying the SPARQL view, allowing clients to request different response formats. The Content Negotiation is controlled by the HTTP `Accept` header. The following values are supported:
+
+- **application/ld+json**: Returns an expanded JSON-LD document. This is supported for a subset of SPARQL queries.
+- **application/n-triples**: Returns the n-triples representation. This is supported for a subset of SPARQL queries
+- **application/rdf+xml**: Returns an XML document.
+- **application/sparql-results+xml**: Returns the sparql results in XML.
+- **application/sparql-results+json**: Returns the sparql results in Json (default).
 
 **Example**
 
 Request
-:   @@snip [composite-view-sparql-projections-search.sh](../assets/views/composite-view-sparql-projections-search.sh)
+:   @@snip [sparql-query.sh](../assets/views/composite/sparql-query.sh)
 
 Response
-:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
+:   @@snip [sparql-query-response.txt](../assets/views/composite/sparql-query-response.txt)
 
-### SPARQL query in the intermediate space
+## SPARQL query in the intermediate space
 
 ```
 POST /v1/views/{org_label}/{project_label}/{view_id}/sparql
@@ -519,19 +619,26 @@ In both endpoints, `{query}` is defined by the
 
 The `Content-Type` HTTP header for POST request is `application/sparql-query`.
 
+From Delta 1.5, we have added support for multiple Content Negotiation types when querying the SPARQL view, allowing clients to request different response formats. The Content Negotiation is controlled by the HTTP `Accept` header. The following values are supported:
+
+- **application/ld+json**: Returns an expanded JSON-LD document. This is supported for a subset of SPARQL queries.
+- **application/n-triples**: Returns the n-triples representation. This is supported for a subset of SPARQL queries
+- **application/rdf+xml**: Returns an XML document.
+- **application/sparql-results+xml**: Returns the sparql results in XML.
+- **application/sparql-results+json**: Returns the sparql results in Json (default).
 
 **Example**
 
 Request
-:   @@snip [composite-view-intermediate-sparql-search.sh](../assets/views/composite-view-intermediate-sparql-search.sh)
+:   @@snip [sparql-query-intermediate.sh](../assets/views/composite/sparql-query-intermediate.sh)
 
 Response
-:   @@snip [composite-view-sparql-search.json](../assets/views/composite-view-sparql-search.json)
+:   @@snip [sparql-query-intermediate-response.txt](../assets/views/composite/sparql-query-intermediate-response.txt)
 
 
-### Fetch statistics
+## Fetch statistics
 
-This endpoint displays statistical information about the intermediate Sparql space.
+This endpoint displays statistical information about each of the composite view projections.
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
@@ -540,10 +647,10 @@ GET /v1/views/{org_label}/{project_label}/{view_id}/statistics
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-intermediate-stats.sh](../assets/views/compositeview-fetch-intermediate-stats.sh)
+:   @@snip [statistics-intermediate.sh](../assets/views/composite/statistics-intermediate.sh)
 
 Response
-:   @@snip [compositeview-fetch-stats.json](../assets/views/compositeview-fetch-stats.json)
+:   @@snip [statistics-response.json](../assets/views/composite/statistics-response.json)
 
 where:
 
@@ -557,25 +664,24 @@ where:
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the sources
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
 - `sourceId` - the @id unique value of the source
-
  
-### Fetch source statistics
+## Fetch source(s) statistics
 
-This endpoint displays statistical information about the provided source.
+This endpoint displays statistical information about the projections related to the `{source_id}` source.
 
 ```
 GET /v1/views/{org_label}/{project_label}/{view_id}/sources/{source_id}/statistics
 ```
 
-where `{source_id}` is the @id value of the source.
+where `{source_id}` is the @id value of the source. The reserved value `_`  means "every source".
 
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-source-id-stats.sh](../assets/views/compositeview-fetch-source-id-stats.sh)
+:   @@snip [statistics-sources.sh](../assets/views/composite/statistics-sources.sh)
 
 Response
-:   @@snip [compositeview-fetch-source-stat.json](../assets/views/compositeview-fetch-source-stat.json)
+:   @@snip [statistics-response.json](../assets/views/composite/statistics-response.json)
 
 where:
 
@@ -588,38 +694,8 @@ where:
 - `lastEventDateTime` - timestamp of the last event from the provided source
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
-
-### Fetch all sources statistics
-
-This endpoint displays statistical information about all the sources.
-
-```
-GET /v1/views/{org_label}/{project_label}/{view_id}/sources/_/statistics
-```
-
-**Example**
-
-Request
-:   @@snip [compositeview-fetch-sources-stats.sh](../assets/views/compositeview-fetch-sources-stats.sh)
-
-Response
-:   @@snip [compositeview-fetch-sources-stat.json](../assets/views/compositeview-fetch-sources-stat.json)
-
-where:
-
-- `sourceId` - the @id unique value of the source
-- `totalEvents` - total number of events for the provided source
-- `processedEvents` - number of events that have been considered by the provided source
-- `remainingEvents` - number of events that remain to be considered by the provided source
-- `discardedEvents` - number of events that have been discarded by the provided source (were not evaluated due to 
-  filters, e.g. did not match schema, tag or type defined in the source)
-- `evaluatedEvents` - number of events that have been used to update the intermediate Sparql of the provided source
-- `lastEventDateTime` - timestamp of the last event from the provided source
-- `lastProcessedEventDateTime` - timestamp of the last event processed by the provided source
-- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
  
- 
-### Fetch projection statistics
+## Fetch projection(s) statistics
 
 This endpoint displays statistical information about the provided projection.
  
@@ -627,16 +703,16 @@ This endpoint displays statistical information about the provided projection.
 GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/statistics
 ```
 
-where `{projection_id}` is the @id value of the projection.
+where `{projection_id}` is the @id value of the projection. The reserved value `_`  means "every projection".
 
 
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-stats.sh](../assets/views/compositeview-fetch-id-stats.sh)
+:   @@snip [statistics-projections.sh](../assets/views/composite/statistics-projections.sh)
 
 Response
-:   @@snip [compositeview-fetch-stats.json](../assets/views/compositeview-fetch-stats.json)
+:   @@snip [statistics-response.json](../assets/views/composite/statistics-response.json)
 
 where:
 
@@ -652,37 +728,50 @@ where:
 - `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
 - `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
 
-### Fetch all projections statistics
- 
-This endpoint displays statistical information about the all projections.
+## Fetch indexing
 
 ```
-GET /v1/views/{org_label}/{project_label}/{view_id}/projections/_/statistics
+GET /v1/views/{org_label}/{project_label}/{view_id}/offset
 ```
 
 **Example**
 
 Request
-:   @@snip [compositeview-fetch-stats.sh](../assets/views/compositeview-fetch-stats.sh)
+:   @@snip [offset.sh](../assets/views/composite/offset.sh)
 
 Response
-:   @@snip [compositeview-fetch-all-stats.json](../assets/views/compositeview-fetch-all-stats.json)
+:   @@snip [offset-response.json](../assets/views/composite/offset-response.json)
 
-where:
+where...
 
-- `sourceId` - the @id unique value of the source
-- `projectionId` - the @id unique value of the projection
-- `totalEvents` - total number of events for the provided source
-- `processedEvents` - number of events that have been considered by the projection
-- `remainingEvents` - number of events that remain to be considered by the projection
-- `discardedEvents` - number of events that have been discarded (were not evaluated due to filters, e.g. did not match 
-  schema, tag or type defined in the projection)
-- `evaluatedEvents` - number of events that have been used to update the projection index
-- `lastEventDateTime` - timestamp of the last event in the source
-- `lastProcessedEventDateTime` - timestamp of the last event processed by the projection
-- `delayInSeconds` - number of seconds between the last processed event timestamp and the last known event timestamp
+- `sourceId` - @id identifying the view's source.
+- `projectionId` - @id identifying the view's projection.
+- `instant` - timestamp of the last event processed by the views' projection.
+- `value` - the value of the offset.
 
-### Restart view
+## Fetch projection(s) indexing
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
+```
+where `{projection_id}` is the @id value of the projection. The reserved value `_`  means "every projection".
+
+**Example**
+
+Request
+:   @@snip [offset-projection.sh](../assets/views/composite/offset-projection.sh)
+
+Response
+:   @@snip [offset-projections-response.json](../assets/views/composite/offset-projections-response.json)
+
+where...
+
+- `sourceId` - @id identifying the view's source.
+- `projectionId` - @id identifying the view's projection.
+- `instant` - timestamp of the last event processed by the views' projection.
+- `value` - the value of the offset.
+
+## Restart indexing
 
 This endpoint restarts the view indexing process. It does not delete the created indices/namespaces but it overrides 
 the graphs/documents when going through the event log.
@@ -694,13 +783,30 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [view-restart.sh](../assets/views/view-restart.sh)
+:   @@snip [restart.sh](../assets/views/composite/restart.sh)
 
 Response
-:   @@snip [composite-view-restart.json](../assets/views/composite-view-restart.json)
+:   @@snip [restarted.json](../assets/views/composite/restarted.json)
+
+## Restart projection(s) indexing
+
+This endpoint restarts indexing process for the provided projection(s) while keeping the sources (and the intermediate
+Sparql space) progress.
+
+```
+DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
+```
+
+**Example**
+
+Request
+:   @@snip [restart.sh](../assets/views/composite/restart.sh)
+
+Response
+:   @@snip [restarted.json](../assets/views/composite/restarted.json)
 
 
-### Restart projection
+## Restart projection
 
 This endpoint restarts indexing process for the provided projection while keeping the sources (and the intermediate 
 Sparql space) progress.
@@ -709,30 +815,12 @@ Sparql space) progress.
 DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/{projection_id}/offset
 ```
 
-
-where `{projection_id}` is the @id value of the projection.
-
-**Example**
-
-Request
-:   @@snip [composite-view-projection-id-restart.sh](../assets/views/composite-view-projection-id-restart.sh)
-
-Response
-:   @@snip [composite-view-projection-id-restart.json](../assets/views/composite-view-projection-id-restart.json)
-
-### Restart all projections
-
-This endpoint restarts indexing process for all projections while keeping the sources (and the intermediate Sparql 
-space) progress.
- 
-```
-DELETE /v1/views/{org_label}/{project_label}/{view_id}/projections/_/offset
-```
+where `{projection_id}` is the @id value of the projection. The reserved value `_`  means "every projection".
 
 **Example**
 
 Request
-:   @@snip [composite-view-projection-restart.sh](../assets/views/composite-view-projection-restart.sh)
+:   @@snip [restart-projection.sh](../assets/views/composite/restart-projection.sh)
 
 Response
-:   @@snip [composite-view-projection-restart.json](../assets/views/composite-view-projection-restart.json)
+:   @@snip [restarted-projection.json](../assets/views/composite/restarted-projection.json)

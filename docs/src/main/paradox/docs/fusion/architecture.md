@@ -32,3 +32,13 @@ Plugins are ways to render resources. You can find more about them @ref:[here](p
 that the plugin repository is hosted separately from Nexus Fusion. Nexus Fusion will request a Plugin Manifest from
 this repository at run-time, and fetch plugins to render during run time based on a config. Both the plugins, the
 configuration, and the manifest should be hosted somewhere Nexus Fusion can request it.
+
+## Customization
+
+You can customize the Header of Nexus Fusion by setting up the following environment variables:
+
+- `LOGO_IMG`: Url for an image to be used as application logo in the Header, for example, `https://drive.boogle.com/jnsjdnsjs`
+- `LOGO_LINK`: Url for the logo, for example, `https://www.epfl.ch`
+- If you use Nexus Forge, it is possible to include a `Forge templates` button by providing the url as `FORGE_LINK`, for example, `https://some-url.hi`
+
+The full list of environment variables can be found @link[here](https://github.com/BlueBrain/nexus-web/blob/main/README.md#env-variables-list).

@@ -1,0 +1,11 @@
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/projects.json"],"@type":"ProjectCreated","apiMappings":[{"namespace":"http://example.com/my","prefix":"my"}],"base":"http://localhost:8080/v1/resources/myorg/myproject/_/","description":"description","vocab":"https://schema.org/","_instant":"2021-05-10T15:43:36.567Z","_label":"myproject","_organizationLabel":"myorg","_organizationUuid":"41f169b8-7ae4-4878-a7ff-6309cb54ae2f","_projectId":"http://localhost:8080/v1/projects/myorg/myproject","_resourceId":"http://localhost:8080/v1/projects/myorg/myproject","_rev":1,"_subject":"http://localhost:8080/v1/anonymous","_uuid":"813cfa79-75fc-48eb-b931-abb21edb082b"}
+event:ProjectCreated
+id:7bdd4bc0-b1a6-11eb-a162-35a8ee728fbb
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/projects.json"],"@type":"ProjectUpdated","apiMappings":[],"base":"http://localhost:8080/v1/resources/myorg/myproject/_/","description":"updated description","vocab":"https://schema.org/","_instant":"2021-05-10T15:45:20.769Z","_label":"myproject","_organizationLabel":"myorg","_organizationUuid":"41f169b8-7ae4-4878-a7ff-6309cb54ae2f","_projectId":"http://localhost:8080/v1/projects/myorg/myproject","_resourceId":"http://localhost:8080/v1/projects/myorg/myproject","_rev":2,"_subject":"http://localhost:8080/v1/anonymous","_uuid":"813cfa79-75fc-48eb-b931-abb21edb082b"}
+event:ProjectUpdated
+id:b9f8a620-b1a6-11eb-a162-35a8ee728fbb
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/projects.json"],"@type":"ProjectDeprecated","_instant":"2021-05-10T15:47:40.659Z","_label":"myproject","_organizationLabel":"myorg","_organizationUuid":"41f169b8-7ae4-4878-a7ff-6309cb54ae2f","_projectId":"http://localhost:8080/v1/projects/myorg/myproject","_resourceId":"http://localhost:8080/v1/projects/myorg/myproject","_rev":3,"_subject":"http://localhost:8080/v1/anonymous","_uuid":"813cfa79-75fc-48eb-b931-abb21edb082b"}
+event:ProjectDeprecated
+id:0d5a5250-b1a7-11eb-a162-35a8ee728fbb

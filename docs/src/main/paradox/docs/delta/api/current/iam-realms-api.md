@@ -5,20 +5,17 @@ Realms are rooted in `/v1/realms` collection.
 Each realm defines a specific authentication provider.
 Any of the authentication providers can be used to obtain access tokens that can be used with Nexus.
 
-Access to resources in the system depends on the access control list set for them. Depending on the access control 
-list, a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about 
-how to retrieve an access token.
-
 @@@ note { .tip title="Authorization notes" }	
 
 When  modifying realms, the caller must have `realms/write` permissions on the path `/`.
 
 When  reading realms, the caller must have `realms/read` permissions on the path `/`.
 
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
+
 @@@
 
-## Create a realm
+## Create
  This operation creates a realm.
 
 ```
@@ -43,7 +40,7 @@ The `logo` parameter is optional.
 
 
 
-## Update a realm
+## Update
  This operation updates a realm.
 ```
 PUT /v1/realms/{realm}?rev={previous_rev}
@@ -65,13 +62,12 @@ Response
  :   @@snip [realm-replaced-ref.json](assets/realms/realm-replaced-ref.json)
 
 
-## Deprecate a realm
+## Deprecate
 
-This operation deprecates a realm. After deprecation, realms loose their metadata
+This operation deprecates a realm.
 
   ```
  DELETE /v1/realms/{realm}?rev={previous_rev}
-   {...}
  ```
 
   where `{previous_rev}` is the last known revision number for the realm.
@@ -83,21 +79,28 @@ Response
  :   @@snip [realm-deleted-ref.json](assets/realms/realm-deleted-ref.json)
 
 
-## List realms
+## List
 
  Lists all available realms.
 
 ```
- GET /v1/realms?deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}
+ GET /v1/realms?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &sort={sort}
 ```
 where...
 
-- `{deprecated}`: Boolean - can be used to filter the resulting realms based on their deprecation status
-- `{rev}`: Number - can be used to filter the resulting realms based on their revision value
-- `{type}`: Iri - can be used to filter the resulting realms based on their `@type` value. This parameter can appear 
-  multiple times, filtering further the `@type` value.
-- `{createdBy}`: Iri - can be used to filter the resulting realms based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting realms based on the person which performed the last update
+- `{from}`: Number - the offset from which to start the listings. Defaults to `0`
+- `{size}`: Number - the maximum amount fo results to be returned. Defaults to `30`
+- `{deprecated}`: Boolean - filter the resulting realms based on their deprecation status. Optional parameter.
+- `{rev}`: Number - filter the resulting realms based on their revision value. Optional parameter.
+- `{createdBy}`: Iri - filter the resulting realms based on their creator. Optional parameter.
+- `{updatedBy}`: Iri - filter the resulting realms based on the person which performed the last update. Optional parameter.
+- `{sort}`: String - orders the resulting realms based on its metadata fields.  Optional parameter that can appear multiple times, further specifying the ordering criteria. Defaults to `_createdAt`, ordering realms by creation date.
 
 Request
  :   @@snip [realms-list.sh](assets/realms/realms-list.sh)
@@ -105,7 +108,7 @@ Request
 Response
  :   @@snip [realms-list.json](assets/realms/realms-list.json)
 
-## Fetch a realm (current version)
+## Fetch (current version)
 
 ```
 GET /v1/realms/{realm}
@@ -120,7 +123,7 @@ Response
 :   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
-## Fetch a realm (specific version)
+## Fetch (specific version)
 
 ```
 GET /v1/realms/{realm}?rev={rev}
@@ -136,7 +139,7 @@ Response
 :   @@snip [realm-fetch.json](assets/realms/realm-fetch.json)
 
 
-## Realms Server Sent Events
+## Server Sent Events
 
 This endpoint allows clients to receive automatic updates from the realms in a streaming fashion.
 

@@ -11,11 +11,7 @@ Each schema...
 - inside an `organization` identifier by the label `{org_label}` 
 - it is validated against the @link:[SHACL schema](https://bluebrainnexus.io/schemas/shacl-20170720.ttl){ open=new } 
   (version 20170720).
-
-Access to resources in the system depends on the access control list set for them. Depending on the access control list, 
-a caller may need to prove its identity by means of an **access token** passed to the `Authorization` 
-header (`Authorization: Bearer {token}`). Please visit @ref:[Authentication](authentication.md) to learn more about how 
-to retrieve an access token.
+  
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -25,9 +21,18 @@ ancestor paths.
 When reading schemas, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
 
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
+
 @@@
 
-## Create a schema using POST
+@@@ note { .warning }
+
+From Delta v1.5, remote contexts and `owl:imports` are only resolved during creates and updates.
+That means that when those get updated, the schemas importing them must be also updated to take the changes into account.
+
+@@@
+
+## Create using POST
 
 ```
 POST /v1/schemas/{org_label}/{project_label}
@@ -43,16 +48,16 @@ The json payload:
 **Example**
 
 Request
-:   @@snip [schema.sh](assets/schemas/schema.sh)
+:   @@snip [create.sh](assets/schemas/create.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
+:   @@snip [created.json](assets/schemas/created.json)
 
 
-## Create a schema using PUT
+## Create using PUT
 
 This alternative endpoint to create a schema is useful in case the json payload does not contain an `@id` but you want 
 to specify one. The @id will be specified in the last segment of the endpoint URI.
@@ -66,16 +71,16 @@ Note that if the payload contains an @id different from the `{schema_id}`, the r
 **Example**
 
 Request
-:   @@snip [schema-put.sh](assets/schemas/schema-put.sh)
+:   @@snip [create-put.sh](assets/schemas/create-put.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new.json](assets/schemas/schema-ref-new.json)
+:   @@snip [created.json](assets/schemas/created.json)
 
 
-## Update a schema
+## Update
 
 This operation overrides the payload.
 
@@ -92,16 +97,16 @@ PUT /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-update.sh](assets/schemas/schema-update.sh)
+:   @@snip [update.sh](assets/schemas/update.sh)
 
 Payload
-:   @@snip [schema.json](assets/schemas/schema.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
 Response
-:   @@snip [schema-ref-new-updated.json](assets/schemas/schema-ref-new-updated.json)
+:   @@snip [updated.json](assets/schemas/updated.json)
 
 
-## Tag a schema
+## Tag
 
 Links a schema revision to a specific name. 
 
@@ -123,15 +128,15 @@ POST /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-tag.sh](assets/schemas/schema-tag.sh)
+:   @@snip [tag.sh](assets/schemas/tag.sh)
 
 Payload
 :   @@snip [tag.json](assets/tag.json)
 
 Response
-:   @@snip [schema-ref-new-tagged.json](assets/schemas/schema-ref-new-tagged.json)
+:   @@snip [tagged.json](assets/schemas/tagged.json)
 
-## Deprecate a schema
+## Deprecate
 
 Locks the schema, so no further operations can be performed. It also deletes the schema from listing/querying results.
 
@@ -146,23 +151,12 @@ DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [schema-deprecate.sh](assets/schemas/schema-deprecate.sh)
+:   @@snip [deprecate.sh](assets/schemas/deprecate.sh)
 
 Response
-:   @@snip [schema-ref-new-deprecated.json](assets/schemas/schema-ref-new-deprecated.json)
+:   @@snip [deprecated.json](assets/schemas/deprecated.json)
 
-## Fetch a schema
-
-When fetching a schema, the response format can be chosen through HTTP content negotiation, using the **Accept** HTTP 
-header.
-
-- **application/ld+json**: JSON-LD output response. Further specifying the query parameter `format=compacted|expanded` 
-  will provide with the JSON-LD @link:[compacted document form](https://www.w3.org/TR/json-ld11/#compacted-document-form){ open=new } or
-  the @link:[expanded document form](https://www.w3.org/TR/json-ld11/#expanded-document-form){ open=new }.
-- **application/n-triples**: RDF n-triples response, as defined by the @link:[w3](https://www.w3.org/TR/n-triples/){ open=new }.
-- **text/vnd.graphviz**: A @link:[DOT response](https://www.graphviz.org/doc/info/lang.html){ open=new }.
-
-If `Accept: */*` HTTP header is present, Nexus defaults to the JSON-LD output in compacted form.
+## Fetch
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}?rev={rev}&tag={tag}
@@ -178,12 +172,12 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch.sh)
+:   @@snip [schema-fetch.sh](assets/schemas/fetch.sh)
 
 Response
-:   @@snip [schema-fetched.json](assets/schemas/schema-fetched.json)
+:   @@snip [schema-fetched.json](assets/schemas/fetched.json)
 
-## Fetch a schema original payload
+## Fetch original payload
 
 ```
 GET /v1/schemas/{org_label}/{project_label}/{schema_id}/source?rev={rev}&tag={tag}
@@ -198,15 +192,43 @@ where ...
 **Example**
 
 Request
-:   @@snip [schema-fetch.sh](assets/schemas/schema-fetch-source.sh)
+:   @@snip [fetchSource.sh](assets/schemas/fetchSource.sh)
 
 Response
-:   @@snip [resource-fetched.json](assets/schemas/schema-fetched-source.json)
+:   @@snip [payload.json](assets/schemas/payload.json)
 
-## List schemas
+## Fetch tags
 
 ```
-GET /v1/schemas/{org_label}/{project_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&q={search}&sort={sort}
+GET /v1/schemas/{org_label}/{project_label}/{schema_id}/tags?rev={rev}&tag={tag}
+```
+where ...
+
+- `{rev}`: Number - the targeted revision to be fetched. This field is optional and defaults to the latest revision.
+- `{tag}`: String - the targeted tag to be fetched. This field is optional.
+
+`{rev}` and `{tag}` fields cannot be simultaneously present.
+
+**Example**
+
+Request
+:   @@snip [fetchTags.sh](assets/schemas/tags.sh)
+
+Response
+:   @@snip [tags.json](assets/tags.json)
+
+## List
+
+```
+GET /v1/schemas/{org_label}/{project_label}?from={from}
+                                           &size={size}
+                                           &deprecated={deprecated}
+                                           &rev={rev}
+                                           &type={type}
+                                           &createdBy={createdBy}
+                                           &updatedBy={updatedBy}
+                                           &q={search}
+                                           &sort={sort}
 ```
                                             
 where...
@@ -222,13 +244,45 @@ where...
 - `{search}`: String - can be provided to select only the schemas in the collection that have attribute values matching 
   (containing) the provided string
 - `{sort}`: String - can be used to sort schemas based on a payloads' field. This parameter can appear multiple times 
-  to enable sorting by multiple fields
+  to enable sorting by multiple fields. The default is done by `_createdBy` and `@id`.
 
 
 **Example**
 
 Request
-:   @@snip [schema-list.sh](assets/schemas/schema-list.sh)
+:   @@snip [list.sh](assets/schemas/list.sh)
 
 Response
-:   @@snip [schema-list.json](assets/schemas/schema-list.json)
+:   @@snip [listed.json](assets/schemas/listed.json)
+
+## Server Sent Events
+
+From Delta 1.5, it is possible to fetch SSEs for all schemas or just schemas
+in the scope of an organization or a project.
+
+```
+GET /v1/schemas/events                              # for all schema events in the application
+GET /v1/schemas/{org_label}/events                  # for schema events in the given organization
+GET /v1/schemas/{org_label}/{project_label}/events  # for schema events in the given project
+```
+
+The caller must have respectively the `events/read` permission on `/`, `{org_label}` and `{org_label}/{project_label}`.
+
+- `{org_label}`: String - the selected organization for which the events are going to be filtered
+- `{project_label}`: String - the selected project for which the events are going to be filtered
+- `Last-Event-Id`: String - optional HTTP Header that identifies the last consumed resource event. It can be used for
+  cases when a client does not want to retrieve the whole event stream, but to start after a specific event.
+
+@@@ note { .warning }
+
+The event type for schemas SSEs have been changed so that it is easier to distinguish them from other types of resources.
+
+@@@
+
+**Example**
+
+Request
+:   @@snip [schemas-sse.sh](assets/schemas/sse.sh)
+
+Response
+:   @@snip [schemas-sse.json](assets/schemas/sse.json)
