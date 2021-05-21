@@ -1,0 +1,3 @@
+<http://music.com/absolution> <http://music.com/name> "Absolution" .
+<http://music.com/absolution> <http://music.com/numberOfSongs> "2"^^<http://www.w3.org/2001/XMLSchema#integer> .
+<http://music.com/absolution> <http://music.com/length> "488"^^<http://www.w3.org/2001/XMLSchema#integer> .

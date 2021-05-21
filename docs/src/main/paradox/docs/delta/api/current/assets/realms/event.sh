@@ -1,1 +1,1 @@
-curl "https://nexus.example.com/v1/realms/events"
+curl "http://localhost:8080/v1/realms/events"

@@ -4,13 +4,9 @@ Projects belong to an `organization` and are rooted in the corresponding `/v1/pr
 The purposes of projects are:
 
 - Group and categorize sub-resources.
-- Define settings that apply for operations on all sub-resources. 
-- Provide isolation from resources inside other projects. This behavior can be changed by defining 
-  @ref:[resolvers](kg-resolvers-api.md)
-
-Access to resources in the system depends on the access control list set for them. A caller may need to prove its 
-identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
-Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.
+- Define global settings that apply for operations on all sub-resources. 
+- Provide isolation from resources inside other projects. This behavior can be partially changed by defining 
+  @ref:[resolvers](kg-resolvers-api.md) and aggregated views @ref:[[1]](views/aggregated-es-view-api.md) @ref:[[2]](views/aggregated-sparql-view-api.md)
 
 @@@ note { .tip title="Authorization notes" }	
 
@@ -23,9 +19,13 @@ ancestor paths.
 When  reading projects, the caller must have `projects/read` permissions on the current path of the project or the 
 ancestor paths.
 
+Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
+
 @@@
 
-## Project payload
+
+
+## Payload
 
 ```
 {
@@ -45,26 +45,32 @@ ancestor paths.
 where...
  
 - `{description}`: String - an optional description for this project.
-- `{base}`: IRI - is going to be used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } 
-  in the generation of the `@id` children resources. E.g.: Let base be `http://example.com/`. When a 
-  @ref:[resource is created](kg-resources-api.md#create-a-resource-using-post) and no `@id` is present in the 
-  payload, the platform will generate an @id which will look like `http://example.com/{UUID}`. This field is optional 
+- `{base}`: IRI - the @link:[JSON-LD @base](https://www.w3.org/TR/json-ld11/#base-iri){ open=new } used for generating fully qualified IRI ids
+  when performing operations on a sub-resource URIs and payloads (when no other @base is present in the @context payload).
+  E.g.: Let base be `http://localhost:8080/`. When a @ref:[resource is created](kg-resources-api.md#create-using-post) and no `@id` is present in the 
+  payload, the platform will generate an @id which will look like `http://localhost:8080/{UUID}`. This field is optional 
   and will default to `{{base}}/v1/resources/{org_label}/{project_label}/_/`.
-- `{vocab}`: IRI - is going to be used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } 
-  prefix for all unqualified predicates in children resources. E.g. if the vocab is set to `https://schema.org/`, when 
+- `{vocab}`: IRI - the @link:[JSON-LD @vocab](https://www.w3.org/TR/json-ld11/#default-vocabulary){ open=new } 
+  for all unqualified predicates in children resources' payload (when no other @vocab is present in the @context payload and the resources' payload is not a JSON-LD aware payload). E.g. if the vocab is set to `https://schema.org/`, when 
   a field a resource is created and a field `name` is present in the payload, it will be expanded to 
   `http://schema.org/name` by the system during indexing and fetch operations. This field is optional and will default 
   to `{{base}}/v1/vocabs/{org_label}/{project_label}/`.
-- `{apiMappings}`: Json object - provides a convinient way to deal with URIs when performing operations on a 
+- `{apiMappings}`: Json object - provides a convenient way to compact/expand URIs when performing operations on a 
   sub-resource. This field is optional.
 
 ### API Mappings
-The `apiMappings` Json object array maps each `prefix` to its `namespace` so that curies on children endpoints can be
-used.
+The `apiMappings` Json object array maps each `prefix` to its `namespace`. This is useful in order to generate IRI ids on API endpoints using the `prefix` as an alias or curie instead of a fully expanded url encoded IRI.
+
+@@@ note { .tip }
+
+The api mappings only apply to children resources URIs but not to their payload. 
+Please, use the @link:[JSON-LD @context](https://www.w3.org/TR/json-ld11/#the-context){ open=new } to achieve compaction/expansion on resources' payload.
+
+@@@
 
 Having the following `apiMappings`:
 
-```
+```json
 {
   "apiMappings": [
    {
@@ -78,14 +84,12 @@ Having the following `apiMappings`:
 
 where...
 
-- `{prefix}`: String - the left hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
-  It has @link:[certain constraints](https://www.w3.org/TR/1999/REC-xml-names-19990114/#NT-NCName){ open=new }.
-- `{namespace}`: IRI - the right hand side of a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new }. 
-  It has @link:[certain constraints (irelative-ref)](https://tools.ietf.org/html/rfc3987#page-7){ open=new }.
+- `{prefix}`: String - a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20101216/){ open=new } or an alias. 
+- `{namespace}`: IRI - the actual resolution of the `prefix` field. 
 
 Let's see an example:
  
- ```json
+```json
  {
    "apiMappings": [
     {
@@ -98,15 +102,15 @@ Let's see an example:
      }
    ]
  }
- ```
+```
 
-The previous payload allows us to @ref:[create a schema](kg-schemas-api.md#create-a-schema-using-put) using the 
+The previous project api mappings allows us to @ref:[create a schema](kg-schemas-api.md#create-using-put) using the 
 following endpoints:
 
 - `/v1/schemas/{org_label}/{project_label}/person`. The `@id` of the resulting schema will be `http://example.com/some/person`
 - `/v1/schemas/{org_label}/{project_label}/schema:other`. The `@id` of the resulting schema will be `https://bluebrainnexus.io/schemas/other`
 
-## Create a project
+## Create
 
 ```
 PUT /v1/projects/{org_label}/{label}
@@ -119,18 +123,18 @@ consistent with the type of data provided by its sub-resources, since it'll be a
 **Example**
 
 Request
-:   @@snip [project.sh](assets/project.sh)
+:   @@snip [create.sh](assets/projects/create.sh)
 
 Payload
-:   @@snip [project.json](assets/project.json)
+:   @@snip [create.json](assets/projects/create.json)
 
 Response
-:   @@snip [project-ref-new.json](assets/project-ref-new.json)
+:   @@snip [created.json](assets/projects/created.json)
 
 
-## Update a project
+## Update
 
-This operation overrides the payload.
+This operation overrides the project payload.
 
 In order to ensure a client does not perform any changes to a project without having had seen the previous revision of
 the project, the last revision needs to be passed as a query parameter.
@@ -147,16 +151,16 @@ PUT /v1/projects/{org_label}/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [project-update.sh](assets/project-update.sh)
+:   @@snip [update.sh](assets/projects/update.sh)
 
 Payload
-:   @@snip [project.json](assets/project.json)
+:   @@snip [update.json](assets/projects/update.json)
 
 Response
-:   @@snip [project-ref-updated.json](assets/project-ref-updated.json)
+:   @@snip [updated.json](assets/projects/updated.json)
 
 
-## Deprecate a project
+## Deprecate
 
 Locks the project, so no further operations can be performed on it or on the children resources.
 
@@ -174,13 +178,13 @@ DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}
 **Example**
 
 Request
-:   @@snip [project-deprecate.sh](assets/project-deprecate.sh)
+:   @@snip [deprecate.sh](assets/projects/deprecate.sh)
 
 Response
-:   @@snip [project-ref-deprecated.json](assets/project-ref-deprecated.json)
+:   @@snip [deprecated.json](assets/projects/deprecated.json)
 
 
-## Fetch a project (current version)
+## Fetch (current version)
 
 ```
 GET /v1/projects/{org_label}/{label}
@@ -188,17 +192,16 @@ GET /v1/projects/{org_label}/{label}
 
 ...where `{label}` is the user friendly name that identifies this project.
 
-
 **Example**
 
 Request
-:   @@snip [project-fetch.sh](assets/project-fetch.sh)
+:   @@snip [fetch.sh](assets/projects/fetch.sh)
 
 Response
-:   @@snip [project-fetched.json](assets/project-fetched.json)
+:   @@snip [fetched.json](assets/projects/fetched.json)
 
 
-## Fetch a project (specific version)
+## Fetch (specific version)
 
 ```
 GET /v1/projects/{org_label}/{label}?rev={rev}
@@ -212,71 +215,57 @@ GET /v1/projects/{org_label}/{label}?rev={rev}
 **Example**
 
 Request
-:   @@snip [project-fetch-revision.sh](assets/project-fetch-revision.sh)
+:   @@snip [fetch.sh](assets/projects/fetchAt.sh)
 
 Response
-:   @@snip [project-fetched.json](assets/project-fetched.json)
+:   @@snip [fetchedAt.json](assets/projects/fetchedAt.json)
 
 
-## List projects
+## List
 
 ```
-GET /v1/projects?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&label=label
+GET /v1/projects?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &label={label}
+                 &sort={sort}
+```
+or the variation to filter a specific organization `{org_label}`:
+```
+GET /v1/projects/{org_label}?from={from}
+                             &size={size}
+                             &deprecated={deprecated}
+                             &rev={rev}
+                             &createdBy={createdBy}
+                             &updatedBy={updatedBy}
+                             &label={label}
+                             &sort={sort}
 ```
 
 where...
 
-- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
-- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
-- `{rev}`: Number - can be used to filter the resulting projects based on their revision value
-- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can 
-  appear multiple times, filtering further the `@type` value.
-- `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any 
-  project's label that contains the string `my`. `label='my'` will match any project where label is equal to `my`. 
-
+- `{from}`: Number - the offset from which to start the listings. Defaults to `0`
+- `{size}`: Number - the maximum amount fo results to be returned. Defaults to `30`
+- `{deprecated}`: Boolean - filter the resulting projects based on their deprecation status. Optional parameter.
+- `{rev}`: Number - filter the resulting projects based on their revision value. Optional parameter.
+- `{createdBy}`: Iri - filter the resulting projects based on their creator. Optional parameter.
+- `{updatedBy}`: Iri - filter the resulting projects based on the person which performed the last update. Optional parameter.
+- `{label}`: String - filter the resulting projects based on its label. E.g.: `label=my` will match
+  any project's label that contains the string `my`. Optional parameter.
+- `{sort}`: String - orders the resulting projects based on its metadata fields.  Optional parameter that can appear multiple times, further specifying the ordering criteria. Defaults to `_createdAt`, ordering projects by creation date.
 
 **Example**
 
 Request
-:   @@snip [project-list.sh](assets/project-list.sh)
+:   @@snip [list.sh](assets/projects/list.sh)
 
 Response
-:   @@snip [project-list.json](assets/project-list.json)
+:   @@snip [listed.json](assets/projects/listed.json)
 
-
-## List projects belonging to an organization
-
-```
-GET /v1/projects/{org_label}?from={from}&size={size}&deprecated={deprecated}&rev={rev}&type={type}&createdBy={createdBy}&updatedBy={updatedBy}&label=label
-```
-
-where...
-
-- `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
-- `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
-- `{deprecated}`: Boolean - can be used to filter the resulting projects based on their deprecation status
-- `{rev}`: Number - can be used to filter the resulting projects based on their revision value
-- `{type}`: Iri - can be used to filter the resulting projects based on their `@type` value. This parameter can appear 
-  multiple times, filtering further the `@type` value.
-- `{createdBy}`: Iri - can be used to filter the resulting projects based on their creator
-- `{updatedBy}`: Iri - can be used to filter the resulting projects based on the person which performed the last update
-- `{label}`: String - can be used to filter the resulting projects based on its label. E.g.: `label=my` will match any 
-  project's label that contains the string `my`.
-
-
-**Example**
-
-Request
-:   @@snip [project-list-org.sh](assets/project-list-org.sh)
-
-Response
-:   @@snip [project-list.json](assets/project-list.json)
-
-
-## Project Server Sent Events
+## Server Sent Events
 
 This endpoint allows clients to receive automatic updates from the projects in a streaming fashion.
 
@@ -305,7 +294,7 @@ where...
 **Example**
 
 Request
-:   @@snip [project-event.sh](assets/project-event.sh)
+:   @@snip [sse.sh](assets/projects/sse.sh)
 
 Response
-:   @@snip [project-event.json](assets/project-event.json)
+:   @@snip [sse.json](assets/projects/sse.json)

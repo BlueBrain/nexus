@@ -1,26 +1,26 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/identities.json"
   ],
   "identities": [
     {
-      "@id": "https://nexus.example.com/v1/anonymous",
+      "@id": "http://localhost:8080/v1/anonymous",
       "@type": "Anonymous"
     },
     {
-      "@id": "https://nexus.example.com/v1/realms/nexusdev/authenticated",
+      "@id": "localhost:8080/v1/realms/nexusdev/authenticated",
       "@type": "Authenticated",
       "realm": "nexusdev"
     },
     {
-      "@id": "https://nexus.example.com/v1/realms/nexusdev/groups/test-group",
+      "@id": "localhost:8080/v1/realms/nexusdev/groups/test-group",
       "@type": "Group",
       "group": "test-group",
       "realm": "nexusdev"
     },
     {
-      "@id": "https://nexus.example.com/v1/realms/nexusdev/users/test-user",
+      "@id": "localhost:8080/v1/realms/nexusdev/users/test-user",
       "@type": "User",
       "realm": "nexusdev",
       "subject": "test-user"

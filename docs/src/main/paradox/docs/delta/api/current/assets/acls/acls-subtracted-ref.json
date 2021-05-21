@@ -1,13 +1,17 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/iam.json",
-    "https://bluebrain.github.io/nexus/contexts/resource.json"
+    "https://bluebrain.github.io/nexus/contexts/acls-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
-  "@id": "https://nexus.example.com/v1/acls/org1",
+  "@id": "http://localhost:8080/v1/acls/org1",
   "@type": "AccessControlList",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+  "_createdAt": "2021-05-11T11:03:06.071Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_path": "/org1",
   "_rev": 3,
-  "_createdAt": "2018-09-18T09:58:00.801Z",
-  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_updatedAt": "2018-09-18T10:10:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+  "_self": "http://localhost:8080/v1/acls/org1",
+  "_updatedAt": "2021-05-11T11:03:52.875Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
 }

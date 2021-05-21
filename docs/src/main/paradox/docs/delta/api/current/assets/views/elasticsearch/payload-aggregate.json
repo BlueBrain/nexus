@@ -1,0 +1,13 @@
+{
+  "@type": "AggregateElasticSearchView",
+  "views": [
+    {
+      "project": "myorg/myproj",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
+    },
+    {
+      "project": "myorg/myproj2",
+      "viewId": "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
+    }
+  ]
+}

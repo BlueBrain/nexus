@@ -17,9 +17,9 @@ There are many ways to run Nexus. Our public Sandbox is running @link:[here](htt
 and you can use it to test Nexus on small, non-sensitive data. Our @ref:[tutorial](getting-started/try-nexus.md) can 
 help you to run Nexus step by step.
 
-Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus.md#docker) 
-or @ref:[Minikube](getting-started/running-nexus.md#run-nexus-locally-with-minikube). You can also deploy Nexus 
-@ref:[“on premise”](getting-started/running-nexus.md#on-premise-cloud-deployment), as a single instance or as a cluster. 
+Meanwhile if you want to run it locally you might need to install @ref:[Docker](getting-started/running-nexus/index.md#docker) 
+or @ref:[Minikube](getting-started/running-nexus/index.md#run-nexus-locally-with-minikube). You can also deploy Nexus 
+@ref:[“on premise”](getting-started/running-nexus/index.md#on-premise-cloud-deployment), as a single instance or as a cluster. 
 Blue Brain Nexus has also been deployed and tested on AWS using @link:[Kubernetes](https://kubernetes.io/){ open=new }.
 
 ### How can I try Blue Brain Nexus without installing it? 
@@ -76,7 +76,7 @@ There are several channels provided to address different issues:
 
 On macOS and Windows, Docker effectively runs containers inside a VM created by the system hypervisor. Nexus requires 
 at least 2 CPUs and 8 GB of memory in total. You can increase the limits in Docker settings in the menu 
-_Preferences > Advanced_. More details are in the dedicated @ref:[page](getting-started/running-nexus.md).
+_Preferences > Advanced_. More details are in the dedicated @ref:[page](getting-started/running-nexus/index.md).
 
 ### What is JSON-LD?
 
@@ -155,7 +155,7 @@ on the HTTP request, any SPARQL client should work.
 By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM 
 property @link:[app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/v1.4.1/delta/src/main/resources/app.conf#L213){ open=new }.
 In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, 
-visit the @ref:[ACLs page](delta/api/current/iam-acls-api.md#create-acls).
+visit the @ref:[ACLs page](delta/api/current/iam-acls-api.md#create).
 
 ### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
