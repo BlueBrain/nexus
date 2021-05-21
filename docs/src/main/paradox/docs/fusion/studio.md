@@ -322,9 +322,17 @@ Ask a developer to add an ENV variable with the location of the 'AggregateElasti
 
 `STUDIO_VIEW=[yourOrgLabel]/[yourProjectLabel]/[viewId]`
 
-In our example it would be:
+In our example, it would be:
 
 `STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList`
 
 Every time when you create a new `Studio`, the `AggregateElasticSearchView` needs to be updated.
 @@@
+
+## Studio Description
+
+Every Studio deserves a beautiful description to highlight its data. We've included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show off some images. Edit the description in either the @ref:[Admin](admin.md) resource editor, or using the edit Studio button located besides the Studio title.
+
+The description can be rendered using handlebars and markdown, in the same way described in the @ref:[Admin Resource Viewer](admin.md#resource-descriptions)
+
+![Studio Description Example](assets/studio-description-example.png)
