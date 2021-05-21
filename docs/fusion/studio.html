@@ -168,6 +168,7 @@ BlueBrain/nexus
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
     <li><a href="../../docs/fusion/studio.html" class="active page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
     <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
     <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
     <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
@@ -254,6 +255,7 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/studio.html#example-sparql-queries" class="header">Example SPARQL Queries</a></li>
     </ul></li>
     <li><a href="../../docs/fusion/studio.html#configuring-the-studios-index-page" class="header">Configuring the Studios index page</a></li>
+    <li><a href="../../docs/fusion/studio.html#studio-description" class="header">Studio Description</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -262,7 +264,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-64e6d48a*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-d060662b*
 </label>
 </li>
 </ul>
@@ -309,6 +311,7 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/studio.html#example-sparql-queries" class="header">Example SPARQL Queries</a></li>
     </ul></li>
     <li><a href="../../docs/fusion/studio.html#configuring-the-studios-index-page" class="header">Configuring the Studios index page</a></li>
+    <li><a href="../../docs/fusion/studio.html#studio-description" class="header">Studio Description</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -537,9 +540,13 @@ LIMIT 20
 </code></pre><div class="callout note "><div class="callout-title">Note</div>
 <p>Ask a developer to add an ENV variable with the location of the &lsquo;AggregateElasticSearchView&rsquo; as following:</p>
 <p><code>STUDIO_VIEW=[yourOrgLabel]/[yourProjectLabel]/[viewId]</code></p>
-<p>In our example it would be:</p>
+<p>In our example, it would be:</p>
 <p><code>STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList</code></p>
 <p>Every time when you create a new <code>Studio</code>, the <code>AggregateElasticSearchView</code> needs to be updated.</p></div>
+<h2><a href="#studio-description" name="studio-description" class="anchor"><span class="anchor-link"></span></a>Studio Description</h2>
+<p>Every Studio deserves a beautiful description to highlight its data. We&rsquo;ve included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show off some images. Edit the description in either the <a href="admin.html">Admin</a> resource editor, or using the edit Studio button located besides the Studio title.</p>
+<p>The description can be rendered using handlebars and markdown, in the same way described in the <a href="admin.html#resource-descriptions">Admin Resource Viewer</a></p>
+<p><img src="assets/studio-description-example.png" alt="Studio Description Example" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/studio.md" title="Edit this page" class="md-source-file md-edit">
@@ -548,7 +555,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-64e6d48a*
+0.0.0+1-d060662b*
 </span>
 </div>
 </article>
@@ -571,13 +578,13 @@ Plugins
 </span>
 </div>
 </a>
-<a href="../../docs/fusion/admin.html" title="Admin" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/fusion/search.html" title="Search" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Admin
+Search
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

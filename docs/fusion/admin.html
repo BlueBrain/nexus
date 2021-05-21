@@ -168,6 +168,7 @@ BlueBrain/nexus
     <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
     <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
     <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
     <li><a href="../../docs/fusion/admin.html" class="active page">Admin</a></li>
     <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
     <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
@@ -232,6 +233,16 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/admin.html#creating-a-new-resource" class="header">Creating a New Resource</a></li>
     </ul></li>
     <li><a href="../../docs/fusion/admin.html#resource-view" class="header">Resource View</a></li>
+    <li><a href="../../docs/fusion/admin.html#resource-descriptions" class="header">Resource Descriptions</a>
+    <ul>
+      <li><a href="../../docs/fusion/admin.html#example-description" class="header">Example Description</a>
+      <ul>
+        <li><a href="../../docs/fusion/admin.html#resource" class="header">Resource</a></li>
+        <li><a href="../../docs/fusion/admin.html#description" class="header">Description</a></li>
+        <li><a href="../../docs/fusion/admin.html#result" class="header">Result</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/admin.html#editing-a-resource-description" class="header">Editing a Resource Description</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -240,7 +251,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-64e6d48a*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-d060662b*
 </label>
 </li>
 </ul>
@@ -265,6 +276,16 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/admin.html#creating-a-new-resource" class="header">Creating a New Resource</a></li>
     </ul></li>
     <li><a href="../../docs/fusion/admin.html#resource-view" class="header">Resource View</a></li>
+    <li><a href="../../docs/fusion/admin.html#resource-descriptions" class="header">Resource Descriptions</a>
+    <ul>
+      <li><a href="../../docs/fusion/admin.html#example-description" class="header">Example Description</a>
+      <ul>
+        <li><a href="../../docs/fusion/admin.html#resource" class="header">Resource</a></li>
+        <li><a href="../../docs/fusion/admin.html#description" class="header">Description</a></li>
+        <li><a href="../../docs/fusion/admin.html#result" class="header">Result</a></li>
+      </ul></li>
+      <li><a href="../../docs/fusion/admin.html#editing-a-resource-description" class="header">Editing a Resource Description</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -303,15 +324,73 @@ BlueBrain/nexus
 <p>The project view in your admin app is the center stage to manage a project.</p><div class="center">
 <p><img src="../assets/fusion-admin-project-page.png" alt="Project View" /></p></div>
 <ul>
-  <li>On the left hand side, you will find the <code>Default Query</code>. You can filter and search resources, order them, as well as share that query with your peers. You can create as many queries as you like by clicking <code>+ Add another resource list</code>.</li>
-  <li>On the right hand side, you find the <code>Project Tools</code>. You&rsquo;ll find the SPARQL and Elasticsearch query editors, and check the project permissions. You can also <a href="admin.html#creating-a-new-resource">create a new resource</a> and upload files.</li>
-  <li>&ldquo;Manage studios for this project&rdquo;, will take you to the studio sub application. There you can create/edit/update studios for this project.</li>
+  <li>On the left hand side, you will find the <code>Default Query</code>. You can filter and search resources, order them, as well  as share that query with your peers. You can create as many queries as you like by clicking <code>+ Add another resource list</code>.</li>
+  <li>On the right hand side, you find the <code>Project Tools</code>. You&rsquo;ll find the SPARQL and Elasticsearch query editors, and  check the project permissions. You can also <a href="admin.html#creating-a-new-resource">create a new resource</a> and upload files.</li>
+  <li>&ldquo;Manage studios for this project&rdquo;, will take you to the studio sub application. There you can create/edit/update  studios for this project.</li>
 </ul>
 <p>In the header, the breadcrumbs menu shows the organization and project your are in. You can also check the indexing status of your project.</p>
 <h3><a href="#creating-a-new-resource" name="creating-a-new-resource" class="anchor"><span class="anchor-link"></span></a>Creating a New Resource</h3>
 <p>Navigate to the project where you want to create a resource. Click on the “Create Resource” button in the right sidebar. Build the JSON payload with the help of the interactive editor, then hit “Save”.</p>
 <h2><a href="#resource-view" name="resource-view" class="anchor"><span class="anchor-link"></span></a>Resource View</h2>
-<p>In resource view, you can see various visual representations of a Nexus Resource. Based on the resource type, you will see a set of plugins, each displayed on its own expandable section. By default, there will only be an admin plugin. You can read more about admin plugin <a href="plugins.html#default-plugins">here</a>. </p>
+<p>In resource view, you can see various visual representations of a Nexus Resource. Based on the resource type, you will see a set of plugins, each displayed on its own expandable section. By default, there will only be an admin plugin. You can read more about admin plugin <a href="plugins.html#default-plugins">here</a>.</p>
+<h2><a href="#resource-descriptions" name="resource-descriptions" class="anchor"><span class="anchor-link"></span></a>Resource Descriptions</h2>
+<p>To enable users to visualize and describe their data, we have included a description editor and viewer. Resource descriptions are rendered first with a templating system, and then as markdown. This allows users to show off their resources using a combination of HTML and markdown that is useful to render resource properties, iterate through resource lists, or render images stored in Nexus Delta.</p>
+<p>Nexus Fusion saves descriptions as a simple string inside the Resource&rsquo;s <code>description</code> property.</p>
+<p>Markdown is rendered using <a href="https://github.com/showdownjs/showdown">showdown</a>, with templating provided by <a href="https://handlebarsjs.com/guide/">handlebars</a>.</p>
+<p>This featured is also used in the <a href="studio.html#studio-description">Studio Description</a>, and inside the <a href="search.html#result-grid">Search Result View Card</a>.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>The Handlebar templating will be resolved <em>before</em> converting markdown.</p></div>
+<h3><a href="#example-description" name="example-description" class="anchor"><span class="anchor-link"></span></a>Example Description</h3>
+<h4><a href="#resource" name="resource" class="anchor"><span class="anchor-link"></span></a>Resource</h4>
+<pre><code>{
+  &quot;@id&quot;: &quot;9a4c53f4-ab50-459f-9aed-cd9ad57b9c5d&quot;,
+  &quot;@type&quot;: [
+    &quot;Entity&quot;,
+    &quot;Cell&quot;
+  ],
+  &quot;brainLocation&quot;: {
+    &quot;@type&quot;: &quot;BrainLocation&quot;,
+    &quot;brainRegion&quot;: {
+      &quot;label&quot;: &quot;primary somatosensory cortex&quot;
+    },
+    &quot;layer&quot;: {
+      &quot;label&quot;: &quot;layer 4&quot;
+    }
+  },
+  &quot;description&quot;: &quot;# {{name}} | {{ objectOfStudy.label }}\n\n## Subject\nSpecies:  {{ subject.species.label }}\n&lt;br/&gt;\n![image](https://my-nexus-deployment.org/v1/files/my-org/my-project/f33e3bdc-7ca3-4dad-b100-88f4891d221c)\n\n## Brain Region\n{{ brainLocation.brainRegion.label }}&quot;,
+  &quot;name&quot;: &quot;Cell #1029&quot;,
+  &quot;objectOfStudy&quot;: {
+    &quot;label&quot;: &quot;Single Cell&quot;
+  },
+  &quot;subject&quot;: {
+    &quot;@type&quot;: &quot;Subject&quot;,
+    &quot;age&quot;: {
+      &quot;period&quot;: &quot;Post-natal&quot;,
+      &quot;unitCode&quot;: &quot;days&quot;,
+      &quot;value&quot;: 13
+    },
+    &quot;species&quot;: {
+      &quot;label&quot;: &quot;Rattus norvegicus&quot;
+    }
+  }
+}
+</code></pre>
+<h4><a href="#description" name="description" class="anchor"><span class="anchor-link"></span></a>Description</h4>
+<pre><code># {{name}} | {{ objectOfStudy.label }}
+
+## Subject
+Species:  {{ subject.species.label }}
+&lt;br/&gt;
+![image](https://my-nexus-deployment.org/v1/files/my-org/my-project/f33e3bdc-7ca3-4dad-b100-88f4891d221c)
+
+## Brain Region
+{{ brainLocation.brainRegion.label }}
+
+</code></pre>
+<h4><a href="#result" name="result" class="anchor"><span class="anchor-link"></span></a>Result</h4>
+<p><img src="assets/description-editor-result.png" alt="Description Editor Result" /></p>
+<h3><a href="#editing-a-resource-description" name="editing-a-resource-description" class="anchor"><span class="anchor-link"></span></a>Editing a Resource Description</h3>
+<p>Users with write permissions on a Resource will have access to a tab called &ldquo;Description&rdquo;. There, you can use a full WYSIWYG editor to type out and preview a description before saving it.</p>
+<p><img src="assets/description-editor-example.png" alt="Description Editor" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/admin.md" title="Edit this page" class="md-source-file md-edit">
@@ -320,7 +399,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-64e6d48a*
+0.0.0+1-d060662b*
 </span>
 </div>
 </article>
@@ -330,7 +409,7 @@ Edit this page
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/fusion/studio.html" title="Studios" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/fusion/search.html" title="Search" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -339,7 +418,7 @@ Edit this page
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Studios
+Search
 </span>
 </div>
 </a>
