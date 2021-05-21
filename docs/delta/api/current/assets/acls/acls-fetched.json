@@ -1,51 +1,60 @@
 {
   "@context": [
-    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
     "https://bluebrain.github.io/nexus/contexts/acls.json"
   ],
-  "@id": "https://nexus.example.com/v1/acls/org1",
-  "@type": "nxv:AccessControlList",
-  "path": "/org1",
-  "acl": [
+  "_total": 1,
+  "_results": [
     {
-      "permissions": [
-        "read"
+      "@id": "http://localhost:8080/v1/acls/org1",
+      "@type": "AccessControlList",
+      "acl": [
+        {
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/myrealm/groups/a-group",
+            "@type": "Group",
+            "group": "a-group",
+            "realm": "myrealm"
+          },
+          "permissions": [
+            "projects/read"
+          ]
+        },
+        {
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/realm/groups/some-group",
+            "@type": "Group",
+            "group": "some-group",
+            "realm": "realm"
+          },
+          "permissions": [
+            "projects/read",
+            "projects/write"
+          ]
+        },
+        {
+          "identity": {
+            "@id": "http://localhost:8080/v1/realms/realm/users/alice",
+            "@type": "User",
+            "realm": "realm",
+            "subject": "alice"
+          },
+          "permissions": [
+            "acls/read",
+            "acls/write"
+          ]
+        }
       ],
-      "identity": {
-        "@id": "https://nexus.example.com/v1/realms/myrealm/groups/a-group",
-        "@type": "Group",
-        "realm": "myrealm",
-        "group": "a-group"
-      }
-    },
-    {
-      "permissions": [
-        "read",
-        "write"
-      ],
-      "identity": {
-        "@id": "https://nexus.example.com/v1/realms/myrealm/groups/some-group",
-        "@type": "Group",
-        "realm": "myrealm",
-        "group": "some-group"
-      }
-    },
-    {
-      "permissions": [
-        "acls/read",
-        "acls/write"
-      ],
-      "identity": {
-        "@id": "https://nexus.example.com/v1/realms/myrealm/users/user",
-        "@type": "User",
-        "realm": "myrealm",
-        "subject": "alice"
-      }
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/acls.json",
+      "_createdAt": "2021-05-11T11:03:06.071Z",
+      "_createdBy": "http://localhost:8080/v1/anonymous",
+      "_deprecated": false,
+      "_path": "/org1",
+      "_rev": 1,
+      "_self": "http://localhost:8080/v1/acls/org1",
+      "_updatedAt": "2021-05-11T11:03:06.071Z",
+      "_updatedBy": "http://localhost:8080/v1/anonymous"
     }
-  ],
-  "_createdAt": "2018-09-18T09:58:00.801Z",
-  "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_updatedAt": "2018-09-18T10:01:00.801Z",
-  "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
-  "_rev": 1
+  ]
 }

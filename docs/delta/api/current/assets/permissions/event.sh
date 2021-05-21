@@ -1,1 +1,2 @@
-curl "https://nexus.example.com/v1/permissions/events"
+curl \
+ "http://localhost:8080/v1/permissions/events"

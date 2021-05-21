@@ -1,5 +1,7 @@
-curl -XPUT -H "Content-Type: application/json" "https://nexus.example.com/v1/acls/org1" -d  \
-'{
+curl -XPUT \
+  -H "Content-Type: application/json" \
+  "http://localhost:8080/v1/acls/org1" -d \
+  '{
   "acl": [
     {
       "permissions": [

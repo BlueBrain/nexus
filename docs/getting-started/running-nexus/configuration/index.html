@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../../../.././assets/img/favicon-32x32.png">
+<title>Nexus configuration · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../../../lib/prettify/prettify.css">
+<script src="../../../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../../../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../../../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+Nexus configuration
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../../../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html" class="active page">Nexus configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../../../docs/delta/api/current/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../../../docs/delta/api/current/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../../../docs/delta/api/current/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../../../docs/delta/api/current/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../../docs/delta/api/current/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../../../docs/delta/api/current/iam-identities.html" class="page">Identities</a></li>
+      <li><a href="../../../../docs/delta/api/current/iam-permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../../../docs/delta/api/current/iam-realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../../../docs/delta/api/current/iam-acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../../../docs/delta/api/current/admin-orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../../../docs/delta/api/current/admin-projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../../docs/delta/api/current/kg-schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../../../docs/delta/api/current/kg-resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../../../docs/delta/api/current/kg-resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../../../docs/delta/api/current/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../../../docs/delta/api/current/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../../docs/delta/api/current/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../../../docs/delta/api/current/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../../../docs/delta/api/current/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../../../docs/delta/api/current/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../../../docs/delta/api/current/kg-storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../../../docs/delta/api/current/kg-files-api.html" class="page">Files</a></li>
+      <li><a href="../../../../docs/delta/api/current/kg-archives-api.html" class="page">Archives</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
+    <li><a href="../../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
+  <ul>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#database-configuration" class="header">Database configuration</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#cassandra-configuration" class="header">Cassandra configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration" class="header">Elasticsearch views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#blazegraph-views-plugin-configuration" class="header">Blazegraph views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration" class="header">Composite views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#storage-plugin-configuration" class="header">Storage plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#archive-plugin-configuration" class="header">Archive plugin configuration</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-cab9e9ab*
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#nexus-configuration" class="header">Nexus configuration</a>
+  <ul>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#http-configuration" class="header">Http configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#database-configuration" class="header">Database configuration</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#cassandra-configuration" class="header">Cassandra configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#postgres-configuration" class="header">Postgres configuration</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration" class="header">Elasticsearch views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#blazegraph-views-plugin-configuration" class="header">Blazegraph views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration" class="header">Composite views plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#storage-plugin-configuration" class="header">Storage plugin configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#archive-plugin-configuration" class="header">Archive plugin configuration</a></li>
+    </ul></li>
+    <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
+    <ul>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#instrumentation" class="header">Instrumentation</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#reporters" class="header">Reporters</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="md-content__searchable">
+<h1><a href="#nexus-configuration" name="nexus-configuration" class="anchor"><span class="anchor-link"></span></a>Nexus configuration</h1>
+<p>Nexus Delta service can be highly customized using <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/app/src/main/resources" title="configuration file(s)" target="_blank" rel="noopener noreferrer">configuration file(s)</a>. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. </p>
+<p>There are 2 ways to modify the default configuration:</p>
+<ul>
+  <li>Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.http.interface=&quot;127.0.0.1&quot;</code>.</li>
+  <li>Using <a href="https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides" title="FORCE_CONFIG_{property}" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_{property}</a>  environment variables. In order to enable this style of configuration, the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. Once set, a configuration flag can be overridden. For example: <code>CONFIG_FORCE_app_http_interface=&quot;127.0.0.1&quot;</code>.</li>
+</ul>
+<p>In terms of JVM pool memory allocation, we recommend setting the following values to the <code>JAVA_OPTS</code>environment variable: <code>-Xms4g -Xmx4g</code>. The recommended values should be changed accordingly with the usage of Nexus Delta, the nomber of projects and the resources/schemas size.</p>
+<p>In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified</p>
+<h2><a href="#http-configuration" name="http-configuration" class="anchor"><span class="anchor-link"></span></a>Http configuration</h2>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L9" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the binding address and port where the service will be listening.</p>
+<p>The configuration flag <code>akka.http.server.parsing.max-content-length</code> can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.</p>
+<h2><a href="#database-configuration" name="database-configuration" class="anchor"><span class="anchor-link"></span></a>Database configuration</h2>
+<p>Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. The configuration flag <code>app.database.flavour</code> is used to select the flavour.</p>
+<h3><a href="#cassandra-configuration" name="cassandra-configuration" class="anchor"><span class="anchor-link"></span></a>Cassandra configuration</h3>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L58" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the cassandra specific configuration (username, password, contact points, etc).</p>
+<p>Before running Nexus Delta, the keyspace defined on the configuration <code>app.database.cassandra.keyspace</code> must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: <code>app.database.cassandra.keyspace-autocreate=true</code> and <code>app.database.cassandra.tables-autocreate=true</code>.</p><div class="callout note warning"><div class="callout-title">Note</div>
+<p>Auto creation of the keyspace and tables is included as a development convenience and should never be used in production. Cassandra does not handle concurrent schema migrations well and if every Akka node tries to create the schema at the same time you’ll get column id mismatch errors in Cassandra.</p></div>
+<p>There are many other configuration parameters to customize the behaviour of the cassandra driver (timeouts, intervals, etc). These can be be found in the <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/application-cassandra.conf" title="application-cassandra.conf" target="_blank" rel="noopener noreferrer">application-cassandra.conf</a> file. One of the most relevant among these settings is: <code>akka.persistence.cassandra.events-by-tag.first-time-bucket</code>. Its value must be the date-time of the first event stored in Nexus Delta in the format YYYYMMDDTHH:MM.</p>
+<h3><a href="#postgres-configuration" name="postgres-configuration" class="anchor"><span class="anchor-link"></span></a>Postgres configuration</h3>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L37" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the postgres specific configuration (username, password, host, etc).</p>
+<p>Before running Nexus Delta, the <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sourcing/src/main/resources/scripts/postgres.ddl" title="expected tables" target="_blank" rel="noopener noreferrer">expected tables</a> should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: <code>app.database.postgres.tables-autocreate=true</code></p>
+<h2><a href="#service-account-configuration" name="service-account-configuration" class="anchor"><span class="anchor-link"></span></a>Service account configuration</h2>
+<p>Nexus Delta uses a service account to perform automatic tasks under the hood. Examples of it are:</p>
+<ul>
+  <li>Granting default ACLs to the user creating a project.</li>
+  <li>Creating default views on project creation.</li>
+</ul>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L394" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the service account configuration.</p>
+<h2><a href="#encryption-configuration" name="encryption-configuration" class="anchor"><span class="anchor-link"></span></a>Encryption configuration</h2>
+<p>Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L235" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the encryption configuration.</p>
+<h2><a href="#plugins-configuration" name="plugins-configuration" class="anchor"><span class="anchor-link"></span></a>Plugins configuration</h2>
+<p>Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local directory defined by the <code>DELTA_PLUGINS</code> environment variable are loaded as plugins into the Delta service. </p>
+<p>Each plugin configuration is rooted under <code>plugins.{plugin_name}</code>. All plugins have a <code>plugins.{plugin_name}.priority</code> configuration flag used to determine the order in which the routes are handled in case of collisions. </p>
+<h3><a href="#elasticsearch-views-plugin-configuration" name="elasticsearch-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views plugin configuration</h3>
+<p>The elasticsearch plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>The most important flag is <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running.</p>
+<h3><a href="#blazegraph-views-plugin-configuration" name="blazegraph-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Blazegraph views plugin configuration</h3>
+<p>The blazegraph plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/blazegraph/src/main/resources/blazegraph.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>The most important flag is <code>plugins.blazegraph.base</code> which defines the endpoint where the Blazegraph service is running.</p>
+<h3><a href="#composite-views-plugin-configuration" name="composite-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Composite views plugin configuration</h3>
+<p>The composite views plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/composite-views/src/main/resources/composite-views.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.</p>
+<h3><a href="#storage-plugin-configuration" name="storage-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Storage plugin configuration</h3>
+<p>The storage plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/storage/src/main/resources/storage.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
+<p>Nexus Delta supports 3 types of storages: &lsquo;disk&rsquo;, &lsquo;amazon&rsquo; (s3 compatible) and &lsquo;remote&rsquo;.</p>
+<ul>
+  <li>For disk storages the most relevant configuration flag is <code>plugins.storage.storages.disk.default-volume</code>, which defines the default location in the Nexus Delta filesystem where the files using that storage are going to be saved.</li>
+  <li>For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: <code>plugins.storage.storages.amazon.default-endpoint</code>, <code>plugins.storage.storages.amazon.default-access-key</code> and <code>plugins.storage.storages.amazon.default-secret-key</code>.</li>
+  <li>For remote disk storages the most relevant configuration flags are <code>plugins.storage.storages.remote-disk.default-endpoint</code> (the endpoint where the remote storage service is running) and <code>plugins.storage.storages.remote-disk.default-credentials</code> (the Bearer token to authenticate to the remote storage service).</li>
+</ul>
+<h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
+<p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<h2><a href="#monitoring" name="monitoring" class="anchor"><span class="anchor-link"></span></a>Monitoring</h2>
+<p>For monitoring, Nexus Delta relies on <a href="https://kamon.io/" title="Kamon" target="_blank" rel="noopener noreferrer">Kamon</a>.</p>
+<p>Kamon can be disabled by passing the environment variable <code>KAMON_ENABLED</code> to <code>false</code></p>
+<p>Delta configuration for Kamon is provided <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L358" title="here" target="_blank" rel="noopener noreferrer">here</a>. For a more complete description on the different options available, please look at the Kamon website.</p>
+<h3><a href="#instrumentation" name="instrumentation" class="anchor"><span class="anchor-link"></span></a>Instrumentation</h3>
+<p>Delta provides the Kamon instrumentation for:</p>
+<ul>
+  <li><a href="https://kamon.io/docs/v1/instrumentation/jdbc/" title="JDBC" target="_blank" rel="noopener noreferrer">JDBC</a> (only useful if you run Delta with PostgreSQL)</li>
+  <li><a href="https://kamon.io/docs/v1/instrumentation/executors/" title="Executors" target="_blank" rel="noopener noreferrer">Executors</a></li>
+  <li><a href="https://kamon.io/docs/v1/instrumentation/futures/" title="Scala futures" target="_blank" rel="noopener noreferrer">Scala futures</a></li>
+  <li><a href="https://kamon.io/docs/v1/instrumentation/logback/" title="Logback" target="_blank" rel="noopener noreferrer">Logback</a></li>
+  <li><a href="https://kamon.io/docs/v1/instrumentation/system-metrics/" title="System metrics" target="_blank" rel="noopener noreferrer">System metrics</a></li>
+</ul>
+<h3><a href="#reporters" name="reporters" class="anchor"><span class="anchor-link"></span></a>Reporters</h3>
+<p>Kamon reporters are also available for:</p>
+<ul>
+  <li><a href="https://kamon.io/docs/v1/reporters/jaeger/" title="Jaeger" target="_blank" rel="noopener noreferrer">Jaeger</a></li>
+  <li><a href="https://kamon.io/docs/v1/reporters/prometheus/" title="Prometheus" target="_blank" rel="noopener noreferrer">Prometheus</a></li>
+</ul>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/running-nexus/configuration/index.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+0.0.0+1-cab9e9ab*
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../../../docs/getting-started/running-nexus/index.html" title="Running Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+Running Nexus
+</span>
+</div>
+</a>
+<a href="../../../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+Releases
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+Powered by
+<a href="https://github.com/lightbend/paradox">Paradox</a>
+and
+<a href="https://jonas.github.io/paradox-material-theme/">Paradox Material Theme</a>
+
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://gitter.im/BlueBrain/nexus" class="md-footer-social__link fa fa-globe"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../../../."}})</script>
+<script type="text/javascript" src="../../../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../../../.././public/js/gtm.js"></script>
+</body>
+</html>

@@ -1,1 +1,1 @@
-curl "https://nexus.example.com/v1/acls/*?ancestors=true&self=true"
+curl "http://localhost:8080/v1/acls/*?ancestors=true&self=true"
