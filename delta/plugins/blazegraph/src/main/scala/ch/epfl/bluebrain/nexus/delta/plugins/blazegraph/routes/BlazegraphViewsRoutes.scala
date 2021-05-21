@@ -76,9 +76,9 @@ class BlazegraphViewsRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
-      extractCaller { implicit caller =>
-        concat(
-          pathPrefix("views") {
+      concat(
+        pathPrefix("views") {
+          extractCaller { implicit caller =>
             projectRef(projects).apply { implicit ref =>
               // Create a view without id segment
               concat(
@@ -216,9 +216,11 @@ class BlazegraphViewsRoutes(
                 }
               )
             }
-          },
-          //Handle all other incoming and outgoing links
-          pathPrefix(Segment) { segment =>
+          }
+        },
+        //Handle all other incoming and outgoing links
+        pathPrefix(Segment) { segment =>
+          extractCaller { implicit caller =>
             projectRef(projects).apply { ref =>
               // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
               consumeIdSegmentIf(segment == "resources") {
@@ -228,8 +230,8 @@ class BlazegraphViewsRoutes(
               }
             }
           }
-        )
-      }
+        }
+      )
     }
 
   private def consumeIdSegmentIf(condition: Boolean): Directive0 =

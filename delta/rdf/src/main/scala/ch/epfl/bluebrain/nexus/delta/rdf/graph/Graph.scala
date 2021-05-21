@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.fakeId
@@ -38,6 +38,7 @@ import scala.util.Try
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
   val rootResource: Node = subject(rootNode)
+  private val rdfType    = predicate(rdf.tpe)
 
   /**
     * Returns all the triples of the current graph
@@ -134,6 +135,12 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
         case (_, _, r: Node) if r.isURI && r.getURI != null && r.getURI.nonEmpty => iri"${r.getURI}"
       }
       .toSet
+
+  /**
+    * Returns the Graph with the predicate ''rdf:type'' and subject ''root''.
+    */
+  def rootTypesGraph: Graph =
+    Graph.empty(rootNode).add(rootTypes.map(tpe => (rootResource, rdfType, obj(tpe))))
 
   /**
     * Adds the passed ''triple'' to the existing graph.
@@ -242,10 +249,10 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   }
 
   /**
-    * Removes the passed triples from the current [[Graph]]
+    * Removes the passed graph triples from the current [[Graph]]
     */
-  def --(triples: Set[Triple]): Graph =
-    filter(spo => !triples.contains(spo))
+  def --(graph: Graph): Graph =
+    filter(spo => !graph.triples.contains(spo))
 
   override def hashCode(): Int = (rootNode, quads).##
 

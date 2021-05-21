@@ -81,6 +81,7 @@ object SearchParams {
     * @param rev        the optional revision of the organization resources
     * @param createdBy  the optional subject who created the organization resource
     * @param updatedBy  the optional subject who updated the resource
+    * @param label      the optional organization label (matches with a contains)
     * @param filter     the additional filter to select organizations
     */
   final case class OrganizationSearchParams(
@@ -88,10 +89,14 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
+      label: Option[String] = None,
       filter: Organization => Boolean
   ) extends SearchParams[Organization] {
-    override val types: Set[Iri]             = Set(nxv.Organization)
-    override val schema: Option[ResourceRef] = Some(Latest(nxvschemas.organizations))
+    override val types: Set[Iri]                                     = Set(nxv.Organization)
+    override val schema: Option[ResourceRef]                         = Some(Latest(nxvschemas.organizations))
+    override def matches(resource: ResourceF[Organization]): Boolean =
+      super.matches(resource) &&
+        label.forall(lb => resource.value.label.value.toLowerCase.contains(lb.toLowerCase.trim))
   }
 
   /**
@@ -102,6 +107,7 @@ object SearchParams {
     * @param rev          the optional revision of the project resources
     * @param createdBy    the optional subject who created the project resource
     * @param updatedBy    the optional subject who updated the resource
+    * @param label        the optional project label (matches with a contains)
     * @param filter       the additional filter to select projects
     */
   final case class ProjectSearchParams(
@@ -110,6 +116,7 @@ object SearchParams {
       rev: Option[Long] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
+      label: Option[String] = None,
       filter: Project => Boolean
   ) extends SearchParams[Project] {
     override val types: Set[Iri]             = Set(nxv.Project)
@@ -117,7 +124,8 @@ object SearchParams {
 
     override def matches(resource: ResourceF[Project]): Boolean =
       super.matches(resource) &&
-        organization.forall(_ == resource.value.organizationLabel)
+        organization.forall(_ == resource.value.organizationLabel) &&
+        label.forall(lb => resource.value.label.value.toLowerCase.contains(lb.toLowerCase.trim))
   }
 
   /**

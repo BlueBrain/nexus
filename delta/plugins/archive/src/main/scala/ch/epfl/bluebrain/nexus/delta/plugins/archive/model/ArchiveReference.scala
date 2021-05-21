@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -58,6 +59,10 @@ object ArchiveReference {
       representation: Option[ArchiveResourceRepresentation]
   ) extends ArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.Resource
+
+    def representationOrDefault: ArchiveResourceRepresentation = representation.getOrElse(CompactedJsonLd)
+
+    def defaultFileName = s"${UrlUtils.encode(ref.original.toString)}${representationOrDefault.extension}"
   }
 
   /**

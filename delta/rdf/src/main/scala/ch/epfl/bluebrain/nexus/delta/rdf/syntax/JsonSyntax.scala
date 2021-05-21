@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.syntax
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.{JsonKeyOrdering, JsonUtils}
 import io.circe._
@@ -182,6 +183,11 @@ final class JsonOps(private val json: Json) extends AnyVal {
   def contextValues: Set[ContextValue] = JsonLdContext.contextValues(json)
 
   /**
+    * Replaces the current context of the ''json'' with the passed  ''ctx''
+    */
+  def replaceContext(ctx: Json) = removeKeys(keywords.context).addContext(ctx)
+
+  /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json documents.
     *
     * @param that the context to append to this json. E.g.: {"@context": {...}}
@@ -189,6 +195,11 @@ final class JsonOps(private val json: Json) extends AnyVal {
     *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(that: Json): Json = JsonLdContext.addContext(json, that)
+
+  /**
+    * Replaces the current context of the ''json'' with the passed  ''ctx''
+    */
+  def replaceContext(ctx: JsonObject) = removeKeys(keywords.context).addContext(ctx)
 
   /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json object documents.
@@ -280,4 +291,20 @@ final class JsonOps(private val json: Json) extends AnyVal {
     */
   def getIgnoreSingleArrayOr[A: Decoder](key: String)(defaultValue: => A): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArrayOr(json, key)(defaultValue)
+
+  /**
+    * Adds to the current json the passed ''key'' and ''valueOpt'' when the value is a Some
+    */
+  def addIfExists[A: Encoder](key: String, valueOpt: Option[A]): Json   =
+    valueOpt.fold(json)(value => json deepMerge Json.obj(key -> value.asJson))
+
+  /**
+    * Adds to the current json the passed ''key'' and ''values'' when the values are not empty
+    */
+  def addIfNonEmpty[A: Encoder](key: String, values: Iterable[A]): Json =
+    values.take(2).toList match {
+      case Nil         => json
+      case head :: Nil => json deepMerge Json.obj(key -> head.asJson)
+      case _           => json deepMerge Json.obj(key -> values.asJson)
+    }
 }

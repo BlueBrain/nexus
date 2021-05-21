@@ -36,6 +36,8 @@ class EventsSpec extends BaseSpec with Inspectors {
       testClient,
       BugsBunny :: Nil
     ).runSyncUnsafe()
+    // force timestampUuid to be evaluated
+    val _ = timestampUuid.toString
     ()
   }
 
@@ -192,8 +194,8 @@ class EventsSpec extends BaseSpec with Inspectors {
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
                        "projectUuid"      -> uuids._2,
-                       "project"          -> s"$orgId/$projId",
-                       "schemaProject"    -> s"$orgId/$projId"
+                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
+                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
                      ): _*
                    )
                  }
@@ -222,8 +224,8 @@ class EventsSpec extends BaseSpec with Inspectors {
                        "resources"        -> s"${config.deltaUri}/resources/$id",
                        "organizationUuid" -> uuids._1,
                        "projectUuid"      -> uuids._2,
-                       "project"          -> s"$orgId/$projId",
-                       "schemaProject"    -> s"$orgId/$projId"
+                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
+                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
                      ): _*
                    )
                  }
@@ -246,8 +248,8 @@ class EventsSpec extends BaseSpec with Inspectors {
                 "resources"        -> s"${config.deltaUri}/resources/$id",
                 "organizationUuid" -> uuids._1,
                 "projectUuid"      -> uuids._2,
-                "project"          -> s"$orgId2/$projId",
-                "schemaProject"    -> s"$orgId2/$projId"
+                "project"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                "schemaProject"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
               ): _*
             )
           }
@@ -280,10 +282,10 @@ class EventsSpec extends BaseSpec with Inspectors {
                         "projectUuid"       -> uuids._2,
                         "organization2Uuid" -> uuids2._1,
                         "project2Uuid"      -> uuids2._2,
-                        "project"           -> s"$orgId/$projId",
-                        "project2"          -> s"$orgId2/$projId",
-                        "schemaProject"     -> s"$orgId/$projId",
-                        "schemaProject2"    -> s"$orgId2/$projId"
+                        "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
+                        "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                        "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
+                        "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
                       ): _*
                     )
                   }

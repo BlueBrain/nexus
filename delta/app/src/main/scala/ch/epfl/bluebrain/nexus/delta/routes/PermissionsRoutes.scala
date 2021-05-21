@@ -51,69 +51,71 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        concat(
-          (pathPrefix("permissions") & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/permissions") {
-              concat(
-                // Fetch permissions
-                get {
-                  authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
-                    parameter("rev".as[Long].?) {
-                      case Some(rev) => emit(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
-                      case None      => emit(permissions.fetch)
+      pathPrefix("permissions") {
+        extractCaller { implicit caller =>
+          concat(
+            pathEndOrSingleSlash {
+              operationName(s"$prefixSegment/permissions") {
+                concat(
+                  // Fetch permissions
+                  get {
+                    authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
+                      parameter("rev".as[Long].?) {
+                        case Some(rev) => emit(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
+                        case None      => emit(permissions.fetch)
+                      }
                     }
-                  }
-                },
-                // Replace permissions
-                (put & parameter("rev" ? 0L)) { rev =>
-                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
-                    entity(as[PatchPermissions]) {
-                      case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
-                      case _            =>
-                        reject(
-                          malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
-                        )
-                    }
-                  }
-                },
-                // Append or Subtract permissions
-                (patch & parameter("rev" ? 0L)) { rev =>
-                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
-                    entity(as[PatchPermissions]) {
-                      case Append(set)   => emit(permissions.append(set, rev).map(_.void))
-                      case Subtract(set) => emit(permissions.subtract(set, rev).map(_.void))
-                      case _             =>
-                        reject(
-                          malformedContent(
-                            s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+                  },
+                  // Replace permissions
+                  (put & parameter("rev" ? 0L)) { rev =>
+                    authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                      entity(as[PatchPermissions]) {
+                        case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
+                        case _            =>
+                          reject(
+                            malformedContent(s"Value for field '${keywords.tpe}' must be 'Replace' when using 'PUT'.")
                           )
-                        )
+                      }
+                    }
+                  },
+                  // Append or Subtract permissions
+                  (patch & parameter("rev" ? 0L)) { rev =>
+                    authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                      entity(as[PatchPermissions]) {
+                        case Append(set)   => emit(permissions.append(set, rev).map(_.void))
+                        case Subtract(set) => emit(permissions.subtract(set, rev).map(_.void))
+                        case _             =>
+                          reject(
+                            malformedContent(
+                              s"Value for field '${keywords.tpe}' must be 'Append' or 'Subtract' when using 'PATCH'."
+                            )
+                          )
+                      }
+                    }
+                  },
+                  // Delete permissions
+                  delete {
+                    authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
+                      parameter("rev".as[Long]) { rev =>
+                        emit(permissions.delete(rev).map(_.void))
+                      }
                     }
                   }
-                },
-                // Delete permissions
-                delete {
-                  authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
-                    parameter("rev".as[Long]) { rev =>
-                      emit(permissions.delete(rev).map(_.void))
-                    }
+                )
+              }
+            },
+            // SSE permissions
+            (pathPrefix("events") & pathEndOrSingleSlash) {
+              operationName(s"$prefixSegment/permissions/events") {
+                authorizeFor(AclAddress.Root, events.read).apply {
+                  lastEventId { offset =>
+                    emit(permissions.events(offset))
                   }
-                }
-              )
-            }
-          },
-          // SSE permissions
-          (pathPrefix("permissions" / "events") & pathEndOrSingleSlash) {
-            operationName(s"$prefixSegment/permissions/events") {
-              authorizeFor(AclAddress.Root, events.read).apply {
-                lastEventId { offset =>
-                  emit(permissions.events(offset))
                 }
               }
             }
-          }
-        )
+          )
+        }
       }
     }
 

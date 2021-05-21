@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.tests.Tags.ViewsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
+import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
 class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
@@ -267,18 +268,20 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "fetch statistics for testView" taggedAs ViewsTag in {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:testView/statistics", ScoobyDoo) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        val expected = jsonContentOf(
-          "/kg/views/statistics.json",
-          "total"     -> "13",
-          "processed" -> "13",
-          "evaluated" -> "6",
-          "discarded" -> "7",
-          "remaining" -> "0"
-        )
-        filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
-      }
+      import scala.concurrent.duration._
+      Task.sleep(3.seconds) >> // allow indexing to complete for postgres
+        deltaClient.get[Json](s"/views/$fullId/test-resource:testView/statistics", ScoobyDoo) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          val expected = jsonContentOf(
+            "/kg/views/statistics.json",
+            "total"     -> "13",
+            "processed" -> "13",
+            "evaluated" -> "6",
+            "discarded" -> "7",
+            "remaining" -> "0"
+          )
+          filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
+        }
     }
 
     val query =

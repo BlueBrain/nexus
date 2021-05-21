@@ -136,6 +136,19 @@ class ResourcesSpec
         }
       }
 
+      "reject with ReservedResourceId" in {
+        forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
+          val myId         = contexts + "some.json"
+          val myIdResource = ResourceGen.resource(myId, projectRef, source, schemaRef)
+          val comp         = myIdResource.compacted
+          val exp          = myIdResource.expanded
+          eval(
+            Initial,
+            CreateResource(myId, projectRef, schemaRef, source, comp, exp, caller)
+          ).rejectedWith[ReservedResourceId]
+        }
+      }
+
       "reject with IncorrectRev" in {
         val current   = ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types)
         val compacted = current.compacted

@@ -52,7 +52,7 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   override def state(id: String): UIO[State] =
     send(id, { askTo: ActorRef[StateResponse[State]] => RequestState(id, askTo) })
       .map(_.value)
-      .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name, "entity.id" -> id))
+      .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name))
       .logAndDiscardErrors(s"fetching the state for the id '$id' for type '${entityTypeKey.name}'")
 
   private def toEvaluationIO(id: String, result: Task[EvaluationResult]): EvaluationIO[Rejection, Event, State] =
@@ -91,7 +91,6 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
           component,
           Map(
             "entity.type" -> entityTypeKey.name,
-            "entity.id"   -> id,
             "command"     -> Command.runtimeClass.getCanonicalName
           )
         )

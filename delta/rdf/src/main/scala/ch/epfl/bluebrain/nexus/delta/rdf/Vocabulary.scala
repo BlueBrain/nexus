@@ -170,6 +170,7 @@ object Vocabulary {
     val incoming              = Metadata("incoming")
     val outgoing              = Metadata("outgoing")
     val originalSource        = Metadata("original_source")
+    val effectiveApiMappings  = Metadata("effectiveApiMappings")
 
     val defaultResolver = nxv + "defaultInProject"
 

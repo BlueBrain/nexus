@@ -81,7 +81,7 @@ object Resolver {
   implicit def resolverEncoder(implicit baseUri: BaseUri): Encoder.AsObject[Resolver] = {
     implicit val identityEncoder: Encoder[Identity] = Identity.identityEncoder
     Encoder.AsObject.instance { r =>
-      r.value.asJsonObject.addContext(r.source.topContextValueOrEmpty.contextObj)
+      r.value.asJsonObject.addContext(r.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }
   }
 

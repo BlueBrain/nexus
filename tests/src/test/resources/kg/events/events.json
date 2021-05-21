@@ -19,7 +19,7 @@
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
-    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "_project": "{{project}}",
     "_rev": 1,
     "_schemaProject": "{{schemaProject}}",
@@ -47,7 +47,7 @@
     "_types": [
       "https://bluebrain.github.io/nexus/vocabulary/TestResource"
     ],
-    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json?rev=1",
+    "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
     "_project": "{{project}}",
     "_schemaProject": "{{schemaProject}}",
     "_projectUuid": "{{projectUuid}}",

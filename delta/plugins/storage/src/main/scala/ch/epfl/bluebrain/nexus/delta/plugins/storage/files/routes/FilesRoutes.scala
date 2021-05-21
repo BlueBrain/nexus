@@ -67,8 +67,8 @@ final class FilesRoutes(
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
-      extractCaller { implicit caller =>
-        pathPrefix("files") {
+      pathPrefix("files") {
+        extractCaller { implicit caller =>
           concat(
             // SSE files for all events
             (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -109,18 +109,18 @@ final class FilesRoutes(
                   }
                 },
                 (post & pathEndOrSingleSlash & noParameter("rev") & parameter("storage".as[IdSegment].?)) { storage =>
-                  concat(
-                    // Link a file without id segment
-                    entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                      emit(Created, files.createLink(storage, ref, filename, mediaType, path))
-                    },
-                    // Create a file without id segment
-                    extractRequestEntity { entity =>
-                      operationName(s"$prefixSegment/files/{org}/{project}") {
+                  operationName(s"$prefixSegment/files/{org}/{project}") {
+                    concat(
+                      // Link a file without id segment
+                      entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
+                        emit(Created, files.createLink(storage, ref, filename, mediaType, path))
+                      },
+                      // Create a file without id segment
+                      extractRequestEntity { entity =>
                         emit(Created, files.create(storage, ref, entity))
                       }
-                    }
-                  )
+                    )
+                  }
                 },
                 idSegment { id =>
                   concat(

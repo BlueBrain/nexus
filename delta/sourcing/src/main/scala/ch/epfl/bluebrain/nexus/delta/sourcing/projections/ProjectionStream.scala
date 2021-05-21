@@ -18,7 +18,6 @@ object ProjectionStream {
 
   trait StreamOps[A] {
 
-    //TODO: Properly handle errors
     protected def onError[B](s: SuccessMessage[A]): PartialFunction[Throwable, Task[Message[B]]] = {
       case NonFatal(err) =>
         val msg =

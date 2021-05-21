@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
@@ -20,6 +21,8 @@ import monix.bio.IO
 import monix.execution.Scheduler
 
 trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with ConfigFixtures with IOFixedClock {
+
+  val serviceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
   def init(
       org: Label,
@@ -50,7 +53,18 @@ trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with Co
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       config      = StoragesConfig(aggregate, keyValueStore, pagination, indexing, storageTypeConfig)
       storages   <-
-        Storages(config, eventLog, resolverCtx, perms, orgs, projects, (_, _) => IO.unit, (_, _) => IO.unit, crypto)
+        Storages(
+          config,
+          eventLog,
+          resolverCtx,
+          perms,
+          orgs,
+          projects,
+          (_, _) => IO.unit,
+          (_, _) => IO.unit,
+          crypto,
+          serviceAccount
+        )
     } yield storages
   }.accepted
 }

@@ -17,13 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectFields, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProjectResource, Projects, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -37,6 +37,7 @@ import monix.execution.Scheduler
 final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(
     implicit
     baseUri: BaseUri,
+    defaultApiMappings: ApiMappings,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
@@ -49,25 +50,24 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
-    parameter("label".as[Label].?).flatMap { organization =>
-      searchParams.tflatMap { case (deprecated, rev, createdBy, updatedBy) =>
-        onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
-          ProjectSearchParams(
-            organization,
-            deprecated,
-            rev,
-            createdBy,
-            updatedBy,
-            proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
-          )
-        }
+    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
+        ProjectSearchParams(
+          None,
+          deprecated,
+          rev,
+          createdBy,
+          updatedBy,
+          label,
+          proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
+        )
       }
     }
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
-      extractCaller { implicit caller =>
-        pathPrefix("projects") {
+      pathPrefix("projects") {
+        extractCaller { implicit caller =>
           concat(
             // List projects
             (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
@@ -157,6 +157,7 @@ object ProjectsRoutes {
     */
   def apply(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(implicit
       baseUri: BaseUri,
+      defaultApiMappings: ApiMappings,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,

@@ -1,6 +1,9 @@
 {
   "@id": "{{id}}",
   "@context": [
+    {
+      "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/"
+    },
     "https://bluebrain.github.io/nexus/contexts/sparql.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],
@@ -21,7 +24,7 @@
   "_incoming": "{{resources}}/incoming",
   "_outgoing": "{{resources}}/outgoing",
   "_self": "{{resources}}",
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
   "_project": "{{project-parent}}",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",

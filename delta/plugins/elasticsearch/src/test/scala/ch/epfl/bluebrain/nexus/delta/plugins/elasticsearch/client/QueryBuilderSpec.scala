@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -29,7 +30,7 @@ class QueryBuilderSpec extends AnyWordSpecLike with Matchers with TestHelpers wi
       val params   = ResourcesSearchParams(
         deprecated = Some(true),
         schema = Some(schema),
-        types = List(nxv.Resolver, nxv.CrossProject)
+        types = List(IncludedType(nxv.Resolver), ExcludedType(nxv.CrossProject))
       )
       QueryBuilder(params).withSort(SortList(List(Sort("@id")))).withPage(FromPagination(0, 10)).build shouldEqual
         expected

@@ -152,7 +152,7 @@ lazy val copyPlugins = taskKey[Unit]("Assembles and copies the plugin files plug
 lazy val productPage = project
   .in(file("product-page"))
   .enablePlugins(GhpagesPlugin)
-  .settings(shared, compilation)
+  .settings(shared, compilation, noPublish)
   .settings(
     name                             := "product-page",
     moduleName                       := "product-page",
@@ -188,7 +188,7 @@ lazy val docs = project
   .in(file("docs"))
   .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
   .disablePlugins(ScapegoatSbtPlugin)
-  .settings(shared, compilation, assertJavaVersion)
+  .settings(shared, compilation, assertJavaVersion, noPublish)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
   .settings(
     name                             := "docs",
@@ -869,6 +869,8 @@ lazy val root = project
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(
+  publish / skip                         := true,
+  Test / publish / skip                  := true,
   publishLocal                           := {},
   publish                                := {},
   publishArtifact                        := false,
@@ -877,7 +879,10 @@ lazy val noPublish = Seq(
   Compile / packageDoc / publishArtifact := false,
   Test / packageBin / publishArtifact    := false,
   Test / packageDoc / publishArtifact    := false,
-  Test / packageSrc / publishArtifact    := false
+  Test / packageSrc / publishArtifact    := false,
+  sonatypeCredentialHost                 := "s01.oss.sonatype.org",
+  sonatypeRepository                     := "https://s01.oss.sonatype.org/service/local",
+  versionScheme                          := Some("strict")
 )
 
 lazy val assertJavaVersion =
@@ -982,19 +987,23 @@ lazy val coverage = Seq(
 )
 
 lazy val release = Seq(
-  Compile / doc / sources                := Seq.empty,
-  packageDoc / publishArtifact           := false,
-  Compile / packageSrc / publishArtifact := true,
-  Compile / packageDoc / publishArtifact := false,
-  Test / packageBin / publishArtifact    := false,
-  Test / packageDoc / publishArtifact    := false,
-  Test / packageSrc / publishArtifact    := false,
-  publishMavenStyle                      := true,
-  pomIncludeRepository                   := Function.const(false),
+  Test / publish / skip               := true,
+  Test / packageBin / publishArtifact := false,
+  Test / packageDoc / publishArtifact := false,
+  Test / packageSrc / publishArtifact := false,
   // removes compile time only dependencies from the resulting pom
-  pomPostProcess                         := { node =>
+  pomPostProcess                      := { node =>
     XmlTransformer.transformer(moduleFilter("org.scoverage") | moduleFilter("com.sksamuel.scapegoat")).transform(node).head
-  }
+  },
+  publishTo                           := {
+    val original            = publishTo.value
+    val ghTo                = githubPublishTo.value
+    val RELEASE_TO_SONATYPE = sys.env.getOrElse("RELEASE_TO_SONATYPE", "false").toBoolean
+    if (RELEASE_TO_SONATYPE) original else ghTo
+  },
+  sonatypeCredentialHost              := "s01.oss.sonatype.org",
+  sonatypeRepository                  := "https://s01.oss.sonatype.org/service/local",
+  versionScheme                       := Some("strict")
 )
 
 lazy val servicePackaging = {
@@ -1022,32 +1031,29 @@ lazy val servicePackaging = {
   )
 }
 
-inThisBuild(
-  Seq(
-    scapegoatVersion             := scalacScapegoatVersion,
-    scapegoatDisabledInspections := Seq(
-      "AsInstanceOf",
-      "ClassNames",
-      "IncorrectlyNamedExceptions",
-      "ObjectNames",
-      "RedundantFinalModifierOnCaseClass",
-      "RedundantFinalModifierOnMethod",
-      "VariableShadowing"
-    ),
-    homepage                     := Some(url("https://github.com/BlueBrain/nexus-commons")),
-    licenses                     := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-    scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-commons"), "scm:git:git@github.com:BlueBrain/nexus-commons.git")),
-    developers                   := List(
-      Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
-    ),
-    // These are the sbt-release-early settings to configure
-    githubOwner                  := "BlueBrain",
-    githubRepository             := "nexus"
-  )
+ThisBuild / scapegoatVersion := scalacScapegoatVersion
+ThisBuild / scapegoatDisabledInspections := Seq(
+  "AsInstanceOf",
+  "ClassNames",
+  "IncorrectlyNamedExceptions",
+  "ObjectNames",
+  "RedundantFinalModifierOnCaseClass",
+  "RedundantFinalModifierOnMethod",
+  "VariableShadowing"
 )
+ThisBuild / homepage                     := Some(url("https://bluebrainnexus.io"))
+ThisBuild / licenses                     := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt"))
+ThisBuild / scmInfo                      := Some(ScmInfo(url("https://github.com/BlueBrain/nexus"), "scm:git:git@github.com:BlueBrain/nexus.git"))
+ThisBuild / developers                   := List(
+  Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+  Developer("imsdu", "Simon Dumas", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
+)
+ThisBuild / githubOwner                  := "BlueBrain"
+ThisBuild / githubRepository             := "nexus"
+ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
+ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
 Global / excludeLintKeys        += tests / composeFile

@@ -2,7 +2,7 @@
   "@context": [
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/search.json",
-    "https://bluebrain.github.io/nexus/contexts/search-metadata.json.json"
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
   ],
   "_total": 2,
   "_results": [
@@ -15,7 +15,7 @@
       "_incoming": "{{deltaUri}}/views/{{project-label}}/documents/incoming",
       "_outgoing": "{{deltaUri}}/views/{{project-label}}/documents/outgoing",
       "_self": "{{deltaUri}}/views/{{project-label}}/documents",
-      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
       "_deprecated": false,
@@ -31,7 +31,7 @@
       "_incoming": "{{deltaUri}}/views/{{project-label}}/graph/incoming",
       "_outgoing": "{{deltaUri}}/views/{{project-label}}/graph/outgoing",
       "_self": "{{deltaUri}}/views/{{project-label}}/graph",
-      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/view.json",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
       "_project": "{{project}}",
       "_rev": 1,
       "_deprecated": false,

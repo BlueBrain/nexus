@@ -8,12 +8,13 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -76,7 +77,7 @@ class ProjectsRoutesSpec
     } yield o
   }.accepted
 
-  private val projectDummy = ProjectsDummy(orgs, Set(aopd), ApiMappings.empty).accepted
+  private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
 
   private val projectStats = ProjectCount(10L, Instant.EPOCH)
 
@@ -399,26 +400,27 @@ class ProjectsRoutesSpec
       )
 
     "list all projects" in {
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
       Get("/v1/projects") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            fetchProjRev3.removeKeys("@context"),
-            fetchProj2.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/projects?label=p") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
     "list all projects for organization" in {
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
+
       Get("/v1/projects/org1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(
-          expectedResults(
-            fetchProjRev3.removeKeys("@context"),
-            fetchProj2.removeKeys("@context")
-          )
-        )
+        response.asJson should equalIgnoreArrayOrder(expected)
+      }
+      Get("/v1/projects/org1?label=p") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson should equalIgnoreArrayOrder(expected)
       }
     }
 
@@ -434,7 +436,7 @@ class ProjectsRoutesSpec
     }
 
     "list all projects updated by Alice" in {
-      Get(s"/v1/projects?updatedBy=${UrlUtils.encode(alice.id.toString)}") ~> routes ~> check {
+      Get(s"/v1/projects?updatedBy=${UrlUtils.encode(alice.id.toString)}&label=p") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
