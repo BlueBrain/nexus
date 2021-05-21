@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.archive
+package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.actor.ExtendedActorSystem
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.KryoSerializerInit._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.KryoSerializerInit.{IRISerializer, PathSerializer}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import io.altoo.akka.serialization.kryo.DefaultKryoInitializer
@@ -10,7 +10,6 @@ import org.apache.jena.iri.{IRI, IRIFactory}
 
 import java.nio.file.Path
 
-//TODO: partially ported from service module, we might want to avoid this duplication
 class KryoSerializerInit extends DefaultKryoInitializer {
 
   override def postInit(kryo: ScalaKryo, system: ExtendedActorSystem): Unit = {

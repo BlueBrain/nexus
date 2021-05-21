@@ -73,6 +73,12 @@ object ResourceRejection {
       extends ResourceFetchRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
+    * Rejection returned when attempting to create/update a resource with a reserved id.
+    */
+  final case class ReservedResourceId(id: Iri)
+      extends ResourceRejection(s"Resource identified '$id' is reserved as a platform identified")
+
+  /**
     * Rejection returned when attempting to update a resource with an id that doesn't exist.
     *
     * @param id        the resource identifier

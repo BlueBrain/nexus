@@ -6,8 +6,8 @@ import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, ResourceNotFound}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{AuthorizationFailed, FilenameTooLong, ResourceNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
@@ -99,6 +99,9 @@ class ArchiveDownloadSpec
     val id1   = iri"http://localhost/${genString()}"
     val file1 = files.create(id1, Some(diskId), project.ref, entity()).accepted
 
+    val id2 = iri"http://localhost/${genString()}"
+    files.create(id2, Some(diskId), project.ref, entity(genString(100))).accepted
+
     val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
 
     "provide a tar for both resources and files" in {
@@ -111,8 +114,8 @@ class ArchiveDownloadSpec
       val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
       val result   = archiveMapOf(source)
       val expected = Map(
-        s"${project.ref.toString}/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
-        s"${project.ref.toString}/${file1.value.attributes.filename}"         -> content
+        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}"              -> content
       )
       result shouldEqual expected
     }
@@ -123,11 +126,12 @@ class ArchiveDownloadSpec
         CompactedJsonLd -> file1.toCompactedJsonLd.accepted.json.sort.spaces2,
         ExpandedJsonLd  -> file1.toExpandedJsonLd.accepted.json.sort.spaces2,
         NTriples        -> file1.toNTriples.accepted.value,
+        NQuads          -> file1.toNQuads.accepted.value,
         Dot             -> file1.toDot.accepted.value
       )
       forAll(list) { case (repr, expectedString) =>
         val filePath     = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
-        val resourcePath = AbsolutePath.apply(s"/${genString()}/file.json").rightValue
+        val resourcePath = AbsolutePath.apply(s"/${genString()}/file${repr.extension}").rightValue
         val value        = ArchiveValue.unsafe(
           NonEmptySet.of(
             ResourceReference(Latest(id1), None, Some(resourcePath), Some(repr)),
@@ -137,7 +141,7 @@ class ArchiveDownloadSpec
         val source       = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
         if (repr == Dot) {
           archiveMapOf(source)(resourcePath.value.toString).contains(s"""digraph "$id1"""") shouldEqual true
-        } else if (repr == NTriples) {
+        } else if (repr == NTriples || repr == NQuads) {
           archiveMapOf(source)(resourcePath.value.toString).contains(s"""<$id1>""") shouldEqual true
         } else {
           val expected = Map(
@@ -147,6 +151,28 @@ class ArchiveDownloadSpec
           archiveMapOf(source) shouldEqual expected
         }
       }
+    }
+
+    "fail to provide a tar if the file name is too long and no path is provided" in {
+      val value = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileReference(Latest(id2), None, None)
+        )
+      )
+
+      archiveDownload.apply(value, project.ref, ignoreNotFound = false).rejectedWith[FilenameTooLong]
+    }
+
+    "provide a tar if the file name is too long but a path is provided" in {
+      val filePath = AbsolutePath.apply(s"/${genString()}/file.txt").rightValue
+      val value    = ArchiveValue.unsafe(
+        NonEmptySet.of(
+          FileReference(Latest(id2), None, Some(filePath))
+        )
+      )
+
+      val result = archiveDownload.apply(value, project.ref, ignoreNotFound = false).accepted
+      archiveMapOf(result) should contain key filePath.value.toString
     }
 
     "fail to provide a tar when a resource is not found" in {
@@ -179,7 +205,7 @@ class ArchiveDownloadSpec
       val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
       val result   = archiveMapOf(source)
       val expected = Map(
-        s"${project.ref.toString}/${file1.value.attributes.filename}" -> content
+        s"${project.ref.toString}/file/${file1.value.attributes.filename}" -> content
       )
       result shouldEqual expected
     }
@@ -194,7 +220,7 @@ class ArchiveDownloadSpec
       val source   = archiveDownload.apply(value, project.ref, ignoreNotFound = true).accepted
       val result   = archiveMapOf(source)
       val expected = Map(
-        s"${project.ref.toString}/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
+        s"${project.ref.toString}/compacted/${UrlUtils.encode(file1.id.toString)}.json" -> file1.toCompactedJsonLd.accepted.json.sort.spaces2
       )
       result shouldEqual expected
     }

@@ -1,6 +1,9 @@
 {
   "@id": "{{id}}",
   "@context": [
+    {
+      "@vocab": "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/"
+    },
     "https://bluebrain.github.io/nexus/contexts/sparql.json",
     "https://bluebrain.github.io/nexus/contexts/metadata.json"
   ],

@@ -5,7 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
@@ -288,7 +288,8 @@ object Resources {
         expanded: ExpandedJsonLd
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
-        IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
+        IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id)) >>
+          IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
       else if (MigrationState.isSchemaValidationDisabled)
         resourceResolution
           .resolve(schemaRef, projectRef)(caller)
@@ -296,6 +297,7 @@ object Resources {
           .map { schema => (ResourceRef.Revision(schema.id, schema.rev), schema.value.project) }
       else
         for {
+          _        <- IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id))
           graph    <- toGraph(id, expanded)
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)

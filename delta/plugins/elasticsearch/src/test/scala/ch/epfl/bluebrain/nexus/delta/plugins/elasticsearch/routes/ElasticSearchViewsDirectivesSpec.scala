@@ -77,9 +77,9 @@ class ElasticSearchViewsDirectivesSpec
       val bobId    = UrlUtils.encode(bob.id.toString)
 
       Get(
-        s"/search/org/project?id=myId&deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId&type=A&type=B&schema=C&q=something"
+        s"/search/org/project?id=myId&deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId&type=A&type=B&type=-C&schema=C&q=something"
       ) ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual s"'${base}myId','false','2','$alicia','$bob','${vocab}A|${vocab}B','${base}C','something'"
+        response.asString shouldEqual s"'${base}myId','false','2','$alicia','$bob','IncludedType(${vocab}A)|IncludedType(${vocab}B)|ExcludedType(${vocab}C)','${base}C','something'"
       }
 
       Get("/search/org/project") ~> Accept(`*/*`) ~> route ~> check {

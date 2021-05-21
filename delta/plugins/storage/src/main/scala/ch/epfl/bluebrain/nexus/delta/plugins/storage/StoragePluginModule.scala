@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -39,7 +40,7 @@ import monix.execution.Scheduler
   */
 class StoragePluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader = getClass.getClassLoader
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   make[StoragePluginConfig].fromEffect { cfg: Config => StoragePluginConfig.load(cfg) }
 
@@ -71,9 +72,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           resourceIdCheck: ResourceIdCheck,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          crypto: Crypto
+          crypto: Crypto,
+          serviceAccount: ServiceAccount
       ) =>
-        Storages(cfg.storages, log, contextResolution, permissions, orgs, projects, resourceIdCheck, crypto)(
+        Storages(
+          cfg.storages,
+          log,
+          contextResolution,
+          permissions,
+          orgs,
+          projects,
+          resourceIdCheck,
+          crypto,
+          serviceAccount
+        )(
           client,
           uuidF,
           clock,

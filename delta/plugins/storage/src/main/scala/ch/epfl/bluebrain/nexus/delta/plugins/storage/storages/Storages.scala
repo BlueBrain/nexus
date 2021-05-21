@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
@@ -63,7 +63,8 @@ final class Storages private (
     orgs: Organizations,
     projects: Projects,
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
-    crypto: Crypto
+    crypto: Crypto,
+    serviceAccount: ServiceAccount
 ) extends StoragesMigration {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
@@ -391,12 +392,12 @@ final class Storages private (
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,
       current: StorageResource
-  )(implicit caller: Caller) =
+  ) =
     IO.when(current.value.default)(
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
           val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
-          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false)(serviceAccount.caller)
           logFailureAndContinue(io)
         } >> UIO.unit
       }
@@ -553,7 +554,8 @@ object Storages {
       orgs: Organizations,
       projects: Projects,
       resourceIdCheck: ResourceIdCheck,
-      crypto: Crypto
+      crypto: Crypto,
+      serviceAccount: ServiceAccount
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -566,7 +568,18 @@ object Storages {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, storageAccess, idAvailability, crypto)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      permissions,
+      orgs,
+      projects,
+      storageAccess,
+      idAvailability,
+      crypto,
+      serviceAccount
+    )
   }
 
   private[storage] def apply(
@@ -578,7 +591,8 @@ object Storages {
       projects: Projects,
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      crypto: Crypto
+      crypto: Crypto,
+      serviceAccount: ServiceAccount
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -591,7 +605,7 @@ object Storages {
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
       storages      =
-        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, crypto)
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, crypto, serviceAccount)
       _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 

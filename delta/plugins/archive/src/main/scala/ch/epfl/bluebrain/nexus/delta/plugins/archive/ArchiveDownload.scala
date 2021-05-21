@@ -5,7 +5,6 @@ import akka.stream.alpakka.file.scaladsl.Archive
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation._
@@ -91,11 +90,14 @@ object ArchiveDownload {
         refs: List[ArchiveReference],
         project: ProjectRef
     )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-      val authTargets = refs.collect { case ref: ResourceReference => ref }.map { ref =>
-        val p       = ref.project.getOrElse(project)
-        val address = AclAddress.Project(p)
-        (address, resources.read)
-      }
+      val authTargets = refs
+        .collect { case ref: ResourceReference => ref }
+        .map { ref =>
+          val p       = ref.project.getOrElse(project)
+          val address = AclAddress.Project(p)
+          (address, resources.read)
+        }
+        .toSet
       acls.authorizeForAny(authTargets).flatMap { authResult =>
         IO.fromEither(
           authResult
@@ -117,17 +119,20 @@ object ArchiveDownload {
         case ResourceRef.Tag(_, iri, tag)      => files.fetchContentBy(iri, refProject, tag)
       }
       val tarEntryIO     = fileResponseIO
-        .map { fileResponse =>
-          val path     = ref.path.map(_.value.toString).getOrElse(pathOf(ref, project, fileResponse.filename))
-          val metadata = TarArchiveMetadata.create(path, fileResponse.bytes)
-          Some((metadata, fileResponse.content))
-        }
         .mapError {
           case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
           case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)
           case _: FileRejection.RevisionNotFound             => ResourceNotFound(ref.ref, project)
           case FileRejection.AuthorizationFailed(addr, perm) => AuthorizationFailed(addr, perm)
           case other                                         => WrappedFileRejection(other)
+        }
+        .flatMap { fileResponse =>
+          IO.fromEither(
+            pathOf(ref, project, fileResponse.filename).map { path =>
+              val metadata = TarArchiveMetadata.create(path, fileResponse.bytes)
+              Some((metadata, fileResponse.content))
+            }
+          )
         }
       if (ignoreNotFound) tarEntryIO.onErrorRecover { case _: ResourceNotFound => None }
       else tarEntryIO
@@ -139,7 +144,7 @@ object ArchiveDownload {
         ignoreNotFound: Boolean
     ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
       val tarEntryIO = resourceRefToByteString(ref, project).map { content =>
-        val path     = ref.path.map(_.value.toString).getOrElse(pathOf(ref, project))
+        val path     = pathOf(ref, project)
         val metadata = TarArchiveMetadata.create(path, content.length.toLong)
         Some((metadata, Source.single(content)))
       }
@@ -152,14 +157,16 @@ object ArchiveDownload {
         project: ProjectRef
     ): IO[ResourceNotFound, ByteString] = {
       val p = ref.project.getOrElse(project)
-      val r = ref.representation.getOrElse(CompactedJsonLd)
       UIO
         .tailRecM(exchanges) { // try all reference exchanges one at a time until there's a result
           case Nil              => UIO.pure(Right(None))
           case exchange :: rest => exchange.fetch(p, ref.ref).map(_.toRight(rest).map(Some.apply))
         }
         .flatMap {
-          case Some(value) => valueToByteString(value, r).logAndDiscardErrors("serialize resource to ByteString")
+          case Some(value) =>
+            valueToByteString(value, ref.representationOrDefault).logAndDiscardErrors(
+              "serialize resource to ByteString"
+            )
           case None        => IO.raiseError(ResourceNotFound(ref.ref, project))
         }
     }
@@ -174,19 +181,25 @@ object ArchiveDownload {
         case CompactedJsonLd => value.resource.toCompactedJsonLd.map(v => ByteString(prettyPrint(v.json)))
         case ExpandedJsonLd  => value.resource.toExpandedJsonLd.map(v => ByteString(prettyPrint(v.json)))
         case NTriples        => value.resource.toNTriples.map(v => ByteString(v.value))
+        case NQuads          => value.resource.toNQuads.map(v => ByteString(v.value))
         case Dot             => value.resource.toDot.map(v => ByteString(v.value))
       }
     }
 
-    private def pathOf(ref: ResourceReference, project: ProjectRef): String = {
+    private def pathOf(ref: ResourceReference, project: ProjectRef): String = ref.path.map(_.value.toString).getOrElse {
       val p = ref.project.getOrElse(project)
-      s"$p/${UrlUtils.encode(ref.ref.original.toString)}.json"
+      s"$p/${ref.representationOrDefault}/${ref.defaultFileName}"
     }
 
-    private def pathOf(ref: FileReference, project: ProjectRef, filename: String): String = {
-      val p = ref.project.getOrElse(project)
-      s"$p/$filename"
-    }
+    private def pathOf(ref: FileReference, project: ProjectRef, filename: String): Either[FilenameTooLong, String] =
+      ref.path.map { p => Right(p.value.toString) }.getOrElse {
+        val p = ref.project.getOrElse(project)
+        Either.cond(
+          filename.length < 100,
+          s"$p/file/$filename",
+          FilenameTooLong(ref.ref.original, p, filename)
+        )
+      }
 
     private val printer = Printer.spaces2.copy(dropNullValues = true)
 

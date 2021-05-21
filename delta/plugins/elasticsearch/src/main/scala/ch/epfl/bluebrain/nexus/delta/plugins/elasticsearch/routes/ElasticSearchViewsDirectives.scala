@@ -5,10 +5,11 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
@@ -29,16 +30,14 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
       projectRef: ProjectRef,
       fetchProject: FetchProject,
       sc: Scheduler
-  ): Directive[(List[Iri], Option[ResourceRef], Option[Iri])] =
+  ): Directive[(List[Type], Option[ResourceRef], Option[Iri])] =
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
       case Right(project) =>
         implicit val p: Project = project
-        (parameter("type".as[IriVocab].*) & parameter("schema".as[IriBase].?) & parameter("id".as[IriBase].?)).tmap {
-          case (types, schema, id) =>
-            (types.toList.reverse.map(_.value), schema.map(iri => ResourceRef(iri.value)), id.map(_.value))
+        (parameter("type".as[Type].*) & parameter("schema".as[IriBase].?) & parameter("id".as[IriBase].?)).tmap {
+          case (types, schema, id) => (types.toList.reverse, schema.map(iri => ResourceRef(iri.value)), id.map(_.value))
         }
-      case _              =>
-        tprovide((List.empty[Iri], None, None))
+      case _              => tprovide((List.empty, None, None))
     }
 
   /**
