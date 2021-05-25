@@ -120,7 +120,7 @@ object Main extends BIOApp {
       val cluster                         = Cluster(as)
 
       sys.env.get("DELETE_PERSISTENCE_IDS").foreach { persistenceIds =>
-        DeletePersistenceIds.delete(persistenceIds.split(","))
+        DeletePersistenceIds.delete(persistenceIds.split(",").toSeq)
       }
 
       if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
