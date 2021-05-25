@@ -90,6 +90,12 @@ object SchemaRejection {
       extends SchemaRejection(s"Schema '$id' does not match schema id on payload '$payloadId'.")
 
   /**
+    * Rejection returned when attempting to create/update a schema with a reserved id.
+    */
+  final case class ReservedSchemaId(id: Iri)
+      extends SchemaRejection(s"Schema identifier '$id' is reserved by the platform.")
+
+  /**
     * Rejection returned when attempting to create/update a schema where the payload does not satisfy the SHACL schema constrains.
     *
     * @param id      the schema identifier
