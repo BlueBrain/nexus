@@ -76,7 +76,7 @@ object ResourceRejection {
     * Rejection returned when attempting to create/update a resource with a reserved id.
     */
   final case class ReservedResourceId(id: Iri)
-      extends ResourceRejection(s"Resource identified '$id' is reserved as a platform identified")
+      extends ResourceRejection(s"Resource identifier '$id' is reserved for the platform.")
 
   /**
     * Rejection returned when attempting to update a resource with an id that doesn't exist.
