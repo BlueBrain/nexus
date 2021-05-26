@@ -94,6 +94,10 @@ const featureIcons: Icon[] = [
     name: "Mapping",
     iconSrc: mappingIcon,
   },
+  {
+    name: "Workflows",
+    iconSrc: mappingIcon,
+  },
 ]
 
 const getIcon = (title: string) => {
