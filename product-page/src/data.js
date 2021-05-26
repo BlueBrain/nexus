@@ -87,6 +87,11 @@ module.exports = {
           description:
             "Manage your Nexus Delta instance from the visual interface instead of the command line.",
         },
+        {
+          title: "Workflows",
+          description:
+            "Design your own data workflow: chain steps and link them with activities and data, and quickly get an overview of your project's status.",
+        },
       ],
     },
     {
