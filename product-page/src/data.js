@@ -119,7 +119,7 @@ module.exports = {
         {
           title: "Extensibility",
           description:
-            "Use Server Sent Event (SSE) to write your own extensions. You can also add your own features and contribute to the community.",
+            "Use Server Sent Event (SSE) to write your own extensions. In addition, our new architecture allows you to write custom plugins and contribute to the community.",
         },
         {
           title: "Federation",
