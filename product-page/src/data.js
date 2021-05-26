@@ -87,6 +87,11 @@ module.exports = {
           description:
             "Manage your Nexus Delta instance from the visual interface instead of the command line.",
         },
+        {
+          title: "Workflows",
+          description:
+            "Design your own data workflow: chain steps and link them with activities and data, and quickly get an overview of your project's status.",
+        },
       ],
     },
     {
@@ -119,7 +124,7 @@ module.exports = {
         {
           title: "Extensibility",
           description:
-            "Use Server Sent Event (SSE) to write your own extensions. You can also add your own features and contribute to the community.",
+            "Use Server Sent Event (SSE) to write your own extensions. In addition, our new architecture allows you to write custom plugins and contribute to the community.",
         },
         {
           title: "Federation",
