@@ -12,7 +12,7 @@ Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/
 
 ## Release 1.6
 
-Nexus 1.6.0 will focus on delivering a better search experience accross the ecosystem.
+Nexus 1.6.0 will focus on delivering a better search experience across the ecosystem.
 
 Details coming soon!
 
