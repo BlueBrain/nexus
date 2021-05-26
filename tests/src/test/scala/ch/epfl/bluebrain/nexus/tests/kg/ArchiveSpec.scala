@@ -243,8 +243,9 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
           val tar    = new TarArchiveInputStream(bytes)
           val unpack = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
 
-          val actualContent1 = parse(unpack.get(s"$fullId/${prefix}1%3Frev%3D1.json").value.utf8String).rightValue
-          val actualContent2 = parse(unpack.get(s"$fullId2/${prefix}2.json").value.utf8String).rightValue
+          val actualContent1 =
+            parse(unpack.get(s"$fullId/compacted/${prefix}1%3Frev%3D1.json").value.utf8String).rightValue
+          val actualContent2 = parse(unpack.get(s"$fullId2/compacted/${prefix}2.json").value.utf8String).rightValue
           val actualDigest3  = digest(unpack.get("/some/other/nexus-logo.png").value)
 
           filterMetadataKeys(actualContent1) should equalIgnoreArrayOrder(payloadResponse1)
@@ -288,7 +289,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
                val unpack         = readEntries(tar).map { case (path, content) => (path.toString, content) }.toMap
                val actualContent1 = parse(
                  unpack
-                   .get(s"$fullId/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json")
+                   .get(s"$fullId/compacted/https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F1%3Frev%3D1.json")
                    .value
                    .utf8String
                ).rightValue
