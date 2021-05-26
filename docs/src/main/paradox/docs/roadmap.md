@@ -4,34 +4,16 @@
 The roadmap is subject to change at any time and is given for information only.
 @@@
 
-## Release 1.5 (scheduled for Q4 2020)
+## Release 1.5.1 
 
-New release date: end of April 2021.
+Nexus 1.5.1 will focus on fixing bugs and under the hood improvements, mostly stemming from the 1.5.0 release.
 
-Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/9){ open=new } for more details or start contributing today!
+Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/20){ open=new } for more details or start contributing today!
 
-### Nexus Fusion
+## Release 1.6
 
-Fusion is the web interface that helps scientists with their day-to-day data-driven activities. This release will bring the following features:
+Nexus 1.6.0 will focus on delivering a better search experience across the ecosystem.
 
-* definition of data workflows
-* (postponed to 1.6) re-use of predefined workflow templates 
-* improved data visualizations
-* basic jupyter notebooks integration
-* configurable data search capabilities
-* data cart support
-* improved studios to present data including publishing capabilities
+Details coming soon!
 
-### Nexus Forge
-
-Coming soon!
-
-### Nexus Delta
-
-Delta is the backbone web services powering the knowledge graph, Fusion, and Forge. This release will bring the following features:
-
-* performance improvements
-* scalability improvements
-* SQL primary store, in addition to Cassandra
-* extensible behavior through plugins
-* online migration support from v1.4
+Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/19){ open=new } for more (preliminary) details or start contributing today!
