@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -152,6 +152,15 @@ class SchemasSpec
           SchemaGen.currentState(schema),
           TagSchema(myId, project.value.ref, 3L, TagLabel.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual RevisionNotFound(provided = 3L, current = 1L)
+      }
+
+      "reject with ReservedSchemaId" in {
+        val reserved = schemas + "myid"
+
+        eval(
+          Initial,
+          CreateSchema(reserved, project.value.ref, source, compacted, expanded, subject)
+        ).rejected shouldEqual ReservedSchemaId(reserved)
       }
 
     }
