@@ -31,7 +31,7 @@ class PostgresServiceDependencySpec
 
     "fetch its service name and version" in {
       new PostgresServiceDependency(config).serviceDescription.accepted shouldEqual
-        ServiceDescription(Name.unsafe("postgres"), "12.2")
+        ServiceDescription(Name.unsafe("postgres"), "12.7")
     }
   }
 

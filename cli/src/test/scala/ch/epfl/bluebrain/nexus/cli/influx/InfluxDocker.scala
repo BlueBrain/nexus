@@ -14,7 +14,7 @@ object InfluxDocker extends ContainerDef {
 
   override def config: InfluxDocker.Config =
     ContainerConfig(
-      image = "library/influxdb:1.8.0",
+      image = "library/influxdb:1.8.6",
       ports = Seq(primaryPort),
       env = Map("INFLUXDB_REPORTING_DISABLED" -> "true", "INFLUXDB_HTTP_FLUX_ENABLED" -> "true"),
       reuse = ReuseEnabled

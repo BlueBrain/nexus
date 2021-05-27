@@ -823,9 +823,9 @@ lazy val storage = project
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     Test / parallelExecution := false,
-    Universal / mappings     := {
-      (Universal / mappings).value :+ cargo.value
-    }
+//    Universal / mappings     := {
+//      (Universal / mappings).value :+ cargo.value
+//    }
   )
 
 lazy val dockerCompose = Seq(

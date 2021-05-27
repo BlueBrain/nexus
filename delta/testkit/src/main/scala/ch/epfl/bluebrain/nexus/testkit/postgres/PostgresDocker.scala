@@ -25,7 +25,7 @@ trait PostgresDocker extends DockerKitWithFactory {
       PostgresExposedPort
     )
 
-  val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.2")
+  val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.7")
     .withPorts((PostgresAdvertisedPort, Some(PostgresExposedPort)))
     .withEnv(s"POSTGRES_USER=$PostgresUser", s"POSTGRES_PASSWORD=$PostgresPassword")
     .withReadyChecker(
