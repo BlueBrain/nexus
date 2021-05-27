@@ -344,7 +344,8 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
         )
         .compile
         .lastOrError
-        .runSyncUnsafe() shouldEqual "second new"
+        .runSyncUnsafe()
+        .value shouldEqual "second new"
 
       val errors = projection
         .errors(projectionId)

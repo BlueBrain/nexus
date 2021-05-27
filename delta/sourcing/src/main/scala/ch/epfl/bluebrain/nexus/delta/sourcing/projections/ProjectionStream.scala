@@ -150,16 +150,16 @@ object ProjectionStream {
         chunk: Chunk[(ProjectionProgress[A], Message[A])],
         persistProgress: ProjectionProgress[A] => Task[Unit],
         persistErrors: Vector[Message[A]] => Task[Unit]
-    ): Task[Option[A]] = {
-      val init: (Option[ProjectionProgress[A]], Vector[Message[A]], Option[A]) = (None, Vector.empty, None)
-      val (progress, errors, firstValue)                                       = chunk.foldLeft(init) { case ((_, messages, value), (progress, message)) =>
-        val (error, newValue) = message match {
-          case SuccessMessage(_, _, _, _, value, warnings) => Option.when(warnings.nonEmpty)(message) -> Some(value)
-          case m                                           => Some(m)                                 -> None
+    ): Task[Option[ProjectionProgress[A]]] = {
+      val init: (Option[ProjectionProgress[A]], Vector[Message[A]]) = (None, Vector.empty)
+      val (progress, errors)                                        = chunk.foldLeft(init) { case ((_, messages), (progress, message)) =>
+        val error = message match {
+          case SuccessMessage(_, _, _, _, _, warnings) => Option.when(warnings.nonEmpty)(message)
+          case m                                       => Some(m)
         }
-        (Some(progress), messages ++ error, value.orElse(newValue))
+        (Some(progress), messages ++ error)
       }
-      persistErrors(errors) >> progress.fold(Task.unit)(persistProgress) >> Task.pure(firstValue)
+      persistErrors(errors) >> progress.fold(Task.unit)(persistProgress) >> Task.pure(progress)
     }
 
     private def persistProgressWithCache(
@@ -169,7 +169,7 @@ object ProjectionStream {
         cacheProgress: ProjectionProgress[A] => Task[Unit],
         projectionConfig: SaveProgressConfig,
         cacheConfig: SaveProgressConfig
-    ): Stream[Task, A] =
+    ): Stream[Task, ProjectionProgress[A]] =
       stream
         .accumulateProgress(initial)
         .groupWithin(cacheConfig.maxNumberOfEntries, cacheConfig.maxTimeWindow)
@@ -196,7 +196,7 @@ object ProjectionStream {
         persistProgress: ProjectionProgress[A] => Task[Unit],
         persistErrors: Vector[Message[A]] => Task[Unit],
         config: SaveProgressConfig
-    ): Stream[Task, A] =
+    ): Stream[Task, ProjectionProgress[A]] =
       stream
         .accumulateProgress(initial)
         .groupWithin(config.maxNumberOfEntries, config.maxTimeWindow)
@@ -215,7 +215,7 @@ object ProjectionStream {
         projectionId: ProjectionId,
         projection: Projection[A],
         config: SaveProgressConfig
-    ): Stream[Task, A] =
+    ): Stream[Task, ProjectionProgress[A]] =
       persistProgress(
         initial,
         projection.recordProgress(projectionId, _),
@@ -240,7 +240,7 @@ object ProjectionStream {
         cacheProgress: ProjectionProgress[A] => Task[Unit],
         projectionConfig: SaveProgressConfig,
         cacheConfig: SaveProgressConfig
-    ): Stream[Task, A] =
+    ): Stream[Task, ProjectionProgress[A]] =
       persistProgressWithCache(
         initial,
         projection.recordProgress(projectionId, _),
