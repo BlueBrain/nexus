@@ -108,42 +108,24 @@ trait Resolvers {
 
   /**
     * Fetch the last version of a resolver
-    * @param id      the resolver identifier to expand as the id of the resolver
+    * @param id         the identifier that will be expanded to the Iri of the resolver with its optional rev/tag
     * @param projectRef the project where the resolver belongs
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
+  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetches and validate the resolver, rejecting if the project does not exists or if it is deprecated
     * @param id               the id of the resolver
     * @param projectRef       the project reference
     */
-  def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver]
+  def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver] =
+    fetch(id, projectRef).flatMap(res => IO.raiseWhen(res.deprecated)(ResolverIsDeprecated(id)).as(res.value))
 
-  /**
-    * Fetches the resolver at a given revision
-    * @param id      the resolver identifier to expand as the id of the resolver
-    * @param projectRef the project where the resolver belongs
-    * @param rev     the current revision of the resolver
-    */
-  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[ResolverRejection, ResolverResource]
-
-  /**
-    * Fetches a resolver by tag.
-    *
-    * @param id        the resolver identifier to expand as the id of the resolver
-    * @param projectRef   the project where the resolver belongs
-    * @param tag       the tag revision
-    */
-  def fetchBy(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: TagLabel
-  ): IO[ResolverRejection, ResolverResource] =
-    fetch(id, projectRef).flatMap { resource =>
-      resource.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, rev).mapError(_ => TagNotFound(tag))
-        case None      => IO.raiseError(TagNotFound(tag))
+  protected def fetchBy(id: IdSegmentRef.Tag, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
+    fetch(id.toLatest, projectRef).flatMap { resolver =>
+      resolver.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), projectRef).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
 
@@ -240,12 +222,7 @@ object Resolvers {
     * Create a reference exchange from a [[Resolvers]] instance
     */
   def referenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
-      ref match {
-        case ResourceRef.Latest(iri)           => resolvers.fetch(iri, projectRef)
-        case ResourceRef.Revision(_, iri, rev) => resolvers.fetchAt(iri, projectRef, rev)
-        case ResourceRef.Tag(_, iri, tag)      => resolvers.fetchBy(iri, projectRef, tag)
-      }
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => resolvers.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[Resolver](fetch(_, _), _.source)
   }
 

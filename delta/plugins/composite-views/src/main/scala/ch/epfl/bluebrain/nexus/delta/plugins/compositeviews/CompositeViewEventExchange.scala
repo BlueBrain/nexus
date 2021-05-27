@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
 import monix.bio.{IO, UIO}
 
@@ -27,8 +27,7 @@ class CompositeViewEventExchange(views: CompositeViews)(implicit base: BaseUri) 
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: CompositeViewEvent =>
-        resourceToValue(tag.fold(views.fetch(ev.id, ev.project))(views.fetchBy(ev.id, ev.project, _)))
+      case ev: CompositeViewEvent => resourceToValue(views.fetch(IdSegmentRef.fromTag(ev.id, tag), ev.project))
       case _                      => UIO.none
     }
 

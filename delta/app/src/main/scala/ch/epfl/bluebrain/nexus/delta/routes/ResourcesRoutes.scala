@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources => resourcePermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -23,12 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -115,7 +114,7 @@ final class ResourcesRoutes(
                 // Create a resource without schema nor id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
-                    authorizeFor(ref, resourcePermissions.write).apply {
+                    authorizeFor(ref, Write).apply {
                       emit(Created, resources.create(ref, resourceSchema, source).map(_.void))
                     }
                   }
@@ -126,7 +125,7 @@ final class ResourcesRoutes(
                     // Create a resource with schema but without id segment
                     (post & pathEndOrSingleSlash & noParameter("rev")) {
                       operationName(s"$prefixSegment/resources/{org}/{project}/{schema}") {
-                        authorizeFor(ref, resourcePermissions.write).apply {
+                        authorizeFor(ref, Write).apply {
                           entity(as[Json]) { source =>
                             emit(
                               Created,
@@ -143,7 +142,7 @@ final class ResourcesRoutes(
                             concat(
                               // Create or update a resource
                               put {
-                                authorizeFor(ref, resourcePermissions.write).apply {
+                                authorizeFor(ref, Write).apply {
                                   (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                     case (None, source)      =>
                                       // Create a resource with schema and id segments
@@ -164,23 +163,26 @@ final class ResourcesRoutes(
                               },
                               // Deprecate a resource
                               (delete & parameter("rev".as[Long])) { rev =>
-                                authorizeFor(ref, resourcePermissions.write).apply {
+                                authorizeFor(ref, Write).apply {
                                   emit(
                                     resources.deprecate(id, ref, schemaOpt, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
                                   )
                                 }
                               },
                               // Fetch a resource
-                              get {
-                                fetch(id, ref, schemaOpt)
+                              (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                                emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                               }
                             )
                           }
                         },
                         // Fetch a resource original source
-                        (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                          operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
-                            fetchSource(id, ref, schemaOpt, _.value.source)
+                        (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                          authorizeFor(ref, Read).apply {
+                            operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
+                              val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
+                              emit(sourceIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
+                            }
                           }
                         },
                         // Tag a resource
@@ -188,12 +190,13 @@ final class ResourcesRoutes(
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
                             concat(
                               // Fetch a resource tags
-                              get {
-                                fetchMap(id, ref, schemaOpt, res => Tags(res.value.tags))
+                              (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                                val tagsIO = resources.fetch(id, ref, schemaOpt).map(res => Tags(res.value.tags))
+                                emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                               },
                               // Tag a resource
                               (post & parameter("rev".as[Long])) { rev =>
-                                authorizeFor(ref, resourcePermissions.write).apply {
+                                authorizeFor(ref, Write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
                                     emit(
                                       Created,
@@ -214,41 +217,6 @@ final class ResourcesRoutes(
           )
         }
       }
-    }
-
-  private def fetch(
-      id: IdSegment,
-      ref: ProjectRef,
-      schemaOpt: Option[IdSegment]
-  )(implicit caller: Caller) =
-    fetchMap(id, ref, schemaOpt, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      schemaOpt: Option[IdSegment],
-      f: DataResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, resourcePermissions.read).apply {
-      fetchResource(
-        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
-        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
-        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
-      )
-    }
-
-  private def fetchSource(
-      id: IdSegment,
-      ref: ProjectRef,
-      schemaOpt: Option[IdSegment],
-      f: DataResource => Json
-  )(implicit caller: Caller) =
-    authorizeFor(ref, resourcePermissions.read).apply {
-      fetchResource(
-        rev => emit(resources.fetchAt(id, ref, schemaOpt, rev).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
-        tag => emit(resources.fetchBy(id, ref, schemaOpt, tag).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound)),
-        emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].map(f).rejectWhen(wrongJsonOrNotFound))
-      )
     }
 
   private val wrongJsonOrNotFound: PartialFunction[ResourceRejection, Boolean] = {

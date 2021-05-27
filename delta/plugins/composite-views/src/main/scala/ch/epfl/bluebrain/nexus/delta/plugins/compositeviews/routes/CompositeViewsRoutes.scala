@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes.{RestartProjections, RestartView}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
@@ -21,12 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
@@ -80,7 +80,7 @@ class CompositeViewsRoutes(
               (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
                 s"$prefixSegment/views/{org}/{project}"
               )) { source =>
-                authorizeFor(ref, permissions.write).apply {
+                authorizeFor(ref, Write).apply {
                   emit(
                     Created,
                     views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
@@ -92,7 +92,7 @@ class CompositeViewsRoutes(
                   (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                     concat(
                       put {
-                        authorizeFor(ref, permissions.write).apply {
+                        authorizeFor(ref, Write).apply {
                           (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a view with id segment
@@ -116,13 +116,13 @@ class CompositeViewsRoutes(
                       },
                       //Deprecate a view
                       (delete & parameter("rev".as[Long])) { rev =>
-                        authorizeFor(ref, permissions.write).apply {
+                        authorizeFor(ref, Write).apply {
                           emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                         }
                       },
                       // Fetch a view
-                      get {
-                        fetch(id, ref)
+                      (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                        emit(views.fetch(id, ref).rejectOn[ViewNotFound])
                       }
                     )
                   },
@@ -130,12 +130,12 @@ class CompositeViewsRoutes(
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
                       concat(
                         // Fetch tags for a view
-                        get {
-                          fetchMap(id, ref, resource => Tags(resource.value.tags))
+                        (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                          emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
                         },
                         // Tag a view
                         (post & parameter("rev".as[Long])) { rev =>
-                          authorizeFor(ref, permissions.write).apply {
+                          authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
@@ -148,9 +148,11 @@ class CompositeViewsRoutes(
                     }
                   },
                   // Fetch a view original source
-                  (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                      fetchSource(id, ref, _.value.source)
+                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                    authorizeFor(ref, Read).apply {
+                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                        emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                      }
                     }
                   },
                   // Manage composite view offsets
@@ -158,11 +160,11 @@ class CompositeViewsRoutes(
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
                       concat(
                         // Fetch all composite view offsets
-                        (get & authorizeFor(ref, permissions.read)) {
+                        (get & authorizeFor(ref, Read)) {
                           emit(views.fetch(id, ref).flatMap(fetchOffsets).rejectWhen(decodingFailedOrViewNotFound))
                         },
                         // Remove all composite view offsets (restart the view)
-                        (delete & authorizeFor(ref, permissions.write)) {
+                        (delete & authorizeFor(ref, Write)) {
                           emit(
                             views
                               .fetch(id, ref)
@@ -176,7 +178,7 @@ class CompositeViewsRoutes(
                   // Fetch composite view statistics
                   (get & pathPrefix("statistics") & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                      authorizeFor(ref, permissions.read).apply {
+                      authorizeFor(ref, Read).apply {
                         emit(views.fetch(id, ref).flatMap(viewStatistics))
                       }
                     }
@@ -188,11 +190,11 @@ class CompositeViewsRoutes(
                         operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/offset") {
                           concat(
                             // Fetch all composite view projection offsets
-                            (get & authorizeFor(ref, permissions.read)) {
+                            (get & authorizeFor(ref, Read)) {
                               emit(views.fetch(id, ref).flatMap(fetchOffsets))
                             },
                             // Remove all composite view projection offsets
-                            (delete & authorizeFor(ref, permissions.write)) {
+                            (delete & authorizeFor(ref, Write)) {
                               emit(
                                 views.fetch(id, ref).flatMap { v =>
                                   val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
@@ -206,7 +208,7 @@ class CompositeViewsRoutes(
                       // Fetch all views' projections statistics
                       (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
                         operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/_/statistics") {
-                          authorizeFor(ref, permissions.read).apply {
+                          authorizeFor(ref, Read).apply {
                             emit(views.fetch(id, ref).flatMap(viewStatistics))
                           }
                         }
@@ -216,11 +218,11 @@ class CompositeViewsRoutes(
                         operationName(s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/offset") {
                           concat(
                             // Fetch a composite view projection offset
-                            (get & authorizeFor(ref, permissions.read)) {
+                            (get & authorizeFor(ref, Read)) {
                               emit(views.fetchProjection(id, projectionId, ref).flatMap(fetchProjectionOffsets))
                             },
                             // Remove a composite view projection offset
-                            (delete & authorizeFor(ref, permissions.write)) {
+                            (delete & authorizeFor(ref, Write)) {
                               emit(
                                 views
                                   .fetchProjection(id, projectionId, ref)
@@ -239,7 +241,7 @@ class CompositeViewsRoutes(
                         operationName(
                           s"$prefixSegment/views/{org}/{project}/{id}/projections/{projectionId}/statistics"
                         ) {
-                          authorizeFor(ref, permissions.read).apply {
+                          authorizeFor(ref, Read).apply {
                             emit(views.fetchProjection(id, projectionId, ref).flatMap(projectionStatistics))
                           }
                         }
@@ -291,7 +293,7 @@ class CompositeViewsRoutes(
                       // Fetch all views' sources statistics
                       (get & pathPrefix("_") & pathPrefix("statistics") & pathEndOrSingleSlash) {
                         operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/_/statistics") {
-                          authorizeFor(ref, permissions.read).apply {
+                          authorizeFor(ref, Read).apply {
                             emit(views.fetch(id, ref).flatMap(viewStatistics))
                           }
                         }
@@ -299,7 +301,7 @@ class CompositeViewsRoutes(
                       // Fetch a views' sources statistics
                       (get & idSegment & pathPrefix("statistics") & pathEndOrSingleSlash) { projectionId =>
                         operationName(s"$prefixSegment/views/{org}/{project}/{id}/sources/{sourceId}/statistics") {
-                          authorizeFor(ref, permissions.read).apply {
+                          authorizeFor(ref, Read).apply {
                             emit(views.fetchSource(id, projectionId, ref).flatMap(sourceStatistics))
                           }
                         }
@@ -403,31 +405,6 @@ class CompositeViewsRoutes(
         fetchOffset(projection).map(offset => ProjectionOffset(sId, pId, offset))
       }
       .map[SearchResults[ProjectionOffset]](list => SearchResults(list.size.toLong, list.sorted))
-
-  private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
-    fetchMap(id, ref, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: ViewResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
-        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
-        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      )
-    }
-
-  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
-        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
-        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      )
-    }
 
   private val decodingFailedOrViewNotFound: PartialFunction[CompositeViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true

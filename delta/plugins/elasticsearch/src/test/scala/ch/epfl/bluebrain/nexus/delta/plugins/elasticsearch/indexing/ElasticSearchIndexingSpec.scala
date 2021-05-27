@@ -272,7 +272,7 @@ class ElasticSearchIndexingSpec
 
     if (view.rev > 1L) {
       val previous =
-        views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted.asInstanceOf[IndexingViewResource]
+        views.fetch(IdSegmentRef(view.id, view.rev - 1), view.value.project).accepted.asInstanceOf[IndexingViewResource]
       eventually {
         val index = IndexLabel.unsafe(ElasticSearchViews.index(previous, externalCfg))
         esClient.existsIndex(index).accepted shouldEqual false

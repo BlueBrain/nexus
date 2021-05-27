@@ -449,7 +449,7 @@ class ElasticSearchViewsSpec
         views.create(id, projectRef, source).accepted
         val updatedSource = json"""{"@type": "ElasticSearchView", "resourceTag": "mytag", "mapping": $mapping}"""
         views.update(id, projectRef, 1L, updatedSource).accepted
-        views.fetchAt(id, projectRef, 1L).accepted shouldEqual resourceFor(
+        views.fetch(IdSegmentRef(id, 1), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
             resourceSchemas = Set.empty,
@@ -473,7 +473,7 @@ class ElasticSearchViewsSpec
         val updatedSource = json"""{"@type": "ElasticSearchView", "resourceTag": "mytag", "mapping": $mapping}"""
         views.update(id, projectRef, 1L, updatedSource).accepted
         views.tag(id, projectRef, tag, 1L, 2L).accepted
-        views.fetchBy(id, projectRef, tag).accepted shouldEqual resourceFor(
+        views.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
             resourceSchemas = Set.empty,
@@ -500,14 +500,14 @@ class ElasticSearchViewsSpec
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted
-        views.fetchAt(id, projectRef, 2L).rejectedWith[RevisionNotFound]
+        views.fetch(IdSegmentRef(id, 2), projectRef).rejectedWith[RevisionNotFound]
       }
       "the tag does not exist" in {
         val tag    = TagLabel.unsafe("mytag")
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted
-        views.fetchBy(id, projectRef, tag).rejectedWith[TagNotFound]
+        views.fetch(IdSegmentRef(id, tag), projectRef).rejectedWith[TagNotFound]
       }
     }
 

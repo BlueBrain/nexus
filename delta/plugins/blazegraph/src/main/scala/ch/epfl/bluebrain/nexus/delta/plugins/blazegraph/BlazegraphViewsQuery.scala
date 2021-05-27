@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
@@ -76,7 +76,7 @@ trait BlazegraphViewsQuery {
 }
 
 object BlazegraphViewsQuery {
-  private[blazegraph] type FetchView    = (IdSegment, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
+  private[blazegraph] type FetchView    = (IdSegmentRef, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
   private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
   final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: SparqlQueryClient)(implicit

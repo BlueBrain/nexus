@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType.{AggregateBlazegraphView => AggregateBlazegraphViewType, IndexingBlazegraphView => IndexingBlazegraphViewType}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -200,72 +201,50 @@ final class BlazegraphViews(
   /**
     * Fetch the latest revision of a view.
     *
-    * @param id       the view id
-    * @param project  the project to which the view belongs
+    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
+    * @param project the project to which the view belongs
     */
   def fetch(
-      id: IdSegment,
+      id: IdSegmentRef,
       project: ProjectRef
   ): IO[BlazegraphViewRejection, ViewResource] =
-    fetch(id, project, None).named("fetchBlazegraphView", moduleType)
+    id.asTag
+      .fold(
+        for {
+          p     <- projects.fetchProject(project)
+          iri   <- expandIri(id.value, p)
+          state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
+          res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
+        } yield res
+      )(fetchBy(_, project))
+      .named("fetchBlazegraphView", moduleType)
 
   /**
     * Retrieves a current [[IndexingBlazegraphView]] resource.
     *
-    * @param id      the view identifier
+    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
     * @param project the view parent project
     */
   def fetchIndexingView(
-      id: IdSegment,
+      id: IdSegmentRef,
       project: ProjectRef
   ): IO[BlazegraphViewRejection, IndexingViewResource] =
-    fetch(id, project, None)
-      .flatMap { res =>
-        res.value match {
-          case v: IndexingBlazegraphView  =>
-            IO.pure(res.as(v))
-          case _: AggregateBlazegraphView =>
-            IO.raiseError(
-              DifferentBlazegraphViewType(
-                res.id,
-                BlazegraphViewType.AggregateBlazegraphView,
-                BlazegraphViewType.IndexingBlazegraphView
-              )
-            )
-        }
+    fetch(id, project).flatMap { res =>
+      res.value match {
+        case v: IndexingBlazegraphView  =>
+          IO.pure(res.as(v))
+        case _: AggregateBlazegraphView =>
+          IO.raiseError(DifferentBlazegraphViewType(res.id, AggregateBlazegraphViewType, IndexingBlazegraphViewType))
       }
-      .named("fetchIndexingBlazegraphView", moduleType)
+    }
 
-  /**
-    * Fetch the view at a specific revision.
-    *
-    * @param id       the view id
-    * @param project  the project to which the view belongs
-    * @param rev      the revision to fetch
-    */
-  def fetchAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  ): IO[BlazegraphViewRejection, ViewResource] =
-    fetch(id, project, Some(rev)).named("fetchBlazegraphViewAt", moduleType)
-
-  /**
-    * Fetch view by tag.
-    *
-    * @param id       the view id
-    * @param project  the project to which the view belongs
-    * @param tag      the tag to fetch
-    */
-  def fetchBy(id: IdSegment, project: ProjectRef, tag: TagLabel): IO[BlazegraphViewRejection, ViewResource] =
-    fetch(id, project, None)
-      .flatMap { resource =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+  private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[BlazegraphViewRejection, ViewResource] =
+    fetch(id.toLatest, project).flatMap { view =>
+      view.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
-      .named("fetchBlazegraphViewBy", moduleType)
+    }
 
   /**
     * List views.
@@ -333,17 +312,6 @@ final class BlazegraphViews(
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  private def fetch(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Option[Long]
-  ): IO[BlazegraphViewRejection, ViewResource] = for {
-    p     <- projects.fetchProject(project)
-    iri   <- expandIri(id, p)
-    state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
-    res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
-  } yield res
-
   private def currentState(project: ProjectRef, iri: Iri): IO[BlazegraphViewRejection, BlazegraphViewState] =
     agg.state(identifier(project, iri))
 
@@ -410,12 +378,7 @@ object BlazegraphViews {
     * Create a reference exchange from a [[BlazegraphViews]] instance
     */
   def referenceExchange(views: BlazegraphViews): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
-      ref match {
-        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
-        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
-        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
-      }
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
   }
 

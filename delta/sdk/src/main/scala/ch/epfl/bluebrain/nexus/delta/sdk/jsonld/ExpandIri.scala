@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef, ResourceRef}
 import monix.bio.IO
 
 final class ExpandIri[R](val onError: String => R) extends AnyVal {
@@ -13,27 +13,24 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
     * @param project the project
     */
   def apply(segment: IdSegment, project: Project): IO[R, Iri] =
-    IO.fromOption(
-      segment.toIri(project.apiMappings, project.base),
-      onError(segment.asString)
-    )
+    apply(IdSegmentRef(segment), project).map(_.iri)
 
   /**
     * Expand the given segment to a ResourceRef using the provided project if necessary and applying the revision
     * to get a resource reference
-    * @param segment the to translate to an Iri
+    *
+    * @param segment the segment to translate to an Iri with its optional rev/tag
     * @param project the project
-    * @param the version of the resource ref
     */
-  def apply(segment: IdSegment, project: Project, version: Option[Either[Long, TagLabel]]): IO[R, ResourceRef] =
+  def apply(segment: IdSegmentRef, project: Project): IO[R, ResourceRef] =
     IO.fromOption(
-      segment.toIri(project.apiMappings, project.base).map { iri =>
-        version match {
-          case None             => ResourceRef.Latest(iri)
-          case Some(Left(rev))  => ResourceRef.Revision(iri, rev)
-          case Some(Right(tag)) => ResourceRef.Tag(iri, tag)
+      segment.value.toIri(project.apiMappings, project.base).map { iri =>
+        segment match {
+          case IdSegmentRef.Latest(_)        => ResourceRef.Latest(iri)
+          case IdSegmentRef.Revision(_, rev) => ResourceRef.Revision(iri, rev)
+          case IdSegmentRef.Tag(_, tag)      => ResourceRef.Tag(iri, tag)
         }
       },
-      onError(segment.asString)
+      onError(segment.value.asString)
     )
 }

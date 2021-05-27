@@ -117,54 +117,26 @@ trait Resources {
   /**
     * Fetches a resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param id         the identifier that will be expanded to the Iri of the resource with its optional rev/tag
     * @param projectRef the project reference where the resource belongs
     * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
     *                   A None value uses the currently available resource schema reference.
     */
   def fetch(
-      id: IdSegment,
+      id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
   ): IO[ResourceFetchRejection, DataResource]
 
-  /**
-    * Fetches a resource at a specific revision.
-    *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param rev       the resources revision
-    * @return the resource as a resource at the specified revision
-    */
-  def fetchAt(
-      id: IdSegment,
+  protected def fetchBy(
+      id: IdSegmentRef.Tag,
       projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment],
-      rev: Long
-  ): IO[ResourceFetchRejection, DataResource]
-
-  /**
-    * Fetches a resource by tag.
-    *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param tag       the tag revision
-    * @return the resource as a resource at the specified revision
-    */
-  def fetchBy(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment],
-      tag: TagLabel
+      schemaOpt: Option[IdSegment]
   ): IO[ResourceFetchRejection, DataResource] =
-    fetch(id, projectRef, schemaOpt).flatMap { resource =>
-      resource.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, schemaOpt, rev).mapError(_ => TagNotFound(tag))
-        case None      => IO.raiseError(TagNotFound(tag))
+    fetch(id.toLatest, projectRef, schemaOpt).flatMap { resource =>
+      resource.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), projectRef, schemaOpt).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
 
@@ -175,16 +147,11 @@ trait Resources {
     * @param resourceRef the resource identifier of the schema
     * @param projectRef  the project reference where the schema belongs
     */
-  def fetch[R](resourceRef: ResourceRef, projectRef: ProjectRef)(implicit
-      rejectionMapper: Mapper[ResourceFetchRejection, R]
-  ): IO[R, DataResource] = {
-    val dataResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(iri, projectRef, None)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, None, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, None, tag)
-    }
-    dataResourceF.mapError(rejectionMapper.to)
-  }
+  def fetch[R](
+      resourceRef: ResourceRef,
+      projectRef: ProjectRef
+  )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[R, DataResource] =
+    fetch(resourceRef.toIdSegmentRef, projectRef, None).mapError(rejectionMapper.to)
 
   /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events

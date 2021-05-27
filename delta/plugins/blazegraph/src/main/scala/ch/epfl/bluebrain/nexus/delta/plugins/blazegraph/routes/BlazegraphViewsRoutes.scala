@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes.RestartView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -84,7 +84,7 @@ class BlazegraphViewsRoutes(
               concat(
                 (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
                   operationName(s"$prefixSegment/views/{org}/{project}") {
-                    authorizeFor(ref, permissions.write).apply {
+                    authorizeFor(ref, Write).apply {
                       emit(
                         Created,
                         views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
@@ -97,7 +97,7 @@ class BlazegraphViewsRoutes(
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                       concat(
                         put {
-                          authorizeFor(ref, permissions.write).apply {
+                          authorizeFor(ref, Write).apply {
                             (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
@@ -121,13 +121,13 @@ class BlazegraphViewsRoutes(
                         },
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
-                          authorizeFor(ref, permissions.write).apply {
+                          authorizeFor(ref, Write).apply {
                             emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                           }
                         },
                         // Fetch a view
-                        get {
-                          fetch(id, ref)
+                        (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                          emit(views.fetch(id, ref).rejectOn[ViewNotFound])
                         }
                       )
                     },
@@ -171,7 +171,7 @@ class BlazegraphViewsRoutes(
                             )
                           },
                           // Remove an blazegraph view offset (restart the view)
-                          (delete & authorizeFor(ref, permissions.write)) {
+                          (delete & authorizeFor(ref, Write)) {
                             emit(
                               views
                                 .fetchIndexingView(id, ref)
@@ -187,12 +187,12 @@ class BlazegraphViewsRoutes(
                       operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch tags for a view
-                          get {
-                            fetchMap(id, ref, resource => Tags(resource.value.tags))
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
                           },
                           // Tag a view
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
@@ -205,9 +205,11 @@ class BlazegraphViewsRoutes(
                       }
                     },
                     // Fetch a view original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                        fetchSource(id, ref, _.value.source)
+                    (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                      authorizeFor(ref, Read).apply {
+                        operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                          emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                        }
                       }
                     },
                     //Incoming/outgoing links for views
@@ -244,7 +246,7 @@ class BlazegraphViewsRoutes(
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
-        authorizeFor(ref, resources.read).apply {
+        authorizeFor(ref, Read).apply {
           emit(viewsQuery.incoming(id, ref, pagination))
         }
       },
@@ -254,36 +256,11 @@ class BlazegraphViewsRoutes(
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[SparqlLink]] =
           searchResultsJsonLdEncoder(ContextValue(Vocabulary.contexts.metadata), pagination, uri)
 
-        authorizeFor(ref, resources.read).apply {
+        authorizeFor(ref, Read).apply {
           emit(viewsQuery.outgoing(id, ref, pagination, includeExternal))
         }
       }
     )
-
-  private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
-    fetchMap(id, ref, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: ViewResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
-        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
-        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      )
-    }
-
-  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ViewResource => Json)(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(views.fetchAt(id, ref, rev).map(f).rejectOn[ViewNotFound]),
-        tag => emit(views.fetchBy(id, ref, tag).map(f).rejectOn[ViewNotFound]),
-        emit(views.fetch(id, ref).map(f).rejectOn[ViewNotFound])
-      )
-    }
 
   private val decodingFailedOrViewNotFound: PartialFunction[BlazegraphViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true

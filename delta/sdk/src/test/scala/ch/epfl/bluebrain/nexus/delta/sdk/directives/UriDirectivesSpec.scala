@@ -86,6 +86,13 @@ class UriDirectivesSpec
           case IriSegment(iri)       => complete(s"iri='$iri'")
           case StringSegment(string) => complete(s"string='$string'")
         },
+        (pathPrefix("idref") & idSegment) { id =>
+          (idSegmentRef(id) & pathEndOrSingleSlash) {
+            case IdSegmentRef.Latest(value)        => complete(s"latest=${value.asString}")
+            case IdSegmentRef.Revision(value, rev) => complete(s"rev=${value.asString},$rev")
+            case IdSegmentRef.Tag(value, tag)      => complete(s"tag=${value.asString},$tag")
+          }
+        },
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
         },
@@ -177,6 +184,20 @@ class UriDirectivesSpec
     "return a StringSegment" in {
       Get("/id/nxv:some") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "string='nxv:some'"
+      }
+    }
+
+    "return an IdSegmentRef" in {
+      val iri     = iri"http://example.com/a/b"
+      val encoded = UrlUtils.encode(iri.toString)
+      Get(s"/idref/$encoded?rev=1") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"rev=$iri,1"
+      }
+      Get(s"/idref/$encoded?tag=mytag") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"tag=$iri,mytag"
+      }
+      Get(s"/idref/$encoded") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual s"latest=$iri"
       }
     }
 

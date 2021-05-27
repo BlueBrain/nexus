@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
@@ -555,29 +555,29 @@ class StoragesSpec
       }
 
       "succeed by tag" in {
-        storages.fetchBy(rdId, projectRef, tag).accepted shouldEqual resourceRev1
+        storages.fetch(IdSegmentRef(rdId, tag), projectRef).accepted shouldEqual resourceRev1
       }
 
       "succeed by rev" in {
-        storages.fetchAt(rdId, projectRef, 2).accepted shouldEqual resourceRev2
-        storages.fetchAt(rdId, projectRef, 1).accepted shouldEqual resourceRev1
+        storages.fetch(IdSegmentRef(rdId, 2), projectRef).accepted shouldEqual resourceRev2
+        storages.fetch(IdSegmentRef(rdId, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        storages.fetchBy(rdId, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        storages.fetch(IdSegmentRef(rdId, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        storages.fetchAt(rdId, projectRef, 5).rejected shouldEqual
+        storages.fetch(IdSegmentRef(rdId, 5), projectRef).rejected shouldEqual
           RevisionNotFound(provided = 5, current = 2)
       }
 
       "fail fetching if storage does not exist" in {
         val notFound = nxv + "notFound"
         storages.fetch(notFound, projectRef).rejectedWith[StorageNotFound]
-        storages.fetchBy(notFound, projectRef, tag).rejectedWith[StorageNotFound]
-        storages.fetchAt(notFound, projectRef, 2L).rejectedWith[StorageNotFound]
+        storages.fetch(IdSegmentRef(notFound, tag), projectRef).rejectedWith[StorageNotFound]
+        storages.fetch(IdSegmentRef(notFound, 2), projectRef).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {

@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -237,65 +236,41 @@ final class Storages private (
       resourceRef: ResourceRef,
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
-    resourceRef match {
-      case Latest(iri)           => fetch(iri, project).mapError(rejectionMapper.to)
-      case Revision(_, iri, rev) => fetchAt(iri, project, rev).mapError(rejectionMapper.to)
-      case Tag(_, iri, tag)      => fetchBy(iri, project, tag).mapError(rejectionMapper.to)
-    }
+    fetch(resourceRef.toIdSegmentRef, project).mapError(rejectionMapper.to)
 
   /**
     * Fetch the last version of a storage
     *
-    * @param id         the storage identifier to expand as the id of the storage
+    * @param id         the identifier that will be expanded to the Iri of the storage with its optional rev/tag
     * @param project the project where the storage belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
-    fetch(id, project, None).named("fetchStorage", moduleType)
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
+    id.asTag
+      .fold(
+        for {
+          p     <- projects.fetchProject(project)
+          iri   <- expandIri(id.value, p)
+          state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
+          res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), StorageNotFound(iri, project))
+        } yield res
+      )(fetchBy(_, project))
+      .named("fetchStorage", moduleType)
 
-  /**
-    * Fetches the storage at a given revision
-    *
-    * @param id      the storage identifier to expand as the id of the storage
-    * @param project the project where the storage belongs
-    * @param rev     the current revision of the storage
-    */
-  def fetchAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  ): IO[StorageFetchRejection, StorageResource] =
-    fetch(id, project, Some(rev)).named("fetchStorageAt", moduleType)
-
-  /**
-    * Fetches a storage by tag.
-    *
-    * @param id        the storage identifier to expand as the id of the storage
-    * @param project   the project where the storage belongs
-    * @param tag       the tag revision
-    */
-  def fetchBy(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: TagLabel
-  ): IO[StorageFetchRejection, StorageResource] =
-    fetch(id, project, None)
-      .flatMap { resource =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+  private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
+    fetch(id.toLatest, project).flatMap { storage =>
+      storage.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
-      .named("fetchStorageByTag", moduleType)
+    }
 
   private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
-    cache
-      .get(project)
-      .map { resources =>
-        resources
-          .filter(res => res.value.project == project && res.value.default && !res.deprecated)
-          .toList
-          .sorted(updatedByDesc)
-      }
+    cache.get(project).map { resources =>
+      resources
+        .filter(res => res.value.project == project && res.value.default && !res.deprecated)
+        .toList
+        .sorted(updatedByDesc)
+    }
 
   /**
     * Fetches the default storage for a project.
@@ -405,18 +380,6 @@ final class Storages private (
 
   private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
     io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
-
-  private def fetch(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Option[Long]
-  ): IO[StorageFetchRejection, StorageResource] =
-    for {
-      p     <- projects.fetchProject(project)
-      iri   <- expandIri(id, p)
-      state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
-      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), StorageNotFound(iri, project))
-    } yield res
 
   private def eval(cmd: StorageCommand, project: Project): IO[StorageRejection, StorageResource] =
     for {

@@ -42,9 +42,7 @@ final class ResolverResolution[R](
     * @param ref        the resource reference
     * @param projectRef the project reference
     */
-  def resolve(ref: ResourceRef, projectRef: ProjectRef)(implicit
-      caller: Caller
-  ): IO[ResourceResolutionReport, R] =
+  def resolve(ref: ResourceRef, projectRef: ProjectRef)(implicit caller: Caller): IO[ResourceResolutionReport, R] =
     resolveReport(ref, projectRef).flatMap { case (report, resource) =>
       IO.fromOption(resource, report)
     }
