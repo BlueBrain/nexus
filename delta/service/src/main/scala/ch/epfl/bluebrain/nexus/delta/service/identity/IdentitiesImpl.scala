@@ -136,7 +136,6 @@ object IdentitiesImpl {
     ShardedAggregate.transientSharded(
       definition,
       config.aggregate.processor
-      // TODO: configure the number of shards
     )
   }
 
