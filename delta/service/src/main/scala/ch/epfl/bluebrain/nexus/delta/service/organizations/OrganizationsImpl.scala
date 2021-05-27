@@ -178,7 +178,6 @@ object OrganizationsImpl {
     ShardedAggregate.persistentSharded(
       definition = definition,
       config = config.aggregate.processor
-      // TODO: configure the number of shards
     )
   }
 

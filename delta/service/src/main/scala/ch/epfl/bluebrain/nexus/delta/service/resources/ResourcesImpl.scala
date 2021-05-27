@@ -230,7 +230,6 @@ object ResourcesImpl {
     ShardedAggregate.persistentSharded(
       definition = definition,
       config = config.processor
-      // TODO: configure the number of shards
     )
   }
 
