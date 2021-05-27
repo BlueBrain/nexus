@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 
 trait BlazegraphDocker extends DockerKitWithFactory {
 
-  val blazegraphContainer: DockerContainer = DockerContainer("bluebrain/blazegraph-nexus:2.1.5")
+  val blazegraphContainer: DockerContainer = DockerContainer("bogdanromanx/blazegraph:2.1.6-RC")
     .withPorts(DefaultPort -> Some(DefaultPort))
     .withReadyChecker(
       DockerReadyChecker.HttpResponseCode(DefaultPort).looped(30, 1.second)

@@ -119,7 +119,7 @@ class BlazegraphClientSpec
   "A Blazegraph Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.5")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.6-SNAPSHOT")
     }
 
     "verify a namespace does not exist" in {

@@ -17,7 +17,7 @@ object PostgresDocker extends ContainerDef {
 
   override def config: PostgresDocker.Config =
     ContainerConfig(
-      image = "library/postgres:12.2",
+      image = "library/postgres:12.7",
       ports = Seq(primaryPort),
       env = Map("POSTGRES_PASSWORD" -> password),
       reuse = ReuseEnabled,
