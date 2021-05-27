@@ -206,7 +206,6 @@ object Archives {
         stopStrategy = cfg.aggregate.stopStrategy.transientStrategy
       ),
       config = cfg.aggregate.processor
-      // TODO: configure the number of shards
     )
     aggregate.map { agg =>
       new Archives(agg, projects, archiveDownload, sourceDecoder, cfg)

@@ -152,7 +152,6 @@ object RealmsImpl {
     ShardedAggregate.persistentSharded(
       definition = definition,
       config = realmsConfig.aggregate.processor
-      // TODO: configure the number of shards
     )
   }
 

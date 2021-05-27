@@ -110,7 +110,6 @@ object PermissionsImpl {
       .persistentSharded(
         definition = definition,
         config = aggregateConfig.processor
-        // TODO: configure the number of shards
       )
   }
 

@@ -897,11 +897,6 @@ lazy val assertJavaVersion =
 
 lazy val shared = Seq(
   organization      := "ch.epfl.bluebrain.nexus",
-  resolvers        ++= Seq(
-    Resolver.bintrayRepo("bbp", "nexus-releases"),
-    Resolver.bintrayRepo("bbp", "nexus-snapshots"),
-    Resolver.bintrayRepo("streamz", "maven")
-  ),
   // TODO: remove when https://github.com/djspiewak/sbt-github-packages/issues/28 is fixed
   githubTokenSource := TokenSource.Or(
     TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
