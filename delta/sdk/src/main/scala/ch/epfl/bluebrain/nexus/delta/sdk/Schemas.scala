@@ -271,12 +271,13 @@ object Schemas {
     }
 
     def validate(id: Iri, graph: Graph): IO[SchemaRejection, Unit] =
-      IO.unless(MigrationState.isSchemaValidationDisabled) {
-        for {
-          report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
-          result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
-        } yield result
-      }
+      IO.raiseWhen(id.startsWith(schemas.base))(ReservedSchemaId(id)) >>
+        IO.unless(MigrationState.isSchemaValidationDisabled) {
+          for {
+            report <- ShaclEngine(graph, reportDetails = true).mapError(SchemaShaclEngineRejection(id, _))
+            result <- IO.when(!report.isValid())(IO.raiseError(InvalidSchema(id, report)))
+          } yield result
+        }
 
     def create(c: CreateSchema) =
       state match {
