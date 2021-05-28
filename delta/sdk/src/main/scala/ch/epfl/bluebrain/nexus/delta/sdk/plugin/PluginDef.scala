@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.plugin
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import com.typesafe.config.{ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
+import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import izumi.distage.model.Locator
 import izumi.distage.model.definition.ModuleDef
 import monix.bio.Task
@@ -27,17 +27,18 @@ trait PluginDef {
   def configFileName: String = s"${info.name}.conf"
 
   /**
+    * @return true if the plugin is enabled, false otherwise
+    */
+  def enabled: Boolean = pluginConfigObject.getBoolean("enabled")
+
+  /**
     * The priority of this plugin.
     * This value will decide the order in which this plugin is executed compared to the rest of the plugins.
     * It affects Routes ordering and classpath ordering.
     *
     * The value is retrieved from the plugin configuration inside the priority field
     */
-  def priority: Int =
-    ConfigFactory
-      .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
-      .getConfig(s"plugins.${info.name.value}")
-      .getInt("priority")
+  def priority: Int = pluginConfigObject.getInt("priority")
 
   /**
     * Initialize the plugin.
@@ -47,6 +48,11 @@ trait PluginDef {
     * @return [[Plugin]] instance.
     */
   def initialize(locator: Locator): Task[Plugin]
+
+  private lazy val pluginConfigObject: Config =
+    ConfigFactory
+      .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
+      .getConfig(s"plugins.${info.name.value}")
 
 }
 
