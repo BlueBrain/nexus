@@ -23,8 +23,6 @@ object EventLogUtils {
 
   implicit private val logger: Logger = Logger("EventLog")
 
-  implicit private val offsetOrdering: Ordering[Offset] = OffsetUtils.offsetOrdering
-
   /**
     * Attempts to convert a generic event envelope to a type one.
     * @param envelope the generic event envelope
@@ -129,7 +127,10 @@ object EventLogUtils {
     eventLog.flavour match {
       case Postgres  => eventLog.eventsByTag(tag, offset)
       case Cassandra =>
-        val maxOffset = List(offset, eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli))).max
+        val maxOffset = OffsetUtils.offsetOrdering.max(
+          offset,
+          OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
+        )
         eventLog.eventsByTag(tag, maxOffset)
     }
 }
