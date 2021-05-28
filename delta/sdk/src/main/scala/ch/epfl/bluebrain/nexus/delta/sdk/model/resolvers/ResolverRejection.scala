@@ -104,7 +104,7 @@ object ResolverRejection {
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
-      extends ResolverRejection(s"Resolver ${id.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
+      extends ResolverRejection(s"Resolver${id.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
 
   /**
     * Signals an error when there is another resolver with the provided priority already existing
