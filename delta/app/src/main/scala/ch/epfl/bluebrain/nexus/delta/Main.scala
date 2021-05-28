@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
@@ -114,10 +115,13 @@ object Main extends BIOApp {
 
   private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
+    import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
     cors(locator.get[CorsSettings]) {
       handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
-          concat(locator.get[Vector[Route]]: _*)
+          uriPrefix(locator.get[BaseUri].base) {
+            concat(locator.get[Vector[Route]]: _*)
+          }
         }
       }
     }
