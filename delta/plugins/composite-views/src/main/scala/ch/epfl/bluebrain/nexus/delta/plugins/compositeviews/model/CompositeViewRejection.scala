@@ -145,7 +145,7 @@ object CompositeViewRejection {
     */
   final case class DuplicateIds(ids: Seq[Iri])
       extends CompositeViewRejection(
-        s"The ids of projection or source contain a duplicate. Ids provided: ${ids.mkString(",")}"
+        s"The ids of projection or source contain a duplicate. Ids provided: ${ids.mkString("'", "', '", "'")}"
       )
 
   /**
@@ -272,7 +272,7 @@ object CompositeViewRejection {
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
       extends CompositeViewRejection(
-        s"The provided composite view JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+        s"The provided composite view JSON document${id.fold("")(id => s" with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
 
   /**

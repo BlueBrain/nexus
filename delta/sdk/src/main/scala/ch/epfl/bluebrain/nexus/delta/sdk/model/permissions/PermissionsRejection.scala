@@ -33,7 +33,7 @@ object PermissionsRejection {
     */
   final case class CannotSubtractFromMinimumCollection(permissions: Set[Permission])
       extends PermissionsRejection(
-        s"Cannot subtract permissions from the minimum collection of permissions: '${permissions.mkString("\"", ", ", "\"")}'"
+        s"Cannot subtract permissions from the minimum collection of permissions: ${permissions.mkString("'", "', '", "'")}"
       )
 
   /**
@@ -47,7 +47,7 @@ object PermissionsRejection {
     */
   final case class CannotSubtractUndefinedPermissions(permissions: Set[Permission])
       extends PermissionsRejection(
-        s"Cannot subtract permissions not present in the collection: '${permissions.mkString("\"", ", ", "\"")}'."
+        s"Cannot subtract permissions not present in the collection: ${permissions.mkString("'", "', '", "'")}."
       )
 
   /**

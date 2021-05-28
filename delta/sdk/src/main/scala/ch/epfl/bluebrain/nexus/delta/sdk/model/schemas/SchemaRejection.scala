@@ -118,8 +118,8 @@ object SchemaRejection {
       resourceImports: Map[ResourceRef, ResourceResolutionReport],
       nonOntologyResources: Set[ResourceRef]
   ) extends SchemaRejection(
-        s"Failed to resolve imports '${(schemaImports.keySet ++ resourceImports.keySet ++ nonOntologyResources)
-          .mkString(", ")}' for schema '$id'."
+        s"Failed to resolve imports ${(schemaImports.keySet ++ resourceImports.keySet ++ nonOntologyResources)
+          .mkString("'", "', '", "'")} for schema '$id'."
       )
 
   /**
@@ -171,7 +171,7 @@ object SchemaRejection {
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
-      extends SchemaRejection(s"Schema ${idOpt.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
+      extends SchemaRejection(s"Schema${idOpt.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
 
   /**
     * Rejection returned when the returned state is the initial state after a Schemas.evaluation plus a Schemas.next
