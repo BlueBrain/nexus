@@ -190,7 +190,7 @@ object ElasticSearchViewRejection {
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
       extends ElasticSearchViewRejection(
-        s"The provided ElasticSearch view JSON document ${id.fold("")(id => s"with id '$id'")} cannot be interpreted as a JSON-LD document."
+        s"The provided ElasticSearch view JSON document${id.fold("")(id => s" with id '$id'")} cannot be interpreted as a JSON-LD document."
       )
 
   /**
