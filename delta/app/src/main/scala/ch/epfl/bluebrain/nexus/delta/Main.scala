@@ -63,13 +63,25 @@ object Main extends BIOApp {
       config: PluginLoaderConfig
   ): IO[ExitCode, (AppConfig, Config, ClassLoader, List[PluginDef])] =
     for {
-      (classLoader, pluginsDef) <- PluginsLoader(config).load.handleError
-      _                         <- UIO.delay(log.info(s"Plugins discovered: ${pluginsDef.map(_.info).mkString(", ")}"))
-      _                         <- validatePriority(pluginsDef)
-      _                         <- validateDifferentName(pluginsDef)
-      configNames                = pluginsDef.map(_.configFileName)
+      (classLoader, pluginDefs) <- PluginsLoader(config).load.handleError
+      _                         <- logPlugins(pluginDefs)
+      enabledDefs                = pluginDefs.filter(_.enabled)
+      _                         <- validatePriority(enabledDefs)
+      _                         <- validateDifferentName(enabledDefs)
+      configNames                = enabledDefs.map(_.configFileName)
       (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
-    } yield (appConfig, mergedConfig, classLoader, pluginsDef)
+    } yield (appConfig, mergedConfig, classLoader, enabledDefs)
+
+  private def logPlugins(pluginDefs: List[PluginDef]): UIO[Unit] = {
+    def pluginLogEntry(pdef: PluginDef): String =
+      s"${pdef.info.name} - version: '${pdef.info.version}', enabled: '${pdef.enabled}'"
+
+    if (pluginDefs.isEmpty) UIO.delay(log.info("No plugins discovered."))
+    else
+      UIO.delay {
+        log.info(s"Discovered plugins: ${pluginDefs.map(p => pluginLogEntry(p)).mkString("\n- ", "\n- ", "")}")
+      }
+  }
 
   private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
     if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
