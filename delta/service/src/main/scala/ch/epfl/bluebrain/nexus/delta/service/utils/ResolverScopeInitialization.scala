@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{Reso
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Resolvers, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 

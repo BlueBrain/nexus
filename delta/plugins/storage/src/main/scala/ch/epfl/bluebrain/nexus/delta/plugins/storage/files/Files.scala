@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
@@ -419,9 +418,7 @@ final class Files(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
-    projects
-      .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+    eventLog.projectEvents(projects, projectRef, offset)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
@@ -434,9 +431,7 @@ final class Files(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
-    orgs
-      .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+    eventLog.orgEvents(orgs, organization, offset)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -505,8 +500,8 @@ final class Files(
     aggregate.state(identifier(project, iri))
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
-    EventLogUtils
-      .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
+    eventLog
+      .fetchStateAt(persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
       .mapError(RevisionNotFound(rev, _))
 
   private def identifier(project: ProjectRef, id: Iri): String =

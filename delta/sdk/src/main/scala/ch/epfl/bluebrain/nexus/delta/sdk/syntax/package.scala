@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.syntax.{OffsetSyntax, ProjectionSt
   * Aggregate syntax from rdf plus the current sdk syntax to avoid importing multiple syntax
   */
 package object syntax
-    extends JsonSyntax
+    extends EventLogSyntax
+    with JsonSyntax
     with IriSyntax
     with JsonLdEncoderSyntax
     with UriSyntax

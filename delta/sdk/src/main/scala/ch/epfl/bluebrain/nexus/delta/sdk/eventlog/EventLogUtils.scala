@@ -1,20 +1,29 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.actor.typed.ActorSystem
-import akka.persistence.query.{EventEnvelope, Offset}
-import ch.epfl.bluebrain.nexus.delta.kernel.Lens
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
+import akka.persistence.query.{EventEnvelope, Offset, TimeBasedUUID}
+import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 
+import java.time.Instant
 import scala.reflect.ClassTag
 
 object EventLogUtils {
 
   implicit private val logger: Logger = Logger("EventLog")
+
+  implicit private val offsetOrdering: Ordering[Offset] = OffsetUtils.offsetOrdering
 
   /**
     * Attempts to convert a generic event envelope to a type one.
@@ -78,5 +87,49 @@ object EventLogUtils {
     flavour match {
       case DatabaseFlavour.Postgres  => EventLog.postgresEventLog(toEnvelope[A])(as)
       case DatabaseFlavour.Cassandra => EventLog.cassandraEventLog(toEnvelope[A])(as)
+    }
+
+  /**
+    * Fetch events related to the given project
+    * @param projects a [[Projects]] instance
+    * @param eventLog a [[EventLog]] instance
+    * @param projectRef the project ref where the events belongs
+    * @param offset the requested offset
+    * @param rejectionMapper to fit the project rejection to one handled by the caller
+    */
+  def projectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    projects
+      .fetch(projectRef)
+      .bimap(
+        rejectionMapper.to,
+        p => events(eventLog, Projects.projectTag(projectRef), p.createdAt, offset)
+      )
+
+  /**
+    * Fetch events related to the given project
+    * @param orgs a [[Organizations]] instance
+    * @param eventLog a [[EventLog]] instance
+    * @param label the project ref where the events belongs
+    * @param offset the requested offset
+    * @param rejectionMapper to fit the project rejection to one handled by the caller
+    */
+  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, offset: Offset)(implicit
+      rejectionMapper: Mapper[OrganizationRejection, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    orgs
+      .fetch(label)
+      .bimap(
+        rejectionMapper.to,
+        o => events(eventLog, Organizations.orgTag(label), o.createdAt, offset)
+      )
+
+  private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
+    eventLog.flavour match {
+      case Postgres  => eventLog.eventsByTag(tag, offset)
+      case Cassandra =>
+        val maxOffset = List(offset, eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli))).max
+        eventLog.eventsByTag(tag, maxOffset)
     }
 }

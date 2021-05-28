@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
-import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
@@ -138,17 +138,13 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    projects
-      .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+    eventLog.projectEvents(projects, projectRef, offset)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    orgs
-      .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+    eventLog.orgEvents(orgs, organization, offset)
 
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)

@@ -89,10 +89,18 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[IndexingSource].named("composite-source").from {
     (
         cfg: CompositeViewsConfig,
+        projects: Projects,
         eventLog: EventLog[Envelope[Event]],
         exchanges: Set[EventExchange]
     ) =>
-      IndexingSource(eventLog, exchanges, cfg.sources.maxBatchSize, cfg.sources.maxTimeWindow, cfg.sources.retry)
+      IndexingSource(
+        projects,
+        eventLog,
+        exchanges,
+        cfg.sources.maxBatchSize,
+        cfg.sources.maxTimeWindow,
+        cfg.sources.retry
+      )
   }
 
   make[ProgressesCache].named("composite-progresses").from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing]) =>

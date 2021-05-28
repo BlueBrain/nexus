@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -368,9 +367,8 @@ final class CompositeViews private (
   def events(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] = projects
-    .fetchProject(projectRef)
-    .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
+    eventLog.projectEvents(projects, projectRef, offset)
 
   /**
     * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
@@ -382,13 +380,12 @@ final class CompositeViews private (
   def events(
       organization: Label,
       offset: Offset
-  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] = orgs
-    .fetchOrganization(organization)
-    .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
+    eventLog.orgEvents(orgs, organization, offset)
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
-    EventLogUtils
-      .fetchStateAt(eventLog, persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
+    eventLog
+      .fetchStateAt(persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
       .mapError(RevisionNotFound(rev, _))
 
   private def currentState(project: ProjectRef, iri: Iri): IO[CompositeViewRejection, CompositeViewState] =
