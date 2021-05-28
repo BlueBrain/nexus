@@ -60,7 +60,7 @@ object RealmRejection {
     * @param openIdConfig the already existing openIdConfig
     */
   final case class RealmOpenIdConfigAlreadyExists(label: Label, openIdConfig: Uri)
-      extends RealmRejection(s"Realm '$label' with openIdConfig '${openIdConfig.toString()}' already exists.")
+      extends RealmRejection(s"Realm '$label' with openIdConfig '$openIdConfig' already exists.")
 
   /**
     * Rejection returned when attempting to deprecate a realm that is already deprecated.
@@ -90,7 +90,7 @@ object RealmRejection {
     */
   final case class IllegalGrantTypeFormat(document: Uri, location: String)
       extends RealmRejection(
-        s"Failed to parse '$location' from '${document.toString()}' as a collection of supported grant types."
+        s"Failed to parse '$location' from '$document' as a collection of supported grant types."
       )
 
   /**
@@ -101,7 +101,7 @@ object RealmRejection {
     * @param location the location in the document
     */
   final case class IllegalIssuerFormat(document: Uri, location: String)
-      extends RealmRejection(s"Failed to parse '$location' from '${document.toString()}' as an issuer url.")
+      extends RealmRejection(s"Failed to parse '$location' from '$document' as an issuer url.")
 
   /**
     * Rejection returned when attempting to parse an openid configuration document, but the jwks uri is not properly
@@ -111,7 +111,7 @@ object RealmRejection {
     * @param location the location in the document
     */
   final case class IllegalJwksUriFormat(document: Uri, location: String)
-      extends RealmRejection(s"Failed to parse '$location' from '${document.toString()}' as a jwk url.")
+      extends RealmRejection(s"Failed to parse '$location' from '$document' as a jwk url.")
 
   /**
     * Rejection returned when attempting to parse a JWKS document, but it's not properly formatted.
@@ -119,7 +119,7 @@ object RealmRejection {
     * @param document the address of the document
     */
   final case class IllegalJwkFormat(document: Uri)
-      extends RealmRejection(s"Illegal format of the JWKs document '${document.toString()}'.")
+      extends RealmRejection(s"Illegal format of the JWKs document '$document'.")
 
   /**
     * Rejection returned when attempting to parse an openid configuration document, but the required endpoints were
@@ -129,7 +129,7 @@ object RealmRejection {
     * @param location the location in the document
     */
   final case class IllegalEndpointFormat(document: Uri, location: String)
-      extends RealmRejection(s"Failed to parse '$location' from '${document.toString()}' as a valid url.")
+      extends RealmRejection(s"Failed to parse '$location' from '$document' as a valid url.")
 
   /**
     * Rejection returned when attempting to fetch a JWKS document but the response is not a successful one.
@@ -137,7 +137,7 @@ object RealmRejection {
     * @param document the address of the document
     */
   final case class UnsuccessfulJwksResponse(document: Uri)
-      extends RealmRejection(s"Failed to retrieve the JWKs document '${document.toString()}'.")
+      extends RealmRejection(s"Failed to retrieve the JWKs document '$document'.")
 
   /**
     * Rejection returned when attempting to fetch an openid config document but the response is not a successful one.
@@ -145,7 +145,7 @@ object RealmRejection {
     * @param document the address of the document
     */
   final case class UnsuccessfulOpenIdConfigResponse(document: Uri)
-      extends RealmRejection(s"Failed to retrieve the openid config document '${document.toString()}'.")
+      extends RealmRejection(s"Failed to retrieve the openid config document '$document'.")
 
   /**
     * Rejection returned when attempting to parse a JWKS document, but no supported keys are found.
@@ -153,7 +153,7 @@ object RealmRejection {
     * @param document the address of the document
     */
   final case class NoValidKeysFound(document: Uri)
-      extends RealmRejection(s"Failed to find a valid RSA JWK key at '${document.toString()}'.")
+      extends RealmRejection(s"Failed to find a valid RSA JWK key at '$document'.")
 
   /**
     * Rejection returned when the returned state is the initial state after a Realm.evaluation plus a Realm.next

@@ -183,7 +183,7 @@ object ResourceRejection {
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
-      extends ResourceRejection(s"Resource ${idOpt.fold("")(id => s"'$id'")} has invalid JSON-LD payload.")
+      extends ResourceRejection(s"Resource${idOpt.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
 
   /**
     * Rejection returned when the returned state is the initial state after a Resources.evaluation plus a Resources.next
