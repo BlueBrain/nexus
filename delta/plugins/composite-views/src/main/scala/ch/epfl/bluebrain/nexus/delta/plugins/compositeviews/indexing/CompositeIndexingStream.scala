@@ -275,7 +275,12 @@ final class CompositeIndexingStream(
 
     strategy match {
       case ProgressStrategy.Continue    =>
-        IO.traverse(projectionIds(view))(pId => projections.progress(pId).map(_.as(pId))).map(collect)
+        IO.traverse(projectionIds(view))(pId =>
+          for {
+            progress <- projections.progress(pId)
+            _        <- cache.put(pId, progress)
+          } yield progress.as(pId)
+        ).map(collect)
       case ProgressStrategy.FullRestart =>
         IO.traverse(projectionIds(view))(pId => reset(pId)).map(collect)
       case PartialRestart(toRestart)    =>
