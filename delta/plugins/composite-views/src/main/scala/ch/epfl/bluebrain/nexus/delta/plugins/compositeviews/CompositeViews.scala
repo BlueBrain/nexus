@@ -228,7 +228,7 @@ final class CompositeViews private (
     * @param project the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
-    id.asTag.fold(fetchInner(id, project).map(_._2))(fetchBy(_, project)).named("fetchCompositeView", moduleType)
+    id.asTag.fold(fetchRevOrLatest(id, project).map(_._2))(fetchBy(_, project)).named("fetchCompositeView", moduleType)
 
   /**
     * Retrieves a current composite view resource and its selected projection.
@@ -243,7 +243,7 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewProjectionResource]       =
     for {
-      (p, view)     <- fetchInner(id, project)
+      (p, view)     <- fetchRevOrLatest(id, project)
       projectionIri <- expandIri(projectionId, p)
       projection    <- IO.fromOption(
                          view.value.projections.value.find(_.id == projectionIri),
@@ -264,7 +264,7 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewSourceResource]           =
     for {
-      (p, view) <- fetchInner(id, project)
+      (p, view) <- fetchRevOrLatest(id, project)
       sourceIri <- expandIri(sourceId, p)
       source    <- IO.fromOption(
                      view.value.sources.value.find(_.id == sourceIri),
@@ -370,7 +370,10 @@ final class CompositeViews private (
   private def currentState(project: ProjectRef, iri: Iri): IO[CompositeViewRejection, CompositeViewState] =
     aggregate.state(identifier(project, iri))
 
-  private def fetchInner(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, (Project, ViewResource)] =
+  private def fetchRevOrLatest(
+      id: IdSegmentRef,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, (Project, ViewResource)] =
     for {
       p     <- projects.fetchProject(project)
       iri   <- expandIri(id.value, p)
