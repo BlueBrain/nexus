@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
-import akka.persistence.query.{EventEnvelope, Offset, PersistenceQuery}
+import akka.persistence.query.{EventEnvelope, NoOffset, Offset, PersistenceQuery, TimeBasedUUID}
 import cats.effect.ExitCase
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import com.typesafe.scalalogging.Logger
 import fs2._
 import monix.bio.{Task, UIO}
@@ -12,6 +13,16 @@ import monix.bio.{Task, UIO}
   * A log of ordered events for uniquely identifiable entities and independent from the storage layer
   */
 trait EventLog[M] {
+
+  /**
+    * The flavour of the event log
+    */
+  def flavour: DatabaseFlavour
+
+  /**
+    * Default offset to fetch from the beginning
+    */
+  def firstOffset: Offset
 
   /**
     * [[akka.persistence.query.scaladsl.PersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
@@ -62,6 +73,8 @@ object EventLog {
   /**
     * Implementation of [[EventLog]] based on Akka Persistence.
     *
+    * @param flavour     the flavour of the event log
+    * @param firstOffset the default offset to fetch from the beginning
     * @param readJournal the underlying akka persistence journal
     * @param f the function to transform envelopes
     * @param as the actor system
@@ -69,6 +82,8 @@ object EventLog {
     * @tparam M      the event type
     */
   private class AkkaEventLog[RJ <: Journal, M](
+      val flavour: DatabaseFlavour,
+      val firstOffset: Offset,
       readJournal: RJ,
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing])
@@ -139,8 +154,16 @@ object EventLog {
     */
   def cassandraEventLog[M](
       f: EventEnvelope => UIO[Option[M]]
-  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
-    eventLog(f, CassandraReadJournal.Identifier)
+  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] = Task.delay {
+    val cassandraReadJournal =
+      PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
+    new AkkaEventLog(
+      DatabaseFlavour.Cassandra,
+      TimeBasedUUID(cassandraReadJournal.firstOffset),
+      cassandraReadJournal,
+      f
+    )
+  }
 
   /**
     * Create an event log relying on akka-persistence-jdbc
@@ -148,21 +171,13 @@ object EventLog {
     */
   def postgresEventLog[M](
       f: EventEnvelope => UIO[Option[M]]
-  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
-    eventLog(f, JdbcReadJournal.Identifier)
-
-  /**
-    * Create an event log using the provided journal identifier.
-    *
-    * @param f                 the transformation we want to apply to the [[EventEnvelope]]
-    * @param journalIdentifier the journal identifier
-    */
-  def eventLog[RJ <: Journal, M](
-      f: EventEnvelope => UIO[Option[M]],
-      journalIdentifier: String
-  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] =
-    Task.delay {
-      new AkkaEventLog(PersistenceQuery(as).readJournalFor[RJ](journalIdentifier), f)
-    }
+  )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] = Task.delay {
+    new AkkaEventLog(
+      DatabaseFlavour.Postgres,
+      NoOffset,
+      PersistenceQuery(as).readJournalFor[Journal](JdbcReadJournal.Identifier),
+      f
+    )
+  }
 
 }
