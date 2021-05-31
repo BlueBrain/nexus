@@ -495,7 +495,7 @@ trait ResourcesBehaviors {
 
       "succeed by tag" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
-          resources.fetchBy("nxv:myid", projectRef, schema, tag).accepted shouldEqual
+          resources.fetch(IdSegmentRef("nxv:myid", tag), projectRef, schema).accepted shouldEqual
             ResourceGen.resourceFor(
               expectedData,
               types = types,
@@ -509,7 +509,7 @@ trait ResourcesBehaviors {
 
       "succeed by rev" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
-          resources.fetchAt(myId, projectRef, schema, 1L).accepted shouldEqual
+          resources.fetch(IdSegmentRef(myId, 1), projectRef, schema).accepted shouldEqual
             ResourceGen.resourceFor(
               expectedData,
               types = types,
@@ -524,13 +524,13 @@ trait ResourcesBehaviors {
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
-          resources.fetchBy(myId, projectRef, schema, otherTag).rejected shouldEqual TagNotFound(otherTag)
+          resources.fetch(IdSegmentRef(myId, otherTag), projectRef, schema).rejected shouldEqual TagNotFound(otherTag)
         }
       }
 
       "reject if revision does not exist" in {
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
-          resources.fetchAt(myId, projectRef, schema, 5L).rejected shouldEqual
+          resources.fetch(IdSegmentRef(myId, 5), projectRef, schema).rejected shouldEqual
             RevisionNotFound(provided = 5L, current = 2L)
         }
       }
@@ -538,14 +538,14 @@ trait ResourcesBehaviors {
       "fail fetching if resource does not exist" in {
         val myId = nxv + "notFound"
         resources.fetch(myId, projectRef, None).rejectedWith[ResourceNotFound]
-        resources.fetchBy(myId, projectRef, None, tag).rejectedWith[ResourceNotFound]
-        resources.fetchAt(myId, projectRef, None, 2L).rejectedWith[ResourceNotFound]
+        resources.fetch(IdSegmentRef(myId, tag), projectRef, None).rejectedWith[ResourceNotFound]
+        resources.fetch(IdSegmentRef(myId, 2), projectRef, None).rejectedWith[ResourceNotFound]
       }
 
       "fail fetching if schema is not resource schema" in {
         resources.fetch(myId, projectRef, Some(schema1.id)).rejectedWith[ResourceNotFound]
-        resources.fetchBy(myId, projectRef, Some(schema1.id), tag).rejectedWith[ResourceNotFound]
-        resources.fetchAt(myId, projectRef, Some(schema1.id), 2L).rejectedWith[ResourceNotFound]
+        resources.fetch(IdSegmentRef(myId, tag), projectRef, Some(schema1.id)).rejectedWith[ResourceNotFound]
+        resources.fetch(IdSegmentRef(myId, 2), projectRef, Some(schema1.id)).rejectedWith[ResourceNotFound]
       }
 
       "reject if project does not exist" in {

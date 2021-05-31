@@ -662,29 +662,29 @@ class FilesSpec
       }
 
       "succeed by tag" in {
-        files.fetchBy(file1, projectRef, tag).accepted shouldEqual resourceRev1
+        files.fetch(IdSegmentRef(file1, tag), projectRef).accepted shouldEqual resourceRev1
       }
 
       "succeed by rev" in {
-        files.fetchAt(file1, projectRef, 5).accepted shouldEqual resourceRev5
-        files.fetchAt(file1, projectRef, 1).accepted shouldEqual resourceRev1
+        files.fetch(IdSegmentRef(file1, 5), projectRef).accepted shouldEqual resourceRev5
+        files.fetch(IdSegmentRef(file1, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        files.fetchBy(file1, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        files.fetch(IdSegmentRef(file1, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        files.fetchAt(file1, projectRef, 6).rejected shouldEqual
+        files.fetch(IdSegmentRef(file1, 6), projectRef).rejected shouldEqual
           RevisionNotFound(provided = 6, current = 5)
       }
 
       "fail if it doesn't exist" in {
         val notFound = nxv + "notFound"
         files.fetch(notFound, projectRef).rejectedWith[FileNotFound]
-        files.fetchBy(notFound, projectRef, tag).rejectedWith[FileNotFound]
-        files.fetchAt(notFound, projectRef, 2L).rejectedWith[FileNotFound]
+        files.fetch(IdSegmentRef(notFound, tag), projectRef).rejectedWith[FileNotFound]
+        files.fetch(IdSegmentRef(notFound, 2), projectRef).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
@@ -705,14 +705,14 @@ class FilesSpec
       }
 
       "succeed by tag" in {
-        val response = files.fetchContentBy(file1, projectRef, tag).accepted
+        val response = files.fetchContent(IdSegmentRef(file1, tag), projectRef).accepted
         consume(response.content) shouldEqual content
         response.filename shouldEqual "myfile.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
       "succeed by rev" in {
-        val response = files.fetchContentAt(file1, projectRef, 1).accepted
+        val response = files.fetchContent(IdSegmentRef(file1, 1), projectRef).accepted
         consume(response.content) shouldEqual content
         response.filename shouldEqual "myfile.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
@@ -720,19 +720,19 @@ class FilesSpec
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        files.fetchContentBy(file1, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        files.fetchContent(IdSegmentRef(file1, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        files.fetchContentAt(file1, projectRef, 6).rejected shouldEqual
+        files.fetchContent(IdSegmentRef(file1, 6), projectRef).rejected shouldEqual
           RevisionNotFound(provided = 6, current = 5)
       }
 
       "fail if it doesn't exist" in {
         val notFound = nxv + "notFound"
         files.fetchContent(notFound, projectRef).rejectedWith[FileNotFound]
-        files.fetchContentBy(notFound, projectRef, tag).rejectedWith[FileNotFound]
-        files.fetchContentAt(notFound, projectRef, 2L).rejectedWith[FileNotFound]
+        files.fetchContent(IdSegmentRef(notFound, tag), projectRef).rejectedWith[FileNotFound]
+        files.fetchContent(IdSegmentRef(notFound, 2), projectRef).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {

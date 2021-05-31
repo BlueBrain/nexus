@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
@@ -292,30 +292,30 @@ trait SchemasBehaviors {
       }
 
       "succeed by tag" in {
-        schemas.fetchBy(mySchema2, projectRef, tag).accepted shouldEqual
+        schemas.fetch(IdSegmentRef(mySchema2, tag), projectRef).accepted shouldEqual
           SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
       }
 
       "succeed by rev" in {
-        schemas.fetchAt(mySchema2, projectRef, 1L).accepted shouldEqual
+        schemas.fetch(IdSegmentRef(mySchema2, 1), projectRef).accepted shouldEqual
           SchemaGen.resourceFor(schema2, subject = subject, am = am, base = projBase)
       }
 
       "reject if tag does not exist" in {
         val otherTag = TagLabel.unsafe("other")
-        schemas.fetchBy(mySchema, projectRef, otherTag).rejected shouldEqual TagNotFound(otherTag)
+        schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 
       "reject if revision does not exist" in {
-        schemas.fetchAt(mySchema, projectRef, 5L).rejected shouldEqual
+        schemas.fetch(IdSegmentRef(mySchema, 5), projectRef).rejected shouldEqual
           RevisionNotFound(provided = 5L, current = 3L)
       }
 
       "fail fetching if schema does not exist" in {
         val mySchema = nxv + "notFound"
         schemas.fetch(mySchema, projectRef).rejectedWith[SchemaNotFound]
-        schemas.fetchBy(mySchema, projectRef, tag).rejectedWith[SchemaNotFound]
-        schemas.fetchAt(mySchema, projectRef, 2L).rejectedWith[SchemaNotFound]
+        schemas.fetch(IdSegmentRef(mySchema, tag), projectRef).rejectedWith[SchemaNotFound]
+        schemas.fetch(IdSegmentRef(mySchema, 2), projectRef).rejectedWith[SchemaNotFound]
       }
 
       "reject if project does not exist" in {

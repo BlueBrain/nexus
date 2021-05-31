@@ -7,7 +7,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions, schemas, StorageResource, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource, Storages, StoragesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -26,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -72,14 +73,14 @@ final class StoragesRoutes(
           createdBy,
           updatedBy,
           types,
-          storage => aclsCol.exists(caller.identities, permissions.read, storage.project)
+          storage => aclsCol.exists(caller.identities, Read, storage.project)
         )
       }
     }
   }
 
   @SuppressWarnings(Array("OptionGet"))
-  def routes: Route                                                          =
+  def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       pathPrefix("storages") {
         extractCaller { implicit caller =>
@@ -125,7 +126,7 @@ final class StoragesRoutes(
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
                   // Create a storage without id segment
                   (post & noParameter("rev") & entity(as[Json])) { source =>
-                    authorizeFor(ref, permissions.write).apply {
+                    authorizeFor(ref, Write).apply {
                       emit(Created, storages.create(ref, Secret(source)).mapValue(_.metadata))
                     }
                   }
@@ -135,7 +136,7 @@ final class StoragesRoutes(
                     // List storages in cache
                     (get & extractUri & fromPaginated & storagesSearchParams & sort[Storage]) {
                       (uri, pagination, params, order) =>
-                        authorizeFor(ref, permissions.read).apply {
+                        authorizeFor(ref, Read).apply {
                           implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[StorageResource]] =
                             searchResultsJsonLdEncoder(Storages.context, pagination, uri)
 
@@ -151,7 +152,7 @@ final class StoragesRoutes(
                         concat(
                           // Create or update a storage
                           put {
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
@@ -164,33 +165,39 @@ final class StoragesRoutes(
                           },
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               emit(storages.deprecate(id, ref, rev).mapValue(_.metadata))
                             }
                           },
                           // Fetch a storage
-                          get {
-                            fetch(id, ref)
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            emit(storages.fetch(id, ref).leftWiden[StorageRejection].rejectOn[StorageNotFound])
                           }
                         )
                       }
                     },
                     // Fetch a storage original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                    (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                       operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
-                        fetchSource(id, ref, res => Storage.encryptSource(res.value.source, crypto).toOption.get)
+                        authorizeFor(ref, Read).apply {
+                          val sourceIO = storages
+                            .fetch(id, ref)
+                            .map(res => Storage.encryptSource(res.value.source, crypto).toOption.get)
+                          emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
+                        }
                       }
                     },
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/storages/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a storage tags
-                          get {
-                            fetchMap(id, ref, resource => Tags(resource.value.tags))
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            val tagsIO = storages.fetch(id, ref).map(res => Tags(res.value.tags))
+                            emit(tagsIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
                           },
                           // Tag a storage
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, storages.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata))
                               }
@@ -206,30 +213,6 @@ final class StoragesRoutes(
           )
         }
       }
-    }
-  private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
-    fetchMap(id, ref, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: StorageResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
-        tag => emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
-        emit(storages.fetch(id, ref).map(f).leftWiden[StorageRejection].rejectOn[StorageNotFound])
-      )
-    }
-
-  private def fetchSource(id: IdSegment, ref: ProjectRef, f: StorageResource => Json)(implicit caller: Caller) =
-    authorizeFor(ref, permissions.read).apply {
-      fetchResource(
-        rev => emit(storages.fetchAt(id, ref, rev).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
-        tag => emit(storages.fetchBy(id, ref, tag).leftWiden[StorageRejection].map(f).rejectOn[StorageNotFound]),
-        onDefault = emit(storages.fetch(id, ref).map(f).leftWiden[StorageRejection].rejectOn[StorageNotFound])
-      )
     }
 }
 

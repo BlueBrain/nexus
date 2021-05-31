@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Label, ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
@@ -82,72 +82,49 @@ class MultiResolutionSpec
   "A multi-resolution" should {
 
     "resolve the id as a resource" in {
-      multiResolution(resourceId, projectRef, None).accepted shouldEqual MultiResolutionResult(
-        ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)),
-        resourceValue
-      )
+      multiResolution(resourceId, projectRef).accepted shouldEqual
+        MultiResolutionResult(ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)), resourceValue)
     }
 
     "resolve the id as a resource with a specific resolver" in {
-      multiResolution(
-        resourceId,
-        projectRef,
-        None,
-        resolverId
-      ).accepted shouldEqual MultiResolutionResult(ResolverReport.success(resolverId, projectRef), resourceValue)
+      multiResolution(resourceId, projectRef, resolverId).accepted shouldEqual
+        MultiResolutionResult(ResolverReport.success(resolverId, projectRef), resourceValue)
     }
 
     "resolve the id as a schema" in {
-      multiResolution(schemaId, projectRef, Some(Left(5L))).accepted shouldEqual MultiResolutionResult(
-        ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)),
-        schemaValue
-      )
+      multiResolution(IdSegmentRef(schemaId, 5), projectRef).accepted shouldEqual
+        MultiResolutionResult(ResourceResolutionReport(ResolverReport.success(resolverId, projectRef)), schemaValue)
     }
 
     "resolve the id as a schema with a specific resolver" in {
-      multiResolution(
-        schemaId,
-        projectRef,
-        Some(Left(5L)),
-        resolverId
-      ).accepted shouldEqual MultiResolutionResult(
-        ResolverReport.success(resolverId, projectRef),
-        schemaValue
-      )
+      multiResolution(IdSegmentRef(schemaId, 5), projectRef, resolverId).accepted shouldEqual
+        MultiResolutionResult(ResolverReport.success(resolverId, projectRef), schemaValue)
     }
 
     "fail when it can't be resolved neither as a resource or a schema" in {
-      multiResolution(unknownResourceId, projectRef, None).rejected shouldEqual InvalidResolution(
-        unknownResourceRef,
-        projectRef,
-        ResourceResolutionReport(
-          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
+      multiResolution(unknownResourceId, projectRef).rejected shouldEqual
+        InvalidResolution(
+          unknownResourceRef,
+          projectRef,
+          ResourceResolutionReport(
+            ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
+          )
         )
-      )
     }
 
     "fail with a specific resolver when it can't be resolved neither as a resource or a schema" in {
-      multiResolution(
-        unknownResourceId,
-        projectRef,
-        None,
-        resolverId
-      ).rejected shouldEqual InvalidResolverResolution(
-        unknownResourceRef,
-        resolverId,
-        projectRef,
-        ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
-      )
+      multiResolution(unknownResourceId, projectRef, resolverId).rejected shouldEqual
+        InvalidResolverResolution(
+          unknownResourceRef,
+          resolverId,
+          projectRef,
+          ResolverReport.failed(resolverId, projectRef -> ResourceNotFound(unknownResourceId, projectRef))
+        )
     }
 
     "fail with an invalid resolver id" in {
       val invalid = "qa$%"
-      multiResolution(
-        resourceId,
-        projectRef,
-        None,
-        invalid
-      ).rejected shouldEqual InvalidResolverId(invalid)
+      multiResolution(resourceId, projectRef, invalid).rejected shouldEqual InvalidResolverId(invalid)
     }
   }
 

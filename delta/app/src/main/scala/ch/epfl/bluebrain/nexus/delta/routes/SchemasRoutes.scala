@@ -11,19 +11,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, schemas => schemaPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -102,7 +101,7 @@ final class SchemasRoutes(
                 // Create a schema without id segment
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
-                    authorizeFor(ref, schemaPermissions.write).apply {
+                    authorizeFor(ref, Write).apply {
                       emit(Created, schemas.create(ref, source).map(_.void))
                     }
                   }
@@ -114,7 +113,7 @@ final class SchemasRoutes(
                         concat(
                           // Create or update a schema
                           put {
-                            authorizeFor(ref, schemaPermissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
@@ -127,33 +126,37 @@ final class SchemasRoutes(
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, schemaPermissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               emit(schemas.deprecate(id, ref, rev).map(_.void))
                             }
                           },
                           // Fetch a schema
-                          get {
-                            fetch(id, ref)
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                           }
                         )
                       }
                     },
                     // Fetch a schema original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                    (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
-                        fetchSource(id, ref, _.value.source)
+                        authorizeFor(ref, Read).apply {
+                          val sourceIO = schemas.fetch(id, ref).map(_.value.source)
+                          emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                        }
                       }
                     },
                     (pathPrefix("tags") & pathEndOrSingleSlash) {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a schema tags
-                          get {
-                            fetchMap(id, ref, resource => Tags(resource.value.tags))
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            val tagsIO = schemas.fetch(id, ref).map(res => Tags(res.value.tags))
+                            emit(tagsIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                           },
                           // Tag a schema
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, schemaPermissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
                               }
@@ -170,32 +173,6 @@ final class SchemasRoutes(
         }
       }
     }
-
-  private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
-    fetchMap(id, ref, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: SchemaResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, schemaPermissions.read).apply {
-      fetchResource(
-        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
-        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
-        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
-      )
-    }
-
-  private def fetchSource(id: IdSegment, ref: ProjectRef, f: SchemaResource => Json)(implicit caller: Caller) =
-    authorizeFor(ref, schemaPermissions.read).apply {
-      fetchResource(
-        rev => emit(schemas.fetchAt(id, ref, rev).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
-        tag => emit(schemas.fetchBy(id, ref, tag).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound]),
-        emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].map(f).rejectOn[SchemaNotFound])
-      )
-    }
-
 }
 
 object SchemasRoutes {

@@ -149,8 +149,9 @@ class BlazegraphViewsQuerySpec
       .toMap
 
   private val fetchView: FetchView = {
-    case (id: IriSegment, p) => IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
-    case (id, _)             => IO.raiseError(InvalidBlazegraphViewId(id.asString))
+    case (IdSegmentRef.Latest(id: IriSegment), p) =>
+      IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
+    case (id, _)                                  => IO.raiseError(InvalidBlazegraphViewId(id.value.asString))
   }
 
   private val projects: Map[ProjectRef, Project] = Map(project1.ref -> project1, project2.ref -> project2)

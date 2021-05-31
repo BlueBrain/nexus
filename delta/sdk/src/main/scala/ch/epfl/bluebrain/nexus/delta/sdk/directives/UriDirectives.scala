@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, Label, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
@@ -200,10 +200,27 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     idSegment.flatMap {
       case str: StringSegment =>
         onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide(_)).getOrElse(reject())
+          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide).getOrElse(reject())
           case Left(_)        => reject()
         }
       case iri: IriSegment    => provide(iri.value)
+    }
+
+  /**
+    * Consumes the segment into [[IdSegmentRef]] and the rev/tag query parameter and generates an [[IdSegmentRef]]
+    */
+  val idSegmentRef: Directive1[IdSegmentRef] =
+    idSegment.flatMap(idSegmentRef(_))
+
+  /**
+    * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
+    */
+  def idSegmentRef(id: IdSegment): Directive1[IdSegmentRef] =
+    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)).tflatMap {
+      case (Some(_), Some(_)) => reject(simultaneousTagAndRevRejection)
+      case (Some(rev), _)     => provide(IdSegmentRef(id, rev))
+      case (_, Some(tag))     => provide(IdSegmentRef(id, tag))
+      case _                  => provide(IdSegmentRef(id))
     }
 
   /**

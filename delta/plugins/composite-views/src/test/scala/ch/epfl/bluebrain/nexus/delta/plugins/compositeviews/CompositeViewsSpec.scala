@@ -248,18 +248,16 @@ class CompositeViewsSpec
         )
       }
       "rev is provided" in {
-        compositeViews.fetchAt(viewId, projectRef, 1L).accepted shouldEqual resourceFor(
+        compositeViews.fetch(IdSegmentRef(viewId, 1), projectRef).accepted shouldEqual resourceFor(
           viewId,
           viewValue,
           source = viewSource.removeAllKeys("token")
         )
       }
       "tag is provided" in {
-        compositeViews.fetchBy(viewId, projectRef, TagLabel.unsafe("mytag")).accepted shouldEqual resourceFor(
-          viewId,
-          viewValue,
-          source = viewSource.removeAllKeys("token")
-        )
+        val tag = TagLabel.unsafe("mytag")
+        compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).accepted shouldEqual
+          resourceFor(viewId, viewValue, source = viewSource.removeAllKeys("token"))
       }
     }
 
@@ -267,12 +265,13 @@ class CompositeViewsSpec
       "view doesn't exist" in {
         compositeViews.fetch(iri"http://example.com/wrong", projectRef).rejectedWith[ViewNotFound]
       }
-      "revision doesnt exist" in {
-        compositeViews.fetchAt(viewId, projectRef, 42L).rejectedWith[RevisionNotFound]
+      "revision doesn't exist" in {
+        compositeViews.fetch(IdSegmentRef(viewId, 42), projectRef).rejectedWith[RevisionNotFound]
       }
 
       "tag doesn't exist" in {
-        compositeViews.fetchBy(viewId, projectRef, TagLabel.unsafe("wrongtag")).rejectedWith[TagNotFound]
+        val tag = TagLabel.unsafe("wrongtag")
+        compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
       }
     }
   }

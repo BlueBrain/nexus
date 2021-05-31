@@ -10,23 +10,22 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, FileResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -155,7 +154,7 @@ final class FilesRoutes(
                           },
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               emit(files.deprecate(id, ref, rev))
                             }
                           },
@@ -170,12 +169,12 @@ final class FilesRoutes(
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a file tags
-                          get {
-                            fetchMap(id, ref, resource => Tags(resource.value.tags))
+                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                            emit(fetchMetadata(id, ref).map(res => Tags(res.value.tags)).rejectOn[FileNotFound])
                           },
                           // Tag a file
                           (post & parameter("rev".as[Long])) { rev =>
-                            authorizeFor(ref, permissions.write).apply {
+                            authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, files.tag(id, ref, tag, tagRev, rev))
                               }
@@ -193,53 +192,16 @@ final class FilesRoutes(
       }
     }
 
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: FileResource => A
-  )(implicit caller: Caller): Route =
-    parameters("rev".as[Long].?, "tag".as[TagLabel].?) {
-      case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-      case (revOpt, tagOpt)   => emit(fetchMetadata(id, ref, revOpt, tagOpt).map(f).rejectOn[FileNotFound])
-    }
-
   def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller): Route =
-    headerValueByType(Accept) { accept =>
-      parameters("rev".as[Long].?, "tag".as[TagLabel].?) {
-        case (Some(_), Some(_)) =>
-          emit(simultaneousTagAndRevRejection)
-        case (revOpt, tagOpt)   =>
-          if (accept.mediaRanges.exists(metadataMediaRanges.contains))
-            emit(fetchMetadata(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
-          else
-            emit(fetchContent(id, ref, revOpt, tagOpt).rejectOn[FileNotFound])
-      }
+    (headerValueByType(Accept) & idSegmentRef(id)) {
+      case (accept, id) if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
+        emit(fetchMetadata(id, ref).rejectOn[FileNotFound])
+      case (_, id)                                                                 =>
+        emit(files.fetchContent(id, ref).rejectOn[FileNotFound])
     }
 
-  private def fetchContent(
-      id: IdSegment,
-      ref: ProjectRef,
-      revOpt: Option[Long],
-      tagOpt: Option[TagLabel]
-  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
-    (revOpt, tagOpt) match {
-      case (Some(rev), _) => files.fetchContentAt(id, ref, rev)
-      case (_, Some(tag)) => files.fetchContentBy(id, ref, tag)
-      case _              => files.fetchContent(id, ref)
-    }
-
-  private def fetchMetadata(
-      id: IdSegment,
-      ref: ProjectRef,
-      revOpt: Option[Long],
-      tagOpt: Option[TagLabel]
-  )(implicit caller: Caller): IO[FileRejection, FileResource] =
-    acls.authorizeForOr(ref, permissions.read)(AuthorizationFailed(ref, permissions.read)) >>
-      ((revOpt, tagOpt) match {
-        case (Some(rev), _) => files.fetchAt(id, ref, rev)
-        case (_, Some(tag)) => files.fetchBy(id, ref, tag)
-        case _              => files.fetch(id, ref)
-      })
+  def fetchMetadata(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResource] =
+    acls.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
 }
 
 object FilesRoutes {

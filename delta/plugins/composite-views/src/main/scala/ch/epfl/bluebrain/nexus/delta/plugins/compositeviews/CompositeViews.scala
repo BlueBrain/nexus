@@ -224,11 +224,11 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource.
     *
-    * @param id      the view identifier
+    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
     * @param project the view parent project
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
-    fetch(id, project, None).map(_._2).named("fetchCompositeView", moduleType)
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
+    id.asTag.fold(fetchRevOrLatest(id, project).map(_._2))(fetchBy(_, project)).named("fetchCompositeView", moduleType)
 
   /**
     * Retrieves a current composite view resource and its selected projection.
@@ -243,7 +243,7 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewProjectionResource]       =
     for {
-      (p, view)     <- fetch(id, project, None)
+      (p, view)     <- fetchRevOrLatest(id, project)
       projectionIri <- expandIri(projectionId, p)
       projection    <- IO.fromOption(
                          view.value.projections.value.find(_.id == projectionIri),
@@ -264,7 +264,7 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewSourceResource]           =
     for {
-      (p, view) <- fetch(id, project, None)
+      (p, view) <- fetchRevOrLatest(id, project)
       sourceIri <- expandIri(sourceId, p)
       source    <- IO.fromOption(
                      view.value.sources.value.find(_.id == sourceIri),
@@ -312,40 +312,16 @@ final class CompositeViews private (
       )
     }
 
-  /**
-    * Retrieves a composite view resource at a specific revision.
-    *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the specific view revision
-    */
-  def fetchAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
+  private def fetchBy(
+      id: IdSegmentRef.Tag,
+      project: ProjectRef
   ): IO[CompositeViewRejection, ViewResource] =
-    fetch(id, project, Some(rev)).map(_._2).named("fetchCompositeViewAt", moduleType)
-
-  /**
-    * Retrieves a composite view resource at a specific revision using a tag as a reference.
-    *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tag     the tag reference
-    */
-  def fetchBy(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: TagLabel
-  ): IO[CompositeViewRejection, ViewResource] =
-    fetch(id, project, None)
-      .flatMap { case (_, resource) =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+    fetch(id.toLatest, project).flatMap { view =>
+      view.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
-      .named("fetchCompositeViewBy", moduleType)
+    }
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The
@@ -394,15 +370,14 @@ final class CompositeViews private (
   private def currentState(project: ProjectRef, iri: Iri): IO[CompositeViewRejection, CompositeViewState] =
     aggregate.state(identifier(project, iri))
 
-  private def fetch(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Option[Long]
+  private def fetchRevOrLatest(
+      id: IdSegmentRef,
+      project: ProjectRef
   ): IO[CompositeViewRejection, (Project, ViewResource)] =
     for {
       p     <- projects.fetchProject(project)
-      iri   <- expandIri(id, p)
-      state <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
+      iri   <- expandIri(id.value, p)
+      state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
     } yield (p, res)
 
@@ -441,12 +416,7 @@ object CompositeViews {
     * Create a reference exchange from a [[CompositeViews]] instance
     */
   def referenceExchange(views: CompositeViews)(implicit base: BaseUri): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
-      ref match {
-        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
-        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
-        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
-      }
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[CompositeView](fetch(_, _), _.source)
   }
 

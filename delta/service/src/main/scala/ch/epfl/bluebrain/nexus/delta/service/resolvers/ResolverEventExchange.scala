@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverEvent, ResolverRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ResolverResource, Resolvers}
 import monix.bio.{IO, UIO}
 
@@ -27,8 +27,7 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: ResolverEvent =>
-        resourceToValue(tag.fold(resolvers.fetch(ev.id, ev.project))(resolvers.fetchBy(ev.id, ev.project, _)))
+      case ev: ResolverEvent => resourceToValue(resolvers.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _                 => UIO.none
     }
 

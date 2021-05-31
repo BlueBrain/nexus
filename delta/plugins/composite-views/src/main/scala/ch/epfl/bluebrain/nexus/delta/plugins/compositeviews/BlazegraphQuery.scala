@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ViewIsDeprecated, WrappedBlazegraphClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewRejection, ViewResource, ViewSparqlProjectionResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
@@ -70,7 +70,7 @@ trait BlazegraphQuery {
 object BlazegraphQuery {
 
   private[compositeviews] type FetchView       =
-    (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
+    (IdSegmentRef, ProjectRef) => IO[CompositeViewRejection, ViewResource]
   private[compositeviews] type FetchProjection =
     (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewSparqlProjectionResource]
 

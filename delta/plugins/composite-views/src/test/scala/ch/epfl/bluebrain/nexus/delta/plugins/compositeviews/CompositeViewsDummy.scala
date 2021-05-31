@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectionNotFound, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -12,10 +12,10 @@ import monix.bio.IO
 
 class CompositeViewsDummy(views: ViewResource*) {
 
-  def fetch(id: IdSegment, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
     IO.fromOption(
-      views.find(v => IriSegment(v.id) == id && v.value.project == project),
-      ViewNotFound(expandIri(id), project)
+      views.find(v => IriSegment(v.id) == id.value && v.value.project == project),
+      ViewNotFound(expandIri(id.value), project)
     )
 
   def fetchProjection(

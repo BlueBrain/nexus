@@ -119,30 +119,21 @@ final class ResourcesDummy private (
     } yield res
 
   override def fetch(
-      id: IdSegment,
+      id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
   ): IO[ResourceFetchRejection, DataResource] =
-    fetch(id, projectRef, schemaOpt, None)
-
-  override def fetchAt(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      schemaOpt: Option[IdSegment],
-      rev: Long
-  ): IO[ResourceFetchRejection, DataResource] =
-    fetch(id, projectRef, schemaOpt, Some(rev))
-
-  private def fetch(id: IdSegment, projectRef: ProjectRef, schemaOpt: Option[IdSegment], rev: Option[Long]) =
-    for {
-      project              <- projects.fetchProject(projectRef)
-      iri                  <- expandIri(id, project)
-      schemeRefOpt         <- expandResourceRef(schemaOpt, project)
-      state                <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
-      resourceOpt           = state.toResource(project.apiMappings, project.base)
-      resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
-      res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
-    } yield res
+    id.asTag.fold(
+      for {
+        project              <- projects.fetchProject(projectRef)
+        iri                  <- expandIri(id.value, project)
+        schemeRefOpt         <- expandResourceRef(schemaOpt, project)
+        state                <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
+        resourceOpt           = state.toResource(project.apiMappings, project.base)
+        resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
+        res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
+      } yield res
+    )(fetchBy(_, projectRef, schemaOpt))
 
   override def events(
       projectRef: ProjectRef,

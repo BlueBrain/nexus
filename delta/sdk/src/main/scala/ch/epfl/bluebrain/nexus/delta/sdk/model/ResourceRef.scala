@@ -11,7 +11,7 @@ import scala.util.Try
 /**
   * A resource reference.
   */
-sealed trait ResourceRef extends Product with Serializable {
+sealed trait ResourceRef extends Product with Serializable { self =>
 
   /**
     * @return the reference identifier as an iri
@@ -22,6 +22,16 @@ sealed trait ResourceRef extends Product with Serializable {
     * @return the original iri
     */
   def original: Iri
+
+  /**
+    * Converts a [[ResourceRef]] to an [[IdSegmentRef]]
+    */
+  def toIdSegmentRef: IdSegmentRef =
+    self match {
+      case ResourceRef.Latest(iri)           => IdSegmentRef(iri)
+      case ResourceRef.Revision(_, iri, rev) => IdSegmentRef(iri, rev)
+      case ResourceRef.Tag(_, iri, tag)      => IdSegmentRef(iri, tag)
+    }
 
   override def toString: String = original.toString
 }

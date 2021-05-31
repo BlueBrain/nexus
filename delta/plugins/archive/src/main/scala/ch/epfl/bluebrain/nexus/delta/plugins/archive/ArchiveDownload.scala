@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
 import io.circe.{Json, Printer}
@@ -111,14 +111,10 @@ object ArchiveDownload {
     private def fetchFile(ref: FileReference, project: ProjectRef, ignoreNotFound: Boolean)(implicit
         caller: Caller
     ): IO[ArchiveRejection, Option[(TarArchiveMetadata, AkkaSource)]] = {
-      val refProject     = ref.project.getOrElse(project)
+      val refProject = ref.project.getOrElse(project)
       // the required permissions are checked for each file content fetch
-      val fileResponseIO = ref.ref match {
-        case ResourceRef.Latest(iri)           => files.fetchContent(iri, refProject)
-        case ResourceRef.Revision(_, iri, rev) => files.fetchContentAt(iri, refProject, rev)
-        case ResourceRef.Tag(_, iri, tag)      => files.fetchContentBy(iri, refProject, tag)
-      }
-      val tarEntryIO     = fileResponseIO
+      val tarEntryIO = files
+        .fetchContent(ref.ref.toIdSegmentRef, refProject)
         .mapError {
           case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
           case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)

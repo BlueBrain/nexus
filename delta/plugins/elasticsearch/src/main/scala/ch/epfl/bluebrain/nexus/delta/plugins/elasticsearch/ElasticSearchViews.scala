@@ -227,14 +227,25 @@ final class ElasticSearchViews private (
   /**
     * Retrieves a current ElasticSearchView resource.
     *
-    * @param id      the view identifier
+    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
     * @param project the view parent project
     */
-  def fetch(
-      id: IdSegment,
-      project: ProjectRef
-  ): IO[ElasticSearchViewRejection, ViewResource]         =
-    fetch(id, project, None).map { case (res, _) => res }.named("fetchElasticSearchView", moduleType)
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] =
+    id.asTag
+      .fold(
+        for {
+          p               <- projects.fetchProject(project)
+          iri             <- expandIri(id.value, p)
+          state           <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
+          defaultMapping  <- defaultElasticsearchMapping
+          defaultSettings <- defaultElasticsearchSettings
+          res             <- IO.fromOption(
+                               state.toResource(p.apiMappings, p.base, defaultMapping, defaultSettings),
+                               ViewNotFound(iri, project)
+                             )
+        } yield res
+      )(fetchBy(_, project))
+      .named("fetchElasticSearchView", moduleType)
 
   /**
     * Retrieves a current IndexingElasticSearchView resource.
@@ -243,11 +254,11 @@ final class ElasticSearchViews private (
     * @param project the view parent project
     */
   def fetchIndexingView(
-      id: IdSegment,
+      id: IdSegmentRef,
       project: ProjectRef
   ): IO[ElasticSearchViewRejection, IndexingViewResource] =
-    fetch(id, project, None)
-      .flatMap { case (res, _) =>
+    fetch(id, project)
+      .flatMap { res =>
         res.value match {
           case v: IndexingElasticSearchView  =>
             IO.pure(res.as(v))
@@ -255,59 +266,14 @@ final class ElasticSearchViews private (
             IO.raiseError(DifferentElasticSearchViewType(res.id, ElasticSearchAggregate, ElasticSearchIndexing))
         }
       }
-      .named("fetchIndexingElasticSearchView", moduleType)
 
-  /**
-    * Retrieves an ElasticSearchView resource at a specific revision.
-    *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the specific view revision
-    */
-  def fetchAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  ): IO[ElasticSearchViewRejection, ViewResource]        =
-    fetch(id, project, Some(rev)).map({ case (res, _) => res }).named("fetchElasticSearchViewAt", moduleType)
-
-  private def fetch(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Option[Long]
-  ): IO[ElasticSearchViewRejection, (ViewResource, Iri)] =
-    for {
-      p               <- projects.fetchProject(project)
-      iri             <- expandIri(id, p)
-      state           <- rev.fold(currentState(project, iri))(stateAt(project, iri, _))
-      defaultMapping  <- defaultElasticsearchMapping
-      defaultSettings <- defaultElasticsearchSettings
-      res             <- IO.fromOption(
-                           state.toResource(p.apiMappings, p.base, defaultMapping, defaultSettings),
-                           ViewNotFound(iri, project)
-                         )
-    } yield (res, iri)
-
-  /**
-    * Retrieves an ElasticSearchView resource at a specific revision using a tag as a reference.
-    *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tag     the tag reference
-    */
-  def fetchBy(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: TagLabel
-  ): IO[ElasticSearchViewRejection, ViewResource] =
-    fetch(id, project, None)
-      .flatMap { case (resource, _) =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+  private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] =
+    fetch(id.toLatest, project).flatMap { view =>
+      view.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
-      .named("fetchElasticSearchViewByTag", moduleType)
+    }
 
   /**
     * Retrieves a list of ElasticSearchViews using specific pagination, filter and ordering configuration.
@@ -466,12 +432,7 @@ object ElasticSearchViews {
     * Create a reference exchange from a [[ElasticSearchViews]] instance
     */
   def referenceExchange(views: ElasticSearchViews): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
-      ref match {
-        case ResourceRef.Latest(iri)           => views.fetch(iri, projectRef)
-        case ResourceRef.Revision(_, iri, rev) => views.fetchAt(iri, projectRef, rev)
-        case ResourceRef.Tag(_, iri, tag)      => views.fetchBy(iri, projectRef, tag)
-      }
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
   }
 

@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -179,16 +179,16 @@ final class ResolversRoutes(
                             }
                           },
                           // Fetches a resolver
-                          get {
-                            fetch(id, ref)
+                          (get & idSegmentRef(id) & authorizeRead) { id =>
+                            emit(resolvers.fetch(id, ref).rejectOn[ResolverNotFound])
                           }
                         )
                       }
                     },
                     // Fetches a resolver original source
-                    (pathPrefix("source") & get & pathEndOrSingleSlash) {
+                    (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id) & authorizeRead) { id =>
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/source") {
-                        fetchSource(id, ref, _.value.source)
+                        emit(resolvers.fetch(id, ref).map(_.value.source).rejectOn[ResolverNotFound])
                       }
                     },
                     // Tags
@@ -196,8 +196,8 @@ final class ResolversRoutes(
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a resolver tags
-                          get {
-                            fetchMap(id, ref, res => Tags(res.value.tags))
+                          (get & idSegmentRef(id) & authorizeRead) { id =>
+                            emit(resolvers.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ResolverNotFound])
                           },
                           // Tag a resolver
                           (post & parameter("rev".as[Long])) { rev =>
@@ -211,9 +211,9 @@ final class ResolversRoutes(
                       }
                     },
                     // Fetch a resource using a resolver
-                    (idSegment & pathEndOrSingleSlash) { resourceSegment =>
+                    (idSegmentRef & pathEndOrSingleSlash) { resourceIdRef =>
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}/{resourceId}") {
-                        resolve(resourceSegment, ref, underscoreToOption(id))
+                        resolve(resourceIdRef, ref, underscoreToOption(id))
                       }
                     }
                   )
@@ -225,32 +225,7 @@ final class ResolversRoutes(
       }
     }
 
-  private def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller) =
-    fetchMap(id, ref, identity)
-
-  private def fetchMap[A: JsonLdEncoder](
-      id: IdSegment,
-      ref: ProjectRef,
-      f: ResolverResource => A
-  )(implicit caller: Caller) =
-    authorizeFor(ref, Read).apply {
-      fetchResource(
-        rev => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound]),
-        tag => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound]),
-        emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
-      )
-    }
-
-  private def fetchSource(id: IdSegment, ref: ProjectRef, f: ResolverResource => Json)(implicit caller: Caller) =
-    authorizeFor(ref, Read).apply {
-      fetchResource(
-        rev => emit(resolvers.fetchAt(id, ref, rev).map(f).rejectOn[ResolverNotFound]),
-        tag => emit(resolvers.fetchBy(id, ref, tag).map(f).rejectOn[ResolverNotFound]),
-        emit(resolvers.fetch(id, ref).map(f).rejectOn[ResolverNotFound])
-      )
-    }
-
-  private def resolve(resourceSegment: IdSegment, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
+  private def resolve(resourceSegment: IdSegmentRef, projectRef: ProjectRef, resolverId: Option[IdSegment])(implicit
       caller: Caller
   ): Route =
     authorizeFor(projectRef, Permissions.resources.read).apply {
@@ -261,19 +236,8 @@ final class ResolversRoutes(
           else
             emit(io.map(_.value.jsonLdValue))
 
-        resolverId match {
-          case Some(r) =>
-            fetchResource(
-              rev => emitResult(multiResolution(resourceSegment, projectRef, Some(Left(rev)), r)),
-              tag => emitResult(multiResolution(resourceSegment, projectRef, Some(Right(tag)), r)),
-              emitResult(multiResolution(resourceSegment, projectRef, None, r))
-            )
-          case None    =>
-            fetchResource(
-              rev => emitResult(multiResolution(resourceSegment, projectRef, Some(Left(rev)))),
-              tag => emitResult(multiResolution(resourceSegment, projectRef, Some(Right(tag)))),
-              emitResult(multiResolution(resourceSegment, projectRef, None))
-            )
+        resolverId.fold(emitResult(multiResolution(resourceSegment, projectRef))) { resolverId =>
+          emitResult(multiResolution(resourceSegment, projectRef, resolverId))
         }
       }
     }

@@ -447,7 +447,7 @@ class CompositeIndexingSpec
     }
 
     if (view.rev > 1L) {
-      val previous = views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted
+      val previous = views.fetch(IdSegmentRef(view.id, view.rev - 1), view.value.project).accepted
       eventually {
         esClient.existsIndex(idx(previous)).accepted shouldEqual false
       }
@@ -465,7 +465,7 @@ class CompositeIndexingSpec
     }
 
     if (view.rev > 1L) {
-      val previous = views.fetchAt(view.id, view.value.project, view.rev - 1L).accepted
+      val previous = views.fetch(IdSegmentRef(view.id, view.rev - 1), view.value.project).accepted
       eventually {
         blazeClient.existsNamespace(ns(previous)).accepted shouldEqual false
       }

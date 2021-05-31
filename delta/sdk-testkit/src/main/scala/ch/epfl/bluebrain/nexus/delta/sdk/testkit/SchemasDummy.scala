@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, IdSegmentRef, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasDummy.SchemaJournal
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
@@ -98,19 +98,15 @@ final class SchemasDummy private (
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
-    fetch(id, projectRef, None)
-
-  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource] =
-    fetch(id, projectRef, Some(rev))
-
-  private def fetch(id: IdSegment, projectRef: ProjectRef, rev: Option[Long]) =
-    for {
-      project <- projects.fetchProject(projectRef)
-      iri     <- expandIri(id, project)
-      state   <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
-      res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
-    } yield res
+  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
+    id.asTag.fold(
+      for {
+        project <- projects.fetchProject(projectRef)
+        iri     <- expandIri(id.value, project)
+        state   <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
+        res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
+      } yield res
+    )(fetchBy(_, projectRef))
 
   override def events(
       projectRef: ProjectRef,
