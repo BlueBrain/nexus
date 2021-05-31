@@ -44,6 +44,7 @@ object IndexingSource {
     * transforming each event its resource using the available [[EventExchange]] in preparation for indexing
     */
   def apply(
+      projects: Projects,
       eventLog: EventLog[Envelope[Event]],
       exchanges: Set[EventExchange],
       batchMaxSize: Int,
@@ -60,22 +61,27 @@ object IndexingSource {
           offset: Offset,
           tag: Option[TagLabel]
       ): Stream[Task, Chunk[Message[EventExchangeValue[_, _]]]] =
-        eventLog
-          .eventsByTag(Projects.projectTag(project), offset)
-          .map(_.toMessage)
-          .groupWithin(batchMaxSize, batchMaxTimeout)
-          .discardDuplicates()
-          .evalMapFilterValue { event =>
-            Task.tailRecM(exchangesList) { // try all event exchanges one at a time until there's a result
-              case Nil              => Task.pure(Right(None))
-              case exchange :: rest =>
-                exchange
-                  .toResource(event, tag)
-                  .map(_.toRight(rest).map(Some.apply))
-                  .absorb
-                  .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
-            }
+        Stream
+          .eval(
+            eventLog
+              .projectEvents(projects, project, offset)
+              .hideErrorsWith(r => new IllegalStateException(r.reason))
+          )
+          .flatMap {
+            _.map(_.toMessage)
+              .groupWithin(batchMaxSize, batchMaxTimeout)
+              .discardDuplicates()
+              .evalMapFilterValue { event =>
+                Task.tailRecM(exchangesList) { // try all event exchanges one at a time until there's a result
+                  case Nil              => Task.pure(Right(None))
+                  case exchange :: rest =>
+                    exchange
+                      .toResource(event, tag)
+                      .map(_.toRight(rest).map(Some.apply))
+                      .absorb
+                      .retryingOnSomeErrors(retryStrategy.retryWhen, retryStrategy.policy, retryStrategy.onError)
+                }
+              }
           }
-
     }
 }

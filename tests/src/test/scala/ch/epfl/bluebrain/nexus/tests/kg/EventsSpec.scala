@@ -205,8 +205,8 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 1" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 11L) { seq =>
-                   val projectEvents = seq.drop(5)
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 12L) { seq =>
+                   val projectEvents = seq.drop(6)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
                      "ResourceCreated",
@@ -236,8 +236,8 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
         _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, take = 6L) { seq =>
-            val projectEvents = seq.drop(5)
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, take = 7L) { seq =>
+            val projectEvents = seq.drop(6)
             projectEvents.size shouldEqual 1
             projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
             val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
@@ -260,8 +260,8 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
         uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-        _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, timestampUuid, take = 17) { seq =>
-                    val projectEvents = seq.drop(10)
+        _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, timestampUuid, take = 19) { seq =>
+                    val projectEvents = seq.drop(12)
                     projectEvents.size shouldEqual 7
                     projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
                       "ResourceCreated",

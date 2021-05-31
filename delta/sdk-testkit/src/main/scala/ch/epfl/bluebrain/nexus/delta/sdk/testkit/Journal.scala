@@ -5,6 +5,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -148,6 +149,10 @@ private[testkit] class Journal[Id, E <: Event] private (
       offset,
       maxStreamSize(offset)
     )
+
+  override def flavour: DatabaseFlavour = DatabaseFlavour.Postgres
+
+  override def firstOffset: Offset = NoOffset
 }
 
 object Journal {

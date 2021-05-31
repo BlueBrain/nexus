@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, IdSegmentRef, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
-import ch.epfl.bluebrain.nexus.delta.service.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
@@ -151,17 +151,13 @@ final class ResolversImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    projects
-      .fetchProject(projectRef)
-      .as(eventLog.eventsByTag(Projects.projectTag(moduleType, projectRef), offset))
+    eventLog.projectEvents(projects, projectRef, offset)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    orgs
-      .fetchOrganization(organization)
-      .as(eventLog.eventsByTag(Organizations.orgTag(moduleType, organization), offset))
+    eventLog.orgEvents(orgs, organization, offset)
 
   override def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)
