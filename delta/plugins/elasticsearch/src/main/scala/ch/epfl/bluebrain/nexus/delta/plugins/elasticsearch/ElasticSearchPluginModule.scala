@@ -54,10 +54,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[IndexingSource].named("elasticsearch-source").from {
     (
         cfg: ElasticSearchViewsConfig,
+        projects: Projects,
         eventLog: EventLog[Envelope[Event]],
         exchanges: Set[EventExchange]
     ) =>
-      IndexingSource(eventLog, exchanges, cfg.indexing.maxBatchSize, cfg.indexing.maxTimeWindow, cfg.indexing.retry)
+      IndexingSource(
+        projects,
+        eventLog,
+        exchanges,
+        cfg.indexing.maxBatchSize,
+        cfg.indexing.maxTimeWindow,
+        cfg.indexing.retry
+      )
   }
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
