@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -207,7 +208,7 @@ object SchemaRejection {
         case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                                      => obj.add("rdf", rdf.asJson)
-        case InvalidSchema(_, report)                                                         => obj.add("details", report.json)
+        case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
         case InvalidSchemaResolution(_, schemaImports, resourceImports, nonOntologyResources) =>
           obj
             .add("schemaImports", importsAsJson(schemaImports))

@@ -1,0 +1,32 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    "https://bluebrain.github.io/nexus/contexts/error.json"
+  ],
+  "@type": "InvalidResource",
+  "reason": "Resource 'https://bluebrain.github.io/nexus/vocabulary/wrong' failed to validate against the constraints defined in schema 'https://bluebrain.github.io/nexus/vocabulary/myschema'",
+  "details": {
+    "@type": "sh:ValidationReport",
+    "conforms": false,
+    "result": {
+      "@type": "sh:ValidationResult",
+      "focusNode": "nxv:wrong",
+      "result:Path": {
+        "@id": "nxv:number"
+      },
+      "resultMessage": "Value must be a valid literal of type integer",
+      "resultSeverity": "sh:Violation",
+      "sh:value": "wrong",
+      "sourceConstraintComponent": "sh:DatatypeConstraintComponent",
+      "sourceShape": "nxv:NumberProperty"
+    },
+    "targetedNodes": 10
+  },
+  "expanded": {
+    "@id": "nxv:wrong",
+    "@type": "Custom",
+    "bool": false,
+    "number": "wrong",
+    "nxv:name": "Alex"
+  }
+}
