@@ -88,7 +88,10 @@ final class ElasticSearchIndexingStream(
   ): Task[ProjectionProgress[Unit]] =
     strategy match {
       case ProgressStrategy.Continue    =>
-        projection.progress(projectionId)
+        for {
+          progress <- projection.progress(projectionId)
+          _        <- cache.put(projectionId, progress)
+        } yield progress
       case ProgressStrategy.FullRestart =>
         cache.remove(projectionId) >>
           cache.put(projectionId, NoProgress) >>
