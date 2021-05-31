@@ -139,8 +139,8 @@ final class SchemasRoutes(
                     },
                     // Fetch a schema original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                      authorizeFor(ref, Read).apply {
-                        operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
+                      operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
+                        authorizeFor(ref, Read).apply {
                           val sourceIO = schemas.fetch(id, ref).map(_.value.source)
                           emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                         }

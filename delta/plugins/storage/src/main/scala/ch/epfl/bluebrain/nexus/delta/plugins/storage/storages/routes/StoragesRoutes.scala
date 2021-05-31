@@ -178,8 +178,8 @@ final class StoragesRoutes(
                     },
                     // Fetch a storage original source
                     (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                      authorizeFor(ref, Read).apply {
-                        operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
+                      operationName(s"$prefixSegment/storages/{org}/{project}/{id}/source") {
+                        authorizeFor(ref, Read).apply {
                           val sourceIO = storages
                             .fetch(id, ref)
                             .map(res => Storage.encryptSource(res.value.source, crypto).toOption.get)

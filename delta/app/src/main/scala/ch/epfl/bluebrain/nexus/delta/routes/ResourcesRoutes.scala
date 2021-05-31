@@ -178,8 +178,8 @@ final class ResourcesRoutes(
                         },
                         // Fetch a resource original source
                         (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                          authorizeFor(ref, Read).apply {
-                            operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
+                          operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
+                            authorizeFor(ref, Read).apply {
                               val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
                               emit(sourceIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                             }

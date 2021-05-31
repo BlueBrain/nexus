@@ -17,6 +17,9 @@ sealed trait IdSegmentRef extends Product with Serializable { self =>
     */
   def toRev(rev: Long): IdSegmentRef.Revision = IdSegmentRef.Revision(self.value, rev)
 
+  /**
+    * Converts the current [[IdSegmentRef]] to an [[IdSegmentRef.Latest]]
+    */
   def toLatest: IdSegmentRef.Latest = IdSegmentRef.Latest(self.value)
 
   def asTag: Option[IdSegmentRef.Tag] = self match {
@@ -37,11 +40,11 @@ object IdSegmentRef {
   implicit def iriToIdSegmentRef(iri: Iri): IdSegmentRef            = Latest(iri)
   implicit def stringToIdSegmentRef(string: String): IdSegmentRef   = Latest(string)
 
-  def apply(id: IdSegment): IdSegmentRef                             = Latest(id)
-  def apply(id: IdSegment, rev: Long): IdSegmentRef                  = Revision(id, rev)
-  def apply(id: IdSegment, tag: TagLabel): IdSegmentRef              = Tag(id, tag)
-  def fromRev(id: IdSegment, revOpt: Option[Long]): IdSegmentRef     = revOpt.fold(apply(id))(Revision(id, _))
-  def fromTag(id: IdSegment, tagOpt: Option[TagLabel]): IdSegmentRef = tagOpt.fold(apply(id))(Tag(id, _))
+  def apply(id: IdSegment): IdSegmentRef                                = Latest(id)
+  def apply(id: IdSegment, rev: Long): IdSegmentRef                     = Revision(id, rev)
+  def apply(id: IdSegment, tag: TagLabel): IdSegmentRef                 = Tag(id, tag)
+  def fromRevOpt(id: IdSegment, revOpt: Option[Long]): IdSegmentRef     = revOpt.fold(apply(id))(Revision(id, _))
+  def fromTagOpt(id: IdSegment, tagOpt: Option[TagLabel]): IdSegmentRef = tagOpt.fold(apply(id))(Tag(id, _))
 
   /**
     * A segment.

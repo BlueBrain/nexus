@@ -149,8 +149,8 @@ class CompositeViewsRoutes(
                   },
                   // Fetch a view original source
                   (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                    authorizeFor(ref, Read).apply {
-                      operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                      authorizeFor(ref, Read).apply {
                         emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
                       }
                     }

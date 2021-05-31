@@ -27,7 +27,7 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: ResolverEvent => resourceToValue(resolvers.fetch(IdSegmentRef.fromTag(ev.id, tag), ev.project))
+      case ev: ResolverEvent => resourceToValue(resolvers.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _                 => UIO.none
     }
 

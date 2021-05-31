@@ -29,7 +29,7 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: FileEvent => resourceToValue(files.fetch(IdSegmentRef.fromTag(ev.id, tag), ev.project))
+      case ev: FileEvent => resourceToValue(files.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _             => UIO.none
     }
 

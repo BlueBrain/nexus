@@ -27,7 +27,7 @@ class ElasticSearchViewEventExchange(views: ElasticSearchViews)(implicit base: B
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: ElasticSearchViewEvent => resourceToValue(views.fetch(IdSegmentRef.fromTag(ev.id, tag), ev.project))
+      case ev: ElasticSearchViewEvent => resourceToValue(views.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _                          => UIO.none
     }
 

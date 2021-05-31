@@ -27,7 +27,7 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
-      case ev: SchemaEvent => resourceToValue(schemas.fetch(IdSegmentRef.fromTag(ev.id, tag), ev.project))
+      case ev: SchemaEvent => resourceToValue(schemas.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _               => UIO.none
     }
 
