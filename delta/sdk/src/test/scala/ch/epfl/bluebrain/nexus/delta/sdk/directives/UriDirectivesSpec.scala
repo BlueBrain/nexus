@@ -190,13 +190,13 @@ class UriDirectivesSpec
     "return an IdSegmentRef" in {
       val iri     = iri"http://example.com/a/b"
       val encoded = UrlUtils.encode(iri.toString)
-      Get(s"/idref/$encoded?rev=1") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/idref/$encoded?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"rev=$iri,1"
       }
-      Get(s"/idref/$encoded?tag=mytag") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/idref/$encoded?tag=mytag") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"tag=$iri,mytag"
       }
-      Get(s"/idref/$encoded") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/idref/$encoded") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"latest=$iri"
       }
     }
