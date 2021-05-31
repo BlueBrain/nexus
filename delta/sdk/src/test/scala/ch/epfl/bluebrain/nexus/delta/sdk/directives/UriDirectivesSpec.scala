@@ -41,7 +41,7 @@ class UriDirectivesSpec
     with TestHelpers
     with Inspectors {
 
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost/base//", Label.unsafe("v1"))
   implicit private val sc: Scheduler    = Scheduler.global
   private val schemaView                = nxv + "schema"
 
@@ -59,7 +59,7 @@ class UriDirectivesSpec
     PaginationConfig(defaultSize = 10, sizeLimit = 20, fromLimit = 50)
 
   private val route: Route =
-    get {
+    (get & uriPrefix(baseUri.base)) {
       concat(
         (pathPrefix("search") & searchParams & pathEndOrSingleSlash) { case (deprecated, rev, createdBy, updatedBy) =>
           complete(s"'${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}'")
@@ -116,7 +116,7 @@ class UriDirectivesSpec
     }
 
   private def sortRoute(list: List[ResourceF[Int]]): Route =
-    get {
+    (get & uriPrefix(baseUri.base)) {
       (pathPrefix("ordering") & sort[Int] & pathEndOrSingleSlash) { implicit ordering =>
         complete(list.sorted.map(_.value).mkString(","))
       }
@@ -125,50 +125,50 @@ class UriDirectivesSpec
   "A route" should {
 
     "return a label" in {
-      Get("/label/my") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/label/my") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "my"
       }
     }
 
     "reject if label is wrongly formatted" in {
-      Get("/label/oth@er") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/label/oth@er") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[ValidationRejection]
       }
     }
 
     "return a project ref" in {
-      Get("/projectRef/org/proj") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/projectRef/org/proj") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "org/proj"
       }
     }
 
     "reject if project ref is wrongly formatted" in {
-      Get("/projectRef/@rg/proj") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/projectRef/@rg/proj") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[ValidationRejection]
       }
     }
 
     "return a UUID" in {
       val uuid = UUID.randomUUID()
-      Get(s"/uuid/$uuid") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/uuid/$uuid") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual uuid.toString
       }
     }
 
     "reject if UUID wrongly formatted" in {
-      Get("/uuid/other") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/uuid/other") ~> Accept(`*/*`) ~> route ~> check {
         handled shouldEqual false
       }
     }
 
     "pass if no rev query parameter is present" in {
-      Get("/noRev?other=1") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/noRev?other=1") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "noRev"
       }
     }
 
     "reject if rev query parameter is present" in {
-      Get("/noRev?rev=1") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/noRev?rev=1") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
       }
     }
@@ -176,13 +176,13 @@ class UriDirectivesSpec
     "return an IriSegment" in {
       val iri     = iri"http://example.com/a/b?rev=1#frag"
       val encoded = UrlUtils.encode(iri.toString)
-      Get(s"/id/$encoded") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/id/$encoded") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"iri='$iri'"
       }
     }
 
     "return a StringSegment" in {
-      Get("/id/nxv:some") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/id/nxv:some") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "string='nxv:some'"
       }
     }
@@ -202,13 +202,13 @@ class UriDirectivesSpec
     }
 
     "return a jsonld expanded format" in {
-      Get("/jsonld?format=expanded") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/jsonld?format=expanded") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "Expanded"
       }
     }
 
     "reject if jsonld format is wrongly formatted" in {
-      Get("/jsonld?format=something") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/jsonld?format=something") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[InvalidRequiredValueForQueryParamRejection]
       }
     }
@@ -219,11 +219,13 @@ class UriDirectivesSpec
       val bob      = User("bob", Label.unsafe("myrealm"))
       val bobId    = UrlUtils.encode(bob.id.toString)
 
-      Get(s"/search?deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/search?deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId") ~> Accept(
+        `*/*`
+      ) ~> route ~> check {
         response.asString shouldEqual s"'false','2','$alicia','$bob'"
       }
 
-      Get(s"/search?deprecated=false&rev=2") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/search?deprecated=false&rev=2") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "'false','2','',''"
       }
     }
@@ -231,10 +233,10 @@ class UriDirectivesSpec
     "reject on invalid search parameters" in {
       val group     = UrlUtils.encode(Group("mygroup", Label.unsafe("myrealm")).id.toString)
       val endpoints = List(
-        "/search?deprecated=3",
-        "/search?rev=false",
-        "/search?createdBy=http%3A%2F%2Fexample.com%2Fwrong",
-        s"/search?updatedBy=$group"
+        "/base/search?deprecated=3",
+        "/base/search?rev=false",
+        "/base/search?createdBy=http%3A%2F%2Fexample.com%2Fwrong",
+        s"/base/search?updatedBy=$group"
       )
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
@@ -244,7 +246,7 @@ class UriDirectivesSpec
     }
 
     "return expanded types" in {
-      Get("/types/org/proj?type=a&type=alias&type=nxv:rev") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/types/org/proj?type=a&type=alias&type=nxv:rev") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"${nxv.rev.iri},${nxv + "alias"},http://localhost/vocab/a"
       }
     }
@@ -261,26 +263,28 @@ class UriDirectivesSpec
           resourceF(bob, 4, deprecated = false, 6)
         )
       )
-      Get("/ordering?sort=_createdBy&sort=_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
+      Get("/base/ordering?sort=_createdBy&sort=_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
         response.asString shouldEqual "1,2,3,4,5,6"
       }
 
-      Get("/ordering?sort=-_createdBy&sort=-_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
+      Get("/base/ordering?sort=-_createdBy&sort=-_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
         response.asString shouldEqual "6,5,4,2,3,1"
       }
     }
 
     "reject on invalid ordering parameter" in {
-      Get("/ordering?sort=_createdBy&sort=_rev&sort=something") ~> Accept(`*/*`) ~> sortRoute(List.empty) ~> check {
+      Get("/base/ordering?sort=_createdBy&sort=_rev&sort=something") ~> Accept(`*/*`) ~> sortRoute(
+        List.empty
+      ) ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
       }
     }
 
     "paginate with from and size" in {
-      Get("/pagination?from=5&size=20") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/pagination?from=5&size=20") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "from='5',size='20'"
       }
-      Get("/pagination") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/pagination") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "from='0',size='10'"
       }
     }
@@ -289,9 +293,9 @@ class UriDirectivesSpec
       val after = json"""["a", "b"]""".noSpaces
       forAll(
         List(
-          "/pagination?from=5&size=30",
-          "/pagination?from=60&size=20",
-          s"/pagination?after=$after&from=10"
+          "/base/pagination?from=5&size=30",
+          "/base/pagination?from=60&size=20",
+          s"/base/pagination?after=$after&from=10"
         )
       ) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
@@ -302,13 +306,13 @@ class UriDirectivesSpec
 
     "paginate with after and size" in {
       val json = json"""["a", "b"]"""
-      Get(s"/pagination?after=${json.noSpaces}&size=20") ~> Accept(`*/*`) ~> route ~> check {
+      Get(s"/base/pagination?after=${json.noSpaces}&size=20") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual s"after='${json.noSpaces}',size='20'"
       }
     }
 
     "return a project and id when redirecting through the _ schema id" in {
-      val endpoints = List("/v1/resources/org/proj/_/myid/other", "/v1/views/org/proj/myid/other")
+      val endpoints = List("/base/v1/resources/org/proj/_/myid/other", "/base/v1/views/org/proj/myid/other")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
           response.asString shouldEqual "project='org/proj',id='myid'"
@@ -318,7 +322,8 @@ class UriDirectivesSpec
 
     "return a project and id when redirecting through the schema id" in {
       val encoded   = UrlUtils.encode(schemaView.toString)
-      val endpoints = List("/v1/resources/org/proj/view/myid/other", s"/v1/resources/org/proj/$encoded/myid/other")
+      val endpoints =
+        List("/base/v1/resources/org/proj/view/myid/other", s"/base/v1/resources/org/proj/$encoded/myid/other")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> Accept(`*/*`) ~> route ~> check {
           response.asString shouldEqual "project='org/proj',id='myid'"
@@ -327,13 +332,13 @@ class UriDirectivesSpec
     }
 
     "reject when redirecting" in {
-      Get("/v1/resources/org/proj/wrong_schema/myid/other") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/v1/resources/org/proj/wrong_schema/myid/other") ~> Accept(`*/*`) ~> route ~> check {
         handled shouldEqual false
       }
     }
 
     "return the other route when redirecting is not being affected" in {
-      Get("/v1/other") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/v1/other") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "other"
       }
     }
