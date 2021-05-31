@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResolverResolution, Resolvers}
 import monix.bio.IO
 
@@ -24,62 +24,46 @@ final class MultiResolution(
 
   /**
     * Attempts to resolve the resourceId against all active resolvers of the given project
-    * @param resourceSegment  the resource id to resolve
-    * @param projectRef       the project from which we try to resolve
-    * @param version          if we are looking for latest or a specific tag/revision
+    *
+    * @param resourceSegment the resource id to resolve with its optional rev/tag
+    * @param projectRef      the project from which we try to resolve
     */
-  def apply(resourceSegment: IdSegment, projectRef: ProjectRef, version: Option[Either[Long, TagLabel]])(implicit
-      caller: Caller
-  ): IO[ResolverRejection, MultiResolutionResult[ResourceResolutionReport]] =
+  def apply(
+      resourceSegment: IdSegmentRef,
+      projectRef: ProjectRef
+  )(implicit caller: Caller): IO[ResolverRejection, MultiResolutionResult[ResourceResolutionReport]] =
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- expandResourceIri(resourceSegment, project, version)
+      resourceRef <- expandResourceIri(resourceSegment, project)
       result      <- resourceResolution.resolveReport(resourceRef, projectRef).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))
                        case (resourceReport, None)                 =>
-                         IO.raiseError(
-                           InvalidResolution(
-                             resourceRef,
-                             projectRef,
-                             resourceReport
-                           )
-                         )
+                         IO.raiseError(InvalidResolution(resourceRef, projectRef, resourceReport))
                      }
     } yield result
 
   /**
     * Attempts to resolve the resourceId against the given resolver of the given project
-    * @param resourceSegment   the resource id to resolve
+    * @param resourceSegment   the resource id to resolve with its optional rev/tag
     * @param projectRef        the project from which we try to resolve
-    * @param version          if we are looking for latest or a specific tag/revision
     * @param resolverSegment  the resolver to use specifically
     */
   def apply(
-      resourceSegment: IdSegment,
+      resourceSegment: IdSegmentRef,
       projectRef: ProjectRef,
-      version: Option[Either[Long, TagLabel]],
       resolverSegment: IdSegment
-  )(implicit
-      caller: Caller
-  ): IO[ResolverRejection, MultiResolutionResult[ResolverReport]] = {
+  )(implicit caller: Caller): IO[ResolverRejection, MultiResolutionResult[ResolverReport]] = {
 
     for {
       project     <- fetchProject(projectRef)
-      resourceRef <- expandResourceIri(resourceSegment, project, version)
+      resourceRef <- expandResourceIri(resourceSegment, project)
       resolverId  <- Resolvers.expandIri(resolverSegment, project)
       result      <- resourceResolution.resolveReport(resourceRef, projectRef, resolverId).flatMap {
                        case (resourceReport, Some(resourceResult)) =>
                          IO.pure(MultiResolutionResult(resourceReport, resourceResult))
                        case (resourceReport, None)                 =>
-                         IO.raiseError(
-                           InvalidResolverResolution(
-                             resourceRef,
-                             resolverId,
-                             projectRef,
-                             resourceReport
-                           )
-                         )
+                         IO.raiseError(InvalidResolverResolution(resourceRef, resolverId, projectRef, resourceReport))
                      }
     } yield result
 
@@ -98,9 +82,6 @@ object MultiResolution {
       projects: Projects,
       resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
   ): MultiResolution =
-    new MultiResolution(
-      projects.fetchProject[ResolverRejection],
-      resourceResolution
-    )
+    new MultiResolution(projects.fetchProject[ResolverRejection], resourceResolution)
 
 }

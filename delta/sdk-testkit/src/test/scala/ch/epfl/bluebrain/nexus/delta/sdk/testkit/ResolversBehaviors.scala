@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, Resolver, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptyList, ResourceF, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, NonEmptyList, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, Task}
@@ -720,7 +720,7 @@ trait ResolversBehaviors {
 
       "succeed by rev" in {
         forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
-          resolvers.fetchAt(resource.value.id, projectRef, 3L).accepted shouldEqual
+          resolvers.fetch(IdSegmentRef(resource.value.id, 3), projectRef).accepted shouldEqual
             resource.copy(rev = 3L, deprecated = false)
         }
       }
@@ -732,7 +732,7 @@ trait ResolversBehaviors {
             nxv + "cross-project" -> crossProjectValue
           )
         ) { case (id, value) =>
-          resolvers.fetchBy(id, projectRef, tag).accepted shouldEqual resolverResourceFor(
+          resolvers.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resolverResourceFor(
             id,
             project,
             value,
@@ -747,17 +747,17 @@ trait ResolversBehaviors {
       }
 
       "fail fetching if resolver does not exist at specific rev" in {
-        resolvers.fetchAt("xxx", projectRef, 1L).rejectedWith[ResolverNotFound]
+        resolvers.fetch(IdSegmentRef("xxx", 1), projectRef).rejectedWith[ResolverNotFound]
       }
 
       "fail if revision does not exist" in {
-        resolvers.fetchAt(nxv + "in-project", projectRef, 30L).rejected shouldEqual
+        resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).rejected shouldEqual
           RevisionNotFound(30L, 4L)
       }
 
       "fail if tag does not exist" in {
         val unknownTag = TagLabel.unsafe("xxx")
-        resolvers.fetchBy(nxv + "in-project", projectRef, unknownTag).rejected shouldEqual
+        resolvers.fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef).rejected shouldEqual
           TagNotFound(unknownTag)
       }
     }

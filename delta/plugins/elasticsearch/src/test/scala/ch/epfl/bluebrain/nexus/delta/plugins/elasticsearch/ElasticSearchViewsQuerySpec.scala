@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
@@ -180,8 +180,9 @@ class ElasticSearchViewsQuerySpec
   }
 
   private val fetch: FetchView = {
-    case (id: IriSegment, p) => IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
-    case (id, _)             => IO.raiseError(InvalidElasticSearchViewId(id.asString))
+    case (IdSegmentRef.Latest(id: IriSegment), p) =>
+      IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
+    case (id, _)                                  => IO.raiseError(InvalidElasticSearchViewId(id.value.asString))
   }
 
   private def createDocuments(view: IndexingViewResource): Seq[Json] =

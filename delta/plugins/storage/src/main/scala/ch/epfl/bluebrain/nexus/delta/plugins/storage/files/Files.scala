@@ -264,14 +264,14 @@ final class Files(
       projectRef: ProjectRef
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
-      file      <- fetch(iri, projectRef)
-      _         <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
-      storageRev = file.value.storage
-      storage   <- storages.fetchAt(storageRev.iri, projectRef, storageRev.rev).mapError(WrappedStorageRejection)
-      attr       = file.value.attributes
-      newAttr   <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
-      mediaType  = attr.mediaType orElse Some(newAttr.mediaType)
-      res       <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev)
+      file        <- fetch(iri, projectRef)
+      _           <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
+      storageIdRef = file.value.storage.toIdSegmentRef
+      storage     <- storages.fetch(storageIdRef, projectRef).mapError(WrappedStorageRejection)
+      attr         = file.value.attributes
+      newAttr     <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
+      mediaType    = attr.mediaType orElse Some(newAttr.mediaType)
+      res         <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev)
     } yield res
 
   /**
@@ -319,93 +319,49 @@ final class Files(
   /**
     * Fetch the last version of a file content
     *
-    * @param id        the file identifier to expand as the iri of the file
-    * @param project   the project where the storage belongs
+    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project the project where the storage belongs
     */
-  def fetchContent(
-      id: IdSegment,
-      project: ProjectRef
-  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
-    fetchContent(id, project, None).named("fetchFileContent", moduleType)
-
-  /**
-    * Fetches the file content at a given revision
-    *
-    * @param id      the file identifier to expand as the iri of the file
-    * @param project the project where the file belongs
-    * @param rev     the current revision of the file
-    */
-  def fetchContentAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
-    fetchContent(id, project, Some(rev)).named("fetchFileContentAt", moduleType)
-
-  /**
-    * Fetches a file content by tag.
-    *
-    * @param id      the file identifier to expand as the iri of the file
-    * @param project the project where the file belongs
-    * @param tag     the tag revision
-    */
-  def fetchContentBy(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: TagLabel
-  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
-    fetch(id, project, None)
-      .flatMap { resource =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchContentAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+  def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse] =
+    id.asTag
+      .fold(
+        for {
+          file      <- fetch(id, project)
+          attributes = file.value.attributes
+          storage   <- storages.fetch(file.value.storage, project)
+          permission = storage.value.storageValue.readPermission
+          _         <- acls.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
+          s         <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
+          mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
+        } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s)
+      ) { id =>
+        fetchBy(id, project).flatMap(file => fetchContent(id.toRev(file.rev), project))
       }
-      .named("fetchFileContentByTag", moduleType)
+      .named("fetchFileContent", moduleType)
 
   /**
     * Fetch the last version of a file
     *
-    * @param id         the file identifier to expand as the iri of the file
+    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
     * @param project the project where the storage belongs
     */
-  def fetch(id: IdSegment, project: ProjectRef): IO[FileRejection, FileResource] =
-    fetch(id, project, None).named("fetchFile", moduleType)
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] =
+    id.asTag
+      .fold(for {
+        p     <- projects.fetchProject(project)
+        iri   <- expandIri(id.value, p)
+        state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
+        res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), FileNotFound(iri, project))
+      } yield res)(fetchBy(_, project))
+      .named("fetchFile", moduleType)
 
-  /**
-    * Fetches the file at a given revision
-    *
-    * @param id      the file identifier to expand as the iri of the file
-    * @param project the project where the file belongs
-    * @param rev     the current revision of the file
-    */
-  def fetchAt(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  ): IO[FileRejection, FileResource] =
-    fetch(id, project, Some(rev)).named("fetchFileAt", moduleType)
-
-  /**
-    * Fetches a file by tag.
-    *
-    * @param id        the file identifier to expand as the iri of the file
-    * @param project   the project where the file belongs
-    * @param tag       the tag revision
-    */
-  def fetchBy(
-      id: IdSegment,
-      project: ProjectRef,
-      tag: TagLabel
-  ): IO[FileRejection, FileResource] =
-    fetch(id, project, None)
-      .flatMap { resource =>
-        resource.value.tags.get(tag) match {
-          case Some(rev) => fetchAt(id, project, rev).mapError(_ => TagNotFound(tag))
-          case None      => IO.raiseError(TagNotFound(tag))
-        }
+  private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[FileRejection, FileResource] =
+    fetch(id.toLatest, project).flatMap { file =>
+      file.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
-      .named("fetchFileByTag", moduleType)
+    }
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -458,33 +414,6 @@ final class Files(
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
     } yield res
-
-  private def fetch(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Option[Long]
-  ): IO[FileRejection, FileResource] =
-    for {
-      project <- projects.fetchProject(projectRef)
-      iri     <- expandIri(id, project)
-      state   <- rev.fold(currentState(projectRef, iri))(stateAt(projectRef, iri, _))
-      res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), FileNotFound(iri, projectRef))
-    } yield res
-
-  private def fetchContent(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      rev: Option[Long]
-  )(implicit caller: Caller): IO[FileRejection, FileResponse] =
-    for {
-      file      <- fetch(id, projectRef, rev)
-      attributes = file.value.attributes
-      storage   <- storages.fetch(file.value.storage, projectRef)
-      permission = storage.value.storageValue.readPermission
-      _         <- acls.authorizeForOr(projectRef, permission)(AuthorizationFailed(projectRef, permission))
-      source    <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
-      mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
-    } yield FileResponse(attributes.filename, mediaType, attributes.bytes, source)
 
   private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
     for {
@@ -655,12 +584,7 @@ object Files {
     * Create a reference exchange from a [[Files]] instance
     */
   def referenceExchange(files: Files)(implicit config: StorageTypeConfig): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) =>
-      ref match {
-        case ResourceRef.Latest(iri)           => files.fetch(iri, projectRef)
-        case ResourceRef.Revision(_, iri, rev) => files.fetchAt(iri, projectRef, rev)
-        case ResourceRef.Tag(_, iri, tag)      => files.fetchBy(iri, projectRef, tag)
-      }
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => files.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[File](fetch(_, _), _.asJson)
   }
 

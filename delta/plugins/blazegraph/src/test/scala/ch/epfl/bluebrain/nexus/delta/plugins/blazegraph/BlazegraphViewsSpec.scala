@@ -344,7 +344,7 @@ class BlazegraphViewsSpec
       }
 
       "fetch a view by tag" in {
-        views.fetchBy(aggregateViewId, projectRef, tag).accepted shouldEqual resourceFor(
+        views.fetch(IdSegmentRef(aggregateViewId, tag), projectRef).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
           aggregateValue,
@@ -357,7 +357,7 @@ class BlazegraphViewsSpec
       }
 
       "fetch a view by rev" in {
-        views.fetchAt(indexingViewId, projectRef, 1L).accepted shouldEqual resourceFor(
+        views.fetch(IdSegmentRef(indexingViewId, 1), projectRef).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
           indexingValue,
@@ -370,11 +370,11 @@ class BlazegraphViewsSpec
 
       "reject when the tag does not exist" in {
         val notFound = TagLabel.unsafe("notfound")
-        views.fetchBy(aggregateViewId, projectRef, notFound).rejected shouldEqual TagNotFound(notFound)
+        views.fetch(IdSegmentRef(aggregateViewId, notFound), projectRef).rejected shouldEqual TagNotFound(notFound)
       }
 
       "reject when the revision does not exit" in {
-        views.fetchAt(indexingViewId, projectRef, 42L).rejected shouldEqual RevisionNotFound(42L, 2L)
+        views.fetch(IdSegmentRef(indexingViewId, 42), projectRef).rejected shouldEqual RevisionNotFound(42L, 2L)
       }
 
       "reject when the view is not found" in {

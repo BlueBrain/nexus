@@ -99,38 +99,16 @@ trait Schemas {
   /**
     * Fetches a schema.
     *
-    * @param id         the identifier that will be expanded to the Iri of the schema
+    * @param id         the identifier that will be expanded to the Iri of the schema with its optional rev/tag
     * @param projectRef the project reference where the schema belongs
     */
-  def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource]
+  def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource]
 
-  /**
-    * Fetches a schema at a specific revision.
-    *
-    * @param id         the identifier that will be expanded to the Iri of the schema
-    * @param projectRef the project reference where the schema belongs
-    * @param rev       the schemas revision
-    * @return the schema as a schema at the specified revision
-    */
-  def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource]
-
-  /**
-    * Fetches a schema by tag.
-    *
-    * @param id         the identifier that will be expanded to the Iri of the schema
-    * @param projectRef the project reference where the schema belongs
-    * @param tag        the tag revision
-    * @return the schema as a schema at the specified revision
-    */
-  def fetchBy(
-      id: IdSegment,
-      projectRef: ProjectRef,
-      tag: TagLabel
-  ): IO[SchemaFetchRejection, SchemaResource] =
-    fetch(id, projectRef).flatMap { schema =>
-      schema.value.tags.get(tag) match {
-        case Some(rev) => fetchAt(id, projectRef, rev).mapError(_ => TagNotFound(tag))
-        case None      => IO.raiseError(TagNotFound(tag))
+  protected def fetchBy(id: IdSegmentRef.Tag, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
+    fetch(id.toLatest, projectRef).flatMap { schema =>
+      schema.value.tags.get(id.tag) match {
+        case Some(rev) => fetch(id.toRev(rev), projectRef).mapError(_ => TagNotFound(id.tag))
+        case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
 
@@ -141,16 +119,11 @@ trait Schemas {
     * @param resourceRef the resource identifier of the schema
     * @param projectRef  the project reference where the schema belongs
     */
-  def fetch[R](resourceRef: ResourceRef, projectRef: ProjectRef)(implicit
-      rejectionMapper: Mapper[SchemaFetchRejection, R]
-  ): IO[R, SchemaResource] = {
-    val schemaResourceF = resourceRef match {
-      case ResourceRef.Latest(iri)           => fetch(iri, projectRef)
-      case ResourceRef.Revision(_, iri, rev) => fetchAt(iri, projectRef, rev)
-      case ResourceRef.Tag(_, iri, tag)      => fetchBy(iri, projectRef, tag)
-    }
-    schemaResourceF.mapError(rejectionMapper.to)
-  }
+  def fetch[R](
+      resourceRef: ResourceRef,
+      projectRef: ProjectRef
+  )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, SchemaResource] =
+    fetch(resourceRef.toIdSegmentRef, projectRef).mapError(rejectionMapper.to)
 
   /**
     * Fetch the active [[Schema]] from the provided ''projectRef'' and ''resourceRef''.
@@ -163,10 +136,9 @@ trait Schemas {
       resourceRef: ResourceRef,
       projectRef: ProjectRef
   )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, Schema] =
-    fetch(resourceRef, projectRef).flatMap {
-      case res if !res.deprecated => IO.pure(res.value)
-      case _                      => IO.raiseError(rejectionMapper.to(SchemaIsDeprecated(resourceRef.original)))
-    }
+    fetch(resourceRef, projectRef).flatMap(res =>
+      IO.raiseWhen(res.deprecated)(rejectionMapper.to(SchemaIsDeprecated(resourceRef.original))).as(res.value)
+    )
 
   /**
     * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events

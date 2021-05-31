@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
@@ -59,7 +59,7 @@ object ElasticSearchQuery {
   private[compositeviews] type ElasticSearchClientQuery =
     (JsonObject, Set[String], Query) => HttpResult[Json]
   private[compositeviews] type FetchView                =
-    (IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewResource]
+    (IdSegmentRef, ProjectRef) => IO[CompositeViewRejection, ViewResource]
   private[compositeviews] type FetchProjection          =
     (IdSegment, IdSegment, ProjectRef) => IO[CompositeViewRejection, ViewElasticSearchProjectionResource]
 

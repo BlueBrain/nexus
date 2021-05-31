@@ -105,34 +105,21 @@ final class SchemasImpl private (
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
 
-  override def fetch(id: IdSegment, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] = {
-    for {
-      project <- projects.fetchProject(projectRef)
-      iri     <- expandIri(id, project)
-      state   <- currentState(projectRef, iri: Iri)
-      cached  <-
-        cache.getOrElseUpdate(
-          (projectRef, iri, state.rev),
-          IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
-        )
-    } yield cached
-  }.named("fetchSchema", moduleType)
-
-  override def fetchAt(id: IdSegment, projectRef: ProjectRef, rev: Long): IO[SchemaFetchRejection, SchemaResource] = {
-    for {
-      project <- projects.fetchProject(projectRef)
-      iri     <- expandIri(id, project)
-      cached  <- cache.getOrElseUpdate(
-                   (projectRef, iri, rev),
-                   stateAt(projectRef, iri, rev).flatMap { s =>
-                     IO.fromOption(s.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
-                   }
-                 )
-    } yield cached
-  }.named("fetchSchemaAt", moduleType)
-
-  override def fetchBy(id: IdSegment, projectRef: ProjectRef, tag: TagLabel): IO[SchemaFetchRejection, SchemaResource] =
-    super.fetchBy(id, projectRef, tag).named("fetchSchemaBy", moduleType)
+  override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
+    id.asTag
+      .fold(
+        for {
+          project <- projects.fetchProject(projectRef)
+          iri     <- expandIri(id.value, project)
+          state   <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
+          cached  <-
+            cache.getOrElseUpdate(
+              (projectRef, iri, state.rev),
+              IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
+            )
+        } yield cached
+      )(fetchBy(_, projectRef))
+      .named("fetchSchema", moduleType)
 
   override def events(
       projectRef: ProjectRef,

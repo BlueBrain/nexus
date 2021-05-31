@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
@@ -160,7 +160,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
 object ElasticSearchViewsQuery {
 
   private[elasticsearch] type FetchDefaultView = ProjectRef => IO[ElasticSearchViewRejection, IndexingViewResource]
-  private[elasticsearch] type FetchView        = (IdSegment, ProjectRef) => IO[ElasticSearchViewRejection, ViewResource]
+  private[elasticsearch] type FetchView        = (IdSegmentRef, ProjectRef) => IO[ElasticSearchViewRejection, ViewResource]
 
   final def apply(
       acls: Acls,

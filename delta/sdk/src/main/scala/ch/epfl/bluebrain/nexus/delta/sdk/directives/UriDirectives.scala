@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.javadsl.server.Rejections.validationRejection
+import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
@@ -18,13 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, Label, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 import akka.http.scaladsl.model.Uri.Path./
 
 import java.util.UUID
+import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 trait UriDirectives extends QueryParamsUnmarshalling {
@@ -197,10 +200,27 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     idSegment.flatMap {
       case str: StringSegment =>
         onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide(_)).getOrElse(reject())
+          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide).getOrElse(reject())
           case Left(_)        => reject()
         }
       case iri: IriSegment    => provide(iri.value)
+    }
+
+  /**
+    * Consumes the segment into [[IdSegmentRef]] and the rev/tag query parameter and generates an [[IdSegmentRef]]
+    */
+  val idSegmentRef: Directive1[IdSegmentRef] =
+    idSegment.flatMap(idSegmentRef(_))
+
+  /**
+    * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
+    */
+  def idSegmentRef(id: IdSegment): Directive1[IdSegmentRef] =
+    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)).tflatMap {
+      case (Some(_), Some(_)) => reject(simultaneousTagAndRevRejection)
+      case (Some(rev), _)     => provide(IdSegmentRef(id, rev))
+      case (_, Some(tag))     => provide(IdSegmentRef(id, tag))
+      case _                  => provide(IdSegmentRef(id))
     }
 
   /**
@@ -310,6 +330,31 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Directive0 =
     replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId, fetchProject, fetchByUuid)
 
+  /**
+    * Strips the trailing spaces of the provided path, for example: for /a// the result will be /a. If the provided
+    * path does not contain any trailing slashes it will be returned unmodified.
+    *
+    * @param path the path with optional trailing spaces
+    */
+  def stripTrailingSlashes(path: Path): Path = {
+    @tailrec
+    def strip(p: Path): Path =
+      p match {
+        case Path.Empty       => Path.Empty
+        case Path.Slash(rest) => strip(rest)
+        case other            => other
+      }
+    strip(path.reverse).reverse
+  }
+
+  /**
+    * Creates a path matcher from the argument ''uri'' by stripping the slashes at the end of its path.  The matcher
+    * is applied directly to the prefix of the unmatched path.
+    *
+    * @param uri the uri to use as a prefix
+    */
+  def uriPrefix(uri: Uri): Directive0 =
+    rawPathPrefix(PathMatcher(stripTrailingSlashes(uri.path), ()))
 }
 
 object UriDirectives extends UriDirectives
