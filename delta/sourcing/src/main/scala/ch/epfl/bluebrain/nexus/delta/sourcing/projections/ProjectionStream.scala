@@ -71,9 +71,9 @@ object ProjectionStream {
       */
     def collectSomeValue[R](f: A => Option[R]): Stream[Task, Message[R]] =
       stream.map(_.map(f)).map {
-        case s @ SuccessMessage(_, _, _, _, None, _)    => s.discarded
-        case s @ SuccessMessage(_, _, _, _, Some(v), _) => s.as(v)
-        case s: SkippedMessage                          => s
+        case s @ SuccessMessage(_, _, _, _, None, _, _)    => s.discarded
+        case s @ SuccessMessage(_, _, _, _, Some(v), _, _) => s.as(v)
+        case s: SkippedMessage                             => s
       }
 
     /**
@@ -154,8 +154,8 @@ object ProjectionStream {
       val init: (Option[ProjectionProgress[A]], Vector[Message[A]]) = (None, Vector.empty)
       val (progress, errors)                                        = chunk.foldLeft(init) { case ((_, messages), (progress, message)) =>
         val error = message match {
-          case SuccessMessage(_, _, _, _, _, warnings) => Option.when(warnings.nonEmpty)(message)
-          case m                                       => Some(m)
+          case SuccessMessage(_, _, _, _, _, warnings, _) => Option.when(warnings.nonEmpty)(message)
+          case m                                          => Some(m)
         }
         (Some(progress), messages ++ error)
       }
@@ -263,8 +263,15 @@ object ProjectionStream {
         .foldRight((Set.empty[String], List.empty[Message[A]])) {
           // If we have seen the id before, we discard
           case (current: SuccessMessage[A], (seen, result)) if seen.contains(current.persistenceId) =>
-            (seen, current.discarded :: result)
-          // New persistence id, we add it to the seeen list and we keep it
+            (
+              seen,
+              result.map {
+                case m: SuccessMessage[A] if m.persistenceId == current.persistenceId =>
+                  m.copy(skippedRevisions = m.skippedRevisions + current.skippedRevisions + 1)
+                case m                                                                => m
+              }
+            )
+          // New persistence id, we add it to the seen list and we keep it
           case (current: SuccessMessage[A], (seen, result))                                         =>
             (seen + current.persistenceId, current :: result)
           // Discarded or error message, we keep them that way
@@ -327,9 +334,9 @@ object ProjectionStream {
     def collectSomeValue[R](f: A => Option[R]): Stream[Task, Chunk[Message[R]]] =
       stream.map { chunk =>
         chunk.map(_.map(f)).map {
-          case s @ SuccessMessage(_, _, _, _, None, _)    => s.discarded
-          case s @ SuccessMessage(_, _, _, _, Some(v), _) => s.as(v)
-          case s: SkippedMessage                          => s
+          case s @ SuccessMessage(_, _, _, _, None, _, _)    => s.discarded
+          case s @ SuccessMessage(_, _, _, _, Some(v), _, _) => s.as(v)
+          case s: SkippedMessage                             => s
         }
       }
 

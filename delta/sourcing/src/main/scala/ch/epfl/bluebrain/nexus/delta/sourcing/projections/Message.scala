@@ -65,8 +65,13 @@ final case class CastFailedMessage(
 /**
   * Message when it has been filtered out during the projection process
   */
-final case class DiscardedMessage(offset: Offset, timestamp: Instant, persistenceId: String, sequenceNr: Long)
-    extends SkippedMessage
+final case class DiscardedMessage(
+    offset: Offset,
+    timestamp: Instant,
+    persistenceId: String,
+    sequenceNr: Long,
+    skippedRevisions: Long = 0L
+) extends SkippedMessage
 
 /**
   * Message which hasn't been filtered out nor been victim of a failure
@@ -80,10 +85,11 @@ final case class SuccessMessage[A](
     persistenceId: String,
     sequenceNr: Long,
     value: A,
-    warnings: Vector[RunResult.Warning]
+    warnings: Vector[RunResult.Warning],
+    skippedRevisions: Long = 0L
 ) extends Message[A] {
 
-  def discarded: DiscardedMessage = DiscardedMessage(offset, timestamp, persistenceId, sequenceNr)
+  def discarded: DiscardedMessage = DiscardedMessage(offset, timestamp, persistenceId, sequenceNr, skippedRevisions)
 
   def failed(throwable: Throwable): FailureMessage[A] =
     FailureMessage(offset, timestamp, persistenceId, sequenceNr, throwable)
@@ -149,9 +155,9 @@ object Message {
     @annotation.tailrec
     override def tailRecM[A, B](init: A)(f: A => Message[Either[A, B]]): Message[B] =
       f(init) match {
-        case e: SkippedMessage                               => e
-        case s @ SuccessMessage(_, _, _, _, Right(value), _) => s.copy(value = value)
-        case SuccessMessage(_, _, _, _, Left(err), _)        => tailRecM(err)(f)
+        case e: SkippedMessage                                  => e
+        case s @ SuccessMessage(_, _, _, _, Right(value), _, _) => s.copy(value = value)
+        case SuccessMessage(_, _, _, _, Left(err), _, _)        => tailRecM(err)(f)
       }
 
     override def map[A, B](fa: Message[A])(f: A => B): Message[B] = functorFilter.functor.map(fa)(f)

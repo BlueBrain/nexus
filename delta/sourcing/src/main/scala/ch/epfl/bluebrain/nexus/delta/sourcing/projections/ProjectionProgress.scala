@@ -34,7 +34,12 @@ final case class ProjectionProgress[A](
   def +(message: Message[A]): ProjectionProgress[A] =
     message match {
       case m: DiscardedMessage  =>
-        copy(offset = m.offset, timestamp = m.timestamp, processed = processed + 1, discarded = discarded + 1)
+        copy(
+          offset = m.offset,
+          timestamp = m.timestamp,
+          processed = processed + 1,
+          discarded = discarded + m.skippedRevisions + 1
+        )
       case m: ErrorMessage      =>
         copy(offset = m.offset, timestamp = timestampOrCurrent(m), processed = processed + 1, failed = failed + 1)
       case s: SuccessMessage[A] =>
@@ -42,7 +47,7 @@ final case class ProjectionProgress[A](
           timestamp = timestamp.max(s.timestamp),
           offset = s.offset.max(offset),
           warnings = warnings + s.warnings.size,
-          processed = processed + 1,
+          processed = processed + s.skippedRevisions + 1,
           value = s.value
         )
     }
