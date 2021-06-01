@@ -144,9 +144,8 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
         // Only one chunk
         (0, 0, 0, "first").success ::
           (1, 0, 1, "failed").failed ::
-          (2, 1, 0).discarded :: // <- Duplicate
           (3, 0, 2).discarded ::
-          (4, 1, 1, "second new").success ::
+          (4, 1, 1, "second new").success.copy(skippedRevisions = 1) ::
           (5, 1, 2).discarded ::
           (6, 2, 0, "third kept").success ::
           Nil
