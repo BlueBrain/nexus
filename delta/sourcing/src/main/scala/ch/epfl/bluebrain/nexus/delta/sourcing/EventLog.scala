@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, PersistenceQuery, TimeBasedUUID}
-import cats.effect.ExitCase
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import com.typesafe.scalalogging.Logger
 import fs2._
@@ -95,12 +94,6 @@ object EventLog {
         .handleErrorWith { e =>
           logger.error(s"EventLog stream $description encountered an error.", e)
           Stream.raiseError[Task](e)
-        }
-        .onFinalizeCase {
-          case ExitCase.Completed =>
-            Task.delay(logger.debug(s"EventLog stream $description has been successfully completed."))
-          case ExitCase.Error(e)  => Task.delay(logger.error(s"EventLog stream $description has failed.", e))
-          case ExitCase.Canceled  => Task.delay(logger.warn(s"EventLog stream $description got cancelled."))
         }
 
     override def currentPersistenceIds: Stream[Task, String] =

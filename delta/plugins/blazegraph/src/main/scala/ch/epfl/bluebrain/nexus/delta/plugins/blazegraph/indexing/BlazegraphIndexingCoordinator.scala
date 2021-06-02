@@ -6,12 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewSearchParams, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamAwake.CurrentViews
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamAwake, IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
@@ -59,6 +65,7 @@ object BlazegraphIndexingCoordinator {
   def apply(
       views: BlazegraphViews,
       indexingController: BlazegraphIndexingController,
+      eventLog: EventLog[Envelope[ProjectScopedEvent]],
       indexingStream: BlazegraphIndexingStream,
       indexingCleanup: BlazegraphIndexingCleanup,
       config: BlazegraphViewsConfig
@@ -66,7 +73,15 @@ object BlazegraphIndexingCoordinator {
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ): Task[BlazegraphIndexingCoordinator] =
+  ): Task[BlazegraphIndexingCoordinator] = {
+    val currentViews: CurrentViews = project =>
+      views
+        .list(
+          Pagination.OnePage,
+          BlazegraphViewSearchParams(project = Some(project), deprecated = Some(false), filter = _ => true),
+          ResourceF.defaultSort
+        )
+        .map(_.results.map(v => Revision(v.source.id, v.source.rev)))
     Task
       .delay {
         val retryStrategy =
@@ -75,6 +90,7 @@ object BlazegraphIndexingCoordinator {
         IndexingStreamCoordinator(
           indexingController,
           fetchView(views, config),
+          config.idleTimeout,
           indexingStream,
           indexingCleanup,
           retryStrategy
@@ -82,7 +98,9 @@ object BlazegraphIndexingCoordinator {
       }
       .tapEval { coordinator =>
         IO.unless(MigrationState.isIndexingDisabled)(
-          BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, coordinator)
+          BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, coordinator) >>
+            IndexingStreamAwake.start(eventLog, coordinator, currentViews, config.idleTimeout, config.indexing.retry)
         )
       }
+  }
 }

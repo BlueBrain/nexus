@@ -13,6 +13,7 @@ import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 
 /**
@@ -26,6 +27,7 @@ import scala.util.Try
   * @param cacheIndexing configuration of the cache indexing process
   * @param indexing      configuration of the external indexing process
   * @param maxViewRefs   configuration of the maximum number of view references allowed on an aggregated view
+  * @param idleTimeout   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -35,7 +37,8 @@ final case class ElasticSearchViewsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
-    maxViewRefs: Int
+    maxViewRefs: Int,
+    idleTimeout: FiniteDuration
 )
 
 object ElasticSearchViewsConfig {

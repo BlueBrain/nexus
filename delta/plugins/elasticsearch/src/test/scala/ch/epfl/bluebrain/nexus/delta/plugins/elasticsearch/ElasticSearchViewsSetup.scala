@@ -18,6 +18,8 @@ import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
+import scala.concurrent.duration._
+
 trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedClock {
 
   private def config(implicit baseUri: BaseUri) = ElasticSearchViewsConfig(
@@ -28,7 +30,8 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
     pagination,
     cacheIndexing,
     externalIndexing,
-    10
+    10,
+    1.minute
   )
 
   def init(

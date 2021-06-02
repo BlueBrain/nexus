@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -40,6 +41,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
   make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect { databaseEventLog[ElasticSearchViewEvent](_, _) }
+  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
   make[HttpClient].named("elasticsearch-client").from {
     (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
@@ -102,6 +104,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
         views: ElasticSearchViews,
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         indexingController: ElasticSearchIndexingController,
         indexingCleanup: ElasticSearchIndexingCleanup,
         indexingStream: ElasticSearchIndexingStream,
@@ -110,7 +113,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+      ElasticSearchIndexingCoordinator(views, indexingController, eventLog, indexingStream, indexingCleanup, config)(
         uuidF,
         as,
         scheduler

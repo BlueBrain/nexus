@@ -26,6 +26,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param blazegraphIndexing    the Blazegraph indexing config
   * @param remoteSourceClient    the HTTP client configuration for a remote source
   * @param minIntervalRebuild    the minimum allowed value for periodic rebuild strategy
+  * @param idleTimeout   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -37,7 +38,8 @@ final case class CompositeViewsConfig(
     elasticSearchIndexing: ExternalIndexingConfig,
     blazegraphIndexing: ExternalIndexingConfig,
     remoteSourceClient: RemoteSourceClientConfig,
-    minIntervalRebuild: FiniteDuration
+    minIntervalRebuild: FiniteDuration,
+    idleTimeout: FiniteDuration
 )
 
 object CompositeViewsConfig {

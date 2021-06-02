@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, _}
@@ -98,6 +99,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
         views: BlazegraphViews,
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         indexingStream: BlazegraphIndexingStream,
         indexingCleanup: BlazegraphIndexingCleanup,
         indexingController: BlazegraphIndexingController,
@@ -106,7 +108,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+      BlazegraphIndexingCoordinator(views, indexingController, eventLog, indexingStream, indexingCleanup, config)(
         uuidF,
         as,
         scheduler

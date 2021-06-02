@@ -20,8 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -31,6 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
@@ -177,9 +180,10 @@ class BlazegraphIndexingSpec
   private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
 
   private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
+  private val eventLog               = EventLog.postgresEventLog[Envelope[ProjectScopedEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val indexingCleanup        = new BlazegraphIndexingCleanup(blazegraphClient, cache)
   private val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
-  BlazegraphIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
+  BlazegraphIndexingCoordinator(views, controller, eventLog, indexingStream, indexingCleanup, config).accepted
 
   "BlazegraphIndexing" should {
 
