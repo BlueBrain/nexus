@@ -7,9 +7,9 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IORef, IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity._
+import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
@@ -25,6 +25,7 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
+import BaseSpec._
 
 import scala.concurrent.duration._
 
@@ -84,10 +85,27 @@ trait BaseSpec
              Identity.ServiceAccount,
              Permission.minimalPermissions
            )
-      _ <- aclDsl.cleanAclsAnonymous
+      _ <- initRealm(
+             testRealm,
+             Identity.ServiceAccount,
+             testClient,
+             allUsers
+           )
     } yield ()
-    setup.runSyncUnsafe()
+
+    val allTasks = for {
+      isSetupCompleted <- setupCompleted.get
+      _                <- Task.unless(isSetupCompleted)(setup)
+      _                <- setupCompleted.set(true)
+      _                <- aclDsl.cleanAclsAnonymous
+    } yield ()
+
+    allTasks.runSyncUnsafe()
+
   }
+
+  override def afterAll(): Unit =
+    Task.when(config.cleanUp)(elasticsearchDsl.deleteAllIndices().void).runSyncUnsafe()
 
   private def toAuthorizationHeader(token: String) =
     Authorization(
@@ -161,7 +179,7 @@ trait BaseSpec
       // Create the realm in Keycloak
       _ <- keycloakDsl.importRealm(realm, client, users)
       // Get the tokens and cache them in the map
-      _ <- users.traverse { user =>
+      _ <- users.parTraverse { user =>
              authenticateUser(user, client)
            }
       _ <- authenticateClient(client)
@@ -200,5 +218,11 @@ trait BaseSpec
 
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
+
+}
+
+object BaseSpec {
+
+  val setupCompleted: IORef[Boolean] = IORef.unsafe(false)
 
 }

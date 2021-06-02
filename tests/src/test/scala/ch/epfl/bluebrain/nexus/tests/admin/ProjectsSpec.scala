@@ -2,19 +2,15 @@ package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.Identity.{Authenticated, UserCredentials}
+import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
+import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.ProjectsTag
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity}
 import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
 
 class ProjectsSpec extends BaseSpec {
-
-  private val testRealm       = Realm("projects" + genString())
-  private val testClient      = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Bojack          = UserCredentials(genString(), genString(), testRealm)
-  private val PrincessCarolyn = UserCredentials(genString(), genString(), testRealm)
 
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
 
@@ -32,16 +28,6 @@ class ProjectsSpec extends BaseSpec {
     StatusCodes.Conflict,
     jsonContentOf("/admin/errors/project-incorrect-revision.json")
   )
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Bojack :: PrincessCarolyn :: Nil
-    ).runSyncUnsafe()
-  }
 
   "projects API" should {
 
@@ -335,7 +321,7 @@ class ProjectsSpec extends BaseSpec {
                "Description",
                Bojack
              )
-        _ <- projectIds.traverse { case (orgId, projId) =>
+        _ <- projectIds.parTraverse { case (orgId, projId) =>
                adminDsl.createProject(
                  orgId,
                  projId,
@@ -382,7 +368,7 @@ class ProjectsSpec extends BaseSpec {
       )
 
       for {
-        _ <- projectsToList.traverse { case (orgId, projectId) =>
+        _ <- projectsToList.parTraverse { case (orgId, projectId) =>
                aclDsl.addPermission(
                  s"/$orgId/$projectId",
                  PrincessCarolyn,

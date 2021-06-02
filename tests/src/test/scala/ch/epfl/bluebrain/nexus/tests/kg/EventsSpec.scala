@@ -1,44 +1,36 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.EventsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import com.fasterxml.uuid.Generators
-import com.typesafe.scalalogging.Logger
 import io.circe.Json
+import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.Inspectors
 
 class EventsSpec extends BaseSpec with Inspectors {
 
-  private val logger = Logger[this.type]
-
-  private val orgId              = genId()
-  private val orgId2             = genId()
-  private val projId             = genId()
-  private val id                 = s"$orgId/$projId"
-  private val id2                = s"$orgId2/$projId"
-  private lazy val timestampUuid = Generators.timeBasedGenerator().generate()
-
-  private[tests] val testRealm  = Realm("events" + genString())
-  private[tests] val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private[tests] val BugsBunny  = UserCredentials(genString(), genString(), testRealm)
+  private val orgId                          = genId()
+  private val orgId2                         = genId()
+  private val projId                         = genId()
+  private val id                             = s"$orgId/$projId"
+  private val id2                            = s"$orgId2/$projId"
+  private var initialEventId: Option[String] = None
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    logger.info(s"TimestampUuid: $timestampUuid")
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      BugsBunny :: Nil
-    ).runSyncUnsafe()
-    // force timestampUuid to be evaluated
-    val _ = timestampUuid.toString
-    ()
+    deltaClient
+      .get[VersionBundle]("/version", Identity.ServiceAccount) { (version, _) =>
+        initialEventId = version.dependencies.cassandra.map(_ => Generators.timeBasedGenerator().generate().toString)
+        succeed
+      }
+      .void
+      .runSyncUnsafe()
   }
 
   "creating projects" should {
@@ -175,7 +167,7 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by project" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, timestampUuid, take = 11L) { seq =>
+        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 11L) { seq =>
                    val projectEvents = seq.drop(5)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
@@ -205,7 +197,7 @@ class EventsSpec extends BaseSpec with Inspectors {
     "fetch resource events filtered by organization 1" taggedAs EventsTag in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, timestampUuid, take = 12L) { seq =>
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
                    val projectEvents = seq.drop(6)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
@@ -236,7 +228,7 @@ class EventsSpec extends BaseSpec with Inspectors {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
         _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, timestampUuid, take = 7L) { seq =>
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
             val projectEvents = seq.drop(6)
             projectEvents.size shouldEqual 1
             projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
@@ -257,39 +249,44 @@ class EventsSpec extends BaseSpec with Inspectors {
     }
 
     "fetch global events" taggedAs EventsTag in {
-      for {
-        uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-        _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, timestampUuid, take = 19) { seq =>
-                    val projectEvents = seq.drop(12)
-                    projectEvents.size shouldEqual 7
-                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                      "ResourceCreated",
-                      "ResourceCreated",
-                      "ResourceUpdated",
-                      "ResourceTagAdded",
-                      "ResourceDeprecated",
-                      "FileCreated",
-                      "FileUpdated"
-                    )
-                    val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                    json shouldEqual jsonContentOf(
-                      "/kg/events/events-multi-project.json",
-                      replacements(
-                        BugsBunny,
-                        "resources"         -> s"${config.deltaUri}/resources/$id",
-                        "organizationUuid"  -> uuids._1,
-                        "projectUuid"       -> uuids._2,
-                        "organization2Uuid" -> uuids2._1,
-                        "project2Uuid"      -> uuids2._2,
-                        "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
-                        "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
-                        "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
-                        "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
-                      ): _*
-                    )
-                  }
-      } yield succeed
+      // Only for cassandra, it is difficult to get the current sequence value with PostgreSQL
+      Task
+        .when(initialEventId.isDefined) {
+          for {
+            uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
+            uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
+            _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 19) { seq =>
+                        val projectEvents = seq.drop(12)
+                        projectEvents.size shouldEqual 7
+                        projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+                          "ResourceCreated",
+                          "ResourceCreated",
+                          "ResourceUpdated",
+                          "ResourceTagAdded",
+                          "ResourceDeprecated",
+                          "FileCreated",
+                          "FileUpdated"
+                        )
+                        val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+                        json shouldEqual jsonContentOf(
+                          "/kg/events/events-multi-project.json",
+                          replacements(
+                            BugsBunny,
+                            "resources"         -> s"${config.deltaUri}/resources/$id",
+                            "organizationUuid"  -> uuids._1,
+                            "projectUuid"       -> uuids._2,
+                            "organization2Uuid" -> uuids2._1,
+                            "project2Uuid"      -> uuids2._2,
+                            "project"           -> s"${config.deltaUri}/projects/$orgId/$projId",
+                            "project2"          -> s"${config.deltaUri}/projects/$orgId2/$projId",
+                            "schemaProject"     -> s"${config.deltaUri}/projects/$orgId/$projId",
+                            "schemaProject2"    -> s"${config.deltaUri}/projects/$orgId2/$projId"
+                          ): _*
+                        )
+                      }
+          } yield ()
+        }
+        .as(succeed)
     }
   }
 }

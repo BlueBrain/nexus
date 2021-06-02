@@ -38,7 +38,8 @@ object VersionSpec {
 
   final case class DependenciesBundle(
       blazegraph: String,
-      cassandra: String,
+      cassandra: Option[String],
+      postgres: Option[String],
       elasticsearch: String,
       remoteStorage: String
   )

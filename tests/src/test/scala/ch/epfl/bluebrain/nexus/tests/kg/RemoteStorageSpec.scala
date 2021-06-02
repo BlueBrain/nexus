@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import java.io.File
-import java.nio.file.{Files, Paths}
-
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity
+import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
 import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
@@ -13,6 +11,8 @@ import io.circe.Json
 import monix.bio.Task
 import org.scalatest.Assertion
 
+import java.io.File
+import java.nio.file.{Files, Paths}
 import scala.reflect.io.Directory
 
 class RemoteStorageSpec extends StorageSpec {

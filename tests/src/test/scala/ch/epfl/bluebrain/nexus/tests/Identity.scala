@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests
 
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+
 sealed trait Identity extends Product with Serializable
 
-object Identity {
+object Identity extends TestHelpers {
 
   case object Anonymous extends Identity
 
@@ -27,5 +29,49 @@ object Identity {
   val ServiceAccount: ClientCredentials = ClientCredentials("delta", "shhh", internal)
 
   val Delta: UserCredentials = UserCredentials("delta", "shhh", internal)
+
+  val testRealm  = Realm("test-" + genString())
+  val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
+
+  object acls {
+    val Marge = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object archives {
+    val Tweety = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object compositeviews {
+    val Jerry = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object events {
+    val BugsBunny = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object orgs {
+    val Fry   = UserCredentials(genString(), genString(), testRealm)
+    val Leela = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object projects {
+    val Bojack          = UserCredentials(genString(), genString(), testRealm)
+    val PrincessCarolyn = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object resources {
+    val Rick = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object storages {
+    val Coyote = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  object views {
+    val ScoobyDoo = UserCredentials(genString(), genString(), testRealm)
+  }
+
+  lazy val allUsers =
+    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: storages.Coyote :: views.ScoobyDoo :: Nil
 
 }

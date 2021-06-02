@@ -4,6 +4,7 @@ services:
     depends_on:
       - keycloak
       - elasticsearch
+      - blazegraph
       - cassandra
       - storage-service
       - minio
@@ -12,7 +13,7 @@ services:
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest<localBuild>
     entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta-app",
-                 "-Xmx2G",
+                 "-Xmx512m",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
                  "-Dapp.cluster.remote-interface=delta",
@@ -21,16 +22,23 @@ services:
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-                 "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+                 "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+                 "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+                 "-Dplugins.composite-views.indexing.max-time-window=50ms",
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
-                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-                 "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
+                 "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
+                 "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
     ports:
       - "8080"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
 
 #########################################################
 #  Uncomment the following lines to run a local cluster #
@@ -91,16 +99,22 @@ services:
   keycloak:
     image: jboss/keycloak:11.0.1<skipPull>
     environment:
+      JAVA_OPTS: "-Xms64m -Xmx256m"
       KEYCLOAK_USER: "admin"
       KEYCLOAK_PASSWORD: "admin"
       KEYCLOAK_FRONTEND_URL: "http://keycloak:8080/auth"
+      DB_VENDOR: H2
     ports:
       - "8080"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0<skipPull>
     environment:
-      ES_JAVA_OPTS: "-Xmx1G"
+      ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
     healthcheck:
@@ -110,30 +124,41 @@ services:
       retries: 3
     ports:
       - "9200"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   blazegraph:
     image: bluebrain/blazegraph-nexus:2.1.5<skipPull>
     environment:
-      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=300m -Xms1g -Xmx1g -XX:+UseG1GC"
+      JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
     ports:
       - "9999"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   cassandra:
     image: cassandra:3.11.8<skipPull>
     environment:
-      JVM_OPTS: "-Xms1g -Xmx1g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0"
-      MAX_HEAP_SIZE: "1G"
+      JVM_OPTS: "-Xms300m -Xmx512m -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0"
+      MAX_HEAP_SIZE: "512m"
       HEAP_NEWSIZE: "100m"
       CASSANDRA_BROADCAST_ADDRESS: cassandra
+      CASSANDRA_NUM_TOKENS: 1
     healthcheck:
       test: ["CMD", "cqlsh","-e describe keyspaces"]
       interval: 30s
       timeout: 20s
       retries: 3
 
+
   storage-service:
     image: bluebrain/nexus-storage:latest
     entrypoint: [ "./bin/storage",
+                  "-Xmx192m",
                   "-Dapp.instance.interface=0.0.0.0",
                   "-Dapp.http.interface=0.0.0.0",
                   "-Dapp.http.public-uri=http://storage.tests.nexus.ocp.bbp.epfl.ch",
@@ -151,6 +176,10 @@ services:
       - "8080"
     volumes:
       - /tmp/storage:/data
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   minio:
     image: minio/minio:RELEASE.2020-09-21T22-31-59Z<skipPull>

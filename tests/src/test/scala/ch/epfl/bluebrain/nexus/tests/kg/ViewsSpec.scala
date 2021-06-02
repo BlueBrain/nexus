@@ -3,20 +3,17 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, UserCredentials}
+import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.ViewsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
 class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
-
-  private val testRealm  = Realm("views" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val ScoobyDoo  = UserCredentials(genString(), genString(), testRealm)
 
   private val orgId  = genId()
   private val projId = genId()
@@ -26,16 +23,6 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
   val fullId2         = s"$orgId/$projId2"
 
   val projects = List(fullId, fullId2)
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      ScoobyDoo :: Nil
-    ).runSyncUnsafe()
-  }
 
   "creating projects" should {
     "add necessary permissions for user" taggedAs ViewsTag in {
@@ -58,7 +45,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "create a context" taggedAs ViewsTag in {
       val payload = jsonContentOf("/kg/views/context.json")
 
-      projects.traverse { project =>
+      projects.parTraverse { project =>
         deltaClient.put[Json](s"/resources/$project/resource/test-resource:context", payload, ScoobyDoo) {
           (_, response) =>
             response.status shouldEqual StatusCodes.Created
@@ -78,7 +65,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "create an ElasticSearch view" taggedAs ViewsTag in {
       val payload = jsonContentOf("/kg/views/elastic-view.json")
 
-      projects.traverse { project =>
+      projects.parTraverse { project =>
         deltaClient.put[Json](s"/views/$project/test-resource:testView", payload, ScoobyDoo) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
         }
@@ -166,7 +153,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "post instances" taggedAs ViewsTag in {
-      (1 to 8).toList.traverse { i =>
+      (1 to 8).toList.parTraverse { i =>
         val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
@@ -350,7 +337,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "tag resources resource" taggedAs ViewsTag in {
-      (1 to 5).toList.traverse { i =>
+      (1 to 5).toList.parTraverse { i =>
         val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
