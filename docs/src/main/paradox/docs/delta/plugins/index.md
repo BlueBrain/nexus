@@ -103,6 +103,17 @@ Plugins should provide their default configuration in `{plugin_name}.conf` file,
 Plugins should include their config inside `plugins.{plugin_name}` namespace in the config.
 `plugins.{plugin_name}.priority` configuration setting defines priority of the plugin, which is used to determine order in which routes provided by plugins are evaluated.
 
+### Adding plugins to a Delta deployment
+
+Delta loads plugins from `.jar` files present in a folder specified by `DELTA_PLUGINS` environment variable. In order to make delta discover the plugin,
+the `.jar` file of the plugin must be added(or symlinked) to that directory. In the official Delta Docker image the plugins
+are loaded from `/opt/docker/plugins` directory.
+
+### Enabling/disabling plugins
+
+Additionally, plugins can be enabled/disabled using `plugins.{plugin_name}.enabled` property. Setting this property to `false`, will disable the given plugin.
+
+
 ## Existing plugins
 
 Currently, following Delta functionality is provided by plugins:
