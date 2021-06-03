@@ -2,31 +2,16 @@ package ch.epfl.bluebrain.nexus.tests.admin
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.orgs.{Fry, Leela}
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.OrgsTag
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse}
 import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
 
 class OrgsSpec extends BaseSpec with EitherValuable {
 
-  private val testRealm  = Realm("orgs" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Fry        = UserCredentials(genString(), genString(), testRealm)
-  private val Leela      = UserCredentials(genString(), genString(), testRealm)
-
   import ch.epfl.bluebrain.nexus.tests.iam.types.Permission._
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Fry :: Leela :: Nil
-    ).runSyncUnsafe()
-  }
 
   private val UnauthorizedAccess = ExpectedResponse(
     StatusCodes.Forbidden,

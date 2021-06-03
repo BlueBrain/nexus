@@ -93,7 +93,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
         .filter(_.acl.nonEmpty)
 
       permissions
-        .traverse { acl =>
+        .parTraverse { acl =>
           val payload = jsonContentOf(
             "/iam/subtract-permissions.json",
             "realm" -> target.realm.name,
@@ -123,7 +123,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
         .filter(_.acl.nonEmpty)
 
       permissions
-        .traverse { acl =>
+        .parTraverse { acl =>
           val payload = jsonContentOf(
             "/iam/subtract-permissions-anon.json",
             "perms" -> acl.acl.head.permissions.map(_.value).mkString("""","""")

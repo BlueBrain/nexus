@@ -4,15 +4,15 @@ import akka.http.scaladsl.model.headers.{ContentDispositionTypes, HttpEncodings}
 import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse, StatusCodes}
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.CirceEq
+import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
@@ -32,21 +32,6 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   private[tests] val orgId  = genId()
   private[tests] val projId = genId()
   private[tests] val fullId = s"$orgId/$projId"
-
-  private[tests] val testRealm  = Realm("storage" + genString())
-  private[tests] val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private[tests] val Coyote     = UserCredentials(genString(), genString(), testRealm)
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Coyote :: Nil
-    ).runSyncUnsafe()
-    ()
-  }
 
   def storageName: String
 

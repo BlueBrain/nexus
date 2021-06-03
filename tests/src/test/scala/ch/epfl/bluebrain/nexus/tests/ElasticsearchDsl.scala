@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods.PUT
+import akka.http.scaladsl.model.HttpMethods.{DELETE, PUT}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCode}
 import akka.stream.Materializer
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
@@ -45,5 +45,18 @@ class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer) ext
       res.status
     }
   }
+
+  def deleteAllIndices(): Task[StatusCode] =
+    elasticClient(
+      HttpRequest(
+        method = DELETE,
+        uri = s"$elasticUrl/delta_*"
+      )
+    ).tapError { t =>
+      Task { logger.error(s"Error while deleting elasticsearch indices", t) }
+    }.map { res =>
+      logger.info(s"Deleting elasticsearch indices returned ${res.status}")
+      res.status
+    }
 
 }
