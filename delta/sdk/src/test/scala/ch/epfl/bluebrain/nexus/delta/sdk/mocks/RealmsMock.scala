@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.RealmNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmCommand, RealmEvent, RealmRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
@@ -33,5 +33,4 @@ class RealmsMock(expected: Map[Label, RealmResource]) extends Realms {
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[RealmEvent]] = ???
   // format: on
-  override def importRealm(importRealm: RealmCommand.ImportRealm): IO[RealmRejection, RealmResource] = ???
 }

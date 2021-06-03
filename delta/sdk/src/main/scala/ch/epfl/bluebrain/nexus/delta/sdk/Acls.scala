@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.time.Instant
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{IdentityRealm, Subject}
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
+import java.time.Instant
 import scala.collection.immutable.Iterable
 
 /**
@@ -320,7 +320,7 @@ object Acls {
         IO.parSequence(acl.value.keySet.collect { case id: IdentityRealm => realms.fetch(id.realm).attempt }.toList)
           .flatMap { results =>
             val unknownRealmLabels = results.collect { case Left(err) => err.label }.toSet
-            IO.when(!MigrationState.isRunning && unknownRealmLabels.nonEmpty)(
+            IO.when(unknownRealmLabels.nonEmpty)(
               IO.raiseError(UnknownRealms(unknownRealmLabels))
             )
           } >>

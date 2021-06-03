@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
-import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
+import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOValues}
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.Locator
@@ -65,25 +65,10 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
       else fail(s"No plugin jar files were found in '$pluginsParentPath'")
     }
 
-    "yield a correct plan in Normal mode" in {
+    "yield a correct plan" in {
       val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
       val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
       val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
-
-      PlanVerifier()
-        .verify[Task](
-          bindings = modules,
-          roots = Roots.Everything,
-          providedKeys = Set.empty,
-          excludedActivations = Set.empty
-        )
-        .throwOnError()
-    }
-
-    "yield a correct plan in Migration mode" in {
-      val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
-      val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
-      val modules: Module          = (MigrationModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
 
       PlanVerifier()
         .verify[Task](

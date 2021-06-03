@@ -9,14 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.{MigrationState, Resolvers, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.{Resolvers, ScopeInitialization}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
 /**
-  * The default creation of the InProject resolver as part of the project initialization. It performs a noop if
-  * executed during a migration.
+  * The default creation of the InProject resolver as part of the project initialization.
   *
   * @param resolvers      the resolvers module
   * @param serviceAccount the subject that will be recorded when performing the initialization
@@ -28,21 +27,19 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
   implicit private val caller: Caller                      = serviceAccount.caller
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
-    if (MigrationState.isRunning) UIO.unit
-    else
-      resolvers
-        .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue)
-        .void
-        .onErrorHandleWith {
-          case _: ResourceAlreadyExists        => UIO.unit // nothing to do, resolver already exits
-          case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
-          case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
-          case rej                             =>
-            val str =
-              s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
-            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-        }
-        .named("createDefaultResolver", Resolvers.moduleType)
+    resolvers
+      .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue)
+      .void
+      .onErrorHandleWith {
+        case _: ResourceAlreadyExists        => UIO.unit // nothing to do, resolver already exits
+        case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
+        case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
+        case rej                             =>
+          val str =
+            s"Failed to create the default InProject resolver for project '${project.ref}' due to '${rej.reason}'."
+          UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+      }
+      .named("createDefaultResolver", Resolvers.moduleType)
 
   override def onOrganizationCreation(
       organization: Organization,

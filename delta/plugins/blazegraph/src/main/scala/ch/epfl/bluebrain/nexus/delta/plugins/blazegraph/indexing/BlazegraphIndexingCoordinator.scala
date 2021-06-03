@@ -8,12 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Ind
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.DifferentBlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task}
+import monix.bio.Task
 import monix.execution.Scheduler
 
 object BlazegraphIndexingCoordinator {
@@ -80,9 +79,5 @@ object BlazegraphIndexingCoordinator {
           retryStrategy
         )
       }
-      .tapEval { coordinator =>
-        IO.unless(MigrationState.isIndexingDisabled)(
-          BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, coordinator)
-        )
-      }
+      .tapEval(BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, _))
 }

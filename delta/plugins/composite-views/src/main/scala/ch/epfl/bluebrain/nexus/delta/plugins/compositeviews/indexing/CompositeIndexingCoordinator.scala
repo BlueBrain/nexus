@@ -8,13 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task}
+import monix.bio.Task
 import monix.execution.Scheduler
 
 object CompositeIndexingCoordinator {
@@ -75,10 +74,6 @@ object CompositeIndexingCoordinator {
         retryStrategy
       )
     }
-    .tapEval { coordinator =>
-      IO.unless(MigrationState.isIndexingDisabled)(
-        CompositeViewsIndexing.startIndexingStreams(config.blazegraphIndexing.retry, views, coordinator)
-      )
-    }
+    .tapEval(CompositeViewsIndexing.startIndexingStreams(config.blazegraphIndexing.retry, views, _))
 
 }

@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.migration.CompositeViewsMigration
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -255,10 +254,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         elasticSearchQuery,
         deltaClient
       )(baseUri, s, cr, ordering)
-  }
-
-  make[CompositeViewsMigration].from { (views: CompositeViews) =>
-    new CompositeViewsMigrationImpl(views)
   }
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) => PriorityRoute(priority, route.routes) }

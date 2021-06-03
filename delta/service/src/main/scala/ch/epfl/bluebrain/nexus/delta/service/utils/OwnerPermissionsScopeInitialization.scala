@@ -13,8 +13,7 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
 /**
-  * The default creation of ACLs for newly created organizations and projects. It performs a noop if
-  * executed during a migration.
+  * The default creation of ACLs for newly created organizations and projects.
   *
   * @param acls             the acls module
   * @param ownerPermissions the collection of permissions to be granted to the owner (creator)
@@ -30,31 +29,26 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
       organization: Organization,
       subject: Subject
   ): IO[ScopeInitializationFailed, Unit] =
-    if (MigrationState.isRunning) IO.unit
-    else {
-      acls
-        .append(Acl(organization.label, subject -> ownerPermissions), 0L)
-        .void
-        .onErrorHandleWith {
-          case _: AclRejection.IncorrectRev => IO.unit // acls are already set
-          case rej                          =>
-            val str = s"Failed to apply the owner permissions for org '${organization.label}' due to '${rej.reason}'."
-            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-        }
-        .named("setOwnerPermissions", Organizations.moduleType)
-    }
+    acls
+      .append(Acl(organization.label, subject -> ownerPermissions), 0L)
+      .void
+      .onErrorHandleWith {
+        case _: AclRejection.IncorrectRev => IO.unit // acls are already set
+        case rej                          =>
+          val str = s"Failed to apply the owner permissions for org '${organization.label}' due to '${rej.reason}'."
+          UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+      }
+      .named("setOwnerPermissions", Organizations.moduleType)
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
-    if (MigrationState.isRunning) IO.unit
-    else
-      acls
-        .append(Acl(project.ref, subject -> ownerPermissions), 0L)
-        .void
-        .onErrorHandleWith {
-          case _: AclRejection.IncorrectRev => IO.unit // acls are already set
-          case rej                          =>
-            val str = s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.reason}'."
-            UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
-        }
-        .named("setOwnerPermissions", Projects.moduleType)
+    acls
+      .append(Acl(project.ref, subject -> ownerPermissions), 0L)
+      .void
+      .onErrorHandleWith {
+        case _: AclRejection.IncorrectRev => IO.unit // acls are already set
+        case rej                          =>
+          val str = s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.reason}'."
+          UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
+      }
+      .named("setOwnerPermissions", Projects.moduleType)
 }
