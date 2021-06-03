@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream
 
-import cats.effect.ExitCase
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
@@ -37,19 +36,10 @@ class CancelableStream[A, S](switch: StreamSwitch[S], value: Stream[Task, A]) { 
   )(implicit scheduler: Scheduler): StreamSwitch[S] = {
     logger.info(s"Stream ${switch.name} is starting")
     val uuid        = switch.uuid
-    val task        = value.onFinalizeCase(logExit).compile.drain.absorb
+    val task        = value.compile.drain.absorb
     val retriedTask = task.retryingOnSomeErrors(strategy.retryWhen, strategy.policy, strategy.onError)
     handleCallbacks(retriedTask, switch)(onCancel(uuid, _), onFinalize(uuid, _)).runAsyncAndForget
     switch
-  }
-
-  private val logExit: ExitCase[Throwable] => UIO[Unit] = {
-    case ExitCase.Completed =>
-      UIO.delay(logger.debug(s"Stream ${switch.name} has been successfully completed."))
-    case ExitCase.Error(e)  =>
-      UIO.delay(logger.error(s"Stream ${switch.name} events has failed.", e))
-    case ExitCase.Canceled  =>
-      UIO.delay(logger.debug(s"Stream ${switch.name} has been canceled."))
   }
 
   private def handleCallbacks(

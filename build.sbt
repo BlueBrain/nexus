@@ -96,6 +96,7 @@ lazy val byteBuddyAgent       = "net.bytebuddy"                 % "byte-buddy-ag
 lazy val caffeine             = "com.github.ben-manes.caffeine" % "caffeine"                        % caffeineVersion
 lazy val catsCore             = "org.typelevel"                %% "cats-core"                       % catsVersion
 lazy val catsEffect           = "org.typelevel"                %% "cats-effect"                     % catsEffectVersion
+lazy val catsEffectLaws       = "org.typelevel"                %% "cats-effect-laws"                % catsEffectVersion
 lazy val catsRetry            = "com.github.cb372"             %% "cats-retry"                      % catsRetryVersion
 lazy val circeCore            = "io.circe"                     %% "circe-core"                      % circeVersion
 lazy val circeGeneric         = "io.circe"                     %% "circe-generic"                   % circeVersion
@@ -350,6 +351,7 @@ lazy val sourcing = project
       streamz,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
+      catsEffectLaws         % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
