@@ -1,0 +1,26 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/shacl-20170720.json",
+    "https://bluebrain.github.io/nexus/contexts/error.json"
+  ],
+  "@type": "InvalidSchema",
+  "reason": "Schema 'https://bluebrain.github.io/nexus/vocabulary/myidwrong' failed to validate against the constraints defined in the SHACL schema.",
+  "details": {
+    "@type": "sh:ValidationReport",
+    "conforms": false,
+    "result": {
+      "@type": "sh:ValidationResult",
+      "focusNode": "nxv:MyShape",
+      "result:Path": {
+        "@id": "node:Kind"
+      },
+      "resultMessage": "Not a value from the sh:in enumeration",
+      "resultSeverity": "sh:Violation",
+      "sourceConstraintComponent": "sh:InConstraintComponent",
+      "sourceShape": {
+      },
+      "value": "nxv:42"
+    },
+    "targetedNodes": 417
+  }
+}

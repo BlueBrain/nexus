@@ -130,6 +130,16 @@ class SchemasRoutesSpec
       }
     }
 
+    "fail to create a schema that does not validate against the SHACL schema" in {
+      Put(
+        s"/v1/schemas/myorg/myproject/myidwrong",
+        payload.removeKeys(keywords.id).replaceKeyWithValue("nodeKind", 42).toEntity
+      ) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("/schemas/errors/invalid-schema.json")
+      }
+    }
+
     "fail to update a schema without schemas/write permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(schemas.write)), 2L).accepted
       Put(s"/v1/schemas/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
