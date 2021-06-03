@@ -169,6 +169,16 @@ class ResourcesRoutesSpec
       }
     }
 
+    "fail to create a resource that does not validate against a schema" in {
+      Put(
+        "/v1/resources/myorg/myproject/nxv:myschema/wrong",
+        payload.removeKeys(keywords.id).replaceKeyWithValue("number", "wrong").toEntity
+      ) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual jsonContentOf("/resources/errors/invalid-resource.json")
+      }
+    }
+
     "fail to update a resource without resources/write permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 2L).accepted
       Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
