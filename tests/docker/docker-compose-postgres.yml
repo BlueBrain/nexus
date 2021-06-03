@@ -49,7 +49,7 @@ services:
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest<localBuild>
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
-  #                  "-Xmx2G",
+  #                  "-Xmx512m",
   #                  "-Dapp.http.interface=0.0.0.0",
   #                  "-Dapp.http.base-uri=http://delta:8080/v1",
   #                  "-Dapp.cluster.remote-interface=delta2",
@@ -57,14 +57,21 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-  #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+  #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+  #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+  #                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
-  #                  "-Djdbc-read-journal.refresh-interval=1s"]
+  #                  "-Djdbc-read-journal.refresh-interval=500ms"]
   #    ports:
   #      - "8080"
+  #    deploy:
+  #     resources:
+  #       limits:
+  #         memory: 768M
   #
   #  delta3:
   #    depends_on:
@@ -74,7 +81,7 @@ services:
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest<localBuild>
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
-  #                  "-Xmx2G",
+  #                  "-Xmx512m",
   #                  "-Dapp.http.interface=0.0.0.0",
   #                  "-Dapp.http.base-uri=http://delta:8080/v1",
   #                  "-Dapp.cluster.remote-interface=delta3",
@@ -82,14 +89,21 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-  #                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+  #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+  #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+  #                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
-  #                  "-Djdbc-read-journal.refresh-interval=1s"]
+  #                  "-Djdbc-read-journal.refresh-interval=500ms"
   #    ports:
   #      - "8080"
+  #    deploy:
+  #      resources:
+  #        limits:
+  #          memory: 768M
 
   keycloak:
     image: jboss/keycloak:11.0.1<skipPull>

@@ -52,23 +52,30 @@ services:
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest<localBuild>
 #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
-#                  "-Xmx2G",
+#                  "-Xmx512m",
 #                  "-Dapp.http.interface=0.0.0.0",
 #                  "-Dapp.http.base-uri=http://delta:8080/v1",
 #                  "-Dapp.cluster.remote-interface=delta2",
 #                  "-Dapp.cluster.seeds=delta:25520",
 #                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+#                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
 #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-#                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+#                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+#                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+#                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
 #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                  "-Dplugins.storage.storages.amazon.enabled=true",
 #                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
-#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
+#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
 #    ports:
 #      - "8080"
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 768M
 #
 #  delta3:
 #    depends_on:
@@ -78,23 +85,30 @@ services:
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest<localBuild>
 #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
-#                  "-Xmx2G",
+#                  "-Xmx512m",
 #                  "-Dapp.http.interface=0.0.0.0",
 #                  "-Dapp.http.base-uri=http://delta:8080/v1",
 #                  "-Dapp.cluster.remote-interface=delta3",
 #                  "-Dapp.cluster.seeds=delta:25520",
 #                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+#                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
 #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-#                  "-Dplugins.composite-views.min-interval-rebuild=15seconds",
+#                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+#                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+#                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
 #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                  "-Dplugins.storage.storages.amazon.enabled=true",
 #                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
-#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=4s",
-#                  "-Dakka.persistence.cassandra.query.refresh-interval=1s"]
+#                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
+#                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
 #    ports:
 #      - "8080"
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 768M
 
   keycloak:
     image: jboss/keycloak:11.0.1<skipPull>
