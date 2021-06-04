@@ -21,10 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -36,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
@@ -194,11 +191,9 @@ class ElasticSearchIndexingSpec
 
   private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
   private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache)
-  private val eventLog                  =
-    EventLog.postgresEventLog[Envelope[ProjectScopedEvent]](EventLogUtils.toEnvelope).hideErrors.accepted
   private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
   private val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
-  ElasticSearchIndexingCoordinator(views, controller, eventLog, indexingStream, indexingCleanup, config).accepted
+  ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
 
   private def listAll(index: IndexLabel) =
     esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted

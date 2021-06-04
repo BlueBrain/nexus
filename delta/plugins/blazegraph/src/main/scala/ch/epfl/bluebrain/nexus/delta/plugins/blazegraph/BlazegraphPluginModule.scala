@@ -5,7 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream, BlazegraphOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
@@ -16,11 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.migration.BlazegraphViewsMigration
@@ -99,7 +98,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
         views: BlazegraphViews,
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         indexingStream: BlazegraphIndexingStream,
         indexingCleanup: BlazegraphIndexingCleanup,
         indexingController: BlazegraphIndexingController,
@@ -108,7 +106,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingController, eventLog, indexingStream, indexingCleanup, config)(
+      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
         uuidF,
         as,
         scheduler
@@ -214,5 +212,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].named("view").ref[BlazegraphViewEventExchange]
   many[EventExchange].ref[BlazegraphViewEventExchange]
   many[EntityType].add(EntityType(BlazegraphViews.moduleType))
+  make[BlazegraphOnEventInstant]
+  many[OnEventInstant].ref[BlazegraphOnEventInstant]
 
 }

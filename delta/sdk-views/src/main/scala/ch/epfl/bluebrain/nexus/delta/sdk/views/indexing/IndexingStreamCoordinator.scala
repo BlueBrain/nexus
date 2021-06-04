@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
 
 /**
   * Relies on cluster sharding to distribute the indexing work between nodes
@@ -41,34 +41,19 @@ object IndexingStreamCoordinator {
   /**
     * Creates a coordinator.
     *
-    * @see [[apply(controller, fetchView, fetchIdleTimeout, buildStream, indexingCleanup, retryStrategy)]]
-    */
-  def apply[V](
-      controller: IndexingStreamController[V],
-      fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-      idleTimeout: FiniteDuration,
-      buildStream: IndexingStream[V],
-      indexingCleanup: IndexingCleanup[V],
-      retryStrategy: RetryStrategy[Throwable]
-  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], scheduler: Scheduler): IndexingStreamCoordinator[V] =
-    apply(controller, fetchView, _ => idleTimeout, buildStream, indexingCleanup, retryStrategy)
-
-  /**
-    * Creates a coordinator.
-    *
     * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
     * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-    * @param controller       how to send messages to the [[IndexingStreamCoordinator]] sharded actor
-    * @param fetchView        how to fetch view metadata for indexing
-    * @param fetchIdleTimeout fetch the idle duration after which an indexing stream will be stopped from the V value
-    * @param buildStream      how to build the indexing stream
-    * @param indexingCleanup  how to cleanup the indexing stream after deprecation or new view indexing
-    * @param retryStrategy    the retry strategy to apply
+    * @param controller      how to send messages to the [[IndexingStreamCoordinator]] sharded actor
+    * @param fetchView       how to fetch view metadata for indexing
+    * @param idleTimeout     the idle duration after which an indexing stream will be stopped
+    * @param buildStream     how to build the indexing stream
+    * @param indexingCleanup how to cleanup the indexing stream after deprecation or new view indexing
+    * @param retryStrategy   the retry strategy to apply
     */
   def apply[V](
       controller: IndexingStreamController[V],
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-      fetchIdleTimeout: V => FiniteDuration,
+      idleTimeout: Duration,
       buildStream: IndexingStream[V],
       indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable]
@@ -87,7 +72,7 @@ object IndexingStreamCoordinator {
           buildStream,
           indexingCleanup,
           retryStrategy,
-          fetchIdleTimeout
+          idleTimeout
         )
       }.withStopMessage(Stop).withSettings(settings)
     )

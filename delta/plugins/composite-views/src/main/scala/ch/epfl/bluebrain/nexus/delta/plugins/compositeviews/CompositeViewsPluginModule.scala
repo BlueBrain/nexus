@@ -21,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
@@ -190,7 +189,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeIndexingCoordinator].fromEffect {
     (
         views: CompositeViews,
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         indexingController: CompositeIndexingController,
         indexingStream: CompositeIndexingStream,
         indexingCleanup: CompositeIndexingCleanup,
@@ -199,7 +197,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      CompositeIndexingCoordinator(views, indexingController, eventLog, indexingStream, indexingCleanup, config)(
+      CompositeIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
         uuidF,
         as,
         scheduler

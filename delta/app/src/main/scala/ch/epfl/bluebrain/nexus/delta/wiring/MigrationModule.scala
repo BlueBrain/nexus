@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -110,6 +111,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   )
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
+  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
     projection(ProjectCountsCollection.empty, system, clock)
@@ -122,7 +124,7 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
   make[ProjectsCounts].fromEffect {
     (
         projection: Projection[ProjectCountsCollection],
-        eventLog: EventLog[Envelope[Event]],
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
         sc: Scheduler

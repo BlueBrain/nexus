@@ -34,11 +34,11 @@ class CancelableStream[A, S](switch: StreamSwitch[S], value: Stream[Task, A]) { 
       onCancel: (UUID, S) => UIO[Unit],
       onFinalize: (UUID, S) => UIO[Unit]
   )(implicit scheduler: Scheduler): StreamSwitch[S] = {
-    logger.info(s"Stream ${switch.name} is starting")
     val uuid        = switch.uuid
     val task        = value.compile.drain.absorb
     val retriedTask = task.retryingOnSomeErrors(strategy.retryWhen, strategy.policy, strategy.onError)
     handleCallbacks(retriedTask, switch)(onCancel(uuid, _), onFinalize(uuid, _)).runAsyncAndForget
+    logger.info(s"Stream '${switch.name}' started")
     switch
   }
 
@@ -47,21 +47,21 @@ class CancelableStream[A, S](switch: StreamSwitch[S], value: Stream[Task, A]) { 
       switch: StreamSwitch[S]
   )(onCancel: S => UIO[Unit], onFinalize: S => UIO[Unit]): Task[Unit] = {
     def terminate: UIO[Unit] = switch.terminated.set(true).hideErrors.void
-    def getStopMessage       = switch.stopMessage.get.logAndDiscardErrors(s"fetch stopMessage from stream ${switch.name}")
+    def getStopMessage       = switch.stopMessage.get.logAndDiscardErrors(s"fetch stopMessage from stream '${switch.name}'")
     f.doOnCancel {
       getStopMessage.flatMap { msg =>
-        UIO.delay(logger.debug("Stopped stream {} after cancellation {}", switch.name, msg)) >>
+        UIO.delay(logger.debug("Stopped stream '{}' after cancellation '{}'", switch.name, msg)) >>
           onCancel(msg) >> terminate
       }
     }.doOnFinish {
       case Some(cause) =>
         getStopMessage.flatMap { msg =>
-          UIO.delay(logger.error(s"Stopping stream ${switch.name} after error", cause.toThrowable)) >>
+          UIO.delay(logger.error(s"Stopping stream '${switch.name}' after error", cause.toThrowable)) >>
             onFinalize(msg) >> terminate
         }
       case None        =>
         getStopMessage.flatMap { msg =>
-          UIO.delay(logger.info("Stopping stream {} after completion {}", switch.name, msg)) >>
+          UIO.delay(logger.info("Stopping stream '{}' after completion '{}'", switch.name, msg)) >>
             onFinalize(msg) >> terminate
         }
     }

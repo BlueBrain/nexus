@@ -62,7 +62,7 @@ object IndexingStreamBehaviour {
       buildStream: IndexingStream[V],
       indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable],
-      idleDuration: V => FiniteDuration
+      idleDuration: Duration
   )(implicit uuidF: UUIDF, sc: Scheduler): Behavior[IndexingViewCommand[V]] =
     Behaviors.setup[IndexingViewCommand[V]] { context =>
       // The stash is used during balancing behaviour when waiting for the stream to properly start
@@ -71,7 +71,7 @@ object IndexingStreamBehaviour {
 
         def streamName(rev: Long) = s"${project}_${id}_$rev"
 
-        def onFinalize(uuid: UUID, msg: StreamStoppedMessage) = UIO.delay(self ! StreamStopped(uuid, msg))
+        def onFinalize(uuid: UUID, msg: StoppedReason) = UIO.delay(self ! StreamStopped(uuid, msg))
 
         // Called during init and running when a new revision is detected
         // Stops the current stream if one exists and build a start a new one according to the new view
@@ -79,10 +79,15 @@ object IndexingStreamBehaviour {
           val io: Task[IndexingViewCommand[V]] = fetchView(id, project).flatMap {
             case None =>
               UIO.delay(logger.debug("View {} in project {} can't be found or is an aggregate one, the indexing will be passivated", id, project)) >>
-                current.fold(Task.unit)(_.switch.stop).as(ViewNotFound)
+                current.fold(Task.unit)(_.switch.stop(StoppedReason.StreamStopped)).as(ViewNotFound)
             case Some(latestView) if latestView.deprecated =>
               UIO.delay(logger.info("View {} in project {} is deprecated, the indexing will be passivated", id, project)) >>
-                current.fold(Task.unit)(c => c.switch.stop >> indexingCleanup(c.viewIndex)).as(ViewIsDeprecated)
+                current
+                  .fold(Task.unit)(c =>
+                    c.switch.stop(StoppedReason.StreamStopped) >>
+                      indexingCleanup(c.viewIndex)
+                  )
+                  .as(ViewIsDeprecated)
             case Some(latestView) =>
               val latestSwitch = current match {
                 case None                                                                   =>
@@ -92,7 +97,7 @@ object IndexingStreamBehaviour {
                 case Some(Started(currentView, switch)) if latestView.rev > currentView.rev =>
                   // A new revision of the view is detected, we stop the current stream and start a new stream
                   UIO.delay(logger.debug("New revision of view {} in project {} is detected, the indexing will be restarted from the beginning on a new index", latestView.rev, id, project)) >>
-                    switch.stop >> indexingCleanup(currentView) >> startStream(latestView, progressStrategy)
+                    switch.stop(StoppedReason.StreamStopped) >> indexingCleanup(currentView) >> startStream(latestView, progressStrategy)
                 case Some(Started(_, switch))                                               =>
                   // No changes in the view detected, we continue with the current stream
                   UIO.delay(logger.debug("Same revision {} of view {} in project {}, we just carry on with the ongoing stream", latestView.rev, id, project)) >>
@@ -108,11 +113,16 @@ object IndexingStreamBehaviour {
         }
 
         // Starts a new stream from the offset defined in progressStrategy
-        def startStream(view: ViewIndex[V], progressStrategy: IndexingStream.ProgressStrategy): Task[StreamSwitch[StreamStoppedMessage]] = {
+        def startStream(view: ViewIndex[V], progressStrategy: IndexingStream.ProgressStrategy): Task[StreamSwitch[StoppedReason]] = {
           val stream = buildStream(view, progressStrategy)
-          CancelableStream[Unit, StreamStoppedMessage](streamName(view.rev), stream, StreamStoppedUnexpected)
-            .map(_.idleTimeout(idleDuration(view.value), StreamPassivated).run(retryStrategy, onCancel = onFinalize, onFinalize = onFinalize))
-
+          CancelableStream[Unit, StoppedReason](streamName(view.rev), stream, StoppedReason.StreamStoppedUnexpected)
+            .map { stream =>
+              val runnableStream = idleDuration match {
+                case duration: FiniteDuration => stream.idleTimeout(duration, StoppedReason.StreamPassivated)
+                case _                        => stream
+              }
+              runnableStream.run(retryStrategy, onCancel = onFinalize, onFinalize = onFinalize)
+            }
         }
 
         // Starts the indexing, attempts to fetch the view and to start a stream
@@ -148,7 +158,7 @@ object IndexingStreamBehaviour {
           }
 
         // A stream is running for the current view
-        def running(viewIndex: ViewIndex[V], switch: StreamSwitch[StreamStoppedMessage]): Behavior[IndexingViewCommand[V]] =
+        def running(viewIndex: ViewIndex[V], switch: StreamSwitch[StoppedReason]): Behavior[IndexingViewCommand[V]] =
           Behaviors
             .receiveMessage[IndexingViewCommand[V]] {
               case ViewRevision(rev) if rev > viewIndex.rev =>
@@ -164,7 +174,7 @@ object IndexingStreamBehaviour {
                 Behaviors.same
               case Restart(progressStrategy) =>
                 logger.debug("'Restart' event has been received for view {} in project {} with progress strategy {}", id, project, progressStrategy)
-                val restart = switch.stop >> startStream(viewIndex, progressStrategy)
+                val restart = switch.stop(StoppedReason.StreamStopped) >> startStream(viewIndex, progressStrategy)
                 context.pipeToSelf(restart.runToFuture) {
                   case Success(switch) => Started(viewIndex, switch)
                   case Failure(cause)  => IndexingError(cause)
@@ -182,7 +192,7 @@ object IndexingStreamBehaviour {
               case IndexingError(cause) =>
                 throw cause
 
-              case StreamStopped(uuid, StreamPassivated) if uuid == switch.uuid =>
+              case StreamStopped(uuid, StoppedReason.StreamPassivated) if uuid == switch.uuid =>
                 logger.debug(
                   "'StreamPassivated' event with a matching uuid has been received for view {} in project {}",
                   id,
@@ -208,17 +218,17 @@ object IndexingStreamBehaviour {
                 Behaviors.same
               case Stop =>
                 logger.info("'Stop' has been requested for view {} in project {}, stopping the stream", id, project)
-                switch.stop.runAsyncAndForget
+                switch.stop(StoppedReason.StreamStopped).runAsyncAndForget
                 Behaviors.stopped
             }
             .receiveSignal {
               case (_, PostStop) =>
                 logger.info(s"Stopped the actor, we stop the indexing for view {} in project {}", id, project)
-                switch.stop.runAsyncAndForget
+                switch.stop(StoppedReason.StreamStopped).runAsyncAndForget
                 Behaviors.same
               case (_, PreRestart) =>
                 logger.info(s"Restarting the actor, we stop the indexing for view {} in project {}", id, project)
-                switch.stop.runAsyncAndForget
+                switch.stop(StoppedReason.StreamStopped).runAsyncAndForget
                 Behaviors.same
             }
 
@@ -234,7 +244,7 @@ object IndexingStreamBehaviour {
     * @param viewIndex the view to index
     * @param switch the switch to interrupt the stream
     */
-  private case class Started[+V](viewIndex: ViewIndex[V], switch: StreamSwitch[StreamStoppedMessage]) extends IndexingViewCommand[V]
+  private case class Started[+V](viewIndex: ViewIndex[V], switch: StreamSwitch[StoppedReason]) extends IndexingViewCommand[V]
 
   /** Internal command when an error has been encountered handling the stream
     * @param cause the reason it failed
@@ -264,22 +274,25 @@ object IndexingStreamBehaviour {
   /** Command returned by the stream when it stops
     *
     * @param uuid    the uuid generated by the actor responsible for the stream
-    * @param message the stop message
+    * @param reason the stop message
     */
-  private case class StreamStopped(uuid: UUID, message: StreamStoppedMessage) extends IndexingViewCommand[Nothing]
+  private case class StreamStopped(uuid: UUID, reason: StoppedReason) extends IndexingViewCommand[Nothing]
 
-  sealed trait StreamStoppedMessage extends Product with Serializable
+  sealed trait StoppedReason extends Product with Serializable
 
-  /** A stream stop for unexpected reasons (not triggered by the client)
-    */
-  final case object StreamStoppedUnexpected extends StreamStoppedMessage
+  object StoppedReason {
 
-  /** A stream that has been stopped through regular cancellation
-    */
-  final case object SteamStopped extends StreamStoppedMessage
+    /** A stream stop for unexpected reasons (not triggered by the client)
+      */
+    final case object StreamStoppedUnexpected extends StoppedReason
 
-  /** A stream that has been stopped due to passivation
-    */
-  final case object StreamPassivated extends StreamStoppedMessage
+    /** A stream that has been stopped through regular cancellation
+      */
+    final case object StreamStopped extends StoppedReason
+
+    /** A stream that has been stopped due to passivation
+      */
+    final case object StreamPassivated extends StoppedReason
+  }
 
 }

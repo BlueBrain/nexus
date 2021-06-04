@@ -18,13 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -46,6 +47,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
+  make[DatabaseConfig].from { appCfg.database }
+  make[ProjectsConfig].from { appCfg.projects }
   make[DatabaseFlavour].from { appCfg.database.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
@@ -105,6 +108,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   )
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
+  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
   make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
     projection(ProjectCountsCollection.empty, system, clock)
@@ -117,7 +121,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[ProjectsCounts].fromEffect {
     (
         projection: Projection[ProjectCountsCollection],
-        eventLog: EventLog[Envelope[Event]],
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
         sc: Scheduler
@@ -133,11 +137,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     pluginsRoutes.toVector.sorted.map(_.route)
   }
 
-  make[PersistenceIdCheck].fromEffect { (config: AppConfig, system: ActorSystem[Nothing]) =>
-    if (config.database.verifyIdUniqueness)
-      config.database.flavour match {
-        case Postgres  => PersistenceIdCheck.postgres(appCfg.database.postgres)
-        case Cassandra => PersistenceIdCheck.cassandra(appCfg.database.cassandra)(system)
+  make[PersistenceIdCheck].fromEffect { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
+    if (config.verifyIdUniqueness)
+      config.flavour match {
+        case Postgres  => PersistenceIdCheck.postgres(config.postgres)
+        case Cassandra => PersistenceIdCheck.cassandra(config.cassandra)(system)
       }
     else Task.delay(PersistenceIdCheck.skipPersistenceIdCheck)
   }

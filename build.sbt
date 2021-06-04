@@ -442,7 +442,7 @@ lazy val sdkViews = project
     name       := "delta-sdk-views",
     moduleName := "delta-sdk-views"
   )
-  .dependsOn(sdk, testkit % "test->compile")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
