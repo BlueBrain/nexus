@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 import com.typesafe.config.Config
-import pureconfig.error.CannotConvert
+import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.util.Try
 
 /**
@@ -38,7 +38,7 @@ final case class ElasticSearchViewsConfig(
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
     maxViewRefs: Int,
-    idleTimeout: FiniteDuration
+    idleTimeout: Duration
 )
 
 object ElasticSearchViewsConfig {
@@ -61,5 +61,11 @@ object ElasticSearchViewsConfig {
   )
 
   implicit final val elasticSearchViewsConfigReader: ConfigReader[ElasticSearchViewsConfig] =
-    deriveReader[ElasticSearchViewsConfig]
+    deriveReader[ElasticSearchViewsConfig].emap { c =>
+      Either.cond(
+        c.idleTimeout.gteq(10.minutes),
+        c,
+        new FailureReason { override def description: String = "'idle-timeout' must be greater than 10 minutes" }
+      )
+    }
 }
