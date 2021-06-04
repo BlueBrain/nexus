@@ -223,6 +223,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-1-24-08-2020-" class="header">v1.4.1 (24.08.2020)</a></li>
@@ -242,7 +243,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-aea335e9*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-cc462b3e*
 </label>
 </li>
 </ul>
@@ -257,6 +258,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-1-24-08-2020-" class="header">v1.4.1 (24.08.2020)</a></li>
@@ -280,7 +282,26 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.5.0</strong> released on <strong>19.05.2021</strong>.</p>
+<p>The latest stable release is <strong>v1.5.1</strong> released on <strong>04.06.2021</strong>.</p>
+<h2><a href="#v1-5-1-04-06-2021-" name="v1-5-1-04-06-2021-" class="anchor"><span class="anchor-link"></span></a>v1.5.1 (04.06.2021)</h2>
+<p>This release contains bugfixes and minor improvements:</p>
+<ul>
+  <li>File paths now respect tar spec, added n-quads format option to archives <a href="https://github.com/BlueBrain/nexus/pull/2459" title="#2459">#2459</a></li>
+  <li>Use service account to unset previous default storage <a href="https://github.com/BlueBrain/nexus/pull/2465" title="#2465">#2465</a></li>
+  <li>Support type query exclusion on listings <a href="https://github.com/BlueBrain/nexus/pull/2468" title="#2468">#2468</a></li>
+  <li>Added organization events to SSEs <a href="https://github.com/BlueBrain/nexus/pull/2477" title="#2477">#2477</a></li>
+  <li>Allow the deletion of some persistence ids at startup <a href="https://github.com/BlueBrain/nexus/pull/2480" title="#2480">#2480</a></li>
+  <li>Prevent creating schemas starting with <code>schemas.base</code> <a href="https://github.com/BlueBrain/nexus/pull/2481" title="#2481">#2481</a></li>
+  <li>Updated the default number of shards value to 50 (prev =&gt; 1000) <a href="https://github.com/BlueBrain/nexus/pull/2490" title="#2490">#2490</a></li>
+  <li>Expose indexing metrics <a href="https://github.com/BlueBrain/nexus/pull/2485" title="#2485">#2485</a></li>
+  <li>Clean up error messages <a href="https://github.com/BlueBrain/nexus/pull/2497" title="#2497">#2497</a></li>
+  <li>Allow plugins to be disabled via configuration <a href="https://github.com/BlueBrain/nexus/pull/2498" title="#2498">#2498</a></li>
+  <li>Consume the entire base URI path in the routes <a href="https://github.com/BlueBrain/nexus/pull/2502" title="#2502">#2502</a></li>
+  <li>Update progress cache on stream start. <a href="https://github.com/BlueBrain/nexus/pull/2505" title="#2505">#2505</a></li>
+  <li>Fetch org/project events from their creation time if none is provided <a href="https://github.com/BlueBrain/nexus/pull/2500" title="#2500">#2500</a></li>
+  <li>Count view statistics deterministically. <a href="https://github.com/BlueBrain/nexus/pull/2509" title="#2509">#2509</a></li>
+  <li>Add SHACL context to resource/schemas errors including SHACL report <a href="https://github.com/BlueBrain/nexus/pull/2508" title="#2508">#2508</a></li>
+</ul>
 <h2><a href="#v1-5-0-19-05-2021-" name="v1-5-0-19-05-2021-" class="anchor"><span class="anchor-link"></span></a>v1.5.0 (19.05.2021)</h2>
 <p>The release is backwards compatible with v1.x.y releases in terms of API (except for some issues that were corrected - please see the <a href="v1.5-release-notes.html">release notes</a> for the exact changes). If you&rsquo;re upgrading from v1.4.x please visit the <a href="v1.4-to-v1.5-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
@@ -444,7 +465,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-aea335e9*
+0.0.0+1-cc462b3e*
 </span>
 </div>
 </article>

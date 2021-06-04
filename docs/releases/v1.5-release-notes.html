@@ -249,7 +249,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-aea335e9*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-cc462b3e*
 </label>
 </li>
 </ul>
@@ -345,6 +345,8 @@ BlueBrain/nexus
 <ul>
   <li>ElasticSearchView/SparqlView/CompositeView have a new field <code>permission</code> that allows clients to customize the permission needed in order to perform queries.</li>
   <li>ElasticSearchView has a new field <code>settings</code>, allowing clients to specify the Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings" title="index settings" target="_blank" rel="noopener noreferrer">index settings</a>.</li>
+  <li>ElasticSearchViews no longer expand the value of <code>@type</code> field if <code>sourceAsText</code> is set to <code>false</code>. The value used will be the one provided by the client.</li>
+  <li>ElasticSearchViews no longer inject and expand the value of <code>@id</code> field if <code>sourceAsText</code> is set to <code>false</code>. If <code>@id</code> is missing in the payload provided by the client, it will not be present in the Elasticsearch document <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-source-field.html" title="\_source">_source</a>.  The identifier of the resource can be retrieved from Elasticsearch <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-id-field.html" title="\_id field">_id field</a> .</li>
   <li>AggregateElasticSearchView can point to a <code>viewId</code> which is another AggregateElasticSearchView.</li>
   <li>AggregateSparqlView can point to a <code>viewId</code> which is another AggregateSparqlView.</li>
   <li>CompositeView statistics endpoints return a <a href="../delta/api/current/views/composite-view-api.html#fetch-statistics">list of projection statistics</a>. This is a <strong>breaking change</strong> introduced to align the API with other statistics endpoints.</li>
@@ -405,7 +407,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-aea335e9*
+0.0.0+1-cc462b3e*
 </span>
 </div>
 </article>
