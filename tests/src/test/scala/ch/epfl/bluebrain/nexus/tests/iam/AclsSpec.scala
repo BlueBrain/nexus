@@ -2,27 +2,14 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.acls.Marge
+import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Tags.AclsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Permission, User}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import monix.execution.Scheduler.Implicits.global
 
 class AclsSpec extends BaseSpec {
-
-  private val testRealm  = Realm("acls" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Marge      = UserCredentials(genString(), genString(), testRealm)
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Marge :: Nil
-    ).runSyncUnsafe()
-  }
 
   "manage acls" should {
     val orgPath1     = genString()
@@ -81,7 +68,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "add permissions for user on paths with depth1" taggedAs AclsTag in {
-      orgs.traverse { org =>
+      orgs.parTraverse { org =>
         aclDsl.addPermissions(
           s"/$org",
           Marge,
@@ -91,7 +78,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "add permissions for user on /orgpath/projectpath1 and /orgpath/projectpath2" taggedAs AclsTag in {
-      crossProduct.traverse { case (org, project) =>
+      crossProduct.parTraverse { case (org, project) =>
         aclDsl.addPermissions(
           s"/$org/$project",
           Marge,

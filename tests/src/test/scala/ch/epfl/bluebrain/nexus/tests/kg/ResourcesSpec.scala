@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.Identity.{Delta, UserCredentials}
+import ch.epfl.bluebrain.nexus.tests.BaseSpec
+import ch.epfl.bluebrain.nexus.tests.Identity.Delta
+import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.ResourcesTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
@@ -16,25 +17,11 @@ import java.net.URLEncoder
 
 class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
-  private val testRealm  = Realm("resources" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Rick       = UserCredentials(genString(), genString(), testRealm)
-
   private val orgId   = genId()
   private val projId1 = genId()
   private val projId2 = genId()
   private val id1     = s"$orgId/$projId1"
   private val id2     = s"$orgId/$projId2"
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Rick :: Nil
-    ).runSyncUnsafe()
-  }
 
   "creating projects" should {
 
@@ -300,7 +287,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       List(
         s"/resources/$id1/test-schema/test-resource:1",
         s"/resources/$id1/_/test-resource:1"
-      ).traverse { url =>
+      ).parTraverse { url =>
         deltaClient.get[Json](url, Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -324,7 +311,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       List(
         s"/resources/$id1/test-schema/test-resource:1?rev=1",
         s"/resources/$id1/_/test-resource:1?rev=1"
-      ).traverse { url =>
+      ).parTraverse { url =>
         deltaClient.get[Json](url, Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
@@ -403,7 +390,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         "storages"  -> jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
       )
 
-      resources.traverse { case (segment, expected) =>
+      resources.parTraverse { case (segment, expected) =>
         deltaClient.get[Json](s"/$segment/$id1", Rick) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)

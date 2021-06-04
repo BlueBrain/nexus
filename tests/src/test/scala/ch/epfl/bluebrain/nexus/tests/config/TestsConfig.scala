@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.tests.Realm
 
 import scala.concurrent.duration.FiniteDuration
 
-case class TestsConfig(deltaUri: Uri, realmUri: Uri, patience: FiniteDuration) {
+case class TestsConfig(deltaUri: Uri, realmUri: Uri, patience: FiniteDuration, cleanUp: Boolean) {
 
   def realmSuffix(realm: Realm) = s"$realmUri/${realm.name}"
 }

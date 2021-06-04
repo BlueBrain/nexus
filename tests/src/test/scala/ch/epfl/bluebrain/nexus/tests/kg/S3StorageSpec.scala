@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import java.net.URI
-import java.nio.file.Paths
-
 import akka.http.scaladsl.model.StatusCodes
+import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
 import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
@@ -16,6 +14,8 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model._
 
+import java.net.URI
+import java.nio.file.Paths
 import scala.jdk.CollectionConverters._
 
 class S3StorageSpec extends StorageSpec {

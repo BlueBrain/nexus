@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.CompositeViewsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import io.circe.optics.JsonPath._
@@ -32,20 +32,6 @@ class CompositeViewsSpec extends BaseSpec {
   private val albumsProject = "albums"
   private val songsProject  = "songs"
 
-  private val testRealm  = Realm("composite" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Jerry      = UserCredentials(genString(), genString(), testRealm)
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Jerry :: Nil
-    ).runSyncUnsafe()
-  }
-
   "Creating projects" should {
     "add necessary permissions for user" taggedAs CompositeViewsTag in {
       aclDsl.addPermissions(
@@ -59,9 +45,13 @@ class CompositeViewsSpec extends BaseSpec {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry)
-        _ <- adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry)
-        _ <- adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+        _ <- Task.parSequence(
+               List(
+                 adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
+                 adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
+                 adminDsl.createProject(orgId, songsProject, projectPayload, Jerry)
+               )
+             )
       } yield succeed
     }
 
@@ -90,7 +80,7 @@ class CompositeViewsSpec extends BaseSpec {
   "Uploading data" should {
     "upload context" taggedAs CompositeViewsTag in {
       val context = jsonContentOf("/kg/views/composite/context.json")
-      List(songsProject, albumsProject, bandsProject).traverse { projectId =>
+      List(songsProject, albumsProject, bandsProject).parTraverse { projectId =>
         deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
         }
@@ -102,7 +92,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/songs1.json")
         )
-        .traverse { song =>
+        .parTraverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -114,7 +104,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/albums.json")
         )
-        .traverse { album =>
+        .parTraverse { album =>
           deltaClient.post[Json](s"/resources/$orgId/$albumsProject", album, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -126,7 +116,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/bands.json")
         )
-        .traverse { band =>
+        .parTraverse { band =>
           deltaClient.post[Json](s"/resources/$orgId/$bandsProject", band, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -268,7 +258,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/songs2.json")
         )
-        .traverse { song =>
+        .parTraverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }

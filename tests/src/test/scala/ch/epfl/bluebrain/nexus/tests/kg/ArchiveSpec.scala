@@ -6,11 +6,12 @@ import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
-import ch.epfl.bluebrain.nexus.tests.Identity.UserCredentials
+import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
+import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.Tags.ArchivesTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import io.circe.parser._
 import monix.execution.Scheduler.Implicits.global
@@ -22,10 +23,6 @@ import java.security.MessageDigest
 import scala.annotation.tailrec
 
 class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
-
-  private val testRealm  = Realm("resources" + genString())
-  private val testClient = Identity.ClientCredentials(genString(), genString(), testRealm)
-  private val Tweety     = UserCredentials(genString(), genString(), testRealm)
 
   private val orgId   = genId()
   private val projId  = genId()
@@ -75,16 +72,6 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
     "edd70eff895cde1e36eaedd22ed8e9c870bb04155d05d275f970f4f255488e993a32a7c914ee195f6893d43b8be4e0b00db0a6d545a8462491eae788f664ea6b"
 
   private type PathAndContent = (Path, ByteString)
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    initRealm(
-      testRealm,
-      Identity.ServiceAccount,
-      testClient,
-      Tweety :: Nil
-    ).runSyncUnsafe()
-  }
 
   @tailrec
   private def readEntries(tar: TarArchiveInputStream, entries: List[PathAndContent] = Nil): List[PathAndContent] = {

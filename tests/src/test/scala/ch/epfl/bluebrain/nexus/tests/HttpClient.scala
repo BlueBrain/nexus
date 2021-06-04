@@ -1,18 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests
 
-import java.nio.file.{Files, Path}
-import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-
 import akka.actor.ActorSystem
-import akka.http.scaladsl.{Http, HttpExt}
 import akka.http.scaladsl.model.HttpCharsets._
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings}
+import akka.http.scaladsl.model.{HttpResponse, _}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import akka.stream.scaladsl.Sink
@@ -24,14 +20,18 @@ import io.circe.parser._
 import fs2._
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
-import org.scalatest.Assertion
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.{AppendedClues, Assertion}
 
+import java.nio.file.{Files, Path}
+import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer: Materializer) extends Matchers {
+class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer: Materializer)
+    extends Matchers
+    with AppendedClues {
 
   def apply(req: HttpRequest): Task[HttpResponse] =
     Task.deferFuture(httpExt.singleRequest(req))
@@ -127,6 +127,16 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       identity: Identity,
       extraHeaders: Seq[HttpHeader] = jsonHeaders
   )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] = {
+    def buildClue(a: A, response: HttpResponse) =
+      s"""
+        |Endpoint: ${method.value} $url
+        |Identity: $identity
+        |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
+        |Status code: ${response.status}
+        |Response:
+        |$a
+        |""".stripMargin
+
     def onFail(e: Throwable) =
       fail(
         s"Something went wrong while processing the response for url: ${method.value} $url with identity $identity",
@@ -137,7 +147,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       url,
       body,
       identity,
-      assertResponse,
+      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
       onFail,
       extraHeaders
     )
@@ -249,7 +259,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
   def sseEvents(
       url: String,
       identity: Identity,
-      initialLastEventId: UUID,
+      initialLastEventId: Option[String],
       take: Long = 100L,
       takeWithin: FiniteDuration = 30.seconds
   )(assertResponse: Seq[(Option[String], Option[Json])] => Assertion): Task[Assertion] = {
@@ -257,7 +267,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       apply(request.addHeader(tokensMap.get(identity))).runToFuture
     Task
       .deferFuture {
-        EventSource(s"$baseUrl$url", send, initialLastEventId = Some(initialLastEventId.toString))
+        EventSource(s"$baseUrl$url", send, initialLastEventId = initialLastEventId)
           //drop resolver, views and storage events
           .take(take)
           .takeWithin(takeWithin)
