@@ -20,12 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -52,6 +52,8 @@ class MigrationModule(appCfg: AppConfig, config: Config)(implicit classLoader: C
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
+  make[DatabaseConfig].from { appCfg.database }
+  make[ProjectsConfig].from { appCfg.projects }
   make[DatabaseFlavour].from { cfg: AppConfig => cfg.database.flavour }
   make[BaseUri].from { cfg: AppConfig => cfg.http.baseUri }
   make[ServiceAccount].from { (cfg: AppConfig) => cfg.serviceAccount.value }
