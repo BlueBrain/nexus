@@ -229,6 +229,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/plugins/index.html#dependency-injection" class="header">Dependency injection</a></li>
       <li><a href="../../../docs/delta/plugins/index.html#class-loading" class="header">Class loading</a></li>
       <li><a href="../../../docs/delta/plugins/index.html#configuration" class="header">Configuration</a></li>
+      <li><a href="../../../docs/delta/plugins/index.html#adding-plugins-to-a-delta-deployment" class="header">Adding plugins to a Delta deployment</a></li>
+      <li><a href="../../../docs/delta/plugins/index.html#enabling-disabling-plugins" class="header">Enabling/disabling plugins</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html#existing-plugins" class="header">Existing plugins</a></li>
   </ul></li>
@@ -239,7 +241,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-115874af*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-aea335e9*
 </label>
 </li>
 </ul>
@@ -260,6 +262,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/plugins/index.html#dependency-injection" class="header">Dependency injection</a></li>
       <li><a href="../../../docs/delta/plugins/index.html#class-loading" class="header">Class loading</a></li>
       <li><a href="../../../docs/delta/plugins/index.html#configuration" class="header">Configuration</a></li>
+      <li><a href="../../../docs/delta/plugins/index.html#adding-plugins-to-a-delta-deployment" class="header">Adding plugins to a Delta deployment</a></li>
+      <li><a href="../../../docs/delta/plugins/index.html#enabling-disabling-plugins" class="header">Enabling/disabling plugins</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html#existing-plugins" class="header">Existing plugins</a></li>
   </ul></li>
@@ -379,6 +383,10 @@ libraryDependencies += &quot;ch.epfl.bluebrain.nexus&quot; %% &quot;delta-sdk-vi
 </code></pre>
 <h3><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h3>
 <p>Plugins should provide their default configuration in <code>{plugin_name}.conf</code> file, where <code>plugin_name</code> is the same as the one in <code>PluginDescription</code>. Plugins should include their config inside <code>plugins.{plugin_name}</code> namespace in the config. <code>plugins.{plugin_name}.priority</code> configuration setting defines priority of the plugin, which is used to determine order in which routes provided by plugins are evaluated.</p>
+<h3><a href="#adding-plugins-to-a-delta-deployment" name="adding-plugins-to-a-delta-deployment" class="anchor"><span class="anchor-link"></span></a>Adding plugins to a Delta deployment</h3>
+<p>Delta loads plugins from <code>.jar</code> files present in a folder specified by <code>DELTA_PLUGINS</code> environment variable. In order to make delta discover the plugin, the <code>.jar</code> file of the plugin must be added(or symlinked) to that directory. In the official Delta Docker image the plugins are loaded from <code>/opt/docker/plugins</code> directory.</p>
+<h3><a href="#enabling-disabling-plugins" name="enabling-disabling-plugins" class="anchor"><span class="anchor-link"></span></a>Enabling/disabling plugins</h3>
+<p>Additionally, plugins can be enabled/disabled using <code>plugins.{plugin_name}.enabled</code> property. Setting this property to <code>false</code>, will disable the given plugin.</p>
 <h2><a href="#existing-plugins" name="existing-plugins" class="anchor"><span class="anchor-link"></span></a>Existing plugins</h2>
 <p>Currently, following Delta functionality is provided by plugins:</p>
 <ul>
@@ -397,7 +405,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-115874af*
+0.0.0+1-aea335e9*
 </span>
 </div>
 </article>
