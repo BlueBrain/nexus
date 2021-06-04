@@ -17,7 +17,27 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.5.0** released on **19.05.2021**.
+The latest stable release is **v1.5.1** released on **04.06.2021**.
+
+## v1.5.1 (04.06.2021)
+
+This release contains bugfixes and minor improvements:
+
+ - File paths now respect tar spec, added n-quads format option to archives @link:[#2459](https://github.com/BlueBrain/nexus/pull/2459)
+ - Use service account to unset previous default storage @link:[#2465](https://github.com/BlueBrain/nexus/pull/2465)
+ - Support type query exclusion on listings @link:[#2468](https://github.com/BlueBrain/nexus/pull/2468)
+ - Added organization events to SSEs @link:[#2477](https://github.com/BlueBrain/nexus/pull/2477)
+ - Allow the deletion of some persistence ids at startup @link:[#2480](https://github.com/BlueBrain/nexus/pull/2480)
+ - Prevent creating schemas starting with `schemas.base` @link:[#2481](https://github.com/BlueBrain/nexus/pull/2481)
+ - Updated the default number of shards value to 50 (prev => 1000) @link:[#2490](https://github.com/BlueBrain/nexus/pull/2490)
+ - Expose indexing metrics @link:[#2485](https://github.com/BlueBrain/nexus/pull/2485)
+ - Clean up error messages @link:[#2497](https://github.com/BlueBrain/nexus/pull/2497)
+ - Allow plugins to be disabled via configuration @link:[#2498](https://github.com/BlueBrain/nexus/pull/2498)
+ - Consume the entire base URI path in the routes @link:[#2502](https://github.com/BlueBrain/nexus/pull/2502)
+ - Update progress cache on stream start. @link:[#2505](https://github.com/BlueBrain/nexus/pull/2505)
+ - Fetch org/project events from their creation time if none is provided @link:[#2500](https://github.com/BlueBrain/nexus/pull/2500)
+ - Count view statistics deterministically. @link:[#2509](https://github.com/BlueBrain/nexus/pull/2509)
+ - Add SHACL context to resource/schemas errors including SHACL report @link:[#2508](https://github.com/BlueBrain/nexus/pull/2508)
 
 ## v1.5.0 (19.05.2021)
 
