@@ -28,6 +28,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, Suite}
 
+import scala.concurrent.duration._
 import scala.xml.Elem
 
 @DoNotDiscover
@@ -50,7 +51,7 @@ class BlazegraphClientSpec
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
   private val endpoint = blazegraphHostConfig.endpoint
-  private val client   = BlazegraphClient(HttpClient(), endpoint, None)
+  private val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
   private val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {

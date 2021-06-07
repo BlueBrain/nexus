@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
+import akka.http.scaladsl.model.HttpHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy.bNode
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.{Aux, SparqlJsonLd, SparqlNTriples, SparqlRdfXml, SparqlResultsJson, SparqlResultsXml}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import io.circe.Json
@@ -19,7 +20,8 @@ class SparqlQueryClientDummy(
   override def query[R <: SparqlQueryResponse](
       indices: Iterable[String],
       q: SparqlQuery,
-      responseType: Aux[R]
+      responseType: Aux[R],
+      additionalHeaders: Seq[HttpHeader] = Seq.empty
   ): IO[SparqlClientError, R] =
     responseType match {
       case SparqlResultsJson =>

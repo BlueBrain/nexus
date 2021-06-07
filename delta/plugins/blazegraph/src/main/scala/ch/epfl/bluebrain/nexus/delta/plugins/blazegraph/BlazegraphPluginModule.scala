@@ -45,7 +45,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphClient].from {
     (cfg: BlazegraphViewsConfig, client: HttpClient @Id("blazegraph-client"), as: ActorSystem[Nothing]) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
   make[IndexingSource].named("blazegraph-source").from {

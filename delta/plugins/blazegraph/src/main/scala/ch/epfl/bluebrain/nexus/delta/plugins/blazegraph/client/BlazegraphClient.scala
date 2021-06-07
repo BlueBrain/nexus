@@ -3,12 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials}
-import akka.http.scaladsl.model.{HttpEntity, Uri}
+import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, ModeledCustomHeader, ModeledCustomHeaderCompanion}
+import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.`X-BIGDATA-MAX-QUERY-MILLIS`
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
@@ -18,13 +20,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import monix.bio.{IO, UIO}
 
 import scala.concurrent.duration._
+import scala.util.Try
 
 /**
   * A client that exposes additional functions on top of [[SparqlClient]] that are specific to Blazegraph.
   */
 class BlazegraphClient(
     client: HttpClient,
-    endpoint: Uri
+    endpoint: Uri,
+    queryTimeout: Duration
 )(implicit credentials: Option[HttpCredentials], as: ActorSystem)
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
@@ -35,6 +39,19 @@ class BlazegraphClient(
 
   private val defaultProperties =
     ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
+
+  override def query[R <: SparqlQueryResponse](
+      indices: Iterable[String],
+      q: SparqlQuery,
+      responseType: Aux[R],
+      additionalHeaders: Seq[HttpHeader]
+  ): IO[SparqlClientError, R] = {
+    val headers = queryTimeout match {
+      case finite: FiniteDuration => additionalHeaders :+ `X-BIGDATA-MAX-QUERY-MILLIS`(finite)
+      case _                      => additionalHeaders
+    }
+    super.query(indices, q, responseType, headers)
+  }
 
   /**
     * Fetches the service description information (name and version)
@@ -111,15 +128,37 @@ class BlazegraphClient(
 object BlazegraphClient {
 
   /**
+    * Header defining Blazegraph query timeout
+    *
+    * @param duration max query duration
+    */
+  final class `X-BIGDATA-MAX-QUERY-MILLIS`(duration: FiniteDuration)
+      extends ModeledCustomHeader[`X-BIGDATA-MAX-QUERY-MILLIS`] {
+    override def renderInRequests  = true
+    override def renderInResponses = true
+    override val companion         = `X-BIGDATA-MAX-QUERY-MILLIS`
+    override def value: String     = duration.toMillis.toString
+  }
+  object `X-BIGDATA-MAX-QUERY-MILLIS` extends ModeledCustomHeaderCompanion[`X-BIGDATA-MAX-QUERY-MILLIS`] {
+    override val name                   = "X-BIGDATA-MAX-QUERY-MILLIS"
+    override def parse(value: String) = {
+      Try(new `X-BIGDATA-MAX-QUERY-MILLIS`(value.toLong.millis))
+    }
+    def apply(duration: FiniteDuration) = new `X-BIGDATA-MAX-QUERY-MILLIS`(duration)
+
+  }
+
+  /**
     * Construct a [[BlazegraphClient]]
     */
   def apply(
       client: HttpClient,
       endpoint: Uri,
-      credentials: Option[Credentials]
+      credentials: Option[Credentials],
+      queryTimeout: Duration
   )(implicit as: ActorSystem): BlazegraphClient = {
     implicit val cred: Option[BasicHttpCredentials] =
       credentials.map { cred => BasicHttpCredentials(cred.username, cred.password.value) }
-    new BlazegraphClient(client, endpoint)
+    new BlazegraphClient(client, endpoint, queryTimeout)
   }
 }
