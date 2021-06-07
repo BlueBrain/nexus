@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.cli
 
 import cats.Parallel
-import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.effect.{Blocker, ConcurrentEffect, ContextShift, Resource, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.cli.CliOpts._
 import ch.epfl.bluebrain.nexus.cli.config.AppConfig
@@ -15,6 +15,9 @@ import izumi.distage.model.definition.StandardAxis.Repo
 import izumi.distage.model.definition.{Activation, Module, ModuleDef}
 import izumi.distage.model.plan.Roots
 import izumi.distage.model.recursive.LocatorRef
+
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
 
 abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locatorOpt: Option[LocatorRef])(implicit
     F: ConcurrentEffect[F]
@@ -35,6 +38,16 @@ abstract class AbstractCommand[F[_]: TagK: Timer: ContextShift: Parallel](locato
                 val influx   = InfluxModule[F]
                 val modules  = cli ++ config ++ postgres ++ influx ++ new ModuleDef {
                   make[AppConfig].from(value)
+                  make[Blocker].from(Blocker.liftExecutionContext {
+                    ExecutionContext.fromExecutor(
+                      Executors.newCachedThreadPool((r: Runnable) => {
+                        val th = new Thread(r)
+                        th.setName(s"blocking-thread-pool-${th.getId}")
+                        th.setDaemon(true)
+                        th
+                      })
+                    )
+                  })
                 }
                 F.pure(modules)
             }
