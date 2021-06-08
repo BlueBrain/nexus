@@ -5,7 +5,6 @@ import ProductList from "./ProductsList"
 import Termslist from "./Termslist"
 
 import bbpLogo from "../../static/img/logos/epfl-bbp-portrait.png"
-import gitterLogo from "../../static/img/logos/gitter.svg"
 import linkedInLogo from "../../static/img/logos/linkedin.svg"
 import githubLogoSquare from "../../static/img/logos/github-square.svg"
 import twitterLogo from "../../static/img/logos/twitter-square.svg"
@@ -40,13 +39,10 @@ export default function Footer() {
             <div className="column">
               <h3>Contact Us</h3>
               <div className="social-icons">
-                <a href="https://gitter.im/BlueBrain/nexus">
-                  <img className="logo" src={gitterLogo} alt="Gitter" />
-                </a>
                 <a href="https://www.linkedin.com/showcase/blue-brain-project/">
                   <img className="logo" src={linkedInLogo} alt="LinkedIn" />
                 </a>
-                <a href="https://github.com/BlueBrain/nexus">
+                <a href="https://github.com/BlueBrain/nexus/discussions">
                   <img className="logo" src={githubLogoSquare} alt="GitHub" />
                 </a>
                 <a href="https://twitter.com/bluebrainnexus">
