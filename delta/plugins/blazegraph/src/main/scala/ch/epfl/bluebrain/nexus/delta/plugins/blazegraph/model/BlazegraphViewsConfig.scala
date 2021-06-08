@@ -15,6 +15,7 @@ import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 /**
@@ -24,6 +25,7 @@ import scala.util.Try
   * @param credentials    the Blazegraph HTTP endpoint credentials
   * @param indexingClient configuration of the indexing Blazegraph client
   * @param queryClient    configuration of the query Blazegraph client
+  * @param queryTimeout  the Blazegraph query timeout
   * @param aggregate      configuration of the underlying aggregate
   * @param keyValueStore  configuration of the underlying key/value store
   * @param pagination     configuration for how pagination should behave in listing operations
@@ -36,6 +38,7 @@ final case class BlazegraphViewsConfig(
     credentials: Option[Credentials],
     indexingClient: HttpClientConfig,
     queryClient: HttpClientConfig,
+    queryTimeout: Duration,
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,

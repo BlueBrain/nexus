@@ -45,7 +45,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphClient].named("blazegraph-indexing-client").from {
     (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-indexing-client"), as: ActorSystem[Nothing]) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
   make[HttpClient].named("http-query-client").from {
@@ -55,7 +55,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphClient].named("blazegraph-query-client").from {
     (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-query-client"), as: ActorSystem[Nothing]) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
   make[IndexingSource].named("blazegraph-source").from {
