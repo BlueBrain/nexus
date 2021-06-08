@@ -10,6 +10,8 @@ on:
       - 'delta/sourcing/**'
       - 'delta/testkit/**'
       - 'delta/plugins/composite-views/**'
+      - 'delta/plugins/blazegraph/**'
+      - 'delta/plugins/elasticsearch/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
