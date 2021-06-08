@@ -27,14 +27,16 @@ trait SparqlQueryClient {
     * Queries the passed indices with the passed ''q''.
     * The response type is controlled by the parameter ''responseType''
     *
-    * @param indices      the namespaces to query
-    * @param q            the query
-    * @param responseType the response type
+    * @param indices           the namespaces to query
+    * @param q                 the query
+    * @param responseType      the response type
+    * @param additionalHeaders additional HTTP headers
     */
   def query[R <: SparqlQueryResponse](
       indices: Iterable[String],
       q: SparqlQuery,
-      responseType: SparqlQueryResponseType.Aux[R]
+      responseType: SparqlQueryResponseType.Aux[R],
+      additionalHeaders: Seq[HttpHeader] = Seq.empty
   ): IO[SparqlClientError, R]
 }
 
@@ -52,14 +54,15 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
   def query[R <: SparqlQueryResponse](
       indices: Iterable[String],
       q: SparqlQuery,
-      responseType: SparqlQueryResponseType.Aux[R]
+      responseType: SparqlQueryResponseType.Aux[R],
+      additionalHeaders: Seq[HttpHeader] = Seq.empty
   ): IO[SparqlClientError, R] =
     responseType match {
-      case SparqlResultsJson => sparqlResultsResponse(indices, q)
-      case SparqlResultsXml  => sparqlXmlResultsResponse(indices, q)
-      case SparqlJsonLd      => sparqlJsonLdResponse(indices, q)
-      case SparqlNTriples    => sparqlNTriplesResponse(indices, q)
-      case SparqlRdfXml      => sparqlRdfXmlResponse(indices, q)
+      case SparqlResultsJson => sparqlResultsResponse(indices, q, additionalHeaders)
+      case SparqlResultsXml  => sparqlXmlResultsResponse(indices, q, additionalHeaders)
+      case SparqlJsonLd      => sparqlJsonLdResponse(indices, q, additionalHeaders)
+      case SparqlNTriples    => sparqlNTriplesResponse(indices, q, additionalHeaders)
+      case SparqlRdfXml      => sparqlRdfXmlResponse(indices, q, additionalHeaders)
     }
 
   /**
@@ -123,12 +126,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   private def sparqlResultsResponse(
       indices: Iterable[String],
-      q: SparqlQuery
+      q: SparqlQuery,
+      additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlClientError, SparqlResultsResponse] =
     indices.toList
       .foldLeftM(SparqlResults.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsJson.mediaTypes.value))
+          .withHeaders(accept(SparqlResultsJson.mediaTypes.value), additionalHeaders: _*)
           .withHttpCredentials
         client.fromJsonTo[SparqlResults](req).mapError(WrappedHttpClientError).map(results ++ _)
       }
@@ -136,12 +140,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   private def sparqlXmlResultsResponse(
       indices: Iterable[String],
-      q: SparqlQuery
+      q: SparqlQuery,
+      additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlClientError, SparqlXmlResultsResponse] =
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlResultsXml.mediaTypes.value))
+          .withHeaders(accept(SparqlResultsXml.mediaTypes.value), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
           elem match {
@@ -161,12 +166,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   private def sparqlJsonLdResponse(
       indices: Iterable[String],
-      q: SparqlQuery
+      q: SparqlQuery,
+      additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlClientError, SparqlJsonLdResponse] =
     indices.toList
       .foldLeftM(Vector.empty[Json]) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlJsonLd.mediaTypes.value))
+          .withHeaders(accept(SparqlJsonLd.mediaTypes.value), additionalHeaders: _*)
           .withHttpCredentials
         client
           .toJson(req)
@@ -177,12 +183,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   private def sparqlNTriplesResponse(
       indices: Iterable[String],
-      q: SparqlQuery
+      q: SparqlQuery,
+      additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlClientError, SparqlNTriplesResponse] =
     indices.toList
       .foldLeftM(NTriples.empty) { (results, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlNTriples.mediaTypes.value))
+          .withHeaders(accept(SparqlNTriples.mediaTypes.value), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[String](req).mapError(WrappedHttpClientError).map(s => results ++ NTriples(s, BNode.random))
       }
@@ -190,12 +197,13 @@ class SparqlClient(client: HttpClient, endpoint: SparqlQueryEndpoint)(implicit
 
   private def sparqlRdfXmlResponse(
       indices: Iterable[String],
-      q: SparqlQuery
+      q: SparqlQuery,
+      additionalHeaders: Seq[HttpHeader]
   ): IO[SparqlClientError, SparqlRdfXmlResponse] =
     indices.toList
       .foldLeftM(None: Option[Elem]) { case (elem, index) =>
         val req = Post(endpoint(index), FormData("query" -> q.value))
-          .withHeaders(accept(SparqlRdfXml.mediaTypes.value))
+          .withHeaders(accept(SparqlRdfXml.mediaTypes.value), additionalHeaders: _*)
           .withHttpCredentials
         client.fromEntityTo[NodeSeq](req).mapError(WrappedHttpClientError).map { nodeSeq =>
           elem match {

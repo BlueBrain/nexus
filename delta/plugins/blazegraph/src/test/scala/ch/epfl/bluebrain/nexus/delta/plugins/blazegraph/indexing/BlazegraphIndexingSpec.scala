@@ -148,7 +148,7 @@ class BlazegraphIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
   private val httpClient          = HttpClient()
-  private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None)
+  private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
   private val projection          = Projection.inMemory(()).accepted
 
   private val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
