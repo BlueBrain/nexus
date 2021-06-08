@@ -3,12 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.{Delete, Get, Post}
 import akka.http.scaladsl.model.StatusCodes._
-import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials}
-import akka.http.scaladsl.model.{HttpEntity, Uri}
+import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpCredentials, RawHeader}
+import akka.http.scaladsl.model.{HttpEntity, HttpHeader, Uri}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers.stringUnmarshaller
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient.timeoutHeader
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.Aux
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
@@ -24,7 +26,8 @@ import scala.concurrent.duration._
   */
 class BlazegraphClient(
     client: HttpClient,
-    endpoint: Uri
+    endpoint: Uri,
+    queryTimeout: Duration
 )(implicit credentials: Option[HttpCredentials], as: ActorSystem)
     extends SparqlClient(client, SparqlQueryEndpoint.blazegraph(endpoint)) {
 
@@ -35,6 +38,19 @@ class BlazegraphClient(
 
   private val defaultProperties =
     ClasspathResourceUtils.ioPropertiesOf("blazegraph/index.properties").hideErrors.memoizeOnSuccess
+
+  override def query[R <: SparqlQueryResponse](
+      indices: Iterable[String],
+      q: SparqlQuery,
+      responseType: Aux[R],
+      additionalHeaders: Seq[HttpHeader]
+  ): IO[SparqlClientError, R] = {
+    val headers = queryTimeout match {
+      case finite: FiniteDuration => additionalHeaders :+ RawHeader(timeoutHeader, finite.toMillis.toString)
+      case _                      => additionalHeaders
+    }
+    super.query(indices, q, responseType, headers)
+  }
 
   /**
     * Fetches the service description information (name and version)
@@ -111,15 +127,21 @@ class BlazegraphClient(
 object BlazegraphClient {
 
   /**
+    * Blazegraph timeout header.
+    */
+  val timeoutHeader: String = "X-BIGDATA-MAX-QUERY-MILLIS"
+
+  /**
     * Construct a [[BlazegraphClient]]
     */
   def apply(
       client: HttpClient,
       endpoint: Uri,
-      credentials: Option[Credentials]
+      credentials: Option[Credentials],
+      queryTimeout: Duration
   )(implicit as: ActorSystem): BlazegraphClient = {
     implicit val cred: Option[BasicHttpCredentials] =
       credentials.map { cred => BasicHttpCredentials(cred.username, cred.password.value) }
-    new BlazegraphClient(client, endpoint)
+    new BlazegraphClient(client, endpoint, queryTimeout)
   }
 }

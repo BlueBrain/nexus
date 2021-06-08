@@ -211,10 +211,7 @@ lazy val docs = project
         .withLogo("./assets/img/logo.png")
         .withCustomStylesheet("./assets/css/docs.css")
         .withRepository(uri("https://github.com/BlueBrain/nexus"))
-        .withSocial(
-          uri("https://github.com/BlueBrain"),
-          uri("https://gitter.im/BlueBrain/nexus")
-        )
+        .withSocial(uri("https://github.com/BlueBrain"))
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
                          |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>

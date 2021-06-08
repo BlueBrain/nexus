@@ -24,6 +24,7 @@ import scala.util.Try
   * @param base          the base uri to the Blazegraph HTTP endpoint
   * @param credentials   the Blazegraph HTTP endpoint credentials
   * @param client        configuration of the Blazegraph client
+  * @param queryTimeout  the Blazegraph query timeout
   * @param aggregate     configuration of the underlying aggregate
   * @param keyValueStore configuration of the underlying key/value store
   * @param pagination    configuration for how pagination should behave in listing operations
@@ -36,6 +37,7 @@ final case class BlazegraphViewsConfig(
     base: Uri,
     credentials: Option[Credentials],
     client: HttpClientConfig,
+    queryTimeout: Duration,
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,

@@ -187,8 +187,8 @@ Removing network nexus_default
 @@@ note
 
 As no data is persisted outside the containers, **everything will be lost** once you remove the Nexus
-deployment. If you'd like help with creating persistent volumes, feel free to contact us on our
-@link:[Gitter channel](https://gitter.im/BlueBrain/nexus){ open=new }.
+deployment. If you'd like help with creating persistent volumes, feel free to contact us on
+@link:[Github Discussions](https://github.com/BlueBrain/nexus/discussions){ open=new }.
 
 @@@
 

@@ -61,7 +61,7 @@ There are several channels provided to address different issues:
 
 - **Bug report**: If you have found a bug while using the Nexus ecosystem, please create an issue 
   @link:[here](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dbug){ open=new }.
-- **Questions**: if you need support, we will be reachable through the @link:[Nexus Gitter channel](https://gitter.im/BlueBrain/nexus){ open=new }
+- **Questions**: if you need support, we will be reachable through the @link:[Github Discussions](https://github.com/BlueBrain/nexus/discussions){ open=new }
 - **Documentation**: Technical documentation and 'Quick Start' to Nexus related concepts can be found 
   @link:[here](https://bluebrainnexus.io/docs/){ open=new }
 - **Feature request**: If there is a feature you would like to see in Blue Brain Nexus, please first consult the 

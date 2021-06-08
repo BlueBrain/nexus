@@ -24,6 +24,7 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
     baseUri.toString,
     None,
     httpClientConfig,
+    1.second,
     aggregate,
     keyValueStore,
     pagination,

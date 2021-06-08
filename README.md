@@ -1,5 +1,5 @@
 [![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrainnexus.io/)
-[![Join the chat at https://gitter.im/BlueBrain/nexus](https://badges.gitter.im/BlueBrain/nexus.svg)](https://gitter.im/BlueBrain/nexus?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)]()
 
 # Blue Brain Nexus
 
@@ -46,7 +46,7 @@ Do you know what a knowledge graph is? Or want to deepen your understanding? Fol
 
 Want to get started with Nexus right away? We provide a [tutorial](https://bluebrainnexus.io/docs/getting-started/try-nexus.html) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
 
-Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus.html).
+Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus/index.html).
 
 ## Roadmap
 
@@ -60,7 +60,7 @@ and the current [roadmap].
 Please head over to the [getting started] section for a description of various options on running Nexus and
 introductory material to [Linked Data] and the [Shapes Constraint Language].
 
-For more details, you can talk with the development team directly on [Gitter] or [contact them by email][nexus-team-email].
+For more details, you can talk with the development team directly on [Github Discussions] or [contact them by email][nexus-team-email].
 
 [architecture]: https://bluebrainnexus.io/docs/delta/architecture.html
 [documentation]: https://bluebrainnexus.io/docs/
@@ -71,7 +71,7 @@ For more details, you can talk with the development team directly on [Gitter] or
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
 [nexus-team-email]: mailto:bbp-nexus-support@groupes.epfl.ch
-[Gitter]: https://gitter.im/BlueBrain/nexus
+[Github Discussions]: https://github.com/BlueBrain/nexus/discussions
 
 ## Getting involved
 
