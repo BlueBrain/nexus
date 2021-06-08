@@ -253,7 +253,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-cc462b3e*
+<i class="md-icon" title="Version">label_outline</i> 0.0.0+1-f159f537*
 </label>
 </li>
 </ul>
@@ -434,7 +434,7 @@ BlueBrain/nexus
 <h4><a href="#introduced-a-command-line-interface-cli-for-nexus" name="introduced-a-command-line-interface-cli-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced a Command Line Interface (CLI) for Nexus</h4>
 <p>We released a <a href="https://github.com/BlueBrain/nexus-cli" title="Nexus CLI" target="_blank" rel="noopener noreferrer">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk" title="Python SDK for Nexus" target="_blank" rel="noopener noreferrer">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and facilitate your data management with Nexus. The use of the CLI is extensively demonstrated in our [Nexus Tutorial].</p>
 <h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
-<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus" title="Gitter" target="_blank" rel="noopener noreferrer">Gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
+<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
 <h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>
 <p>Services have been updated to expose their event logs or subsets via HTTP through <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>, removing the need to use Kafka as means of service to service communication. It uses the same authentication and authorization mechanism as with the rest of the API, thus ensuring that the information exchanged in guarded by the ACLs defined.</p>
 <p>The change reduces the additional operational burden of maintaining a Kafka cluster and also opens up the system for extension as the event logs can be consumed by third party applications in an efficient manner without the need of direct access to the message broker.</p>
@@ -448,7 +448,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-0.0.0+1-cc462b3e*
+0.0.0+1-f159f537*
 </span>
 </div>
 </article>
@@ -501,7 +501,7 @@ and
 
 </div>
 <div class="md-footer-social">
-<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://gitter.im/BlueBrain/nexus" class="md-footer-social__link fa fa-globe"></a>
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a>
 </div>
 
 </div>
