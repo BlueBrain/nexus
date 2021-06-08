@@ -46,7 +46,7 @@ Do you know what a knowledge graph is? Or want to deepen your understanding? Fol
 
 Want to get started with Nexus right away? We provide a [tutorial](https://bluebrainnexus.io/docs/getting-started/try-nexus.html) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
 
-Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus.html).
+Ready to deploy your own instance of Nexus? Follow our [guide](https://bluebrainnexus.io/docs/getting-started/running-nexus/index.html).
 
 ## Roadmap
 
