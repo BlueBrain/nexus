@@ -53,7 +53,7 @@ object IndexingStreamCoordinator {
   def apply[V](
       controller: IndexingStreamController[V],
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
-      idleTimeout: Duration,
+      idleTimeout: V => Duration,
       buildStream: IndexingStream[V],
       indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable]

@@ -62,7 +62,7 @@ object IndexingStreamBehaviour {
       buildStream: IndexingStream[V],
       indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable],
-      idleDuration: Duration
+      idleDuration: V => Duration
   )(implicit uuidF: UUIDF, sc: Scheduler): Behavior[IndexingViewCommand[V]] =
     Behaviors.setup[IndexingViewCommand[V]] { context =>
       // The stash is used during balancing behaviour when waiting for the stream to properly start
@@ -117,7 +117,7 @@ object IndexingStreamBehaviour {
           val stream = buildStream(view, progressStrategy)
           CancelableStream[Unit, StoppedReason](streamName(view.rev), stream, StoppedReason.StreamStoppedUnexpected)
             .map { stream =>
-              val runnableStream = idleDuration match {
+              val runnableStream = idleDuration(view.value) match {
                 case duration: FiniteDuration => stream.idleTimeout(duration, StoppedReason.StreamPassivated)
                 case _                        => stream
               }

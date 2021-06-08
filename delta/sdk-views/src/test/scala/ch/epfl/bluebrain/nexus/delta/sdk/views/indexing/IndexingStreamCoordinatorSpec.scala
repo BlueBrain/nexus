@@ -134,7 +134,7 @@ class IndexingStreamCoordinatorSpec
 
   private val controller  = new IndexingStreamController[Unit]("v")
   private val coordinator =
-    IndexingStreamCoordinator[Unit](controller, fetchView, 1.minute, buildStream, indexingCleanup, never)
+    IndexingStreamCoordinator[Unit](controller, fetchView, _ => 1.minute, buildStream, indexingCleanup, never)
 
   "An IndexingStreamCoordinator" should {
 

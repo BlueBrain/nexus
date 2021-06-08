@@ -11,7 +11,7 @@ import monix.bio.UIO
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * The composite view configuration.
@@ -26,6 +26,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * @param blazegraphIndexing    the Blazegraph indexing config
   * @param remoteSourceClient    the HTTP client configuration for a remote source
   * @param minIntervalRebuild    the minimum allowed value for periodic rebuild strategy
+  * @param idleTimeout           the idle duration after which an indexing stream will be stopped
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
@@ -37,11 +38,9 @@ final case class CompositeViewsConfig(
     elasticSearchIndexing: ExternalIndexingConfig,
     blazegraphIndexing: ExternalIndexingConfig,
     remoteSourceClient: RemoteSourceClientConfig,
-    minIntervalRebuild: FiniteDuration
-) {
-  // TODO: This value is hardcoded and cannot be changed by configuration until we add support for it.
-  val idleTimeout: Duration = Duration.Inf
-}
+    minIntervalRebuild: FiniteDuration,
+    idleTimeout: FiniteDuration
+)
 
 object CompositeViewsConfig {
 
