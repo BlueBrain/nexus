@@ -143,7 +143,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeIndexingStream].from {
     (
         esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient,
+        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
         projection: Projection[Unit],
         deltaClient: DeltaClient,
         indexingController: CompositeIndexingController,
@@ -173,7 +173,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[CompositeIndexingCleanup].from {
     (
         esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient,
+        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
         cache: ProgressesCache @Id("composite-progresses"),
         config: CompositeViewsConfig
     ) =>
@@ -217,7 +217,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   )
 
   make[BlazegraphQuery].from {
-    (acls: Acls, views: CompositeViews, client: BlazegraphClient, cfg: CompositeViewsConfig) =>
+    (
+        acls: Acls,
+        views: CompositeViews,
+        client: BlazegraphClient @Id("blazegraph-query-client"),
+        cfg: CompositeViewsConfig
+    ) =>
       BlazegraphQuery(acls, views, client)(cfg.blazegraphIndexing)
 
   }
