@@ -56,6 +56,10 @@ object IdSegment {
     */
   final case class IriSegment(value: Iri) extends IdSegment {
     override def asString: String                                             = value.toString
-    override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] = Some(value)
+    override def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri] =
+      if (value.scheme.exists(mappings.prefixMappings.contains))
+        StringSegment(value.toString).toIri(mappings, base) orElse Some(value)
+      else
+        Some(value)
   }
 }
