@@ -8,10 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
 import com.typesafe.config.Config
 import monix.bio.UIO
-import pureconfig.ConfigSource
+import pureconfig.error.FailureReason
+import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.generic.auto._
+import pureconfig.generic.semiauto.deriveReader
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 /**
   * The composite view configuration.
@@ -84,5 +86,14 @@ object CompositeViewsConfig {
         .fromConfig(config)
         .at("plugins.composite-views")
         .loadOrThrow[CompositeViewsConfig]
+    }
+
+  implicit final val compositeViewsConfigReader: ConfigReader[CompositeViewsConfig] =
+    deriveReader[CompositeViewsConfig].emap { c =>
+      Either.cond(
+        c.idleTimeout.gteq(10.minutes),
+        c,
+        new FailureReason { override def description: String = "'idle-timeout' must be greater than 10 minutes" }
+      )
     }
 }
