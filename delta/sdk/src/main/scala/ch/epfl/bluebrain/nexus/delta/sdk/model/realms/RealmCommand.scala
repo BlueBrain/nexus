@@ -3,9 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
-import io.circe.Json
-
-import java.time.Instant
 
 /**
   * Enumeration of Realm command types.
@@ -72,25 +69,6 @@ object RealmCommand {
   final case class DeprecateRealm(
       label: Label,
       rev: Long,
-      subject: Subject
-  ) extends RealmCommand
-
-  //TODO Remove after migration
-  final case class ImportRealm(
-      label: Label,
-      rev: Long,
-      name: Name,
-      openIdConfig: Uri,
-      issuer: String,
-      keys: Set[Json],
-      grantTypes: Set[GrantType],
-      logo: Option[Uri],
-      authorizationEndpoint: Uri,
-      tokenEndpoint: Uri,
-      userInfoEndpoint: Uri,
-      revocationEndpoint: Option[Uri],
-      endSessionEndpoint: Option[Uri],
-      instant: Instant,
       subject: Subject
   ) extends RealmCommand
 }

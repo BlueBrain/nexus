@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
@@ -31,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -42,11 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg
-import ch.epfl.bluebrain.nexus.migration.v1_4.events.kg.{StorageFileAttributes, StorageReference}
-import ch.epfl.bluebrain.nexus.migration.{FilesMigration, MigrationRejection}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax._
@@ -67,8 +61,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages
-)(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem)
-    extends FilesMigration {
+)(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
 
   // format: off
   private val testStorageRef = ResourceRef.Revision(iri"http://localhost/test", 1)
@@ -469,93 +462,6 @@ final class Files(
   private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
     uuidF().map(uuid => project.base.iri / uuid.toString)
 
-  // Ignore errors that may happen when an event gets replayed twice after a migration restart
-  private def errorRecover: PartialFunction[FileRejection, RunResult] = {
-    case _: ResourceAlreadyExists                                => RunResult.Success
-    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
-    case _: FileIsDeprecated                                     => RunResult.Success
-  }
-
-  override def migrate(
-      id: Iri,
-      projectRef: ProjectRef,
-      rev: Option[Long],
-      storage: StorageReference,
-      attributes: kg.FileAttributes
-  )(implicit caller: Subject): IO[MigrationRejection, RunResult] =
-    for {
-      project                   <- projects.fetchActiveProject(projectRef).mapError(MigrationRejection(_))
-      (storageRef, storageType) <-
-        storages
-          .fetch(Revision(storage.id, storage.rev), project.ref)
-          .map(Revision(storage.id, storage.rev) -> _.value.tpe)
-          .onErrorFallbackTo(IO.pure(Revision(storage.id, storage.rev) -> StorageType.DiskStorage))
-      digest                     = digestV15(attributes.digest)
-      origin                     = digest match {
-                                     case NotComputedDigest => FileAttributesOrigin.Storage
-                                     case _                 => FileAttributesOrigin.Client
-                                   }
-      attributes15               = FileAttributes(
-                                     attributes.uuid,
-                                     attributes.location,
-                                     attributes.path,
-                                     attributes.filename,
-                                     Some(attributes.mediaType),
-                                     attributes.bytes,
-                                     digest,
-                                     origin
-                                   )
-      _                         <- eval(
-                                     MigrateFile(id, projectRef, storageRef, storageType, attributes15, rev.getOrElse(0L), caller),
-                                     project
-                                   ).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
-    } yield RunResult.Success
-
-  override def fileAttributesUpdated(id: Iri, projectRef: ProjectRef, rev: Long, attributes: StorageFileAttributes)(
-      implicit subject: Subject
-  ): IO[MigrationRejection, RunResult] = {
-    updateAttributes(
-      id,
-      projectRef,
-      Some(attributes.mediaType),
-      attributes.bytes,
-      digestV15(attributes.digest),
-      rev
-    )
-  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
-
-  override def fileDigestUpdated(id: Iri, projectRef: ProjectRef, rev: Long, digest: kg.Digest)(implicit
-      subject: Subject
-  ): IO[MigrationRejection, RunResult] = {
-    val segment = id
-    fetch(segment, projectRef).flatMap { res =>
-      updateAttributes(
-        id,
-        projectRef,
-        res.value.attributes.mediaType,
-        res.value.attributes.bytes,
-        digestV15(digest),
-        rev
-      )
-    }
-  }.as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
-
-  private def digestV15(digestV14: kg.Digest) =
-    if (digestV14 == kg.Digest.empty) NotComputedDigest
-    else ComputedDigest(DigestAlgorithm(digestV14.algorithm).getOrElse(DigestAlgorithm.default), digestV14.value)
-
-  override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
-      subject: Subject
-  ): IO[MigrationRejection, RunResult] =
-    tag(id, projectRef, tagLabel, tagRev, rev)
-      .as(RunResult.Success)
-      .onErrorRecover(errorRecover)
-      .mapError(MigrationRejection(_))
-
-  override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
-      subject: Subject
-  ): IO[MigrationRejection, RunResult] =
-    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 
 @SuppressWarnings(Array("MaxParameters"))
@@ -800,25 +706,12 @@ object Files {
       case s: Current                   => IOUtils.instant.map(FileDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
     }
 
-    def migrate(c: MigrateFile) = state match {
-      case Initial if c.rev == 0L                                 =>
-        IOUtils.instant.map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
-      case Initial                                                => IO.raiseError(FileNotFound(c.id, c.project))
-      case s: Current if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
-      case s: Current if s.attributes.digest == NotComputedDigest => IO.raiseError(DigestNotComputed(c.id))
-      case s: Current                                             =>
-        IOUtils.instant
-          .map(FileUpdated(c.id, c.project, c.storage, c.storageType, c.attributes, s.rev + 1L, _, c.subject))
-    }
-
     cmd match {
       case c: CreateFile           => create(c)
       case c: UpdateFile           => update(c)
       case c: UpdateFileAttributes => updateAttributes(c)
       case c: TagFile              => tag(c)
       case c: DeprecateFile        => deprecate(c)
-      case c: MigrateFile          => migrate(c)
     }
   }
 }

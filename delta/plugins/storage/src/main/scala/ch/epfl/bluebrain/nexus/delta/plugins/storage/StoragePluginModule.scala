@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.migration.{FilesMigration, StoragesMigration}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -93,7 +92,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as
         )
     }
-    .aliased[StoragesMigration]
 
   make[StoragesRoutes].from {
     (
@@ -149,7 +147,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as
         )
     }
-    .aliased[FilesMigration]
 
   make[FilesRoutes].from {
     (

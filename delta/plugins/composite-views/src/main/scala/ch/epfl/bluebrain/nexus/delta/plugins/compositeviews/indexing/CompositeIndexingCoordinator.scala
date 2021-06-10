@@ -9,13 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task}
+import monix.bio.Task
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
@@ -68,6 +67,8 @@ object CompositeIndexingCoordinator {
       scheduler: Scheduler
   ): Task[CompositeIndexingCoordinator] = {
 
+    val retryStrategy = RetryStrategy.retryOnNonFatal(config.blazegraphIndexing.retry, logger, "composite indexing")
+
     def computeIdleTimeout(v: CompositeView): Duration =
       v.sources.value.collectFirst { case _: RemoteProjectSource => Duration.Inf }.getOrElse {
         v.rebuildStrategy.fold(config.idleTimeout) { case CompositeView.Interval(extraIdleTimeout) =>
@@ -77,8 +78,6 @@ object CompositeIndexingCoordinator {
 
     Task
       .delay {
-        val retryStrategy = RetryStrategy.retryOnNonFatal(config.blazegraphIndexing.retry, logger, "composite indexing")
-
         IndexingStreamCoordinator(
           indexingController,
           fetchView(views, config),
@@ -88,10 +87,7 @@ object CompositeIndexingCoordinator {
           retryStrategy
         )
       }
-      .tapEval { coordinator =>
-        IO.unless(MigrationState.isIndexingDisabled)(
-          CompositeViewsIndexing.startIndexingStreams(config.blazegraphIndexing.retry, views, coordinator)
-        )
-      }
+      .tapEval(CompositeViewsIndexing.startIndexingStreams(config.blazegraphIndexing.retry, views, _))
   }
+
 }

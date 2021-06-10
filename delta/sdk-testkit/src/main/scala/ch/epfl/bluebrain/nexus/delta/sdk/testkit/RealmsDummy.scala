@@ -6,7 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, ImportRealm, UpdateRealm}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{RealmNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
@@ -85,7 +85,6 @@ final class RealmsDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[RealmEvent]] = journal.events(offset)
 
-  override def importRealm(importRealm: ImportRealm): IO[RealmRejection, RealmResource] = eval(importRealm)
 }
 
 object RealmsDummy {

@@ -8,12 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.DifferentElasticSearchViewType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import com.typesafe.scalalogging.Logger
-import monix.bio.{IO, Task}
+import monix.bio.Task
 import monix.execution.Scheduler
 
 object ElasticSearchIndexingCoordinator {
@@ -79,10 +78,6 @@ object ElasticSearchIndexingCoordinator {
         retryStrategy
       )
     }
-    .tapEval { coordinator =>
-      IO.unless(MigrationState.isIndexingDisabled)(
-        ElasticSearchViewsIndexing.startIndexingStreams(config.indexing.retry, views, coordinator)
-      )
-    }
+    .tapEval(ElasticSearchViewsIndexing.startIndexingStreams(config.indexing.retry, views, _))
 
 }

@@ -476,20 +476,6 @@ lazy val service = project
     Test / fork          := true
   )
 
-lazy val migration = project
-  .in(file("delta/migration"))
-  .settings(
-    name       := "delta-migration",
-    moduleName := "delta-migration"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sdk, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
-  .settings(
-    libraryDependencies ++= Seq(
-      circeOptics
-    )
-  )
-
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -498,7 +484,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(service, migration, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
+  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies  ++= Seq(
       akkaDistributedData,
@@ -578,7 +564,6 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration  % Provided,
     sdk        % "provided;test->test",
     sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
@@ -613,7 +598,6 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration  % Provided,
     sdk        % "provided;test->test",
     sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
@@ -645,7 +629,6 @@ lazy val compositeViewsPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration           % Provided,
     sdk                 % "provided;test->test",
     sdkViews            % Provided,
     sdkTestkit          % "test->compile;test->test",
@@ -685,7 +668,6 @@ lazy val storagePlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    migration  % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -723,7 +705,6 @@ lazy val archivePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration     % Provided, // required to avoid error 'Symbol 'type ch.epfl.bluebrain.nexus.migration.FilesMigration' is missing from the classpath.'
     sdk           % Provided,
     storagePlugin % "provided;test->test",
     sdkTestkit    % "test;test->test"

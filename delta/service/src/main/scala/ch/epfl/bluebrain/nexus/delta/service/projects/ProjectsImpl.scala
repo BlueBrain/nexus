@@ -96,8 +96,8 @@ final class ProjectsImpl private (
   )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
     (organizations.fetchActiveOrganization(ref.organization) >>
       fetch(ref).flatMap {
-        case resource if resource.deprecated && !MigrationState.isRunning => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                                                     => IO.pure(resource.value)
+        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
+        case resource                        => IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](

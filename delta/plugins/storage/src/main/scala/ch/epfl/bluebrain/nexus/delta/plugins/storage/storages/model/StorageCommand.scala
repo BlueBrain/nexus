@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.migration.MigrationCommand
 import io.circe.Json
 
 /**
@@ -89,16 +88,5 @@ object StorageCommand {
     * @param subject the identity associated to this command
     */
   final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends StorageCommand
-
-  //TODO: Remove after migration
-  final case class MigrateStorage(
-      id: Iri,
-      project: ProjectRef,
-      fields: StorageFields,
-      source: Json,
-      rev: Long,
-      subject: Subject
-  ) extends StorageCommand
-      with MigrationCommand
 
 }
