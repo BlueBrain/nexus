@@ -15,25 +15,30 @@ import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
+import scala.concurrent.duration.Duration
 import scala.util.Try
 
 /**
   * Configuration for the Blazegraph views module.
   *
-  * @param base          the base uri to the Blazegraph HTTP endpoint
-  * @param credentials   the Blazegraph HTTP endpoint credentials
-  * @param client        configuration of the Blazegraph client
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing configuration of the cache indexing process
-  * @param indexing      configuration of the external indexing process
-  * @param maxViewRefs   configuration of the maximum number of view references allowed on an aggregated view
+  * @param base           the base uri to the Blazegraph HTTP endpoint
+  * @param credentials    the Blazegraph HTTP endpoint credentials
+  * @param indexingClient configuration of the indexing Blazegraph client
+  * @param queryClient    configuration of the query Blazegraph client
+  * @param queryTimeout  the Blazegraph query timeout
+  * @param aggregate      configuration of the underlying aggregate
+  * @param keyValueStore  configuration of the underlying key/value store
+  * @param pagination     configuration for how pagination should behave in listing operations
+  * @param cacheIndexing  configuration of the cache indexing process
+  * @param indexing       configuration of the external indexing process
+  * @param maxViewRefs    configuration of the maximum number of view references allowed on an aggregated view
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
     credentials: Option[Credentials],
-    client: HttpClientConfig,
+    indexingClient: HttpClientConfig,
+    queryClient: HttpClientConfig,
+    queryTimeout: Duration,
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,

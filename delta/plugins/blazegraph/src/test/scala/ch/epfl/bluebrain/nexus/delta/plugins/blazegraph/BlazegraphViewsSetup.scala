@@ -16,12 +16,16 @@ import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
 
+import scala.concurrent.duration._
+
 trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedClock with RemoteContextResolutionFixture {
 
   def config(implicit baseUri: BaseUri) = BlazegraphViewsConfig(
     baseUri.toString,
     None,
     httpClientConfig,
+    httpClientConfig,
+    1.second,
     aggregate,
     keyValueStore,
     pagination,

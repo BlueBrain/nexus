@@ -37,14 +37,24 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[EventLog[Envelope[BlazegraphViewEvent]]].fromEffect { databaseEventLog[BlazegraphViewEvent](_, _) }
 
-  make[HttpClient].named("blazegraph-client").from {
+  make[HttpClient].named("http-indexing-client").from {
     (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-      HttpClient()(cfg.client, as.classicSystem, sc)
+      HttpClient()(cfg.indexingClient, as.classicSystem, sc)
   }
 
-  make[BlazegraphClient].from {
-    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("blazegraph-client"), as: ActorSystem[Nothing]) =>
-      BlazegraphClient(client, cfg.base, cfg.credentials)(as.classicSystem)
+  make[BlazegraphClient].named("blazegraph-indexing-client").from {
+    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-indexing-client"), as: ActorSystem[Nothing]) =>
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
+  }
+
+  make[HttpClient].named("http-query-client").from {
+    (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
+      HttpClient()(cfg.queryClient, as.classicSystem, sc)
+  }
+
+  make[BlazegraphClient].named("blazegraph-query-client").from {
+    (cfg: BlazegraphViewsConfig, client: HttpClient @Id("http-query-client"), as: ActorSystem[Nothing]) =>
+      BlazegraphClient(client, cfg.base, cfg.credentials, cfg.queryTimeout)(as.classicSystem)
   }
 
   make[IndexingSource].named("blazegraph-source").from {
@@ -73,7 +83,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphIndexingStream].from {
     (
-        client: BlazegraphClient,
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
         projection: Projection[Unit],
         indexingSource: IndexingSource @Id("blazegraph-source"),
         cache: ProgressesCache @Id("blazegraph-progresses"),
@@ -90,7 +100,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphIndexingCleanup].from {
-    (client: BlazegraphClient, cache: ProgressesCache @Id("blazegraph-progresses")) =>
+    (client: BlazegraphClient @Id("blazegraph-indexing-client"), cache: ProgressesCache @Id("blazegraph-progresses")) =>
       new BlazegraphIndexingCleanup(client, cache)
   }
 
@@ -119,7 +129,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           log: EventLog[Envelope[BlazegraphViewEvent]],
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          client: BlazegraphClient,
+          client: BlazegraphClient @Id("blazegraph-indexing-client"),
           permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
@@ -141,7 +151,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         acls: Acls,
         views: BlazegraphViews,
         projects: Projects,
-        client: BlazegraphClient,
+        client: BlazegraphClient @Id("blazegraph-query-client"),
         cfg: BlazegraphViewsConfig
     ) =>
       BlazegraphViewsQuery(acls, views, projects, client)(cfg.indexing)
@@ -199,7 +209,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (route: BlazegraphViewsRoutes) => PriorityRoute(priority, route.routes) }
 
-  many[ServiceDependency].add { new BlazegraphServiceDependency(_) }
+  many[ServiceDependency].add { (client: BlazegraphClient @Id("blazegraph-indexing-client")) =>
+    new BlazegraphServiceDependency(client)
+  }
 
   many[ReferenceExchange].add { (views: BlazegraphViews) =>
     BlazegraphViews.referenceExchange(views)

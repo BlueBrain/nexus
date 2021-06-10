@@ -72,7 +72,7 @@ class BlazegraphViewsQuerySpec
   implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = blazegraphHostConfig.endpoint
-  private val client   = BlazegraphClient(HttpClient(), endpoint, None)
+  private val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

@@ -172,6 +172,11 @@ object IriOrBNode {
       */
     def toUri: Either[String, Uri] = UriUtils.uri(toString)
 
+    /**
+      * @return the IRI scheme
+      */
+    def scheme: Option[String] = Option(value.getScheme)
+
     override lazy val toString: String = value.toString
 
     override val rdfFormat: String = s"<$toString>"
