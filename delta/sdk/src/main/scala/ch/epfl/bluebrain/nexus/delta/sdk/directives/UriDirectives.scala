@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByU
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntityAndForceEmit
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
@@ -193,17 +193,15 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes a path Segment and parse it into an [[Iri]]. If the segment is already an Iri it returns
-    * otherwise it fetches the project in order to expand the [[StringSegment]] into an Iri
+    * Consumes a path Segment and parse it into an [[Iri]].
+    * It fetches the project in order to expand the segment into an Iri
     */
   def iriSegment(projectRef: ProjectRef, fetchProject: FetchProject)(implicit sc: Scheduler): Directive1[Iri] =
-    idSegment.flatMap {
-      case str: StringSegment =>
-        onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
-          case Right(project) => str.toIri(project.apiMappings, project.base).map(provide).getOrElse(reject())
-          case Left(_)        => reject()
-        }
-      case iri: IriSegment    => provide(iri.value)
+    idSegment.flatMap { idSegment =>
+      onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
+        case Right(project) => idSegment.toIri(project.apiMappings, project.base).map(provide).getOrElse(reject())
+        case Left(_)        => reject()
+      }
     }
 
   /**
