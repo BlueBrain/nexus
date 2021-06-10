@@ -257,11 +257,6 @@ object Resources {
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id)) >>
           IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
-      else if (MigrationState.isSchemaValidationDisabled)
-        resourceResolution
-          .resolve(schemaRef, projectRef)(caller)
-          .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
-          .map { schema => (ResourceRef.Revision(schema.id, schema.rev), schema.value.project) }
       else
         for {
           _        <- IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id))

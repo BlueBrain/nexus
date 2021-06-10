@@ -20,14 +20,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage =
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -35,14 +36,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
-import ch.epfl.bluebrain.nexus.migration.{MigrationRejection, StoragesMigration}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -61,9 +59,8 @@ final class Storages private (
     orgs: Organizations,
     projects: Projects,
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
-    crypto: Crypto,
     serviceAccount: ServiceAccount
-) extends StoragesMigration {
+) {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
 
@@ -395,67 +392,6 @@ final class Storages private (
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  // Ignore errors that may happen when an event gets replayed twice after a migration restart
-  private def errorRecover: PartialFunction[StorageRejection, RunResult] = {
-    case _: ResourceAlreadyExists                                => RunResult.Success
-    case IncorrectRev(provided, expected) if provided < expected => RunResult.Success
-    case _: StorageIsDeprecated                                  => RunResult.Success
-  }
-
-  override def migrate(
-      id: Iri,
-      projectRef: ProjectRef,
-      rev: Option[Long],
-      source: Json
-  )(implicit caller: Caller): IO[MigrationRejection, RunResult] = {
-    val fieldsToDecrypt                    = List("credentials", "accessKey", "secretKey")
-    var errorDecrypt: Either[String, Unit] = Right(())
-    val decryptedSource                    = fieldsToDecrypt.foldLeft(source) { (acc, field) =>
-      acc.hcursor
-        .downField(field)
-        .withFocus {
-          _.asString match {
-            case Some(s) =>
-              val decrypted = crypto.decrypt(s).toEither
-              decrypted match {
-                case Left(err)    =>
-                  errorDecrypt = Left(
-                    s"Error while decrypting $field, we got ${err.getMessage} for storage with id $id and source $source. "
-                  )
-                  Json.Null
-                case Right(value) => Json.fromString(value)
-              }
-              crypto.decrypt(s).map(Json.fromString).getOrElse(Json.Null)
-            case None    => Json.Null
-          }
-        }
-        .top
-        .getOrElse(acc)
-        .dropNullValues
-    }
-    for {
-      _             <- IO.fromEither(errorDecrypt).mapError(MigrationRejection(_))
-      p             <- projects.fetchActiveProject(projectRef).leftWiden[StorageRejection].mapError(MigrationRejection(_))
-      storageFields <- sourceDecoder(p, id, decryptedSource).mapError(MigrationRejection(_))
-      _             <- eval(MigrateStorage(id, projectRef, storageFields, decryptedSource, rev.getOrElse(0L), caller.subject), p)
-                         .as(RunResult.Success)
-                         .onErrorRecover(errorRecover)
-                         .mapError(MigrationRejection(_))
-    } yield RunResult.Success
-  }
-
-  override def migrateTag(id: IdSegment, projectRef: ProjectRef, tagLabel: TagLabel, tagRev: Long, rev: Long)(implicit
-      subject: Subject
-  ): IO[MigrationRejection, RunResult] =
-    tag(id, projectRef, tagLabel, tagRev, rev)
-      .as(RunResult.Success)
-      .onErrorRecover(errorRecover)
-      .mapError(MigrationRejection(_))
-
-  override def migrateDeprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
-      subject: Subject
-  ): IO[MigrationRejection, RunResult] =
-    deprecate(id, projectRef, rev).as(RunResult.Success).onErrorRecover(errorRecover).mapError(MigrationRejection(_))
 }
 @SuppressWarnings(Array("MaxParameters"))
 object Storages {
@@ -563,7 +499,7 @@ object Storages {
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
       storages      =
-        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, crypto, serviceAccount)
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, serviceAccount)
       _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 
@@ -752,40 +688,11 @@ object Storages {
       case s: Current                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1L, _, c.subject))
     }
 
-    def migrate(c: MigrateStorage) = {
-      // We apply minimal validation
-      def getValue =
-        for {
-          value <- IO.fromOption(c.fields.toValue(config), InvalidStorageType(c.id, c.fields.tpe, allowedStorageTypes))
-          _     <- IO.fromEither(verifyCrypto(value))
-        } yield value
-
-      state match {
-        case Initial if c.rev == 0L                    =>
-          for {
-            value   <- getValue
-            instant <- IOUtils.instant
-          } yield StorageCreated(c.id, c.project, value, Secret(c.source), 1L, instant, c.subject)
-        case Initial                                   =>
-          IO.raiseError(StorageNotFound(c.id, c.project))
-        case s: Current if s.rev != c.rev              => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated                => IO.raiseError(StorageIsDeprecated(c.id))
-        case s: Current if c.fields.tpe != s.value.tpe =>
-          IO.raiseError(DifferentStorageType(s.id, c.fields.tpe, s.value.tpe))
-        case s: Current                                =>
-          for {
-            value   <- getValue
-            instant <- IOUtils.instant
-          } yield StorageUpdated(c.id, c.project, value, Secret(c.source), s.rev + 1L, instant, c.subject)
-      }
-    }
-
     cmd match {
       case c: CreateStorage    => create(c)
       case c: UpdateStorage    => update(c)
       case c: TagStorage       => tag(c)
       case c: DeprecateStorage => deprecate(c)
-      case c: MigrateStorage   => migrate(c)
     }
   }
 }

@@ -10,13 +10,12 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, Rou
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
-import ch.epfl.bluebrain.nexus.delta.sdk.MigrationState
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
-import ch.epfl.bluebrain.nexus.delta.wiring.{DeltaModule, MigrationModule}
+import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
@@ -49,12 +48,7 @@ object Main extends BIOApp {
       _                             <- UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'."))
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
       _                             <- Tracing.initializeKamon(config)
-      modules                       <- if (MigrationState.isRunning)
-                                         UIO.delay(log.info("Starting Delta in migration mode")) >>
-                                           UIO.delay(MigrationModule(cfg, config, cl))
-                                       else
-                                         UIO.delay(log.info("Starting Delta in normal mode")) >>
-                                           UIO.delay(DeltaModule(cfg, config, cl))
+      modules                       <- UIO.delay(DeltaModule(cfg, config, cl))
       (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
       _                             <- preStart(locator).handleError
       _                             <- bootstrap(locator, plugins).handleError

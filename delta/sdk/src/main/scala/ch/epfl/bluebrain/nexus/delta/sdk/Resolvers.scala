@@ -288,20 +288,17 @@ object Resolvers {
   ): IO[ResolverRejection, ResolverEvent] = {
 
     def validatePriorityUniqueness(project: ProjectRef, id: Iri, priority: Priority): IO[PriorityAlreadyExists, Unit] =
-      IO.unless(MigrationState.isRunning)(
-        findResolver(
-          project,
-          ResolverSearchParams(
-            project = Some(project),
-            deprecated = Some(false),
-            filter = r => r.priority == priority && r.id != id
-          )
+      findResolver(
+        project,
+        ResolverSearchParams(
+          project = Some(project),
+          deprecated = Some(false),
+          filter = r => r.priority == priority && r.id != id
         )
-          .flatMap {
-            case None        => IO.unit
-            case Some(resId) => IO.raiseError(PriorityAlreadyExists(project, resId, priority))
-          }
-      )
+      ).flatMap {
+        case None        => IO.unit
+        case Some(resId) => IO.raiseError(PriorityAlreadyExists(project, resId, priority))
+      }
 
     def validateResolverValue(
         project: ProjectRef,

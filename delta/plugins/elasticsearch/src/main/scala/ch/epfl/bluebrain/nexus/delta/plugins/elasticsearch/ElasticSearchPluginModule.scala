@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.migration.ElasticSearchViewsMigration
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -208,10 +207,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchScopeInitialization]
-
-  make[ElasticSearchViewsMigration].from { (elasticSearchViews: ElasticSearchViews) =>
-    new ElasticSearchViewsMigrationImpl(elasticSearchViews)
-  }
 
   many[ScopeInitialization].ref[ElasticSearchScopeInitialization]
 

@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
-import io.circe.{Encoder, Json, JsonObject}
+import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
 import scala.reflect.ClassTag
@@ -46,9 +46,6 @@ object ProjectRejection {
     */
   final case class ProjectNotFound private (override val reason: String) extends NotFound(reason)
   object ProjectNotFound {
-    //TODO Remove after migration
-    def apply(json: Json): ProjectNotFound                       =
-      ProjectNotFound(s"Project from json '$json' not found.")
     def apply(uuid: UUID): ProjectNotFound                       =
       ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
     def apply(orgUuid: UUID, projectUuid: UUID): ProjectNotFound =

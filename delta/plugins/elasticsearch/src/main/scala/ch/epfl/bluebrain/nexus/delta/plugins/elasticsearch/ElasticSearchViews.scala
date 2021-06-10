@@ -637,7 +637,7 @@ object ElasticSearchViews {
         for {
           t <- IOUtils.instant
           u <- uuidF()
-          _ <- IO.unless(MigrationState.isRunning)(validate(u, 1L, c.value))
+          _ <- validate(u, 1L, c.value)
           _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
       case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -654,7 +654,7 @@ object ElasticSearchViews {
         IO.raiseError(DifferentElasticSearchViewType(s.id, c.value.tpe, s.value.tpe))
       case s: Current                               =>
         for {
-          _ <- IO.unless(MigrationState.isRunning)(validate(s.uuid, s.rev + 1L, c.value))
+          _ <- validate(s.uuid, s.rev + 1L, c.value)
           t <- IOUtils.instant
         } yield ElasticSearchViewUpdated(c.id, c.project, s.uuid, c.value, c.source, s.rev + 1L, t, c.subject)
     }
