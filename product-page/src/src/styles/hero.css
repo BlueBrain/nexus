@@ -1,0 +1,70 @@
+/* 
+Hero
+*/
+.title {
+  font-weight: 800;
+}
+.hero {
+  color: white;
+}
+.hero .title,
+.hero .subtitle {
+  color: white;
+}
+.hero .subtitle {
+  max-width: 750px;
+}
+.hero h1 {
+  font-size: 3em;
+}
+.full-height {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+}
+.hero .gradient {
+  height: 120%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  background: transparent;
+  background-image: url("../../static/img/hero.png");
+  clip-path: none;
+  background-size: cover;
+}
+
+.hero .button {
+  min-width: 160px;
+}
+
+.hero .columns {
+  width: 50%;
+}
+
+canvas {
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .hero .gradient {
+    height: 120%;
+  }
+  .hero .columns {
+    width: 100%;
+  }
+  .hero .button {
+    width: 100%;
+  }
+  .hero .title {
+    font-size: 2em;
+  }
+}
+
+@media (max-width: 340px) {
+  .hero .gradient {
+    clip-path: none;
+    height: 150%;
+  }
+}
