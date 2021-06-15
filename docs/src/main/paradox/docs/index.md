@@ -1,5 +1,6 @@
 @@@ index
 
+- [Nexus versions](versions.md)
 - [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
 - [Roadmap](roadmap.md)
@@ -11,7 +12,12 @@
 
 @@@
 
-# Blue Brain Nexus
+# Blue Brain Nexus (v1.4.x)
+@@@ note { title="Outdated version" .warning }
+
+You are browsing the docs for Nexus @var[project.version.short], the latest release is available @link:[here](https://bluebrainnexus.io/docs/)
+
+@@@
 
 Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
 
@@ -57,6 +63,12 @@ Do you know know what a knowledge graph is? Or want to deepen your understanding
 Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-started/try-nexus.md) that uses our [sandbox](https://sandbox.bluebrainnexus.io/) environment to let you try the functionalities.
 
 Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus.md).
+
+## Nexus versions
+
+Looking for docs for another release of Nexus ?
+
+@ref:[List of versions](versions.md)
 
 ## Roadmap
 

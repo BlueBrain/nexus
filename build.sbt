@@ -163,7 +163,7 @@ lazy val productPage = project
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
+  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
@@ -189,15 +189,10 @@ lazy val docs = project
                          |""".stripMargin)
     },
     paradoxNavigationDepth in Paradox := 4,
-    paradoxProperties in Paradox      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
+    Paradox / paradoxProperties       ++= Map("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master", "project.version.short" -> "v1.4.x"),
     paradoxRoots                      := List("docs/index.html"),
     previewPath                       := "docs/index.html",
-    previewFixedPort                  := Some(4001),
-    // gh pages settings
-    includeFilter in ghpagesCleanSite := docsFilesFilter(ghpagesRepository.value),
-    git.remoteRepo                    := "git@github.com:BlueBrain/nexus.git",
-    ghpagesNoJekyll                   := true,
-    ghpagesBranch                     := "gh-pages"
+    previewFixedPort                  := Some(4001)
   )
 
 lazy val cli = project
