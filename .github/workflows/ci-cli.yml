@@ -20,13 +20,9 @@ jobs:
       fail-fast: true
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.1.0
+        uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v12
         with:
@@ -46,13 +42,9 @@ jobs:
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2.1.0
+        uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
+        uses: coursier/cache-action@v6
       - name: Setup Scala
         uses: olafurpg/setup-scala@v12
         with:
