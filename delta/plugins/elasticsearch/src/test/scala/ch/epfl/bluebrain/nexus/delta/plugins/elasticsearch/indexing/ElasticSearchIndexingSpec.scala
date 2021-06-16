@@ -96,7 +96,8 @@ class ElasticSearchIndexingSpec
     pagination,
     cacheIndexing,
     externalIndexing,
-    10
+    10,
+    1.minute
   )
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore

@@ -13,13 +13,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
+import scala.concurrent.duration.Duration
+
 /**
   * Relies on cluster sharding to distribute the indexing work between nodes
   * and relies on remember entities for restarts after a rebalance or a crash.
   */
-final class IndexingStreamCoordinator[V] private (
-    controller: IndexingStreamController[V]
-) {
+final class IndexingStreamCoordinator[V] private (controller: IndexingStreamController[V]) {
 
   /**
     * Runs the indexing work for the given view, starting it if needed
@@ -45,6 +45,7 @@ object IndexingStreamCoordinator {
     * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
     * @param controller      how to send messages to the [[IndexingStreamCoordinator]] sharded actor
     * @param fetchView       how to fetch view metadata for indexing
+    * @param idleTimeout     the idle duration after which an indexing stream will be stopped
     * @param buildStream     how to build the indexing stream
     * @param indexingCleanup how to cleanup the indexing stream after deprecation or new view indexing
     * @param retryStrategy   the retry strategy to apply
@@ -52,6 +53,7 @@ object IndexingStreamCoordinator {
   def apply[V](
       controller: IndexingStreamController[V],
       fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[V]]],
+      idleTimeout: V => Duration,
       buildStream: IndexingStream[V],
       indexingCleanup: IndexingCleanup[V],
       retryStrategy: RetryStrategy[Throwable]
@@ -69,7 +71,8 @@ object IndexingStreamCoordinator {
           fetchView,
           buildStream,
           indexingCleanup,
-          retryStrategy
+          retryStrategy,
+          idleTimeout
         )
       }.withStopMessage(Stop).withSettings(settings)
     )

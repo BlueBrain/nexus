@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -19,11 +19,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -167,6 +171,35 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
     )
 
+  make[Projection[ProjectsEventsInstantCollection]].fromEffect {
+    (dbCfg: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      implicit val s = system
+      implicit val c = clock
+      dbCfg.flavour match {
+        case Postgres  => Projection.postgres(dbCfg.postgres, ProjectsEventsInstantCollection.empty)
+        case Cassandra => Projection.cassandra(dbCfg.cassandra, ProjectsEventsInstantCollection.empty)
+      }
+  }
+
+  make[IndexingStreamAwake].fromEffect {
+    (
+        cfg: ProjectsConfig,
+        projection: Projection[ProjectsEventsInstantCollection],
+        onEventInstantsSet: Set[OnEventInstant],
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      IndexingStreamAwake(
+        cfg,
+        projection,
+        eventLog.eventsByTag(Event.eventTag, _),
+        OnEventInstant.combine(onEventInstantsSet)
+      )(uuidF, as, sc)
+
+  }
+
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
@@ -264,4 +297,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
   many[EventExchange].ref[ElasticSearchViewEventExchange]
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
+  make[ElasticSearchOnEventInstant]
+  many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 }

@@ -31,7 +31,8 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
     pagination,
     cacheIndexing,
     externalIndexing,
-    10
+    10,
+    1.minute
   )
 
   def init(

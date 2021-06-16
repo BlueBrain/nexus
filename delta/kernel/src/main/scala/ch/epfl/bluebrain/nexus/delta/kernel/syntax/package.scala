@@ -1,3 +1,3 @@
 package ch.epfl.bluebrain.nexus.delta.kernel
 
-package object syntax extends KamonSyntax with ClassTagSyntax with TaskSyntax
+package object syntax extends KamonSyntax with ClassTagSyntax with TaskSyntax with InstantSyntax

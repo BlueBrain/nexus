@@ -100,7 +100,7 @@ object EventLog {
           case ExitCase.Completed =>
             Task.delay(logger.debug(s"EventLog stream $description has been successfully completed."))
           case ExitCase.Error(e)  => Task.delay(logger.error(s"EventLog stream $description has failed.", e))
-          case ExitCase.Canceled  => Task.delay(logger.warn(s"EventLog stream $description got cancelled."))
+          case ExitCase.Canceled  => Task.delay(logger.debug(s"EventLog stream $description got cancelled."))
         }
 
     override def currentPersistenceIds: Stream[Task, String] =

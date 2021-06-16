@@ -69,9 +69,10 @@ object ElasticSearchIndexingCoordinator {
     .delay {
       val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "elasticsearch indexing")
 
-      IndexingStreamCoordinator(
+      IndexingStreamCoordinator[IndexingElasticSearchView](
         indexingController,
         fetchView(views, config),
+        _ => config.idleTimeout,
         indexingStream,
         indexingCleanup,
         retryStrategy

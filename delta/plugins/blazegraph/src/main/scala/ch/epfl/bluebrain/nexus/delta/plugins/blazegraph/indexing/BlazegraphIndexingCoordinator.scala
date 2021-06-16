@@ -65,19 +65,19 @@ object BlazegraphIndexingCoordinator {
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ): Task[BlazegraphIndexingCoordinator] =
+  ): Task[BlazegraphIndexingCoordinator] = {
+    val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
     Task
       .delay {
-        val retryStrategy =
-          RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "blazegraph indexing")
-
-        IndexingStreamCoordinator(
+        IndexingStreamCoordinator[IndexingBlazegraphView](
           indexingController,
           fetchView(views, config),
+          _ => config.idleTimeout,
           indexingStream,
           indexingCleanup,
           retryStrategy
         )
       }
       .tapEval(BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, _))
+  }
 }

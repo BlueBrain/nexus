@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConf
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
@@ -36,7 +36,7 @@ trait ProjectsCounts {
 
 object ProjectsCounts {
   private val logger: Logger = Logger[ProjectsCounts]
-  private type StreamFromOffset = Offset => Stream[Task, Envelope[Event]]
+  private type StreamFromOffset = Offset => Stream[Task, Envelope[ProjectScopedEvent]]
   private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
 
   /**
@@ -73,8 +73,8 @@ object ProjectsCounts {
         .flatMap { progress =>
           val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
           stream(progress.offset)
-            .collect { case env @ Envelope(event: ProjectScopedEvent, _, _, _, _, _) =>
-              env.toMessage.as(event.project)
+            .map { env =>
+              env.toMessage.as(env.event.project)
             }
             .mapAccumulate(initial) { (acc, msg) =>
               (msg.as(acc.value.increment(msg.value, msg.timestamp)), msg.value)

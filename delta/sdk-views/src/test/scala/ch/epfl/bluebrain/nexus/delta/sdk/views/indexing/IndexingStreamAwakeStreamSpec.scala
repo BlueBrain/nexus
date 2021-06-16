@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
@@ -11,14 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverCreated
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import com.typesafe.config.ConfigFactory
 import fs2.Stream
+import fs2.concurrent.SignallingRef
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
@@ -29,7 +31,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ProjectsCountsSpec
+class IndexingStreamAwakeStreamSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory.parseResources("akka-cluster-test.conf").withFallback(ConfigFactory.load()).resolve()
     )
@@ -51,8 +53,8 @@ class ProjectsCountsSpec
   private val project3 = ProjectRef.unsafe("a3", "b3")
 
   private def project(idx: Int): ProjectRef = {
-    if (idx <= 25) project1
-    else if (idx <= 40) project2
+    if (idx <= 2) project1
+    else if (idx <= 4) project2
     else project3
   }
   private val now = Instant.now()
@@ -60,7 +62,7 @@ class ProjectsCountsSpec
   private val globalStream: Stream[Task, Envelope[ProjectScopedEvent]] =
     Stream
       .iterable[Task, Envelope[ProjectScopedEvent]](
-        (1 until 51).map { idx =>
+        (1 until 7).map { idx =>
           val r = ResolverGen.inProject(nxv + idx.toString, project(idx), idx)
           Envelope(
             ResolverCreated(
@@ -69,7 +71,7 @@ class ProjectsCountsSpec
               r.value,
               json"""{"created": $idx}""",
               1L,
-              now.plusSeconds(1 * idx.toLong),
+              now.plusSeconds(idx.toLong),
               Identity.Anonymous
             ),
             Sequence(idx.toLong),
@@ -87,33 +89,45 @@ class ProjectsCountsSpec
       case _               => throw new IllegalArgumentException("")
     }
 
-  private val projection                                  = Projection.inMemory(ProjectCountsCollection.empty).accepted
+  private val projection                                  = Projection.inMemory(ProjectsEventsInstantCollection.empty).accepted
   implicit private val persistProgress                    = SaveProgressConfig(1, 5.millis)
   implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
+  private val ref                                         = SignallingRef[Task, Seq[(ProjectRef, FiniteDuration)]](Seq.empty).accepted
+  implicit private val onEventInstant                     = new OnEventInstant {
+    override def awakeIndexingStream(
+        project: ProjectRef,
+        prevEvent: Option[Instant],
+        currentEvent: Instant
+    ): Task[Unit] =
+      ref.update(_ :+ ((project, currentEvent.diff(prevEvent.getOrElse(currentEvent)))))
+  }
 
-  "ProjectsCounts" should {
+  "IndexingStreamAwakeStream" should {
 
-    "be computed" in {
-      val counts = ProjectsCounts(projection, stream).accepted
+    "trigger awake callbacks" in {
+      val _ = IndexingStreamAwake(projection, stream, onEventInstant).accepted
       eventually {
-        val currentCounts = counts.get().accepted
-        currentCounts.get(project1).value shouldEqual ProjectCount(25, now.plusSeconds(25))
-        currentCounts.get(project2).value shouldEqual ProjectCount(15, now.plusSeconds(40))
-        currentCounts.get(project3).value // it has already consumed some element
-        currentCounts.get(ProjectRef.unsafe("other", "other")) shouldEqual None
+        ref.get.accepted shouldEqual List(
+          project1 -> 0.millis,
+          project1 -> 1000.millis,
+          project2 -> 0.millis,
+          project2 -> 1000.millis,
+          project3 -> 0.millis,
+          project3 -> 1000.millis
+        )
       }
     }
 
     "retrieve its offset" in eventually {
-      val currentProgress = projection.progress(ProjectsCounts.projectionId).accepted
-      val counts          = ProjectCountsCollection(
+      val currentProgress = projection.progress(IndexingStreamAwake.projectionId).accepted
+      val values          = ProjectsEventsInstantCollection(
         Map(
-          project1 -> ProjectCount(25, now.plusSeconds(25)),
-          project2 -> ProjectCount(15, now.plusSeconds(40)),
-          project3 -> ProjectCount(10, now.plusSeconds(50))
+          project1 -> now.plusSeconds(2),
+          project2 -> now.plusSeconds(4),
+          project3 -> now.plusSeconds(6)
         )
       )
-      currentProgress shouldEqual ProjectionProgress(Sequence(50), now.plusSeconds(50), 50, 0L, 0L, 0L, counts)
+      currentProgress shouldEqual ProjectionProgress(Sequence(6), now.plusSeconds(6), 7, 0, 0, 0, values)
     }
   }
 

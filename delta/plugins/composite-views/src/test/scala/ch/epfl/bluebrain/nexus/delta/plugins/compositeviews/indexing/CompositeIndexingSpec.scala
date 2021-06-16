@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingSpec.{Album, Band, Music}
@@ -291,7 +291,13 @@ class CompositeIndexingSpec
       Crypto("password", "salt"),
       config.copy(minIntervalRebuild = 900.millis)
     ).accepted
-  CompositeIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config).runAsyncAndForget
+  CompositeIndexingCoordinator(
+    views,
+    indexingController,
+    indexingStream,
+    indexingCleanup,
+    config
+  ).runAsyncAndForget
 
   private def exchangeValue[A <: Music: Encoder](
       project: ProjectRef,

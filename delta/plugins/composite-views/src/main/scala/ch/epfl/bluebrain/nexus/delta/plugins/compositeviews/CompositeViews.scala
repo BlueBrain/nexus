@@ -37,6 +37,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -321,6 +324,28 @@ final class CompositeViews private (
         case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
+
+  /**
+    * Retrieves a list of CompositeViews using specific pagination, filter and ordering configuration.
+    *
+    * @param pagination the pagination configuration
+    * @param params     the filtering configuration
+    * @param ordering   the ordering configuration
+    */
+  def list(
+      pagination: FromPagination,
+      params: CompositeViewSearchParams,
+      ordering: Ordering[ViewResource]
+  ): UIO[UnscoredSearchResults[ViewResource]] =
+    cache.values
+      .map { resources =>
+        val results = resources.filter(params.matches).sorted(ordering)
+        UnscoredSearchResults(
+          results.size.toLong,
+          results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
+        )
+      }
+      .named("listCompositeViews", moduleType)
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The
