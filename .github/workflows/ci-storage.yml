@@ -85,7 +85,7 @@ jobs:
         uses: coursier/cache-action@v6
       - uses: olafurpg/setup-scala@v12
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: SetVersion
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: PublishToBintray
