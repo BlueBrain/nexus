@@ -30,7 +30,7 @@ jobs:
           path: ~/.cache/coursier
           key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
           restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
+      - uses: olafurpg/setup-scala@v12
         with:
           java-version: adopt@1.11
       - name: StaticAnalysis
@@ -57,7 +57,7 @@ jobs:
           path: ~/.cache/coursier
           key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
           restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
+      - uses: olafurpg/setup-scala@v12
         with:
           java-version: adopt@1.11
       - name: PublishToBintray
