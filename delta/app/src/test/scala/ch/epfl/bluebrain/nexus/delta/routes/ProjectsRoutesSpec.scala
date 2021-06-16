@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectCountsCollection, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -47,16 +48,31 @@ class ProjectsRoutesSpec
   private val orgUuid                   = UUID.randomUUID()
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val provisionedRealm  = Label.unsafe("realm2")
+  private val caller            = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val provisionedUser   = User("user1", provisionedRealm)
+  private val provisionedCaller =
+    Caller(
+      provisionedUser,
+      Set(provisionedUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm))
+    )
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller, AuthToken("user1") -> provisionedCaller))
 
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
+  private val asAlice       = addCredentials(OAuth2BearerToken("alice"))
+  private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))
 
   private val acls = AclSetup
     .init(
-      Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read, resources.read),
-      Set(realm)
+      Set(
+        projectsPermissions.write,
+        projectsPermissions.read,
+        projectsPermissions.create,
+        events.read,
+        resources.read,
+        resources.write
+      ),
+      Set(realm, provisionedRealm)
     )
     .accepted
 
@@ -72,12 +88,23 @@ class ProjectsRoutesSpec
       o <- OrganizationsDummy(Set(aopd))(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
+      _ <- o.create(Label.unsafe("users-org"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)
 
     } yield o
   }.accepted
 
-  private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
+  private val provisioningConfig = AutomaticProvisioningConfig(
+    enabled = true,
+    permissions = Set(resources.read, resources.write, projectsPermissions.read),
+    enabledReams = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
+    description = "Auto provisioned project",
+    apiMappings = ApiMappings.empty,
+    base = PrefixIri.unsafe(iri"http://example.com/base/"),
+    vocab = PrefixIri.unsafe(iri"http://example.com/vocab/")
+  )
+
+  private val projectDummy = ProjectsDummy(orgs, acls, Set(aopd), defaultApiMappings, provisioningConfig).accepted
 
   private val projectStats = ProjectCount(10L, Instant.EPOCH)
 
@@ -501,6 +528,18 @@ class ProjectsRoutesSpec
           "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
           "value" : 10
         }"""
+      }
+    }
+
+    "provision project for user when listing" in {
+
+      Get("/v1/projects/users-org") ~> asProvisioned ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson.asObject.value("_total").value.asNumber.value.toInt.value shouldEqual 1
+      }
+
+      Get("/v1/projects/users-org/user1") ~> asProvisioned ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
       }
     }
 

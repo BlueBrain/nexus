@@ -8,15 +8,16 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{logger, ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -33,8 +34,10 @@ final class ProjectsImpl private (
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     organizations: Organizations,
+    acls: Acls,
     scopeInitializations: Set[ScopeInitialization],
-    defaultApiMappings: ApiMappings
+    defaultApiMappings: ApiMappings,
+    provisioningConfig: AutomaticProvisioningConfig
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -114,11 +117,25 @@ final class ProjectsImpl private (
   private def fetchFromCache(uuid: UUID): IO[ProjectNotFound, ProjectRef] =
     index.collectFirstOr { case (ref, resource) if resource.value.uuid == uuid => ref }(ProjectNotFound(uuid))
 
+  override def provisionProject(subject: Subject): UIO[Unit]              = subject match {
+    case user @ User(subject, realm) if provisioningConfig.enabled =>
+      (for {
+        org       <- IO.fromOption(provisioningConfig.enabledReams.get(realm))
+        proj      <- IO.fromEither(Label.apply(subject)).mapError { err =>
+                       logger.warn(s"Failed to create a project label for $user, due to error '${err.getMessage}'")
+                     }
+        projectRef = ProjectRef(org, proj)
+        exists    <- index.get(projectRef).map(_.isDefined)
+        _         <- provisionIfNotExists(exists, projectRef, user, acls, provisioningConfig)
+      } yield ()).onErrorHandle(_ => ())
+    case _                                                         => UIO.unit
+  }
+
   override def list(
       pagination: Pagination.FromPagination,
       params: SearchParams.ProjectSearchParams,
       ordering: Ordering[ProjectResource]
-  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
+  ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
     index.values
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
@@ -214,10 +231,21 @@ object ProjectsImpl {
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
       organizations: Organizations,
+      acls: Acls,
       scopeInitializations: Set[ScopeInitialization],
-      defaultApiMappings: ApiMappings
+      defaultApiMappings: ApiMappings,
+      provisioningConfig: AutomaticProvisioningConfig
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations, defaultApiMappings)
+    new ProjectsImpl(
+      agg,
+      eventLog,
+      cache,
+      organizations,
+      acls,
+      scopeInitializations,
+      defaultApiMappings,
+      provisioningConfig
+    )
 
   /**
     * Constructs a [[Projects]] instance.
@@ -225,6 +253,7 @@ object ProjectsImpl {
     * @param config               the projects configuration
     * @param eventLog             the event log for [[ProjectEvent]]
     * @param organizations        an instance of the organizations module
+    * @param acls                 an instance of the acl module
     * @param scopeInitializations the collection of registered scope initializations
     * @param defaultApiMappings   the default api mappings
     */
@@ -232,6 +261,7 @@ object ProjectsImpl {
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
+      acls: Acls,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings
   )(implicit
@@ -244,7 +274,16 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations, defaultApiMappings)
       index   <- UIO.delay(cache(config))
-      projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
+      projects = apply(
+                   agg,
+                   eventLog,
+                   index,
+                   organizations,
+                   acls,
+                   scopeInitializations,
+                   defaultApiMappings,
+                   config.automaticProvisioning
+                 )
       _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
     } yield projects
 

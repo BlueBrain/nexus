@@ -5,17 +5,21 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.logger
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -101,6 +105,7 @@ trait Projects {
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
+    *
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     */
@@ -121,6 +126,7 @@ trait Projects {
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
+    *
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     * @param rev         the revision to be retrieved
@@ -159,6 +165,44 @@ trait Projects {
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
+
+  /**
+    * Create a project for a user according to automatic provisioning settings.
+    *
+    * @param subject  the user for which to provision the project.
+    */
+  def provisionProject(subject: Subject): UIO[Unit]
+
+  private[delta] def provisionIfNotExists(
+      exists: Boolean,
+      projectRef: ProjectRef,
+      user: User,
+      acls: Acls,
+      provisioningConfig: AutomaticProvisioningConfig
+  ): IO[Unit, Unit] =
+    if (exists) UIO.unit
+    else {
+      val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
+      (for {
+        _ <- acls
+               .append(acl, 0L)(user)
+               .onErrorRecover { case _: AclRejection.IncorrectRev => () }
+               .mapError { rej => s"Failed to set ACL for user '$user' due to '${rej.reason}'." }
+        _ <- create(
+               projectRef,
+               ProjectFields(
+                 Some(provisioningConfig.description),
+                 provisioningConfig.apiMappings,
+                 Some(provisioningConfig.base),
+                 Some(provisioningConfig.vocab)
+               )
+             )(user)
+               .onErrorRecover { case _: ProjectAlreadyExists => () }
+               .mapError { rej => s"Failed to provision project for '$user' due to '${rej.reason}'." }
+      } yield ()).onErrorHandle { err =>
+        logger.warn(err)
+      }
+    }
 }
 
 object Projects {
@@ -167,6 +211,8 @@ object Projects {
   type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
   type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
   type FetchUuids         = ProjectRef => UIO[Option[(UUID, UUID)]]
+
+  private val logger: Logger = Logger[Projects]
 
   implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
   implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)

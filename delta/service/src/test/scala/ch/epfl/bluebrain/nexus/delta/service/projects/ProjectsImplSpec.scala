@@ -13,7 +13,14 @@ import monix.bio.Task
 class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures {
 
   val projectsConfig: ProjectsConfig =
-    ProjectsConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist)
+    ProjectsConfig(
+      aggregate,
+      keyValueStore,
+      pagination,
+      cacheIndexing,
+      persist,
+      provisioningConfig
+    )
 
   override def create: Task[Projects] =
     for {
@@ -23,6 +30,7 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
           projectsConfig,
           eventLog,
           organizations,
+          acls,
           Set(new OwnerPermissionsScopeInitialization(acls, ownerPermissions, serviceAccount)),
           ApiMappings.empty
         )

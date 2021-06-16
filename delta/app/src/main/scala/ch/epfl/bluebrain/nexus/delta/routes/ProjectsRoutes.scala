@@ -9,10 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -21,9 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -64,20 +64,25 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
       }
     }
 
+  private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
+    projects.provisionProject(caller.subject).runToFuture
+  )
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("projects") {
         extractCaller { implicit caller =>
           concat(
             // List projects
-            (get & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
-              (uri, pagination, params, order) =>
-                operationName(s"$prefixSegment/projects") {
-                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
-                    searchResultsJsonLdEncoder(Project.context, pagination, uri)
+            (get & pathEndOrSingleSlash & extractUri & fromPaginated & provisionProject & projectsSearchParams & sort[
+              Project
+            ]) { (uri, pagination, params, order) =>
+              operationName(s"$prefixSegment/projects") {
+                implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
+                  searchResultsJsonLdEncoder(Project.context, pagination, uri)
 
-                  emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
-                }
+                emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
+              }
             },
             // SSE projects
             (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -136,13 +141,14 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
               }
             },
             // list projects for an organization
-            (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & projectsSearchParams & sort[Project]) {
-              (organization, uri, pagination, params, order) =>
-                implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
-                  searchResultsJsonLdEncoder(Project.context, pagination, uri)
+            (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & provisionProject & projectsSearchParams & sort[
+              Project
+            ]) { (organization, uri, pagination, params, order) =>
+              implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectResource]] =
+                searchResultsJsonLdEncoder(Project.context, pagination, uri)
 
-                val filter = params.copy(organization = Some(organization))
-                emit(projects.list(pagination, filter, order).widen[SearchResults[ProjectResource]])
+              val filter = params.copy(organization = Some(organization))
+              emit(projects.list(pagination, filter, order).widen[SearchResults[ProjectResource]])
             }
           )
         }
