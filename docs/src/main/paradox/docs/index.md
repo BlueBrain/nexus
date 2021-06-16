@@ -1,6 +1,6 @@
 @@@ index
 
-- [Nexus versions](versions.md)
+- [Versions](versions.md)
 - [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
 - [Roadmap](roadmap.md)
@@ -64,7 +64,7 @@ Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-
 
 Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus.md).
 
-## Nexus versions
+## Versions
 
 Looking for docs for another release of Nexus ?
 

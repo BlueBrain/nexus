@@ -1,7 +1,7 @@
 @@@ index
 
 - [Architecture](architecture.md)
-- [API Reference](api/current/index.md)
+- [API Reference](api/index.md)
 - [Benchmarks](benchmarks.md)
 
 @@@
@@ -28,7 +28,7 @@ Please refer to the @ref:[architecture] and @ref:[api reference] sections for mo
 [Nexus Fusion]: ../fusion/index.md
 [Nexus Forge]: ../forge.md
 [architecture]: ./architecture.md
-[api reference]: ./api/current/index.md
+[api reference]: api/index.md
 [in the open]: https://github.com/BlueBrain/nexus
 [Apache License, version 2.0]: https://www.apache.org/licenses/LICENSE-2.0
 [OpenID Connect]: https://openid.net/connect/
