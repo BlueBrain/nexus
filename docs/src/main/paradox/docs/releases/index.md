@@ -104,7 +104,7 @@ the @ref:[migration instructions](v1.2-to-v1.3-migration.md).
 
 Summary of the significant changes:
 
-- Introduced a @ref:[new type of view](../delta/api/current/views/composite-view-api.md) (_CompositeView_, currently as a
+- Introduced a @ref:[new type of view](../delta/api/views/composite-view-api.md) (_CompositeView_, currently as a
   Beta feature) that expands on the indexing capabilities of the system through the ability to consume multiple sources
   (multiple projects in the same Nexus deployment and projects in different Nexus deployments);
 - Added the ability to generate tabular views on the data available to a specific project (using any SparqlView defined
@@ -149,8 +149,8 @@ Storage service related updates:
 
 KG updates:
 
-- Added @ref:[archives resources](../delta/api/current/kg-archives-api.md).
-- Added @ref:[/source](../delta/api/current/kg-resources-api.md#fetch-original-payload) sub-resource.
+- Added @ref:[archives resources](../delta/api/archives-api.md).
+- Added @ref:[/source](../delta/api/resources-api.md#fetch-original-payload) sub-resource.
 - @link:[Fixed issue](https://github.com/BlueBrain/nexus/issues/750){ open=new } with resource retrieval when linked context changes.
 - Updated `DigestViewCoordinator` to `AttributesViewCoordinator`. This async process now updates all the FileAttributes.
 
