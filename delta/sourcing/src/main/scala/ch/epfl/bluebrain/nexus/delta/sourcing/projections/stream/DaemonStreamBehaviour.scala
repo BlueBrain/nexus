@@ -10,6 +10,7 @@ import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Behavior to define and supervise a running stream in background
@@ -33,25 +34,18 @@ object DaemonStreamBehaviour {
     Behaviors.setup[SupervisorCommand] { context =>
       import context._
 
-      def onFinalize(uuid: UUID) = UIO.delay(self ! StreamStopped(uuid))
+      @nowarn("cat=unused")
+      def onFinalize(uuid: UUID, message: Unit) = UIO.delay(self ! StreamStopped(uuid))
 
       // Adds an interrupter to the stream and start its evaluation
       def start(): Behavior[SupervisorCommand] = {
         logger.debug("Starting the stream for StreamSupervisor {}", streamName)
-        val switch = StreamSwitch
-          .run(
-            streamName,
-            stream,
-            retryStrategy,
-            onCancel = onFinalize,
-            onFinalize = onFinalize
-          )
-          .runSyncUnsafe()
-
+        val cancelableStream = CancelableStream(streamName, stream).runSyncUnsafe()
+        val switch           = cancelableStream.run(retryStrategy, onCancel = onFinalize, onFinalize = onFinalize)
         running(switch)
       }
 
-      def running(switch: StreamSwitch): Behavior[SupervisorCommand] =
+      def running(switch: StreamSwitch[Unit]): Behavior[SupervisorCommand] =
         Behaviors
           .receiveMessage[SupervisorCommand] {
             case StreamStopped(uuid) if switch.uuid == uuid =>
