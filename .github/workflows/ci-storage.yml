@@ -26,7 +26,7 @@ jobs:
         uses: coursier/cache-action@v6
       - uses: olafurpg/setup-scala@v12
         with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -57,7 +57,7 @@ jobs:
         uses: coursier/cache-action@v6
       - uses: olafurpg/setup-scala@v12
         with:
-          java-version: adop@1.8.0-272
+          java-version: adopt@1.8.0-272
       - name: PublishToBintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
       - name: PublishToDockerHub
