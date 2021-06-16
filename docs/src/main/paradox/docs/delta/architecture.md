@@ -168,5 +168,5 @@ The authorization flow is as follows:
 [OAuth 2.0]: https://tools.ietf.org/html/rfc6749
 [JSON Web Tokens]: https://tools.ietf.org/html/rfc7519
 [Keycloak]: https://www.keycloak.org/
-[identities]: api/iam-identities.md
-[ACLs]: api/iam-acls-api.md
+[identities]: api/identities.md
+[ACLs]: api/acls-api.md

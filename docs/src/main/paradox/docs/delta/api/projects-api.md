@@ -5,7 +5,7 @@ The purposes of projects are:
 
 - Group and categorize sub-resources.
 - Define settings that apply for operations on all sub-resources. 
-- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](kg-resolvers-api.md)
+- Provide isolation from resources inside other projects. This behavior can be changed by defining @ref:[resolvers](resolvers-api.md)
 
 Access to resources in the system depends on the access control list set for them. A caller may need to prove its identity by means of an **access token** passed in the `Authorization` header (`Authorization: Bearer {token}`).
 Please visit @ref:[Authentication](authentication.md) to learn more about retrieving access tokens.

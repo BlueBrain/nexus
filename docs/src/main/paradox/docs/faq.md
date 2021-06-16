@@ -108,7 +108,7 @@ Yes. As long as the client supports the ability to provide a `Authentication` HT
 ### How can I create an organization as an anonymous user in the docker-compose file? What needs to be done to switch to "authenticated" mode?
 
 By default, the permissions used - for an authenticated user - when running Nexus Delta are the ones defined on the JVM property [app.permissions.minimum](https://github.com/BlueBrain/nexus/blob/master/delta/src/main/resources/app.conf#L213).
-In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, visit the @ref:[ACLs page](delta/api/iam-acls-api.md#create-acls).
+In order to change that behaviour, please create some ACLs for the path `/`. For more details about ACLs creation, visit the @ref:[ACLs page](delta/api/acls-api.md#create-acls).
 
 ### Can I use Blue Brain Nexus from Jupyter Notebooks?
 
