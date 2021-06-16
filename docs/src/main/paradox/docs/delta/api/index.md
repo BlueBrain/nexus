@@ -4,19 +4,19 @@
 * @ref:[Error Signaling](error-signaling.md)
 * @ref:[Version endpoint](version.md)
 * @ref:[Authentication & Authorization](authentication.md)
-* @ref:[Identities](iam-identities.md)
-* @ref:[Permissions](iam-permissions-api.md)
-* @ref:[Realms](iam-realms-api.md)
-* @ref:[ACLs](iam-acls-api.md)
-* @ref:[Organizations](admin-orgs-api.md)
-* @ref:[Projects](admin-projects-api.md)
-* @ref:[Schemas](kg-schemas-api.md)
-* @ref:[Resources](kg-resources-api.md)
-* @ref:[Resolvers](kg-resolvers-api.md)
+* @ref:[Identities](identities.md)
+* @ref:[Permissions](permissions-api.md)
+* @ref:[Realms](realms-api.md)
+* @ref:[ACLs](acls-api.md)
+* @ref:[Organizations](orgs-api.md)
+* @ref:[Projects](projects-api.md)
+* @ref:[Schemas](schemas-api.md)
+* @ref:[Resources](resources-api.md)
+* @ref:[Resolvers](resolvers-api.md)
 * @ref:[Views](views/index.md)
-* @ref:[Storages](kg-storages-api.md)
-* @ref:[Files](kg-files-api.md)
-* @ref:[Archives](kg-archives-api.md)
+* @ref:[Storages](storages-api.md)
+* @ref:[Files](files-api.md)
+* @ref:[Archives](archives-api.md)
 
 @@@
 
@@ -32,12 +32,12 @@ The API provides access and management of several primary resource types.
 A realm provides with the necessary information to perform authentication against a certain 
 @link:[OIDC](https://en.wikipedia.org/wiki/OpenID_Connect){ open=new } provider .  
 
-@ref:[Operations on realms](iam-realms-api.md)
+@ref:[Operations on realms](realms-api.md)
 
 ## Permissions 
 A permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-@ref:[Operations on permisions](iam-permissions-api.md)
+@ref:[Operations on permisions](permissions-api.md)
 
 ## ACLs
 
@@ -50,38 +50,38 @@ In order to restrict applications' access to data by placing restrictions on the
 
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
 
-@ref:[Operations on ACLs](iam-acls-api.md)
+@ref:[Operations on ACLs](acls-api.md)
 
 ## Identities
 Identities endpoint can be used to fetch user identities.
 
-@ref:[Operations on identities](iam-identities.md)
+@ref:[Operations on identities](identities.md)
 
 
 ## Organizations 
 
 The top-level grouping resource in the platform, called organization
 
-@ref:[Operations on organizations](admin-orgs-api.md)
+@ref:[Operations on organizations](orgs-api.md)
 
 ## Projects
 
 The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource 
 resolution and indices (ElasticSearch index and Blazegraph namespace).
 
-@ref:[Operations on projects](admin-projects-api.md)
+@ref:[Operations on projects](projects-api.md)
 
 ## Schemas
 
 A schema is a resource which defines a set of rules and constrains using @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new }. 
 
-@ref:[Operations on schemas](kg-schemas-api.md)
+@ref:[Operations on schemas](schemas-api.md)
 
 ## Resolvers
 
 A resolver is a resource which defines the way ids are retrieved inside a project.
 
-@ref:[Operations on resolvers](kg-resolvers-api.md)
+@ref:[Operations on resolvers](resolvers-api.md)
 
 ## Views
 
@@ -93,26 +93,26 @@ A view is a resource which defines the way indexing is applied to certain resour
 
 A storage is a resource which represents a backend where files are stored. It describes where and how files are created and retrieve.
 
-@ref:[Operations on storages](kg-storages-api.md)
+@ref:[Operations on storages](storages-api.md)
 
 ## Files
 
 A file is a binary attachment resource.
 
-@ref:[Operations on files](kg-files-api.md)
+@ref:[Operations on files](files-api.md)
 
 ## Archives
 
 An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
 
-@ref:[Operations on archives](kg-archives-api.md)
+@ref:[Operations on archives](archives-api.md)
 
 ## Resources
 
 A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`,
 `storages`, `files` or `data`.
 
-@ref:[Operations on resources](kg-resources-api.md)
+@ref:[Operations on resources](resources-api.md)
 
 ## Resource Lifecycle
 

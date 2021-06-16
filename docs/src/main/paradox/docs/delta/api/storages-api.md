@@ -1,7 +1,7 @@
 # Storages
 
 Storages are rooted in the `/v1/storages/{org_label}/{project_label}` collection and are used to describe where
-@ref:[files](kg-files-api.md) are physically stored.
+@ref:[files](files-api.md) are physically stored.
 
 Each storage belongs to a `project` identifier by the label `{project_label}` inside an `organization` identifier by the label `{org_label}`.
 
@@ -24,7 +24,7 @@ This is the most basic storage type. It is backed by the local file-system (i.e.
 running) and rooted in an arbitrary path.
 
 Upon project creation, a default disk storage is initialized automatically, so that users can start uploading
-resource attachments right away. This resource can be accessed using the @ref:[api mapping](admin-projects-api.md#api-mappings) alias `defaultStorage`.
+resource attachments right away. This resource can be accessed using the @ref:[api mapping](projects-api.md#api-mappings) alias `defaultStorage`.
 
 While typically not necessary, you can manage and create additional disk storages, provided you are aware of the
 local file-system structure and that Nexus has read and write access to the target folder.
