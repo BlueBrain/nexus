@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectFields, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
@@ -55,12 +55,7 @@ object ProjectProvisioning {
         _ <- projects
                .create(
                  projectRef,
-                 ProjectFields(
-                   Some(provisioningConfig.description),
-                   provisioningConfig.apiMappings,
-                   Some(provisioningConfig.base),
-                   Some(provisioningConfig.vocab)
-                 )
+                 provisioningConfig.fields
                )(user)
                .onErrorRecover { case _: ProjectAlreadyExists => () }
                .mapError { rej => s"Failed to provision project for '$user' due to '${rej.reason}'." }

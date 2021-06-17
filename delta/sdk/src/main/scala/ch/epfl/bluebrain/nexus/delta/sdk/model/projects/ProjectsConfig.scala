@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -44,19 +43,13 @@ object ProjectsConfig {
     * @param enabled        flag signalling whether automatic provisioning is enabled
     * @param permissions    the permissions applied to the newly provisioned project
     * @param enabledRealms  the realms for which the provisioning is enabled(map of realm label to organization in which the projects for the realm should be created)
-    * @param description    the description of the created project
-    * @param apiMappings    the [[ApiMappings]] of the created project
-    * @param base           the base for the created project
-    * @param vocab          the vocab for the created project
+    * @param fields         the project configuration
     */
   final case class AutomaticProvisioningConfig(
       enabled: Boolean,
       permissions: Set[Permission],
       enabledRealms: Map[Label, Label],
-      description: String,
-      apiMappings: ApiMappings,
-      base: PrefixIri,
-      vocab: PrefixIri
+      fields: ProjectFields
   )
 
   object AutomaticProvisioningConfig {
@@ -65,10 +58,7 @@ object ProjectsConfig {
       enabled = false,
       permissions = Set.empty,
       enabledRealms = Map.empty,
-      description = "",
-      apiMappings = ApiMappings.empty,
-      base = PrefixIri.unsafe(iri"http://localhost:8080/"),
-      vocab = PrefixIri.unsafe(iri"http://localhost:8080/")
+      ProjectFields(None, ApiMappings.empty, None, None)
     )
 
   }
@@ -119,10 +109,8 @@ object ProjectsConfig {
       enabled,
       permissions,
       enabledRealms,
-      description,
-      ApiMappings(apiMappings),
-      base,
-      vocab
+      l
+        ProjectFields (Some(description), ApiMappings(apiMappings), Some(base), Some(vocab))
     )
   }
   implicit final val projectConfigReader: ConfigReader[ProjectsConfig]             =
