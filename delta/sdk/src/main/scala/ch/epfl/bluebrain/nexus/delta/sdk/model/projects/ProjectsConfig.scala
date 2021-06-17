@@ -109,8 +109,7 @@ object ProjectsConfig {
       enabled,
       permissions,
       enabledRealms,
-      l
-        ProjectFields (Some(description), ApiMappings(apiMappings), Some(base), Some(vocab))
+      ProjectFields(Some(description), ApiMappings(apiMappings), Some(base), Some(vocab))
     )
   }
   implicit final val projectConfigReader: ConfigReader[ProjectsConfig]             =
