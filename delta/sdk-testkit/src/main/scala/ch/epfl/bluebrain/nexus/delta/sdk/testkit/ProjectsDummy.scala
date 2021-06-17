@@ -6,16 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
@@ -37,10 +35,8 @@ final class ProjectsDummy private (
     cache: ProjectsCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
-    acls: Acls,
     scopeInitializations: Set[ScopeInitialization],
-    defaultApiMappings: ApiMappings,
-    provisioningConfig: AutomaticProvisioningConfig
+    defaultApiMappings: ApiMappings
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -135,17 +131,7 @@ final class ProjectsDummy private (
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.currentEvents(offset)
 
-  override def provisionProject(subject: Subject): UIO[Unit] = subject match {
-    case user @ User(subject, realm) if provisioningConfig.enabled =>
-      (for {
-        org       <- IO.fromOption(provisioningConfig.enabledRealms.get(realm))
-        proj      <- IO.fromEither(Label.apply(subject)).mapError { _ => () }
-        projectRef = ProjectRef(org, proj)
-        exists    <- cache.fetch(projectRef).map(_.isDefined)
-        _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, acls, provisioningConfig))
-      } yield ()).onErrorHandle(_ => ())
-    case _                                                         => UIO.unit
-  }
+  override def projectExists(project: ProjectRef): UIO[Boolean] = cache.fetch(project).map(_.isDefined)
 }
 
 object ProjectsDummy {
@@ -162,17 +148,13 @@ object ProjectsDummy {
     * Creates a project dummy instance
     *
     * @param organizations        an Organizations instance
-    * @param acls                 an Acls instance
     * @param scopeInitializations the collection of registered scope initializations
     * @param defaultApiMappings   the default api mappings
-    * @param provisioningConfig   the automatic project provisioning config.
     */
   def apply(
       organizations: Organizations,
-      acls: Acls,
       scopeInitializations: Set[ScopeInitialization],
-      defaultApiMappings: ApiMappings,
-      provisioningConfig: AutomaticProvisioningConfig
+      defaultApiMappings: ApiMappings
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
@@ -183,10 +165,8 @@ object ProjectsDummy {
       cache,
       sem,
       organizations,
-      acls,
       scopeInitializations,
-      defaultApiMappings,
-      provisioningConfig
+      defaultApiMappings
     )
 
   /**
@@ -194,12 +174,10 @@ object ProjectsDummy {
     *
     * @param organizations      an Organizations instance
     * @param defaultApiMappings the default api mappings
-    * @param provisioningConfig the automatic project provisioning config.
     */
   def apply(
       organizations: Organizations,
-      defaultApiMappings: ApiMappings,
-      provisioningConfig: AutomaticProvisioningConfig
+      defaultApiMappings: ApiMappings
   )(implicit
       base: BaseUri,
       clock: Clock[UIO],
@@ -210,7 +188,7 @@ object ProjectsDummy {
       r        <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a        <- AclsDummy(p, r)
       scopeInit = Set[ScopeInitialization](OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous)))
-      p        <- apply(organizations, a, scopeInit, defaultApiMappings, provisioningConfig)
+      p        <- apply(organizations, scopeInit, defaultApiMappings)
     } yield p
 
 }

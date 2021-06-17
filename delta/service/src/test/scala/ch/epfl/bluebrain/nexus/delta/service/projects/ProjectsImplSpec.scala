@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectsBehaviors}
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
@@ -19,7 +20,7 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
       pagination,
       cacheIndexing,
       persist,
-      provisioningConfig
+      AutomaticProvisioningConfig.disabled
     )
 
   override def create: Task[Projects] =
@@ -30,7 +31,6 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
           projectsConfig,
           eventLog,
           organizations,
-          acls,
           Set(new OwnerPermissionsScopeInitialization(acls, ownerPermissions, serviceAccount)),
           ApiMappings.empty
         )

@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -34,8 +35,13 @@ import monix.execution.Scheduler
   * @param acls       the ACLs module
   * @param projects   the projects module
   */
-final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(
-    implicit
+final class ProjectsRoutes(
+    identities: Identities,
+    acls: Acls,
+    projects: Projects,
+    projectsCounts: ProjectsCounts,
+    projectProvisioning: ProjectProvisioning
+)(implicit
     baseUri: BaseUri,
     defaultApiMappings: ApiMappings,
     paginationConfig: PaginationConfig,
@@ -65,7 +71,7 @@ final class ProjectsRoutes(identities: Identities, acls: Acls, projects: Project
     }
 
   private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
-    projects.provisionProject(caller.subject).runToFuture
+    projectProvisioning(caller.subject).runToFuture
   )
 
   def routes: Route =
@@ -161,13 +167,19 @@ object ProjectsRoutes {
   /**
     * @return the [[Route]] for projects
     */
-  def apply(identities: Identities, acls: Acls, projects: Projects, projectsCounts: ProjectsCounts)(implicit
+  def apply(
+      identities: Identities,
+      acls: Acls,
+      projects: Projects,
+      projectsCounts: ProjectsCounts,
+      projectProvisioning: ProjectProvisioning
+  )(implicit
       baseUri: BaseUri,
       defaultApiMappings: ApiMappings,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ProjectsRoutes(identities, acls, projects, projectsCounts).routes
+  ): Route = new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning).routes
 
 }

@@ -104,7 +104,7 @@ class ProjectsRoutesSpec
     vocab = PrefixIri.unsafe(iri"http://example.com/vocab/")
   )
 
-  private val projectDummy = ProjectsDummy(orgs, acls, Set(aopd), defaultApiMappings, provisioningConfig).accepted
+  private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
 
   private val projectStats = ProjectCount(10L, Instant.EPOCH)
 
@@ -114,7 +114,9 @@ class ProjectsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts))
+  private val provisioning = ProjectProvisioning(acls, projectDummy, provisioningConfig)
+
+  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts, provisioning))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"

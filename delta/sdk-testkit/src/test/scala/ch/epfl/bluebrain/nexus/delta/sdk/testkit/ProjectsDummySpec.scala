@@ -20,11 +20,5 @@ class ProjectsDummySpec
     with ProjectsBehaviors {
 
   override def create: UIO[Projects] =
-    ProjectsDummy(
-      organizations,
-      acls,
-      Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)),
-      ApiMappings.empty,
-      provisioningConfig
-    )
+    ProjectsDummy(organizations, Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)), ApiMappings.empty)
 }

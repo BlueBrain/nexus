@@ -4,16 +4,14 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
@@ -21,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -40,19 +39,8 @@ trait ProjectsBehaviors {
     with CancelAfterFailure
     with OptionValues =>
 
-  val provisioningConfig = AutomaticProvisioningConfig(
-    enabled = true,
-    permissions = Set(resources.read, resources.write),
-    enabledRealms = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
-    description = "Auto provisioned project",
-    apiMappings = ApiMappings.empty,
-    base = PrefixIri.unsafe(iri"http://example.com/base/"),
-    vocab = PrefixIri.unsafe(iri"http://example.com/vocab/")
-  )
-
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
-  val subjectRealm2: Subject         = Identity.User("user", Label.unsafe("realm2"))
   val serviceAccount: ServiceAccount = ServiceAccount(Identity.User("serviceAccount", Label.unsafe("realm")))
 
   implicit val scheduler: Scheduler = Scheduler.global
@@ -77,9 +65,8 @@ trait ProjectsBehaviors {
   val payload        = ProjectFields(desc, mappings, Some(base), Some(voc))
   val anotherPayload = ProjectFields(Some("Another project description"), mappings, None, None)
 
-  val org1     = Label.unsafe("org")
-  val org2     = Label.unsafe("org2")
-  val usersOrg = Label.unsafe("users-org")
+  val org1 = Label.unsafe("org")
+  val org2 = Label.unsafe("org2")
 
   // A project created on org1 has all owner permissions on / and org1
   val (rootPermissions, org1Permissions) =
@@ -103,7 +90,6 @@ trait ProjectsBehaviors {
   val acls = AclSetup
     .init(
       (subject, AclAddress.Root, rootPermissions),
-      (subjectRealm2, AclAddress.Root, rootPermissions),
       (subject, AclAddress.Organization(org1), org1Permissions),
       (subject, AclAddress.Organization(org2), org2Permissions),
       (subject, AclAddress.Project(org2, proj20), proj20Permissions),
@@ -117,7 +103,6 @@ trait ProjectsBehaviors {
       o <- OrganizationsDummy()(orgUuidF, ioClock)
       _ <- o.create(org1, None)
       _ <- o.create(org2, None)
-      _ <- o.create(usersOrg, None)
       _ <- o.create(Label.unsafe("orgDeprecated"), None)
       _ <- o.deprecate(Label.unsafe("orgDeprecated"), 1L)
     } yield o
@@ -423,48 +408,6 @@ trait ProjectsBehaviors {
       resource.value.value shouldEqual Map(subject -> proj20Permissions)
       resource.rev shouldEqual 1L
     }
-  }
-
-  "Provisioning projects" should {
-
-    "provision project with correct permissions" in {
-      val subject: Subject = Identity.User("user1", Label.unsafe("realm2"))
-      val projectLabel     = Label.unsafe("user1")
-      val projectRef       = ProjectRef(usersOrg, projectLabel)
-      val acl              = Acl(AclAddress.Project(projectRef), subject -> provisioningConfig.permissions)
-      projects.provisionProject(subject).accepted
-      projects.fetchProject(projectRef).accepted shouldEqual Project(
-        projectLabel,
-        uuid,
-        usersOrg,
-        orgUuid,
-        Some(provisioningConfig.description),
-        provisioningConfig.apiMappings,
-        ProjectBase(provisioningConfig.base.value),
-        provisioningConfig.vocab.value
-      )
-      acls.fetch(projectRef).accepted.value shouldEqual acl
-    }
-    "provision project with even if the ACLs have been set before" in {
-      val subject: Subject = Identity.User("user2", Label.unsafe("realm2"))
-      val projectLabel     = Label.unsafe("user2")
-      val projectRef       = ProjectRef(usersOrg, projectLabel)
-      val acl              = Acl(AclAddress.Project(projectRef), subject -> provisioningConfig.permissions)
-      acls.append(acl, 0L)(subject).accepted
-      projects.provisionProject(subject).accepted
-      projects.fetchProject(ProjectRef(usersOrg, projectLabel)).accepted shouldEqual Project(
-        projectLabel,
-        uuid,
-        usersOrg,
-        orgUuid,
-        Some(provisioningConfig.description),
-        provisioningConfig.apiMappings,
-        ProjectBase(provisioningConfig.base.value),
-        provisioningConfig.vocab.value
-      )
-
-    }
-
   }
 }
 

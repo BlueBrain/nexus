@@ -50,13 +50,13 @@ object ProjectsConfig {
     * @param vocab          the vocab for the created project
     */
   final case class AutomaticProvisioningConfig(
-                                                enabled: Boolean,
-                                                permissions: Set[Permission],
-                                                enabledRealms: Map[Label, Label],
-                                                description: String,
-                                                apiMappings: ApiMappings,
-                                                base: PrefixIri,
-                                                vocab: PrefixIri
+      enabled: Boolean,
+      permissions: Set[Permission],
+      enabledRealms: Map[Label, Label],
+      description: String,
+      apiMappings: ApiMappings,
+      base: PrefixIri,
+      vocab: PrefixIri
   )
 
   object AutomaticProvisioningConfig {

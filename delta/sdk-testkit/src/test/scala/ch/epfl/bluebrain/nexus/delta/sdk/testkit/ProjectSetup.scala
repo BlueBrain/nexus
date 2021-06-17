@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import monix.bio.UIO
@@ -41,7 +40,7 @@ object ProjectSetup {
       _ <- orgsToCreate
              .traverse(o.create(_, None))
              .hideErrorsWith(r => new IllegalStateException(r.reason))
-      p <- ProjectsDummy(o, defaultApiMappings, AutomaticProvisioningConfig.disabled)
+      p <- ProjectsDummy(o, defaultApiMappings)
       // Creating projects
       _ <- projectsToCreate.traverse { c =>
              p.create(c.ref, ProjectGen.projectFields(c))
