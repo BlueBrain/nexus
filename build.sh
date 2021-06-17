@@ -6,7 +6,6 @@ rm -rf target/*
 # Build product page
 (cd product-page/src && make install && make build)
 cp -R ./product-page/src/site/* ./target
-cp -R ./product-page/src/site/* ./target
 
 # Build every version of docs
 current_version=v1.5.x
