@@ -97,7 +97,7 @@ class ProjectsRoutesSpec
   private val provisioningConfig = AutomaticProvisioningConfig(
     enabled = true,
     permissions = Set(resources.read, resources.write, projectsPermissions.read),
-    enabledReams = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
+    enabledRealms = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
     description = "Auto provisioned project",
     apiMappings = ApiMappings.empty,
     base = PrefixIri.unsafe(iri"http://example.com/base/"),

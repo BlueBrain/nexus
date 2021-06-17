@@ -173,20 +173,18 @@ trait Projects {
     */
   def provisionProject(subject: Subject): UIO[Unit]
 
-  private[delta] def provisionIfNotExists(
-      exists: Boolean,
+  private[delta] def provisionOnNotFound(
       projectRef: ProjectRef,
       user: User,
       acls: Acls,
       provisioningConfig: AutomaticProvisioningConfig
-  ): IO[Unit, Unit] =
-    if (exists) UIO.unit
-    else {
+  ): UIO[Unit] =
+    {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
       (for {
         _ <- acls
                .append(acl, 0L)(user)
-               .onErrorRecover { case _: AclRejection.IncorrectRev => () }
+               .onErrorRecover { case _: AclRejection.IncorrectRev | _:AclRejection.NothingToBeUpdated => () }
                .mapError { rej => s"Failed to set ACL for user '$user' due to '${rej.reason}'." }
         _ <- create(
                projectRef,

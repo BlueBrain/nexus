@@ -41,22 +41,22 @@ object ProjectsConfig {
   /**
     * Configuration of automatic provisioning of projects.
     *
-    * @param enabled      flag signalling whether automatic provisioning is enabled
-    * @param permissions  the permissions applied to the newly provisioned project
-    * @param enabledReams the realms for which the provisioning is enabled(map of realm label to organization in which the projects for the realm should be created)
-    * @param description  the description of the created project
-    * @param apiMappings  the [[ApiMappings]] of the created project
-    * @param base         the base for the created project
-    * @param vocab        the vocab for the created project
+    * @param enabled        flag signalling whether automatic provisioning is enabled
+    * @param permissions    the permissions applied to the newly provisioned project
+    * @param enabledRealms  the realms for which the provisioning is enabled(map of realm label to organization in which the projects for the realm should be created)
+    * @param description    the description of the created project
+    * @param apiMappings    the [[ApiMappings]] of the created project
+    * @param base           the base for the created project
+    * @param vocab          the vocab for the created project
     */
   final case class AutomaticProvisioningConfig(
-      enabled: Boolean,
-      permissions: Set[Permission],
-      enabledReams: Map[Label, Label],
-      description: String,
-      apiMappings: ApiMappings,
-      base: PrefixIri,
-      vocab: PrefixIri
+                                                enabled: Boolean,
+                                                permissions: Set[Permission],
+                                                enabledRealms: Map[Label, Label],
+                                                description: String,
+                                                apiMappings: ApiMappings,
+                                                base: PrefixIri,
+                                                vocab: PrefixIri
   )
 
   object AutomaticProvisioningConfig {
@@ -64,7 +64,7 @@ object ProjectsConfig {
     val disabled = AutomaticProvisioningConfig(
       enabled = false,
       permissions = Set.empty,
-      enabledReams = Map.empty,
+      enabledRealms = Map.empty,
       description = "",
       apiMappings = ApiMappings.empty,
       base = PrefixIri.unsafe(iri"http://localhost:8080/"),

@@ -120,13 +120,13 @@ final class ProjectsImpl private (
   override def provisionProject(subject: Subject): UIO[Unit]              = subject match {
     case user @ User(subject, realm) if provisioningConfig.enabled =>
       (for {
-        org       <- IO.fromOption(provisioningConfig.enabledReams.get(realm))
+        org       <- IO.fromOption(provisioningConfig.enabledRealms.get(realm))
         proj      <- IO.fromEither(Label.apply(subject)).mapError { err =>
                        logger.warn(s"Failed to create a project label for $user, due to error '${err.getMessage}'")
                      }
         projectRef = ProjectRef(org, proj)
         exists    <- index.get(projectRef).map(_.isDefined)
-        _         <- provisionIfNotExists(exists, projectRef, user, acls, provisioningConfig)
+        _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, acls, provisioningConfig))
       } yield ()).onErrorHandle(_ => ())
     case _                                                         => UIO.unit
   }
