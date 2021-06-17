@@ -175,7 +175,7 @@ lazy val docs = project
         .withRepository(uri("https://github.com/BlueBrain/nexus"))
         .withSocial(
           uri("https://github.com/BlueBrain"),
-          uri("https://github.com/BlueBrain/nexus/discussion")
+          uri("https://github.com/BlueBrain/nexus/discussions")
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
