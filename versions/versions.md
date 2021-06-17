@@ -1,4 +1,4 @@
-# Nexus Versions
+# Versions
 
 ## Current (v1.5.x)
 - @link:[Documentation](https://bluebrainnexus.io/docs/)
