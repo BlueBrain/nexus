@@ -14,13 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OrganizationsDummy, OwnerPermissionsDummy, ProjectsDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
+import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.util.UUID
 
-class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock {
+class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock with OptionValues {
 
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
@@ -56,10 +57,12 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
     enabled = true,
     permissions = Set(resources.read, resources.write),
     enabledRealms = Map(Label.unsafe("realm") -> Label.unsafe("users-org")),
-    description = "Auto provisioned project",
-    apiMappings = ApiMappings.empty,
-    base = PrefixIri.unsafe(iri"http://example.com/base/"),
-    vocab = PrefixIri.unsafe(iri"http://example.com/vocab/")
+    ProjectFields(
+      Some("Auto provisioned project"),
+      ApiMappings.empty,
+      Some(PrefixIri.unsafe(iri"http://example.com/base/")),
+      Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
+    )
   )
 
   val projects = ProjectsDummy(
@@ -82,10 +85,10 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         uuid,
         usersOrg,
         orgUuid,
-        Some(provisioningConfig.description),
-        provisioningConfig.apiMappings,
-        ProjectBase(provisioningConfig.base.value),
-        provisioningConfig.vocab.value
+        provisioningConfig.fields.description,
+        provisioningConfig.fields.apiMappings,
+        ProjectBase(provisioningConfig.fields.base.value.value),
+        provisioningConfig.fields.vocab.value.value
       )
       acls.fetch(projectRef).accepted.value shouldEqual acl
     }
@@ -101,10 +104,10 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         uuid,
         usersOrg,
         orgUuid,
-        Some(provisioningConfig.description),
-        provisioningConfig.apiMappings,
-        ProjectBase(provisioningConfig.base.value),
-        provisioningConfig.vocab.value
+        provisioningConfig.fields.description,
+        provisioningConfig.fields.apiMappings,
+        ProjectBase(provisioningConfig.fields.base.value.value),
+        provisioningConfig.fields.vocab.value.value
       )
     }
   }

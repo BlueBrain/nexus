@@ -15,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -98,10 +99,12 @@ class ProjectsRoutesSpec
     enabled = true,
     permissions = Set(resources.read, resources.write, projectsPermissions.read),
     enabledRealms = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
-    description = "Auto provisioned project",
-    apiMappings = ApiMappings.empty,
-    base = PrefixIri.unsafe(iri"http://example.com/base/"),
-    vocab = PrefixIri.unsafe(iri"http://example.com/vocab/")
+    ProjectFields(
+      Some("Auto provisioned project"),
+      ApiMappings.empty,
+      Some(PrefixIri.unsafe(iri"http://example.com/base/")),
+      Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
+    )
   )
 
   private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
