@@ -23,7 +23,7 @@ Vocab is an IRI used as a @link:[curie](https://www.w3.org/TR/2010/NOTE-curie-20
 unqualified predicates in child resources of the project. JSON object - provides a convenient way to deal with URIs
 when performing operations on a sub-resource. This field is optional.
 
-More info can be found @ref:[here](../delta/api/current/admin-projects-api.md#api-mappings) regarding API Mappings.
+More info can be found @ref:[here](../delta/api/projects-api.md#api-mappings) regarding API Mappings.
 
 ### Creating a New Organization
 

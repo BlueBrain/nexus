@@ -253,7 +253,7 @@ As an exercise try to filter by tag to only retrieve resources of type Tag.
 
 ### Query data
 
-Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called @ref:[views](../delta/api/current/views/index.md).
+Listing is usually not enough to select specific subset of data. Data ingested within each project can be searched through two complementary search interfaces called @ref:[views](../delta/api/views/index.md).
 
 View              | Description
 ------------------|---------------

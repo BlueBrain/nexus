@@ -145,51 +145,14 @@ val javaSpecificationVersion = SettingKey[String](
 
 lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is compatible with the code java version")
 
-lazy val makeProductPage = taskKey[Unit]("Crete product page")
-
 lazy val copyPlugins = taskKey[Unit]("Assembles and copies the plugin files plugins directory")
-
-lazy val productPage = project
-  .in(file("product-page"))
-  .enablePlugins(GhpagesPlugin)
-  .settings(shared, compilation, noPublish)
-  .settings(
-    name                             := "product-page",
-    moduleName                       := "product-page",
-    // gh pages settings
-    git.remoteRepo                   := "git@github.com:BlueBrain/nexus.git",
-    ghpagesNoJekyll                  := true,
-    ghpagesBranch                    := "gh-pages",
-    makeProductPage                  := {
-      import java.nio.file.Files
-      import scala.sys.process._
-      val log     = streams.value.log
-      if (!Files.exists(siteSourceDirectory.value.toPath)) Files.createDirectory(siteSourceDirectory.value.toPath)
-      val install = Process(Seq("make", "install"), baseDirectory.value / "src")
-      val build   = Process(Seq("make", "build"), baseDirectory.value / "src")
-      if ((install #&& build !) == 0) {
-        log.success("Product page built.")
-      } else {
-        log.error("Product page built failed.")
-        throw new RuntimeException
-      }
-    },
-    makeSite / includeFilter         := "*.*",
-    makeSite                         := makeSite.dependsOn(makeProductPage).value,
-    previewFixedPort                 := Some(4000),
-    ghpagesCleanSite / excludeFilter := docsFilesFilter(ghpagesRepository.value),
-    cleanFiles                      ++= Seq(
-      baseDirectory.value / "src" / ".cache",
-      siteSourceDirectory.value
-    )
-  )
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin, GhpagesPlugin)
+  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion, noPublish)
-  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
+  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
   .settings(
     name                             := "docs",
     moduleName                       := "docs",
@@ -202,8 +165,7 @@ lazy val docs = project
       "https://shacl.org/.*".r,
       "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
     ),
-    Paradox / sourceDirectory        := sourceDirectory.value / "main" / "paradox",
-    Paradox / paradoxMaterialTheme   := {
+    Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
         .withFavicon("./assets/img/favicon-32x32.png")
@@ -212,23 +174,21 @@ lazy val docs = project
         .withRepository(uri("https://github.com/BlueBrain/nexus"))
         .withSocial(
           uri("https://github.com/BlueBrain"),
-          uri("https://gitter.im/BlueBrain/nexus")
+          uri("https://github.com/BlueBrain/nexus/discussions")
         )
         .withCustomJavaScript("./public/js/gtm.js")
         .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
                          |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
-    Paradox / paradoxNavigationDepth := 4,
-    Paradox / paradoxProperties      += ("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master"),
+    Compile / paradoxNavigationDepth := 4,
+    Compile / paradoxProperties     ++= Map(
+      "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
+      "project.version.short" -> "v1.5.x"
+    ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
     previewFixedPort                 := Some(4001),
-    // gh pages settings
-    ghpagesCleanSite / includeFilter := docsFilesFilter(ghpagesRepository.value),
-    git.remoteRepo                   := "git@github.com:BlueBrain/nexus.git",
-    ghpagesNoJekyll                  := true,
-    ghpagesBranch                    := "gh-pages",
     // copy contexts
     makeSite / mappings             ++= {
       def fileSources(base: File): Seq[File] = (base * "*.json").get
@@ -765,14 +725,6 @@ lazy val delta = project
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 
-lazy val docsFiles =
-  Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
-
-def docsFilesFilter(repo: File) =
-  new FileFilter {
-    def accept(repoFile: File) = docsFiles.exists(file => repoFile.getCanonicalPath.startsWith((repo / file).getCanonicalPath))
-  }
-
 lazy val storage = project
   .in(file("storage"))
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
@@ -1063,5 +1015,3 @@ addCommandAlias(
 )
 addCommandAlias("build-docs", ";docs/clean;docs/makeSite")
 addCommandAlias("preview-docs", ";docs/clean;docs/previewSite")
-addCommandAlias("build-product-page", ";productPage/clean;productPage/makeSite")
-addCommandAlias("preview-product-page", ";productPage/clean;productPage/previewSite")
