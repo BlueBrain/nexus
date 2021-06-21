@@ -131,8 +131,8 @@ lazy val docs = project
   .settings(shared, compilation, assertJavaVersion)
   .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
   .settings(
-    name                              := "docs",
-    moduleName                        := "docs",
+    name                             := "docs",
+    moduleName                       := "docs",
     // paradox settings
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
@@ -151,16 +151,16 @@ lazy val docs = project
                          |""".stripMargin)
     },
     Compile / paradoxNavigationDepth := 4,
-    Compile / paradoxProperties      ++=
+    Compile / paradoxProperties     ++=
       Map(
-        "github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master",
+        "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
         "project.version.short" -> "v1.4.x",
-        "current.url" -> "https://bluebrainnexus.io/docs/",
-        "version.old" -> "true"
+        "current.url"           -> "https://bluebrainnexus.io/docs/",
+        "version.old"           -> "true"
       ),
-    paradoxRoots                      := List("docs/index.html"),
-    previewPath                       := "docs/index.html",
-    previewFixedPort                  := Some(4001)
+    paradoxRoots                     := List("docs/index.html"),
+    previewPath                      := "docs/index.html",
+    previewFixedPort                 := Some(4001)
   )
 
 lazy val cli = project
