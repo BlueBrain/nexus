@@ -12,7 +12,7 @@
 
 @@@
 
-# Blue Brain Nexus (v1.5.x)
+# Blue Brain Nexus
 
 Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a 
 Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
