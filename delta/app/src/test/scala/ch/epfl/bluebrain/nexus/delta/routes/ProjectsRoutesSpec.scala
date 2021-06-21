@@ -51,17 +51,27 @@ class ProjectsRoutesSpec
 
   private val provisionedRealm  = Label.unsafe("realm2")
   private val caller            = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val provisionedUser   = User("user1", provisionedRealm)
+  private val provisionedUser   = User("user1!!!!", provisionedRealm)
   private val provisionedCaller =
     Caller(
       provisionedUser,
       Set(provisionedUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm))
     )
+  private val invalidUser       = User("!@#%^", provisionedRealm)
+  private val invalidCaller     =
+    Caller(invalidUser, Set(invalidUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm)))
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller, AuthToken("user1") -> provisionedCaller))
+  private val identities = IdentitiesDummy(
+    Map(
+      AuthToken("alice")   -> caller,
+      AuthToken("user1")   -> provisionedCaller,
+      AuthToken("invalid") -> invalidCaller
+    )
+  )
 
   private val asAlice       = addCredentials(OAuth2BearerToken("alice"))
   private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))
+  private val asInvalid     = addCredentials(OAuth2BearerToken("invalid"))
 
   private val acls = AclSetup
     .init(
@@ -537,7 +547,6 @@ class ProjectsRoutesSpec
     }
 
     "provision project for user when listing" in {
-
       Get("/v1/projects/users-org") ~> asProvisioned ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson.asObject.value("_total").value.asNumber.value.toInt.value shouldEqual 1
@@ -548,5 +557,10 @@ class ProjectsRoutesSpec
       }
     }
 
+    "return error when failed to provision project" in {
+      Get("/v1/projects/users-org") ~> asInvalid ~> routes ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
   }
 }

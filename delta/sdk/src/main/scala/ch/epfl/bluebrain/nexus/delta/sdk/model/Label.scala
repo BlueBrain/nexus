@@ -21,7 +21,9 @@ final case class Label private (value: String) {
 
 object Label {
 
-  private[sdk] val regex: Regex = "[a-zA-Z0-9_-]{1,64}".r
+  private val allowedChars: String = "a-zA-Z0-9_-"
+
+  private[sdk] val regex: Regex = s"[$allowedChars]{1,64}".r
 
   /**
     * Attempts to construct a label from its string representation.
@@ -41,6 +43,16 @@ object Label {
     */
   def unsafe(value: String): Label =
     new Label(value)
+
+  /**
+    * Attempts to construct a label from its string representation.
+    * It will remove all invalid characters and truncate to max length of 64 characters.
+    * It will return [[FormatError]] when `value` contains only invalid characters.
+    *
+    * @param value  the string representation of the Label
+    */
+  def sanitized(value: String): Either[FormatError, Label] =
+    apply(value.replaceAll(s"[^$allowedChars]", "").take(64))
 
   implicit final val labelEncoder: Encoder[Label] =
     Encoder.encodeString.contramap(_.value)

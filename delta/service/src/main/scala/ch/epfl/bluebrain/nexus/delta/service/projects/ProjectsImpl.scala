@@ -142,7 +142,6 @@ final class ProjectsImpl private (
       _                <- index.put(cmd.ref, resource)
     } yield resource
 
-  override def projectExists(project: ProjectRef): UIO[Boolean] = index.get(project).map(_.isDefined)
 }
 
 object ProjectsImpl {

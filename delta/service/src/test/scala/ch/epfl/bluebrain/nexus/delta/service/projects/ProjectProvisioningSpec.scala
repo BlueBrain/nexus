@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.Automatic
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OrganizationsDummy, OwnerPermissionsDummy, ProjectsDummy}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
@@ -75,7 +76,7 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
   "Provisioning projects" should {
 
     "provision project with correct permissions" in {
-      val subject: Subject = Identity.User("user1", Label.unsafe("realm"))
+      val subject: Subject = Identity.User("user1######", Label.unsafe("realm"))
       val projectLabel     = Label.unsafe("user1")
       val projectRef       = ProjectRef(usersOrg, projectLabel)
       val acl              = Acl(AclAddress.Project(projectRef), subject -> provisioningConfig.permissions)
@@ -109,6 +110,11 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         ProjectBase(provisioningConfig.fields.base.value.value),
         provisioningConfig.fields.vocab.value.value
       )
+    }
+
+    "fail to provision if it's not possible to sanitize username" in {
+      val subject: Subject = Identity.User("!!!!!!!######", Label.unsafe("realm"))
+      provisioning(subject).rejected shouldBe a[InvalidProjectLabel]
     }
   }
 }

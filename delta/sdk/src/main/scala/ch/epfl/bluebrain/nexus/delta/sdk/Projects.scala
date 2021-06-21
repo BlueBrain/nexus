@@ -162,13 +162,6 @@ trait Projects {
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
 
-  /**
-    * Check if project exists.
-    *
-    * @param project the reference to the project to check
-    */
-  def projectExists(project: ProjectRef): UIO[Boolean]
-
 }
 
 object Projects {

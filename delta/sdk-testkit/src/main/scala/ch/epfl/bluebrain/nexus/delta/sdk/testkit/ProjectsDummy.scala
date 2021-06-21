@@ -130,8 +130,6 @@ final class ProjectsDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.currentEvents(offset)
-
-  override def projectExists(project: ProjectRef): UIO[Boolean] = cache.fetch(project).map(_.isDefined)
 }
 
 object ProjectsDummy {

@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
+import ch.epfl.bluebrain.nexus.delta.sdk.error.{FormatError, SDKError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
-import com.typesafe.scalalogging.Logger
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.ProjectProvisioningRejection
 import monix.bio.{IO, UIO}
 
 /**
@@ -20,13 +21,33 @@ trait ProjectProvisioning {
     *
     * @param subject a user to provision a project for
     */
-  def apply(subject: Subject): UIO[Unit]
+  def apply(subject: Subject): IO[ProjectProvisioningRejection, Unit]
 
 }
 
 object ProjectProvisioning {
 
-  private val logger: Logger = Logger[ProjectProvisioning]
+  /**
+    * Rejection signalling that project provisioning failed.
+    */
+  abstract class ProjectProvisioningRejection(reason: String) extends SDKError {
+    override def getMessage: String = reason
+  }
+
+  /**
+    * Rejection signalling that we were not able to crate project label from username.
+    */
+  final case class InvalidProjectLabel(err: FormatError) extends ProjectProvisioningRejection(err.getMessage)
+
+  /**
+    * Rejection signalling that we were unable to set ACLs for user.
+    */
+  final case class UnableToSetAcls(err: AclRejection) extends ProjectProvisioningRejection(err.reason)
+
+  /**
+    * Rejection signalling that we were unable to create the project for user.
+    */
+  final case class UnableToCreateProject(err: ProjectRejection) extends ProjectProvisioningRejection(err.reason)
 
   /**
     * Create an instance of [[ProjectProvisioning]]
@@ -45,36 +66,35 @@ object ProjectProvisioning {
         user: User,
         acls: Acls,
         provisioningConfig: AutomaticProvisioningConfig
-    ): UIO[Unit] = {
+    ): IO[ProjectProvisioningRejection, Unit] = {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
-      (for {
+      for {
         _ <- acls
                .append(acl, 0L)(user)
                .onErrorRecover { case _: AclRejection.IncorrectRev | _: AclRejection.NothingToBeUpdated => () }
-               .mapError { rej => s"Failed to set ACL for user '$user' due to '${rej.reason}'." }
+               .mapError(UnableToSetAcls)
         _ <- projects
                .create(
                  projectRef,
                  provisioningConfig.fields
                )(user)
                .onErrorRecover { case _: ProjectAlreadyExists => () }
-               .mapError { rej => s"Failed to provision project for '$user' due to '${rej.reason}'." }
-      } yield ()).onErrorHandle { err =>
-        logger.warn(err)
-      }
+               .mapError(UnableToCreateProject)
+      } yield ()
     }
 
-    override def apply(subject: Subject): UIO[Unit] = subject match {
+    override def apply(subject: Subject): IO[ProjectProvisioningRejection, Unit] = subject match {
       case user @ User(subject, realm) if provisioningConfig.enabled =>
-        (for {
-          org       <- IO.fromOption(provisioningConfig.enabledRealms.get(realm))
-          proj      <- IO.fromEither(Label.apply(subject)).mapError { err =>
-                         logger.warn(s"Failed to create a project label for $user, due to error '${err.getMessage}'")
-                       }
-          projectRef = ProjectRef(org, proj)
-          exists    <- projects.projectExists(projectRef)
-          _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, acls, provisioningConfig))
-        } yield ()).onErrorHandle(_ => ())
+        provisioningConfig.enabledRealms.get(realm) match {
+          case Some(org) =>
+            for {
+              proj      <- IO.fromEither(Label.sanitized(subject)).mapError(InvalidProjectLabel)
+              projectRef = ProjectRef(org, proj)
+              exists    <- projects.fetch(projectRef).map(_ => true).onErrorHandle(_ => false)
+              _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, acls, provisioningConfig))
+            } yield ()
+          case None      => IO.unit
+        }
       case _                                                         => UIO.unit
     }
   }
