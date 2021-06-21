@@ -160,7 +160,7 @@ The authorization flow is as follows:
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
 [Server Sent Events]: https://www.w3.org/TR/eventsource/
 [REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
-[API Reference]: ./api/current/index.md
+[API Reference]: api/index.md
 [IRI]: https://tools.ietf.org/html/rfc3987
 [CURIE]: https://www.w3.org/TR/curie/
 [LDAP]: https://en.wikipedia.org/wiki/Lightweight_Directory_Access_Protocol
@@ -168,5 +168,5 @@ The authorization flow is as follows:
 [OAuth 2.0]: https://tools.ietf.org/html/rfc6749
 [JSON Web Tokens]: https://tools.ietf.org/html/rfc7519
 [Keycloak]: https://www.keycloak.org/
-[identities]: ./api/current/iam-identities.md
-[ACLs]: ./api/current/iam-acls-api.md
+[identities]: api/identities.md
+[ACLs]: api/acls-api.md

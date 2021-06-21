@@ -19,14 +19,10 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
+        uses: coursier/cache-action@v6
+      - uses: olafurpg/setup-scala@v12
         with:
           java-version: adopt@1.11
       - name: StaticAnalysis
@@ -43,14 +39,10 @@ jobs:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
-        with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
+        uses: coursier/cache-action@v6
+      - uses: olafurpg/setup-scala@v12
         with:
           java-version: adopt@1.11
       - name: Publish

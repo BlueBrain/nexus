@@ -21,16 +21,12 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+        uses: coursier/cache-action@v6
+      - uses: olafurpg/setup-scala@v12
         with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
-        with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -56,16 +52,12 @@ jobs:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+        uses: coursier/cache-action@v6
+      - uses: olafurpg/setup-scala@v12
         with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
-        with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: PublishToBintray
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" releaseEarly
       - name: PublishToDockerHub
@@ -88,16 +80,12 @@ jobs:
       BINTRAY_USER: ${{ secrets.BINTRAY_USER }}
       BINTRAY_PASS: ${{ secrets.BINTRAY_PASS }}
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - name: Cache Coursier
-        uses: actions/cache@v1.1.2
+        uses: coursier/cache-action@v6
+      - uses: olafurpg/setup-scala@v12
         with:
-          path: ~/.cache/coursier
-          key: ${{ runner.os }}-coursier-scala-${{ hashFiles('**/*.sbt') }}
-          restore-keys: ${{ runner.os }}-coursier-scala-
-      - uses: olafurpg/setup-scala@v5
-        with:
-          java-version: adopt@1.8-0
+          java-version: adopt@1.8.0-272
       - name: SetVersion
         run: echo ::set-env name=VERSION::$(echo ${GITHUB_REF:11})
       - name: PublishToBintray

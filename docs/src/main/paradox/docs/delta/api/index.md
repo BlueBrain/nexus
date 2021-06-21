@@ -1,20 +1,20 @@
 @@@ index
 
 * [Operating on resources](operating-on-resources.md)
-* [Realms](iam-realms-api.md)
+* [Realms](realms-api.md)
 * [Authentication](authentication.md)
-* [Permissions](iam-permissions-api.md)
-* [ACLs](iam-acls-api.md)
-* [Identities](iam-identities.md)
-* [Organizations](admin-orgs-api.md)
-* [Projects](admin-projects-api.md)
-* [Schemas](kg-schemas-api.md)
-* [Resolvers](kg-resolvers-api.md)
+* [Permissions](permissions-api.md)
+* [ACLs](acls-api.md)
+* [Identities](identities.md)
+* [Organizations](orgs-api.md)
+* [Projects](projects-api.md)
+* [Schemas](schemas-api.md)
+* [Resolvers](resolvers-api.md)
 * [Views](views/index.md)
 * [Storages](kg-storages-api.md)
-* [Files](kg-files-api.md)
-* [Archives](kg-archives-api.md)
-* [Resources](kg-resources-api.md)
+* [Files](files-api.md)
+* [Archives](archives-api.md)
+* [Resources](resources-api.md)
 * [Error Signaling](error-signaling.md)
 
 @@@
@@ -29,12 +29,12 @@ The API provides access and management of several primary resource types.
 ## Realms 
 A realm provides with the necessary information to perform authentication against a certain [OIDC](https://en.wikipedia.org/wiki/OpenID_Connect) provider .  
 
-@ref:[Operations on realms](iam-realms-api.md)
+@ref:[Operations on realms](realms-api.md)
 
 ## Permissions 
 A permission is the basic unit to provide a way to limit applications' access to sensitive information.  
 
-@ref:[Operations on permisions](iam-permissions-api.md)
+@ref:[Operations on permisions](permissions-api.md)
 
 ## ACLs
 
@@ -46,37 +46,37 @@ In order to restrict applications' access to data by placing restrictions on the
 
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
 
-@ref:[Operations on ACLs](iam-acls-api.md)
+@ref:[Operations on ACLs](acls-api.md)
 
 ## Identities
 Identities endpoint can be used to fetch user identities.
 
-@ref:[Operations on identities](iam-identities.md)
+@ref:[Operations on identities](identities.md)
 
 
 ## Organizations 
 
 The top-level grouping resource in the platform, called organization
 
-@ref:[Operations on organizations](admin-orgs-api.md)
+@ref:[Operations on organizations](orgs-api.md)
 
 ## Projects
 
 The 2nd level grouping resources in the platform, called project. Projects provide isolation of ACLs, resource resolution and indices (ElasticSearch index and Blazegraph namespace).
 
-@ref:[Operations on projects](admin-projects-api.md)
+@ref:[Operations on projects](projects-api.md)
 
 ## Schemas
 
 A schema is a resource which defines a set of rules and constrains using [SHACL](https://www.w3.org/TR/shacl/). 
 
-@ref:[Operations on schemas](kg-schemas-api.md)
+@ref:[Operations on schemas](schemas-api.md)
 
 ## Resolvers
 
 A resolver is a resource which defines the way ids are retrieved inside a project.
 
-@ref:[Operations on resolvers](kg-resolvers-api.md)
+@ref:[Operations on resolvers](resolvers-api.md)
 
 ## Views
 
@@ -94,20 +94,20 @@ A storage is a resource which represents a backend where files are stored. It de
 
 A file is a binary attachment resource.
 
-@ref:[Operations on files](kg-files-api.md)
+@ref:[Operations on files](files-api.md)
 
 ## Archives
 
 An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
 
-@ref:[Operations on archives](kg-archives-api.md)
+@ref:[Operations on archives](archives-api.md)
 
 ## Resources
 
 A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`,
 `storages`, `files` or `data`.
 
-@ref:[Operations on resources](kg-resources-api.md)
+@ref:[Operations on resources](resources-api.md)
 
 ## Resource Lifecycle
 

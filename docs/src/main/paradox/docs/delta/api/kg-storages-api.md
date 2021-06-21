@@ -1,7 +1,7 @@
 # Storages
 
 Storages are rooted in the `/v1/storages/{org_label}/{project_label}` collection and are used to describe where
-@ref:[files](kg-files-api.md) are physically stored.
+@ref:[files](files-api.md) are physically stored.
 
 Each storage...
 
