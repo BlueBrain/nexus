@@ -12,12 +12,7 @@
 
 @@@
 
-# Blue Brain Nexus (v1.4.x)
-@@@ note { title="Outdated version" .warning }
-
-You are browsing the docs for Nexus @var[project.version.short], the latest release is available @link:[here](https://bluebrainnexus.io/docs/)
-
-@@@
+# Blue Brain Nexus
 
 Blue Brain Nexus is an ecosystem that allows you to organize and better leverage your data through the use of a Knowledge Graph. In addition to the products listed here, you’ll find a rich ecosystem of libraries and tools.
 

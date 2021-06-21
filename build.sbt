@@ -126,16 +126,15 @@ lazy val checkJavaVersion = taskKey[Unit]("Verifies the current Java version is 
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin)
+  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion)
-  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
+  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
   .settings(
     name                              := "docs",
     moduleName                        := "docs",
     // paradox settings
-    sourceDirectory in Paradox        := sourceDirectory.value / "main" / "paradox",
-    paradoxMaterialTheme in Paradox   := {
+    Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
         .withFavicon("./assets/img/favicon-32x32.png")
@@ -147,12 +146,18 @@ lazy val docs = project
           uri("https://github.com/BlueBrain/nexus/discussions")
         )
         .withCustomJavaScript("./public/js/gtm.js")
-        .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-                         |© 2017-2020 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+        .withCopyright(s"""Nexus is Open Source and available under the Apache 2 License.<br/>
+                         |© 2017-${java.time.Year.now.getValue} <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
-    paradoxNavigationDepth in Paradox := 4,
-    Paradox / paradoxProperties      ++= Map("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master", "project.version.short" -> "v1.4.x"),
+    Compile / paradoxNavigationDepth := 4,
+    Compile / paradoxProperties      ++=
+      Map(
+        "github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master",
+        "project.version.short" -> "v1.4.x",
+        "current.url" -> "https://bluebrainnexus.io/docs/",
+        "version.old" -> "true"
+      ),
     paradoxRoots                      := List("docs/index.html"),
     previewPath                       := "docs/index.html",
     previewFixedPort                  := Some(4001)
@@ -256,14 +261,6 @@ lazy val rdf      = project
   )
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
-
-lazy val docsFiles =
-  Set("_template/", "assets/", "contexts/", "docs/", "lib/", "CNAME", "paradox.json", "partials/", "public/", "schemas/", "search/", "project/")
-
-def docsFilesFilter(repo: File) =
-  new FileFilter {
-    def accept(repoFile: File) = docsFiles.exists(file => repoFile.getCanonicalPath.startsWith((repo / file).getCanonicalPath))
-  }
 
 lazy val storage = project
   .in(file("storage"))
