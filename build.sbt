@@ -150,10 +150,10 @@ lazy val copyPlugins = taskKey[Unit]("Assembles and copies the plugin files plug
 
 lazy val docs = project
   .in(file("docs"))
-  .enablePlugins(ParadoxPlugin, ParadoxMaterialThemePlugin, ParadoxSitePlugin)
+  .enablePlugins(ParadoxMaterialThemePlugin, ParadoxSitePlugin)
   .disablePlugins(ScapegoatSbtPlugin)
   .settings(shared, compilation, assertJavaVersion, noPublish)
-  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Paradox))
+  .settings(ParadoxMaterialThemePlugin.paradoxMaterialThemeSettings(Compile))
   .settings(
     name                             := "docs",
     moduleName                       := "docs",
@@ -166,8 +166,7 @@ lazy val docs = project
       "https://shacl.org/.*".r,
       "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
     ),
-    Paradox / sourceDirectory        := sourceDirectory.value / "main" / "paradox",
-    Paradox / paradoxMaterialTheme   := {
+    Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
         .withFavicon("./assets/img/favicon-32x32.png")
@@ -183,8 +182,14 @@ lazy val docs = project
                          |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
-    Paradox / paradoxNavigationDepth := 4,
-    Paradox / paradoxProperties     ++= Map("github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master", "project.version.short" -> "v1.6.x"),
+    Compile / paradoxNavigationDepth := 4,
+    Compile / paradoxProperties      ++=
+      Map(
+        "github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master",
+        "project.version.short" -> "Snapshot",
+        "current.url" -> "https://bluebrainnexus.io/docs/",
+        "version.snapshot" -> "true"
+      ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
     previewFixedPort                 := Some(4001),
