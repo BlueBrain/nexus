@@ -12,10 +12,6 @@ a.md-logo {
     background: #2d2f38f0 radial-gradient(ellipse at center -70%, #18334f 0, #18334f 18%, #192532 57%, #2d2f38f0 100%);
 }
 
-.md-version {
-    display: none !important;
-}
-
 .half {
     width: 50%;
 }

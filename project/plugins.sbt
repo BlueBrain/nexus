@@ -11,9 +11,8 @@ addSbtPlugin("com.lightbend.sbt" % "sbt-javaagent"       % "0.1.6")
 addSbtPlugin("com.eed3si9n"      % "sbt-assembly"        % "0.15.0")
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"       % "0.10.0")
 
-addSbtPlugin("com.typesafe.sbt"      % "sbt-ghpages"                % "0.6.3")
-addSbtPlugin("com.typesafe.sbt"      % "sbt-site"                   % "1.3.3") // cannot upgrade to 1.4.0 because of paradox material theme
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.6.7")
+addSbtPlugin("com.typesafe.sbt"      % "sbt-site"                   % "1.4.1")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox"                % "0.9.2")
 addSbtPlugin("io.github.jonas"       % "sbt-paradox-material-theme" % "0.5.1")
 
 addSbtPlugin("com.dwijnand"   % "sbt-dynver"          % "4.1.1")

@@ -10,9 +10,9 @@ The administrator who configures one or more `SearchConfigs` for their Search Su
 
 ### Powered by Elastic Search Views
 
-This feature leverages the Elastic Search indexing capability of Nexus Delta. It uses the `SearchConfig` to decide how to query an @ref:[Elastic Search View](../delta/api/current/views/elasticsearch-view-api.md). Because it depends on the @ref:[Elastic Search View](../delta/api/current/views/elasticsearch-view-api.md) feature, make sure that your `mappings` property is properly configured to index the data in the way you expect. An incorrectly configured `mapping` property might not show the appropriate `Facets` you might expect, or it could simply result in nothing shown.
+This feature leverages the Elastic Search indexing capability of Nexus Delta. It uses the `SearchConfig` to decide how to query an @ref:[Elastic Search View](../delta/api/views/elasticsearch-view-api.md). Because it depends on the @ref:[Elastic Search View](../delta/api/views/elasticsearch-view-api.md) feature, make sure that your `mappings` property is properly configured to index the data in the way you expect. An incorrectly configured `mapping` property might not show the appropriate `Facets` you might expect, or it could simply result in nothing shown.
 
-We recommend using an @ref:[Aggregate Search View](../delta/api/current/views/aggregated-es-view-api.md), so that you can query multiple projects at once. However, this feature is limited to 10 to 15 projects, depending on their index name length.
+We recommend using an @ref:[Aggregate Search View](../delta/api/views/aggregated-es-view-api.md), so that you can query multiple projects at once. However, this feature is limited to 10 to 15 projects, depending on their index name length.
 
 @@@
 
@@ -20,7 +20,7 @@ We recommend using an @ref:[Aggregate Search View](../delta/api/current/views/ag
 
 ### Where are SearchConfigs stored?
 
-Search configs are saved in a project as a simple @ref:[Resource](../delta/api/current/kg-resources-api.md), with a type `nxv:SearchConfig`.
+Search configs are saved in a project as a simple @ref:[Resource](../delta/api/resources-api.md), with a type `nxv:SearchConfig`.
 
 Nexus Fusion must be made aware of which project to look for these resources, either by using the env var `SEARCH_CONFIG_PROJECT`
 
