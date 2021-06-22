@@ -23,6 +23,17 @@ class LabelSpec extends AnyWordSpecLike with Matchers with Inspectors with TestH
         Label(string).leftValue shouldBe a[IllegalLabelFormatError]
       }
     }
+
+    "should sanitize invalid characters and truncate" in {
+      val validChars = genString(65)
+      val string     = s"!@#%^&*()$validChars!@#%^&*()"
+      Label.sanitized(string).rightValue.value shouldEqual validChars.dropRight(1)
+    }
+
+    "fail to construct if there are no valid characters" in {
+      val string = s"!@#%^&*()!@#%^&*()"
+      Label.sanitized(string).leftValue shouldBe a[IllegalLabelFormatError]
+    }
   }
 
 }

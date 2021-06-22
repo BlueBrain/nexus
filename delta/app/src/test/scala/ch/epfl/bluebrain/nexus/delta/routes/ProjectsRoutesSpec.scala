@@ -11,13 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -47,16 +49,41 @@ class ProjectsRoutesSpec
   private val orgUuid                   = UUID.randomUUID()
   implicit private val subject: Subject = Identity.Anonymous
 
-  private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val provisionedRealm  = Label.unsafe("realm2")
+  private val caller            = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
+  private val provisionedUser   = User("user1!!!!", provisionedRealm)
+  private val provisionedCaller =
+    Caller(
+      provisionedUser,
+      Set(provisionedUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm))
+    )
+  private val invalidUser       = User("!@#%^", provisionedRealm)
+  private val invalidCaller     =
+    Caller(invalidUser, Set(invalidUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm)))
 
-  private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
+  private val identities = IdentitiesDummy(
+    Map(
+      AuthToken("alice")   -> caller,
+      AuthToken("user1")   -> provisionedCaller,
+      AuthToken("invalid") -> invalidCaller
+    )
+  )
 
-  private val asAlice = addCredentials(OAuth2BearerToken("alice"))
+  private val asAlice       = addCredentials(OAuth2BearerToken("alice"))
+  private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))
+  private val asInvalid     = addCredentials(OAuth2BearerToken("invalid"))
 
   private val acls = AclSetup
     .init(
-      Set(projectsPermissions.write, projectsPermissions.read, projectsPermissions.create, events.read, resources.read),
-      Set(realm)
+      Set(
+        projectsPermissions.write,
+        projectsPermissions.read,
+        projectsPermissions.create,
+        events.read,
+        resources.read,
+        resources.write
+      ),
+      Set(realm, provisionedRealm)
     )
     .accepted
 
@@ -72,10 +99,23 @@ class ProjectsRoutesSpec
       o <- OrganizationsDummy(Set(aopd))(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
+      _ <- o.create(Label.unsafe("users-org"), None)
       _ <- o.deprecate(Label.unsafe("org2"), 1L)
 
     } yield o
   }.accepted
+
+  private val provisioningConfig = AutomaticProvisioningConfig(
+    enabled = true,
+    permissions = Set(resources.read, resources.write, projectsPermissions.read),
+    enabledRealms = Map(Label.unsafe("realm2") -> Label.unsafe("users-org")),
+    ProjectFields(
+      Some("Auto provisioned project"),
+      ApiMappings.empty,
+      Some(PrefixIri.unsafe(iri"http://example.com/base/")),
+      Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
+    )
+  )
 
   private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
 
@@ -87,7 +127,9 @@ class ProjectsRoutesSpec
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
-  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts))
+  private val provisioning = ProjectProvisioning(acls, projectDummy, provisioningConfig)
+
+  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts, provisioning))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
@@ -504,5 +546,21 @@ class ProjectsRoutesSpec
       }
     }
 
+    "provision project for user when listing" in {
+      Get("/v1/projects/users-org") ~> asProvisioned ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson.asObject.value("_total").value.asNumber.value.toInt.value shouldEqual 1
+      }
+
+      Get("/v1/projects/users-org/user1") ~> asProvisioned ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return error when failed to provision project" in {
+      Get("/v1/projects/users-org") ~> asInvalid ~> routes ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
   }
 }

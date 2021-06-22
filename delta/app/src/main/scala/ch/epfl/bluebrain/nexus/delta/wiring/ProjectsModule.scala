@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectEventExchange, ProjectsImpl}
+import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectEventExchange, ProjectProvisioning, ProjectsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -58,6 +58,10 @@ object ProjectsModule extends ModuleDef {
       )(baseUri, uuidF, as, scheduler, clock)
   }
 
+  make[ProjectProvisioning].from { (acls: Acls, projects: Projects, config: ProjectsConfig) =>
+    ProjectProvisioning(acls, projects, config.automaticProvisioning)
+  }
+
   make[ProjectsRoutes].from {
     (
         config: AppConfig,
@@ -65,13 +69,14 @@ object ProjectsModule extends ModuleDef {
         acls: Acls,
         projects: Projects,
         projectsCounts: ProjectsCounts,
+        projectProvisioning: ProjectProvisioning,
         baseUri: BaseUri,
         mappings: ApiMappingsCollection,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ProjectsRoutes(identities, acls, projects, projectsCounts)(
+      new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning)(
         baseUri,
         mappings.merge,
         config.projects.pagination,

@@ -141,6 +141,7 @@ final class ProjectsImpl private (
       resource         <- IO.fromOption(evaluationResult.state.toResource, UnexpectedInitialState(cmd.ref))
       _                <- index.put(cmd.ref, resource)
     } yield resource
+
 }
 
 object ProjectsImpl {
@@ -217,7 +218,14 @@ object ProjectsImpl {
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings
   )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(agg, eventLog, cache, organizations, scopeInitializations, defaultApiMappings)
+    new ProjectsImpl(
+      agg,
+      eventLog,
+      cache,
+      organizations,
+      scopeInitializations,
+      defaultApiMappings
+    )
 
   /**
     * Constructs a [[Projects]] instance.
@@ -225,6 +233,7 @@ object ProjectsImpl {
     * @param config               the projects configuration
     * @param eventLog             the event log for [[ProjectEvent]]
     * @param organizations        an instance of the organizations module
+    * @param acls                 an instance of the acl module
     * @param scopeInitializations the collection of registered scope initializations
     * @param defaultApiMappings   the default api mappings
     */
@@ -244,7 +253,14 @@ object ProjectsImpl {
     for {
       agg     <- aggregate(config, organizations, defaultApiMappings)
       index   <- UIO.delay(cache(config))
-      projects = apply(agg, eventLog, index, organizations, scopeInitializations, defaultApiMappings)
+      projects = apply(
+                   agg,
+                   eventLog,
+                   index,
+                   organizations,
+                   scopeInitializations,
+                   defaultApiMappings
+                 )
       _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
     } yield projects
 

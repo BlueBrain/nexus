@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
@@ -158,7 +158,14 @@ object ProjectsDummy {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
       cache   <- ResourceCache[ProjectRef, Project]
       sem     <- IOSemaphore(1L)
-    } yield new ProjectsDummy(journal, cache, sem, organizations, scopeInitializations, defaultApiMappings)
+    } yield new ProjectsDummy(
+      journal,
+      cache,
+      sem,
+      organizations,
+      scopeInitializations,
+      defaultApiMappings
+    )
 
   /**
     * Creates a project dummy instance where ownerPermissions don't matter
@@ -166,7 +173,10 @@ object ProjectsDummy {
     * @param organizations      an Organizations instance
     * @param defaultApiMappings the default api mappings
     */
-  def apply(organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
+  def apply(
+      organizations: Organizations,
+      defaultApiMappings: ApiMappings
+  )(implicit
       base: BaseUri,
       clock: Clock[UIO],
       uuidf: UUIDF

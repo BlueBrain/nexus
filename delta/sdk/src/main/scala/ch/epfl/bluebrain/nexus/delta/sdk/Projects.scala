@@ -101,6 +101,7 @@ trait Projects {
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
+    *
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     */
@@ -121,6 +122,7 @@ trait Projects {
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
+    *
     * @param orgUuid     the unique organization identifier
     * @param projectUuid the unique project identifier
     * @param rev         the revision to be retrieved
@@ -159,6 +161,7 @@ trait Projects {
     * @param offset the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
+
 }
 
 object Projects {
