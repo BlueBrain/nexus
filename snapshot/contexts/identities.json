@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "subject": "https://bluebrain.github.io/nexus/vocabulary/subject",
+    "identities": {
+      "@container": "@set"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/identity.json"
+}

@@ -1,0 +1,51 @@
+version: "3.3"
+services:
+  delta:
+    image: bluebrain/nexus-delta:latest
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta",
+                 "-Xms1G",
+                 "-Xmx2G",
+                 "-Dapp.instance.interface=0.0.0.0",
+                 "-Dapp.http.interface=0.0.0.0",
+                 "-Dapp.http.public-uri=http://localhost:8080",
+                 "-Dapp.elastic-search.base=http://elasticsearch:9200",
+                 "-Dapp.sparql.base=http://localhost:9999/blazegraph",
+                 "-Dakka.persistence.cassandra.journal.keyspace-autocreate=true",
+                 "-Dakka.persistence.cassandra.journal.tables-autocreate=true",
+                 "-Dakka.persistence.cassandra.snapshot.keyspace-autocreate=true",
+                 "-Dakka.persistence.cassandra.snapshot.tables-autocreate=true",
+                 "-Ddatastax-java-driver.basic.contact-points.1=cassandra:9042"]
+  elasticsearch:
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.4.0"
+    environment:
+      ES_JAVA_OPTS: "-Xms2G -Xmx2G"
+      discovery.type: "single-node"
+      bootstrap.memory_lock: "true"
+
+  cassandra:
+    image: "cassandra:3"
+    environment:
+      MAX_HEAP_SIZE: "2G"
+      HEAP_NEWSIZE: "256m"
+      CASSANDRA_BROADCAST_ADDRESS: cassandra
+
+  blazegraph:
+    image: bluebrain/blazegraph-nexus:2.1.5
+
+  web:
+    image: bluebrain/nexus-web:v1.3.3
+    environment:
+      BASE_PATH: "/"
+      HOST_NAME: "http://localhost"
+      API_ENDPOINT: "http://localhost/v1"
+
+  router:
+    image: nginx:stable
+    ports:
+      - target: 80
+        published: 80
+        mode: host
+    deploy:
+      mode: global
+    volumes:
+      - ${PWD}/nginx.conf:/etc/nginx/conf.d/default.conf

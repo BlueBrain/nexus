@@ -1,0 +1,1 @@
+nexus orgs create $ORGLABEL && nexus orgs select $ORGLABEL && nexus orgs list

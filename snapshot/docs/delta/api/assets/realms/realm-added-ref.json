@@ -1,0 +1,17 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/realms-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/realms/realm1",
+  "@type": "Realm",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/realms.json",
+  "_createdAt": "2021-05-11T09:42:41.313Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_label": "realm1",
+  "_rev": 1,
+  "_self": "http://localhost:8080/v1/realms/realm1",
+  "_updatedAt": "2021-05-11T09:42:41.313Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous"
+}

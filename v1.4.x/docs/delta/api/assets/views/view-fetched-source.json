@@ -1,0 +1,39 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/view.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "@id": "nxv:myview2",
+  "@type": [
+    "ElasticSearchView",
+    "View"
+  ],
+  "includeMetadata": false,
+  "includeDeprecated": false,
+  "mapping": {
+    "dynamic": false,
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "bool": {
+        "type": "boolean"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "number": {
+        "type": "long"
+      }
+    }
+  },
+  "resourceSchemas": [
+    "https://bluebrain.github.io/nexus/schemas/myschema"
+  ],
+  "resourceTypes": [],
+  "sourceAsText": false,
+  "_uuid": "4f90ceff-45b7-442d-8536-d41705321d50"
+}

@@ -1,0 +1,11 @@
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclAppended","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["organizations/create"]}],"_path":"/","_rev":5,"_instant":"2019-06-14T11:54:52.379Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+event:AclAppended
+id:381a17e0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclReplaced","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["schemas/write","views/write","files/write","acls/write","projects/read","acls/read","organizations/create","organizations/write","resources/write","projects/create","storages/write","resources/read","organizations/read","resolvers/write","views/query","projects/write"]}],"_path":"/imw5ta2pjjvxjxm","_rev":1,"_instant":"2019-06-14T11:54:53.133Z","_subject":"https://nexus.example.com/v1/anonymous"}
+event:AclReplaced
+id:388cfdf0-8e9b-11e9-a8f6-c5c16f2312d6
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/iam.json","https://bluebrain.github.io/nexus/contexts/resource.json"],"@type":"AclSubtracted","acl":[{"identity":{"@id":"https://nexus.example.com/v1/realms/nexusdev/users/test","@type":"User","realm":"nexusdev","subject":"test"},"permissions":["organizations/create"]}],"_path":"/","_rev":6,"_instant":"2019-06-14T11:56:55.963Z","_subject":"https://nexus.example.com/v1/realms/nexusdev/users/myuser"}
+event:AclSubtracted
+id:81c3d200-8e9b-11e9-a8f6-c5c16f2312d6

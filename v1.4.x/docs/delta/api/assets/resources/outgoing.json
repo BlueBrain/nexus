@@ -1,0 +1,61 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 4,
+  "_results": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/mouse1",
+      "@type": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Entity",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Subject"
+      ],
+      "paths": "https://nexus.example.com/v1/vocabs/myorg/myproject/subject",
+      "_self": "https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/mouse1",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_project": "https://nexus.example.com/v1/projects/myorg/myproject",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "2019-05-28T13:27:42.707Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2019-05-28T13:27:42.707Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/jane",
+      "@type": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Agent",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/Person"
+      ],
+      "paths": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/contribution",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/agent"
+      ],
+      "_self": "https://nexus.example.com/v1/resources/myorg/myproject/_/https://bluebrain.github.io/nexus/vocabulary/jane",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/unconstrained.json",
+      "_project": "https://nexus.example.com/v1/projects/myorg/myproject",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdAt": "2019-05-28T13:26:27.627Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2019-05-28T13:26:27.627Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+    },
+    {
+      "@id": "http://uri.interlex.org/base/ilx_0383233",
+      "@type": "https://nexus.example.com/v1/vocabs/myorg/myproject/MType",
+      "paths": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/annotation",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/hasBody"
+      ]
+    },
+    {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0008933",
+      "paths": [
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/brainLocation",
+        "https://nexus.example.com/v1/vocabs/myorg/myproject/brainRegion"
+      ]
+    }
+  ]
+}

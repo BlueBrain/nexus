@@ -1,0 +1,25 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+      "@type": "http://example.com/Custom",
+      "_incoming": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming",
+      "_outgoing": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing",
+      "_self": "https://nexus.example.com/v1/resources/myorg/myproj/myschema/base:fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resource",
+      "_project": "https://nexus.example.com/v1/projects/myorg/myproj",
+      "_rev": 4,
+      "_deprecated": true,
+      "_createdAt": "2018-09-17T14:54:42.939Z",
+      "_createdBy": "https://nexus.example.com/v1/realms/myrealm/users/john",
+      "_updatedAt": "2018-09-17T15:02:42.939Z",
+      "_updatedBy": "https://nexus.example.com/v1/realms/myrealm/users/john"
+    }
+  ],
+  "_next": "https://nexus.example.com/v1/resources/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b029%22%5D"
+}

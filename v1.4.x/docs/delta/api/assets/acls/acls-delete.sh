@@ -1,0 +1,1 @@
+curl -XDELETE "https://nexus.example.com/v1/acls/org1?rev=4"

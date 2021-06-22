@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: nexus-web
+    namespace: nexus
+    labels:
+      app: nexus-web
+      group: service
+  spec:
+    ports:
+      - name: http
+        port: 8000
+        protocol: TCP
+        targetPort: 8000
+    selector:
+      app: nexus-web
+      group: service
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: nexus-web
+    namespace: nexus
+    labels:
+      app: nexus-web
+      group: service
+  spec:
+    replicas: 1
+    serviceName: nexus-web
+    selector:
+      matchLabels:
+        app: nexus-web
+    template:
+      metadata:
+        labels:
+          app: nexus-web
+          group: service
+      spec:
+        containers:
+          - name: nexus-web
+            image: 'bluebrain/nexus-web:1.1.2'
+            ports:
+              - containerPort: 8000
+                protocol: TCP
+            env:
+              - name: PUBLIC_IP
+                valueFrom:
+                  configMapKeyRef:
+                    name: config
+                    key: public.ip
+              - name: BASE_PATH
+                value: /
+              - name: HOST_NAME
+                value: 'http://$(PUBLIC_IP)'
+              - name: API_ENDPOINT
+                value: 'http://$(PUBLIC_IP)/v1'
+            imagePullPolicy: Always
+            livenessProbe:
+              failureThreshold: 5
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              successThreshold: 1
+              tcpSocket:
+                port: 8000
+              timeoutSeconds: 5
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 8000
+                scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 5
+              successThreshold: 1
+              timeoutSeconds: 5
+- apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    name: nexus-web
+    namespace: nexus
+  spec:
+    rules:
+    - http:
+        paths:
+        - backend:
+            serviceName: nexus-web
+            servicePort: 8000
+          path: /

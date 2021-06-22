@@ -1,0 +1,119 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: cassandra
+    namespace: nexus
+    labels:
+      app: cassandra
+      group: infra
+  spec:
+    ports:
+    - port: 7000
+      name: internode
+    - port: 7001
+      name: internode-tls
+    - port: 7199
+      name: jmx
+    - port: 9042
+      name: cql
+    - port: 9160
+      name: thrift
+    clusterIP: None
+    selector:
+      app: cassandra
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: cassandra
+    namespace: nexus
+    labels:
+      app: cassandra
+      group: infra
+  spec:
+    serviceName: cassandra
+    selector:
+      matchLabels:
+        app: cassandra
+    replicas: 1
+    template:
+      metadata:
+        namespace: nexus
+        labels:
+          app: cassandra
+          group: infra
+      spec:
+        terminationGracePeriodSeconds: 180
+        containers:
+        - name: cassandra
+          image: cassandra:3
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+          - name: storage
+            mountPath: /var/lib/cassandra
+          env:
+          - name: CASSANDRA_LISTEN_ADDRESS
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: CASSANDRA_RPC_ADDRESS
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: CASSANDRA_BROADCAST_ADDRESS
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: CASSANDRA_CLUSTER_NAME
+            value: 'nexus-cluster'
+          - name: MAX_HEAP_SIZE
+            value: '1g'
+          - name: HEAP_NEWSIZE
+            value: '100m'
+          - name: CASSANDRA_DATA_FILE_DIRECTORY
+            value: '/var/lib/cassandra/data'
+          - name: CASSANDRA_COMMITLOG_DIRECTORY
+            value: '/var/lib/cassandra/commitlog'
+          - name: CASSANDRA_SEEDS
+            value: 'cassandra-0.cassandra.nexus.svc'
+          ports:
+          - containerPort: 7000
+            name: internode
+          - containerPort: 7001
+            name: internode-tls
+          - containerPort: 7199
+            name: jmx
+          - containerPort: 9042
+            name: cql
+          - containerPort: 9160
+            name: thrift
+          securityContext:
+            capabilities:
+              add:
+              - IPC_LOCK
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - nodetool drain
+          livenessProbe:
+            tcpSocket:
+              port: cql
+            failureThreshold: 5
+            successThreshold: 1
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+    volumeClaimTemplates:
+    - metadata:
+        name: storage
+      spec:
+        storageClassName: standard
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 1Gi

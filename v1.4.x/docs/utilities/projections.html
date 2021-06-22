@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>Indexing data in other systems · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+Indexing data in other systems
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../docs/getting-started/running-nexus.html" class="page">Running Nexus</a></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/operating-on-resources.html" class="page">Operating on resources</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/kg-storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/benchmarks.html" class="page">Benchmarks</a></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html" class="active page">Indexing data in other systems</a></li>
+    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/utilities/projections.html#indexing-data-in-other-systems" class="header">Indexing data in other systems</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html#introduction" class="header">Introduction</a></li>
+    <li><a href="../../docs/utilities/projections.html#projecting-data-into-influxdb" class="header">Projecting data into InfluxDB</a></li>
+    <li><a href="../../docs/utilities/projections.html#projecting-data-into-postgresql" class="header">Projecting data into PostgreSQL</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> v1.4.x
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/utilities/projections.html#indexing-data-in-other-systems" class="header">Indexing data in other systems</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html#introduction" class="header">Introduction</a></li>
+    <li><a href="../../docs/utilities/projections.html#projecting-data-into-influxdb" class="header">Projecting data into InfluxDB</a></li>
+    <li><a href="../../docs/utilities/projections.html#projecting-data-into-postgresql" class="header">Projecting data into PostgreSQL</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.4.x,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#indexing-data-in-other-systems" name="indexing-data-in-other-systems" class="anchor"><span class="anchor-link"></span></a>Indexing data in other systems</h1>
+<h2><a href="#introduction" name="introduction" class="anchor"><span class="anchor-link"></span></a>Introduction</h2>
+<p>Blue Brain Nexus supports out of the box document and RDF graph based indices of the data through Elasticsearch, Sparql and Composite views. These cover a wide range of requirements but may not suffice in certain cases. New indexing capabilities can be added using external processes that subscribe to the global event log, enrich the information and project the result in arbitrary stores. </p>
+<p>By exposing over HTTP(S) the event log using the <a href="https://www.w3.org/TR/eventsource">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">
+<p><img src="extending-nexus.png" alt="Extending Blue Brain Nexus" /></p></div>
+<p>An example of such a tool is the newly introduced docker image (<code>bluebrain/nexus-cli</code>) that supports projecting data to InfluxDB and PostgreSQL databases. The image is yet another software artifact in the Blue Brain Nexus ecosystem that complements the system to introduce new indexing capabilities that are not part of the core.</p>
+<p>It functions as described above following a simple streaming approach with the following stages:</p>
+<ol>
+  <li>subscribe to the global event log of the KG service</li>
+  <li>for each individual event (change in the system) collect additional information about the change and the current  state of the resource; the information is collected by querying the Sparql view defined in the project where the  change occurred</li>
+  <li>the collected information is projected to a target system (InfluxDB or PostgreSQL) by performing an insert or update</li>
+</ol>
+<p>The sections below describe how each of the newly supported projections work and how one would configure them.</p>
+<h2><a href="#projecting-data-into-influxdb" name="projecting-data-into-influxdb" class="anchor"><span class="anchor-link"></span></a>Projecting data into InfluxDB</h2>
+<p>In order to compute statistics about various kinds of data hosted in Blue Brain Nexus, like volume over time, a time series database like InfluxDB is a very good solution.</p>
+<p>The following example shows how one could use the <code>bluebrain/nexus-cli</code> docker image, InfluxDB and Grafana to continuously compute statistics about data evolution in each project in Blue Brain Nexus.</p>
+<p>To start, let&rsquo;s set up an influxdb docker container running in the background:</p>
+<pre><code>docker run -p 8086:8086 -d -e INFLUXDB_DATA_MAX_VALUES_PER_TAG=0 --name influx influxdb:1.8.0
+</code></pre>
+<p>The additional environment variable <code>INFLUXDB_DATA_MAX_VALUES_PER_TAG</code> disables the limit of maximum tag values for measurements.</p>
+<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>influx.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
+<pre><code>mkdir config
+
+echo &#39;
+env {
+  endpoint = ${NEXUS_ENDPOINT}
+  token = ${NEXUS_TOKEN}
+  http-client {
+    retry {
+      strategy = &quot;exponential&quot;
+      initial-delay = 100 millis
+      max-delay = 20 seconds
+      max-retries = 10
+      condition = &quot;on-server-error&quot;
+    }
+  }
+  default-sparql-view = &quot;https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex&quot;
+}
+&#39; &gt; config/env.conf
+
+echo &#39;
+influx {
+  endpoint = ${NEXUS_INFLUXDB_ENDPOINT}
+  database = ${NEXUS_INFLUXDB_DATABASE}
+  db-creation-command = &quot;&quot;&quot;CREATE DATABASE &quot;&quot;&quot;&quot;${influx.database}&quot;&quot;&quot;&quot; WITH DURATION 10000d REPLICATION 1 SHARD DURATION 7d NAME &quot;&quot;&quot;&quot;${influx.database}&quot;&quot;&quot;&quot;&quot;&quot;&quot;
+  offset-file = ${NEXUS_INFLUXDB_OFFSET_FILE}
+  offset-save-interval = 5 minutes
+  default-sparql-query = &quot;&quot;&quot;
+    PREFIX ns:&lt;https://neuroshapes.org/&gt;
+    PREFIX schema:&lt;http://schema.org/&gt;
+    PREFIX nxv:&lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+
+    SELECT ?project ?type ?created ?deprecated ?bytes WHERE {
+      &lt;{resource_id}&gt;       nxv:createdAt            ?created .
+      &lt;{resource_id}&gt;      nxv:deprecated         ?deprecated .
+      OPTIONAL {
+        &lt;{resource_id}&gt; schema:distribution                  ?d .
+        ?d                                a schema:DataDownload .
+        ?d               schema:contentSize                 ?cs .
+        ?cs                    schema:value         ?bytesValue .
+      }
+      BIND(&quot;{resource_project}&quot; AS ?project)
+      BIND(REPLACE(&quot;{resource_type}&quot;, &quot;^.*/([^/]+)$&quot;, &quot;$1&quot;) AS ?type)
+      BIND(IF(BOUND(?bytesValue),?bytesValue,0) AS ?bytes)
+    }
+  &quot;&quot;&quot;
+  projects {
+    bbp/atlas {
+      types = [
+        {
+          type = ${nrs}&quot;BrainAtlasRelease&quot;
+          query = ${influx.default-sparql-query}
+          measurement = &quot;distribution&quot;
+          values = [&quot;bytes&quot;]
+          timestamp = &quot;created&quot;
+        },
+        {
+          type = ${nrs}&quot;BrainAtlasSpatialReferenceSystem&quot;
+          query = ${influx.default-sparql-query}
+          measurement = &quot;distribution&quot;
+          values = [&quot;bytes&quot;]
+          timestamp = &quot;created&quot;
+        }
+      ]
+    }
+  }
+}
+nrs = &quot;https://neuroshapes.org/&quot;
+&#39; &gt; config/influx.conf
+</code></pre>
+<p>The <code>env.conf</code> file defines a set of global properties that will be read from the process environment variables like for example the <code>NEXUS_ENDPOINT</code> or the <code>NEXUS_TOKEN</code> to be used for connecting to the system and how errors should be retried.</p>
+<p>The <code>influx.conf</code> file defines how should the execution happen, what projects and types to consider, what queries to be executed for collecting information about each resource and where to project the result.</p>
+<p>In this example we will consider that we&rsquo;d like to index information about resources with the types <code>https://neuroshapes.org/BrainAtlasRelease</code> and <code>https://neuroshapes.org/BrainAtlasSpatialReferenceSystem</code> from the <code>bbp/atlas</code> project. The information that we would like to collect about each of these resources is defined in the variables selected in the SPARQL query, specifically:</p>
+<ul>
+  <li><code>?project</code>: the project where the resource is hosted (resources of the same type can be in multiple projects)</li>
+  <li><code>?type</code>: the type that was used to configure the collection of information (resources may have multiple types, but we may only be interested in one)</li>
+  <li><code>?created</code>: the timestamp when the resource was initially created</li>
+  <li><code>?deprecated</code>: whether the resource was deprecated or not</li>
+  <li><code>?bytes</code>: the number of bytes of the resource distribution</li>
+</ul>
+<p>For each of the resources in the system that have the type defined in the configuration a new point will be created in the InfluxDB database using the <code>?created</code> value as the timestamp, <code>?bytes</code> as field with its value and the <code>?project</code>, <code>?type</code> and <code>?deprecated</code> as tags.</p>
+<p>Obviously some of the information we&rsquo;re looking for is not necessarily present in the RDF graph, but we can obtain this information by means of templating. The SPARQL select query executed is first processed to replace some well known tokens (supported ones are: <code>resource_id</code> - the id of the resource for which the current change was recorded, <code>resource_project</code> - the project in which the change was recorded, <code>resource_type</code> - the type of the resource that matches the type entry in the configuration and <code>event_rev</code> - the revision of the resource that the current processed event has yielded). Information can thus be passed from the context of each event to the SPARQL select query. The <code>BIND</code> statements allow setting fixed or conditional values to the collected variable patterns:</p>
+<ul>
+  <li><code>BIND(&quot;{resource_project}&quot; AS ?project)</code> binds the project label (<code>bbp/atlas</code> in this case) to the <code>?project</code> variable</li>
+  <li><code>BIND(REPLACE(&quot;{resource_type}&quot;, &quot;^.*/([^/]+)$&quot;, &quot;$1&quot;) AS ?type)</code> binds the tail (curie name) to the <code>?type</code> variable such that a type like <code>https://neuroshapes.org/BrainAtlasRelease</code> will be bound as <code>BrainAtlasRelease</code> to the <code>?type</code> variable</li>
+  <li><code>BIND(IF(BOUND(?bytesValue),?bytesValue,0) AS ?bytes)</code> binds the value of the selected literal bytes value if it is found in the graph, or the value of <code>0</code> otherwise.</li>
+</ul>
+<p>Since the SPARQL query configuration supports templating, the queries can be very efficient. They can select triples with a well defined starting point (the resource id) which are simple for the triple store to handle due to optimal use of indices. Any Sparql query can be executed; the selected variables will be projected as either a timestamp, a field or a tag, depending on the configuration. If the query returns multiple rows only the first one will be considered.</p>
+<p>The configuration also mentions a file (<code>NEXUS_INFLUXDB_OFFSET_FILE</code>) where the tool can save its progress such that it can resume from the last event processed in case of restarts.</p>
+<p>We&rsquo;re ready to start the tool:</p>
+<pre><code>docker run \
+  -v $(pwd)/config:/home/nexus/.nexus \
+  --link=influx \
+  -e NEXUS_ENDPOINT=&quot;https://sandbox.bluebrainnexus.io/v1&quot; \
+  -e NEXUS_TOKEN=&quot;******&quot; \
+  -e NEXUS_INFLUXDB_ENDPOINT=&quot;http://influx:8086&quot; \
+  -e NEXUS_INFLUXDB_DATABASE=&quot;nstats&quot; \
+  -e NEXUS_INFLUXDB_OFFSET_FILE=&quot;/home/nexus/.nexus/influx.offset&quot; \
+  bluebrain/nexus-cli:1.3.0 influxdb run
+</code></pre>
+<p>The tool will output something like the following (assuming the selected data exists in the system), and it&rsquo;s going to continue to run, waiting for new changes. The tool uses a continuous subscription, so it will first replay the entire log until it reaches the end and then it&rsquo;s going to wait for new changes to be recorded in the system. </p>
+<pre><code>SLF4J: Failed to load class &quot;org.slf4j.impl.StaticLoggerBinder&quot;.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Starting influxDB projection...
+Read 100 events (success: 0, skip: 100, errors: 0)
+Read 200 events (success: 0, skip: 200, errors: 0)
+Read 300 events (success: 0, skip: 300, errors: 0)
+Read 400 events (success: 0, skip: 400, errors: 0)
+Read 500 events (success: 0, skip: 500, errors: 0)
+Read 600 events (success: 0, skip: 600, errors: 0)
+Read 700 events (success: 0, skip: 700, errors: 0)
+Read 800 events (success: 0, skip: 800, errors: 0)
+Read 900 events (success: 0, skip: 900, errors: 0)
+Read 1000 events (success: 0, skip: 1000, errors: 0)
+...
+Read 2023400 events (success: 905059, skip: 1118341, errors: 0)
+Processed 905100 events (success: 905100, errors: 0)
+Read 2023500 events (success: 905159, skip: 1118341, errors: 0)
+Processed 905200 events (success: 905200, errors: 0)
+</code></pre>
+<p>The final step is to set up grafana to visualize the time series data recorded.</p>
+<pre><code>docker run -p 3000:3000 -d --link=influx --name grafana grafana/grafana:6.4.4
+</code></pre>
+<p>After the grafana container starts successfully, we need to configure it to add the influxdb datasource and create a dashboard to visualize the data:</p>
+<pre><code>curl -XPOST -H&quot;Content-Type: application/json&quot; -s http://localhost:3000/api/datasources -u admin:admin -d &#39;
+{
+  &quot;orgId&quot;: 1,
+  &quot;name&quot;: &quot;InfluxDB&quot;,
+  &quot;type&quot;: &quot;influxdb&quot;,
+  &quot;typeLogoUrl&quot;: &quot;&quot;,
+  &quot;access&quot;: &quot;proxy&quot;,
+  &quot;url&quot;: &quot;http://influx:8086&quot;,
+  &quot;password&quot;: &quot;&quot;,
+  &quot;user&quot;: &quot;&quot;,
+  &quot;database&quot;: &quot;nstats&quot;,
+  &quot;basicAuth&quot;: false,
+  &quot;basicAuthUser&quot;: &quot;&quot;,
+  &quot;basicAuthPassword&quot;: &quot;&quot;,
+  &quot;withCredentials&quot;: false,
+  &quot;isDefault&quot;: false,
+  &quot;jsonData&quot;: {
+    &quot;httpMode&quot;: &quot;GET&quot;,
+    &quot;keepCookies&quot;: [],
+    &quot;timeInterval&quot;: &quot;1h&quot;
+  }
+}&#39;
+
+wget https://bluebrainnexus.io/docs/additional-info/grafana-dashboard.json
+
+curl -XPOST -H&quot;Content-Type: application/json&quot; -s http://localhost:3000/api/dashboards/db -d @grafana-dashboard.json
+</code></pre>
+<p>The last command should output something like:</p>
+<pre><code>{&quot;id&quot;:1,&quot;slug&quot;:&quot;blue-brain-nexus-statistics&quot;,&quot;status&quot;:&quot;success&quot;,&quot;uid&quot;:&quot;CjzVq5RMk&quot;,&quot;url&quot;:&quot;/d/CjzVq5RMk/blue-brain-nexus-statistics&quot;,&quot;version&quot;:1}
+</code></pre>
+<p>You can now navigate to the grafana container to view the data at <a href="http://localhost:3000">http://localhost:3000</a> (default username and password are <strong>admin:admin</strong>). Assuming the configuration matches the data in the Blue Brain Nexus deployment the board should look similar to the following:</p>
+<p><img src="grafana-dashboard.png" alt="Grafana Dashboard" /></p>
+<h2><a href="#projecting-data-into-postgresql" name="projecting-data-into-postgresql" class="anchor"><span class="anchor-link"></span></a>Projecting data into PostgreSQL</h2>
+<p>A lot of users prefer using a relational model with a fixed schema to query data in systems. They&rsquo;re used to using SQL a query language and wouldn&rsquo;t necessarily want to learn a new query language like SPARQL to navigate the graph. Additionally, there are a lot of analytics tools that support connecting to RDBMS systems and enable real time queries with strong visualization engines.</p>
+<p>In order to address this use case we&rsquo;ve built the <code>bluebrain/nexus-cli</code> docker image to be used for projecting data into a PostgreSQL database.</p>
+<p>The following example shows how one could use the <code>bluebrain/nexus-cli</code> docker image to project a subset of an RDF graph to a strict relational model. The use case we&rsquo;re going to address in this example is to collect all schema resources in a Blue Brain Nexus instance and identify all transitive dependencies.</p>
+<p>To start, let&rsquo;s set up a postgresql docker container running in the background:</p>
+<pre><code>docker run -p 5432:5432 -d -e POSTGRES_PASSWORD=postgres --name postgres library/postgres:12.2
+</code></pre>
+<p>We can now configure the projection using two config files (<code>env.conf</code> and <code>postgres.conf</code> in the <a href="https://github.com/lightbend/config/blob/master/HOCON.md">HOCON</a> format) that will be mounted to the <code>nexus-cli</code> container:</p>
+<pre><code>mkdir config
+
+echo &#39;
+env {
+  endpoint = ${NEXUS_ENDPOINT}
+  token = ${NEXUS_TOKEN}
+  http-client {
+    retry {
+      strategy = &quot;exponential&quot;
+      initial-delay = 100 millis
+      max-delay = 20 seconds
+      max-retries = 10
+      condition = &quot;on-server-error&quot;
+    }
+  }
+  default-sparql-view = &quot;https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex&quot;
+}
+&#39; &gt; config/env.conf
+
+echo &#39;
+postgres {
+  host = ${NEXUS_POSTGRES_HOST}
+  port = ${NEXUS_POSTGRES_PORT}
+  username = ${NEXUS_POSTGRES_USERNAME}
+  password = ${NEXUS_POSTGRES_PASSWORD}
+  database = ${NEXUS_POSTGRES_DATABASE}
+  offset-file =  ${NEXUS_POSTGRES_OFFSET_FILE}
+  offset-save-interval = 1s
+  projects {
+    tutorialnexus/datamodels {
+      sparql-view = ${env.default-sparql-view}
+      types = [
+        {
+          type = &quot;https://bluebrain.github.io/nexus/vocabulary/Schema&quot;
+          queries = [
+            {
+              table = schemas
+              ddl =
+                &quot;&quot;&quot;
+                  CREATE TABLE IF NOT EXISTS schemas (
+                    id      VARCHAR NOT NULL UNIQUE,
+                    rev     INT NOT NULL,
+                    project VARCHAR NOT NULL
+                  );
+                &quot;&quot;&quot;
+              query =
+                &quot;&quot;&quot;
+                  PREFIX nxv:&lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+                  PREFIX owl:&lt;http://www.w3.org/2002/07/owl#&gt;
+                  SELECT ?id ?rev ?project
+                  WHERE {
+                    &lt;{resource_id}&gt;             a   nxv:Schema .
+                    &lt;{resource_id}&gt;       nxv:rev          ?rev .
+                    BIND(&quot;{resource_id}&quot; as ?id) .
+                    BIND(&quot;{resource_project}&quot; AS ?project) .
+                    FILTER(?rev &gt;= {event_rev})
+                  }
+                  LIMIT 1
+                &quot;&quot;&quot;
+            },
+            {
+              table = schema_imports
+              ddl =
+                &quot;&quot;&quot;
+                  CREATE TABLE IF NOT EXISTS schema_imports (
+                    id     VARCHAR NOT NULL,
+                    import VARCHAR NOT NULL
+                  );
+                &quot;&quot;&quot;
+              query =
+                &quot;&quot;&quot;
+                  PREFIX nxv:&lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+                  PREFIX owl:&lt;http://www.w3.org/2002/07/owl#&gt;
+                  SELECT ?id ?import
+                  WHERE {
+                    &lt;{resource_id}&gt;           a nxv:Schema .
+                    &lt;{resource_id}&gt; owl:imports    ?import .
+                    &lt;{resource_id}&gt;     nxv:rev       ?rev .
+                    BIND(&quot;{resource_id}&quot; as ?id) .
+                    FILTER(?rev &gt;= {event_rev})
+                  }
+                &quot;&quot;&quot;
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+&#39; &gt; config/postgres.conf
+</code></pre>
+<p>The <code>env.conf</code> file defines a set of global properties that will be read from the process environment variables like for example the <code>NEXUS_ENDPOINT</code> or the <code>NEXUS_TOKEN</code> to be used for connecting to the system and how errors should be retried.</p>
+<p>The <code>postgres.conf</code> file defines how should the execution happen, what projects and types to consider, what queries to be executed for collecting information about each resource and where to project the result.</p>
+<p>In this example we will collect all resources of type <code>Schema</code> from the <code>tutorialnexus/datamodels</code> and project a subset of the information in two tables. The information that we would like to collect about each of these resources is defined in the variables selected in the SPARQL queries, specifically for the <code>schemas</code> table we&rsquo;ll collect:</p>
+<ul>
+  <li><code>?id</code>: the id of each schema</li>
+  <li><code>?rev</code>: the last known revision of each schema</li>
+  <li><code>?project</code>: the project where the schema resides</li>
+</ul>
+<p>For the <code>schema_imports</code> table we&rsquo;ll collect the import relationships:</p>
+<ul>
+  <li><code>?id</code>: the id of each schema</li>
+  <li><code>?import</code>: the id of the schema that is imported by the one identified by <code>?id</code></li>
+</ul>
+<p>The <code>schema_imports</code> table will contain multiple rows for a schema identified by <code>?id</code> if it defines multiple imports.</p>
+<p>Obviously some of the information we&rsquo;re looking for is not necessarily present in the RDF graph, but we can obtain this information by means of templating. The SPARQL select query executed is first processed to replace some well known tokens (supported ones are: <code>resource_id</code> - the id of the resource for which the current change was recorded, <code>resource_project</code> - the project in which the change was recorded, <code>resource_type</code> - the type of the resource that matches the type entry in the configuration and <code>event_rev</code> - the revision of the resource that the current processed event has yielded). Information can thus be passed from the context of each event to the SPARQL select query. The <code>BIND</code> statements allow setting fixed or conditional values to the collected variable patterns, like for example: the <code>BIND(&quot;{resource_project}&quot; AS ?project)</code> binds the project label (<code>tutorialnexus/datamodels</code> in this case) to the <code>?project</code> variable.</p>
+<p>Since the SPARQL query configuration supports templating, the queries can be very efficient. They can select triples with a well defined starting point (the resource id) which are simple for the triple store to handle due to optimal use of indices. Any Sparql query can be executed; the selected variables will be projected as either a timestamp, a field or a tag, depending on the configuration.</p>
+<p>The configuration requires the definition of a <code>DDL</code> statement for each type selection. The following type mapping is currently supported by the tool:</p>
+<table>
+  <thead>
+    <tr>
+      <th>Node Type </th>
+      <th>DB Type </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Iri </td>
+      <td>Character types, such as: char, varchar and text </td>
+    </tr>
+    <tr>
+      <td>Blank Node </td>
+      <td>Character types, such as: char, varchar and text </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#string">http://www.w3.org/2001/XMLSchema#string</a> </td>
+      <td>Character types, such as: char, varchar and text </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#long">http://www.w3.org/2001/XMLSchema#long</a> </td>
+      <td>Numeric types, such as int </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#int">http://www.w3.org/2001/XMLSchema#int</a> </td>
+      <td>Numeric types, such as int </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#integer">http://www.w3.org/2001/XMLSchema#integer</a> </td>
+      <td>Numeric types, such as int </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#boolean">http://www.w3.org/2001/XMLSchema#boolean</a> </td>
+      <td>Boolean </td>
+    </tr>
+    <tr>
+      <td><a href="http://www.w3.org/2001/XMLSchema#dateTime">http://www.w3.org/2001/XMLSchema#dateTime</a> </td>
+      <td>Timestamp </td>
+    </tr>
+  </tbody>
+</table>
+<p>The configuration also mentions a file (<code>NEXUS_POSTGRES_OFFSET_FILE</code>) where the tool can save its progress such that it can resume from the last event processed in case of restarts.</p>
+<p>We&rsquo;re ready to start the tool:</p>
+<pre><code>docker run \
+  -v $(pwd)/config:/home/nexus/.nexus \
+  --link=postgres \
+  -e NEXUS_ENDPOINT=&quot;https://sandbox.bluebrainnexus.io/v1&quot; \
+  -e NEXUS_TOKEN=&quot;******&quot; \
+  -e NEXUS_POSTGRES_HOST=&quot;postgres&quot; \
+  -e NEXUS_POSTGRES_PORT=&quot;5432&quot; \
+  -e NEXUS_POSTGRES_DATABASE=&quot;postgres&quot; \
+  -e NEXUS_POSTGRES_USERNAME=&quot;postgres&quot; \
+  -e NEXUS_POSTGRES_PASSWORD=&quot;postgres&quot; \
+  -e NEXUS_POSTGRES_OFFSET_FILE=&quot;/home/nexus/.nexus/postgres.offset&quot; \
+  bluebrain/nexus-cli:1.3.0 postgres run
+</code></pre>
+<p>The tool will output something like the following (assuming the selected data exists in the system), and it&rsquo;s going to continue to run, waiting for new changes. The tool uses a continuous subscription, so it will first replay the entire log until it reaches the end and then it&rsquo;s going to wait for new changes to be recorded in the system. </p>
+<pre><code>SLF4J: Failed to load class &quot;org.slf4j.impl.StaticLoggerBinder&quot;.
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Starting influxDB projection...
+Read 100 events (success: 0, skip: 100, errors: 0)
+Read 200 events (success: 0, skip: 200, errors: 0)
+Read 300 events (success: 0, skip: 300, errors: 0)
+Read 400 events (success: 0, skip: 400, errors: 0)
+Read 500 events (success: 0, skip: 500, errors: 0)
+Read 600 events (success: 0, skip: 600, errors: 0)
+Read 700 events (success: 0, skip: 700, errors: 0)
+Read 800 events (success: 0, skip: 800, errors: 0)
+Read 900 events (success: 0, skip: 900, errors: 0)
+Read 1000 events (success: 0, skip: 1000, errors: 0)
+...
+Read 238000 events (success: 0, skip: 238000, errors: 0)
+Read 238100 events (success: 0, skip: 238100, errors: 0)
+Read 238200 events (success: 9, skip: 238191, errors: 0)
+Processed 100 events (success: 100, errors: 0)
+Read 238300 events (success: 109, skip: 238191, errors: 0)
+Read 238400 events (success: 177, skip: 238223, errors: 0)
+Read 238500 events (success: 177, skip: 238323, errors: 0)
+</code></pre>
+<p>We can now query the data that has been projected to the PostgreSQL container.</p>
+<p>First we need to login:</p>
+<pre><code>docker exec -it postgres psql -U postgres
+psql (12.2 (Debian 12.2-2.pgdg100+1))
+Type &quot;help&quot; for help.
+
+postgres=#
+</code></pre>
+<p>Count the schemas:</p>
+<pre><code>postgres=# select count(*) from schemas;
+ count
+-------
+   176
+(1 row)
+
+</code></pre>
+<p>Find the top 5 schemas with the most direct imports:</p>
+<pre><code>postgres=# select id,count(import) from schema_imports group by id order by count desc limit 5;
+                          id                          | count
+------------------------------------------------------+-------
+ https://neuroshapes.org/commons/entity               |     7
+ https://neuroshapes.org/commons/minds                |     6
+ https://neuroshapes.org/dash/density                 |     4
+ https://neuroshapes.org/commons/experimentalprotocol |     4
+ https://neuroshapes.org/dash/intrasharprecordedcell  |     4
+(5 rows)
+</code></pre>
+<p>Find all transitive imports of a specific schema:</p>
+<pre><code>postgres=# WITH RECURSIVE tree(schema, timport) AS (
+   SELECT
+      s.id,
+      s.import
+   FROM
+      schema_imports s
+   LEFT JOIN
+      schema_imports p ON s.import = p.id
+   WHERE
+      p.id IS NULL
+   UNION
+   SELECT
+      id,
+      timport
+   FROM
+      tree
+   INNER JOIN
+      schema_imports on tree.schema = schema_imports.import
+)
+SELECT * FROM tree where schema = &#39;https://neuroshapes.org/dash/intrasharprecordedcell&#39;;
+
+                       schema                        |                        timport
+-----------------------------------------------------+-------------------------------------------------------
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/labeledontologyentity
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/derivation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/invalidation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://provshapes.org/commons/generation
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/language
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/license
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/vector3d
+ https://neuroshapes.org/dash/intrasharprecordedcell | https://neuroshapes.org/commons/propertyvalue
+(8 rows)
+</code></pre>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/utilities/projections.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+v1.4.x
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/utilities/index.html" title="Utilities" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+Utilities
+</span>
+</div>
+</a>
+<a href="../../docs/utilities/nexus-python-cli.html" title="MovieLens Tutorial using the Nexus Python CLI" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+MovieLens Tutorial using the Nexus Python CLI
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

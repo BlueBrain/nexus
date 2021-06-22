@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: List
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: elasticsearch
+    namespace: nexus
+    labels:
+      app: elasticsearch
+      group: infra
+  spec:
+    ports:
+    - name: http
+      port: 9200
+    clusterIP: None
+    selector:
+      app: elasticsearch
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: elasticsearch-discovery
+    namespace: nexus
+    labels:
+      app: elasticsearch
+      group: infra
+  spec:
+    clusterIP: None
+    selector:
+      app: elasticsearch
+    ports:
+    - name: transport
+      port: 9300
+      protocol: TCP
+- apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: elasticsearch
+    namespace: nexus
+    labels:
+      app: elasticsearch
+      group: infra
+  spec:
+    serviceName: elasticsearch
+    selector:
+      matchLabels:
+        app: elasticsearch
+    replicas: 1
+    template:
+      metadata:
+        namespace: nexus
+        labels:
+          app: elasticsearch
+          group: infra
+      spec:
+        initContainers:
+        - name: init-sysctl
+          image: busybox:1.27.2
+          imagePullPolicy: IfNotPresent
+          command:
+          - sysctl
+          - -w
+          - vm.max_map_count=262144
+          securityContext:
+            privileged: true
+        containers:
+        - name: elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.4.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add:
+              - IPC_LOCK
+              - SYS_RESOURCE
+          volumeMounts:
+          - name: storage
+            mountPath: /usr/share/elasticsearch/data
+          env:
+          - name: cluster.name
+            value: 'es-cluster'
+          - name: discovery.zen.ping.unicast.hosts
+            value: 'elasticsearch-discovery'
+          - name: discovery.type
+            value: 'single-node'
+          - name: bootstrap.memory_lock
+            value: 'true'
+          - name: PROCESSORS
+            value: '1'
+          - name: path.data
+            value: '/usr/share/elasticsearch/data'
+          - name: ES_JAVA_OPTS
+            value: '-Xms1G -Xmx1G'
+          ports:
+          - containerPort: 9200
+            name: http
+          - containerPort: 9300
+            name: transport
+          livenessProbe:
+            tcpSocket:
+              port: transport
+            failureThreshold: 5
+            successThreshold: 1
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: http
+            failureThreshold: 30
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 5
+    volumeClaimTemplates:
+    - metadata:
+        name: storage
+      spec:
+        storageClassName: standard
+        accessModes: [ ReadWriteOnce ]
+        resources:
+          requests:
+            storage: 1Gi
+- apiVersion: extensions/v1beta1
+  kind: Ingress
+  metadata:
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    name: elasticsearch
+    namespace: nexus
+  spec:
+    rules:
+    - http:
+        paths:
+        - backend:
+            serviceName: elasticsearch
+            servicePort: 9200
+          path: /elasticsearch
