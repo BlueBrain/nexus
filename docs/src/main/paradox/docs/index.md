@@ -1,5 +1,6 @@
 @@@ index
 
+- [Versions](versions.md)
 - [Quick Start Guide](getting-started/index.md)
 - [Releases](releases/index.md)
 - [Roadmap](roadmap.md)
@@ -67,6 +68,12 @@ Want to get started with Nexus right away? We provide a @ref:[tutorial](getting-
 @link:[sandbox](https://sandbox.bluebrainnexus.io/){ open=new } environment to let you try the functionalities.
 
 Ready to deploy your own instance of Nexus? Follow our @ref:[guide](getting-started/running-nexus/index.md).
+
+## Versions
+
+Looking for docs for another release of Nexus ?
+
+@ref:[List of versions](versions.md)
 
 ## Roadmap
 
