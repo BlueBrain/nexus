@@ -66,7 +66,7 @@ For more details, you can talk with the development team directly on [Github Dis
 [documentation]: https://bluebrainnexus.io/docs/
 [components]: https://bluebrainnexus.io/docs/index.html#nexus-components
 [getting started]: https://bluebrainnexus.io/docs/getting-started/index.html
-[api reference]: https://bluebrainnexus.io/docs/delta/api/current/index.html
+[api reference]: https://bluebrainnexus.io/docs/delta/api/index.html
 [roadmap]: https://bluebrainnexus.io/docs/roadmap.html
 [Linked Data]: https://www.w3.org/standards/semanticweb/data
 [Shapes Constraint Language]: https://www.w3.org/TR/shacl/
