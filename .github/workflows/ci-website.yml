@@ -1,0 +1,39 @@
+name: Website
+on:
+  pull_request:
+    branches: [website]
+  push:
+    branches: [website]
+
+jobs:
+  build_publish:
+    name: Generate Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Cache node modules
+        uses: actions/cache@v2
+        with:
+          path: ./product-page/src/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('./product-page/**/package-lock.json') }}
+      - name: Coursier Cache
+        uses: coursier/cache-action@v6
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+      - name: Build Website
+        run: ./build.sh
+      - name: Publish website
+        if: github.event_name != 'pull_request'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          deploy_key: ${{ secrets.BUILD_BOT_SSH_PRIVATE_KEY }}
+          publish_dir: ./target
+          publish_branch: gh-pages
