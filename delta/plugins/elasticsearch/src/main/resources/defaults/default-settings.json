@@ -14,7 +14,8 @@
     "filter": {
       "word_delimiter_nexus": {
         "type": "word_delimiter_graph",
-        "split_on_numerics": false
+        "split_on_numerics": false,
+        "preserve_original": true
       }
     }
   },
