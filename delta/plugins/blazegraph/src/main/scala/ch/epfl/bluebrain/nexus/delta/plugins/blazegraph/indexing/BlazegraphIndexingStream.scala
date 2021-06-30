@@ -46,15 +46,7 @@ final class BlazegraphIndexingStream(
             // Creates a resource graph and metadata from the event exchange response
             BlazegraphIndexingStreamEntry.fromEventExchange(eventExchangeValue)
           }
-          .evalMapFilterValue {
-            // Either delete the named graph or insert triples to it depending on filtering options
-            case res if res.containsSchema(view.value.resourceSchemas) && res.containsTypes(view.value.resourceTypes) =>
-              res.deleteOrIndex(view.value.includeMetadata, view.value.includeDeprecated)
-            case res if res.containsSchema(view.value.resourceSchemas)                                                =>
-              res.delete().map(Some.apply)
-            case _                                                                                                    =>
-              Task.none
-          }
+          .evalMapFilterValue(_.queryOrNone(view.value))
           .runAsyncUnit { bulk =>
             // Pushes DROP/REPLACE queries to Blazegraph
             IO.when(bulk.nonEmpty)(client.bulk(view.index, bulk))

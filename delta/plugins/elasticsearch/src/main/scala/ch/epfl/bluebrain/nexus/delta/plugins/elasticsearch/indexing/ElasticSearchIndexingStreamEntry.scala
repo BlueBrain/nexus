@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConsistentWrite.ConsistentWriteValue
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -121,5 +122,10 @@ object ElasticSearchIndexingStreamEntry {
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
+    IndexingData(exchangedValue, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
+
+  def fromConsistentWrite[A, M](
+                               exchangedValue: ConsistentWriteValue[A, M]
+                             )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
     IndexingData(exchangedValue, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
 }

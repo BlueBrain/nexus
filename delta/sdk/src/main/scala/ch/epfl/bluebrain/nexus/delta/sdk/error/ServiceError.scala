@@ -32,6 +32,10 @@ object ServiceError {
     */
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
 
+  sealed abstract class ConsistentWriteFailed(override val reason: String) extends ServiceError(reason)
+
+  final case class IndexingFailed(override val reason: String) extends ConsistentWriteFailed(reason)
+
   @nowarn("cat=unused")
   implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
@@ -42,5 +46,17 @@ object ServiceError {
   }
 
   implicit val serviceErrorJsonLdEncoder: JsonLdEncoder[ServiceError] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  @nowarn("cat=unused")
+  implicit val consistentWriteFailedEncoder: Encoder.AsObject[ConsistentWriteFailed] = {
+    implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
+    val enc                                   = deriveConfiguredEncoder[ServiceError]
+    Encoder.AsObject.instance[ConsistentWriteFailed] { r =>
+      enc.encodeObject(r).+:("reason" -> Json.fromString(r.reason))
+    }
+  }
+
+  implicit val consistentWriteFailedJsonLdEncoder: JsonLdEncoder[ConsistentWriteFailed] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

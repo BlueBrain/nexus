@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, ScopeInitializationFailed}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -175,6 +175,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case AuthorizationFailed          => StatusCodes.Forbidden
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
+      case IndexingFailed(_) => StatusCodes.InternalServerError
     }
 
   implicit val responseFieldsUnit: HttpResponseFields[Unit] =

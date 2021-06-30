@@ -2,12 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, MissingPredicate}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ConsistentWrite.ConsistentWriteValue
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -18,6 +20,15 @@ import monix.bio.{IO, Task}
 final case class BlazegraphIndexingStreamEntry(
     resource: IndexingData
 ) {
+
+  def queryOrNone(view: IndexingBlazegraphView): Task[Option[SparqlWriteQuery]] =
+  // Either delete the named graph or insert triples to it depending on filtering options
+    if (containsSchema(view.resourceSchemas) && containsTypes(view.resourceTypes))
+      deleteOrIndex(view.includeMetadata, view.includeDeprecated)
+    else if (containsSchema(view.resourceSchemas))
+      delete().map(Some.apply)
+    else
+      Task.none
 
   /**
     * Deletes or indexes the current resource depending on the passed filters
@@ -85,6 +96,14 @@ object BlazegraphIndexingStreamEntry {
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
     IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
+
+
+  def fromConsistentWriteValue[A, M](
+                               exchangedValue: ConsistentWriteValue[A, M]
+                             )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
+    IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
+
+
 
   /**
     * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]

@@ -42,7 +42,8 @@ trait Resources {
   def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -57,7 +58,8 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -75,7 +77,8 @@ trait Resources {
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -95,7 +98,8 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
@@ -111,7 +115,8 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**

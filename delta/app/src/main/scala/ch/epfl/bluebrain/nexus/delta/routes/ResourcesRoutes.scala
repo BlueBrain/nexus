@@ -63,6 +63,12 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
+  private val executionType: Directive1[ExecutionType] = parameter("execution".as[String].?).map {
+    case None               => ExecutionType.Performant
+    case Some("performant") => ExecutionType.Performant
+    case Some("consistent") => ExecutionType.Consistent
+  }
+
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {
@@ -112,14 +118,14 @@ final class ResourcesRoutes(
                   }
                 },
                 // Create a resource without schema nor id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) { (source, execution) =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, resources.create(ref, resourceSchema, source).map(_.void))
+                      emit(Created, resources.create(ref, resourceSchema, source, execution).map(_.void))
                     }
                   }
                 },
-                idSegment { schema =>
+                (idSegment & executionType) { (schema, execution) =>
                   val schemaOpt = underscoreToOption(schema)
                   concat(
                     // Create a resource with schema but without id segment
@@ -129,7 +135,7 @@ final class ResourcesRoutes(
                           entity(as[Json]) { source =>
                             emit(
                               Created,
-                              resources.create(ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                              resources.create(ref, schema, source, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
                             )
                           }
                         }
@@ -148,13 +154,13 @@ final class ResourcesRoutes(
                                       // Create a resource with schema and id segments
                                       emit(
                                         Created,
-                                        resources.create(id, ref, schema, source).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                        resources.create(id, ref, schema, source, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
                                       )
                                     case (Some(rev), source) =>
                                       // Update a resource
                                       emit(
                                         resources
-                                          .update(id, ref, schemaOpt, rev, source)
+                                          .update(id, ref, schemaOpt, rev, source, execution)
                                           .map(_.void)
                                           .rejectWhen(wrongJsonOrNotFound)
                                       )
@@ -165,7 +171,7 @@ final class ResourcesRoutes(
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   emit(
-                                    resources.deprecate(id, ref, schemaOpt, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                    resources.deprecate(id, ref, schemaOpt, rev, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
                                   )
                                 }
                               },
@@ -200,7 +206,10 @@ final class ResourcesRoutes(
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
                                     emit(
                                       Created,
-                                      resources.tag(id, ref, schemaOpt, tag, tagRev, rev).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                      resources
+                                        .tag(id, ref, schemaOpt, tag, tagRev, rev, execution)
+                                        .map(_.void)
+                                        .rejectWhen(wrongJsonOrNotFound)
                                     )
                                   }
                                 }

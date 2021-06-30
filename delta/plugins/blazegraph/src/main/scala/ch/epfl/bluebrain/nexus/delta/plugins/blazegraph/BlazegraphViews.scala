@@ -5,10 +5,11 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingStreamEntry, BlazegraphViewsIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -18,9 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{ConsistentWriteFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -377,6 +380,37 @@ object BlazegraphViews {
   def referenceExchange(views: BlazegraphViews): ReferenceExchange = {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
+  }
+
+  def consistentWrite(
+      client: BlazegraphClient,
+      cache: BlazegraphViewsCache,
+      indexingConfig: ExternalIndexingConfig
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): ConsistentWrite = {
+    new ConsistentWrite {
+      override def apply[R](res: ConsistentWrite.ConsistentWriteValue[_, _])(implicit rejectionMapper: Mapper[ConsistentWriteFailed, R]): IO[R, Unit] = {
+        (for {
+          projectViews <- cache.values.map { vs =>
+            vs.filter(v => v.value.project == res.project && v.value.tpe == IndexingBlazegraphViewType)
+              .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
+          }
+
+          streamEntry <- BlazegraphIndexingStreamEntry.fromConsistentWriteValue(res)
+          queries <- projectViews
+            .map { v =>
+              streamEntry
+                .queryOrNone(v.value)
+                .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
+            }
+            .sequence
+            .map(_.flatten)
+          _ <- queries.map { case (index, query) =>
+            client.bulk(index, Seq(query))
+          }.parSequence
+
+        } yield ()).mapError(err => rejectionMapper.to(IndexingFailed(err.getMessage)))
+      }
+    }
   }
 
   private[blazegraph] def next(

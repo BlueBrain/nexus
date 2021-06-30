@@ -51,7 +51,8 @@ final class ResourcesDummy private (
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project                    <- projects.fetchActiveProject(projectRef)
@@ -64,7 +65,8 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -79,7 +81,8 @@ final class ResourcesDummy private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -96,7 +99,8 @@ final class ResourcesDummy private (
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- projects.fetchActiveProject(projectRef)
@@ -109,7 +113,8 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- projects.fetchActiveProject(projectRef)

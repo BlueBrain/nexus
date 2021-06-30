@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -12,12 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -180,6 +181,9 @@ object ResourceRejection {
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ResourceFetchRejection(rejection.reason)
 
+  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+      extends ResourceRejection(rejection.reason)
+
   /**
     * Signals an error converting the source Json to JsonLD
     */
@@ -207,6 +211,9 @@ object ResourceRejection {
   implicit val resourceOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
+  implicit val resourceConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
+    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
+
   implicit val resourceProjectRejectionMapper: Mapper[ProjectRejection, ResourceFetchRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => resourceOrgRejectionMapper.to(r)
     case value                                            => WrappedProjectRejection(value)
@@ -225,6 +232,7 @@ object ResourceRejection {
           JsonObject(keywords.tpe -> "ResourceEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
+        case WrappedConsistentWriteRejection(rejection)            => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details)           => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                           => obj.add("rdf", rdf.asJson)
         case InvalidResource(_, _, report, expanded)               =>
