@@ -63,7 +63,7 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
       query deepMerge queryPayload(
         mustTerms = includeTypes.map(tpe => term(keywords.tpe, tpe.value)) ++
           params.id.map(term(keywords.id, _)) ++
-          params.q.map(`match`(allFields, _)) ++
+          params.q.map(matchPhrasePrefix(allFields, _)) ++
           params.schema.map(term(nxv.constrainedBy.prefix, _)) ++
           params.deprecated.map(term(nxv.deprecated.prefix, _)) ++
           params.rev.map(term(nxv.rev.prefix, _)) ++
@@ -90,13 +90,13 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     )
   }
 
-  private def term[A: Encoder](k: String, value: A): JsonObject    =
+  private def term[A: Encoder](k: String, value: A): JsonObject              =
     JsonObject("term" -> Json.obj(k -> value.asJson))
 
-  private def `match`[A: Encoder](k: String, value: A): JsonObject =
-    JsonObject("match" -> Json.obj(k -> value.asJson))
+  private def matchPhrasePrefix[A: Encoder](k: String, value: A): JsonObject =
+    JsonObject("match_phrase_prefix" -> Json.obj(k -> Json.obj("query" -> value.asJson)))
 
-  def build: JsonObject                                            = query
+  def build: JsonObject                                                      = query
 }
 
 object QueryBuilder {

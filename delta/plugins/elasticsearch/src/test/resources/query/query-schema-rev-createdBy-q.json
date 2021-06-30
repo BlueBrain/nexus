@@ -3,8 +3,10 @@
     "bool": {
       "must": [
         {
-          "match": {
-            "_all_fields": "some text"
+          "match_phrase_prefix": {
+            "_all_fields": {
+              "query": "some text"
+            }
           }
         },
         {
