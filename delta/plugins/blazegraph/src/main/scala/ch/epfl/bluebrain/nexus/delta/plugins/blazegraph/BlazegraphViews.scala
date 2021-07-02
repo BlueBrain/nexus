@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -388,26 +389,27 @@ object BlazegraphViews {
       indexingConfig: ExternalIndexingConfig
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): ConsistentWrite = {
     new ConsistentWrite {
-      override def apply[R](res: ConsistentWrite.ConsistentWriteValue[_, _])(implicit rejectionMapper: Mapper[ConsistentWriteFailed, R]): IO[R, Unit] = {
+      override def apply[R](
+          project:ProjectRef,
+          res: EventExchangeValue[_, _]
+      )(implicit rejectionMapper: Mapper[ConsistentWriteFailed, R]): IO[R, Unit] = {
         (for {
           projectViews <- cache.values.map { vs =>
-            vs.filter(v => v.value.project == res.project && v.value.tpe == IndexingBlazegraphViewType)
-              .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
-          }
+                            vs.filter(v => v.value.project == project && v.value.tpe == IndexingBlazegraphViewType)
+                              .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
+                          }
 
-          streamEntry <- BlazegraphIndexingStreamEntry.fromConsistentWriteValue(res)
-          queries <- projectViews
-            .map { v =>
-              streamEntry
-                .queryOrNone(v.value)
-                .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
-            }
-            .sequence
-            .map(_.flatten)
-          _ <- queries.map { case (index, query) =>
-            client.bulk(index, Seq(query))
-          }.parSequence
-
+          streamEntry <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
+          queries     <- projectViews
+                           .traverse { v =>
+                             streamEntry
+                               .writeOrNone(v.value)
+                               .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
+                           }
+                           .map(_.flatten)
+          _           <- queries.parTraverse { case (index, query) =>
+                           client.bulk(index, Seq(query))
+                         }
         } yield ()).mapError(err => rejectionMapper.to(IndexingFailed(err.getMessage)))
       }
     }

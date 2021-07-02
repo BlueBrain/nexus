@@ -46,7 +46,7 @@ final class BlazegraphIndexingStream(
             // Creates a resource graph and metadata from the event exchange response
             BlazegraphIndexingStreamEntry.fromEventExchange(eventExchangeValue)
           }
-          .evalMapFilterValue(_.queryOrNone(view.value))
+          .evalMapFilterValue(_.writeOrNone(view.value))
           .runAsyncUnit { bulk =>
             // Pushes DROP/REPLACE queries to Blazegraph
             IO.when(bulk.nonEmpty)(client.bulk(view.index, bulk))

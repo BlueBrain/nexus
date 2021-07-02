@@ -58,32 +58,6 @@ object IndexingData {
       data.copy(graph = data.graph.filter { case (s, p, _) => s == id && graphPredicates.contains(p) })
     }
 
-  def apply[A, M](
-                   exchangedValue: ConsistentWriteValue[A, M],
-                   graphPredicates: Set[Node]
-                 )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] =
-    IndexingData(exchangedValue).map { data =>
-      val id = subject(data.id)
-      data.copy(graph = data.graph.filter { case (s, p, _) => s == id && graphPredicates.contains(p) })
-    }
-
-  def apply[A, M](consistentWriteValue: ConsistentWriteValue[A, M])(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
-    val resource = consistentWriteValue.value.resource
-    val encoder  = consistentWriteValue.value.encoder
-    val source   = consistentWriteValue.value.source
-    val metadata = consistentWriteValue.metadata
-    val id       = resource.resolvedId
-    for {
-      graph             <- encoder.graph(resource.value)
-      rootGraph          = graph.replaceRootNode(id)
-      resourceMetaGraph <- resource.void.toGraph
-      metaGraph         <- metadata.encoder.graph(metadata.value)
-      rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
-      typesGraph         = rootMetaGraph.rootTypesGraph
-      finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
-    } yield IndexingData(resource, finalRootGraph, rootMetaGraph, source.removeAllKeys(keywords.context))
-  }
-
   /**
     * Helper function to generate an IndexingData from the [[EventExchangeValue]].
     * The resource data is divided in 2 graphs. One containing only metadata and the other containing only data.
