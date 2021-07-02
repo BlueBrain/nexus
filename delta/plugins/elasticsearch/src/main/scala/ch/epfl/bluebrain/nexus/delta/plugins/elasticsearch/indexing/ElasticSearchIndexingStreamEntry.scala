@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.ConsistentWrite.ConsistentWriteValue
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -21,6 +21,19 @@ import org.apache.jena.graph.Node
 final case class ElasticSearchIndexingStreamEntry(
     resource: IndexingData
 )(implicit cr: RemoteContextResolution) {
+
+  def writeOrNone(index: IndexLabel, view: IndexingElasticSearchView): Task[Option[ElasticSearchBulk]] =
+    if (containsSchema(view.resourceSchemas) && containsTypes(view.resourceTypes))
+      deleteOrIndex(
+        index,
+        view.includeMetadata,
+        view.includeDeprecated,
+        view.sourceAsText
+      )
+    else if (containsSchema(view.resourceSchemas))
+      delete(index).map(Some.apply)
+    else
+      Task.none
 
   private val ctx: ContextValue =
     ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
@@ -122,10 +135,5 @@ object ElasticSearchIndexingStreamEntry {
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
-    IndexingData(exchangedValue, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
-
-  def fromConsistentWrite[A, M](
-                               exchangedValue: ConsistentWriteValue[A, M]
-                             )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
     IndexingData(exchangedValue, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
 }

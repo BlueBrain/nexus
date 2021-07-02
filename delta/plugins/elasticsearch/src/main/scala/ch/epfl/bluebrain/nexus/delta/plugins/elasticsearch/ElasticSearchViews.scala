@@ -5,11 +5,12 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchViewsIndexing
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingStreamEntry, ElasticSearchViewsIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
@@ -19,9 +20,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{ConsistentWriteFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -429,6 +433,35 @@ object ElasticSearchViews {
   def referenceExchange(views: ElasticSearchViews): ReferenceExchange = {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
+  }
+
+  def consistentWrite(
+      client: ElasticSearchClient,
+      cache: ElasticSearchViewCache,
+      indexingConfig: ExternalIndexingConfig
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): ConsistentWrite = {
+    new ConsistentWrite {
+      override def apply[R](
+          project: ProjectRef,
+          res: EventExchangeValue[_, _]
+      )(implicit rejectionMapper: Mapper[ConsistentWriteFailed, R]): IO[R, Unit] = {
+        (for {
+          projectViews <- cache.values.map { vs =>
+                            vs.filter(v => v.value.project == project && v.value.tpe == ElasticSearchIndexing)
+                              .map(_.map(_.asInstanceOf[IndexingElasticSearchView]))
+                          }
+
+          streamEntry <- ElasticSearchIndexingStreamEntry.fromEventExchange(res)
+          queries     <- projectViews
+                           .traverse { v =>
+                             streamEntry
+                               .writeOrNone(IndexLabel.fromView(indexingConfig.prefix, v.value.uuid, v.rev), v.value)
+                           }
+                           .map(_.flatten)
+          _           <- client.bulk(queries)
+        } yield ()).mapError(err => rejectionMapper.to(IndexingFailed(err.getMessage)))
+      }
+    }
   }
 
   /**
