@@ -5,9 +5,8 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{BlazegraphViewsCache, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingStreamEntry, BlazegraphViewsIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
@@ -20,7 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -62,35 +63,43 @@ final class BlazegraphViews(
     projects: Projects,
     orgs: Organizations,
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
-    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
+    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
+    consistentWrite: ConsistentWrite
 ) {
 
   /**
     * Create a new Blazegraph view where the id is either present on the payload or self generated.
     *
-    * @param project  the project of to which the view belongs
-    * @param source   the payload to create the view
+    * @param project        the project of to which the view belongs
+    * @param source         the payload to create the view
+    * @param executionType  the type of execution for this action
     */
-  def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
+  def create(project: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+      caller: Caller
+  ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p                <- projects.fetchActiveProject(project)
       (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
       _                <- createNamespace(res)
+      _                <- consistentWrite(project, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("createBlazegraphView", moduleType)
 
   /**
     * Create a new view with the provided id.
     *
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param source   the payload to create the view
+    * @param id             the view identifier
+    * @param project        the project to which the view belongs
+    * @param source         the payload to create the view
+    * @param executionType  the type of execution for this action
     */
   def create(
       id: IdSegment,
       project: ProjectRef,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
@@ -98,16 +107,19 @@ final class BlazegraphViews(
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
       _         <- createNamespace(res)
+      _         <- consistentWrite(project, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("createBlazegraphView", moduleType)
 
   /**
     * Create a new view with the provided id and the [[BlazegraphViewValue]] instead of [[Json]] payload.
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param view     the value of the view
+    * @param id             the view identifier
+    * @param project        the project to which the view belongs
+    * @param view           the value of the view
+    * @param executionType  the type of execution for this action
     */
-  def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
+  def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue, executionType: ExecutionType)(implicit
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
@@ -116,88 +128,103 @@ final class BlazegraphViews(
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
       _     <- createNamespace(res)
+      _     <- consistentWrite(project, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("createBlazegraphView", moduleType)
 
   /**
     * Update an existing view with [[Json]] source.
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
-    * @param source   the view source
+    * @param id             the view identifier
+    * @param project        the project to which the view belongs
+    * @param rev            the current revision of the view
+    * @param source         the view source
+    * @param executionType  the type of execution for this action
     */
   def update(
       id: IdSegment,
       project: ProjectRef,
       rev: Long,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
+      _         <- consistentWrite(project, eventExchangeValue(res), executionType)
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
   /**
     * Update an existing view.
     *
-    * @param id       the identifier of the view
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
-    * @param view     the view value
+    * @param id             the identifier of the view
+    * @param project        the project to which the view belongs
+    * @param rev            the current revision of the view
+    * @param view           the view value
+    * @param executionType  the type of execution for this action
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue)(implicit
-      subject: Subject
+  def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue, executionType: ExecutionType)(
+      implicit subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
+      _     <- consistentWrite(project, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
   /**
     * Add a tag to an existing view.
     *
-    * @param id       the id of the view
-    * @param project  the project to which the view belongs
-    * @param tag      the tag label
-    * @param tagRev   the target revision of the tag
-    * @param rev      the current revision of the view
+    * @param id             the id of the view
+    * @param project        the project to which the view belongs
+    * @param tag            the tag label
+    * @param tagRev         the target revision of the tag
+    * @param rev            the current revision of the view
+    * @param executionType  the type of execution for this action
     */
   def tag(
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
+      _   <- consistentWrite(project, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("tagBlazegraphView", moduleType)
 
   /**
     * Deprecate a view.
     *
-    * @param id       the view id
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
+    * @param id             the view id
+    * @param project        the project to which the view belongs
+    * @param rev            the current revision of the view
+    * @param executionType  the type of execution for this action
     */
   def deprecate(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), p)
+      _   <- consistentWrite(project, eventExchangeValue(res), executionType)
     } yield res
   }.named("deprecateBlazegraphView", moduleType)
 
@@ -248,6 +275,11 @@ final class BlazegraphViews(
         case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
+
+  private def eventExchangeValue(res: ViewResource)(implicit
+      enc: JsonLdEncoder[BlazegraphView]
+  ) =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * List views.
@@ -389,28 +421,27 @@ object BlazegraphViews {
       indexingConfig: ExternalIndexingConfig
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): ConsistentWrite = {
     new ConsistentWrite {
-      override def apply[R](
-          project:ProjectRef,
+      override def execute(
+          project: ProjectRef,
           res: EventExchangeValue[_, _]
-      )(implicit rejectionMapper: Mapper[ConsistentWriteFailed, R]): IO[R, Unit] = {
+      ): IO[ConsistentWriteFailed, Unit] = {
         (for {
           projectViews <- cache.values.map { vs =>
                             vs.filter(v => v.value.project == project && v.value.tpe == IndexingBlazegraphViewType)
                               .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
                           }
-
-          streamEntry <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
-          queries     <- projectViews
-                           .traverse { v =>
-                             streamEntry
-                               .writeOrNone(v.value)
-                               .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
-                           }
-                           .map(_.flatten)
-          _           <- queries.parTraverse { case (index, query) =>
-                           client.bulk(index, Seq(query))
-                         }
-        } yield ()).mapError(err => rejectionMapper.to(IndexingFailed(err.getMessage)))
+          streamEntry  <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
+          queries      <- projectViews
+                            .traverse { v =>
+                              streamEntry
+                                .writeOrNone(v.value)
+                                .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
+                            }
+                            .map(_.flatten)
+          _            <- queries.parTraverse { case (index, query) =>
+                            client.bulk(index, Seq(query))
+                          }
+        } yield ()).mapError(err => IndexingFailed(err.getMessage))
       }
     }
   }
@@ -544,10 +575,12 @@ object BlazegraphViews {
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       contextResolution: ResolverContextResolution,
       permissions: Permissions,
+      cache: BlazegraphViewsCache,
       orgs: Organizations,
       projects: Projects,
       resourceIdCheck: ResourceIdCheck,
-      client: BlazegraphClient
+      client: BlazegraphClient,
+      consistentWrite: ConsistentWrite
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -565,7 +598,18 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(config, eventLog, contextResolution, permissions, orgs, projects, idAvailability, createNameSpace)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      permissions,
+      cache,
+      orgs,
+      projects,
+      idAvailability,
+      createNameSpace,
+      consistentWrite
+    )
   }
 
   private[blazegraph] def apply(
@@ -573,10 +617,12 @@ object BlazegraphViews {
       eventLog: EventLog[Envelope[BlazegraphViewEvent]],
       contextResolution: ResolverContextResolution,
       permissions: Permissions,
+      cache: BlazegraphViewsCache,
       orgs: Organizations,
       projects: Projects,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
+      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
+      consistentWrite: ConsistentWrite
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -598,15 +644,14 @@ object BlazegraphViews {
                         idAvailability,
                         validateRef(deferred)
                       )
-      index        <- UIO.delay(cache(config))
       sourceDecoder = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
                         contexts.blazegraph,
                         contextResolution,
                         uuidF
                       )
-      views         = new BlazegraphViews(agg, eventLog, index, projects, orgs, sourceDecoder, createNamespace)
+      views         = new BlazegraphViews(agg, eventLog, cache, projects, orgs, sourceDecoder, createNamespace, consistentWrite)
       _            <- deferred.complete(views)
-      _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
+      _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views
   }
 
@@ -652,7 +697,9 @@ object BlazegraphViews {
     )
   }
 
-  private def cache(config: BlazegraphViewsConfig)(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
+  private[blazegraph] def cache(
+      config: BlazegraphViewsConfig
+  )(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
     val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)
