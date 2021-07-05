@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -15,16 +15,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.discardEntit
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriVocab
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{JsonLdFormat, QueryParamsUnmarshalling}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.StringSegment
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{after, from, size, FromPagination, SearchAfterPagination}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, Label, ResourceF, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ExecutionType, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
-import akka.http.scaladsl.model.Uri.Path./
 
 import java.util.UUID
 import scala.annotation.tailrec
@@ -209,6 +208,21 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   val idSegmentRef: Directive1[IdSegmentRef] =
     idSegment.flatMap(idSegmentRef(_))
+
+  /**
+    * Creates [[ExecutionType]] from `execution` query param. Defaults to performant.
+    */
+  val executionType: Directive1[ExecutionType] = parameter("execution".as[String].?).flatMap {
+    case None | Some("performant") => provide(ExecutionType.Performant)
+    case Some("consistent")        => provide(ExecutionType.Consistent)
+    case Some(_)                   =>
+      reject(
+        MalformedQueryParamRejection(
+          "execution",
+          "Invalid value of execution type, allowed values are 'performant' or 'consistent'."
+        )
+      )
+  }
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
