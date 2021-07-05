@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -225,6 +226,12 @@ object FileRejection {
       extends FileRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused by a failure to perform consistent write.
+    */
+  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+      extends FileRejection(rejection.reason)
+
+  /**
     * Rejection returned when the returned state is the initial state after a Files.evaluation plus a Files.next
     * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
     */
@@ -245,6 +252,9 @@ object FileRejection {
 
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
+
+  implicit val fileConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
+    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
 

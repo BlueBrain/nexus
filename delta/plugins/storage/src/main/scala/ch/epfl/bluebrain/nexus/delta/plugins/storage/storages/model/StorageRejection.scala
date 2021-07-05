@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -203,6 +204,12 @@ object StorageRejection {
       extends StorageFetchRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused by a failure to perform consistent write.
+    */
+  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+      extends StorageRejection(rejection.reason)
+
+  /**
     * Rejection returned when the returned state is the initial state after a Storages.evaluation plus a Storages.next
     * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
     */
@@ -227,8 +234,10 @@ object StorageRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
+  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection]                =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+  implicit val storageConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
+    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
 
   implicit private[plugins] def storageRejectionEncoder(implicit
       C: ClassTag[StorageCommand]

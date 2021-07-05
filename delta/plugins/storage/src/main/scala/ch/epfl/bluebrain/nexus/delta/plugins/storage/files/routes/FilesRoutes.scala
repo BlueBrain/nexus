@@ -107,21 +107,23 @@ final class FilesRoutes(
                     }
                   }
                 },
-                (post & pathEndOrSingleSlash & noParameter("rev") & parameter("storage".as[IdSegment].?)) { storage =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
+                  "storage".as[IdSegment].?
+                ) & executionType) { (storage, execution) =>
                   operationName(s"$prefixSegment/files/{org}/{project}") {
                     concat(
                       // Link a file without id segment
                       entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                        emit(Created, files.createLink(storage, ref, filename, mediaType, path))
+                        emit(Created, files.createLink(storage, ref, filename, mediaType, path, execution))
                       },
                       // Create a file without id segment
                       extractRequestEntity { entity =>
-                        emit(Created, files.create(storage, ref, entity))
+                        emit(Created, files.create(storage, ref, entity, execution))
                       }
                     )
                   }
                 },
-                idSegment { id =>
+                (idSegment & executionType) { (id, execution) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
@@ -132,22 +134,25 @@ final class FilesRoutes(
                                 concat(
                                   // Link a file with id segment
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(Created, files.createLink(id, storage, ref, filename, mediaType, path))
+                                    emit(
+                                      Created,
+                                      files.createLink(id, storage, ref, filename, mediaType, path, execution)
+                                    )
                                   },
                                   // Create a file with id segment
                                   extractRequestEntity { entity =>
-                                    emit(Created, files.create(id, storage, ref, entity))
+                                    emit(Created, files.create(id, storage, ref, entity, execution))
                                   }
                                 )
                               case (Some(rev), storage) =>
                                 concat(
                                   // Update a Link
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(files.updateLink(id, storage, ref, filename, mediaType, path, rev))
+                                    emit(files.updateLink(id, storage, ref, filename, mediaType, path, rev, execution))
                                   },
                                   // Update a file
                                   extractRequestEntity { entity =>
-                                    emit(files.update(id, storage, ref, rev, entity))
+                                    emit(files.update(id, storage, ref, rev, entity, execution))
                                   }
                                 )
                             }
@@ -155,7 +160,7 @@ final class FilesRoutes(
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev))
+                              emit(files.deprecate(id, ref, rev, execution))
                             }
                           },
                           // Fetch a file
@@ -176,7 +181,7 @@ final class FilesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, files.tag(id, ref, tag, tagRev, rev))
+                                emit(Created, files.tag(id, ref, tag, tagRev, rev, execution))
                               }
                             }
                           }
