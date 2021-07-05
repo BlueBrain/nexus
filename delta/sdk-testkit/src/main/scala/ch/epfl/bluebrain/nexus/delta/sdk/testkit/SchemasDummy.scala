@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, IdSegmentRef, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.SchemasDummy.SchemaJournal
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
@@ -32,25 +32,29 @@ final class SchemasDummy private (
     schemaImports: SchemaImports,
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
-    idAvailability: IdAvailability[ResourceAlreadyExists]
+    idAvailability: IdAvailability[ResourceAlreadyExists],
+    consistentWrite: ConsistentWrite
 )(implicit clock: Clock[UIO])
     extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      _                          <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -58,13 +62,15 @@ final class SchemasDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -72,6 +78,7 @@ final class SchemasDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def tag(
@@ -79,23 +86,27 @@ final class SchemasDummy private (
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
+      _       <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
+      _       <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
@@ -162,13 +173,15 @@ object SchemasDummy {
     * @param schemaImports     resolves the OWL imports from a Schema
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
+    * @param consistentWrite   the consistent write
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      consistentWrite: ConsistentWrite
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
@@ -184,7 +197,8 @@ object SchemasDummy {
         contextResolution,
         uuidF
       ),
-      idAvailability
+      idAvailability,
+      consistentWrite
     )
 
 }

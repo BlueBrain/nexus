@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, MetadataContextValue, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -38,6 +38,7 @@ object SchemasModule extends ModuleDef {
         schemaImports: SchemaImports,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        consistentWrite: ConsistentWrite @Id("aggregate"),
         clock: Clock[UIO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing]
@@ -49,7 +50,8 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         config.schemas,
         eventLog,
-        resourceIdCheck
+        resourceIdCheck,
+        consistentWrite
       )(uuidF, as, clock)
   }
 

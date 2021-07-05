@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.service.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, SchemaResource, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue, SchemaResource, Schemas}
 import monix.bio.{IO, UIO}
 
 /**
@@ -36,7 +35,7 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
   )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(())))
+        Some(Schemas.eventExchangeValue(res))
       }
       .onErrorHandle(_ => None)
 }

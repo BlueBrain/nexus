@@ -6,17 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -169,6 +170,12 @@ object SchemaRejection {
       extends SchemaRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused by a failure to perform consistent write.
+    */
+  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+      extends SchemaRejection(rejection.reason)
+
+  /**
     * Signals an error converting the source Json to JsonLD
     */
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
@@ -235,6 +242,9 @@ object SchemaRejection {
 
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     WrappedOrganizationRejection.apply
+
+  implicit val schemaConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
+    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
 

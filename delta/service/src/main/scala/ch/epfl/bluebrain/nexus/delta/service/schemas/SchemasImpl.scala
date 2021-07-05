@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
@@ -37,25 +37,30 @@ final class SchemasImpl private (
     projects: Projects,
     schemaImports: SchemaImports,
     eventLog: EventLog[Envelope[SchemaEvent]],
-    sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
+    sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
+    consistentWrite: ConsistentWrite
 ) extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      _                          <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("createSchema", moduleType)
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -63,6 +68,8 @@ final class SchemasImpl private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("createSchema", moduleType)
 
@@ -70,7 +77,8 @@ final class SchemasImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      source: Json
+      source: Json,
+      executionType: ExecutionType
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -78,6 +86,8 @@ final class SchemasImpl private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+
     } yield res
   }.named("updateSchema", moduleType)
 
@@ -86,23 +96,28 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
+      _       <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+
     } yield res).named("tagSchema", moduleType)
 
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Long
+      rev: Long,
+      executionType: ExecutionType
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
+      _       <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res).named("deprecateSchema", moduleType)
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
@@ -193,6 +208,7 @@ object SchemasImpl {
     * @param config            the aggregate configuration
     * @param eventLog          the event log for [[SchemaEvent]]
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
+    * @param consistentWrite   the consistent write.
     */
   final def apply(
       orgs: Organizations,
@@ -201,7 +217,8 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      consistentWrite: ConsistentWrite
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] =
     apply(
       orgs,
@@ -210,7 +227,8 @@ object SchemasImpl {
       contextResolution,
       config,
       eventLog,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
+      consistentWrite
     )
 
   private[schemas] def apply(
@@ -220,7 +238,8 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      consistentWrite: ConsistentWrite
   )(implicit uuidF: UUIDF = UUIDF.random, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
@@ -239,7 +258,8 @@ object SchemasImpl {
         projects,
         schemaImports,
         eventLog,
-        parser
+        parser,
+        consistentWrite
       )
     }
   }

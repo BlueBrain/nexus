@@ -99,14 +99,14 @@ final class SchemasRoutes(
                   }
                 },
                 // Create a schema without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) { (source, execution) =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, schemas.create(ref, source).map(_.void))
+                      emit(Created, schemas.create(ref, source, execution).map(_.void))
                     }
                   }
                 },
-                idSegment { id =>
+                (idSegment & executionType) { (id, execution) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}") {
@@ -117,17 +117,17 @@ final class SchemasRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
-                                  emit(Created, schemas.create(id, ref, source).map(_.void))
+                                  emit(Created, schemas.create(id, ref, source, execution).map(_.void))
                                 case (Some(rev), source) =>
                                   // Update a schema
-                                  emit(schemas.update(id, ref, rev, source).map(_.void))
+                                  emit(schemas.update(id, ref, rev, source, execution).map(_.void))
                               }
                             }
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(schemas.deprecate(id, ref, rev).map(_.void))
+                              emit(schemas.deprecate(id, ref, rev,execution).map(_.void))
                             }
                           },
                           // Fetch a schema
@@ -158,7 +158,7 @@ final class SchemasRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev, execution).map(_.void))
                               }
                             }
                           }
