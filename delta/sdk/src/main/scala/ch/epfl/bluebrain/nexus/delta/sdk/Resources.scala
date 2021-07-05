@@ -8,9 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -35,9 +38,10 @@ trait Resources {
   /**
     * Creates a new resource where the id is either present on the payload or self generated.
     *
-    * @param projectRef the project reference where the resource belongs
-    * @param source     the resource payload
-    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param projectRef     the project reference where the resource belongs
+    * @param source         the resource payload
+    * @param schema         the identifier that will be expanded to the schema reference to validate the resource
+    * @param executionType  the type of execution for this action
     */
   def create(
       projectRef: ProjectRef,
@@ -49,10 +53,11 @@ trait Resources {
   /**
     * Creates a new resource with the expanded form of the passed id.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
-    * @param source     the resource payload
+    * @param id             the identifier that will be expanded to the Iri of the resource
+    * @param projectRef     the project reference where the resource belongs
+    * @param schema         the identifier that will be expanded to the schema reference to validate the resource
+    * @param source         the resource payload
+    * @param executionType  the type of execution for this action
     */
   def create(
       id: IdSegment,
@@ -65,12 +70,13 @@ trait Resources {
   /**
     * Updates an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference to validate the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param rev        the current revision of the resource
-    * @param source     the resource payload
+    * @param id             the identifier that will be expanded to the Iri of the resource
+    * @param projectRef     the project reference where the resource belongs
+    * @param schemaOpt      the optional identifier that will be expanded to the schema reference to validate the resource.
+    *                       A None value uses the currently available resource schema reference.
+    * @param rev            the current revision of the resource
+    * @param source         the resource payload
+    * @param executionType  the type of execution for this action
     */
   def update(
       id: IdSegment,
@@ -84,13 +90,14 @@ trait Resources {
   /**
     * Adds a tag to an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param tag        the tag name
-    * @param tagRev     the tag revision
-    * @param rev        the current revision of the resource
+    * @param id             the identifier that will be expanded to the Iri of the resource
+    * @param projectRef     the project reference where the resource belongs
+    * @param schemaOpt      the optional identifier that will be expanded to the schema reference of the resource.
+    *                       A None value uses the currently available resource schema reference.
+    * @param tag            the tag name
+    * @param tagRev         the tag revision
+    * @param rev            the current revision of the resource
+    * @param executionType  the type of execution for this action
     */
   def tag(
       id: IdSegment,
@@ -105,11 +112,12 @@ trait Resources {
   /**
     * Deprecates an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param rev       the revision of the resource
+    * @param id             the identifier that will be expanded to the Iri of the resource
+    * @param projectRef     the project reference where the resource belongs
+    * @param schemaOpt      the optional identifier that will be expanded to the schema reference of the resource.
+    *                       A None value uses the currently available resource schema reference.
+    * @param rev            the revision of the resource
+    * @param executionType  the type of execution for this action
     */
   def deprecate(
       id: IdSegment,
@@ -192,6 +200,13 @@ trait Resources {
 }
 
 object Resources {
+
+  /**
+    * Create an [[EventExchangeValue]] for a resource.
+    * @return
+    */
+  def eventExchangeValue(res: DataResource)(implicit enc: JsonLdEncoder[Resource]): EventExchangeValue[Resource, Unit] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
     * The resources module type.

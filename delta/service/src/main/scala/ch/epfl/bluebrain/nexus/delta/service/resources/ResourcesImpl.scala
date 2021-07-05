@@ -5,10 +5,6 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
@@ -54,7 +50,7 @@ final class ResourcesImpl private (
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                          <- executeConsistentWrite(executionType, projectRef, res)
+      _                          <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
   }.named("createResource", moduleType)
 
@@ -71,7 +67,7 @@ final class ResourcesImpl private (
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                     <- executeConsistentWrite(executionType, projectRef, res)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
   }.named("createResource", moduleType)
 
@@ -90,7 +86,7 @@ final class ResourcesImpl private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <-
         eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
-      _                     <- executeConsistentWrite(executionType, projectRef, res)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
   }.named("updateResource", moduleType)
 
@@ -108,7 +104,7 @@ final class ResourcesImpl private (
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
-      _            <- executeConsistentWrite(executionType, projectRef, res)
+      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res).named("tagResource", moduleType)
 
   override def deprecate(
@@ -123,7 +119,7 @@ final class ResourcesImpl private (
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
-      _            <- executeConsistentWrite(executionType, projectRef, res)
+      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res).named("deprecateResource", moduleType)
 
   override def fetch(
@@ -197,16 +193,6 @@ final class ResourcesImpl private (
       case _                                                          => None
     }
 
-  private def executeConsistentWrite(executionType: ExecutionType, project: ProjectRef, res: DataResource)(implicit
-      enc: JsonLdEncoder[Resource]
-  ): IO[ResourceRejection, Unit] = executionType match {
-    case Performant => IO.unit
-    case Consistent =>
-      consistentWrite(
-        project,
-        EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
-      )
-  }
 }
 
 object ResourcesImpl {

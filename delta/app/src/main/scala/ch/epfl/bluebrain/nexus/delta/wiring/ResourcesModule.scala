@@ -38,6 +38,7 @@ object ResourcesModule extends ModuleDef {
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        consistentWrite: ConsistentWrite @Id("aggregate"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -49,7 +50,8 @@ object ResourcesModule extends ModuleDef {
         resourceIdCheck,
         resolverContextResolution,
         config.resources.aggregate,
-        eventLog
+        eventLog,
+        consistentWrite
       )(uuidF, as, clock)
   }
 

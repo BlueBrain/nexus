@@ -63,12 +63,6 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
-  private val executionType: Directive1[ExecutionType] = parameter("execution".as[String].?).map {
-    case None               => ExecutionType.Performant
-    case Some("performant") => ExecutionType.Performant
-    case Some("consistent") => ExecutionType.Consistent
-  }
-
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("resources") {

@@ -5,8 +5,8 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
@@ -34,6 +34,7 @@ import monix.bio.{IO, Task, UIO}
   * @param projects  the projects operations bundle
   * @param resourceResolution   to resolve schemas using resolvers
   * @param semaphore a semaphore for serializing write operations on the journal
+  * @param consistentWrite  the consistent write
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
@@ -42,7 +43,8 @@ final class ResourcesDummy private (
     resourceResolution: ResourceResolution[Schema],
     idAvailability: IdAvailability[ResourceAlreadyExists],
     semaphore: IOSemaphore,
-    sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
+    sourceParser: JsonLdSourceResolvingParser[ResourceRejection],
+    consistentWrite: ConsistentWrite
 )(implicit clock: Clock[UIO])
     extends Resources {
 
@@ -59,6 +61,7 @@ final class ResourcesDummy private (
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      _                          <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def create(
@@ -74,6 +77,7 @@ final class ResourcesDummy private (
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def update(
@@ -91,6 +95,7 @@ final class ResourcesDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <-
         eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
+      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def tag(
@@ -107,6 +112,7 @@ final class ResourcesDummy private (
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
+      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def deprecate(
@@ -121,6 +127,7 @@ final class ResourcesDummy private (
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
+      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
     } yield res
 
   override def fetch(
@@ -214,19 +221,30 @@ object ResourcesDummy {
     * @param projects the projects operations bundle
     * @param resourceResolution   to resolve schemas using resolvers
     * @param contextResolution the context resolver
+    * @param consistentWrite the consistent write
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      contextResolution: ResolverContextResolution
+      contextResolution: ResolverContextResolution,
+      consistentWrite: ConsistentWrite
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
       sem     <- IOSemaphore(1L)
       parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
+    } yield new ResourcesDummy(
+      journal,
+      orgs,
+      projects,
+      resourceResolution,
+      idAvailability,
+      sem,
+      parser,
+      consistentWrite
+    )
 
   /**
     * Creates a resources dummy instance
@@ -237,6 +255,7 @@ object ResourcesDummy {
     * @param idAvailability to resolve schemas using resolvers
     * @param contextResolution  the context resolver
     * @param journal            underlying [[Journal]]
+    * @param consistentWrite    the consistent write
     */
   def apply(
       orgs: Organizations,
@@ -244,11 +263,21 @@ object ResourcesDummy {
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
-      journal: ResourcesJournal
+      journal: ResourcesJournal,
+      consistentWrite: ConsistentWrite
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       sem   <- IOSemaphore(1L)
       parser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
+    } yield new ResourcesDummy(
+      journal,
+      orgs,
+      projects,
+      resourceResolution,
+      idAvailability,
+      sem,
+      parser,
+      consistentWrite
+    )
 
 }

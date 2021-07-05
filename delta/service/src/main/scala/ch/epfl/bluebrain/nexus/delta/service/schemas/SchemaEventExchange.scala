@@ -32,7 +32,7 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
 
   private def resourceToValue(
       resourceIO: IO[SchemaRejection, SchemaResource]
-  )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
+  )(implicit enc: JsonLdEncoder[A]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
         Some(Schemas.eventExchangeValue(res))

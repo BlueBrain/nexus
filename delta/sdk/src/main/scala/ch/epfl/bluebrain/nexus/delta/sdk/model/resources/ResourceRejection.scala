@@ -181,6 +181,9 @@ object ResourceRejection {
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ResourceFetchRejection(rejection.reason)
 
+  /**
+    * Signals a rejection caused by a failure to perform consistent write.
+    */
   final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
       extends ResourceRejection(rejection.reason)
 
