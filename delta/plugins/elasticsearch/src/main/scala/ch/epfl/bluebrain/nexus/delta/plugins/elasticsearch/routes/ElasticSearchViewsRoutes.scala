@@ -22,15 +22,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -139,16 +139,20 @@ final class ElasticSearchViewsRoutes(
               },
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
                 // Create an elasticsearch view without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
-                  authorizeFor(ref, Write).apply {
-                    emit(
-                      Created,
-                      views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                    )
-                  }
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) {
+                  (source, execution) =>
+                    authorizeFor(ref, Write).apply {
+                      emit(
+                        Created,
+                        views
+                          .create(ref, source, execution)
+                          .mapValue(_.metadata)
+                          .rejectWhen(decodingFailedOrViewNotFound)
+                      )
+                    }
                 }
               },
-              idSegment { id =>
+              (idSegment & executionType) { (id, execution) =>
                 concat(
                   pathEndOrSingleSlash {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
@@ -162,7 +166,7 @@ final class ElasticSearchViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .create(id, ref, source)
+                                    .create(id, ref, source, execution)
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -170,7 +174,7 @@ final class ElasticSearchViewsRoutes(
                                 // Update a view
                                 emit(
                                   views
-                                    .update(id, ref, rev, source)
+                                    .update(id, ref, rev, source, execution)
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -182,7 +186,7 @@ final class ElasticSearchViewsRoutes(
                           authorizeFor(ref, Write).apply {
                             emit(
                               views
-                                .deprecate(id, ref, rev)
+                                .deprecate(id, ref, rev, execution)
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
@@ -264,7 +268,7 @@ final class ElasticSearchViewsRoutes(
                               emit(
                                 Created,
                                 views
-                                  .tag(id, ref, tag, tagRev, rev)
+                                  .tag(id, ref, tag, tagRev, rev, execution)
                                   .mapValue(_.metadata)
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
