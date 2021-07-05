@@ -130,9 +130,9 @@ final class ResolversRoutes(
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   // Create a resolver without an id segment
-                  (post & noParameter("rev") & entity(as[Json])) { payload =>
+                  (post & noParameter("rev") & entity(as[Json]) & executionType) { (payload, execution) =>
                     authorizeWrite {
-                      emit(Created, resolvers.create(ref, payload).map(_.void))
+                      emit(Created, resolvers.create(ref, payload, execution).map(_.void))
                     }
                   }
                 },
@@ -150,7 +150,7 @@ final class ResolversRoutes(
                     }
                   }
                 },
-                idSegment { id =>
+                (idSegment & executionType) { (id, execution) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}") {
@@ -162,12 +162,12 @@ final class ResolversRoutes(
                                   // Create a resolver with an id segment
                                   emit(
                                     Created,
-                                    resolvers.create(id, ref, payload).map(_.void)
+                                    resolvers.create(id, ref, payload, execution).map(_.void)
                                   )
                                 case (Some(rev), payload) =>
                                   // Update a resolver
                                   emit(
-                                    resolvers.update(id, ref, rev, payload).map(_.void)
+                                    resolvers.update(id, ref, rev, payload, execution).map(_.void)
                                   )
                               }
                             }
@@ -175,7 +175,7 @@ final class ResolversRoutes(
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               // Deprecate a resolver
-                              emit(resolvers.deprecate(id, ref, rev).map(_.void))
+                              emit(resolvers.deprecate(id, ref, rev, execution).map(_.void))
                             }
                           },
                           // Fetches a resolver
@@ -203,7 +203,7 @@ final class ResolversRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, resolvers.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(Created, resolvers.tag(id, ref, tag, tagRev, rev, execution).map(_.void))
                               }
                             }
                           }

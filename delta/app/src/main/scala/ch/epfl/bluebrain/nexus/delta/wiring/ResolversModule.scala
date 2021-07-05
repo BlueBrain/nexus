@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, MetadataContextValue, ResourceToSchemaMappings}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -37,10 +37,12 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        consistentWrite: ConsistentWrite @Id("aggregate"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
-        scheduler: Scheduler
+        scheduler: Scheduler,
+        base: BaseUri
     ) =>
       ResolversImpl(
         config.resolvers,
@@ -48,8 +50,9 @@ object ResolversModule extends ModuleDef {
         orgs,
         projects,
         resolverContextResolution,
-        resourceIdCheck
-      )(uuidF, clock, scheduler, as)
+        resourceIdCheck,
+        consistentWrite
+      )(uuidF, clock, scheduler, as, base)
   }
 
   make[MultiResolution].from {

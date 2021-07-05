@@ -5,6 +5,9 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -33,21 +36,23 @@ trait Resolvers {
   /**
     * Create a new resolver where the id is either present on the payload or self generated
     *
-    * @param projectRef the project where the resolver will belong
-    * @param source    the payload to create the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param source         the payload to create the resolver
+    * @param executionType  the type of execution for this action
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit
+  def create(projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Create a new resolver with the provided id
     *
-    * @param id         the resolver identifier to expand as the id of the resolver
-    * @param projectRef the project where the resolver will belong
-    * @param source    the payload to create the resolver
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver will belong
+    * @param source         the payload to create the resolver
+    * @param executionType  the type of execution for this action
     */
-  def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -56,19 +61,21 @@ trait Resolvers {
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef     the project where the resolver will belong
     * @param resolverValue  the value of the resolver
+    * @param executionType  the type of execution for this action
     */
-  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue, executionType: ExecutionType)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Update an existing resolver
     * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef        the project where the resolver will belong
+    * @param projectRef     the project where the resolver will belong
     * @param rev            the current revision of the resolver
-    * @param source the payload to update the resolver
+    * @param source         the payload to update the resolver
+    * @param executionType  the type of execution for this action
     */
-  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, executionType: ExecutionType)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -78,31 +85,40 @@ trait Resolvers {
     * @param projectRef     the project where the resolver will belong
     * @param rev            the current revision of the resolver
     * @param resolverValue  the value of the resolver
+    * @param executionType  the type of execution for this action
     */
-  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
+  def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      resolverValue: ResolverValue,
+      executionType: ExecutionType
+  )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Add a tag to an existing resolver
     *
-    * @param id        the resolver identifier to expand as the id of the resolver
-    * @param projectRef   the project where the resolver belongs
-    * @param tag       the tag name
-    * @param tagRev    the tag revision
-    * @param rev       the current revision of the resolver
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver belongs
+    * @param tag            the tag name
+    * @param tagRev         the tag revision
+    * @param rev            the current revision of the resolver
+    * @param executionType  the type of execution for this action
     */
-  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
-      subject: Subject
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long, executionType: ExecutionType)(
+      implicit subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Deprecate an existing resolver
-    * @param id      the resolver identifier to expand as the id of the resolver
-    * @param projectRef the project where the resolver belongs
-    * @param rev     the current revision of the resolver
+    * @param id             the resolver identifier to expand as the id of the resolver
+    * @param projectRef     the project where the resolver belongs
+    * @param rev            the current revision of the resolver
+    * @param executionType  the type of execution for this action
     */
-  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
+  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: ExecutionType)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
@@ -194,6 +210,14 @@ trait Resolvers {
 }
 
 object Resolvers {
+
+  /**
+    * Create [[EventExchangeValue]] for a resolver.
+    */
+  def eventExchangeValue(res: ResolverResource)(implicit
+      enc: JsonLdEncoder[Resolver]
+  ): EventExchangeValue[Resolver, Unit] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   type FindResolver = (ProjectRef, ResolverSearchParams) => UIO[Option[Iri]]
 
