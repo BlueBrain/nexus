@@ -372,7 +372,7 @@ class StoragesSpec
         .accepted
 
     val consistentWrite = ConsistentWriteDummy()
-    val storages = StoragesSetup.init(orgs, projects, consistentWrite, perms)
+    val storages        = StoragesSetup.init(orgs, projects, consistentWrite, perms)
 
     "creating a storage" should {
 
@@ -388,7 +388,6 @@ class StoragesSpec
         storages.create("s3-storage", projectRef, payload, Performant).accepted shouldEqual
           resourceFor(s3Id, projectRef, s3Val, payload, createdBy = bob, updatedBy = bob)
         consistentWrite.valueFor(projectRef, s3Id, 1).accepted.value shouldEqual Performant
-
 
         val previousDefault = storages.fetch(dId, projectRef).accepted
         previousDefault.value.default shouldEqual false

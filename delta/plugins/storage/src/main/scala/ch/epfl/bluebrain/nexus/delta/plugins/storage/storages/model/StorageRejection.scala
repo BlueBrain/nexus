@@ -234,7 +234,7 @@ object StorageRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection]                =
+  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
   implicit val storageConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =

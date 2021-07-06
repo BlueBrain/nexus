@@ -127,7 +127,7 @@ final class StoragesRoutes(
                   // Create a storage without id segment
                   (post & noParameter("rev") & entity(as[Json]) & executionType) { (source, execution) =>
                     authorizeFor(ref, Write).apply {
-                      emit(Created, storages.create(ref, Secret(source),execution).mapValue(_.metadata))
+                      emit(Created, storages.create(ref, Secret(source), execution).mapValue(_.metadata))
                     }
                   }
                 },
@@ -156,7 +156,10 @@ final class StoragesRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
-                                  emit(Created, storages.create(id, ref, Secret(source), execution).mapValue(_.metadata))
+                                  emit(
+                                    Created,
+                                    storages.create(id, ref, Secret(source), execution).mapValue(_.metadata)
+                                  )
                                 case (Some(rev), source) =>
                                   // Update a storage
                                   emit(storages.update(id, ref, rev, Secret(source), execution).mapValue(_.metadata))

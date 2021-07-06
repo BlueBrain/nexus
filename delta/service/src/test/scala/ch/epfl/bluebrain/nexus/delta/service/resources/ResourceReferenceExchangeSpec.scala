@@ -77,7 +77,14 @@ class ResourceReferenceExchangeSpec
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
 
   private lazy val resources: Resources =
-    ResourcesDummy(orgs, projs, resolution, (_, _) => IO.unit, resolverContextResolution, ConsistentWriteDummy()).accepted
+    ResourcesDummy(
+      orgs,
+      projs,
+      resolution,
+      (_, _) => IO.unit,
+      resolverContextResolution,
+      ConsistentWriteDummy()
+    ).accepted
 
   "A ResourceReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"

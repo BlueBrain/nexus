@@ -99,12 +99,13 @@ final class SchemasRoutes(
                   }
                 },
                 // Create a schema without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) { (source, execution) =>
-                  operationName(s"$prefixSegment/schemas/{org}/{project}") {
-                    authorizeFor(ref, Write).apply {
-                      emit(Created, schemas.create(ref, source, execution).map(_.void))
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) {
+                  (source, execution) =>
+                    operationName(s"$prefixSegment/schemas/{org}/{project}") {
+                      authorizeFor(ref, Write).apply {
+                        emit(Created, schemas.create(ref, source, execution).map(_.void))
+                      }
                     }
-                  }
                 },
                 (idSegment & executionType) { (id, execution) =>
                   concat(
@@ -127,7 +128,7 @@ final class SchemasRoutes(
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(schemas.deprecate(id, ref, rev,execution).map(_.void))
+                              emit(schemas.deprecate(id, ref, rev, execution).map(_.void))
                             }
                           },
                           // Fetch a schema

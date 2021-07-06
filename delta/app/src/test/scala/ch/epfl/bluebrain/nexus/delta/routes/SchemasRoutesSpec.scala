@@ -90,7 +90,14 @@ class SchemasRoutesSpec
         acls,
         orgs,
         projs,
-        SchemasDummy(orgs, projs, schemaImports, resolverContextResolution, (_, _) => IO.unit, ConsistentWriteDummy()).accepted
+        SchemasDummy(
+          orgs,
+          projs,
+          schemaImports,
+          resolverContextResolution,
+          (_, _) => IO.unit,
+          ConsistentWriteDummy()
+        ).accepted
       )
     )
 

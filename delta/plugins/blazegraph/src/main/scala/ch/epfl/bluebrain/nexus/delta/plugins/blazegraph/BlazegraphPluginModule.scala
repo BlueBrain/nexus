@@ -145,7 +145,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           scheduler: Scheduler,
           consistentWrite: ConsistentWrite @Id("aggregate")
       ) =>
-        BlazegraphViews(cfg, log, contextResolution, permissions, cache, orgs, projects, resourceIdCheck, client, consistentWrite)(
+        BlazegraphViews(
+          cfg,
+          log,
+          contextResolution,
+          permissions,
+          cache,
+          orgs,
+          projects,
+          resourceIdCheck,
+          client,
+          consistentWrite
+        )(
           uuidF,
           clock,
           scheduler,
@@ -230,7 +241,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cache: BlazegraphViewsCache,
         config: BlazegraphViewsConfig,
         baseUri: BaseUri,
-        cr: RemoteContextResolution@Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate")
     ) =>
       BlazegraphViews.consistentWrite(client, cache, config.indexing)(cr, baseUri)
 

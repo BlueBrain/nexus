@@ -21,7 +21,7 @@ final case class BlazegraphIndexingStreamEntry(
 ) {
 
   def writeOrNone(view: IndexingBlazegraphView): Task[Option[SparqlWriteQuery]] =
-  // Either delete the named graph or insert triples to it depending on filtering options
+    // Either delete the named graph or insert triples to it depending on filtering options
     if (containsSchema(view.resourceSchemas) && containsTypes(view.resourceTypes))
       deleteOrIndex(view.includeMetadata, view.includeDeprecated)
     else if (containsSchema(view.resourceSchemas))
@@ -95,7 +95,6 @@ object BlazegraphIndexingStreamEntry {
       exchangedValue: EventExchangeValue[A, M]
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
     IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
-
 
   /**
     * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]

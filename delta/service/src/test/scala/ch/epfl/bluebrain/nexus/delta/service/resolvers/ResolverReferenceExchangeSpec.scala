@@ -60,7 +60,8 @@ class ResolverReferenceExchangeSpec
   private val resolverContextResolution: ResolverContextResolution =
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
-  private val resolvers: Resolvers = ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit, ConsistentWriteDummy()).accepted
+  private val resolvers: Resolvers =
+    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit, ConsistentWriteDummy()).accepted
 
   "A ResolverReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"
