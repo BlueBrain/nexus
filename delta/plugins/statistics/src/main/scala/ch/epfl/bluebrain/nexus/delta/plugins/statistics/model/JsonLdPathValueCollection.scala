@@ -37,7 +37,7 @@ object JsonLdPathValueCollection {
     val empty: JsonLdProperties                                     = JsonLdProperties(Seq.empty)
     implicit val jsonLdPropertiesEncoder: Encoder[JsonLdProperties] = Encoder.instance(_.values.asJson)
 
-    def fromJson(value: ExpandedJsonLd): JsonLdProperties = {
+    def fromExpanded(value: ExpandedJsonLd): JsonLdProperties = {
 
       def innerEntry(acc: JsonLdProperties, parent: JsonLdPath, json: Json): JsonLdProperties =
         json.arrayOrObject(

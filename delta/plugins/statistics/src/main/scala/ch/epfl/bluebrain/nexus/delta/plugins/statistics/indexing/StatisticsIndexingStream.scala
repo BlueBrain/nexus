@@ -112,7 +112,7 @@ final class StatisticsIndexingStream(
     val encoder = exchangedValue.value.encoder
     for {
       expanded          <- encoder.expand(res.value)
-      pathProperties     = JsonLdProperties.fromJson(expanded)
+      pathProperties     = JsonLdProperties.fromExpanded(expanded)
       pathRelationships <- relationships(pathProperties.relationshipCandidates, project)
       paths              = JsonLdPathValueCollection(pathProperties, pathRelationships)
       types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
