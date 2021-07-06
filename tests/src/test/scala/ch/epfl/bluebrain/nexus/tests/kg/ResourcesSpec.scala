@@ -326,12 +326,14 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       val tag2 = jsonContentOf("/kg/resources/tag.json", "tag" -> "v1.0.1", "rev" -> "2")
 
       for {
-        _ <- deltaClient.post[Json](s"/resources/$id1/test-schema/test-resource:1/tags?rev=2", tag1, Rick) {
+        _ <- deltaClient
+               .post[Json](s"/resources/$id1/test-schema/test-resource:1/tags?rev=2&execution=consistent", tag1, Rick) {
+                 (_, response) =>
+                   response.status shouldEqual StatusCodes.Created
+               }
+        _ <- deltaClient.post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&execution=consistent", tag2, Rick) {
                (_, response) =>
                  response.status shouldEqual StatusCodes.Created
-             }
-        _ <- deltaClient.post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3", tag2, Rick) { (_, response) =>
-               response.status shouldEqual StatusCodes.Created
              }
       } yield succeed
     }
@@ -405,10 +407,11 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           "priority"   -> "3",
           "resourceId" -> s"$resourceId"
         )
-        deltaClient.put[Json](s"/resources/$id1/test-schema/test-resource:$resourceId", payload, Rick) {
-          (_, response) =>
-            response.status shouldEqual StatusCodes.Created
-        }
+        deltaClient
+          .put[Json](s"/resources/$id1/test-schema/test-resource:$resourceId?execution=consistent", payload, Rick) {
+            (_, response) =>
+              response.status shouldEqual StatusCodes.Created
+          }
       }
     }
 
@@ -422,11 +425,9 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         ): _*
       )
 
-      eventually {
-        deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-        }
+      deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
     }
 
