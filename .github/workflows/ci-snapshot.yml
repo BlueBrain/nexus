@@ -26,9 +26,6 @@ jobs:
         uses: olafurpg/setup-scala@v10
         with:
           java-version: adopt@1.11
-      - name: Publish to Github Packages
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false publish
       - name: Publish To DockerHub
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false docker:publishLocal
@@ -36,3 +33,6 @@ jobs:
           docker push bluebrain/nexus-delta:latest
           docker push bluebrain/nexus-cli:latest
           docker push bluebrain/nexus-storage:latest
+      - name: Publish to Github Packages
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false publish
