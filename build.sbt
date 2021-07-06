@@ -731,7 +731,8 @@ lazy val statisticsPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-statistics-plugin", "plugin"), assembly),
-    Test / fork                := true
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
   )
 
 lazy val plugins = project
