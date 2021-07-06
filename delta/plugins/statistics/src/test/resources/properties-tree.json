@@ -1,0 +1,117 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/properties.json",
+  "@id" : "https://neuroshapes.org/Trace",
+  "_count" : 100000,
+  "_name" : "Trace",
+  "_properties" : [
+    {
+      "@id" : "http://schema.org/dateCreated",
+      "_count" : 35000,
+      "_name" : "dateCreated"
+    },
+    {
+      "@id" : "https://neuroshapes.org/subject",
+      "_count" : 95000,
+      "_name" : "subject",
+      "_properties" : [
+        {
+          "@id" : "https://neuroshapes.org/age",
+          "_count" : 35000,
+          "_name" : "age",
+          "_properties" : [
+            {
+              "@id" : "https://neuroshapes.org/period",
+              "_count" : 35000,
+              "_name" : "period"
+            },
+            {
+              "@id" : "http://schema.org/value",
+              "_count" : 35000,
+              "_name" : "value"
+            },
+            {
+              "@id" : "http://schema.org/unitCode",
+              "_count" : 35000,
+              "_name" : "unitCode"
+            }
+          ]
+        },
+        {
+          "@id" : "https://neuroshapes.org/species",
+          "_count" : 60000,
+          "_name" : "species",
+          "_properties" : [
+            {
+              "@id" : "http://www.w3.org/2000/01/rdf-schema#subClassOf",
+              "_count" : 35000,
+              "_name" : "subClassOf"
+            },
+            {
+              "@id" : "http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+              "_count" : 35000,
+              "_name" : "isDefinedBy"
+            },
+            {
+              "@id" : "http://www.w3.org/2000/01/rdf-schema#label",
+              "_count" : 95000,
+              "_name" : "label"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id" : "https://neuroshapes.org/objectOfStudy",
+      "_count" : 95000,
+      "_name" : "objectOfStudy",
+      "_properties" : [
+        {
+          "@id" : "http://www.w3.org/2000/01/rdf-schema#label",
+          "_count" : 95000,
+          "_name" : "label"
+        }
+      ]
+    },
+    {
+      "@id" : "https://neuroshapes.org/brainLocation",
+      "_count" : 95000,
+      "_name" : "brainLocation",
+      "_properties" : [
+        {
+          "@id" : "https://neuroshapes.org/atlasSpatialReferenceSystem",
+          "_count" : 60000,
+          "_name" : "atlasSpatialReferenceSystem",
+          "_properties" : [
+            {
+              "@id" : "http://schema.org/name",
+              "_count" : 60000,
+              "_name" : "name"
+            }
+          ]
+        },
+        {
+          "@id" : "https://neuroshapes.org/brainRegion",
+          "_count" : 95000,
+          "_name" : "brainRegion",
+          "_properties" : [
+            {
+              "@id" : "http://www.w3.org/2000/01/rdf-schema#label",
+              "_count" : 95000,
+              "_name" : "label"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id" : "http://schema.org/name",
+      "_count" : 95000,
+      "_name" : "name"
+    },
+    {
+      "@id" : "http://schema.org/identifier",
+      "_count" : 95000,
+      "_name" : "identifier"
+    }
+  ]
+}

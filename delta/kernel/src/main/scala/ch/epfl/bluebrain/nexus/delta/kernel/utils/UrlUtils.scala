@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-trait UrlUtils {}
+trait UrlUtils
 
 object UrlUtils extends UrlUtils {
 

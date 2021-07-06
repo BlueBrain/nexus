@@ -1,0 +1,98 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/relationships.json",
+  "_edges" : [
+    {
+      "_count" : 60000,
+      "_path" : [
+        {
+          "@id" : "https://neuroshapes.org/annotation",
+          "_name" : "annotation"
+        },
+        {
+          "@id" : "https://neuroshapes.org/hasBody",
+          "_name" : "hasBody"
+        }
+      ],
+      "_source" : "https://neuroshapes.org/ReconstructedCell",
+      "_target" : "https://neuroshapes.org/AnnotationBody"
+    },
+    {
+      "_count" : 60000,
+      "_path" : [
+        {
+          "@id" : "https://neuroshapes.org/annotation",
+          "_name" : "annotation"
+        },
+        {
+          "@id" : "https://neuroshapes.org/hasBody",
+          "_name" : "hasBody"
+        }
+      ],
+      "_source" : "https://neuroshapes.org/ReconstructedCell",
+      "_target" : "https://neuroshapes.org/MType"
+    },
+    {
+      "_count" : 35000,
+      "_path" : [
+        {
+          "@id" : "https://neuroshapes.org/subject",
+          "_name" : "subject"
+        },
+        {
+          "@id" : "https://neuroshapes.org/species",
+          "_name" : "species"
+        }
+      ],
+      "_source" : "https://neuroshapes.org/Trace",
+      "_target" : "http://schema.org#Rat"
+    },
+    {
+      "_count" : 5000,
+      "_path" : [
+        {
+          "@id" : "http://schema.org/affiliation",
+          "_name" : "affiliation"
+        }
+      ],
+      "_source" : "http://schema.org/Person",
+      "_target" : "http://schema.org/Organization"
+    }
+  ],
+  "_nodes" : [
+    {
+      "@id" : "https://neuroshapes.org/ReconstructedCell",
+      "_count" : 60000,
+      "_name" : "ReconstructedCell"
+    },
+    {
+      "@id" : "https://neuroshapes.org/Trace",
+      "_count" : 35000,
+      "_name" : "Trace"
+    },
+    {
+      "@id" : "http://schema.org/Person",
+      "_count" : 5000,
+      "_name" : "Person"
+    },
+    {
+      "@id" : "http://schema.org/Organization",
+      "_count" : 1,
+      "_name" : "Organization"
+    },
+    {
+      "@id" : "http://schema.org#Rat",
+      "_count" : 1,
+      "_name" : "Rat"
+    },
+    {
+      "@id" : "https://neuroshapes.org/AnnotationBody",
+      "_count" : 1,
+      "_name" : "AnnotationBody"
+    },
+    {
+      "@id" : "https://neuroshapes.org/MType",
+      "_count" : 1,
+      "_name" : "MType"
+    }
+  ]
+}

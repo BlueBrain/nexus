@@ -10,6 +10,7 @@ import io.circe.{Decoder, Encoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
 
 import java.util.UUID
+import scala.annotation.tailrec
 
 /**
   * Represents an [[Iri]] or a [[BNode]]
@@ -88,9 +89,9 @@ object IriOrBNode {
       } else {
         Iri.unsafe(
           scheme = Option(value.getScheme),
-          path = Option(value.getRawPath),
+          path = path,
           query = Option.when(query.nonEmpty)(query.toString()),
-          fragment = Option(value.getRawFragment)
+          fragment = fragment
         )
       }
 
@@ -202,6 +203,34 @@ object IriOrBNode {
         Iri.unsafe(s"$absolute/$relative")
 
       } else this
+
+    /**
+      * @return the Iri path, if present
+      */
+    def path: Option[String] =
+      Option(value.getRawPath)
+
+    /**
+      * @return the last Iri path segment, if present
+      */
+    def lastSegment: Option[String] = {
+
+      @tailrec
+      def inner(rest: String): Option[String] = {
+        val idx = rest.lastIndexOf("/")
+        if (idx == -1) None
+        else if (idx < rest.size - 1) Some(rest.substring(idx + 1))
+        else inner(rest.dropRight(1))
+      }
+
+      Option(value.getRawPath).flatMap(inner)
+    }
+
+    /**
+      * @return the Iri fragment, if present
+      */
+    def fragment: Option[String] =
+      Option(value.getRawFragment)
   }
 
   object Iri {
