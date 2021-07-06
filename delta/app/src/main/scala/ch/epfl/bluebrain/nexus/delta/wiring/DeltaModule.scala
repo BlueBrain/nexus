@@ -102,8 +102,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       RdfRejectionHandler(s, cr, ordering)
   }
   make[ExceptionHandler].from {
-    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-      RdfExceptionHandler(s, cr, ordering)
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
+      RdfExceptionHandler(s, cr, ordering, base)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings

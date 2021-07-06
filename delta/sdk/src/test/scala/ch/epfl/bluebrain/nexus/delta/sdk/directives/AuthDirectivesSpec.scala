@@ -9,13 +9,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -27,6 +27,8 @@ import org.scalatest.matchers.should.Matchers
 class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IdiomaticMockito with IOValues {
 
   implicit private val cl = getClass.getClassLoader
+
+  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(contexts.error -> ContextValue.fromFile("contexts/error.json").accepted)

@@ -441,7 +441,7 @@ object BlazegraphViews {
           _            <- queries.parTraverse { case (index, query) =>
                             client.bulk(index, Seq(query))
                           }
-        } yield ()).mapError(err => IndexingFailed(err.getMessage))
+        } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
       }
     }
   }

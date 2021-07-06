@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
@@ -222,7 +222,10 @@ object ResourceRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit def resourceRejectionEncoder(implicit C: ClassTag[ResourceCommand]): Encoder.AsObject[ResourceRejection] =
+  implicit def resourceRejectionEncoder(implicit
+      C: ClassTag[ResourceCommand],
+      base: BaseUri
+  ): Encoder.AsObject[ResourceRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
@@ -246,7 +249,7 @@ object ResourceRejection {
       }
     }
 
-  implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceRejection] =
+  implicit final def resourceRejectionJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResourceRejection] = ResourceEvaluationError.apply

@@ -3,8 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.error
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
 import scala.annotation.nowarn
@@ -32,12 +34,14 @@ object ServiceError {
     */
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
 
-  sealed abstract class ConsistentWriteFailed(override val reason: String) extends ServiceError(reason)
+  sealed abstract class ConsistentWriteFailed(override val reason: String, val resource: ResourceF[Unit])
+      extends ServiceError(reason)
 
-  final case class IndexingFailed(override val reason: String) extends ConsistentWriteFailed(reason)
+  final case class IndexingFailed(override val reason: String, override val resource: ResourceF[Unit])
+      extends ConsistentWriteFailed(reason, resource)
 
   @nowarn("cat=unused")
-  implicit val serviceErrorEncoder: Encoder.AsObject[ServiceError] = {
+  implicit def serviceErrorEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ServiceError] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]
     Encoder.AsObject.instance[ServiceError] { r =>
@@ -45,18 +49,18 @@ object ServiceError {
     }
   }
 
-  implicit val serviceErrorJsonLdEncoder: JsonLdEncoder[ServiceError] =
+  implicit def serviceErrorJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ServiceError] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   @nowarn("cat=unused")
-  implicit val consistentWriteFailedEncoder: Encoder.AsObject[ConsistentWriteFailed] = {
+  implicit def consistentWriteFailedEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ConsistentWriteFailed] = {
     implicit val configuration: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                   = deriveConfiguredEncoder[ServiceError]
     Encoder.AsObject.instance[ConsistentWriteFailed] { r =>
-      enc.encodeObject(r).+:("reason" -> Json.fromString(r.reason))
+      enc.encodeObject(r).add("reason", Json.fromString(r.reason)).add("_resource", r.resource.asJson)
     }
   }
 
-  implicit val consistentWriteFailedJsonLdEncoder: JsonLdEncoder[ConsistentWriteFailed] =
+  implicit def consistentWriteFailedJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[ConsistentWriteFailed] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 }

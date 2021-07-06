@@ -489,7 +489,7 @@ object ElasticSearchViews {
                            }
                            .map(_.flatten)
           _           <- client.bulk(queries)
-        } yield ()).mapError(err => IndexingFailed(err.getMessage))
+        } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
       }
     }
   }

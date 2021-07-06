@@ -175,7 +175,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case AuthorizationFailed          => StatusCodes.Forbidden
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
-      case IndexingFailed(_)            => StatusCodes.InternalServerError
+      case IndexingFailed(_, _)         => StatusCodes.InternalServerError
     }
 
   implicit val responseFieldsUnit: HttpResponseFields[Unit] =
