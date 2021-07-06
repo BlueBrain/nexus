@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, Use
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ConsistentWriteDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -44,7 +44,7 @@ class BlazegraphScopeInitializationSpec
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, ConsistentWriteDummy(), permissions.query)
 
   "A BlazegraphScopeInitialization" should {
     val init = new BlazegraphScopeInitialization(views, sa)

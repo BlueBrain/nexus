@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
@@ -15,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConsistentWriteDummy, ProjectSetup, ResourcesDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.{IO, UIO}
@@ -76,7 +77,7 @@ class ResourceReferenceExchangeSpec
   private val resolution: ResourceResolution[Schema] = ResourceResolutionGen.singleInProject(project.ref, fetchSchema)
 
   private lazy val resources: Resources =
-    ResourcesDummy(orgs, projs, resolution, (_, _) => IO.unit, resolverContextResolution).accepted
+    ResourcesDummy(orgs, projs, resolution, (_, _) => IO.unit, resolverContextResolution, ConsistentWriteDummy()).accepted
 
   "A ResourceReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"
@@ -91,8 +92,8 @@ class ResourceReferenceExchangeSpec
               "bool": false
             }"""
     val tag     = TagLabel.unsafe("tag")
-    val resRev1 = resources.create(id, project.ref, schema.id, source).accepted
-    val resRev2 = resources.tag(id, project.ref, None, tag, 1L, 1L).accepted
+    val resRev1 = resources.create(id, project.ref, schema.id, source, Performant).accepted
+    val resRev2 = resources.tag(id, project.ref, None, tag, 1L, 1L, Performant).accepted
 
     val exchange = Resources.referenceExchange(resources)
 

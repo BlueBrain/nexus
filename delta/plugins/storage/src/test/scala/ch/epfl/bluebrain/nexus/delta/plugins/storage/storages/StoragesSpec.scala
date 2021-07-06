@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
@@ -370,20 +371,24 @@ class StoragesSpec
         )
         .accepted
 
-    val storages = StoragesSetup.init(orgs, projects, perms)
+    val consistentWrite = ConsistentWriteDummy()
+    val storages = StoragesSetup.init(orgs, projects, consistentWrite, perms)
 
     "creating a storage" should {
 
       "succeed with the id present on the payload" in {
         val payload = diskFieldsJson.map(_ deepMerge Json.obj(keywords.id -> dId.asJson))
-        storages.create(projectRef, payload).accepted shouldEqual
+        storages.create(projectRef, payload, Consistent).accepted shouldEqual
           resourceFor(dId, projectRef, diskVal, payload, createdBy = bob, updatedBy = bob)
+        consistentWrite.valueFor(projectRef, dId, 1).accepted.value shouldEqual Consistent
       }
 
       "succeed with the id present on the payload and passed" in {
         val payload = s3FieldsJson.map(_ deepMerge Json.obj(keywords.id -> s3Id.asJson))
-        storages.create("s3-storage", projectRef, payload).accepted shouldEqual
+        storages.create("s3-storage", projectRef, payload, Performant).accepted shouldEqual
           resourceFor(s3Id, projectRef, s3Val, payload, createdBy = bob, updatedBy = bob)
+        consistentWrite.valueFor(projectRef, s3Id, 1).accepted.value shouldEqual Performant
+
 
         val previousDefault = storages.fetch(dId, projectRef).accepted
         previousDefault.value.default shouldEqual false
@@ -391,35 +396,37 @@ class StoragesSpec
       }
 
       "succeed with the passed id" in {
-        storages.create(rdId, projectRef, remoteFieldsJson).accepted shouldEqual
+        storages.create(rdId, projectRef, remoteFieldsJson, Consistent).accepted shouldEqual
           resourceFor(rdId, projectRef, remoteVal, remoteFieldsJson, createdBy = bob, updatedBy = bob)
+        consistentWrite.valueFor(projectRef, rdId, 1).accepted.value shouldEqual Consistent
+
       }
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
         val payload = s3FieldsJson.map(_ deepMerge Json.obj(keywords.id -> s3Id.asJson))
-        storages.create(otherId, projectRef, payload).rejected shouldEqual
+        storages.create(otherId, projectRef, payload, Performant).rejected shouldEqual
           UnexpectedStorageId(id = otherId, payloadId = s3Id)
       }
 
       "reject if it already exists" in {
-        storages.create(s3Id, projectRef, s3FieldsJson).rejected shouldEqual
+        storages.create(s3Id, projectRef, s3FieldsJson, Performant).rejected shouldEqual
           ResourceAlreadyExists(s3Id, projectRef)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        storages.create(projectRef, s3FieldsJson).rejected shouldEqual
+        storages.create(projectRef, s3FieldsJson, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.create(deprecatedProject.ref, s3FieldsJson).rejected shouldEqual
+        storages.create(deprecatedProject.ref, s3FieldsJson, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.create(projectWithDeprecatedOrg.ref, s3FieldsJson).rejected shouldEqual
+        storages.create(projectWithDeprecatedOrg.ref, s3FieldsJson, Performant).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -428,28 +435,30 @@ class StoragesSpec
 
       "succeed" in {
         val payload = diskFieldsJson.map(_ deepMerge json"""{"default": false, "maxFileSize": 40}""")
-        storages.update(dId, projectRef, 2, payload).accepted shouldEqual
+        storages.update(dId, projectRef, 2, payload, Consistent).accepted shouldEqual
           resourceFor(dId, projectRef, diskValUpdate, payload, rev = 3, createdBy = bob, updatedBy = bob)
+        consistentWrite.valueFor(projectRef, dId, 3).accepted.value shouldEqual Consistent
+
       }
 
       "reject if it doesn't exists" in {
-        storages.update(nxv + "other", projectRef, 1, diskFieldsJson).rejectedWith[StorageNotFound]
+        storages.update(nxv + "other", projectRef, 1, diskFieldsJson, Performant).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.update(dId, projectRef, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, projectRef, 2, diskFieldsJson, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.update(dId, deprecatedProject.ref, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, deprecatedProject.ref, 2, diskFieldsJson, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.update(dId, projectWithDeprecatedOrg.ref, 2, diskFieldsJson).rejected shouldEqual
+        storages.update(dId, projectWithDeprecatedOrg.ref, 2, diskFieldsJson, Performant).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -457,7 +466,7 @@ class StoragesSpec
     "tagging a storage" should {
 
       "succeed" in {
-        storages.tag(rdId, projectRef, tag, tagRev = 1, 1).accepted shouldEqual
+        storages.tag(rdId, projectRef, tag, tagRev = 1, 1, Consistent).accepted shouldEqual
           resourceFor(
             rdId,
             projectRef,
@@ -468,26 +477,28 @@ class StoragesSpec
             updatedBy = bob,
             tags = Map(tag -> 1)
           )
+        consistentWrite.valueFor(projectRef, rdId, 2).accepted.value shouldEqual Consistent
+
       }
 
       "reject if it doesn't exists" in {
-        storages.tag(nxv + "other", projectRef, tag, tagRev = 1, 1).rejectedWith[StorageNotFound]
+        storages.tag(nxv + "other", projectRef, tag, tagRev = 1, 1, Performant).rejectedWith[StorageNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.tag(rdId, projectRef, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, projectRef, tag, tagRev = 2, 2, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 2, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 2).rejected shouldEqual
+        storages.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 2, Performant).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -496,7 +507,7 @@ class StoragesSpec
 
       "succeed" in {
         val payload = s3FieldsJson.map(_ deepMerge json"""{"@id": "$s3Id", "default": false}""")
-        storages.deprecate(s3Id, projectRef, 2).accepted shouldEqual
+        storages.deprecate(s3Id, projectRef, 2, Consistent).accepted shouldEqual
           resourceFor(
             s3Id,
             projectRef,
@@ -507,31 +518,33 @@ class StoragesSpec
             createdBy = bob,
             updatedBy = bob
           )
+        consistentWrite.valueFor(projectRef, s3Id, 3).accepted.value shouldEqual Consistent
+
       }
 
       "reject if it doesn't exists" in {
-        storages.deprecate(nxv + "other", projectRef, 1).rejectedWith[StorageNotFound]
+        storages.deprecate(nxv + "other", projectRef, 1, Performant).rejectedWith[StorageNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        storages.deprecate(s3Id, projectRef, 5).rejected shouldEqual
+        storages.deprecate(s3Id, projectRef, 5, Performant).rejected shouldEqual
           IncorrectRev(provided = 5, expected = 3)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        storages.deprecate(s3Id, projectRef, 3).rejected shouldEqual
+        storages.deprecate(s3Id, projectRef, 3, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        storages.deprecate(s3Id, deprecatedProject.ref, 1).rejected shouldEqual
+        storages.deprecate(s3Id, deprecatedProject.ref, 1, Performant).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        storages.tag(s3Id, projectWithDeprecatedOrg.ref, tag, 1, 2).rejected shouldEqual
+        storages.tag(s3Id, projectWithDeprecatedOrg.ref, tag, 1, 2, Performant).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 

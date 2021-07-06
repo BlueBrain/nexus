@@ -7,12 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ConsistentWriteDummy}
 import io.circe.literal._
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -37,14 +38,15 @@ class BlazegraphViewEventExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  private val views: BlazegraphViews =
+    BlazegraphViewsSetup.init(org, project, ConsistentWriteDummy(), permissions.query)
 
   "A BlazegraphViewEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
     val source          = json"""{ "@type": "SparqlView" }"""
     val tag             = TagLabel.unsafe("tag")
-    val resRev1         = views.create(id, project.ref, source).accepted
-    val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
+    val resRev1         = views.create(id, project.ref, source, Performant).accepted
+    val resRev2         = views.tag(id, project.ref, tag, 1L, 1L, Performant).accepted
     val deprecatedEvent = BlazegraphViewDeprecated(id, project.ref, BlazegraphType, uuid, 1, Instant.EPOCH, subject)
 
     val exchange = new BlazegraphViewEventExchange(views)

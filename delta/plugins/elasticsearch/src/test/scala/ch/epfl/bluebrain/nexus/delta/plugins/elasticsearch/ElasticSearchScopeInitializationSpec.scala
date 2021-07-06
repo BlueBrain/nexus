@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, Use
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ConsistentWriteDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -50,7 +50,8 @@ class ElasticSearchScopeInitializationSpec
   private val settings          = defaultElasticsearchSettings.accepted
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(org, project, queryPermissions)
+  private val views: ElasticSearchViews =
+    ElasticSearchViewsSetup.init(org, project, ConsistentWriteDummy(), queryPermissions)
 
   "An ElasticSearchScopeInitialization" should {
     val init = new ElasticSearchScopeInitialization(views, sa)

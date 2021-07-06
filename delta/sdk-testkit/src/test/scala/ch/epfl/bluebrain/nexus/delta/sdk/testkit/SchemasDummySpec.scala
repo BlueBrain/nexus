@@ -28,7 +28,8 @@ class SchemasDummySpec
           projs,
           schemaImports,
           resolverContextResolution,
-          (_, _) => IO.unit
+          (_, _) => IO.unit,
+          consistentWrite
         )
     } yield r
 

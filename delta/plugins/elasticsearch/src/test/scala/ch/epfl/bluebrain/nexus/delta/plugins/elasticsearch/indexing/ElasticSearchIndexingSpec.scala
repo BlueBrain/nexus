@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -191,7 +192,8 @@ class ElasticSearchIndexingSpec
 
   private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
   private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache)
-  private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
+  private val views: ElasticSearchViews =
+    ElasticSearchViewsSetup.init(orgs, projs, ConsistentWriteDummy(), permissions.query)
   private val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
   ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
 
@@ -203,7 +205,8 @@ class ElasticSearchIndexingSpec
   "ElasticSearchIndexing" should {
 
     "index resources for project1" in {
-      val view = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      val view =
+        views.create(viewId, project1.ref, indexingValue, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
         documentFor(res2Proj1, value2Proj1),
@@ -212,12 +215,14 @@ class ElasticSearchIndexingSpec
     }
 
     "index resources for project2" in {
-      val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
+      val view =
+        views.create(viewId, project2.ref, indexingValue, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(view, documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
     }
     "index resources with metadata" in {
       val indexVal = indexingValue.copy(includeMetadata = true)
-      val view     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val view     =
+        views.update(viewId, project1.ref, 1L, indexVal, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
         documentWithMetaFor(res2Proj1, value2Proj1, uuid2Proj1),
@@ -226,7 +231,8 @@ class ElasticSearchIndexingSpec
     }
     "index resources including deprecated" in {
       val indexVal = indexingValue.copy(includeDeprecated = true)
-      val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val view     =
+        views.update(viewId, project1.ref, 2L, indexVal, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
         documentFor(res2Proj1, value2Proj1),
@@ -237,7 +243,8 @@ class ElasticSearchIndexingSpec
 
     "index resources constrained by schema" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
-      val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val view     =
+        views.update(viewId, project1.ref, 3L, indexVal, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
         documentFor(res3Proj1, value3Proj1),
@@ -251,12 +258,14 @@ class ElasticSearchIndexingSpec
     }
     "index resources with type" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
-      val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val view     =
+        views.update(viewId, project1.ref, 4L, indexVal, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(view, documentFor(res3Proj1, value3Proj1))
     }
     "index resources without source" in {
       val indexVal = indexingValue.copy(sourceAsText = false)
-      val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      val view     =
+        views.update(viewId, project1.ref, 5L, indexVal, Performant).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
         documentWithSourceAsJsonFor(res2Proj1, value2Proj1),

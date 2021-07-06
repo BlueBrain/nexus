@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Content-Type`}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.alpakka.file.scaladsl.Archive
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -129,9 +130,9 @@ class ArchiveRoutesSpec
                                  allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
                                )
                              )
-      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, allowedPerms: _*))
+      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, ConsistentWriteDummy(), allowedPerms: _*))
       storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-      _                 <- storages.create(diskId, projectRef, storageJson)
+      _                 <- storages.create(diskId, projectRef, storageJson, Performant)
       archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
       archives          <- Archives(projs, archiveDownload, archivesConfig, (_, _) => IO.unit)
       identities         = IdentitiesDummy(Map(AuthToken("subject") -> caller, AuthToken("nofileperms") -> callerNoFilePerms))
@@ -216,7 +217,7 @@ class ArchiveRoutesSpec
     val archiveCtxJson = jsonContentOf("responses/archive-resource-context.json")
 
     "create required file" in {
-      files.create(fileId, Some(diskId), project.ref, entity()).accepted
+      files.create(fileId, Some(diskId), project.ref, entity(), Performant).accepted
     }
 
     "create an archive without specifying an id" in {

@@ -7,12 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Consistent
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ConsistentWriteDummy}
 import io.circe.literal._
 import io.circe.syntax._
 import monix.execution.Scheduler
@@ -39,7 +40,14 @@ class ElasticSearchViewEventExchangeSpec
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val views: ElasticSearchViews =
-    ElasticSearchViewsSetup.init(org, project, permissions.write, permissions.query, permissions.read)
+    ElasticSearchViewsSetup.init(
+      org,
+      project,
+      ConsistentWriteDummy(),
+      permissions.write,
+      permissions.query,
+      permissions.read
+    )
 
   private val mapping = defaultElasticsearchMapping.accepted.asJson
 
@@ -51,8 +59,8 @@ class ElasticSearchViewEventExchangeSpec
               "mapping": $mapping
             }"""
     val tag             = TagLabel.unsafe("tag")
-    val resRev1         = views.create(id, project.ref, source).accepted
-    val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
+    val resRev1         = views.create(id, project.ref, source, Consistent).accepted
+    val resRev2         = views.tag(id, project.ref, tag, 1L, 1L, Consistent).accepted
     val deprecatedEvent =
       ElasticSearchViewDeprecated(id, project.ref, ElasticSearchType, uuid, 1, Instant.EPOCH, subject)
 

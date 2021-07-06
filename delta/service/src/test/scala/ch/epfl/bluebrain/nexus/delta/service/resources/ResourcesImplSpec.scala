@@ -28,7 +28,8 @@ class ResourcesImplSpec
                          (_, _) => UIO.unit,
                          resolverContextResolution,
                          aggregate,
-                         eventLog
+                         eventLog,
+                         consistentWrite
                        )
     } yield resources
 }
