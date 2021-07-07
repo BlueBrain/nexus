@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.statistics.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -28,12 +28,6 @@ object StatisticsRejection {
     */
   final case class WrappedElasticSearchRejection(rejection: ElasticSearchViewRejection)
       extends StatisticsRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused by a failure to load resource from classpath
-    */
-  final case class WrappedClasspathResourceError(error: ClasspathResourceError)
-      extends StatisticsRejection(error.toString)
 
   /**
     * Rejection returned when attempting to interact with statistics while providing a property type that cannot be
@@ -70,7 +64,6 @@ object StatisticsRejection {
     HttpResponseFields {
       case WrappedElasticSearchRejection(rej) => rej.status
       case WrappedProjectRejection(rej)       => rej.status
-      case WrappedClasspathResourceError(_)   => StatusCodes.InternalServerError
       case _                                  => StatusCodes.BadRequest
     }
 }

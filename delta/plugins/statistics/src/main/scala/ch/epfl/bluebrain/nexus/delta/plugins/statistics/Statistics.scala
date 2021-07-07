@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
-import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.StatisticsRejection.{InvalidPropertyType, WrappedClasspathResourceError, WrappedElasticSearchRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.StatisticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.{PropertiesStatistics, StatisticsGraph, StatisticsRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, JsonObject}
 import monix.bio.IO
 
@@ -43,15 +44,21 @@ object Statistics {
       projects: Projects
   )(implicit config: ExternalIndexingConfig): Statistics = new Statistics {
 
+    implicit private val logger: Logger = Logger[Statistics]
+
     private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
     implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
     private val propertiesAggQuery =
-      ioJsonObjectContentOf("elasticsearch/paths-properties-aggregations.json").memoize
+      ioJsonObjectContentOf("elasticsearch/paths-properties-aggregations.json")
+        .logAndDiscardErrors("ElasticSearch 'paths-properties-aggregations.json' template not found")
+        .memoizeOnSuccess
 
     private val relationshipsAggQuery =
-      ioJsonObjectContentOf("elasticsearch/paths-relationships-aggregations.json").memoize
+      ioJsonObjectContentOf("elasticsearch/paths-relationships-aggregations.json")
+        .logAndDiscardErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
+        .memoizeOnSuccess
 
     private def propertiesAggQueryFor(tpe: Iri)                                                  =
       propertiesAggQuery.map(_.replace("@type" -> "{{type}}", tpe))
@@ -59,7 +66,7 @@ object Statistics {
     override def relationships(projectRef: ProjectRef): IO[StatisticsRejection, StatisticsGraph] =
       for {
         _     <- projects.fetchProject[StatisticsRejection](projectRef)
-        query <- relationshipsAggQuery.mapError(WrappedClasspathResourceError)
+        query <- relationshipsAggQuery
         stats <- client
                    .searchAs[StatisticsGraph](QueryBuilder(query), Set(idx(projectRef).value), Query.Empty)
                    .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
@@ -77,7 +84,7 @@ object Statistics {
       for {
         project <- projects.fetchProject[StatisticsRejection](projectRef)
         tpeIri  <- expandIri(tpe, project)
-        query   <- propertiesAggQueryFor(tpeIri).mapError(WrappedClasspathResourceError)
+        query   <- propertiesAggQueryFor(tpeIri)
         stats   <- search(tpeIri, idx(projectRef), query)
       } yield stats
 
