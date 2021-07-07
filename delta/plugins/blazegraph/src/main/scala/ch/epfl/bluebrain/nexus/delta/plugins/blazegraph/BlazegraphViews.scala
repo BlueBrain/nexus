@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{ConsistentWriteFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
@@ -339,7 +339,7 @@ final class BlazegraphViews(
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
       res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
-      _                <- index.put(ViewRef(cmd.project, cmd.id), res)
+      _                <- index.put(cmd.project, cmd.id, res)
     } yield res
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -405,7 +405,7 @@ object BlazegraphViews {
   type BlazegraphViewsAggregate =
     Aggregate[String, BlazegraphViewState, BlazegraphViewCommand, BlazegraphViewEvent, BlazegraphViewRejection]
 
-  type BlazegraphViewsCache = KeyValueStore[ViewRef, ViewResource]
+  type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
 
   /**
     * Create a reference exchange from a [[BlazegraphViews]] instance
@@ -426,8 +426,8 @@ object BlazegraphViews {
           res: EventExchangeValue[_, _]
       ): IO[ConsistentWriteFailed, Unit] = {
         (for {
-          projectViews <- cache.values.map { vs =>
-                            vs.filter(v => v.value.project == project && v.value.tpe == IndexingBlazegraphViewType)
+          projectViews <- cache.get(project).map { vs =>
+                            vs.filter(v => v.value.tpe == IndexingBlazegraphViewType && !v.deprecated)
                               .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
                           }
           streamEntry  <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
@@ -702,6 +702,6 @@ object BlazegraphViews {
   )(implicit as: ActorSystem[Nothing]): BlazegraphViewsCache = {
     implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
     val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
+    CompositeKeyValueStore(moduleType, clock)
   }
 }

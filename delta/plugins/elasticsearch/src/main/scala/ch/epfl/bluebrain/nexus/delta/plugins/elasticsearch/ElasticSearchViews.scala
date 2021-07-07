@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{ConsistentWriteFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -388,7 +388,7 @@ final class ElasticSearchViews private (
                            result.state.toResource(am, base, defaultMapping, defaultSettings),
                            UnexpectedInitialState(cmd.id, project.ref)
                          )
-      _               <- cache.put(ViewRef(cmd.project, cmd.id), resource)
+      _               <- cache.put(cmd.project, cmd.id, resource)
     } yield resource
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -476,8 +476,8 @@ object ElasticSearchViews {
           res: EventExchangeValue[_, _]
       ): IO[ConsistentWriteFailed, Unit] = {
         (for {
-          projectViews <- cache.values.map { vs =>
-                            vs.filter(v => v.value.project == project && v.value.tpe == ElasticSearchIndexing)
+          projectViews <- cache.get(project).map { vs =>
+                            vs.filter(v => v.value.tpe == ElasticSearchIndexing && !v.deprecated)
                               .map(_.map(_.asInstanceOf[IndexingElasticSearchView]))
                           }
 
@@ -597,7 +597,7 @@ object ElasticSearchViews {
     ElasticSearchViewRejection
   ]
 
-  type ElasticSearchViewCache = KeyValueStore[ViewRef, ViewResource]
+  type ElasticSearchViewCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
 
   /**
     * Creates a new distributed ElasticSearchViewCache.
@@ -608,7 +608,7 @@ object ElasticSearchViews {
     UIO.delay {
       implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
       val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
-      KeyValueStore.distributed(moduleType, clock)
+      CompositeKeyValueStore(moduleType, clock)
     }
 
   private def aggregate(
