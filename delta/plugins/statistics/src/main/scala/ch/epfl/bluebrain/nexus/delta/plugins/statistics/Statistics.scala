@@ -58,7 +58,7 @@ object Statistics {
 
     override def relationships(projectRef: ProjectRef): IO[StatisticsRejection, StatisticsGraph] =
       for {
-        _     <- projects.fetchActiveProject[StatisticsRejection](projectRef)
+        _     <- projects.fetchProject[StatisticsRejection](projectRef)
         query <- relationshipsAggQuery.mapError(WrappedClasspathResourceError)
         stats <- client
                    .searchAs[StatisticsGraph](QueryBuilder(query), Set(idx(projectRef).value), Query.Empty)
@@ -75,7 +75,7 @@ object Statistics {
       }
 
       for {
-        project <- projects.fetchActiveProject[StatisticsRejection](projectRef)
+        project <- projects.fetchProject[StatisticsRejection](projectRef)
         tpeIri  <- expandIri(tpe, project)
         query   <- propertiesAggQueryFor(tpeIri).mapError(WrappedClasspathResourceError)
         stats   <- search(tpeIri, idx(projectRef), query)
