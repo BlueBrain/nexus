@@ -3,15 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.rdf
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{owl, schema, xsd}
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.Json
 import io.circe.syntax._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
-class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable with OptionValues {
 
   "An Iri" should {
     val iriString = "http://example.com/a"
@@ -91,6 +91,17 @@ class IriSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherV
 
     "be constructed from Json" in {
       Json.fromString(iriString).as[Iri].rightValue shouldEqual iri
+    }
+
+    "get last path segment" in {
+      val list =
+        List(iri"http://example.com/c?q=v", iri"http://example.com/a/b/c#some", iri"http://example.com/a/b/c/#some?q=a")
+      forAll(list)(_.lastSegment.value shouldEqual "c")
+    }
+
+    "return None when getting last path segment" in {
+      val list = List(iri"http://example.com/", iri"http://example.com//")
+      forAll(list)(_.lastSegment shouldEqual None)
     }
   }
 

@@ -19,10 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import com.typesafe.scalalogging.Logger
 import monix.bio.IO
 
 import java.util.regex.Pattern.quote
@@ -100,21 +102,27 @@ object BlazegraphViewsQuery {
     new BlazegraphViewsQuery {
 
       private val expandIri: ExpandIri[BlazegraphViewRejection] = new ExpandIri(InvalidResourceId.apply)
+      implicit private val logger: Logger                       = Logger[BlazegraphViewsQuery]
 
       implicit private val cl: ClassLoader  = this.getClass.getClassLoader
       private val incomingQuery             =
-        ioContentOf("blazegraph/incoming.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+        ioContentOf("blazegraph/incoming.txt")
+          .logAndDiscardErrors("SPARQL 'incoming.txt' template not found")
+          .memoizeOnSuccess
       private val outgoingWithExternalQuery =
-        ioContentOf("blazegraph/outgoing_include_external.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+        ioContentOf("blazegraph/outgoing_include_external.txt")
+          .logAndDiscardErrors("SPARQL 'outgoing_include_external.txt' template not found")
+          .memoizeOnSuccess
       private val outgoingScopedQuery       =
-        ioContentOf("blazegraph/outgoing_scoped.txt").mapError(WrappedClasspathResourceError).memoizeOnSuccess
+        ioContentOf("blazegraph/outgoing_scoped.txt")
+          .logAndDiscardErrors("SPARQL 'outgoing_scoped.txt' template not found")
+          .memoizeOnSuccess
 
-      private def replace(query: String, id: Iri, pagination: FromPagination): String = {
+      private def replace(query: String, id: Iri, pagination: FromPagination): String =
         query
           .replaceAll(quote("{id}"), id.toString)
           .replaceAll(quote("{offset}"), pagination.from.toString)
           .replaceAll(quote("{size}"), pagination.size.toString)
-      }
 
       def incoming(
           id: IdSegment,
@@ -138,14 +146,15 @@ object BlazegraphViewsQuery {
           projectRef: ProjectRef,
           pagination: FromPagination,
           includeExternalLinks: Boolean
-      )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] = for {
-        queryTemplate <- if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
-        p             <- fetchProject(projectRef)
-        iri           <- expandIri(id, p)
-        q              = SparqlQuery(replace(queryTemplate, iri, pagination))
-        bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
-        links          = toSparqlLinks(bindings.value, p.apiMappings, p.base)
-      } yield links
+      )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
+        for {
+          queryTemplate <- if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
+          p             <- fetchProject(projectRef)
+          iri           <- expandIri(id, p)
+          q              = SparqlQuery(replace(queryTemplate, iri, pagination))
+          bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
+          links          = toSparqlLinks(bindings.value, p.apiMappings, p.base)
+        } yield links
 
       def query[R <: SparqlQueryResponse](
           id: IdSegment,
