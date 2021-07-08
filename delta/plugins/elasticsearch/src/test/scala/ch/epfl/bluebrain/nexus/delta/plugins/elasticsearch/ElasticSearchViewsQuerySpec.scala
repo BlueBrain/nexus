@@ -71,7 +71,7 @@ class ElasticSearchViewsQuerySpec
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val fixedUuid                             = UUID.randomUUID()
   implicit private val uuidF: UUIDF                 = UUIDF.fixed(fixedUuid)
 

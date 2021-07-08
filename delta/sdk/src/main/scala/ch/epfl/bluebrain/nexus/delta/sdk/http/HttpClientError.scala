@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
+import akka.http.scaladsl.model.headers.HttpEncoding
 import akka.http.scaladsl.model.{HttpRequest, StatusCode, StatusCodes}
 import io.circe.Json
 import io.circe.parser.parse
@@ -69,6 +70,13 @@ object HttpClientError {
     override val reason: String                =
       s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' resulted in a timeout"
     override val details: Option[String]       = Some(s"the request timed out due to '$message'")
+    override val errorCode: Option[StatusCode] = None
+  }
+
+  final case class InvalidEncoding(req: HttpRequest, encoding: HttpEncoding) extends HttpClientError {
+    override val reason: String                =
+      s"an HTTP response to endpoint '${req.uri}' with method '${req.method}' could not be decoded from '$encoding'"
+    override val details: Option[String]       = Some(s"Encoding '$encoding' not supported")
     override val errorCode: Option[StatusCode] = None
   }
 

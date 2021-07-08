@@ -67,7 +67,7 @@ class BlazegraphViewsQuerySpec
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private val sc: Scheduler                          = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never)
+  implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
   implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
 
