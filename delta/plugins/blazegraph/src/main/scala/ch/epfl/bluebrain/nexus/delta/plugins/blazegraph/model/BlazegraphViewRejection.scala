@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -181,7 +181,7 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when a resource [[IdSegment]] cannot be expanded to [[Iri]].
+    * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id the resource identifier
     */
@@ -199,12 +199,6 @@ object BlazegraphViewRejection {
     * Signals a rejection caused when interacting with the blazegraph client
     */
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
-
-  /**
-    * Signals a rejection caused by a failure to load resource from classpath
-    */
-  final case class WrappedClasspathResourceError(error: ClasspathResourceError)
-      extends BlazegraphViewRejection(error.toString)
 
   /**
     * Rejection returned when attempting to evaluate a command but the evaluation failed
@@ -278,7 +272,6 @@ object BlazegraphViewRejection {
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
       case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
       case AuthorizationFailed               => StatusCodes.Forbidden
       case _                                 => StatusCodes.BadRequest

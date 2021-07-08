@@ -25,6 +25,7 @@ import monix.bio.{IO, UIO}
 import io.circe.syntax._
 
 import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 /**
   * A client that provides some of the functionality of the elasticsearch API.
@@ -190,10 +191,8 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
       query: QueryBuilder,
       indices: Set[String],
       qp: Query
-  ): HttpResult[SearchResults[JsonObject]] = {
-    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    client.fromJsonTo[SearchResults[JsonObject]](Post(searchEndpoint, query.build))
-  }
+  ): HttpResult[SearchResults[JsonObject]] =
+    searchAs[SearchResults[JsonObject]](query, indices, qp)
 
   /**
     * Search for the provided ''query'' inside the ''indices''
@@ -213,6 +212,22 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     val payload        = QueryBuilder(query).withSort(sort).withTotalHits(true).build
     client.toJson(Post(searchEndpoint, payload))
+  }
+
+  /**
+    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as [[T]].
+    *
+    * @param query        the search query
+    * @param indices      the indices to use on search (if empty, searches in all the indices)
+    * @param qp           the optional query parameters
+    */
+  def searchAs[T: Decoder: ClassTag](
+      query: QueryBuilder,
+      indices: Set[String],
+      qp: Query
+  ): HttpResult[T] = {
+    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    client.fromJsonTo[T](Post(searchEndpoint, query.build))
   }
 
   private def discardEntity(resp: HttpResponse) =
@@ -280,4 +295,10 @@ object ElasticSearchClient {
         case None           => decodeUnscoredResults
       }
     )
+
+  final private[client] case class Count(value: Long)
+  private[client] object Count {
+    implicit val decodeCount: Decoder[Count] =
+      Decoder.instance(_.get[Long]("count").map(Count(_)))
+  }
 }
