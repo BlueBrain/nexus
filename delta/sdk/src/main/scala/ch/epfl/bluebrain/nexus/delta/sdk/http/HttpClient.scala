@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.http
 
 import akka.actor.ActorSystem
+import akka.http.javadsl.model.headers.{AcceptEncoding, HttpEncodingRange}
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.coding.Coders
+import akka.http.scaladsl.model.headers.HttpEncodings
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.StreamTcpException
@@ -65,6 +68,9 @@ object HttpClient {
 
   type HttpResult[A] = IO[HttpClientError, A]
 
+  private val acceptEncoding =
+    AcceptEncoding.create(HttpEncodingRange.create(HttpEncodings.gzip), HttpEncodingRange.create(HttpEncodings.deflate))
+
   private[http] trait HttpSingleRequest {
     def execute(request: HttpRequest): Task[HttpResponse]
   }
@@ -77,29 +83,44 @@ object HttpClient {
   /**
     * Construct the Http client using an underlying akka http client
     */
-  final def apply()(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient =
+  final def apply()(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient = {
     apply(HttpSingleRequest.default)
+  }
 
   private[http] def apply(
       client: HttpSingleRequest
   )(implicit httpConfig: HttpClientConfig, as: ActorSystem, scheduler: Scheduler): HttpClient =
     new HttpClient {
 
+      private def decodeResponse(req: HttpRequest, response: HttpResponse): IO[InvalidEncoding, HttpResponse] = {
+        val decoder = response.encoding match {
+          case HttpEncodings.gzip     => IO.pure(Coders.Gzip)
+          case HttpEncodings.deflate  => IO.pure(Coders.Deflate)
+          case HttpEncodings.identity => IO.pure(Coders.NoCoding)
+          case encoding               => IO.raiseError(InvalidEncoding(req, encoding))
+        }
+        decoder.map(_.decodeMessage(response))
+      }
+
       private val retryStrategy = httpConfig.strategy
+
+      private def toHttpError(req: HttpRequest): Throwable => HttpClientError = {
+        case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
+        case e: StreamTcpException if e.getCause.isInstanceOf[UnknownHostException] => HttpUnknownHost(req)
+        case e: Throwable                                                           => HttpUnexpectedError(req, e.getMessage)
+      }
 
       @SuppressWarnings(Array("IsInstanceOf"))
       override def apply[A](
           req: HttpRequest
-      )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] =
-        client
-          .execute(req)
-          .mapError {
-            case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
-            case e: StreamTcpException if e.getCause.isInstanceOf[UnknownHostException] => HttpUnknownHost(req)
-            case e: Throwable                                                           => HttpUnexpectedError(req, e.getMessage)
-          }
-          .flatMap(resp => handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp)))
-          .retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
+      )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] = {
+        val reqCompressionSupport = if (httpConfig.compression) req.addHeader(acceptEncoding) else req
+        for {
+          encodedResp <- client.execute(reqCompressionSupport).mapError(toHttpError(req))
+          resp        <- decodeResponse(req, encodedResp)
+          a           <- handleResponse.applyOrElse(resp, resp => consumeEntity[A](req, resp))
+        } yield a
+      }.retryingOnSomeErrors(httpConfig.isWorthRetrying, retryStrategy.policy, retryStrategy.onError)
 
       override def fromEntityTo[A](
           req: HttpRequest

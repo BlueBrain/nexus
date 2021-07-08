@@ -56,7 +56,7 @@ final class SchemasRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects) & encodeResponse) {
       pathPrefix("schemas") {
         extractCaller { implicit caller =>
           concat(

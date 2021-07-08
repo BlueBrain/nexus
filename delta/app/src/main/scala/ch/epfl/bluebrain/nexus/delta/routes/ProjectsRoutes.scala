@@ -75,7 +75,7 @@ final class ProjectsRoutes(
   )
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
       pathPrefix("projects") {
         extractCaller { implicit caller =>
           concat(

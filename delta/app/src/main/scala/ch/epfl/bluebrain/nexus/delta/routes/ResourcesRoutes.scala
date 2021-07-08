@@ -64,7 +64,7 @@ final class ResourcesRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
       pathPrefix("resources") {
         extractCaller { implicit caller =>
           concat(

@@ -50,7 +50,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.permissionsMetadata))
 
   def routes: Route =
-    baseUriPrefix(baseUri.prefix) {
+    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
       pathPrefix("permissions") {
         extractCaller { implicit caller =>
           concat(

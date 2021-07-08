@@ -86,7 +86,7 @@ final class ElasticSearchViewsRoutes(
   implicit private val fetchProject: FetchProject    = projects
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & encodeResponse) {
       concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
     }
 

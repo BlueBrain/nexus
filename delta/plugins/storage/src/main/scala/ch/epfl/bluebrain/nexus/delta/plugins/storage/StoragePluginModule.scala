@@ -48,7 +48,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
 
   make[HttpClient].named("storage").from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
-    def defaultHttpClientConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+    def defaultHttpClientConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
     HttpClient()(
       cfg.storages.storageTypeConfig.remoteDisk.fold(defaultHttpClientConfig)(_.client),
       as.classicSystem,
