@@ -40,7 +40,7 @@ class HttpClientSpec
     with BeforeAndAfterEach
     with EitherValuable {
 
-  implicit private val config: HttpClientConfig = HttpClientConfig(OnceStrategyConfig(200.millis), onServerError, true)
+  implicit private val config: HttpClientConfig = HttpClientConfig(OnceStrategyConfig(200.millis), onServerError, false)
   implicit private val sc: Scheduler            = Scheduler.global
 
   private val value1 = Value("first", 1, deprecated = false)
