@@ -82,7 +82,7 @@ final class ResolversRoutes(
     }
 
   def routes: Route =
-    ((baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) & encodeResponse) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
           concat(

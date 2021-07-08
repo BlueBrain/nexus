@@ -81,7 +81,7 @@ final class StoragesRoutes(
 
   @SuppressWarnings(Array("OptionGet"))
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects) & encodeResponse) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       pathPrefix("storages") {
         extractCaller { implicit caller =>
           concat(

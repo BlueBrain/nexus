@@ -104,13 +104,13 @@ object HttpClient {
 
       private val retryStrategy = httpConfig.strategy
 
+      @SuppressWarnings(Array("IsInstanceOf"))
       private def toHttpError(req: HttpRequest): Throwable => HttpClientError = {
         case e: TimeoutException                                                    => HttpTimeoutError(req, e.getMessage)
         case e: StreamTcpException if e.getCause.isInstanceOf[UnknownHostException] => HttpUnknownHost(req)
         case e: Throwable                                                           => HttpUnexpectedError(req, e.getMessage)
       }
 
-      @SuppressWarnings(Array("IsInstanceOf"))
       override def apply[A](
           req: HttpRequest
       )(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A] = {

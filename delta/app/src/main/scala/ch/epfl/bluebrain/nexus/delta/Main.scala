@@ -114,7 +114,9 @@ object Main extends BIOApp {
       handleExceptions(locator.get[ExceptionHandler]) {
         handleRejections(locator.get[RejectionHandler]) {
           uriPrefix(locator.get[BaseUri].base) {
-            concat(locator.get[Vector[Route]]: _*)
+            encodeResponse {
+              concat(locator.get[Vector[Route]]: _*)
+            }
           }
         }
       }

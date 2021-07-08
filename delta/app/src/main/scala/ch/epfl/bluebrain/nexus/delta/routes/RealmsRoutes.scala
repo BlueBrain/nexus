@@ -50,7 +50,7 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
     }
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
+    baseUriPrefix(baseUri.prefix) {
       pathPrefix("realms") {
         extractCaller { implicit caller =>
           concat(

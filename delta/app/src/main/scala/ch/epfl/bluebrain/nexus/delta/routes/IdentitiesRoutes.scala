@@ -25,7 +25,7 @@ class IdentitiesRoutes(identities: Identities, acls: Acls)(implicit
 ) extends AuthDirectives(identities, acls) {
 
   def routes: Route = {
-    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
+    baseUriPrefix(baseUri.prefix) {
       (pathPrefix("identities") & pathEndOrSingleSlash) {
         operationName(s"/${baseUri.prefix}/identities") {
           (extractCaller & get) { caller =>

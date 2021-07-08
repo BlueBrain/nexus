@@ -97,7 +97,7 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
     }
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
+    baseUriPrefix(baseUri.prefix) {
       pathPrefix("acls") {
         extractCaller { implicit caller =>
           concat(

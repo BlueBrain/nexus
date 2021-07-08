@@ -69,7 +69,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     }
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
+    baseUriPrefix(baseUri.prefix) {
       pathPrefix("orgs") {
         extractCaller { implicit caller =>
           concat(

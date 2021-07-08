@@ -71,7 +71,7 @@ class CompositeViewsRoutes(
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & encodeResponse) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       pathPrefix("views") {
         extractCaller { implicit caller =>
           projectRef(projects).apply { implicit ref =>

@@ -39,7 +39,7 @@ class VersionRoutes(
   import baseUri.prefixSegment
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & encodeResponse) {
+    baseUriPrefix(baseUri.prefix) {
       pathPrefix("version") {
         extractCaller { implicit caller =>
           (get & pathEndOrSingleSlash) {
