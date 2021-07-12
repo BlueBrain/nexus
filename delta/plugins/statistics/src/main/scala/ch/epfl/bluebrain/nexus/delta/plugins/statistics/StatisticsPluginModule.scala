@@ -82,7 +82,7 @@ class StatisticsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[Statistics]
-    .from { (client: ElasticSearchClient, projects: Projects, config: StatisticsConfig) =>
+    .fromEffect { (client: ElasticSearchClient, projects: Projects, config: StatisticsConfig) =>
       Statistics(client, projects)(config.indexing)
     }
 

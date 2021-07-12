@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.statistics.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPath.{ArrayPathEntry, ObjectPathEntry, RootPath}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValue.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationships}
+import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationshipCandidates, JsonLdRelationships}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,24 +13,23 @@ import io.circe.{Encoder, Json, JsonObject}
 /**
   * All the paths of a JSON-LD document
   *
-  * @param properties    the properties (nested entries in the current document)
-  * @param relationships the relationships (@id values pointing to external JSON-LD documents)
+  * @param properties             the properties (nested entries in the current document)
+  * @param relationshipCandidates the relationship candidates (@id values pointing to external JSON-LD documents)
+  * @param relationships          the relationships (@id values pointing to external JSON-LD documents)
   */
-final case class JsonLdPathValueCollection private[JsonLdPathValueCollection] (
+final case class JsonLdPathValueCollection private (
     properties: JsonLdProperties,
+    relationshipCandidates: JsonLdRelationshipCandidates,
     relationships: JsonLdRelationships
 )
 
 object JsonLdPathValueCollection {
+
   final case class JsonLdProperties(values: Seq[JsonLdPathValue]) { self =>
-    def ++(that: JsonLdProperties): JsonLdProperties =
-      JsonLdProperties(values ++ that.values)
 
-    def +(that: JsonLdPathValue): JsonLdProperties =
-      JsonLdProperties(values :+ that)
-
-    def relationshipCandidates: Map[Iri, JsonLdPathValue] =
-      values.map(v => v.metadata -> v).collect { case (Metadata(Some(id), _), pathValue) => id -> pathValue }.toMap
+    def ++(that: JsonLdProperties): JsonLdProperties      = JsonLdProperties(values ++ that.values)
+    def +(that: JsonLdPathValue): JsonLdProperties        = JsonLdProperties(values :+ that)
+    def relationshipCandidates: Map[Iri, JsonLdPathValue] = filterIds(values)
   }
 
   object JsonLdProperties {
@@ -70,10 +69,24 @@ object JsonLdPathValueCollection {
     }
   }
 
+  final case class JsonLdRelationshipCandidates(values: Seq[(JsonLdPathValue, Boolean)]) {
+    def add(that: JsonLdPathValue, found: Boolean): JsonLdRelationshipCandidates = JsonLdRelationshipCandidates(
+      values :+ (that -> found)
+    )
+  }
+
+  object JsonLdRelationshipCandidates {
+    val empty: JsonLdRelationshipCandidates                                                 = JsonLdRelationshipCandidates(Vector.empty)
+    implicit val jsonLdRelationshipCandidatesEncoder: Encoder[JsonLdRelationshipCandidates] =
+      Encoder.instance { r =>
+        r.values.map { case (path, found) => path.asJson deepMerge Json.obj("found" -> found.asJson) }.asJson
+      }
+  }
+
   final case class JsonLdRelationships(values: Seq[JsonLdPathValue])
 
   object JsonLdRelationships {
-    val empty: JsonLdRelationships                                        = JsonLdRelationships(Seq.empty)
+    val empty: JsonLdRelationships                                        = JsonLdRelationships(Vector.empty)
     implicit val jsonLdRelationshipsEncoder: Encoder[JsonLdRelationships] = Encoder.instance(_.values.asJson)
 
   }
@@ -82,4 +95,15 @@ object JsonLdPathValueCollection {
 
   implicit val jsonLdPathValueCollectionEncoder: Encoder.AsObject[JsonLdPathValueCollection] =
     deriveEncoder[JsonLdPathValueCollection]
+
+  final def apply(properties: JsonLdProperties, relationships: JsonLdRelationships): JsonLdPathValueCollection = {
+    val relationshipsIds = filterIds(relationships.values).keySet
+    val candidates       = properties.relationshipCandidates.foldLeft(JsonLdRelationshipCandidates.empty) {
+      case (acc, (id, pathValue)) => acc.add(pathValue, relationshipsIds.contains(id))
+    }
+    JsonLdPathValueCollection(properties, candidates, relationships)
+  }
+
+  private def filterIds(values: Seq[JsonLdPathValue]) =
+    values.map(v => v.metadata -> v).collect { case (Metadata(Some(id), _), pathValue) => id -> pathValue }.toMap
 }

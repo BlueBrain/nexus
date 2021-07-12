@@ -6,23 +6,27 @@ import akka.http.scaladsl.model.StatusCodes.{BadRequest, Created, NotFound, OK}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import com.typesafe.scalalogging.Logger
+import io.circe.syntax._
 import io.circe.{Decoder, Json, JsonObject}
 import monix.bio.{IO, UIO}
-import io.circe.syntax._
+import retry.syntax.all._
 
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -32,17 +36,25 @@ import scala.reflect.ClassTag
   */
 class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorSystem) {
   import as.dispatcher
-  private val serviceName                                        = Name.unsafe("elasticsearch")
-  private val docPath                                            = "_doc"
-  private val allIndexPath                                       = "_all"
-  private val bulkPath                                           = "_bulk"
-  private val ignoreUnavailable                                  = "ignore_unavailable"
-  private val allowNoIndices                                     = "allow_no_indices"
-  private val searchPath                                         = "_search"
-  private val newLine                                            = System.lineSeparator()
-  private val `application/x-ndjson`: MediaType.WithFixedCharset =
+  private val logger: Logger                                        = Logger[ElasticSearchClient]
+  private val serviceName                                           = Name.unsafe("elasticsearch")
+  private val scriptPath                                            = "_scripts"
+  private val docPath                                               = "_doc"
+  private val allIndexPath                                          = "_all"
+  private val bulkPath                                              = "_bulk"
+  private val tasksPath                                             = "_tasks"
+  private val waitForCompletion                                     = "wait_for_completion"
+  private val ignoreUnavailable                                     = "ignore_unavailable"
+  private val allowNoIndices                                        = "allow_no_indices"
+  private val updateByQueryPath                                     = "_update_by_query"
+  private val searchPath                                            = "_search"
+  private val newLine                                               = System.lineSeparator()
+  private val `application/x-ndjson`: MediaType.WithFixedCharset    =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
-  private val defaultQuery                                       = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
+  private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
+  private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
+  private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
+    RetryStrategy.constant(1.second, Int.MaxValue, _ => true, logError(logger, "updateByQuery"))
 
   /**
     * Fetches the service description information (name and version)
@@ -156,6 +168,44 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
           )
         }
     }
+
+  /**
+    * Creates a script on Elasticsearch with the passed ''id'' and ''content''
+    */
+  def createScript(id: String, content: String): HttpResult[Unit] = {
+    val payload = Json.obj("script" -> Json.obj("lang" -> "painless".asJson, "source" -> content.asJson))
+    val req     = Put(endpoint / scriptPath / UrlUtils.encode(id), payload)
+    client.toJson(req).flatMap { json =>
+      IO.unless(json.hcursor.get[Boolean]("acknowledged").contains(true))(
+        IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
+      )
+    }
+  }
+
+  /**
+    * Runs an update by query with the passed ''query'' and ''indices''. The query is run as a task
+    * and the task is requested until it finished
+    *
+    * @param query   the search query
+    * @param indices the indices to use on search (if empty, searches in all the indices)
+    */
+  def updateByQuery(query: JsonObject, indices: Set[String]): HttpResult[Unit] = {
+    val updateEndpoint = (endpoint / indexPath(indices) / updateByQueryPath).withQuery(Uri.Query(defaultUpdateByQuery))
+    val req            = Post(updateEndpoint, query)
+    for {
+      json   <- client.toJson(req)
+      taskId <- IO.fromEither(
+                  json.hcursor.get[String]("task").leftMap(_ => HttpClientStatusError(req, BadRequest, json.noSpaces))
+                )
+      _      <- client
+                  .toJson(Get((endpoint / tasksPath / taskId).withQuery(Query(waitForCompletion -> "true"))))
+                  .retryingOnSomeErrors(
+                    updateByQueryStrategy.retryWhen,
+                    updateByQueryStrategy.policy,
+                    updateByQueryStrategy.onError
+                  )
+    } yield ()
+  }
 
   /**
     * Search for the provided ''query'' inside the ''indices''

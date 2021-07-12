@@ -369,6 +369,7 @@ lazy val sdk = project
       akkaHttpXml,
       akkaPersistenceQuery, // To have access to the Offset type
       caffeine,
+      circeLiteral,
       circeGenericExtras,
       distageCore,
       fs2,

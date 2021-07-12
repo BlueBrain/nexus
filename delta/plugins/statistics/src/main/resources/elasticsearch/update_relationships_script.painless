@@ -1,0 +1,23 @@
+if(ctx._source.relationshipCandidates != null) {
+    Set existingRelationships = new HashSet();
+    for (prop in ctx._source.relationshipCandidates) {
+        if(prop['@id'] == params.id) {
+            if(ctx._source.relationships == null) ctx._source.relationships = new ArrayList();
+            prop['@type'] = params.types;
+            if(prop['found']) {
+                existingRelationships.add(prop['path']);
+            } else {
+                prop['found'] = true;
+                ctx._source.relationships.add(prop)
+            }
+        }
+    }
+    if(!existingRelationships.isEmpty()) {
+        for (prop in ctx._source.relationships) {
+            String id = prop['@id'];
+            if(prop['@id'] == params.id && existingRelationships.contains(prop['path'])) {
+                prop['@type'] = params.types;
+            }
+        }
+    }
+}
