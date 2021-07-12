@@ -40,9 +40,9 @@ trait Statistics {
 object Statistics {
 
   final def apply(
-                   client: ElasticSearchClient,
-                   projects: Projects
-                 )(implicit config: ExternalIndexingConfig): Task[Statistics] =
+      client: ElasticSearchClient,
+      projects: Projects
+  )(implicit config: ExternalIndexingConfig): Task[Statistics] =
     for {
       script <- scriptContent
       _      <- client.createScript(updateRelationshipsScriptId, script)
@@ -68,8 +68,8 @@ object Statistics {
           _     <- projects.fetchProject[StatisticsRejection](projectRef)
           query <- relationshipsAggQuery
           stats <- client
-            .searchAs[StatisticsGraph](QueryBuilder(query), Set(idx(projectRef).value), Query.Empty)
-            .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
+                     .searchAs[StatisticsGraph](QueryBuilder(query), Set(idx(projectRef).value), Query.Empty)
+                     .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         } yield stats
 
       override def properties(projectRef: ProjectRef, tpe: IdSegment): IO[StatisticsRejection, PropertiesStatistics] = {
@@ -98,7 +98,6 @@ object Statistics {
     ioContentOf("elasticsearch/update_relationships_script.painless")
       .logAndDiscardErrors("ElasticSearch script 'update_relationships_script.painless' template not found")
       .memoizeOnSuccess
-
 
   /**
     * The id for the type statistics elasticsearch view
