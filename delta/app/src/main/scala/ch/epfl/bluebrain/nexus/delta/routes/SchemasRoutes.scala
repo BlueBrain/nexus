@@ -127,7 +127,7 @@ final class SchemasRoutes(
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(schemas.deprecate(id, ref, rev).map(_.void))
+                              emit(schemas.deprecate(id, ref, rev).map(_.void).rejectOn[SchemaNotFound])
                             }
                           },
                           // Fetch a schema
