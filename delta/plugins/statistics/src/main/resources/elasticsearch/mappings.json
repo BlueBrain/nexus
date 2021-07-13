@@ -27,7 +27,6 @@
       }
     },
     "relationshipCandidates": {
-      "type": "nested",
       "properties": {
         "@id": {
           "type": "keyword"

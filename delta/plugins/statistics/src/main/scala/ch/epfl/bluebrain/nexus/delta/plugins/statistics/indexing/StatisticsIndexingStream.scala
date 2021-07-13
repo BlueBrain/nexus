@@ -47,17 +47,16 @@ final class StatisticsIndexingStream(
 
   @SuppressWarnings(Array("OptionGet"))
   private def relationshipsQuery(resources: Map[Iri, Set[Iri]]): JsonObject = {
-    val terms = resources.map { case (id, _) => json"""{ "term": { "relationshipCandidates.@id": $id } }""" }.asJson
+    val terms = resources.map { case (id, _) => id.asJson }.asJson
     json"""
     {
       "query": {
-        "nested": {
-          "path": "relationshipCandidates",
-            "query": {
-                "bool": {
-                    "should": $terms
-                }
+        "bool": {
+          "filter": {
+            "terms": {
+              "relationshipCandidates.@id": $terms
             }
+          }
         }
       },
       "script": {
