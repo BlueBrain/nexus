@@ -46,28 +46,29 @@ final class StatisticsIndexingStream(
     extends IndexingStream[StatisticsView] {
 
   @SuppressWarnings(Array("OptionGet"))
-  private def relationshipsQuery(id: Iri, types: Set[Iri]): JsonObject =
+  private def relationshipsQuery(resources: Map[Iri, Set[Iri]]): JsonObject = {
+    val terms = resources.map { case (id, _) => json"""{ "term": { "relationshipCandidates.@id": $id } }""" }.asJson
     json"""
     {
       "query": {
         "nested": {
           "path": "relationshipCandidates",
-          "query": {
-            "term": {
-              "relationshipCandidates.@id": ${id}
+            "query": {
+                "bool": {
+                    "should": $terms
+                }
             }
-          }
         }
       },
       "script": {
         "id": "updateRelationships",
         "params": {
-          "id": ${id},
-          "types": ${types}
+          "resources": $resources
         }
       }
     }          
     """.asObject.get
+  }
 
   override def apply(
       view: ViewIndex[StatisticsView],
@@ -92,12 +93,10 @@ final class StatisticsIndexingStream(
           }
           .runAsyncUnit { list =>
             IO.when(list.nonEmpty) {
-              // Performs an update by query for each resource sequentially
-              Task.traverse(list) { case (id, types, _) =>
-                client.updateByQuery(relationshipsQuery(id, types), Set(index.value))
-              } >>
-                // Pushes INDEX/DELETE Elasticsearch bulk operations
-                client.bulk(list.map(_._3))
+              val idTypesMap = list.map { case (id, types, _) => id -> types }.toMap
+              val bulkOps    = list.map { case (_, _, bulkOp) => bulkOp }
+              // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
+              client.bulkWaitFor(bulkOps) >> client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
             }
           }
           .flatMap(Stream.chunk)

@@ -49,12 +49,19 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   private val updateByQueryPath                                     = "_update_by_query"
   private val searchPath                                            = "_search"
   private val newLine                                               = System.lineSeparator()
-  private val `application/x-ndjson`: MediaType.WithFixedCharset    =
-    MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
+  private val `application/x-ndjson`                                = MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                          = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
   private val defaultUpdateByQuery                                  = defaultQuery + (waitForCompletion -> "false")
   private val updateByQueryStrategy: RetryStrategy[HttpClientError] =
-    RetryStrategy.constant(1.second, Int.MaxValue, _ => true, logError(logger, "updateByQuery"))
+    RetryStrategy.constant(
+      1.second,
+      Int.MaxValue,
+      {
+        case err: HttpClientStatusError if err.code == StatusCodes.NotFound => false
+        case _                                                              => true
+      },
+      logError(logger, "updateByQuery")
+    )
 
   /**
     * Fetches the service description information (name and version)
@@ -155,19 +162,26 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     *
     * @param ops          the list of operations to be included in the bulk update
     */
-  def bulk(ops: Seq[ElasticSearchBulk]): HttpResult[Unit] =
+  def bulk(ops: Seq[ElasticSearchBulk], qp: Query = Query.Empty): HttpResult[Unit] =
     if (ops.isEmpty) IO.unit
     else {
       val entity = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
-      val req    = Post(endpoint / bulkPath, entity)
-      client
-        .toJson(Post(endpoint / bulkPath, entity))
-        .flatMap { json =>
-          IO.unless(json.hcursor.get[Boolean]("errors").contains(false))(
-            IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
-          )
-        }
+      val req    = Post((endpoint / bulkPath).withQuery(qp), entity)
+      client.toJson(req).flatMap { json =>
+        IO.unless(json.hcursor.get[Boolean]("errors").contains(false))(
+          IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
+        )
+      }
     }
+
+  /**
+    * Creates a bulk update with the operations defined on the provided ''ops'' argument. This bulk will wait for the
+    * shards involved to refresh their indices so that the newly created documents are accessible for search
+    *
+    * @param ops          the list of operations to be included in the bulk update
+    */
+  def bulkWaitFor(ops: Seq[ElasticSearchBulk]): HttpResult[Unit] =
+    bulk(ops, Query("refresh" -> "wait_for"))
 
   /**
     * Creates a script on Elasticsearch with the passed ''id'' and ''content''
