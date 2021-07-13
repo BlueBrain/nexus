@@ -6,7 +6,7 @@ import akka.testkit.TestKit
 import cats.syntax.traverse._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
