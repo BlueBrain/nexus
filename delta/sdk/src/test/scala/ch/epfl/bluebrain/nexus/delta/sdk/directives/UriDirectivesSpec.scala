@@ -9,7 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -52,8 +54,8 @@ class UriDirectivesSpec
 
   private val fetchProjectByUuid: FetchProjectByUuid = uuid => IO.raiseError(ProjectNotFound(uuid))
 
-  implicit private val orderingKeys = JsonKeyOrdering.alphabetical
-  implicit private val rcr          = RemoteContextResolution.never
+  implicit private val orderingKeys: JsonKeyOrdering = JsonKeyOrdering.alphabetical
+  implicit private val rcr: RemoteContextResolution  = RemoteContextResolution.never
 
   implicit private val paginationConfig: PaginationConfig =
     PaginationConfig(defaultSize = 10, sizeLimit = 20, fromLimit = 50)
@@ -117,8 +119,8 @@ class UriDirectivesSpec
 
   private def sortRoute(list: List[ResourceF[Int]]): Route =
     (get & uriPrefix(baseUri.base)) {
-      (pathPrefix("ordering") & sort[Int] & pathEndOrSingleSlash) { implicit ordering =>
-        complete(list.sorted.map(_.value).mkString(","))
+      (pathPrefix("ordering") & sort[IntValue] & pathEndOrSingleSlash) { implicit ordering =>
+        complete(list.map(_.map(IntValue.apply)).sorted.map(_.value.value).mkString(","))
       }
     }
 
@@ -270,6 +272,9 @@ class UriDirectivesSpec
       Get("/base/ordering?sort=-_createdBy&sort=-_rev&sort=_deprecated") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
         response.asString shouldEqual "6,5,4,2,3,1"
       }
+      Get("/base/ordering?sort=-value") ~> Accept(`*/*`) ~> sortRoute(list) ~> check {
+        response.asString shouldEqual "6,5,4,3,2,1"
+      }
     }
 
     "reject on invalid ordering parameter" in {
@@ -359,4 +364,12 @@ class UriDirectivesSpec
       idx
     )
 
+}
+
+object UriDirectivesSpec {
+  final case class IntValue(value: Int)
+  object IntValue {
+    implicit val intValueOrderingFields: OrderingFields[IntValue] =
+      OrderingFields { case "value" => Ordering[Int] on (_.value) }
+  }
 }

@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -83,4 +84,10 @@ object Realm {
   implicit private val realmMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
   implicit val realmMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.realmsMetadata))
+
+  implicit val realmOrderingFields: OrderingFields[Realm] =
+    OrderingFields {
+      case "_label"  => Ordering[String] on (_.label.value)
+      case "_issuer" => Ordering[String] on (_.issuer)
+    }
 }

@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -185,4 +186,10 @@ object Storage {
 
   implicit val storageMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.storagesMetadata))
+
+  implicit val storageOrderingFields: OrderingFields[Storage] =
+    OrderingFields { case "_algorithm" =>
+      Ordering[String] on (_.storageValue.algorithm.value)
+    }
+
 }
