@@ -15,8 +15,13 @@ import scala.annotation.nowarn
   * @param retry           the retry configuration
   * @param isWorthRetrying the strategy to decide if it is worth retrying when an Http error occurs.
   *                        Allowed strategies are 'always', 'never' or 'onServerError'.
+  * @param compression     Flag to decide whether or not to support compression
   */
-final case class HttpClientConfig(retry: RetryStrategyConfig, isWorthRetrying: HttpClientWorthRetry) {
+final case class HttpClientConfig(
+    retry: RetryStrategyConfig,
+    isWorthRetrying: HttpClientWorthRetry,
+    compression: Boolean
+) {
 
   /**
     * @return the retry strategy from the current configuration

@@ -175,7 +175,7 @@ final class ResolversRoutes(
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               // Deprecate a resolver
-                              emit(resolvers.deprecate(id, ref, rev).map(_.void))
+                              emit(resolvers.deprecate(id, ref, rev).map(_.void).rejectOn[ResolverNotFound])
                             }
                           },
                           // Fetches a resolver

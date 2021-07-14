@@ -23,7 +23,7 @@ class StorageRoutes()(implicit storages: Storages[Task, AkkaSource], hc: HttpCon
 
   def routes: Route =
     // Consume buckets/{name}/
-    pathPrefix("buckets" / Segment) { name =>
+    (encodeResponse & pathPrefix("buckets" / Segment)) { name =>
       concat(
         // Check bucket
         (head & pathEndOrSingleSlash) {
