@@ -6,7 +6,7 @@ import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, KeyEncoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
 
 import java.util.UUID
@@ -219,7 +219,7 @@ object IriOrBNode {
       def inner(rest: String): Option[String] = {
         val idx = rest.lastIndexOf("/")
         if (idx == -1) None
-        else if (idx < rest.size - 1) Some(rest.substring(idx + 1))
+        else if (idx < rest.length - 1) Some(rest.substring(idx + 1))
         else inner(rest.dropRight(1))
       }
 
@@ -315,8 +315,9 @@ object IriOrBNode {
     def unsafe(string: String): Iri =
       new Iri(iriFactory.create(string))
 
-    implicit final val iriDecoder: Decoder[Iri] = Decoder.decodeString.emap(apply)
-    implicit final val iriEncoder: Encoder[Iri] = Encoder.encodeString.contramap(_.toString)
+    implicit final val iriDecoder: Decoder[Iri]       = Decoder.decodeString.emap(apply)
+    implicit final val iriEncoder: Encoder[Iri]       = Encoder.encodeString.contramap(_.toString)
+    implicit final val iriKeyEncoder: KeyEncoder[Iri] = KeyEncoder.encodeKeyString.contramap(_.toString)
 
     implicit final val iriOrder: Order[Iri] = Order.by(_.toString)
 

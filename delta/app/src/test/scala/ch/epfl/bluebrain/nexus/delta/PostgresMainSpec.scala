@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.{ElasticSearchDocker, IOValues}
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -12,6 +12,7 @@ class PostgresMainSpec
     with IOValues
     with OptionValues
     with PostgresSpec
+    with ElasticSearchDocker
     with MainBehaviors {
 
   override protected def flavour: String = "postgres"

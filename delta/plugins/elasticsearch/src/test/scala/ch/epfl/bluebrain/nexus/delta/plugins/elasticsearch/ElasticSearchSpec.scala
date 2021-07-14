@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClientSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec
+import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker
 import com.whisk.docker.scalatest.DockerTestKit
 import org.scalatest.Suites
 

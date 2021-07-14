@@ -1,8 +1,12 @@
 {
   "size": 0,
   "query": {
-    "term": {
-      "@type": "{{type}}"
+    "bool": {
+      "filter": {
+        "term": {
+          "@type": "{{type}}"
+        }
+      }
     }
   },
   "aggs": {
