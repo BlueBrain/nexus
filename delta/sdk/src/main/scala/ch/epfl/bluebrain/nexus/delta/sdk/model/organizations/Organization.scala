@@ -4,6 +4,7 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization.Metadata
 import io.circe.Encoder
@@ -55,4 +56,10 @@ object Organization {
   implicit private val organizationMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
   implicit val organizationMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.organizationsMetadata))
+
+  implicit val orgOrderingFields: OrderingFields[Organization] =
+    OrderingFields {
+      case "_label" => Ordering[String] on (_.label.value)
+      case "_uuid"  => Ordering[UUID] on (_.uuid)
+    }
 }
