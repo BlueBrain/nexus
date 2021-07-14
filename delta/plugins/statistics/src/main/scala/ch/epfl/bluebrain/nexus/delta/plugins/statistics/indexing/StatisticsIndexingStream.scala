@@ -26,8 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
-import io.circe.Json
+import io.circe.literal._
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -43,6 +44,30 @@ final class StatisticsIndexingStream(
     relationshipResolution: RelationshipResolution
 )(implicit cr: RemoteContextResolution, sc: Scheduler)
     extends IndexingStream[StatisticsView] {
+
+  @SuppressWarnings(Array("OptionGet"))
+  private def relationshipsQuery(resources: Map[Iri, Set[Iri]]): JsonObject = {
+    val terms = resources.map { case (id, _) => id.asJson }.asJson
+    json"""
+    {
+      "query": {
+        "bool": {
+          "filter": {
+            "terms": {
+              "relationshipCandidates.@id": $terms
+            }
+          }
+        }
+      },
+      "script": {
+        "id": "updateRelationships",
+        "params": {
+          "resources": $resources
+        }
+      }
+    }          
+    """.asObject.get
+  }
 
   override def apply(
       view: ViewIndex[StatisticsView],
@@ -60,14 +85,18 @@ final class StatisticsIndexingStream(
             // Creates a JsonLdPathValueCollection from the event exchange response
             fromEventExchange(view.projectRef, eventExchangeValue)
           }
-          // TODO: Every time a NEW resource (rev = 1) is created, we also need to run the update-by-query-creation task
-          // TODO: Every time an existing resource (rev > 1) is updated and the types change, we also need to run the update-by-update task
           .evalMapFilterValue { res =>
-            res.index(index, includeMetadata = false, sourceAsText = false)
+            res
+              .index(index, includeMetadata = false, sourceAsText = false)
+              .map(_.map(bulk => (res.resource.id, res.resource.types, bulk)))
           }
-          .runAsyncUnit { bulk =>
-            // Pushes INDEX/DELETE Elasticsearch bulk operations
-            IO.when(bulk.nonEmpty)(client.bulk(bulk))
+          .runAsyncUnit { list =>
+            IO.when(list.nonEmpty) {
+              val idTypesMap = list.map { case (id, types, _) => id -> types }.toMap
+              val bulkOps    = list.map { case (_, _, bulkOp) => bulkOp }
+              // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
+              client.bulkWaitFor(bulkOps) >> client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
+            }
           }
           .flatMap(Stream.chunk)
           .map(_.void)
