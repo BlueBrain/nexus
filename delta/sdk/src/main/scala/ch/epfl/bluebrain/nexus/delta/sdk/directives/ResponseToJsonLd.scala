@@ -107,9 +107,7 @@ object ResponseToJsonLd extends FileBytesInstances {
               if (accept.mediaRanges.exists(_.matches(response.contentType.mediaType))) {
                 val encodedFilename = attachmentString(response.filename)
                 respondWithHeaders(RawHeader("Content-Disposition", s"""attachment; filename="$encodedFilename"""")) {
-                  encodeResponse {
-                    complete(statusOverride.getOrElse(OK), HttpEntity(response.contentType, response.content))
-                  }
+                  complete(statusOverride.getOrElse(OK), HttpEntity(response.contentType, response.content))
                 }
               } else
                 reject(unacceptedMediaTypeRejection(Seq(response.contentType.mediaType)))

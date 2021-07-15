@@ -51,6 +51,6 @@ trait ConfigFixtures extends OptionValues {
     )
 
   def httpClientConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
 }

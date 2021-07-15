@@ -24,7 +24,7 @@ trait StorageFixtures extends OptionValues with TestHelpers with EitherValuable 
   private val diskVolume = AbsolutePath(Files.createTempDirectory("disk")).rightValue
   private val tmpVolume  = AbsolutePath(Paths.get("/tmp")).rightValue
 
-  private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   // format: off
   implicit val config: StorageTypeConfig = StorageTypeConfig(

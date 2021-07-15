@@ -121,7 +121,7 @@ class CompositeIndexingSpec
 
   implicit private val keyValueStoreConfig = keyValueStore
 
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
   private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
   private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)

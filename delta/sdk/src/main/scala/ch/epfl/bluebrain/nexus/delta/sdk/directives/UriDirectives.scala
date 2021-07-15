@@ -278,7 +278,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
-    (get & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
+    ((get | delete) & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
       .tflatMap { case (projectRef, id) =>
         mapRequestContext { ctx =>
           val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id

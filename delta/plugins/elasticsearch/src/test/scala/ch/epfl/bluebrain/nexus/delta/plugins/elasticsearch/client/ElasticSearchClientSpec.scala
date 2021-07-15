@@ -41,7 +41,7 @@ class ElasticSearchClientSpec
 
   implicit private val sc: Scheduler         = Scheduler.global
   implicit private val cfg: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   private val endpoint = elasticsearchHost.endpoint
   private val client   = new ElasticSearchClient(HttpClient(), endpoint)
