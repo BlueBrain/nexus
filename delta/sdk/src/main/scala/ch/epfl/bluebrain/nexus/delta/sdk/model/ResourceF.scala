@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -80,17 +81,17 @@ object ResourceF {
   /**
     * Creates an ordering of ''ResourceF'' by the passed field name
     */
-  final def sortBy[A](field: String): Option[Ordering[ResourceF[A]]] =
+  final def sortBy[A](field: String)(implicit orderingValueFields: OrderingFields[A]): Option[Ordering[ResourceF[A]]] =
     field match {
-      case "@id"            => Some(Ordering[Iri] on (r => r.id))
-      case "_rev"           => Some(Ordering[Long] on (r => r.rev))
-      case "_deprecated"    => Some(Ordering[Boolean] on (r => r.deprecated))
+      case "@id"            => Some(Ordering[Iri] on (_.id))
+      case "_rev"           => Some(Ordering[Long] on (_.rev))
+      case "_deprecated"    => Some(Ordering[Boolean] on (_.deprecated))
       case "_createdAt"     => Some(defaultSort)
-      case "_createdBy"     => Some(Ordering[Subject] on (r => r.createdBy))
-      case "_updatedAt"     => Some(Ordering[Instant] on (r => r.updatedAt))
-      case "_updatedBy"     => Some(Ordering[Subject] on (r => r.updatedBy))
-      case "_constrainedBy" => Some(Ordering[Iri] on (r => r.schema.original))
-      case _                => None
+      case "_createdBy"     => Some(Ordering[Subject] on (_.createdBy))
+      case "_updatedAt"     => Some(Ordering[Instant] on (_.updatedAt))
+      case "_updatedBy"     => Some(Ordering[Subject] on (_.updatedBy))
+      case "_constrainedBy" => Some(Ordering[Iri] on (_.schema.original))
+      case field            => orderingValueFields(field).map(ordering => ordering on (_.value))
     }
 
   final private case class ResourceMetadata(
