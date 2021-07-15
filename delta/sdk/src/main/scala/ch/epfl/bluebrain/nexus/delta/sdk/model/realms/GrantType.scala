@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
+import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json}
 
 /**
@@ -55,6 +58,13 @@ object GrantType {
     */
   final case object RefreshToken extends GrantType
 
+  /**
+    * A newly defined authorization grant type
+    *
+    * https://datatracker.ietf.org/doc/html/rfc6749#section-8.3
+    */
+  final case class CustomGrantType(uri: Uri) extends GrantType
+
   object Snake {
 
     implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
@@ -64,18 +74,19 @@ object GrantType {
       case "client_credentials" => Right(ClientCredentials)
       case "device_code"        => Right(DeviceCode)
       case "refresh_token"      => Right(RefreshToken)
-      case other                => Left(s"Unknown grant type '$other'")
+      case other                => toCustom(other).toRight(s"Unknown grant type '$other'")
     }
   }
 
   object Camel {
     implicit final val grantTypeEncoder: Encoder[GrantType] = Encoder.instance {
-      case AuthorizationCode => Json.fromString("authorizationCode")
-      case Implicit          => Json.fromString("implicit")
-      case Password          => Json.fromString("password")
-      case ClientCredentials => Json.fromString("clientCredentials")
-      case DeviceCode        => Json.fromString("deviceCode")
-      case RefreshToken      => Json.fromString("refreshToken")
+      case AuthorizationCode    => Json.fromString("authorizationCode")
+      case Implicit             => Json.fromString("implicit")
+      case Password             => Json.fromString("password")
+      case ClientCredentials    => Json.fromString("clientCredentials")
+      case DeviceCode           => Json.fromString("deviceCode")
+      case RefreshToken         => Json.fromString("refreshToken")
+      case CustomGrantType(uri) => uri.asJson
     }
     implicit final val grantTypeDecoder: Decoder[GrantType] = Decoder.decodeString.emap {
       case "authorizationCode" => Right(AuthorizationCode)
@@ -84,7 +95,10 @@ object GrantType {
       case "clientCredentials" => Right(ClientCredentials)
       case "deviceCode"        => Right(DeviceCode)
       case "refreshToken"      => Right(RefreshToken)
-      case other               => Left(s"Unknown grant type '$other'")
+      case other               => toCustom(other).toRight(s"Unknown grant type '$other'")
     }
   }
+
+  private def toCustom(string: String): Option[CustomGrantType] =
+    Option(Uri(string)).filter(_.isAbsolute).map(CustomGrantType)
 }
