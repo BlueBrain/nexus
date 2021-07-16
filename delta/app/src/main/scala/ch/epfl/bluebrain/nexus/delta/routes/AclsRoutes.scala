@@ -221,16 +221,17 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 
 object AclsRoutes {
 
-  @nowarn("cat=unused")
-  implicit private val config: Configuration =
-    Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
-
   final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
 
   final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
+
   private[routes] object AclValues {
-    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] =
+
+    @nowarn("cat=unused")
+    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
       deriveConfiguredDecoder[IdentityPermissions]
+    }
 
     implicit val aclValuesDecoder: Decoder[AclValues] =
       Decoder
@@ -240,7 +241,12 @@ object AclsRoutes {
 
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
-    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveConfiguredDecoder[ReplaceAcl]
+
+    @nowarn("cat=unused")
+    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
+      deriveConfiguredDecoder[ReplaceAcl]
+    }
   }
 
   sealed private[routes] trait PatchAcl extends Product with Serializable
@@ -248,7 +254,11 @@ object AclsRoutes {
     final case class Subtract(acl: AclValues) extends PatchAcl
     final case class Append(acl: AclValues)   extends PatchAcl
 
-    implicit val aclPatchDecoder: Decoder[PatchAcl] = deriveConfiguredDecoder[PatchAcl]
+    @nowarn("cat=unused")
+    implicit val aclPatchDecoder: Decoder[PatchAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
+      deriveConfiguredDecoder[PatchAcl]
+    }
   }
 
   /**
