@@ -4,6 +4,9 @@
     "logo": {
       "@type": "@id"
     },
+    "acceptedAudiences": {
+      "@container": "@set"
+    },
     "openIdConfig": {
       "@type": "@id"
     },

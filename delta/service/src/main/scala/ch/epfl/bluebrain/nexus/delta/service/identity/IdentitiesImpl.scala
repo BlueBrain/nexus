@@ -7,6 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
@@ -20,14 +21,16 @@ import com.nimbusds.jose.jwk.source.ImmutableJWKSet
 import com.nimbusds.jose.jwk.{JWK, JWKSet}
 import com.nimbusds.jose.proc.{JWSVerificationKeySelector, SecurityContext}
 import com.nimbusds.jwt.SignedJWT
-import com.nimbusds.jwt.proc.DefaultJWTProcessor
+import com.nimbusds.jwt.proc.{DefaultJWTClaimsVerifier, DefaultJWTProcessor}
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, HCursor, Json}
 import monix.bio.{IO, UIO}
 
+import java.util.{Set => JSet}
 import scala.util.Try
 
 class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], groups: GroupsCache) extends Identities {
+  import scala.jdk.CollectionConverters._
 
   private val component: String = "identities"
 
@@ -36,14 +39,15 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
       val jwks = realm.keys.foldLeft(Set.empty[JWK]) { case (acc, e) =>
         Try(JWK.parse(e.noSpaces)).map(acc + _).getOrElse(acc)
       }
-      import scala.jdk.CollectionConverters._
       new JWKSet(jwks.toList.asJava)
     }
 
-    def validate(jwt: SignedJWT, keySet: JWKSet) = {
+    def validate(audiences: Option[NonEmptySet[String]], jwt: SignedJWT, keySet: JWKSet) = {
       val proc        = new DefaultJWTProcessor[SecurityContext]
       val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
       proc.setJWSKeySelector(keySelector)
+      val audiencesJ  = audiences.fold[JSet[String]](null)(_.value.asJava)
+      proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(audiencesJ, null, null, null))
       IO.fromEither(
         Either
           .catchNonFatal(proc.process(jwt, null))
@@ -77,7 +81,7 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
       parsedToken       <- IO.fromEither(ParsedToken.fromToken(token))
       activeRealmOption <- findActiveRealm(parsedToken.issuer)
       activeRealm       <- IO.fromOption(activeRealmOption, UnknownAccessTokenIssuer)
-      _                 <- validate(parsedToken.jwtToken, realmKeyset(activeRealm))
+      _                 <- validate(activeRealm.acceptedAudiences, parsedToken.jwtToken, realmKeyset(activeRealm))
       groups            <- fetchGroups(parsedToken, activeRealm)
     } yield {
       val user = User(parsedToken.subject, activeRealm.label)

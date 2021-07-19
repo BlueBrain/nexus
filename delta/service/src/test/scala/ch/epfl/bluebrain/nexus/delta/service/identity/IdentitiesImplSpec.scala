@@ -1,17 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.service.identity
 
-import java.time.Instant
-import java.util.Date
-
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.service.TokenGenerator
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
@@ -23,6 +20,8 @@ import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
+import java.time.Instant
+import java.util.Date
 import scala.concurrent.duration._
 
 class IdentitiesImplSpec
@@ -49,11 +48,19 @@ class IdentitiesImplSpec
     AuthToken(jwt.serialize())
   }
 
-  private val githubLabel              = Label.unsafe("github")
-  private val (githubOpenId, githubWk) = WellKnownGen.create(githubLabel.value)
+  private val githubLabel                = Label.unsafe("github")
+  private val githubLabel2               = Label.unsafe("github2")
+  private val (githubOpenId, githubWk)   = WellKnownGen.create(githubLabel.value)
+  private val (githubOpenId2, githubWk2) = WellKnownGen.create(githubLabel2.value)
 
   private val github = RealmGen
     .realm(githubOpenId, githubWk)
+    .copy(
+      keys = Set(parser.parse(rsaKey.toPublicJWK.toJSONString).rightValue)
+    )
+
+  private val github2 = RealmGen
+    .realm(githubOpenId2, githubWk2, acceptedAudiences = Some(NonEmptySet.of("audience", "ba")))
     .copy(
       keys = Set(parser.parse(rsaKey.toPublicJWK.toJSONString).rightValue)
     )
@@ -68,8 +75,9 @@ class IdentitiesImplSpec
     )
 
   private val findActiveRealm: String => UIO[Option[Realm]] = ioFromMap[String, Realm](
-    githubLabel.value -> github,
-    gitlabLabel.value -> gitlab
+    githubLabel.value  -> github,
+    githubLabel2.value -> github2,
+    gitlabLabel.value  -> gitlab
   )
 
   private def userInfo(uri: Uri): IO[HttpUnexpectedError, Json] =
@@ -159,6 +167,38 @@ class IdentitiesImplSpec
       val user = User("Robert", githubLabel)
       identities.exchange(token).accepted shouldEqual
         Caller(user, Set(user, Anonymous, auth, group3, group4))
+    }
+
+    "succeed when the token is valid and aud matches the available audiences" in {
+      val expires = Instant.now().plusSeconds(3600)
+      val token   = TokenGenerator.token(
+        subject = "Robert",
+        issuer = githubLabel2.value,
+        rsaKey = rsaKey,
+        expires = expires,
+        aud = Some(NonEmptySet.of("ca", "ba")),
+        groups = Some(Set("group1", "group2"))
+      )
+
+      val user   = User("Robert", githubLabel2)
+      val group1 = Group("group1", githubLabel2)
+      val group2 = Group("group2", githubLabel2)
+      identities.exchange(token).accepted shouldEqual
+        Caller(user, Set(user, Anonymous, Authenticated(githubLabel2), group1, group2))
+    }
+
+    "fail when the token is valid but aud does not match the available audiences" in {
+      val expires = Instant.now().plusSeconds(3600)
+      val token   = TokenGenerator.token(
+        subject = "Robert",
+        issuer = githubLabel2.value,
+        rsaKey = rsaKey,
+        expires = expires,
+        aud = Some(NonEmptySet.of("ca", "de")),
+        groups = Some(Set("group1", "group2"))
+      )
+
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken
     }
 
     "fail when the token is invalid" in {

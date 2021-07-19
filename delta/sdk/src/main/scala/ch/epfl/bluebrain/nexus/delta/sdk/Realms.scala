@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -26,33 +26,37 @@ trait Realms {
   /**
     * Creates a new realm using the provided configuration.
     *
-    * @param label        the realm label
-    * @param name         the name of the realm
-    * @param openIdConfig the address of the openid configuration
-    * @param logo         an optional realm logo
+    * @param label             the realm label
+    * @param name              the name of the realm
+    * @param openIdConfig      the address of the openid configuration
+    * @param logo              an optional realm logo
+    * @param acceptedAudiences the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     */
   def create(
       label: Label,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
     * Updates an existing realm using the provided configuration.
     *
-    * @param label        the realm label
-    * @param rev          the current revision of the realm
-    * @param name         the new name for the realm
-    * @param openIdConfig the new openid configuration address
-    * @param logo         an optional new logo
+    * @param label             the realm label
+    * @param rev               the current revision of the realm
+    * @param name              the new name for the realm
+    * @param openIdConfig      the new openid configuration address
+    * @param logo              an optional new logo
+    * @param acceptedAudiences the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     */
   def update(
       label: Label,
       rev: Long,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
@@ -120,12 +124,12 @@ object Realms {
   private[delta] def next(state: RealmState, event: RealmEvent): RealmState = {
     // format: off
     def created(e: RealmCreated): RealmState = state match {
-      case Initial     => Current(e.label, e.rev, deprecated = false, e.name, e.openIdConfig, e.issuer, e.keys, e.grantTypes, e.logo, e.authorizationEndpoint, e.tokenEndpoint, e.userInfoEndpoint, e.revocationEndpoint, e.endSessionEndpoint, e.instant, e.subject, e.instant, e.subject)
+      case Initial     => Current(e.label, e.rev, deprecated = false, e.name, e.openIdConfig, e.issuer, e.keys, e.grantTypes, e.logo, e.acceptedAudiences, e.authorizationEndpoint, e.tokenEndpoint, e.userInfoEndpoint, e.revocationEndpoint, e.endSessionEndpoint, e.instant, e.subject, e.instant, e.subject)
       case s: Current  => s
     }
     def updated(e: RealmUpdated): RealmState = state match {
       case Initial    => Initial
-      case s: Current => Current(e.label, e.rev, deprecated = false, e.name, e.openIdConfig, e.issuer, e.keys, e.grantTypes, e.logo, e.authorizationEndpoint, e.tokenEndpoint, e.userInfoEndpoint, e.revocationEndpoint, e.endSessionEndpoint, s.createdAt, s.createdBy, e.instant, e.subject)
+      case s: Current => Current(e.label, e.rev, deprecated = false, e.name, e.openIdConfig, e.issuer, e.keys, e.grantTypes, e.logo, e.acceptedAudiences, e.authorizationEndpoint, e.tokenEndpoint, e.userInfoEndpoint, e.revocationEndpoint, e.endSessionEndpoint, s.createdAt, s.createdBy, e.instant, e.subject)
     }
     def deprecated(e: RealmDeprecated): RealmState = state match {
       case Initial    => Initial
@@ -151,7 +155,7 @@ object Realms {
         case Initial =>
           openIdAlreadyExists(c.label, c.openIdConfig, existingRealms) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
             case (wk, instant) =>
-              RealmCreated(c.label, 1L, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
+              RealmCreated(c.label, 1L, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, c.acceptedAudiences, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
           }
         case _       => IO.raiseError(RealmAlreadyExists(c.label))
       }
@@ -165,7 +169,7 @@ object Realms {
         case s: Current                   =>
           openIdAlreadyExists(c.label, c.openIdConfig, existingRealms) >> (wellKnown(c.openIdConfig), IOUtils.instant).mapN {
             case (wk, instant) =>
-              RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
+              RealmUpdated(c.label, s.rev + 1, c.name, c.openIdConfig, wk.issuer, wk.keys, wk.grantTypes, c.logo, c.acceptedAudiences, wk.authorizationEndpoint, wk.tokenEndpoint, wk.userInfoEndpoint, wk.revocationEndpoint, wk.endSessionEndpoint, instant, c.subject)
           }
       }
     // format: on
