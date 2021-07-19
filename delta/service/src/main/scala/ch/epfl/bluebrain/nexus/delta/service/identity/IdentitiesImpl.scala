@@ -26,7 +26,6 @@ import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, HCursor, Json}
 import monix.bio.{IO, UIO}
 
-import java.util.{Set => JSet}
 import scala.util.Try
 
 class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], groups: GroupsCache) extends Identities {
@@ -46,12 +45,13 @@ class IdentitiesImpl private (findActiveRealm: String => UIO[Option[Realm]], gro
       val proc        = new DefaultJWTProcessor[SecurityContext]
       val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
       proc.setJWSKeySelector(keySelector)
-      val audiencesJ  = audiences.fold[JSet[String]](null)(_.value.asJava)
-      proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(audiencesJ, null, null, null))
+      audiences.foreach { aud =>
+        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.value.asJava, null, null, null))
+      }
       IO.fromEither(
         Either
           .catchNonFatal(proc.process(jwt, null))
-          .leftMap(_ => InvalidAccessToken)
+          .leftMap(err => InvalidAccessToken(Option(err.getMessage).filter(_.trim.nonEmpty)))
       )
     }
 
@@ -120,7 +120,7 @@ object IdentitiesImpl {
         case HttpClientStatusError(_, code, message)
             if code == StatusCodes.Unauthorized || code == StatusCodes.Forbidden =>
           logger.warn(s"A provided client token was rejected by the OIDC provider, reason: '$message'")
-          InvalidAccessToken
+          InvalidAccessToken(Option.when(message.trim.nonEmpty)(message))
         case e =>
           logger.warn(s"A call to get the groups from the OIDC provider failed unexpectedly, reason: '${e.asString}'")
           GetGroupsFromOidcError

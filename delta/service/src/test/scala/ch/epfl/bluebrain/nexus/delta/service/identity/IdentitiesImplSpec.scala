@@ -198,7 +198,7 @@ class IdentitiesImplSpec
         groups = Some(Set("group1", "group2"))
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT audience rejected: [de, ca]"))
     }
 
     "fail when the token is invalid" in {
@@ -254,7 +254,7 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("Expired JWT"))
     }
 
     "fail when the token is not yet valid" in {
@@ -268,7 +268,7 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT before use time"))
     }
 
     "fail when the signature is invalid" in {
@@ -280,7 +280,9 @@ class IdentitiesImplSpec
         useCommas = true
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(
+        Some("Signed JWT rejected: Another algorithm expected, or no matching key(s) found")
+      )
     }
 
     "fail when getting groups from the oidc provider can't be complete" in {
