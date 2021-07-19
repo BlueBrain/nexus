@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -92,18 +92,18 @@ class BlazegraphViewsSpec
         )
         .accepted
 
-    val consistentWrite        = ConsistentWriteDummy()
-    val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, consistentWrite, permissions.query)
+    val indexingActionDummy    = IndexingActionDummy()
+    val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, indexingActionDummy, permissions.query)
 
     "creating a view" should {
       "reject when referenced view does not exist" in {
         views
-          .create(aggregateViewId, projectRef, aggregateValue, Performant)
+          .create(aggregateViewId, projectRef, aggregateValue, Async)
           .rejected shouldEqual InvalidViewReference(viewRef)
       }
 
       "create an IndexingBlazegraphView" in {
-        views.create(indexingViewId, projectRef, indexingValue, Consistent).accepted shouldEqual resourceFor(
+        views.create(indexingViewId, projectRef, indexingValue, Sync).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
           indexingValue,
@@ -112,12 +112,12 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, indexingViewId, 1L).accepted.value shouldEqual Consistent
+        indexingActionDummy.valueFor(projectRef, indexingViewId, 1L).accepted.value shouldEqual Sync
 
       }
 
       "create an AggregateBlazegraphViewValue" in {
-        views.create(aggregateViewId, projectRef, aggregateValue, Performant).accepted shouldEqual resourceFor(
+        views.create(aggregateViewId, projectRef, aggregateValue, Async).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
           aggregateValue,
@@ -126,38 +126,38 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, aggregateViewId, 1L).accepted.value shouldEqual Performant
+        indexingActionDummy.valueFor(projectRef, aggregateViewId, 1L).accepted.value shouldEqual Async
       }
 
       "reject when the project does not exist" in {
         val nonExistent = ProjectGen.project("org", "nonexistent").ref
         views
-          .create(indexingViewId, nonExistent, indexingValue, Performant)
+          .create(indexingViewId, nonExistent, indexingValue, Async)
           .rejected shouldEqual WrappedProjectRejection(ProjectRejection.ProjectNotFound(nonExistent))
       }
 
       "reject when the project is deprecated" in {
         views
-          .create(indexingViewId, deprecatedProject.ref, indexingValue, Performant)
+          .create(indexingViewId, deprecatedProject.ref, indexingValue, Async)
           .rejected shouldEqual WrappedProjectRejection(ProjectRejection.ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject when the organization is deprecated" in {
         views
-          .create(indexingViewId, projectWithDeprecatedOrg.ref, indexingValue, Performant)
+          .create(indexingViewId, projectWithDeprecatedOrg.ref, indexingValue, Async)
           .rejected shouldEqual WrappedOrganizationRejection(
           OrganizationRejection.OrganizationIsDeprecated(projectWithDeprecatedOrg.organizationLabel)
         )
       }
 
       "reject when view already exists" in {
-        views.create(aggregateViewId, projectRef, aggregateValue, Performant).rejected shouldEqual
+        views.create(aggregateViewId, projectRef, aggregateValue, Async).rejected shouldEqual
           ResourceAlreadyExists(aggregateViewId, projectRef)
       }
 
       "reject when the permission is not defined" in {
         views
-          .create(indexingViewId2, projectRef, indexingValue.copy(permission = undefinedPermission), Performant)
+          .create(indexingViewId2, projectRef, indexingValue.copy(permission = undefinedPermission), Async)
           .rejected shouldEqual PermissionIsNotDefined(undefinedPermission)
       }
 
@@ -166,7 +166,7 @@ class BlazegraphViewsSpec
     "updating a view" should {
 
       "update an IndexingBlazegraphView" in {
-        views.update(indexingViewId, projectRef, 1L, updatedIndexingValue, Consistent).accepted shouldEqual resourceFor(
+        views.update(indexingViewId, projectRef, 1L, updatedIndexingValue, Sync).accepted shouldEqual resourceFor(
           indexingViewId,
           projectRef,
           updatedIndexingValue,
@@ -176,12 +176,12 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, indexingViewId, 2L).accepted.value shouldEqual Consistent
+        indexingActionDummy.valueFor(projectRef, indexingViewId, 2L).accepted.value shouldEqual Sync
 
       }
 
       "update an AggregateBlazegraphView" in {
-        views.update(aggregateViewId, projectRef, 1L, aggregateValue, Performant).accepted shouldEqual resourceFor(
+        views.update(aggregateViewId, projectRef, 1L, aggregateValue, Async).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
           aggregateValue,
@@ -191,19 +191,19 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, aggregateViewId, 2L).accepted.value shouldEqual Performant
+        indexingActionDummy.valueFor(projectRef, aggregateViewId, 2L).accepted.value shouldEqual Async
 
       }
 
       "reject when view doesn't exits" in {
-        views.update(indexingViewId2, projectRef, 1L, indexingValue, Performant).rejected shouldEqual ViewNotFound(
+        views.update(indexingViewId2, projectRef, 1L, indexingValue, Async).rejected shouldEqual ViewNotFound(
           indexingViewId2,
           projectRef
         )
       }
 
       "reject when incorrect revision is provided" in {
-        views.update(indexingViewId, projectRef, 1L, indexingValue, Performant).rejected shouldEqual IncorrectRev(
+        views.update(indexingViewId, projectRef, 1L, indexingValue, Async).rejected shouldEqual IncorrectRev(
           1L,
           2L
         )
@@ -211,7 +211,7 @@ class BlazegraphViewsSpec
 
       "reject when trying to change the view type" in {
         views
-          .update(indexingViewId, projectRef, 2L, aggregateValue, Performant)
+          .update(indexingViewId, projectRef, 2L, aggregateValue, Async)
           .rejected shouldEqual DifferentBlazegraphViewType(
           indexingViewId,
           BlazegraphViewType.AggregateBlazegraphView,
@@ -224,14 +224,14 @@ class BlazegraphViewsSpec
         val aggregateValueWithInvalidView =
           AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
-          .update(aggregateViewId, projectRef, 2L, aggregateValueWithInvalidView, Performant)
+          .update(aggregateViewId, projectRef, 2L, aggregateValueWithInvalidView, Async)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
       }
 
       "reject when view is deprecated" in {
-        views.create(indexingViewId2, projectRef, indexingValue, Performant).accepted
-        views.deprecate(indexingViewId2, projectRef, 1L, Performant).accepted
-        views.update(indexingViewId2, projectRef, 2L, indexingValue, Performant).rejected shouldEqual ViewIsDeprecated(
+        views.create(indexingViewId2, projectRef, indexingValue, Async).accepted
+        views.deprecate(indexingViewId2, projectRef, 1L, Async).accepted
+        views.update(indexingViewId2, projectRef, 2L, indexingValue, Async).rejected shouldEqual ViewIsDeprecated(
           indexingViewId2
         )
       }
@@ -241,13 +241,13 @@ class BlazegraphViewsSpec
         val aggregateValueWithInvalidView =
           AggregateBlazegraphViewValue(NonEmptySet.of(nonExistentViewRef))
         views
-          .update(aggregateViewId, projectRef, 2L, aggregateValueWithInvalidView, Performant)
+          .update(aggregateViewId, projectRef, 2L, aggregateValueWithInvalidView, Async)
           .rejected shouldEqual InvalidViewReference(nonExistentViewRef)
       }
 
       "reject when the permission is not defined" in {
         views
-          .update(indexingViewId, projectRef, 2L, indexingValue.copy(permission = undefinedPermission), Performant)
+          .update(indexingViewId, projectRef, 2L, indexingValue.copy(permission = undefinedPermission), Async)
           .rejected shouldEqual PermissionIsNotDefined(undefinedPermission)
       }
 
@@ -255,7 +255,7 @@ class BlazegraphViewsSpec
 
     "tagging a view" should {
       "tag a view" in {
-        views.tag(aggregateViewId, projectRef, tag, tagRev = 1, 2L, Consistent).accepted shouldEqual resourceFor(
+        views.tag(aggregateViewId, projectRef, tag, tagRev = 1, 2L, Sync).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
           aggregateValue,
@@ -266,33 +266,33 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, aggregateViewId, 3L).accepted.value shouldEqual Consistent
+        indexingActionDummy.valueFor(projectRef, aggregateViewId, 3L).accepted.value shouldEqual Sync
 
       }
 
       "reject when view doesn't exits" in {
-        views.tag(doesntExistId, projectRef, tag, tagRev = 1, 2L, Performant).rejected shouldEqual ViewNotFound(
+        views.tag(doesntExistId, projectRef, tag, tagRev = 1, 2L, Async).rejected shouldEqual ViewNotFound(
           doesntExistId,
           projectRef
         )
       }
 
       "reject when target revision doesn't exist" in {
-        views.tag(indexingViewId, projectRef, tag, tagRev = 42L, 2L, Performant).rejected shouldEqual RevisionNotFound(
+        views.tag(indexingViewId, projectRef, tag, tagRev = 42L, 2L, Async).rejected shouldEqual RevisionNotFound(
           42L,
           2L
         )
       }
 
       "reject when incorrect revision is provided" in {
-        views.tag(indexingViewId, projectRef, tag, tagRev = 1L, 1L, Performant).rejected shouldEqual IncorrectRev(
+        views.tag(indexingViewId, projectRef, tag, tagRev = 1L, 1L, Async).rejected shouldEqual IncorrectRev(
           1L,
           2L
         )
       }
 
       "reject when view is deprecated" in {
-        views.tag(indexingViewId2, projectRef, tag, tagRev = 1L, 2L, Performant).rejected shouldEqual ViewIsDeprecated(
+        views.tag(indexingViewId2, projectRef, tag, tagRev = 1L, 2L, Async).rejected shouldEqual ViewIsDeprecated(
           indexingViewId2
         )
       }
@@ -301,7 +301,7 @@ class BlazegraphViewsSpec
 
     "deprecating a view" should {
       "deprecate the view" in {
-        views.deprecate(aggregateViewId, projectRef, 3L, Consistent).accepted shouldEqual resourceFor(
+        views.deprecate(aggregateViewId, projectRef, 3L, Sync).accepted shouldEqual resourceFor(
           aggregateViewId,
           projectRef,
           aggregateValue,
@@ -313,27 +313,27 @@ class BlazegraphViewsSpec
           createdBy = bob,
           updatedBy = bob
         )
-        consistentWrite.valueFor(projectRef, aggregateViewId, 4L).accepted.value shouldEqual Consistent
+        indexingActionDummy.valueFor(projectRef, aggregateViewId, 4L).accepted.value shouldEqual Sync
 
       }
 
       "reject when view doesn't exits" in {
         val doesntExist = nxv + "doesntexist"
-        views.deprecate(doesntExist, projectRef, 1L, Performant).rejected shouldEqual ViewNotFound(
+        views.deprecate(doesntExist, projectRef, 1L, Async).rejected shouldEqual ViewNotFound(
           doesntExist,
           projectRef
         )
       }
 
       "reject when incorrect revision is provided" in {
-        views.deprecate(indexingViewId, projectRef, 42L, Performant).rejected shouldEqual IncorrectRev(
+        views.deprecate(indexingViewId, projectRef, 42L, Async).rejected shouldEqual IncorrectRev(
           42L,
           2L
         )
       }
 
       "reject when view is deprecated" in {
-        views.deprecate(indexingViewId2, projectRef, 2L, Performant).rejected shouldEqual ViewIsDeprecated(
+        views.deprecate(indexingViewId2, projectRef, 2L, Async).rejected shouldEqual ViewIsDeprecated(
           indexingViewId2
         )
       }

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
@@ -97,9 +97,9 @@ class UriDirectivesSpec
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
         },
-        (pathPrefix("execution") & executionType & pathEndOrSingleSlash) {
-          case ExecutionType.Performant => complete("performant")
-          case ExecutionType.Consistent => complete("consistent")
+        (pathPrefix("indexing") & indexingType & pathEndOrSingleSlash) {
+          case Indexing.Async => complete("async")
+          case Indexing.Sync  => complete("sync")
         },
         (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)
@@ -179,25 +179,25 @@ class UriDirectivesSpec
     }
 
     "return performant when no query param is present" in {
-      Get("/base/execution") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual "performant"
+      Get("/base/indexing") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "async"
       }
     }
 
     "return performant when specified in query param" in {
-      Get("/base/execution?execution=performant") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual "performant"
+      Get("/base/indexing?indexing=async") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "ascync"
       }
     }
 
     "return consistent when specified in query param" in {
-      Get("/base/execution?execution=consistent") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual "consistent"
+      Get("/base/indexing?indexing=sync") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "sync"
       }
     }
 
     "reject when other value is provided" in {
-      Get("/base/execution?execution=other") ~> Accept(`*/*`) ~> route ~> check {
+      Get("/base/indexing?indexing=other") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
       }
     }

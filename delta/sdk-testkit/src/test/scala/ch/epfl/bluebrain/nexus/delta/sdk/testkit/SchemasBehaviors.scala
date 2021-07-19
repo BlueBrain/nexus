@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -92,7 +92,7 @@ trait SchemasBehaviors {
     projectsToCreate = project :: projectDeprecated :: projectWithDeprecatedOrg :: Nil,
     projectsToDeprecate = projectDeprecated.ref :: Nil
   )
-  val consistentWrite                                             = ConsistentWriteDummy()
+  val indexingAction                                              = IndexingActionDummy()
 
   def create: UIO[Schemas]
 
@@ -105,59 +105,59 @@ trait SchemasBehaviors {
     "creating a schema" should {
 
       "succeed with the id present on the payload" in {
-        schemas.create(projectRef, source, Consistent).accepted shouldEqual
+        schemas.create(projectRef, source, Sync).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Sync
 
       }
 
       "succeed with the id present on the payload and passed" in {
         val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
         val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
-        schemas.create("myschema2", projectRef, sourceWithId, Performant).accepted shouldEqual
+        schemas.create("myschema2", projectRef, sourceWithId, Async).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Performant
+        indexingAction.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Async
       }
 
       "succeed with the passed id" in {
         val sourceWithId = source deepMerge json"""{"@id": "$mySchema3"}"""
         val schema       = SchemaGen.schema(mySchema3, project.ref, sourceWithId).copy(source = sourceNoId)
-        schemas.create(mySchema3, projectRef, sourceNoId, Consistent).accepted shouldEqual
+        schemas.create(mySchema3, projectRef, sourceNoId, Sync).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, schema.id, 1L).accepted.value shouldEqual Sync
       }
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
-        schemas.create(otherId, projectRef, source, Performant).rejected shouldEqual
+        schemas.create(otherId, projectRef, source, Async).rejected shouldEqual
           UnexpectedSchemaId(id = otherId, payloadId = mySchema)
       }
 
       "reject if it already exists" in {
-        schemas.create(mySchema, projectRef, source, Performant).rejected shouldEqual
+        schemas.create(mySchema, projectRef, source, Async).rejected shouldEqual
           ResourceAlreadyExists(mySchema, projectRef)
       }
 
       "reject if it does not validate against the SHACL schema" in {
         val otherId     = nxv + "other"
         val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
-        schemas.create(otherId, projectRef, wrongSource, Performant).rejectedWith[InvalidSchema]
+        schemas.create(otherId, projectRef, wrongSource, Async).rejectedWith[InvalidSchema]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        schemas.create(projectRef, sourceNoId, Performant).rejected shouldEqual WrappedProjectRejection(
+        schemas.create(projectRef, sourceNoId, Async).rejected shouldEqual WrappedProjectRejection(
           ProjectNotFound(projectRef)
         )
       }
 
       "reject if project is deprecated" in {
-        schemas.create(projectDeprecated.ref, sourceNoId, Performant).rejected shouldEqual
+        schemas.create(projectDeprecated.ref, sourceNoId, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
       "reject if organization is deprecated" in {
-        schemas.create(projectWithDeprecatedOrg.ref, sourceNoId, Performant).rejected shouldEqual
+        schemas.create(projectWithDeprecatedOrg.ref, sourceNoId, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -165,45 +165,45 @@ trait SchemasBehaviors {
     "updating a schema" should {
 
       "succeed" in {
-        schemas.update(mySchema, projectRef, 1L, sourceUpdated, Consistent).accepted shouldEqual
+        schemas.update(mySchema, projectRef, 1L, sourceUpdated, Sync).accepted shouldEqual
           SchemaGen.resourceFor(schemaUpdated, rev = 2L, subject = subject, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 2L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, schema.id, 2L).accepted.value shouldEqual Sync
 
       }
 
       "reject if it doesn't exists" in {
-        schemas.update(nxv + "other", projectRef, 1L, json"""{"a": "b"}""", Performant).rejectedWith[SchemaNotFound]
+        schemas.update(nxv + "other", projectRef, 1L, json"""{"a": "b"}""", Async).rejectedWith[SchemaNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        schemas.update(mySchema, projectRef, 3L, json"""{"a": "b"}""", Performant).rejected shouldEqual
+        schemas.update(mySchema, projectRef, 3L, json"""{"a": "b"}""", Async).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        schemas.deprecate(mySchema3, projectRef, 1L, Performant).accepted
-        schemas.update(mySchema3, projectRef, 2L, json"""{"a": "b"}""", Performant).rejectedWith[SchemaIsDeprecated]
+        schemas.deprecate(mySchema3, projectRef, 1L, Async).accepted
+        schemas.update(mySchema3, projectRef, 2L, json"""{"a": "b"}""", Async).rejectedWith[SchemaIsDeprecated]
       }
 
       "reject if it does not validate against its schema" in {
         val wrongSource = sourceNoId.replace("minCount" -> 1, "wrong")
-        schemas.update(mySchema, projectRef, 2L, wrongSource, Performant).rejectedWith[InvalidSchema]
+        schemas.update(mySchema, projectRef, 2L, wrongSource, Async).rejectedWith[InvalidSchema]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        schemas.update(mySchema, projectRef, 2L, source, Performant).rejected shouldEqual
+        schemas.update(mySchema, projectRef, 2L, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        schemas.update(mySchema, projectDeprecated.ref, 2L, source, Performant).rejected shouldEqual
+        schemas.update(mySchema, projectDeprecated.ref, 2L, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
       "reject if organization is deprecated" in {
-        schemas.update(mySchema, projectWithDeprecatedOrg.ref, 2L, sourceNoId, Performant).rejected shouldEqual
+        schemas.update(mySchema, projectWithDeprecatedOrg.ref, 2L, sourceNoId, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -214,44 +214,44 @@ trait SchemasBehaviors {
         val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
         val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId, tags = Map(tag -> 1L))
 
-        schemas.tag(mySchema2, projectRef, tag, 1L, 1L, Consistent).accepted shouldEqual
+        schemas.tag(mySchema2, projectRef, tag, 1L, 1L, Sync).accepted shouldEqual
           SchemaGen.resourceFor(schema, subject = subject, rev = 2L, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 2L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, schema.id, 2L).accepted.value shouldEqual Sync
 
       }
 
       "reject if it doesn't exists" in {
-        schemas.tag(nxv + "other", projectRef, tag, 1L, 1L, Performant).rejectedWith[SchemaNotFound]
+        schemas.tag(nxv + "other", projectRef, tag, 1L, 1L, Async).rejectedWith[SchemaNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        schemas.tag(mySchema, projectRef, tag, 1L, 3L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectRef, tag, 1L, 3L, Async).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        schemas.tag(mySchema3, projectRef, tag, 2L, 2L, Performant).rejectedWith[SchemaIsDeprecated]
+        schemas.tag(mySchema3, projectRef, tag, 2L, 2L, Async).rejectedWith[SchemaIsDeprecated]
       }
 
       "reject if tag revision not found" in {
-        schemas.tag(mySchema, projectRef, tag, 6L, 2L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectRef, tag, 6L, 2L, Async).rejected shouldEqual
           RevisionNotFound(provided = 6L, current = 2L)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        schemas.tag(mySchema, projectRef, tag, 2L, 1L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectRef, tag, 2L, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        schemas.tag(mySchema, projectDeprecated.ref, tag, 2L, 2L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectDeprecated.ref, tag, 2L, 2L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
       "reject if organization is deprecated" in {
-        schemas.tag(mySchema, projectWithDeprecatedOrg.ref, tag, 1L, 2L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectWithDeprecatedOrg.ref, tag, 1L, 2L, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -259,38 +259,38 @@ trait SchemasBehaviors {
     "deprecating a schema" should {
 
       "succeed" in {
-        schemas.deprecate(mySchema, projectRef, 2L, Consistent).accepted shouldEqual
+        schemas.deprecate(mySchema, projectRef, 2L, Sync).accepted shouldEqual
           SchemaGen.resourceFor(schemaUpdated, subject = subject, rev = 3L, deprecated = true, am = am, base = projBase)
-        consistentWrite.valueFor(projectRef, schema.id, 3L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, schema.id, 3L).accepted.value shouldEqual Sync
       }
 
       "reject if it doesn't exists" in {
-        schemas.deprecate(nxv + "other", projectRef, 1L, Performant).rejectedWith[SchemaNotFound]
+        schemas.deprecate(nxv + "other", projectRef, 1L, Async).rejectedWith[SchemaNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        schemas.deprecate(mySchema, projectRef, 5L, Performant).rejected shouldEqual
+        schemas.deprecate(mySchema, projectRef, 5L, Async).rejected shouldEqual
           IncorrectRev(provided = 5L, expected = 3L)
       }
 
       "reject if deprecated" in {
-        schemas.deprecate(mySchema, projectRef, 3L, Performant).rejectedWith[SchemaIsDeprecated]
+        schemas.deprecate(mySchema, projectRef, 3L, Async).rejectedWith[SchemaIsDeprecated]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        schemas.deprecate(mySchema, projectRef, 1L, Performant).rejected shouldEqual
+        schemas.deprecate(mySchema, projectRef, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        schemas.deprecate(mySchema, projectDeprecated.ref, 1L, Performant).rejected shouldEqual
+        schemas.deprecate(mySchema, projectDeprecated.ref, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 
       "reject if organization is deprecated" in {
-        schemas.tag(mySchema, projectWithDeprecatedOrg.ref, tag, 1L, 2L, Performant).rejected shouldEqual
+        schemas.tag(mySchema, projectWithDeprecatedOrg.ref, tag, 1L, 2L, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 

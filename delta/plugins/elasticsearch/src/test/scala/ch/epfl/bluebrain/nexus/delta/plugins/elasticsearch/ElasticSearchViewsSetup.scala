@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConsistentWrite, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
@@ -37,26 +37,26 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
   def init(
       org: Label,
       project: Project,
-      consistentWrite: ConsistentWrite,
+      indexingAction: IndexingAction,
       perms: Permission*
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, s: Subject, sc: Scheduler): ElasticSearchViews = {
     for {
       (orgs, projs) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    } yield init(orgs, projs, consistentWrite, perms: _*)
+    } yield init(orgs, projs, indexingAction, perms: _*)
   }.accepted
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      consistentWrite: ConsistentWrite,
+      indexingAction: IndexingAction,
       perms: Permission*
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews =
-    init(orgs, projects, consistentWrite, PermissionsDummy(perms.toSet).accepted)
+    init(orgs, projects, indexingAction, PermissionsDummy(perms.toSet).accepted)
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      consistentWrite: ConsistentWrite,
+      indexingAction: IndexingAction,
       perms: Permissions
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews = {
     for {
@@ -74,7 +74,7 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
           perms,
           (_, _) => UIO.unit,
           (_, _) => UIO.unit,
-          consistentWrite
+          indexingAction
         )
     } yield views
   }.accepted

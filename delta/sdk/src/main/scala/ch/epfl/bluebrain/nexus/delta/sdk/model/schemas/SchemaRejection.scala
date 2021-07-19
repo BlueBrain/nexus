@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -170,9 +170,9 @@ object SchemaRejection {
       extends SchemaRejection(rejection.reason)
 
   /**
-    * Signals a rejection caused by a failure to perform consistent write.
+    * Signals a rejection caused by a failure to perform indexing.
     */
-  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends SchemaRejection(rejection.reason)
 
   /**
@@ -243,8 +243,8 @@ object SchemaRejection {
   implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     WrappedOrganizationRejection.apply
 
-  implicit val schemaConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
-    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
+  implicit val schemaIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
 

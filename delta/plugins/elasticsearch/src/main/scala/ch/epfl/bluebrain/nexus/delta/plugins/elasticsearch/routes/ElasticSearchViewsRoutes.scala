@@ -139,7 +139,7 @@ final class ElasticSearchViewsRoutes(
               },
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
                 // Create an elasticsearch view without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) {
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingType) {
                   (source, execution) =>
                     authorizeFor(ref, Write).apply {
                       emit(
@@ -152,7 +152,7 @@ final class ElasticSearchViewsRoutes(
                     }
                 }
               },
-              (idSegment & executionType) { (id, execution) =>
+              (idSegment & indexingType) { (id, execution) =>
                 concat(
                   pathEndOrSingleSlash {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}") {

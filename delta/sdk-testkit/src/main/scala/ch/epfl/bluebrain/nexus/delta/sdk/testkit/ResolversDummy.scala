@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
@@ -46,21 +46,21 @@ class ResolversDummy private (
     semaphore: IOSemaphore,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
     idAvailability: IdAvailability[ResourceAlreadyExists],
-    consistentWrite: ConsistentWrite
+    inde: IndexingAction
 )(implicit clock: Clock[UIO], base: BaseUri)
     extends Resolvers {
 
-  override def create(projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+  override def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _                    <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _                    <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
-  override def create(id: IdSegment, projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+  override def create(id: IdSegment, projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
@@ -68,14 +68,14 @@ class ResolversDummy private (
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _             <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _             <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
       resolverValue: ResolverValue,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
@@ -84,18 +84,18 @@ class ResolversDummy private (
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _     <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _     <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, executionType: ExecutionType)(
-      implicit caller: Caller
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, indexing: Indexing)(implicit
+      caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _             <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _             <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
 
     } yield res
 
@@ -104,7 +104,7 @@ class ResolversDummy private (
       projectRef: ProjectRef,
       rev: Long,
       resolverValue: ResolverValue,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
@@ -113,7 +113,7 @@ class ResolversDummy private (
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _     <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _     <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
   override def tag(
@@ -122,7 +122,7 @@ class ResolversDummy private (
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
@@ -130,17 +130,17 @@ class ResolversDummy private (
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
-      _   <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _   <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
-  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: ExecutionType)(implicit
+  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: Indexing)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
-      _   <- consistentWrite(projectRef, Resolvers.eventExchangeValue(res), executionType)
+      _   <- inde(projectRef, Resolvers.eventExchangeValue(res), executionType)
     } yield res
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
@@ -219,14 +219,14 @@ object ResolversDummy {
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
-    * @param consistentWrite   the consistent write
+    * @param indexingAction     the indexingAction
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit clock: Clock[UIO], uuidF: UUIDF, base: BaseUri): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
@@ -234,5 +234,5 @@ object ResolversDummy {
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability, consistentWrite)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability, indexingAction)
 }

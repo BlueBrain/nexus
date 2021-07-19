@@ -64,7 +64,7 @@ final class Files(
     orgs: Organizations,
     projects: Projects,
     storages: Storages,
-    consistentWrite: ConsistentWrite
+    consistentWrite: IndexingAction
 )(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
 
   // format: off
@@ -79,13 +79,13 @@ final class Files(
     * @param storageId      the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef     the project where the file will belong
     * @param entity         the http FormData entity
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def create(
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -94,7 +94,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
-      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("createFile", moduleType)
 
@@ -105,14 +105,14 @@ final class Files(
     * @param storageId      the optional storage identifier to expand as the id of the storage. When None, the default storage is used
     * @param projectRef     the project where the file will belong
     * @param entity         the http FormData entity
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def create(
       id: IdSegment,
       storageId: Option[IdSegment],
       projectRef: ProjectRef,
       entity: HttpEntity,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -121,7 +121,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
-      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("createFile", moduleType)
 
@@ -133,7 +133,7 @@ final class Files(
     * @param filename       the optional filename to use
     * @param mediaType      the optional media type to use
     * @param path           the path where the file is located inside the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def createLink(
       storageId: Option[IdSegment],
@@ -141,13 +141,13 @@ final class Files(
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- generateId(project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
-      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("createLink", moduleType)
 
@@ -160,7 +160,7 @@ final class Files(
     * @param filename       the optional filename to use
     * @param mediaType      the optional media type to use
     * @param path           the path where the file is located inside the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def createLink(
       id: IdSegment,
@@ -169,13 +169,13 @@ final class Files(
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
-      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("createLink", moduleType)
 
@@ -187,7 +187,7 @@ final class Files(
     * @param projectRef     the project where the file will belong
     * @param rev            the current revision of the file
     * @param entity         the http FormData entity
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
@@ -195,7 +195,7 @@ final class Files(
       projectRef: ProjectRef,
       rev: Long,
       entity: HttpEntity,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -204,7 +204,7 @@ final class Files(
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
       attributes            <- extractFileAttributes(iri, entity, storage)
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
-      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("updateFile", moduleType)
 
@@ -218,7 +218,7 @@ final class Files(
     * @param filename       the optional filename to use
     * @param mediaType      the optional media type to use
     * @param path           the path where the file is located inside the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def updateLink(
       id: IdSegment,
@@ -228,7 +228,7 @@ final class Files(
       mediaType: Option[ContentType],
       path: Uri.Path,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -239,7 +239,7 @@ final class Files(
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
       res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
-      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _                     <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("updateLink", moduleType)
 
@@ -252,7 +252,7 @@ final class Files(
     * @param bytes          the size of the file file in bytes
     * @param digest         the digest information of the file
     * @param rev            the current revision of the file
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def updateAttributes(
       id: IdSegment,
@@ -261,13 +261,13 @@ final class Files(
       bytes: Long,
       digest: Digest,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
-      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("updateFileAttributes", moduleType)
 
@@ -281,12 +281,12 @@ final class Files(
     *
     * @param iri            the file iri identifier
     * @param projectRef     the project where the file will belong
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   private[files] def updateAttributes(
       iri: Iri,
       projectRef: ProjectRef,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[FileRejection, FileResource] =
     for {
       file        <- fetch(iri, projectRef)
@@ -296,7 +296,7 @@ final class Files(
       attr         = file.value.attributes
       newAttr     <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
       mediaType    = attr.mediaType orElse Some(newAttr.mediaType)
-      res         <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev, executionType)
+      res         <- updateAttributes(iri, projectRef, mediaType, newAttr.bytes, newAttr.digest, file.rev, indexing)
     } yield res
 
   /**
@@ -307,7 +307,7 @@ final class Files(
     * @param tag            the tag name
     * @param tagRev         the tag revision
     * @param rev            the current revision of the file
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def tag(
       id: IdSegment,
@@ -315,13 +315,13 @@ final class Files(
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
-      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("tagFile", moduleType)
 
@@ -336,13 +336,13 @@ final class Files(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
-      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), executionType)
+      _       <- consistentWrite(projectRef, eventEventExchangeValue(res), indexing)
     } yield res
   }.named("deprecateFile", moduleType)
 
@@ -550,7 +550,7 @@ object Files {
       projects: Projects,
       storages: Storages,
       resourceIdCheck: ResourceIdCheck,
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -560,7 +560,7 @@ object Files {
   ): Task[Files] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability, consistentWrite)
+    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability, indexingAction)
   }
 
   private[files] def apply(
@@ -572,7 +572,7 @@ object Files {
       projects: Projects,
       storages: Storages,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -584,7 +584,7 @@ object Files {
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
       agg  <- aggregate(config.aggregate, idAvailability)
-      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, consistentWrite)
+      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, indexingAction)
       _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }
@@ -629,7 +629,7 @@ object Files {
         .eventsByTag(moduleType, Offset.noOffset)
         .mapAsync(indexing.concurrency) { envelope =>
           files
-            .updateAttributes(envelope.event.id, envelope.event.project, ExecutionType.Performant)(
+            .updateAttributes(envelope.event.id, envelope.event.project, Indexing.Async)(
               envelope.event.subject
             )
             .redeemWith(

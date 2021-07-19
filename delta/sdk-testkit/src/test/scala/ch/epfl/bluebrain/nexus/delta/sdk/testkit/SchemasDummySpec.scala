@@ -29,7 +29,7 @@ class SchemasDummySpec
           schemaImports,
           resolverContextResolution,
           (_, _) => IO.unit,
-          consistentWrite
+          indexingAction
         )
     } yield r
 

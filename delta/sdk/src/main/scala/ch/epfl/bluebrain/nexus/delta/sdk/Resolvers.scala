@@ -38,9 +38,9 @@ trait Resolvers {
     *
     * @param projectRef     the project where the resolver will belong
     * @param source         the payload to create the resolver
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
-  def create(projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+  def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -50,9 +50,9 @@ trait Resolvers {
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef     the project where the resolver will belong
     * @param source         the payload to create the resolver
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
-  def create(id: IdSegment, projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -61,21 +61,21 @@ trait Resolvers {
     * @param id             the resolver identifier to expand as the id of the resolver
     * @param projectRef     the project where the resolver will belong
     * @param resolverValue  the value of the resolver
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
-  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue, executionType: ExecutionType)(implicit
+  def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
   /**
     * Update an existing resolver
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef     the project where the resolver will belong
-    * @param rev            the current revision of the resolver
-    * @param source         the payload to update the resolver
-    * @param executionType  the type of execution for this action
+    * @param id         the resolver identifier to expand as the id of the resolver
+    * @param projectRef the project where the resolver will belong
+    * @param rev        the current revision of the resolver
+    * @param source     the payload to update the resolver
+    * @param indexing   the type of indexing for this action
     */
-  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, executionType: ExecutionType)(implicit
+  def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
 
@@ -85,14 +85,14 @@ trait Resolvers {
     * @param projectRef     the project where the resolver will belong
     * @param rev            the current revision of the resolver
     * @param resolverValue  the value of the resolver
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       resolverValue: ResolverValue,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource]
@@ -100,15 +100,15 @@ trait Resolvers {
   /**
     * Add a tag to an existing resolver
     *
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef     the project where the resolver belongs
-    * @param tag            the tag name
-    * @param tagRev         the tag revision
-    * @param rev            the current revision of the resolver
-    * @param executionType  the type of execution for this action
+    * @param id         the resolver identifier to expand as the id of the resolver
+    * @param projectRef the project where the resolver belongs
+    * @param tag        the tag name
+    * @param tagRev     the tag revision
+    * @param rev        the current revision of the resolver
+    * @param indexing   the type of indexing for this action
     */
-  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long, executionType: ExecutionType)(
-      implicit subject: Subject
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long, indexing: Indexing)(implicit
+      subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
   /**
@@ -118,7 +118,7 @@ trait Resolvers {
     * @param rev            the current revision of the resolver
     * @param executionType  the type of execution for this action
     */
-  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: ExecutionType)(implicit
+  def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: Indexing)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 

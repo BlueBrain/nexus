@@ -96,7 +96,7 @@ class SchemasRoutesSpec
           schemaImports,
           resolverContextResolution,
           (_, _) => IO.unit,
-          ConsistentWriteDummy()
+          IndexingActionDummy()
         ).accepted
       )
     )

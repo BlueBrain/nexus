@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -267,7 +267,7 @@ class FilesSpec
       disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
-    val consistentWrite = ConsistentWriteDummy()
+    val consistentWrite = IndexingActionDummy()
 
     val (files, storages) = FilesSetup.init(orgs, projs, acls, cfg, consistentWrite, allowedPerms.toSeq: _*)
 
@@ -275,24 +275,24 @@ class FilesSpec
 
       "create storages for files" in {
         val payload = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-        storages.create(diskId, projectRef, payload, Performant).accepted
+        storages.create(diskId, projectRef, payload, Async).accepted
 
         val payload2 =
           json"""{"@type": "RemoteDiskStorage", "endpoint": "$RemoteStorageEndpoint", "folder": "$BucketName", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
-        storages.create(remoteId, projectRef, Secret(payload2), Performant).accepted
+        storages.create(remoteId, projectRef, Secret(payload2), Async).accepted
       }
 
       "succeed with the id passed" in {
         files
-          .create("file1", Some(diskId), projectRef, entity("myfile.txt"), Consistent)
+          .create("file1", Some(diskId), projectRef, entity("myfile.txt"), Sync)
           .accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes("myfile.txt"), createdBy = bob, updatedBy = bob)
-        consistentWrite.valueFor(projectRef, file1, 1L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file1, 1L).accepted.value shouldEqual Sync
 
       }
 
       "succeed with randomly generated id" in {
-        files.create(None, projectRef, entity("myfile2.txt"), Performant).accepted shouldEqual
+        files.create(None, projectRef, entity("myfile2.txt"), Async).accepted shouldEqual
           FileGen.resourceFor(
             generatedId,
             projectRef,
@@ -301,40 +301,40 @@ class FilesSpec
             createdBy = bob,
             updatedBy = bob
           )
-        consistentWrite.valueFor(projectRef, generatedId, 1L).accepted.value shouldEqual Performant
+        consistentWrite.valueFor(projectRef, generatedId, 1L).accepted.value shouldEqual Async
 
       }
 
       "reject if no write permissions" in {
         files
-          .create("file2", Some(remoteId), projectRef, entity(), Performant)
+          .create("file2", Some(remoteId), projectRef, entity(), Async)
           .rejectedWith[AuthorizationFailed]
       }
 
       "reject if file id already exists" in {
-        files.create("file1", None, projectRef, entity(), Performant).rejected shouldEqual
+        files.create("file1", None, projectRef, entity(), Async).rejected shouldEqual
           ResourceAlreadyExists(file1, projectRef)
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        files.create("file2", Some(storage), projectRef, entity(), Performant).rejected shouldEqual
+        files.create("file2", Some(storage), projectRef, entity(), Async).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.create(None, projectRef, entity(), Performant).rejected shouldEqual
+        files.create(None, projectRef, entity(), Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.create(Some(diskId), deprecatedProject.ref, entity(), Performant).rejected shouldEqual
+        files.create(Some(diskId), deprecatedProject.ref, entity(), Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.create(None, projectWithDeprecatedOrg.ref, entity(), Performant).rejected shouldEqual
+        files.create(None, projectWithDeprecatedOrg.ref, entity(), Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -343,7 +343,7 @@ class FilesSpec
 
       "reject if no write permissions" in {
         files
-          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, Performant)
+          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, Async)
           .rejectedWith[AuthorizationFailed]
       }
 
@@ -354,22 +354,22 @@ class FilesSpec
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage, mediaType = None)
         files
-          .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path, Consistent)
+          .createLink("file2", Some(remoteId), projectRef, Some("myfile.txt"), None, path, Sync)
           .accepted shouldEqual
           FileGen.resourceFor(file2, projectRef, remoteRev, attr, RemoteStorageType, createdBy = bob, updatedBy = bob)
-        consistentWrite.valueFor(projectRef, file2, 1L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file2, 1L).accepted.value shouldEqual Sync
 
       }
 
       "reject if no filename" in {
         files
-          .createLink("file3", Some(remoteId), projectRef, None, None, Uri.Path("a/b/"), Performant)
+          .createLink("file3", Some(remoteId), projectRef, None, None, Uri.Path("a/b/"), Async)
           .rejectedWith[InvalidFileLink]
       }
 
       "reject if file id already exists" in {
         files
-          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, Performant)
+          .createLink("file2", Some(remoteId), projectRef, None, None, Uri.Path.Empty, Async)
           .rejected shouldEqual
           ResourceAlreadyExists(file2, projectRef)
       }
@@ -377,27 +377,27 @@ class FilesSpec
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .createLink("file3", Some(storage), projectRef, None, None, Uri.Path.Empty, Performant)
+          .createLink("file3", Some(storage), projectRef, None, None, Uri.Path.Empty, Async)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        files.createLink(None, projectRef, None, None, Uri.Path.Empty, Performant).rejected shouldEqual
+        files.createLink(None, projectRef, None, None, Uri.Path.Empty, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .createLink(Some(remoteId), deprecatedProject.ref, None, None, Uri.Path.Empty, Performant)
+          .createLink(Some(remoteId), deprecatedProject.ref, None, None, Uri.Path.Empty, Async)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .createLink(None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, Performant)
+          .createLink(None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, Async)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
@@ -406,36 +406,36 @@ class FilesSpec
     "updating a file" should {
 
       "succeed" in {
-        files.update("file1", None, projectRef, 1, entity(), Consistent).accepted shouldEqual
+        files.update("file1", None, projectRef, 1, entity(), Sync).accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attributes(), rev = 2, createdBy = bob, updatedBy = bob)
-        consistentWrite.valueFor(projectRef, file1, 2L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file1, 2L).accepted.value shouldEqual Sync
 
       }
 
       "reject if file doesn't exists" in {
-        files.update(nxv + "other", None, projectRef, 1, entity(), Performant).rejectedWith[FileNotFound]
+        files.update(nxv + "other", None, projectRef, 1, entity(), Async).rejectedWith[FileNotFound]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
-        files.update("file1", Some(storage), projectRef, 2, entity(), Performant).rejected shouldEqual
+        files.update("file1", Some(storage), projectRef, 2, entity(), Async).rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.update(file1, None, projectRef, 2, entity(), Performant).rejected shouldEqual
+        files.update(file1, None, projectRef, 2, entity(), Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.update(file1, None, deprecatedProject.ref, 2, entity(), Performant).rejected shouldEqual
+        files.update(file1, None, deprecatedProject.ref, 2, entity(), Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.update(file1, None, projectWithDeprecatedOrg.ref, 2, entity(), Performant).rejected shouldEqual
+        files.update(file1, None, projectWithDeprecatedOrg.ref, 2, entity(), Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -443,14 +443,14 @@ class FilesSpec
     "updating remote disk file attributes" should {
 
       "reject if digest is already computed" in {
-        files.updateAttributes(file1, projectRef, Performant).rejectedWith[DigestAlreadyComputed]
+        files.updateAttributes(file1, projectRef, Async).rejectedWith[DigestAlreadyComputed]
       }
 
       "succeed" in {
         val tempAttr = attributes("myfile.txt")
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
-        files.updateAttributes(file2, projectRef, Consistent).accepted shouldEqual
+        files.updateAttributes(file2, projectRef, Sync).accepted shouldEqual
           FileGen.resourceFor(
             file2,
             projectRef,
@@ -461,7 +461,7 @@ class FilesSpec
             createdBy = bob,
             updatedBy = bob
           )
-        consistentWrite.valueFor(projectRef, file2, 2L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file2, 2L).accepted.value shouldEqual Sync
 
       }
     }
@@ -474,7 +474,7 @@ class FilesSpec
         val attr     =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
         files
-          .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2, Consistent)
+          .updateLink("file2", Some(remoteId), projectRef, None, Some(`text/plain(UTF-8)`), path, 2, Sync)
           .accepted shouldEqual
           FileGen.resourceFor(
             file2,
@@ -486,26 +486,26 @@ class FilesSpec
             createdBy = bob,
             updatedBy = bob
           )
-        consistentWrite.valueFor(projectRef, file2, 3L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file2, 3L).accepted.value shouldEqual Sync
 
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateLink(nxv + "other", None, projectRef, None, None, Uri.Path.Empty, 1, Performant)
+          .updateLink(nxv + "other", None, projectRef, None, None, Uri.Path.Empty, 1, Async)
           .rejectedWith[FileNotFound]
       }
 
       "reject if digest is not computed" in {
         files
-          .updateLink("file2", None, projectRef, None, None, Uri.Path.Empty, 3, Performant)
+          .updateLink("file2", None, projectRef, None, None, Uri.Path.Empty, 3, Async)
           .rejectedWith[DigestNotComputed]
       }
 
       "reject if storage does not exist" in {
         val storage = nxv + "other-storage"
         files
-          .updateLink("file1", Some(storage), projectRef, None, None, Uri.Path.Empty, 2, Performant)
+          .updateLink("file1", Some(storage), projectRef, None, None, Uri.Path.Empty, 2, Async)
           .rejected shouldEqual
           WrappedStorageRejection(StorageNotFound(storage, projectRef))
       }
@@ -513,20 +513,20 @@ class FilesSpec
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.updateLink(file1, None, projectRef, None, None, Uri.Path.Empty, 2, Performant).rejected shouldEqual
+        files.updateLink(file1, None, projectRef, None, None, Uri.Path.Empty, 2, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .updateLink(file1, None, deprecatedProject.ref, None, None, Uri.Path.Empty, 2, Performant)
+          .updateLink(file1, None, deprecatedProject.ref, None, None, Uri.Path.Empty, 2, Async)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .updateLink(file1, None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, 2, Performant)
+          .updateLink(file1, None, projectWithDeprecatedOrg.ref, None, None, Uri.Path.Empty, 2, Async)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
@@ -539,16 +539,16 @@ class FilesSpec
       "succeed" in {
         val attr = attributes(size = 20)
         files
-          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 2, Consistent)
+          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 2, Sync)
           .accepted shouldEqual
           FileGen.resourceFor(file1, projectRef, diskRev, attr, rev = 3, createdBy = bob, updatedBy = bob)
-        consistentWrite.valueFor(projectRef, file1, 3L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file1, 3L).accepted.value shouldEqual Sync
 
       }
 
       "reject if file doesn't exists" in {
         files
-          .updateAttributes(nxv + "other", projectRef, attr.mediaType, attr.bytes, attr.digest, 3, Performant)
+          .updateAttributes(nxv + "other", projectRef, attr.mediaType, attr.bytes, attr.digest, 3, Async)
           .rejectedWith[FileNotFound]
       }
 
@@ -556,21 +556,21 @@ class FilesSpec
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
         files
-          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 3, Performant)
+          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 3, Async)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
         files
-          .updateAttributes("file1", deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3, Performant)
+          .updateAttributes("file1", deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3, Async)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
         files
-          .updateAttributes(file1, projectWithDeprecatedOrg.ref, attr.mediaType, attr.bytes, attr.digest, 3, Performant)
+          .updateAttributes(file1, projectWithDeprecatedOrg.ref, attr.mediaType, attr.bytes, attr.digest, 3, Async)
           .rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
@@ -579,7 +579,7 @@ class FilesSpec
     "tagging a file" should {
 
       "succeed" in {
-        files.tag(file1, projectRef, tag, tagRev = 1, 3, Consistent).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 1, 3, Sync).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
@@ -590,28 +590,28 @@ class FilesSpec
             createdBy = bob,
             updatedBy = bob
           )
-        consistentWrite.valueFor(projectRef, file1, 4).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file1, 4).accepted.value shouldEqual Sync
 
       }
 
       "reject if file doesn't exists" in {
-        files.tag(nxv + "other", projectRef, tag, tagRev = 1, 4, Performant).rejectedWith[FileNotFound]
+        files.tag(nxv + "other", projectRef, tag, tagRev = 1, 4, Async).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.tag(rdId, projectRef, tag, tagRev = 2, 4, Performant).rejected shouldEqual
+        files.tag(rdId, projectRef, tag, tagRev = 2, 4, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 4, Performant).rejected shouldEqual
+        files.tag(rdId, deprecatedProject.ref, tag, tagRev = 2, 4, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 4, Performant).rejected shouldEqual
+        files.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 4, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
     }
@@ -619,7 +619,7 @@ class FilesSpec
     "deprecating a file" should {
 
       "succeed" in {
-        files.deprecate(file1, projectRef, 4, Consistent).accepted shouldEqual
+        files.deprecate(file1, projectRef, 4, Sync).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
@@ -631,33 +631,33 @@ class FilesSpec
             createdBy = bob,
             updatedBy = bob
           )
-        consistentWrite.valueFor(projectRef, file1, 4L).accepted.value shouldEqual Consistent
+        consistentWrite.valueFor(projectRef, file1, 4L).accepted.value shouldEqual Sync
 
       }
 
       "reject if file doesn't exists" in {
-        files.deprecate(nxv + "other", projectRef, 1, Performant).rejectedWith[FileNotFound]
+        files.deprecate(nxv + "other", projectRef, 1, Async).rejectedWith[FileNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        files.deprecate(file1, projectRef, 3, Performant).rejected shouldEqual
+        files.deprecate(file1, projectRef, 3, Async).rejected shouldEqual
           IncorrectRev(provided = 3, expected = 5)
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        files.deprecate(file1, projectRef, 1, Performant).rejected shouldEqual
+        files.deprecate(file1, projectRef, 1, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        files.deprecate(file1, deprecatedProject.ref, 1, Performant).rejected shouldEqual
+        files.deprecate(file1, deprecatedProject.ref, 1, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(deprecatedProject.ref))
       }
 
       "reject if organization is deprecated" in {
-        files.tag(file1, projectWithDeprecatedOrg.ref, tag, 1, 1, Performant).rejected shouldEqual
+        files.tag(file1, projectWithDeprecatedOrg.ref, tag, 1, 1, Async).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 

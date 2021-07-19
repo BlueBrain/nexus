@@ -63,7 +63,7 @@ final class Storages private (
     projects: Projects,
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
     serviceAccount: ServiceAccount,
-    consistentWrite: ConsistentWrite
+    indexingAction: IndexingAction
 ) {
 
   private val updatedByDesc: Ordering[StorageResource] = Ordering.by[StorageResource, Instant](_.updatedAt).reverse
@@ -73,20 +73,20 @@ final class Storages private (
     *
     * @param projectRef     the project where the storage will belong
     * @param source         the payload to create the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   @SuppressWarnings(Array("PartialFunctionInsteadOfMatch"))
   def create(
       projectRef: ProjectRef,
       source: Secret[Json],
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
-      _                    <- unsetPreviousDefaultIfRequired(projectRef, res, executionType)
-      _                    <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _                    <- unsetPreviousDefaultIfRequired(projectRef, res, indexing)
+      _                    <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("createStorage", moduleType)
 
@@ -96,21 +96,21 @@ final class Storages private (
     * @param id             the storage identifier to expand as the id of the storage
     * @param projectRef     the project where the storage will belong
     * @param source         the payload to create the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Secret[Json],
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
-      _             <- unsetPreviousDefaultIfRequired(projectRef, res, executionType)
-      _             <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _             <- unsetPreviousDefaultIfRequired(projectRef, res, indexing)
+      _             <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("createStorage", moduleType)
 
@@ -120,21 +120,21 @@ final class Storages private (
     * @param id             the storage identifier to expand as the id of the storage
     * @param projectRef     the project where the storage will belong
     * @param storageFields  the value of the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       storageFields: StorageFields,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
-      _     <- unsetPreviousDefaultIfRequired(projectRef, res, executionType)
-      _     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _     <- unsetPreviousDefaultIfRequired(projectRef, res, indexing)
+      _     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("createStorage", moduleType)
 
@@ -145,16 +145,16 @@ final class Storages private (
     * @param projectRef     the project where the storage will belong
     * @param rev            the current revision of the storage
     * @param source         the payload to update the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       source: Secret[Json],
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] =
-    update(id, projectRef, rev, source, unsetPreviousDefault = true, executionType)
+    update(id, projectRef, rev, source, unsetPreviousDefault = true, indexing)
 
   private def update(
       id: IdSegment,
@@ -162,15 +162,15 @@ final class Storages private (
       rev: Long,
       source: Secret[Json],
       unsetPreviousDefault: Boolean,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
-      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res, executionType))
-      _             <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res, indexing))
+      _             <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -181,22 +181,22 @@ final class Storages private (
     * @param projectRef     the project where the storage will belong
     * @param rev            the current revision of the storage
     * @param storageFields  the value of the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       storageFields: StorageFields,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
-      _     <- unsetPreviousDefaultIfRequired(projectRef, res, executionType)
-      _     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _     <- unsetPreviousDefaultIfRequired(projectRef, res, indexing)
+      _     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("updateStorage", moduleType)
 
@@ -208,7 +208,7 @@ final class Storages private (
     * @param tag            the tag name
     * @param tagRev         the tag revision
     * @param rev            the current revision of the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def tag(
       id: IdSegment,
@@ -216,13 +216,13 @@ final class Storages private (
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), p)
-      _   <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _   <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("tagStorage", moduleType)
 
@@ -232,19 +232,19 @@ final class Storages private (
     * @param id             the storage identifier to expand as the id of the storage
     * @param projectRef     the project where the storage belongs
     * @param rev            the current revision of the storage
-    * @param executionType  the type of execution for this action
+    * @param indexing       the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
-      _   <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _   <- indexingAction(projectRef, eventExchangeValue(res), indexing)
 
     } yield res
   }.named("deprecateStorage", moduleType)
@@ -391,13 +391,13 @@ final class Storages private (
   private def unsetPreviousDefaultIfRequired(
       project: ProjectRef,
       current: StorageResource,
-      executionType: ExecutionType
+      indexing: Indexing
   ) =
     IO.when(current.value.default)(
       fetchDefaults(project).map(_.filter(_.id != current.id)).flatMap { resources =>
         resources.traverse { storage =>
           val source = storage.value.source.map(_.replace("default" -> true, false).replace("default" -> "true", false))
-          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false, executionType)(
+          val io     = update(storage.id, project, storage.rev, source, unsetPreviousDefault = false, indexing)(
             serviceAccount.caller
           )
           logFailureAndContinue(io)
@@ -485,7 +485,7 @@ object Storages {
       resourceIdCheck: ResourceIdCheck,
       crypto: Crypto,
       serviceAccount: ServiceAccount,
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -509,7 +509,7 @@ object Storages {
       idAvailability,
       crypto,
       serviceAccount,
-      consistentWrite
+      indexingAction
     )
   }
 
@@ -524,7 +524,7 @@ object Storages {
       idAvailability: IdAvailability[ResourceAlreadyExists],
       crypto: Crypto,
       serviceAccount: ServiceAccount,
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -537,7 +537,7 @@ object Storages {
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
       storages      =
-        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, serviceAccount, consistentWrite)
+        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, serviceAccount, indexingAction)
       _            <- startIndexing(config, eventLog, index, storages)
     } yield storages
 

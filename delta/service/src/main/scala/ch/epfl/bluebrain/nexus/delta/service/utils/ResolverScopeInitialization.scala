@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{Reso
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{ExecutionType, Resolvers, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, Resolvers, ScopeInitialization}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -28,7 +28,7 @@ class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceA
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
     resolvers
-      .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue, ExecutionType.Performant)
+      .create(nxv.defaultResolver, project.ref, defaultInProjectResolverValue, Indexing.Async)
       .void
       .onErrorHandleWith {
         case _: ResourceAlreadyExists        => UIO.unit // nothing to do, resolver already exits

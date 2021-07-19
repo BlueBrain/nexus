@@ -112,14 +112,14 @@ final class ResourcesRoutes(
                   }
                 },
                 // Create a resource without schema nor id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) { (source, execution) =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingType) { (source, indexing) =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, resources.create(ref, resourceSchema, source, execution).map(_.void))
+                      emit(Created, resources.create(ref, resourceSchema, source, indexing).map(_.void))
                     }
                   }
                 },
-                (idSegment & executionType) { (schema, execution) =>
+                (idSegment & indexingType) { (schema, indexing) =>
                   val schemaOpt = underscoreToOption(schema)
                   concat(
                     // Create a resource with schema but without id segment
@@ -129,7 +129,7 @@ final class ResourcesRoutes(
                           entity(as[Json]) { source =>
                             emit(
                               Created,
-                              resources.create(ref, schema, source, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                              resources.create(ref, schema, source, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
                             )
                           }
                         }
@@ -148,13 +148,13 @@ final class ResourcesRoutes(
                                       // Create a resource with schema and id segments
                                       emit(
                                         Created,
-                                        resources.create(id, ref, schema, source, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                        resources.create(id, ref, schema, source, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
                                       )
                                     case (Some(rev), source) =>
                                       // Update a resource
                                       emit(
                                         resources
-                                          .update(id, ref, schemaOpt, rev, source, execution)
+                                          .update(id, ref, schemaOpt, rev, source, indexing)
                                           .map(_.void)
                                           .rejectWhen(wrongJsonOrNotFound)
                                       )
@@ -165,7 +165,7 @@ final class ResourcesRoutes(
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   emit(
-                                    resources.deprecate(id, ref, schemaOpt, rev, execution).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                    resources.deprecate(id, ref, schemaOpt, rev, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
                                   )
                                 }
                               },
@@ -201,7 +201,7 @@ final class ResourcesRoutes(
                                     emit(
                                       Created,
                                       resources
-                                        .tag(id, ref, schemaOpt, tag, tagRev, rev, execution)
+                                        .tag(id, ref, schemaOpt, tag, tagRev, rev, indexing)
                                         .map(_.void)
                                         .rejectWhen(wrongJsonOrNotFound)
                                     )

@@ -141,7 +141,7 @@ class BlazegraphViewsRoutesSpec
   var restartedView: Option[(ProjectRef, Iri)] = None
 
   private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, ConsistentWriteDummy(), perms)
+  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, IndexingActionDummy(), perms)
 
   val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,

@@ -29,7 +29,7 @@ class ResourcesImplSpec
                          resolverContextResolution,
                          aggregate,
                          eventLog,
-                         consistentWrite
+                         indexingAction
                        )
     } yield resources
 }

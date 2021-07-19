@@ -38,45 +38,45 @@ trait Resources {
   /**
     * Creates a new resource where the id is either present on the payload or self generated.
     *
-    * @param projectRef     the project reference where the resource belongs
-    * @param source         the resource payload
-    * @param schema         the identifier that will be expanded to the schema reference to validate the resource
-    * @param executionType  the type of execution for this action
+    * @param projectRef the project reference where the resource belongs
+    * @param source     the resource payload
+    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param indexing   the type of indexing for this action
     */
   def create(
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Creates a new resource with the expanded form of the passed id.
     *
-    * @param id             the identifier that will be expanded to the Iri of the resource
-    * @param projectRef     the project reference where the resource belongs
-    * @param schema         the identifier that will be expanded to the schema reference to validate the resource
-    * @param source         the resource payload
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param source     the resource payload
+    * @param indexing   the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Updates an existing resource.
     *
-    * @param id             the identifier that will be expanded to the Iri of the resource
-    * @param projectRef     the project reference where the resource belongs
-    * @param schemaOpt      the optional identifier that will be expanded to the schema reference to validate the resource.
-    *                       A None value uses the currently available resource schema reference.
-    * @param rev            the current revision of the resource
-    * @param source         the resource payload
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference to validate the resource.
+    *                   A None value uses the currently available resource schema reference.
+    * @param rev        the current revision of the resource
+    * @param source     the resource payload
+    * @param indexing   the type of indexing for this action
     */
   def update(
       id: IdSegment,
@@ -84,20 +84,20 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
     * Adds a tag to an existing resource.
     *
-    * @param id             the identifier that will be expanded to the Iri of the resource
-    * @param projectRef     the project reference where the resource belongs
-    * @param schemaOpt      the optional identifier that will be expanded to the schema reference of the resource.
-    *                       A None value uses the currently available resource schema reference.
-    * @param tag            the tag name
-    * @param tagRev         the tag revision
-    * @param rev            the current revision of the resource
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
+    * @param tag        the tag name
+    * @param tagRev     the tag revision
+    * @param rev       the current revision of the resource
+    * @param indexing  the type of indexing for this action
     */
   def tag(
       id: IdSegment,
@@ -106,25 +106,25 @@ trait Resources {
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
     * Deprecates an existing resource.
     *
-    * @param id             the identifier that will be expanded to the Iri of the resource
-    * @param projectRef     the project reference where the resource belongs
-    * @param schemaOpt      the optional identifier that will be expanded to the schema reference of the resource.
-    *                       A None value uses the currently available resource schema reference.
-    * @param rev            the revision of the resource
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the resource
+    * @param projectRef the project reference where the resource belongs
+    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
+    *                   A None value uses the currently available resource schema reference.
+    * @param rev        the revision of the resource
+    * @param indexing  the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**

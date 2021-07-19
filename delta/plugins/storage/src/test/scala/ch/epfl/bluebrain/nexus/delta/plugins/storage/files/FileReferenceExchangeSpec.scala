@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConsistentWriteDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, IndexingActionDummy}
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -45,9 +45,9 @@ class FileReferenceExchangeSpec
     )
   )
 
-  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg, ConsistentWriteDummy())
+  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg, IndexingActionDummy())
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-  storages.create(diskId, projectRef, storageJson, Performant).accepted
+  storages.create(diskId, projectRef, storageJson, Async).accepted
 
   "A FileReferenceExchange" should {
     val id     = iri"http://localhost/${genString()}"
@@ -72,8 +72,8 @@ class FileReferenceExchangeSpec
 
     val exchange = Files.referenceExchange(files)
 
-    val resRev1 = files.create(id, Some(diskId), project.ref, entity(), Performant).accepted
-    val resRev2 = files.tag(id, project.ref, tag, 1L, 1L, Performant).accepted
+    val resRev1 = files.create(id, Some(diskId), project.ref, entity(), Async).accepted
+    val resRev2 = files.tag(id, project.ref, tag, 1L, 1L, Async).accepted
 
     "return a file by id" in {
       val value = exchange.fetch(project.ref, Latest(id)).accepted.value

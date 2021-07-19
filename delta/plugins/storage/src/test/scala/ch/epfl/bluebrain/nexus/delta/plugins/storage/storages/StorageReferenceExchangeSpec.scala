@@ -4,14 +4,14 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConsistentWriteDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, IndexingActionDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -44,7 +44,7 @@ class StorageReferenceExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val storages = StoragesSetup.init(org, project, ConsistentWriteDummy(), allowedPerms: _*)
+  private val storages = StoragesSetup.init(org, project, IndexingActionDummy(), allowedPerms: _*)
 
   "A StorageReferenceExchange" should {
     val id           = iri"http://localhost/${genString()}"
@@ -54,8 +54,8 @@ class StorageReferenceExchangeSpec
 
     val exchange = Storages.referenceExchange(storages)(crypto)
 
-    val resRev1 = storages.create(id, project.ref, sourceSecret, Performant).accepted
-    val resRev2 = storages.tag(id, project.ref, tag, 1L, 1L, Performant).accepted
+    val resRev1 = storages.create(id, project.ref, sourceSecret, Async).accepted
+    val resRev2 = storages.tag(id, project.ref, tag, 1L, 1L, Async).accepted
 
     "return a storage by id" in {
       val value = exchange.fetch(project.ref, Latest(id)).accepted.value

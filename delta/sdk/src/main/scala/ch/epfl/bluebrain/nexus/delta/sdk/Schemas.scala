@@ -36,11 +36,11 @@ trait Schemas {
   /**
     * Creates a new schema where the id is either present on the payload or self generated.
     *
-    * @param projectRef     the project reference where the schema belongs
-    * @param source         the schema payload
-    * @param executionType  the type of execution for this action
+    * @param projectRef the project reference where the schema belongs
+    * @param source     the schema payload
+    * @param indexing   the type of indexing for this action
     */
-  def create(projectRef: ProjectRef, source: Json, executionType: ExecutionType)(implicit
+  def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
       caller: Caller
   ): IO[SchemaRejection, SchemaResource]
 
@@ -50,41 +50,41 @@ trait Schemas {
     * @param id             the identifier that will be expanded to the Iri of the schema
     * @param projectRef     the project reference where the schema belongs
     * @param source         the schema payload
-    * @param executionType  the type of execution for this action
+    * @param indexing  the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
     * Updates an existing schema.
     *
-    * @param id             the identifier that will be expanded to the Iri of the schema
-    * @param projectRef     the project reference where the schema belongs
-    * @param rev            the current revision of the schema
-    * @param source         the schema payload
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the schema
+    * @param projectRef the project reference where the schema belongs
+    * @param rev        the current revision of the schema
+    * @param source     the schema payload
+    * @param indexing   the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
     * Adds a tag to an existing schema.
     *
-    * @param id             the identifier that will be expanded to the Iri of the schema
-    * @param projectRef     the project reference where the schema belongs
-    * @param tag            the tag name
-    * @param tagRev         the tag revision
-    * @param rev            the current revision of the schema
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the schema
+    * @param projectRef the project reference where the schema belongs
+    * @param tag        the tag name
+    * @param tagRev     the tag revision
+    * @param rev        the current revision of the schema
+    * @param indexing   the type of indexing for this action
     */
   def tag(
       id: IdSegment,
@@ -92,22 +92,22 @@ trait Schemas {
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
   /**
     * Deprecates an existing schema.
     *
-    * @param id             the identifier that will be expanded to the Iri of the schema
-    * @param projectRef     the project reference where the schema belongs
-    * @param rev            the revision of the schema
-    * @param executionType  the type of execution for this action
+    * @param id         the identifier that will be expanded to the Iri of the schema
+    * @param projectRef the project reference where the schema belongs
+    * @param rev        the revision of the schema
+    * @param indexing   the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
   /**

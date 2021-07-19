@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.{Consistent, Performant}
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
@@ -83,7 +83,7 @@ trait ResourcesBehaviors {
     projectsToDeprecate = projectDeprecated.ref :: Nil
   )
 
-  val consistentWrite = ConsistentWriteDummy()
+  val indexingAction = IndexingActionDummy()
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
     case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))
@@ -121,7 +121,7 @@ trait ResourcesBehaviors {
         forAll(List(myId -> resourceSchema, myId2 -> Latest(schema1.id))) { case (id, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(projectRef, schemaRef, sourceWithId, Consistent).accepted
+          val resource     = resources.create(projectRef, schemaRef, sourceWithId, Sync).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -129,7 +129,7 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-          consistentWrite.valueFor(projectRef, id, 1L).accepted.value shouldEqual Consistent
+          indexingAction.valueFor(projectRef, id, 1L).accepted.value shouldEqual Sync
         }
       }
 
@@ -142,7 +142,7 @@ trait ResourcesBehaviors {
         forAll(list) { case (id, schemaSegment, schemaRef) =>
           val sourceWithId = source deepMerge json"""{"@id": "$id"}"""
           val expectedData = ResourceGen.resource(id, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
-          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, Performant).accepted
+          val resource     = resources.create(id, projectRef, schemaSegment, sourceWithId, Async).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -150,7 +150,7 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-          consistentWrite.valueFor(projectRef, id, 1L).accepted.value shouldEqual Performant
+          indexingAction.valueFor(projectRef, id, 1L).accepted.value shouldEqual Async
 
         }
       }
@@ -167,7 +167,7 @@ trait ResourcesBehaviors {
             ResourceGen
               .resource(iri, projectRef, sourceWithId, Revision(schemaRef.iri, 1))
               .copy(source = sourceWithoutId)
-          val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId, Consistent).accepted
+          val resource        = resources.create(segment, projectRef, schemaRef, sourceWithoutId, Sync).accepted
           resource shouldEqual ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -175,7 +175,7 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-          consistentWrite.valueFor(projectRef, iri, 1L).accepted.value shouldEqual Consistent
+          indexingAction.valueFor(projectRef, iri, 1L).accepted.value shouldEqual Sync
 
         }
       }
@@ -188,9 +188,9 @@ trait ResourcesBehaviors {
         val expectedData   =
           ResourceGen.resource(myId7, projectRef, payloadWithCtx, schemaRev).copy(source = payload)
 
-        resources.create(myId7, projectRef, schemas.resources, payload, Consistent).accepted shouldEqual
+        resources.create(myId7, projectRef, schemas.resources, payload, Sync).accepted shouldEqual
           ResourceGen.resourceFor(expectedData, subject = subject, am = allApiMappings, base = projBase)
-        consistentWrite.valueFor(projectRef, myId7, 1L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, myId7, 1L).accepted.value shouldEqual Sync
 
       }
 
@@ -200,7 +200,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId8, projectRef, sourceMyId8, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, Consistent).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId8, Sync).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -208,7 +208,7 @@ trait ResourcesBehaviors {
           am = allApiMappings,
           base = projBase
         )
-        consistentWrite.valueFor(projectRef, expectedData.id, 1L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, expectedData.id, 1L).accepted.value shouldEqual Sync
       }
 
       "succeed when pointing to another resource which itself points to other resources in its context" in {
@@ -216,7 +216,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData =
           ResourceGen.resource(myId9, projectRef, sourceMyId9, schemaRev)(resolverContextResolution(projectRef))
-        val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, Consistent).accepted
+        val resource     = resources.create(projectRef, resourceSchema, sourceMyId9, Sync).accepted
         resource shouldEqual ResourceGen.resourceFor(
           expectedData,
           types = types,
@@ -224,21 +224,21 @@ trait ResourcesBehaviors {
           am = allApiMappings,
           base = projBase
         )
-        consistentWrite.valueFor(projectRef, expectedData.id, 1L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, expectedData.id, 1L).accepted.value shouldEqual Sync
       }
 
       "reject with different ids on the payload and passed" in {
         val otherId = nxv + "other"
-        resources.create(otherId, projectRef, schemas.resources, source, Performant).rejected shouldEqual
+        resources.create(otherId, projectRef, schemas.resources, source, Async).rejected shouldEqual
           UnexpectedResourceId(id = otherId, payloadId = myId)
       }
 
       "reject if it already exists" in {
-        resources.create(myId, projectRef, schemas.resources, source, Performant).rejected shouldEqual
+        resources.create(myId, projectRef, schemas.resources, source, Async).rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
 
         resources
-          .create("nxv:myid", projectRef, schemas.resources, source, Performant)
+          .create("nxv:myid", projectRef, schemas.resources, source, Async)
           .rejected shouldEqual
           ResourceAlreadyExists(myId, projectRef)
       }
@@ -246,14 +246,14 @@ trait ResourcesBehaviors {
       "reject if it does not validate against its schema" in {
         val otherId     = nxv + "other"
         val wrongSource = source deepMerge json"""{"@id": "$otherId", "number": "wrong"}"""
-        resources.create(otherId, projectRef, schema1.id, wrongSource, Performant).rejectedWith[InvalidResource]
+        resources.create(otherId, projectRef, schema1.id, wrongSource, Async).rejectedWith[InvalidResource]
       }
 
       "reject if the validated schema is deprecated" in {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
         forAll(List[IdSegment](schema2.id, "Person")) { segment =>
-          resources.create(otherId, projectRef, segment, noIdSource, Performant).rejected shouldEqual
+          resources.create(otherId, projectRef, segment, noIdSource, Async).rejected shouldEqual
             SchemaIsDeprecated(schema2.id)
 
         }
@@ -262,7 +262,7 @@ trait ResourcesBehaviors {
       "reject if the validated schema does not exists" in {
         val otherId    = nxv + "other"
         val noIdSource = source.removeKeys(keywords.id)
-        resources.create(otherId, projectRef, "nxv:notExist", noIdSource, Performant).rejected shouldEqual
+        resources.create(otherId, projectRef, "nxv:notExist", noIdSource, Async).rejected shouldEqual
           InvalidSchemaRejection(
             Latest(nxv + "notExist"),
             project.ref,
@@ -277,19 +277,19 @@ trait ResourcesBehaviors {
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
-        resources.create(projectRef, schemas.resources, source, Performant).rejected shouldEqual
+        resources.create(projectRef, schemas.resources, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
 
-        resources.create(myId, projectRef, schemas.resources, source, Performant).rejected shouldEqual
+        resources.create(myId, projectRef, schemas.resources, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.create(projectDeprecated.ref, schemas.resources, source, Performant).rejected shouldEqual
+        resources.create(projectDeprecated.ref, schemas.resources, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
 
         resources
-          .create(myId, projectDeprecated.ref, schemas.resources, source, Performant)
+          .create(myId, projectDeprecated.ref, schemas.resources, source, Async)
           .rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
@@ -299,7 +299,7 @@ trait ResourcesBehaviors {
         val unknownResource = nxv + "fail"
         val sourceMyIdX     =
           source.addContext(contexts.metadata).addContext(unknownResource) deepMerge json"""{"@id": "$myIdX"}"""
-        resources.create(projectRef, resourceSchema, sourceMyIdX, Performant).rejectedWith[InvalidJsonLdFormat]
+        resources.create(projectRef, resourceSchema, sourceMyIdX, Async).rejectedWith[InvalidJsonLdFormat]
       }
     }
 
@@ -308,7 +308,7 @@ trait ResourcesBehaviors {
       "succeed" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 60}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update(myId2, projectRef, Some(schema1.id), 1L, updated, Consistent).accepted shouldEqual
+        resources.update(myId2, projectRef, Some(schema1.id), 1L, updated, Sync).accepted shouldEqual
           ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -317,14 +317,14 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-        consistentWrite.valueFor(projectRef, myId2, 2L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, myId2, 2L).accepted.value shouldEqual Sync
 
       }
 
       "succeed without specifying the schema" in {
         val updated      = source.removeKeys(keywords.id) deepMerge json"""{"number": 65}"""
         val expectedData = ResourceGen.resource(myId2, projectRef, updated, Revision(schema1.id, 1))
-        resources.update("nxv:myid2", projectRef, None, 2L, updated, Performant).accepted shouldEqual
+        resources.update("nxv:myid2", projectRef, None, 2L, updated, Async).accepted shouldEqual
           ResourceGen.resourceFor(
             expectedData,
             types = types,
@@ -333,51 +333,51 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-        consistentWrite.valueFor(projectRef, expectedData.id, 3L).accepted.value shouldEqual Performant
+        indexingAction.valueFor(projectRef, expectedData.id, 3L).accepted.value shouldEqual Async
 
       }
 
       "reject if it doesn't exists" in {
         resources
-          .update(nxv + "other", projectRef, None, 1L, json"""{"a": "b"}""", Performant)
+          .update(nxv + "other", projectRef, None, 1L, json"""{"a": "b"}""", Async)
           .rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.update(myId, projectRef, None, 3L, json"""{"a": "b"}""", Performant).rejected shouldEqual
+        resources.update(myId, projectRef, None, 3L, json"""{"a": "b"}""", Async).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 1L)
       }
 
       "reject if deprecated" in {
-        resources.deprecate(myId3, projectRef, None, 1L, Performant).accepted
+        resources.deprecate(myId3, projectRef, None, 1L, Async).accepted
         resources
-          .update(myId3, projectRef, None, 2L, json"""{"a": "b"}""", Performant)
+          .update(myId3, projectRef, None, 2L, json"""{"a": "b"}""", Async)
           .rejectedWith[ResourceIsDeprecated]
         resources
-          .update("nxv:myid3", projectRef, None, 2L, json"""{"a": "b"}""", Performant)
+          .update("nxv:myid3", projectRef, None, 2L, json"""{"a": "b"}""", Async)
           .rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .update(myId2, projectRef, Some(schemas.resources), 3L, json"""{"a": "b"}""", Performant)
+          .update(myId2, projectRef, Some(schemas.resources), 3L, json"""{"a": "b"}""", Async)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if it does not validate against its schema" in {
         val wrongSource = source.removeKeys(keywords.id) deepMerge json"""{"number": "wrong"}"""
-        resources.update(myId2, projectRef, Some(schema1.id), 3L, wrongSource, Performant).rejectedWith[InvalidResource]
+        resources.update(myId2, projectRef, Some(schema1.id), 3L, wrongSource, Async).rejectedWith[InvalidResource]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.update(myId, projectRef, None, 2L, source, Performant).rejected shouldEqual
+        resources.update(myId, projectRef, None, 2L, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.update(myId, projectDeprecated.ref, None, 2L, source, Performant).rejected shouldEqual
+        resources.update(myId, projectDeprecated.ref, None, 2L, source, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
@@ -388,7 +388,7 @@ trait ResourcesBehaviors {
         val schemaRev    = Revision(resourceSchema.iri, 1)
         val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev, tags = Map(tag -> 1L))
         val resource     =
-          resources.tag(myId, projectRef, Some(schemas.resources), tag, 1L, 1L, Consistent).accepted
+          resources.tag(myId, projectRef, Some(schemas.resources), tag, 1L, 1L, Sync).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
@@ -398,33 +398,33 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-        consistentWrite.valueFor(projectRef, expectedData.id, 2L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, expectedData.id, 2L).accepted.value shouldEqual Sync
 
       }
 
       "reject if it doesn't exists" in {
-        resources.tag(nxv + "other", projectRef, None, tag, 1L, 1L, Performant).rejectedWith[ResourceNotFound]
+        resources.tag(nxv + "other", projectRef, None, tag, 1L, 1L, Async).rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.tag(myId, projectRef, None, tag, 1L, 3L, Performant).rejected shouldEqual
+        resources.tag(myId, projectRef, None, tag, 1L, 3L, Async).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        resources.tag(myId3, projectRef, None, tag, 2L, 2L, Performant).rejectedWith[ResourceIsDeprecated]
-        resources.tag("nxv:myid3", projectRef, None, tag, 2L, 2L, Performant).rejectedWith[ResourceIsDeprecated]
+        resources.tag(myId3, projectRef, None, tag, 2L, 2L, Async).rejectedWith[ResourceIsDeprecated]
+        resources.tag("nxv:myid3", projectRef, None, tag, 2L, 2L, Async).rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .tag(myId2, projectRef, Some(schemas.resources), tag, 2L, 3L, Performant)
+          .tag(myId2, projectRef, Some(schemas.resources), tag, 2L, 3L, Async)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if tag revision not found" in {
         resources
-          .tag(myId, projectRef, Some(schemas.resources), tag, 6L, 2L, Performant)
+          .tag(myId, projectRef, Some(schemas.resources), tag, 6L, 2L, Async)
           .rejected shouldEqual
           RevisionNotFound(provided = 6L, current = 2L)
       }
@@ -432,12 +432,12 @@ trait ResourcesBehaviors {
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.tag(myId, projectRef, None, tag, 2L, 1L, Performant).rejected shouldEqual
+        resources.tag(myId, projectRef, None, tag, 2L, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.tag(myId, projectDeprecated.ref, None, tag, 2L, 1L, Performant).rejected shouldEqual
+        resources.tag(myId, projectDeprecated.ref, None, tag, 2L, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
     }
@@ -447,7 +447,7 @@ trait ResourcesBehaviors {
       "succeed" in {
         val sourceWithId = source deepMerge json"""{"@id": "$myId4"}"""
         val expectedData = ResourceGen.resource(myId4, projectRef, sourceWithId, Revision(schema1.id, 1))
-        val resource     = resources.deprecate(myId4, projectRef, Some(schema1.id), 1L, Consistent).accepted
+        val resource     = resources.deprecate(myId4, projectRef, Some(schema1.id), 1L, Sync).accepted
         resource shouldEqual
           ResourceGen.resourceFor(
             expectedData,
@@ -458,39 +458,39 @@ trait ResourcesBehaviors {
             am = allApiMappings,
             base = projBase
           )
-        consistentWrite.valueFor(projectRef, expectedData.id, 2L).accepted.value shouldEqual Consistent
+        indexingAction.valueFor(projectRef, expectedData.id, 2L).accepted.value shouldEqual Sync
 
       }
 
       "reject if it doesn't exists" in {
-        resources.deprecate(nxv + "other", projectRef, None, 1L, Performant).rejectedWith[ResourceNotFound]
+        resources.deprecate(nxv + "other", projectRef, None, 1L, Async).rejectedWith[ResourceNotFound]
       }
 
       "reject if the revision passed is incorrect" in {
-        resources.deprecate(myId, projectRef, None, 3L, Performant).rejected shouldEqual
+        resources.deprecate(myId, projectRef, None, 3L, Async).rejected shouldEqual
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
       "reject if deprecated" in {
-        resources.deprecate(myId4, projectRef, None, 2L, Performant).rejectedWith[ResourceIsDeprecated]
-        resources.deprecate("nxv:myid4", projectRef, None, 2L, Performant).rejectedWith[ResourceIsDeprecated]
+        resources.deprecate(myId4, projectRef, None, 2L, Async).rejectedWith[ResourceIsDeprecated]
+        resources.deprecate("nxv:myid4", projectRef, None, 2L, Async).rejectedWith[ResourceIsDeprecated]
       }
 
       "reject if schemas do not match" in {
         resources
-          .deprecate(myId2, projectRef, Some(schemas.resources), 3L, Performant)
+          .deprecate(myId2, projectRef, Some(schemas.resources), 3L, Async)
           .rejectedWith[UnexpectedResourceSchema]
       }
 
       "reject if project does not exist" in {
         val projectRef = ProjectRef(org, Label.unsafe("other"))
 
-        resources.deprecate(myId, projectRef, None, 1L, Performant).rejected shouldEqual
+        resources.deprecate(myId, projectRef, None, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectNotFound(projectRef))
       }
 
       "reject if project is deprecated" in {
-        resources.deprecate(myId, projectDeprecated.ref, None, 1L, Performant).rejected shouldEqual
+        resources.deprecate(myId, projectDeprecated.ref, None, 1L, Async).rejected shouldEqual
           WrappedProjectRejection(ProjectIsDeprecated(projectDeprecated.ref))
       }
 

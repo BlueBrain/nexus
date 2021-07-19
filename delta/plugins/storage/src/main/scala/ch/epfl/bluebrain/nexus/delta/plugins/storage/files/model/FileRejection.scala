@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
@@ -226,9 +226,9 @@ object FileRejection {
       extends FileRejection(rejection.reason)
 
   /**
-    * Signals a rejection caused by a failure to perform consistent write.
+    * Signals a rejection caused by a failure to perform indexing.
     */
-  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends FileRejection(rejection.reason)
 
   /**
@@ -253,8 +253,8 @@ object FileRejection {
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
 
-  implicit val fileConsistentWriteRejectionMapper: Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
-    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
+  implicit val fileIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
 

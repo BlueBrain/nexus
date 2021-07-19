@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ExecutionType, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -210,16 +210,16 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     idSegment.flatMap(idSegmentRef(_))
 
   /**
-    * Creates [[ExecutionType]] from `execution` query param. Defaults to performant.
+    * Creates [[Indexing]] from `indexing` query param. Defaults to [[Indexing.Async]].
     */
-  val executionType: Directive1[ExecutionType] = parameter("execution".as[String].?).flatMap {
-    case None | Some("performant") => provide(ExecutionType.Performant)
-    case Some("consistent")        => provide(ExecutionType.Consistent)
-    case Some(_)                   =>
+  val indexingType: Directive1[Indexing] = parameter("indexing".as[String].?).flatMap {
+    case None | Some("async") => provide(Indexing.Async)
+    case Some("sync")         => provide(Indexing.Sync)
+    case Some(_)              =>
       reject(
         MalformedQueryParamRejection(
-          "execution",
-          "Invalid value of execution type, allowed values are 'performant' or 'consistent'."
+          "indexing",
+          "Invalid value of indexing type, allowed values are 'async' or 'sync'."
         )
       )
   }

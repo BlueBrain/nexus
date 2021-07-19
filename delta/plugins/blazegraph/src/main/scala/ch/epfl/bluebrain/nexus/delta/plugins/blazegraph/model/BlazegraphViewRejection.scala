@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ConsistentWriteFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -208,9 +208,9 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(error.toString)
 
   /**
-    * Signals a rejection caused by a failure to perform consistent write.
+    * Signals a rejection caused by a failure to perform indexing.
     */
-  final case class WrappedConsistentWriteRejection(rejection: ConsistentWriteFailed)
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends BlazegraphViewRejection(rejection.reason)
 
   /**
@@ -236,9 +236,9 @@ object BlazegraphViewRejection {
   implicit val blazegraphViewOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
 
-  implicit val blazegraphViewConsistentWriteRejectionMapper
-      : Mapper[ConsistentWriteFailed, WrappedConsistentWriteRejection] =
-    (value: ConsistentWriteFailed) => WrappedConsistentWriteRejection(value)
+  implicit val blazegraphViewIndexingActionRejectionMapper
+      : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)

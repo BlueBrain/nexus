@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ConsistentWrite.AggregateConsistentWrite
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
@@ -59,8 +59,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
 
-  make[ConsistentWrite].named("aggregate").from { (internal: Set[ConsistentWrite]) =>
-    AggregateConsistentWrite(internal.toSeq)
+  make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
+    AggregateIndexingAction(internal.toSeq)
   }
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {

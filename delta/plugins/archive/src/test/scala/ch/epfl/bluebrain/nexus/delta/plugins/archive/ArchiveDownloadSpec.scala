@@ -14,14 +14,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConsistentWriteDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, IndexingActionDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Permissions}
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
@@ -70,9 +70,9 @@ class ArchiveDownloadSpec
       )
     )
     .accepted
-  private val (files, storages) = FilesSetup.init(org, project, acls, cfg, ConsistentWriteDummy())
+  private val (files, storages) = FilesSetup.init(org, project, acls, cfg, IndexingActionDummy())
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-  storages.create(diskId, projectRef, storageJson, Performant).accepted
+  storages.create(diskId, projectRef, storageJson, Async).accepted
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {
     val path   = JFiles.createTempFile("test", ".tar")
@@ -98,10 +98,10 @@ class ArchiveDownloadSpec
 
   "An ArchiveDownload" should {
     val id1   = iri"http://localhost/${genString()}"
-    val file1 = files.create(id1, Some(diskId), project.ref, entity(), Performant).accepted
+    val file1 = files.create(id1, Some(diskId), project.ref, entity(), Async).accepted
 
     val id2 = iri"http://localhost/${genString()}"
-    files.create(id2, Some(diskId), project.ref, entity(genString(100)), Performant).accepted
+    files.create(id2, Some(diskId), project.ref, entity(genString(100)), Async).accepted
 
     val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
 

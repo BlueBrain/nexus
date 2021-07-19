@@ -141,7 +141,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          consistentWrite: ConsistentWrite @Id("aggregate")
+          indexingAction: IndexingAction @Id("aggregate")
       ) =>
         ElasticSearchViews(
           cfg,
@@ -153,7 +153,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           permissions,
           client,
           resourceIdCheck,
-          consistentWrite
+          indexingAction
         )(
           uuidF,
           clock,
@@ -311,7 +311,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ElasticSearchViews.referenceExchange(elasticSearchViews)
   }
 
-  many[ConsistentWrite].add {
+  many[IndexingAction].add {
     (
         client: ElasticSearchClient,
         cache: ElasticSearchViewCache,
@@ -319,7 +319,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ElasticSearchViews.consistentWrite(client, cache, config.indexing)(cr, baseUri)
+      ElasticSearchViews.indexingAction(client, cache, config.indexing)(cr, baseUri)
   }
 
   make[ElasticSearchViewEventExchange]

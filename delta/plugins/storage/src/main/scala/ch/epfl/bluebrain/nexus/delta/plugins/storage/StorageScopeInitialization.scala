@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.{ExecutionType, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, ScopeInitialization}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -33,7 +33,7 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
 
   override def onProjectCreation(project: Project, subject: Identity.Subject): IO[ScopeInitializationFailed, Unit] =
     storages
-      .create(defaultStorageId, project.ref, defaultValue, ExecutionType.Performant)
+      .create(defaultStorageId, project.ref, defaultValue, Indexing.Async)
       .void
       .onErrorHandleWith {
         case _: ResourceAlreadyExists        => UIO.unit // nothing to do, storage already exits

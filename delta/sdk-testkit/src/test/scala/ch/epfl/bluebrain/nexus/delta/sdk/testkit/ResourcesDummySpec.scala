@@ -23,7 +23,7 @@ class ResourcesDummySpec
     for {
       (orgs, projs) <- projectSetup
       r             <-
-        ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution, consistentWrite)
+        ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution, indexingAction)
     } yield r
 
 }

@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.SchemaDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConsistentWriteDummy, ProjectSetup, SchemasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IndexingActionDummy, ProjectSetup, SchemasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
@@ -77,13 +77,13 @@ class SchemaEventExchangeSpec
       schemaImports,
       resolverContextResolution,
       (_, _) => IO.unit,
-      ConsistentWriteDummy()
+      IndexingActionDummy()
     ).accepted
 
   "A SchemaEventExchange" should {
     val tag     = TagLabel.unsafe("tag")
-    val resRev1 = schemas.create(schema.id, project.ref, schema.source, Performant).accepted
-    val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L, Performant).accepted
+    val resRev1 = schemas.create(schema.id, project.ref, schema.source, Async).accepted
+    val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L, Async).accepted
 
     val exchange        = new SchemaEventExchange(schemas)
     val deprecatedEvent = SchemaDeprecated(schema.id, project.ref, 1, Instant.EPOCH, subject)

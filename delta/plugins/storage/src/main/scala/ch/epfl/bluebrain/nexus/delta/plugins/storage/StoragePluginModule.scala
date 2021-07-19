@@ -69,7 +69,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          consistentWrite: ConsistentWrite @Id("aggregate"),
+          indexingAction: IndexingAction @Id("aggregate"),
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
           crypto: Crypto,
@@ -85,7 +85,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           resourceIdCheck,
           crypto,
           serviceAccount,
-          consistentWrite
+          indexingAction
         )(
           client,
           uuidF,
@@ -136,7 +136,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           storages: Storages,
           resourceIdCheck: ResourceIdCheck,
-          consistentWrite: ConsistentWrite @Id("aggregate"),
+          consistentWrite: IndexingAction @Id("aggregate"),
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],

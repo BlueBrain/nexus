@@ -8,13 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ExecutionType.Performant
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConsistentWriteDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, IndexingActionDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -48,7 +48,7 @@ class StorageEventExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val storages = StoragesSetup.init(org, project, ConsistentWriteDummy(), allowedPerms: _*)
+  private val storages = StoragesSetup.init(org, project, IndexingActionDummy(), allowedPerms: _*)
 
   "A StorageEventExchanges" should {
     val id           = iri"http://localhost/${genString()}"
@@ -58,8 +58,8 @@ class StorageEventExchangeSpec
 
     val exchange = new StorageEventExchange(storages)(baseUri, crypto)
 
-    val resRev1         = storages.create(id, project.ref, sourceSecret, Performant).accepted
-    val resRev2         = storages.tag(id, project.ref, tag, 1L, 1L, Performant).accepted
+    val resRev1         = storages.create(id, project.ref, sourceSecret, Async).accepted
+    val resRev2         = storages.tag(id, project.ref, tag, 1L, 1L, Async).accepted
     val deprecatedEvent = StorageDeprecated(id, project.ref, DiskStorageType, 1, Instant.EPOCH, subject)
 
     "return the latest resource state from the event" in {

@@ -143,7 +143,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          consistentWrite: ConsistentWrite @Id("aggregate")
+          indexingAction: IndexingAction @Id("aggregate")
       ) =>
         BlazegraphViews(
           cfg,
@@ -155,7 +155,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           projects,
           resourceIdCheck,
           client,
-          consistentWrite
+          indexingAction
         )(
           uuidF,
           clock,
@@ -235,7 +235,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     BlazegraphViews.referenceExchange(views)
   }
 
-  many[ConsistentWrite].add {
+  many[IndexingAction].add {
     (
         client: BlazegraphClient @Id("blazegraph-query-client"),
         cache: BlazegraphViewsCache,
@@ -243,7 +243,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      BlazegraphViews.consistentWrite(client, cache, config.indexing)(cr, baseUri)
+      BlazegraphViews.indexingAction(client, cache, config.indexing)(cr, baseUri)
 
   }
 

@@ -34,7 +34,7 @@ import monix.bio.{IO, Task, UIO}
   * @param projects  the projects operations bundle
   * @param resourceResolution   to resolve schemas using resolvers
   * @param semaphore a semaphore for serializing write operations on the journal
-  * @param consistentWrite  the consistent write
+  * @param indexingAction  the consistent write
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
@@ -44,7 +44,7 @@ final class ResourcesDummy private (
     idAvailability: IdAvailability[ResourceAlreadyExists],
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection],
-    consistentWrite: ConsistentWrite
+    indexingAction: IndexingAction
 )(implicit clock: Clock[UIO])
     extends Resources {
 
@@ -54,14 +54,14 @@ final class ResourcesDummy private (
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                          <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _                          <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def create(
@@ -69,7 +69,7 @@ final class ResourcesDummy private (
       projectRef: ProjectRef,
       schema: IdSegment,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -77,7 +77,7 @@ final class ResourcesDummy private (
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def update(
@@ -86,7 +86,7 @@ final class ResourcesDummy private (
       schemaOpt: Option[IdSegment],
       rev: Long,
       source: Json,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -95,7 +95,7 @@ final class ResourcesDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <-
         eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
-      _                     <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def tag(
@@ -105,14 +105,14 @@ final class ResourcesDummy private (
       tag: TagLabel,
       tagRev: Long,
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
-      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _            <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def deprecate(
@@ -120,14 +120,14 @@ final class ResourcesDummy private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      executionType: ExecutionType
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
       project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
-      _            <- consistentWrite(projectRef, eventExchangeValue(res), executionType)
+      _            <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def fetch(
@@ -221,7 +221,7 @@ object ResourcesDummy {
     * @param projects the projects operations bundle
     * @param resourceResolution   to resolve schemas using resolvers
     * @param contextResolution the context resolver
-    * @param consistentWrite the consistent write
+    * @param indexingAction the indexing action
     */
   def apply(
       orgs: Organizations,
@@ -229,7 +229,7 @@ object ResourcesDummy {
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
@@ -243,7 +243,7 @@ object ResourcesDummy {
       idAvailability,
       sem,
       parser,
-      consistentWrite
+      indexingAction
     )
 
   /**
@@ -252,10 +252,10 @@ object ResourcesDummy {
     * @param orgs               the organizations operations bundle
     * @param projects           the projects operations bundle
     * @param resourceResolution to resolve schemas using resolvers
-    * @param idAvailability to resolve schemas using resolvers
+    * @param idAvailability     to resolve schemas using resolvers
     * @param contextResolution  the context resolver
     * @param journal            underlying [[Journal]]
-    * @param consistentWrite    the consistent write
+    * @param indexingAction     the indexing action
     */
   def apply(
       orgs: Organizations,
@@ -264,7 +264,7 @@ object ResourcesDummy {
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       journal: ResourcesJournal,
-      consistentWrite: ConsistentWrite
+      indexingAction: IndexingAction
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       sem   <- IOSemaphore(1L)
@@ -277,7 +277,7 @@ object ResourcesDummy {
       idAvailability,
       sem,
       parser,
-      consistentWrite
+      indexingAction
     )
 
 }

@@ -29,7 +29,7 @@ class SchemasImplSpec
                          SchemasConfig(aggregate, 20),
                          eventLog,
                          (_, _) => IO.unit,
-                         consistentWrite
+                         indexingAction
                        )
     } yield resources
 }

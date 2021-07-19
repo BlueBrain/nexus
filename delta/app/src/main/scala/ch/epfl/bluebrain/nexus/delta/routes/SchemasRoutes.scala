@@ -9,17 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
@@ -99,15 +98,15 @@ final class SchemasRoutes(
                   }
                 },
                 // Create a schema without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & executionType) {
-                  (source, execution) =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingType) {
+                  (source, indexing) =>
                     operationName(s"$prefixSegment/schemas/{org}/{project}") {
                       authorizeFor(ref, Write).apply {
-                        emit(Created, schemas.create(ref, source, execution).map(_.void))
+                        emit(Created, schemas.create(ref, source, indexing).map(_.void))
                       }
                     }
                 },
-                (idSegment & executionType) { (id, execution) =>
+                (idSegment & indexingType) { (id, indexing) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}") {
@@ -118,17 +117,17 @@ final class SchemasRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
-                                  emit(Created, schemas.create(id, ref, source, execution).map(_.void))
+                                  emit(Created, schemas.create(id, ref, source, indexing).map(_.void))
                                 case (Some(rev), source) =>
                                   // Update a schema
-                                  emit(schemas.update(id, ref, rev, source, execution).map(_.void))
+                                  emit(schemas.update(id, ref, rev, source, indexing).map(_.void))
                               }
                             }
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(schemas.deprecate(id, ref, rev, execution).map(_.void))
+                              emit(schemas.deprecate(id, ref, rev, indexing).map(_.void))
                             }
                           },
                           // Fetch a schema
@@ -159,7 +158,7 @@ final class SchemasRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev, execution).map(_.void))
+                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev, indexing).map(_.void))
                               }
                             }
                           }

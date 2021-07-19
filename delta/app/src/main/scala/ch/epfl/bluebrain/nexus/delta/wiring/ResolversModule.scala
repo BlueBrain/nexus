@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -37,7 +37,7 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
-        consistentWrite: ConsistentWrite @Id("aggregate"),
+        indexingAction: IndexingAction @Id("aggregate"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
@@ -51,7 +51,7 @@ object ResolversModule extends ModuleDef {
         projects,
         resolverContextResolution,
         resourceIdCheck,
-        consistentWrite
+        indexingAction
       )(uuidF, clock, scheduler, as, base)
   }
 
