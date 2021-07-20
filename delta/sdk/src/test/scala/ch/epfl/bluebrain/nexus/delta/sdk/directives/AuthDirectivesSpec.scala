@@ -47,7 +47,7 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
       token match {
         case AuthToken("alice") => IO.pure(userCaller)
         case AuthToken("bob")   => IO.pure(user2Caller)
-        case _                  => IO.raiseError(InvalidAccessToken)
+        case _                  => IO.raiseError(InvalidAccessToken(Some("Expired JWT")))
 
       }
     }

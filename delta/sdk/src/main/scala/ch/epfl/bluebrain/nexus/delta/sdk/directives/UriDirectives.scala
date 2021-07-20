@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.Uri.Path./
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.BasicDirectives.extractRequestContext
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -21,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, OrderingFields, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -65,7 +66,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   /**
     * Extract the ''sort'' query parameter(s) and provide an Ordering
     */
-  def sort[A]: Directive1[Ordering[ResourceF[A]]] = {
+  def sort[A: OrderingFields]: Directive1[Ordering[ResourceF[A]]] = {
 
     def ordering(field: String) = {
       val (fieldName, descending) =
@@ -73,14 +74,10 @@ trait UriDirectives extends QueryParamsUnmarshalling {
         else (field, false)
       ResourceF.sortBy[A](fieldName).map(ord => if (descending) ord.reverse else ord).toRight(fieldName)
     }
-
     parameter("sort".as[String].*).map(_.toList.reverse).flatMap {
       case Nil           => provide(ResourceF.defaultSort)
       case field :: tail =>
-        tail.foldLeft(ordering(field)) {
-          case (err @ Left(_), _)  => err
-          case (Right(ord), field) => ordering(field).map(ord.orElse)
-        } match {
+        ordering(field).flatMap(tail.foldM(_)((acc, field) => ordering(field).map(acc.orElse))) match {
           case Left(f)         => reject(MalformedQueryParamRejection("sort", s"'$f' cannot be used as a sorting value."))
           case Right(ordering) => provide(ordering)
         }
@@ -292,7 +289,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   private def replaceUriOnUnderscore(rootResourceType: String): Directive0 =
-    (get & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
+    ((get | delete) & pathPrefix("resources") & projectRef & pathPrefix("_") & pathPrefix(Segment))
       .tflatMap { case (projectRef, id) =>
         mapRequestContext { ctx =>
           val basePath = /(rootResourceType) / projectRef.organization.value / projectRef.project.value / id

@@ -46,13 +46,10 @@ object TokenRejection {
   final case object UnknownAccessTokenIssuer extends TokenRejection("The issuer referenced in the token was not found.")
 
   /**
-    * Rejection for cases where the access token is invalid: incorrect signature or the ''not before'' and
-    * ''expiration'' values are incorrect with respect to the current timestamp.
+    * Rejection for cases where the access token is invalid according to JWTClaimsVerifier
     */
-  final case object InvalidAccessToken
-      extends TokenRejection(
-        "The token is invalid; possible causes are: incorrect signature, the token is expired or the 'nbf' value was not met."
-      )
+  final case class InvalidAccessToken(details: Option[String] = None)
+      extends TokenRejection("The provided token is invalid.")
 
   /**
     * Rejection for cases where we couldn't fetch the groups from the OIDC provider
@@ -84,8 +81,12 @@ object TokenRejection {
         val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' after '$t'"
         JsonObject(keywords.tpe -> "TokenEvaluationTimeout".asJson, "reason" -> reason.asJson)
       case r                                               =>
-        val tpe = ClassUtils.simpleName(r)
-        JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+        val tpe  = ClassUtils.simpleName(r)
+        val json = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
+        r match {
+          case InvalidAccessToken(Some(details)) => json.add("details", details.asJson)
+          case _                                 => json
+        }
     }
 
   implicit final val tokenRejectionJsonLdEncoder: JsonLdEncoder[TokenRejection] =

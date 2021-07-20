@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptyList, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptyList, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
@@ -59,18 +59,19 @@ class EventSerializerSpec
   val instant: Instant    = Instant.EPOCH
   val rev: Long           = 1L
 
-  val realm: Label               = Label.unsafe("myrealm")
-  val name: Name                 = Name.unsafe("name")
-  val openIdConfig: Uri          = Uri("http://localhost:8080/.wellknown")
-  val issuer: String             = "http://localhost:8080/issuer"
-  val keys: Set[Json]            = Set(Json.obj("k" -> Json.fromString(issuer)))
-  val grantTypes: Set[GrantType] = Set(AuthorizationCode, Implicit, Password, ClientCredentials, DeviceCode, RefreshToken)
-  val logo: Uri                  = Uri("http://localhost:8080/logo.png")
-  val authorizationEndpoint: Uri = Uri("http://localhost:8080/authorize")
-  val tokenEndpoint: Uri         = Uri("http://localhost:8080/token")
-  val userInfoEndpoint: Uri      = Uri("http://localhost:8080/userinfo")
-  val revocationEndpoint: Uri    = Uri("http://localhost:8080/revocation")
-  val endSessionEndpoint: Uri    = Uri("http://localhost:8080/logout")
+  val realm: Label                           = Label.unsafe("myrealm")
+  val name: Name                             = Name.unsafe("name")
+  val openIdConfig: Uri                      = Uri("http://localhost:8080/.wellknown")
+  val issuer: String                         = "http://localhost:8080/issuer"
+  val keys: Set[Json]                        = Set(Json.obj("k" -> Json.fromString(issuer)))
+  val grantTypes: Set[GrantType]             = Set(AuthorizationCode, Implicit, Password, ClientCredentials, DeviceCode, RefreshToken)
+  val logo: Uri                              = Uri("http://localhost:8080/logo.png")
+  val acceptedAudiences: NonEmptySet[String] = NonEmptySet.of("audience")
+  val authorizationEndpoint: Uri             = Uri("http://localhost:8080/authorize")
+  val tokenEndpoint: Uri                     = Uri("http://localhost:8080/token")
+  val userInfoEndpoint: Uri                  = Uri("http://localhost:8080/userinfo")
+  val revocationEndpoint: Uri                = Uri("http://localhost:8080/revocation")
+  val endSessionEndpoint: Uri                = Uri("http://localhost:8080/logout")
 
   val subject: Subject         = User("username", realm)
   val anonymous: Subject       = Anonymous
@@ -144,6 +145,7 @@ class EventSerializerSpec
       keys = keys,
       grantTypes = grantTypes,
       logo = Some(logo),
+      acceptedAudiences = Some(acceptedAudiences),
       authorizationEndpoint = authorizationEndpoint,
       tokenEndpoint = tokenEndpoint,
       userInfoEndpoint = userInfoEndpoint,
@@ -161,6 +163,7 @@ class EventSerializerSpec
       keys = keys,
       grantTypes = grantTypes,
       logo = Some(logo),
+      acceptedAudiences = Some(acceptedAudiences),
       authorizationEndpoint = authorizationEndpoint,
       tokenEndpoint = tokenEndpoint,
       userInfoEndpoint = userInfoEndpoint,

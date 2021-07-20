@@ -112,116 +112,116 @@ class WellKnownResolverSpec
         rej.document shouldEqual openIdUri
         rej.location shouldEqual ".issuer"
       }
-    }
 
-    "the openid contains an invalid jwks_uri" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString("asd"))),
-        validJwks
-      ).rejectedWith[IllegalJwksUriFormat]
-
-      rej.document shouldEqual openIdUri
-      rej.location shouldEqual ".jwks_uri"
-    }
-
-    "the openid contains a jwks_uri with an invalid type" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromInt(3))),
-        validJwks
-      ).rejectedWith[IllegalJwksUriFormat]
-
-      rej.document shouldEqual openIdUri
-      rej.location shouldEqual ".jwks_uri"
-    }
-
-    "the openid contains a invalid grant_types" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.fromString("incorrect"))),
-        validJwks
-      ).rejectedWith[IllegalGrantTypeFormat]
-
-      rej.document shouldEqual openIdUri
-      rej.location shouldEqual ".grant_types_supported"
-    }
-
-    "the openid contains no valid grant_types" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.arr(Json.fromString("incorrect")))),
-        validJwks
-      ).rejectedWith[IllegalGrantTypeFormat]
-
-      rej.document shouldEqual openIdUri
-      rej.location shouldEqual ".grant_types_supported[0]"
-    }
-
-    "the openid contains an incorrect endpoint" in {
-      forAll(
-        List(
-          "authorization_endpoint",
-          "token_endpoint",
-          "userinfo_endpoint",
-          "revocation_endpoint",
-          "end_session_endpoint"
-        )
-      ) { key =>
+      "the openid contains an invalid jwks_uri" in {
         val rej = resolveWellKnown(
-          fullOpenIdConfig.deepMerge(Json.obj(key -> Json.fromInt(3))),
+          validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString("asd"))),
           validJwks
-        ).rejectedWith[IllegalEndpointFormat]
+        ).rejectedWith[IllegalJwksUriFormat]
 
         rej.document shouldEqual openIdUri
-        rej.location shouldEqual s".$key"
+        rej.location shouldEqual ".jwks_uri"
       }
-    }
 
-    "the openid does not contain required endpoints" in {
-      forAll(List("authorization_endpoint", "token_endpoint", "userinfo_endpoint")) { key =>
+      "the openid contains a jwks_uri with an invalid type" in {
         val rej = resolveWellKnown(
-          fullOpenIdConfig.hcursor.downField(key).delete.top.value,
+          validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromInt(3))),
           validJwks
-        ).rejectedWith[IllegalEndpointFormat]
+        ).rejectedWith[IllegalJwksUriFormat]
 
         rej.document shouldEqual openIdUri
-        rej.location shouldEqual s".$key"
-
+        rej.location shouldEqual ".jwks_uri"
       }
-    }
 
-    "the client returns a bad response for the jwks document" in {
-      val invalidJwksUri = Uri("https://localhost/invalid")
-      val rej            = resolveWellKnown(
-        validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString(invalidJwksUri.toString()))),
-        validJwks
-      ).rejectedWith[UnsuccessfulJwksResponse]
+      "the openid contains a invalid grant_types" in {
+        val rej = resolveWellKnown(
+          validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.fromString("incorrect"))),
+          validJwks
+        ).rejectedWith[IllegalGrantTypeFormat]
 
-      rej.document shouldEqual invalidJwksUri
-    }
+        rej.document shouldEqual openIdUri
+        rej.location shouldEqual ".grant_types_supported"
+      }
 
-    "the jwks document has an incorrect format" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig,
-        Json.obj()
-      ).rejectedWith[IllegalJwkFormat]
+      "the openid contains no valid grant_types" in {
+        val rej = resolveWellKnown(
+          validOpenIdConfig.deepMerge(Json.obj("grant_types_supported" -> Json.arr(Json.fromString("incorrect")))),
+          validJwks
+        ).rejectedWith[IllegalGrantTypeFormat]
 
-      rej.document shouldEqual jwksUri
-    }
+        rej.document shouldEqual openIdUri
+        rej.location shouldEqual ".grant_types_supported[0]"
+      }
 
-    "the jwks document has no keys" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig,
-        Json.obj("keys" -> Json.arr())
-      ).rejectedWith[NoValidKeysFound]
+      "the openid contains an incorrect endpoint" in {
+        forAll(
+          List(
+            "authorization_endpoint",
+            "token_endpoint",
+            "userinfo_endpoint",
+            "revocation_endpoint",
+            "end_session_endpoint"
+          )
+        ) { key =>
+          val rej = resolveWellKnown(
+            fullOpenIdConfig.deepMerge(Json.obj(key -> Json.fromInt(3))),
+            validJwks
+          ).rejectedWith[IllegalEndpointFormat]
 
-      rej.document shouldEqual jwksUri
-    }
+          rej.document shouldEqual openIdUri
+          rej.location shouldEqual s".$key"
+        }
+      }
 
-    "the jwks document has incorrect keys" in {
-      val rej = resolveWellKnown(
-        validOpenIdConfig,
-        Json.obj("keys" -> Json.arr(Json.fromString("incorrect")))
-      ).rejectedWith[NoValidKeysFound]
+      "the openid does not contain required endpoints" in {
+        forAll(List("authorization_endpoint", "token_endpoint", "userinfo_endpoint")) { key =>
+          val rej = resolveWellKnown(
+            fullOpenIdConfig.hcursor.downField(key).delete.top.value,
+            validJwks
+          ).rejectedWith[IllegalEndpointFormat]
 
-      rej.document shouldEqual jwksUri
+          rej.document shouldEqual openIdUri
+          rej.location shouldEqual s".$key"
+
+        }
+      }
+
+      "the client returns a bad response for the jwks document" in {
+        val invalidJwksUri = Uri("https://localhost/invalid")
+        val rej            = resolveWellKnown(
+          validOpenIdConfig.deepMerge(Json.obj("jwks_uri" -> Json.fromString(invalidJwksUri.toString()))),
+          validJwks
+        ).rejectedWith[UnsuccessfulJwksResponse]
+
+        rej.document shouldEqual invalidJwksUri
+      }
+
+      "the jwks document has an incorrect format" in {
+        val rej = resolveWellKnown(
+          validOpenIdConfig,
+          Json.obj()
+        ).rejectedWith[IllegalJwkFormat]
+
+        rej.document shouldEqual jwksUri
+      }
+
+      "the jwks document has no keys" in {
+        val rej = resolveWellKnown(
+          validOpenIdConfig,
+          Json.obj("keys" -> Json.arr())
+        ).rejectedWith[NoValidKeysFound]
+
+        rej.document shouldEqual jwksUri
+      }
+
+      "the jwks document has incorrect keys" in {
+        val rej = resolveWellKnown(
+          validOpenIdConfig,
+          Json.obj("keys" -> Json.arr(Json.fromString("incorrect")))
+        ).rejectedWith[NoValidKeysFound]
+
+        rej.document shouldEqual jwksUri
+      }
     }
   }
 

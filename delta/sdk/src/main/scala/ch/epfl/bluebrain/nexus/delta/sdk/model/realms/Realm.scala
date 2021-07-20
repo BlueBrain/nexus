@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptySet}
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -19,6 +20,7 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
   * @param issuer                an identifier for the issuer
   * @param grantTypes            the supported grant types of the realm
   * @param logo                  an optional logo address
+  * @param acceptedAudiences     the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
   * @param authorizationEndpoint the authorization endpoint
   * @param tokenEndpoint         the token endpoint
   * @param userInfoEndpoint      the user info endpoint
@@ -33,6 +35,7 @@ final case class Realm(
     issuer: String,
     grantTypes: Set[GrantType],
     logo: Option[Uri],
+    acceptedAudiences: Option[NonEmptySet[String]],
     authorizationEndpoint: Uri,
     tokenEndpoint: Uri,
     userInfoEndpoint: Uri,
@@ -83,4 +86,10 @@ object Realm {
   implicit private val realmMetadataEncoder: Encoder.AsObject[Metadata] = deriveConfiguredEncoder[Metadata]
   implicit val realmMetadataJsonLdEncoder: JsonLdEncoder[Metadata]      =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.realmsMetadata))
+
+  implicit val realmOrderingFields: OrderingFields[Realm] =
+    OrderingFields {
+      case "_label"  => Ordering[String] on (_.label.value)
+      case "_issuer" => Ordering[String] on (_.issuer)
+    }
 }

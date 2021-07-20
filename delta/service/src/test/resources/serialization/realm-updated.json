@@ -18,6 +18,7 @@
     "implicit"
   ],
   "logo": "http://localhost:8080/logo.png",
+  "acceptedAudiences": ["audience"],
   "authorizationEndpoint": "http://localhost:8080/authorize",
   "tokenEndpoint": "http://localhost:8080/token",
   "userInfoEndpoint": "http://localhost:8080/userinfo",

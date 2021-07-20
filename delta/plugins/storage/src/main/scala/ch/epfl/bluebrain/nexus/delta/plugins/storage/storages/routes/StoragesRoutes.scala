@@ -169,7 +169,12 @@ final class StoragesRoutes(
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(storages.deprecate(id, ref, rev, indexing).mapValue(_.metadata))
+                              emit(
+                                storages
+                                  .deprecate(id, ref, rev, indexing)
+                                  .mapValue(_.metadata)
+                                  .rejectOn[StorageNotFound]
+                              )
                             }
                           },
                           // Fetch a storage

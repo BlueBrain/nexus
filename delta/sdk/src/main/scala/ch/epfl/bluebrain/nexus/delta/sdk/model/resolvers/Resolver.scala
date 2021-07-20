@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -87,5 +88,7 @@ object Resolver {
 
   implicit def resolverJsonLdEncoder(implicit baseUri: BaseUri): JsonLdEncoder[Resolver] =
     JsonLdEncoder.computeFromCirce(_.id, context)
+
+  implicit val resolverOrderingFields: OrderingFields[Resolver] = OrderingFields.empty
 
 }

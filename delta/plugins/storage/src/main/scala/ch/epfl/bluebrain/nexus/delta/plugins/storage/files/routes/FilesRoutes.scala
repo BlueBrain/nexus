@@ -160,7 +160,7 @@ final class FilesRoutes(
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev, indexing))
+                              emit(files.deprecate(id, ref, rev, indexing).rejectOn[FileNotFound])
                             }
                           },
                           // Fetch a file

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.RealmNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
 import monix.bio.{IO, Task, UIO}
 
@@ -16,9 +16,9 @@ import monix.bio.{IO, Task, UIO}
 class RealmsMock(expected: Map[Label, RealmResource]) extends Realms {
   // format: off
 
-  override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit caller: Identity.Subject): IO[RealmRejection, RealmResource] = ???
+  override def create(label: Label, name: Name, openIdConfig: Uri, logo: Option[Uri], acceptedAudiences: Option[NonEmptySet[String]])(implicit caller: Identity.Subject): IO[RealmRejection, RealmResource] = ???
 
-  override def update(label: Label, rev: Long, name: Name, openIdConfig: Uri, logo: Option[Uri])(implicit caller: Identity.Subject): IO[RealmRejection, RealmResource] = ???
+  override def update(label: Label, rev: Long, name: Name, openIdConfig: Uri, logo: Option[Uri], acceptedAudiences: Option[NonEmptySet[String]])(implicit caller: Identity.Subject): IO[RealmRejection, RealmResource] = ???
 
   override def deprecate(label: Label, rev: Long)(implicit caller: Identity.Subject): IO[RealmRejection, RealmResource] = ???
 

@@ -147,7 +147,7 @@ class BlazegraphIndexingSpec
 
   private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
 
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
   private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
   private val projection          = Projection.inMemory(()).accepted

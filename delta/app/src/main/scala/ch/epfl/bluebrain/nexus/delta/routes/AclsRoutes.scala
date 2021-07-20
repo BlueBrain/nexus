@@ -96,114 +96,115 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
       }
     }
 
-  def routes: Route = baseUriPrefix(baseUri.prefix) {
-    pathPrefix("acls") {
-      extractCaller { implicit caller =>
-        concat(
-          // SSE ACLs
-          (pathPrefix("events") & pathEndOrSingleSlash) {
-            authorizeFor(AclAddress.Root, events.read).apply {
-              operationName(s"$prefixSegment/acls/events") {
-                lastEventId { offset =>
-                  emit(acls.events(offset))
+  def routes: Route =
+    baseUriPrefix(baseUri.prefix) {
+      pathPrefix("acls") {
+        extractCaller { implicit caller =>
+          concat(
+            // SSE ACLs
+            (pathPrefix("events") & pathEndOrSingleSlash) {
+              authorizeFor(AclAddress.Root, events.read).apply {
+                operationName(s"$prefixSegment/acls/events") {
+                  lastEventId { offset =>
+                    emit(acls.events(offset))
+                  }
+                }
+              }
+            },
+            extractAclAddress { address =>
+              parameter("rev" ? 0L) { rev =>
+                operationName(s"$prefixSegment/acls${address.string}") {
+                  concat(
+                    // Replace ACLs
+                    (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
+                      authorizeFor(address, aclsPermissions.write).apply {
+                        val status = if (rev == 0L) Created else OK
+                        emit(status, acls.replace(Acl(address, values: _*), rev).mapValue(_.metadata))
+                      }
+                    },
+                    // Append or subtract ACLs
+                    (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
+                      case Append(AclValues(values))   =>
+                        emit(acls.append(Acl(address, values: _*), rev).mapValue(_.metadata))
+                      case Subtract(AclValues(values)) =>
+                        emit(acls.subtract(Acl(address, values: _*), rev).mapValue(_.metadata))
+                    },
+                    // Delete ACLs
+                    delete {
+                      authorizeFor(address, aclsPermissions.write).apply {
+                        emit(acls.delete(address, rev).mapValue(_.metadata))
+                      }
+                    },
+                    // Fetch ACLs
+                    (get & parameter("self" ? true)) {
+                      case true  =>
+                        (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
+                          case (Some(_), true)    => emit(simultaneousRevAndAncestorsRejection)
+                          case (Some(rev), false) =>
+                            // Fetch self ACLs without ancestors at specific revision
+                            emit(notFoundToNone(acls.fetchSelfAt(address, rev)).map(searchResults(_)))
+                          case (None, true)       =>
+                            // Fetch self ACLs with ancestors
+                            emit(acls.fetchSelfWithAncestors(address).map(col => searchResults(col.value.values)))
+                          case (None, false)      =>
+                            // Fetch self ACLs without ancestors
+                            emit(notFoundToNone(acls.fetchSelf(address)).map(searchResults(_)))
+                        }
+                      case false =>
+                        authorizeFor(address, aclsPermissions.read).apply {
+                          (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
+                            case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
+                            case (Some(rev), false) =>
+                              // Fetch all ACLs without ancestors at specific revision
+                              emit(notFoundToNone(acls.fetchAt(address, rev)).map(searchResults(_)))
+                            case (None, true)       =>
+                              // Fetch all ACLs with ancestors
+                              emit(acls.fetchWithAncestors(address).map(col => searchResults(col.value.values)))
+                            case (None, false)      =>
+                              // Fetch all ACLs without ancestors
+                              emit(notFoundToNone(acls.fetch(address)).map(searchResults(_)))
+                          }
+                        }
+                    }
+                  )
+                }
+              }
+            },
+            // Filter ACLs
+            (get & extractAclAddressFilter) { addressFilter =>
+              operationName(s"$prefixSegment/acls${addressFilter.string}") {
+                parameter("self" ? true) {
+                  case true  =>
+                    // Filter self ACLs with or without ancestors
+                    emit(
+                      acls
+                        .listSelf(addressFilter)
+                        .map { aclCol =>
+                          val nonEmpty = aclCol.removeEmpty()
+                          SearchResults(nonEmpty.value.size.toLong, nonEmpty.value.values.toSeq)
+                        }
+                        .widen[SearchResults[AclResource]]
+                    )
+                  case false =>
+                    // Filter all ACLs with or without ancestors
+                    emit(
+                      acls
+                        .list(addressFilter)
+                        .map { aclCol =>
+                          val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
+                          val callerAcls     = aclCol.filter(caller.identities)
+                          val acls           = accessibleAcls ++ callerAcls
+                          SearchResults(acls.value.size.toLong, acls.value.values.toSeq)
+                        }
+                        .widen[SearchResults[AclResource]]
+                    )
                 }
               }
             }
-          },
-          extractAclAddress { address =>
-            parameter("rev" ? 0L) { rev =>
-              operationName(s"$prefixSegment/acls${address.string}") {
-                concat(
-                  // Replace ACLs
-                  (put & entity(as[ReplaceAcl])) { case ReplaceAcl(AclValues(values)) =>
-                    authorizeFor(address, aclsPermissions.write).apply {
-                      val status = if (rev == 0L) Created else OK
-                      emit(status, acls.replace(Acl(address, values: _*), rev).mapValue(_.metadata))
-                    }
-                  },
-                  // Append or subtract ACLs
-                  (patch & entity(as[PatchAcl]) & authorizeFor(address, aclsPermissions.write)) {
-                    case Append(AclValues(values))   =>
-                      emit(acls.append(Acl(address, values: _*), rev).mapValue(_.metadata))
-                    case Subtract(AclValues(values)) =>
-                      emit(acls.subtract(Acl(address, values: _*), rev).mapValue(_.metadata))
-                  },
-                  // Delete ACLs
-                  delete {
-                    authorizeFor(address, aclsPermissions.write).apply {
-                      emit(acls.delete(address, rev).mapValue(_.metadata))
-                    }
-                  },
-                  // Fetch ACLs
-                  (get & parameter("self" ? true)) {
-                    case true  =>
-                      (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
-                        case (Some(_), true)    => emit(simultaneousRevAndAncestorsRejection)
-                        case (Some(rev), false) =>
-                          // Fetch self ACLs without ancestors at specific revision
-                          emit(notFoundToNone(acls.fetchSelfAt(address, rev)).map(searchResults(_)))
-                        case (None, true)       =>
-                          // Fetch self ACLs with ancestors
-                          emit(acls.fetchSelfWithAncestors(address).map(col => searchResults(col.value.values)))
-                        case (None, false)      =>
-                          // Fetch self ACLs without ancestors
-                          emit(notFoundToNone(acls.fetchSelf(address)).map(searchResults(_)))
-                      }
-                    case false =>
-                      authorizeFor(address, aclsPermissions.read).apply {
-                        (parameter("rev".as[Long].?) & parameter("ancestors" ? false)) {
-                          case (Some(_), true)    => reject(simultaneousRevAndAncestorsRejection)
-                          case (Some(rev), false) =>
-                            // Fetch all ACLs without ancestors at specific revision
-                            emit(notFoundToNone(acls.fetchAt(address, rev)).map(searchResults(_)))
-                          case (None, true)       =>
-                            // Fetch all ACLs with ancestors
-                            emit(acls.fetchWithAncestors(address).map(col => searchResults(col.value.values)))
-                          case (None, false)      =>
-                            // Fetch all ACLs without ancestors
-                            emit(notFoundToNone(acls.fetch(address)).map(searchResults(_)))
-                        }
-                      }
-                  }
-                )
-              }
-            }
-          },
-          // Filter ACLs
-          (get & extractAclAddressFilter) { addressFilter =>
-            operationName(s"$prefixSegment/acls${addressFilter.string}") {
-              parameter("self" ? true) {
-                case true  =>
-                  // Filter self ACLs with or without ancestors
-                  emit(
-                    acls
-                      .listSelf(addressFilter)
-                      .map { aclCol =>
-                        val nonEmpty = aclCol.removeEmpty()
-                        SearchResults(nonEmpty.value.size.toLong, nonEmpty.value.values.toSeq)
-                      }
-                      .widen[SearchResults[AclResource]]
-                  )
-                case false =>
-                  // Filter all ACLs with or without ancestors
-                  emit(
-                    acls
-                      .list(addressFilter)
-                      .map { aclCol =>
-                        val accessibleAcls = aclCol.filterByPermission(caller.identities, aclsPermissions.read)
-                        val callerAcls     = aclCol.filter(caller.identities)
-                        val acls           = accessibleAcls ++ callerAcls
-                        SearchResults(acls.value.size.toLong, acls.value.values.toSeq)
-                      }
-                      .widen[SearchResults[AclResource]]
-                  )
-              }
-            }
-          }
-        )
+          )
+        }
       }
     }
-  }
 
   private def notFoundToNone(result: IO[AclRejection, AclResource]): IO[AclRejection, Option[AclResource]] =
     result.attempt.flatMap {
@@ -220,16 +221,17 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 
 object AclsRoutes {
 
-  @nowarn("cat=unused")
-  implicit private val config: Configuration =
-    Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
-
   final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
 
   final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
+
   private[routes] object AclValues {
-    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] =
+
+    @nowarn("cat=unused")
+    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
       deriveConfiguredDecoder[IdentityPermissions]
+    }
 
     implicit val aclValuesDecoder: Decoder[AclValues] =
       Decoder
@@ -239,7 +241,12 @@ object AclsRoutes {
 
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
-    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveConfiguredDecoder[ReplaceAcl]
+
+    @nowarn("cat=unused")
+    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
+      deriveConfiguredDecoder[ReplaceAcl]
+    }
   }
 
   sealed private[routes] trait PatchAcl extends Product with Serializable
@@ -247,7 +254,11 @@ object AclsRoutes {
     final case class Subtract(acl: AclValues) extends PatchAcl
     final case class Append(acl: AclValues)   extends PatchAcl
 
-    implicit val aclPatchDecoder: Decoder[PatchAcl] = deriveConfiguredDecoder[PatchAcl]
+    @nowarn("cat=unused")
+    implicit val aclPatchDecoder: Decoder[PatchAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
+      deriveConfiguredDecoder[PatchAcl]
+    }
   }
 
   /**

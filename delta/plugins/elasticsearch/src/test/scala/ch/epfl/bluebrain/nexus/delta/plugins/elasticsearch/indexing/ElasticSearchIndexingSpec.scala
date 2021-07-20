@@ -104,7 +104,7 @@ class ElasticSearchIndexingSpec
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit private val externalCfg: ExternalIndexingConfig = config.indexing
 
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never)
+  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
   private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
 

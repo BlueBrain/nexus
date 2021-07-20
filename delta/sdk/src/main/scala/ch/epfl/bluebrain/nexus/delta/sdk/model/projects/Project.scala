@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.{Metadata, Source}
 import io.circe.Encoder
@@ -120,5 +121,13 @@ object Project {
 
   implicit val projectMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.projectsMetadata))
+
+  implicit val projectOrderingFields: OrderingFields[Project] =
+    OrderingFields {
+      case "_label"             => Ordering[String] on (_.label.value)
+      case "_uuid"              => Ordering[UUID] on (_.uuid)
+      case "_organizationLabel" => Ordering[String] on (_.organizationLabel.value)
+      case "_organizationUuid"  => Ordering[UUID] on (_.organizationUuid)
+    }
 
 }
