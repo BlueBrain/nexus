@@ -79,6 +79,7 @@ object RealmState {
     * @param keys                  the collection of JWK keys in json format
     * @param grantTypes            the supported oauth2 grant types
     * @param logo                  an optional logo address
+    * @param acceptedAudiences     the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     * @param authorizationEndpoint the authorization endpoint
     * @param tokenEndpoint         the token endpoint
     * @param userInfoEndpoint      the user info endpoint
@@ -99,6 +100,7 @@ object RealmState {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
@@ -123,6 +125,7 @@ object RealmState {
         issuer = issuer,
         grantTypes = grantTypes,
         logo = logo,
+        acceptedAudiences = acceptedAudiences,
         authorizationEndpoint = authorizationEndpoint,
         tokenEndpoint = tokenEndpoint,
         userInfoEndpoint = userInfoEndpoint,

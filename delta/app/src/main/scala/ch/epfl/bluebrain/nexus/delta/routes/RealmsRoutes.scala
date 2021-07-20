@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource, Realms}
 import io.circe.Decoder
@@ -87,15 +87,17 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
                       parameter("rev".as[Long].?) {
                         case Some(rev) =>
                           // Update a realm
-                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
-                            emit(realms.update(id, rev, name, openIdConfig, logo).mapValue(_.metadata))
+                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
+                            emit(
+                              realms.update(id, rev, name, openIdConfig, logo, acceptedAudiences).mapValue(_.metadata)
+                            )
                           }
                         case None      =>
                           // Create a realm
-                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo) =>
+                          entity(as[RealmInput]) { case RealmInput(name, openIdConfig, logo, acceptedAudiences) =>
                             emit(
                               StatusCodes.Created,
-                              realms.create(id, name, openIdConfig, logo).mapValue(_.metadata)
+                              realms.create(id, name, openIdConfig, logo, acceptedAudiences).mapValue(_.metadata)
                             )
                           }
                       }
@@ -133,7 +135,12 @@ object RealmsRoutes {
   @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
 
-  final private[routes] case class RealmInput(name: Name, openIdConfig: Uri, logo: Option[Uri])
+  final private[routes] case class RealmInput(
+      name: Name,
+      openIdConfig: Uri,
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
+  )
   private[routes] object RealmInput {
     implicit val realmDecoder: Decoder[RealmInput] = deriveConfiguredDecoder[RealmInput]
   }

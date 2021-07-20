@@ -41,6 +41,7 @@ object RealmEvent {
     * @param keys                  the collection of keys
     * @param grantTypes            the types of OAuth2 grants supported
     * @param logo                  an optional address for a logo
+    * @param acceptedAudiences     the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     * @param authorizationEndpoint the authorization endpoint
     * @param tokenEndpoint         the token endpoint
     * @param userInfoEndpoint      the user info endpoint
@@ -58,6 +59,7 @@ object RealmEvent {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
@@ -78,6 +80,7 @@ object RealmEvent {
     * @param keys                  the collection of keys
     * @param grantTypes            the types of OAuth2 grants supported
     * @param logo                  an optional address for a logo
+    * @param acceptedAudiences     the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     * @param authorizationEndpoint the authorization endpoint
     * @param tokenEndpoint         the token endpoint
     * @param userInfoEndpoint      the user info endpoint
@@ -95,6 +98,7 @@ object RealmEvent {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
