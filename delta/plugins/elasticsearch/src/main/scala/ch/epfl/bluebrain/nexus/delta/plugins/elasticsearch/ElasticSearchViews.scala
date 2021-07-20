@@ -468,7 +468,7 @@ object ElasticSearchViews {
   def indexingAction(
       client: ElasticSearchClient,
       cache: ElasticSearchViewCache,
-      indexingConfig: ExternalIndexingConfig
+      config: ElasticSearchViewsConfig
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IndexingAction = {
     new IndexingAction {
       override def execute(
@@ -485,10 +485,10 @@ object ElasticSearchViews {
           queries     <- projectViews
                            .traverse { v =>
                              streamEntry
-                               .writeOrNone(IndexLabel.fromView(indexingConfig.prefix, v.value.uuid, v.rev), v.value)
+                               .writeOrNone(IndexLabel.fromView(config.indexing.prefix, v.value.uuid, v.rev), v.value)
                            }
                            .map(_.flatten)
-          _           <- client.bulk(queries)
+          _           <- client.bulk(queries, config.syncIndexingRefresh)
         } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
       }
     }

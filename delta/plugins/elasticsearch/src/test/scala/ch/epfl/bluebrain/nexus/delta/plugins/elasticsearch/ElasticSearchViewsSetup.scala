@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture.rcr
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -31,7 +32,8 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
     cacheIndexing,
     externalIndexing,
     10,
-    1.minute
+    1.minute,
+    Refresh.False
   )
 
   def init(

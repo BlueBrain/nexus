@@ -6,6 +6,7 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
@@ -98,7 +99,8 @@ class ElasticSearchIndexingSpec
     cacheIndexing,
     externalIndexing,
     10,
-    1.minute
+    1.minute,
+    Refresh.False
   )
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore

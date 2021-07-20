@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 import akka.http.scaladsl.model.Uri
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
@@ -19,15 +20,16 @@ import scala.util.Try
 /**
   * Configuration for the ElasticSearchView plugin.
   *
-  * @param base          the base uri to the Elasticsearch HTTP endpoint
-  * @param client        configuration of the Elasticsearch client
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing configuration of the cache indexing process
-  * @param indexing      configuration of the external indexing process
-  * @param maxViewRefs   configuration of the maximum number of view references allowed on an aggregated view
-  * @param idleTimeout   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param base                 the base uri to the Elasticsearch HTTP endpoint
+  * @param client               configuration of the Elasticsearch client
+  * @param aggregate            configuration of the underlying aggregate
+  * @param keyValueStore        configuration of the underlying key/value store
+  * @param pagination           configuration for how pagination should behave in listing operations
+  * @param cacheIndexing        configuration of the cache indexing process
+  * @param indexing             configuration of the external indexing process
+  * @param maxViewRefs          configuration of the maximum number of view references allowed on an aggregated view
+  * @param idleTimeout          the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param syncIndexingRefresh  the value for `refresh` Elasticsearch parameter for synchronous indexing
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -38,7 +40,8 @@ final case class ElasticSearchViewsConfig(
     cacheIndexing: CacheIndexingConfig,
     indexing: ExternalIndexingConfig,
     maxViewRefs: Int,
-    idleTimeout: Duration
+    idleTimeout: Duration,
+    syncIndexingRefresh: Refresh
 )
 
 object ElasticSearchViewsConfig {
@@ -59,6 +62,21 @@ object ElasticSearchViewsConfig {
       .toEither
       .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
   )
+
+  @nowarn("cat=unused")
+  implicit private val refreshConfigReader: ConfigReader[Refresh] = ConfigReader.fromString {
+    case "true"     => Right(Refresh.True)
+    case "false"    => Right(Refresh.False)
+    case "wait_for" => Right(Refresh.WaitFor)
+    case other      =>
+      Left(
+        CannotConvert(
+          other,
+          classOf[Uri].getSimpleName,
+          s"Incorrect value for 'refresh' parameter, allowed values are 'true', 'false', 'wait_for', got '$other' instead."
+        )
+      )
+  }
 
   implicit final val elasticSearchViewsConfigReader: ConfigReader[ElasticSearchViewsConfig] =
     deriveReader[ElasticSearchViewsConfig].emap { c =>

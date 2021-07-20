@@ -15,14 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.{ScoredResultEntry, UnscoredResultEntry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearchResults, UnscoredSearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.syntax._
 import io.circe.{Decoder, Json, JsonObject}
 import monix.bio.{IO, UIO}
-import io.circe.syntax._
 
 import scala.concurrent.duration._
 
@@ -35,6 +35,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   private val docPath                                            = "_doc"
   private val allIndexPath                                       = "_all"
   private val bulkPath                                           = "_bulk"
+  private val refreshParam                                       = "refresh"
   private val ignoreUnavailable                                  = "ignore_unavailable"
   private val allowNoIndices                                     = "allow_no_indices"
   private val searchPath                                         = "_search"
@@ -140,15 +141,17 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   /**
     * Creates a bulk update with the operations defined on the provided ''ops'' argument.
     *
-    * @param ops          the list of operations to be included in the bulk update
+    * @param ops      the list of operations to be included in the bulk update
+    * @param refresh  the value for the `refresh` Elasticsearch parameter
     */
-  def bulk(ops: Seq[ElasticSearchBulk]): HttpResult[Unit] =
+  def bulk(ops: Seq[ElasticSearchBulk], refresh: Refresh = Refresh.False): HttpResult[Unit] =
     if (ops.isEmpty) IO.unit
     else {
-      val entity = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
-      val req    = Post(endpoint / bulkPath, entity)
+      val bulkEndpoint = (endpoint / bulkPath).withQuery(Query(refreshParam -> refresh.value))
+      val entity       = HttpEntity(`application/x-ndjson`, ops.map(_.payload).mkString("", newLine, newLine))
+      val req          = Post(bulkEndpoint, entity)
       client
-        .toJson(Post(endpoint / bulkPath, entity))
+        .toJson(Post(bulkEndpoint, entity))
         .flatMap { json =>
           IO.unless(json.hcursor.get[Boolean]("errors").contains(false))(
             IO.raiseError(HttpClientStatusError(req, BadRequest, json.noSpaces))
@@ -229,6 +232,24 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
 }
 
 object ElasticSearchClient {
+
+  sealed trait Refresh {
+    def value: String
+  }
+
+  object Refresh {
+    case object True extends Refresh {
+      override def value: String = "true"
+    }
+
+    case object False extends Refresh {
+      override def value: String = "false"
+    }
+
+    case object WaitFor extends Refresh {
+      override def value: String = "wait_for"
+    }
+  }
 
   private def queryResults(json: JsonObject, scored: Boolean): Either[JsonObject, Vector[ResultEntry[JsonObject]]] = {
 

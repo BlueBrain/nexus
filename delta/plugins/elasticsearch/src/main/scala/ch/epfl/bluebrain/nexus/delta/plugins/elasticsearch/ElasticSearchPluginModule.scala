@@ -319,7 +319,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ElasticSearchViews.indexingAction(client, cache, config.indexing)(cr, baseUri)
+      ElasticSearchViews.indexingAction(client, cache, config)(cr, baseUri)
   }
 
   make[ElasticSearchViewEventExchange]
