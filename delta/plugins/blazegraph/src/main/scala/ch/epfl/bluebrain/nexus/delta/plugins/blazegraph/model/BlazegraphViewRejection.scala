@@ -291,6 +291,7 @@ object BlazegraphViewRejection {
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
       case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case AuthorizationFailed               => StatusCodes.Forbidden
       case _                                 => StatusCodes.BadRequest
     }

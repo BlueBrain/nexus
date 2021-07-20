@@ -308,6 +308,7 @@ object FileRejection {
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
       case FileEvaluationError(_)                                          => (StatusCodes.InternalServerError, Seq.empty)
       case UnexpectedInitialState(_, _)                                    => (StatusCodes.InternalServerError, Seq.empty)
+      case WrappedIndexingActionRejection(_)                               => (StatusCodes.InternalServerError, Seq.empty)
       case AuthorizationFailed(_, _)                                       => (StatusCodes.Forbidden, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)
     }

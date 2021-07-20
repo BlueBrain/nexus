@@ -276,9 +276,7 @@ final class BlazegraphViews(
       }
     }
 
-  private def eventExchangeValue(res: ViewResource)(implicit
-      enc: JsonLdEncoder[BlazegraphView]
-  ) =
+  private def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
     EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**

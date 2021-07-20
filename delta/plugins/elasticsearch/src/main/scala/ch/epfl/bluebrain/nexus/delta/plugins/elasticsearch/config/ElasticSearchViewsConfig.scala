@@ -72,7 +72,7 @@ object ElasticSearchViewsConfig {
       Left(
         CannotConvert(
           other,
-          classOf[Uri].getSimpleName,
+          classOf[Refresh].getSimpleName,
           s"Incorrect value for 'refresh' parameter, allowed values are 'true', 'false', 'wait_for', got '$other' instead."
         )
       )

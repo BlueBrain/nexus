@@ -299,6 +299,7 @@ object ElasticSearchViewRejection {
       case AuthorizationFailed                    => StatusCodes.Forbidden
       case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
       case ElasticSearchViewEvaluationError(_)    => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_)      => StatusCodes.InternalServerError
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

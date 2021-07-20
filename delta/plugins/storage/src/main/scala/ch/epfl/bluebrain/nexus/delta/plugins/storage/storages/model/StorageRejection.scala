@@ -283,6 +283,7 @@ object StorageRejection {
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
       case StorageEvaluationError(_)         => StatusCodes.InternalServerError
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
     }
 
