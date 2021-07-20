@@ -155,7 +155,7 @@ object HttpResponseFields {
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case ResourceRejection.ResourceEvaluationError(_)        => StatusCodes.InternalServerError
-      case ResolverRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
+      case ResourceRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                   => StatusCodes.BadRequest
     }
 
