@@ -178,19 +178,19 @@ class UriDirectivesSpec
       }
     }
 
-    "return performant when no query param is present" in {
+    "return async when no query param is present" in {
       Get("/base/indexing") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "async"
       }
     }
 
-    "return performant when specified in query param" in {
+    "return async when specified in query param" in {
       Get("/base/indexing?indexing=async") ~> Accept(`*/*`) ~> route ~> check {
-        response.asString shouldEqual "ascync"
+        response.asString shouldEqual "async"
       }
     }
 
-    "return consistent when specified in query param" in {
+    "return sync when specified in query param" in {
       Get("/base/indexing?indexing=sync") ~> Accept(`*/*`) ~> route ~> check {
         response.asString shouldEqual "sync"
       }
