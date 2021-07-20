@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+import scala.concurrent.duration._
 
 import java.net.URLEncoder
 
@@ -94,14 +95,14 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       val payload2 = jsonContentOf(
         "/kg/resources/simple-resource.json",
         "priority"   -> "5",
-        "resourceId" -> "10"
+        "resourceId" -> "a"
       )
 
       for {
         _ <- deltaClient.put[Json](s"/resources/$id1/test-schema/test-resource:1", payload, Rick) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
-        _ <- deltaClient.put[Json](s"/resources/$id1/$id2/test-resource:10", payload2, Rick) { (_, response) =>
+        _ <- deltaClient.put[Json](s"/resources/$id1/$id2/test-resource:a", payload2, Rick) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
              }
       } yield succeed
@@ -484,6 +485,30 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       result.flatMap { l =>
         Task.pure(l.flatten shouldEqual expected)
       }
+    }
+  }
+
+  "check consistence of responses" taggedAs ResourcesTag in {
+    (6 to 100).toList.traverse { resourceId =>
+      val payload = jsonContentOf(
+        "/kg/resources/simple-resource.json",
+        "priority"   -> "3",
+        "resourceId" -> s"$resourceId"
+      )
+      for {
+        _ <- deltaClient
+               .put[Json](s"/resources/$id1/test-schema/test-resource:$resourceId?indexing=sync", payload, Rick) {
+                 (_, response) =>
+                   response.status shouldEqual StatusCodes.Created
+               }
+        _ <- Task.sleep(100.millis)
+        _ <- deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               val received = json.asObject.value("_total").value.asNumber.value.toInt.value
+               val expected = resourceId
+               received shouldEqual expected
+             }
+      } yield succeed
     }
   }
 
