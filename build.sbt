@@ -183,12 +183,12 @@ lazy val docs = project
                          |""".stripMargin)
     },
     Compile / paradoxNavigationDepth := 4,
-    Compile / paradoxProperties      ++=
+    Compile / paradoxProperties     ++=
       Map(
-        "github.base_url" -> "https://github.com/BlueBrain/nexus/tree/master",
+        "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
         "project.version.short" -> "Snapshot",
-        "current.url" -> "https://bluebrainnexus.io/docs/",
-        "version.snapshot" -> "true"
+        "current.url"           -> "https://bluebrainnexus.io/docs/",
+        "version.snapshot"      -> "true"
       ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
@@ -203,6 +203,7 @@ lazy val docs = project
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
+        (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
         (storagePlugin / Compile / resourceDirectory).value / "contexts"
       )
@@ -472,6 +473,7 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       val pluginsTarget      = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
@@ -480,7 +482,8 @@ lazy val app = project
           bgFile             -> (pluginsTarget / bgFile.getName),
           storageFile        -> (pluginsTarget / storageFile.getName),
           archiveFile        -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName)
+          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile         -> (pluginsTarget / searchFile.getName)
         )
       )
     },
@@ -503,12 +506,14 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
-        (compositeViewsFile, "plugins/" + compositeViewsFile.getName)
+        (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
+        (searchFile, "plugins/" + searchFile.getName)
       )
     }
   )
@@ -628,6 +633,40 @@ lazy val compositeViewsPlugin = project
     Test / fork                := true
   )
 
+lazy val searchPlugin = project
+  .in(file("delta/plugins/search"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk                  % "provided;test->test",
+    sdkViews             % Provided,
+    sdkTestkit           % "test->compile;test->test",
+    elasticsearchPlugin  % Provided,
+    compositeViewsPlugin % Provided
+  )
+  .settings(
+    name                       := "delta-search-plugin",
+    moduleName                 := "delta-search-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp     % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
+    addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
+    assembly / assemblyJarName := "search.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
+    Test / fork                := true
+  )
+
 lazy val storagePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
@@ -702,7 +741,7 @@ lazy val archivePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, storagePlugin, archivePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
