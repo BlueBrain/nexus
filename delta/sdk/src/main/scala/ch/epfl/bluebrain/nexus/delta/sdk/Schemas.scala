@@ -9,7 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -35,20 +38,25 @@ trait Schemas {
     *
     * @param projectRef the project reference where the schema belongs
     * @param source     the schema payload
+    * @param indexing   the type of indexing for this action
     */
-  def create(projectRef: ProjectRef, source: Json)(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
+  def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
+      caller: Caller
+  ): IO[SchemaRejection, SchemaResource]
 
   /**
     * Creates a new schema with the expanded form of the passed id.
     *
-    * @param id         the identifier that will be expanded to the Iri of the schema
-    * @param projectRef the project reference where the schema belongs
-    * @param source     the schema payload
+    * @param id             the identifier that will be expanded to the Iri of the schema
+    * @param projectRef     the project reference where the schema belongs
+    * @param source         the schema payload
+    * @param indexing  the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
@@ -58,12 +66,14 @@ trait Schemas {
     * @param projectRef the project reference where the schema belongs
     * @param rev        the current revision of the schema
     * @param source     the schema payload
+    * @param indexing   the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource]
 
   /**
@@ -74,13 +84,15 @@ trait Schemas {
     * @param tag        the tag name
     * @param tagRev     the tag revision
     * @param rev        the current revision of the schema
+    * @param indexing   the type of indexing for this action
     */
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
   /**
@@ -88,12 +100,14 @@ trait Schemas {
     *
     * @param id         the identifier that will be expanded to the Iri of the schema
     * @param projectRef the project reference where the schema belongs
-    * @param rev       the revision of the schema
+    * @param rev        the revision of the schema
+    * @param indexing   the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
   /**
@@ -175,6 +189,12 @@ trait Schemas {
 }
 
 object Schemas {
+
+  /**
+    * Create an [[EventExchangeValue]] for schema
+    */
+  def eventExchangeValue(res: SchemaResource)(implicit enc: JsonLdEncoder[Schema]): EventExchangeValue[Schema, Unit] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
     * The schemas module type.

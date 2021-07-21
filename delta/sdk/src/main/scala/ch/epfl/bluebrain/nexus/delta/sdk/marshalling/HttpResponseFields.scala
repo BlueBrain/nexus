@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -139,6 +139,7 @@ object HttpResponseFields {
       case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
       case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
       case ResolverRejection.ResolverEvaluationError(_)            => StatusCodes.InternalServerError
+      case ResolverRejection.WrappedIndexingActionRejection(_)     => StatusCodes.InternalServerError
       case _                                                       => StatusCodes.BadRequest
     }
 
@@ -154,6 +155,7 @@ object HttpResponseFields {
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case ResourceRejection.ResourceEvaluationError(_)        => StatusCodes.InternalServerError
+      case ResourceRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                   => StatusCodes.BadRequest
     }
 
@@ -168,6 +170,7 @@ object HttpResponseFields {
       case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status
       case SchemaRejection.SchemaEvaluationError(_)          => StatusCodes.InternalServerError
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case SchemaRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
     }
 
@@ -175,6 +178,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case AuthorizationFailed          => StatusCodes.Forbidden
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
+      case IndexingFailed(_, _)         => StatusCodes.InternalServerError
     }
 
   implicit val responseFieldsUnit: HttpResponseFields[Unit] =

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -207,6 +208,12 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(error.toString)
 
   /**
+    * Signals a rejection caused by a failure to perform indexing.
+    */
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
+      extends BlazegraphViewRejection(rejection.reason)
+
+  /**
     * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
   final case class BlazegraphViewEvaluationError(err: EvaluationError)
@@ -228,6 +235,10 @@ object BlazegraphViewRejection {
 
   implicit val blazegraphViewOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit val blazegraphViewIndexingActionRejectionMapper
+      : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit val jsonLdRejectionMapper: Mapper[JsonLdRejection, BlazegraphViewRejection] = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedBlazegraphViewId(id, payloadIri)
@@ -280,6 +291,7 @@ object BlazegraphViewRejection {
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
       case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case AuthorizationFailed               => StatusCodes.Forbidden
       case _                                 => StatusCodes.BadRequest
     }

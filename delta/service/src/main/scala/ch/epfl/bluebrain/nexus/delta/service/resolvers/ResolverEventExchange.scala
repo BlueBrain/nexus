@@ -2,10 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverEvent, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ResolverResource, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue, ResolverResource, Resolvers}
 import monix.bio.{IO, UIO}
 
 /**
@@ -33,10 +32,10 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
 
   private def resourceToValue(
       resourceIO: IO[ResolverRejection, ResolverResource]
-  )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
+  )(implicit enc: JsonLdEncoder[A]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(())))
+        Some(Resolvers.eventExchangeValue(res))
       }
       .onErrorHandle(_ => None)
 }

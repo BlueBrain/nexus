@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
@@ -120,6 +121,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[ElasticSearchViewCache].fromEffect { (config: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
+    ElasticSearchViews.cache(config)(as)
+  }
+
   make[ElasticSearchViews]
     .fromEffect {
       (
@@ -129,14 +134,27 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           resourceIdCheck: ResourceIdCheck,
           client: ElasticSearchClient,
           permissions: Permissions,
+          cache: ElasticSearchViewCache,
           orgs: Organizations,
           projects: Projects,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler
+          scheduler: Scheduler,
+          indexingAction: IndexingAction @Id("aggregate")
       ) =>
-        ElasticSearchViews(cfg, log, contextResolution, orgs, projects, permissions, client, resourceIdCheck)(
+        ElasticSearchViews(
+          cfg,
+          log,
+          contextResolution,
+          cache,
+          orgs,
+          projects,
+          permissions,
+          client,
+          resourceIdCheck,
+          indexingAction
+        )(
           uuidF,
           clock,
           scheduler,
@@ -291,6 +309,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ReferenceExchange].add { (elasticSearchViews: ElasticSearchViews) =>
     ElasticSearchViews.referenceExchange(elasticSearchViews)
+  }
+
+  many[IndexingAction].add {
+    (
+        client: ElasticSearchClient,
+        cache: ElasticSearchViewCache,
+        config: ElasticSearchViewsConfig,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      ElasticSearchViews.indexingAction(client, cache, config)(cr, baseUri)
   }
 
   make[ElasticSearchViewEventExchange]

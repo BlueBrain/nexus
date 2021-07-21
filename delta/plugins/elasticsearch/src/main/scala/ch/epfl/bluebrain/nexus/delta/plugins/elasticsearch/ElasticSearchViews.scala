@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchViewsIndexing
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingStreamEntry, ElasticSearchViewsIndexing}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
@@ -19,9 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{IndexingActionFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -57,39 +62,45 @@ final class ElasticSearchViews private (
     cache: ElasticSearchViewCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: ElasticSearchViewJsonLdSourceDecoder
+    sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
+    indexingAction: IndexingAction
 )(implicit uuidF: UUIDF) {
 
   /**
     * Creates a new ElasticSearchView with a generated id.
     *
-    * @param project the parent project of the view
-    * @param value   the view configuration
-    * @param subject the subject that initiated the action
+    * @param project  the parent project of the view
+    * @param value    the view configuration
+    * @param subject  the subject that initiated the action
+    * @param indexing the type of indexing for this action
     */
   def create(
       project: ProjectRef,
-      value: ElasticSearchViewValue
+      value: ElasticSearchViewValue,
+      indexing: Indexing
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    uuidF().flatMap(uuid => create(uuid.toString, project, value))
+    uuidF().flatMap(uuid => create(uuid.toString, project, value, indexing))
 
   /**
     * Creates a new ElasticSearchView with a provided id.
     *
-    * @param id      the id of the view either in Iri or aliased form
-    * @param project the parent project of the view
-    * @param value   the view configuration
-    * @param subject the subject that initiated the action
+    * @param id       the id of the view either in Iri or aliased form
+    * @param project  the parent project of the view
+    * @param value    the view configuration
+    * @param subject  the subject that initiated the action
+    * @param indexing the type of indexing for this action
     */
   def create(
       id: IdSegment,
       project: ProjectRef,
-      value: ElasticSearchViewValue
+      value: ElasticSearchViewValue,
+      indexing: Indexing
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
+      _   <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -97,18 +108,21 @@ final class ElasticSearchViews private (
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
     * be used; otherwise a new identifier will be generated.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project  the parent project of the view
+    * @param source   the json representation of the view
+    * @param caller   the caller that initiated the action
+    * @param indexing the type of indexing for this action
     */
   def create(
       project: ProjectRef,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p            <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
+      _            <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -116,89 +130,101 @@ final class ElasticSearchViews private (
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
     * be used as long as it matches the provided id in Iri form or as an alias; otherwise the action will be rejected.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project        the parent project of the view
+    * @param source         the json representation of the view
+    * @param caller         the caller that initiated the action
+    * @param indexing       the type of indexing for this action
     */
   def create(
       id: IdSegment,
       project: ProjectRef,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
+      _     <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
   /**
     * Updates an existing ElasticSearchView.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param value   the new view configuration
-    * @param subject the subject that initiated the action
+    * @param id             the view identifier
+    * @param project        the view parent project
+    * @param rev            the current view revision
+    * @param value          the new view configuration
+    * @param subject        the subject that initiated the action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
       project: ProjectRef,
       rev: Long,
-      value: ElasticSearchViewValue
+      value: ElasticSearchViewValue,
+      indexing: Indexing
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
+      _   <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
   /**
     * Updates an existing ElasticSearchView.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param source  the new view configuration in json representation
-    * @param caller  the caller that initiated the action
+    * @param id             the view identifier
+    * @param project        the view parent project
+    * @param rev            the current view revision
+    * @param source         the new view configuration in json representation
+    * @param caller         the caller that initiated the action
+    * @param indexing       the type of indexing for this action
     */
   def update(
       id: IdSegment,
       project: ProjectRef,
       rev: Long,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p     <- projects.fetchActiveProject(project)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
+      _     <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
   /**
     * Applies a tag to an existing ElasticSearchView revision.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tag     the tag to apply
-    * @param tagRev  the target revision of the tag
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id             the view identifier
+    * @param project        the view parent project
+    * @param tag            the tag to apply
+    * @param tagRev         the target revision of the tag
+    * @param rev            the current view revision
+    * @param subject        the subject that initiated the action
+    * @param indexing       the type of indexing for this action
     */
   def tag(
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), p)
+      _   <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("tagElasticSearchView", moduleType)
 
@@ -206,22 +232,30 @@ final class ElasticSearchViews private (
     * Deprecates an existing ElasticSearchView. View deprecation implies blocking any query capabilities and in case of
     * an IndexingElasticSearchView the corresponding index is deleted.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id             the view identifier
+    * @param project        the view parent project
+    * @param rev            the current view revision
+    * @param subject        the subject that initiated the action
+    * @param indexing       the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
+      _   <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("deprecateElasticSearchView", moduleType)
+
+  private def eventExchangeValue(res: ViewResource)(implicit
+      enc: JsonLdEncoder[ElasticSearchView]
+  ) =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * Retrieves a current ElasticSearchView resource.
@@ -354,7 +388,7 @@ final class ElasticSearchViews private (
                            result.state.toResource(am, base, defaultMapping, defaultSettings),
                            UnexpectedInitialState(cmd.id, project.ref)
                          )
-      _               <- cache.put(ViewRef(cmd.project, cmd.id), resource)
+      _               <- cache.put(cmd.project, cmd.id, resource)
     } yield resource
 
   private def identifier(project: ProjectRef, id: Iri): String =
@@ -431,6 +465,35 @@ object ElasticSearchViews {
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
   }
 
+  def indexingAction(
+      client: ElasticSearchClient,
+      cache: ElasticSearchViewCache,
+      config: ElasticSearchViewsConfig
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IndexingAction = {
+    new IndexingAction {
+      override def execute(
+          project: ProjectRef,
+          res: EventExchangeValue[_, _]
+      ): IO[IndexingActionFailed, Unit] = {
+        (for {
+          projectViews <- cache.get(project).map { vs =>
+                            vs.filter(v => v.value.tpe == ElasticSearchIndexing && !v.deprecated)
+                              .map(_.map(_.asInstanceOf[IndexingElasticSearchView]))
+                          }
+
+          streamEntry <- ElasticSearchIndexingStreamEntry.fromEventExchange(res)
+          queries     <- projectViews
+                           .traverse { v =>
+                             streamEntry
+                               .writeOrNone(IndexLabel.fromView(config.indexing.prefix, v.value.uuid, v.rev), v.value)
+                           }
+                           .map(_.flatten)
+          _           <- client.bulk(queries, config.syncIndexingRefresh)
+        } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
+      }
+    }
+  }
+
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
     */
@@ -438,11 +501,13 @@ object ElasticSearchViews {
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       contextResolution: ResolverContextResolution,
+      cache: ElasticSearchViewCache,
       orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
       client: ElasticSearchClient,
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      indexingAction: IndexingAction
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -452,18 +517,31 @@ object ElasticSearchViews {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
 
-    apply(config, eventLog, contextResolution, orgs, projects, permissions, validIndex(client), idAvailability)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      cache,
+      orgs,
+      projects,
+      permissions,
+      validIndex(client),
+      idAvailability,
+      indexingAction
+    )
   }
 
   private[elasticsearch] def apply(
       config: ElasticSearchViewsConfig,
       eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
       contextResolution: ResolverContextResolution,
+      cache: ElasticSearchViewCache,
       orgs: Organizations,
       projects: Projects,
       permissions: Permissions,
       validateIndex: ValidateIndex,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      indexingAction: IndexingAction
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -504,11 +582,10 @@ object ElasticSearchViews {
                     validateRef(deferred),
                     idAvailability
                   )
-      index    <- cache(config)
       decoder   = ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
-      views     = new ElasticSearchViews(agg, eventLog, index, orgs, projects, decoder)
+      views     = new ElasticSearchViews(agg, eventLog, cache, orgs, projects, decoder, indexingAction)
       _        <- deferred.complete(views)
-      _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
+      _        <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views
   }
 
@@ -520,16 +597,18 @@ object ElasticSearchViews {
     ElasticSearchViewRejection
   ]
 
-  type ElasticSearchViewCache = KeyValueStore[ViewRef, ViewResource]
+  type ElasticSearchViewCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
 
   /**
     * Creates a new distributed ElasticSearchViewCache.
     */
-  private def cache(config: ElasticSearchViewsConfig)(implicit as: ActorSystem[Nothing]): UIO[ElasticSearchViewCache] =
+  private[elasticsearch] def cache(
+      config: ElasticSearchViewsConfig
+  )(implicit as: ActorSystem[Nothing]): UIO[ElasticSearchViewCache] =
     UIO.delay {
       implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
       val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
-      KeyValueStore.distributed(moduleType, clock)
+      CompositeKeyValueStore(moduleType, clock)
     }
 
   private def aggregate(

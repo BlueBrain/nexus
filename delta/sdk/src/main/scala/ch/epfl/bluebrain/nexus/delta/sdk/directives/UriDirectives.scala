@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, OrderingFields, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -205,6 +205,21 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   val idSegmentRef: Directive1[IdSegmentRef] =
     idSegment.flatMap(idSegmentRef(_))
+
+  /**
+    * Creates [[Indexing]] from `indexing` query param. Defaults to [[Indexing.Async]].
+    */
+  val indexingType: Directive1[Indexing] = parameter("indexing".as[String].?).flatMap {
+    case None | Some("async") => provide(Indexing.Async)
+    case Some("sync")         => provide(Indexing.Sync)
+    case Some(_)              =>
+      reject(
+        MalformedQueryParamRejection(
+          "indexing",
+          "Invalid value of indexing type, allowed values are 'async' or 'sync'."
+        )
+      )
+  }
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]

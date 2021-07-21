@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.BlazegraphViewsCache
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream, BlazegraphOnEventInstant}
@@ -16,9 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
@@ -122,6 +123,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[BlazegraphViewsCache].from { (config: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
+    BlazegraphViews.cache(config)(as)
+  }
+
   make[BlazegraphViews]
     .fromEffect {
       (
@@ -131,14 +136,27 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           resourceIdCheck: ResourceIdCheck,
           client: BlazegraphClient @Id("blazegraph-indexing-client"),
           permissions: Permissions,
+          cache: BlazegraphViewsCache,
           orgs: Organizations,
           projects: Projects,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler
+          scheduler: Scheduler,
+          indexingAction: IndexingAction @Id("aggregate")
       ) =>
-        BlazegraphViews(cfg, log, contextResolution, permissions, orgs, projects, resourceIdCheck, client)(
+        BlazegraphViews(
+          cfg,
+          log,
+          contextResolution,
+          permissions,
+          cache,
+          orgs,
+          projects,
+          resourceIdCheck,
+          client,
+          indexingAction
+        )(
           uuidF,
           clock,
           scheduler,
@@ -215,6 +233,18 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ReferenceExchange].add { (views: BlazegraphViews) =>
     BlazegraphViews.referenceExchange(views)
+  }
+
+  many[IndexingAction].add {
+    (
+        client: BlazegraphClient @Id("blazegraph-query-client"),
+        cache: BlazegraphViewsCache,
+        config: BlazegraphViewsConfig,
+        baseUri: BaseUri,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      BlazegraphViews.indexingAction(client, cache, config.indexing)(cr, baseUri)
+
   }
 
   make[BlazegraphViewEventExchange]

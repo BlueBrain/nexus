@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -119,7 +119,8 @@ class ResolversRoutesSpec
         case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
+  private val resolvers =
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit, IndexingActionDummy()).accepted
 
   private val resolverResolution = ResolverResolution(
     acls,

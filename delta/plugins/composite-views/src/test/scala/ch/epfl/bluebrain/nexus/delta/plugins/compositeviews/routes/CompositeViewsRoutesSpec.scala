@@ -65,19 +65,20 @@ class CompositeViewsRoutesSpec
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
 
-  implicit val ordering: JsonKeyOrdering          =
+  implicit val ordering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
+
+  implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
-  val realm                     = Label.unsafe("myrealm")
-  val bob                       = User("Bob", realm)
-  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val identities        = IdentitiesDummy(Map(AuthToken("bob") -> caller))
-  private val asBob             = addCredentials(OAuth2BearerToken("bob"))
+  val realm                   = Label.unsafe("myrealm")
+  val bob                     = User("Bob", realm)
+  implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  private val identities      = IdentitiesDummy(Map(AuthToken("bob") -> caller))
+  private val asBob           = addCredentials(OAuth2BearerToken("bob"))
 
   val undefinedPermission = Permission.unsafe("not/defined")
   val allowedPerms        = Set(

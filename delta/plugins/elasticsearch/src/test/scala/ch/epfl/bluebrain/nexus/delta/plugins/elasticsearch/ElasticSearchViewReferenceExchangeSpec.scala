@@ -3,13 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, permissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, IndexingActionDummy}
 import io.circe.literal._
 import io.circe.syntax._
 import monix.execution.Scheduler
@@ -35,7 +36,14 @@ class ElasticSearchViewReferenceExchangeSpec
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val views: ElasticSearchViews =
-    ElasticSearchViewsSetup.init(org, project, permissions.write, permissions.query, permissions.read)
+    ElasticSearchViewsSetup.init(
+      org,
+      project,
+      IndexingActionDummy(),
+      permissions.write,
+      permissions.query,
+      permissions.read
+    )
 
   private val mapping = defaultElasticsearchMapping.accepted.asJson
 
@@ -47,8 +55,8 @@ class ElasticSearchViewReferenceExchangeSpec
               "mapping": $mapping
             }"""
     val tag     = TagLabel.unsafe("tag")
-    val resRev1 = views.create(id, project.ref, source).accepted
-    val resRev2 = views.tag(id, project.ref, tag, 1L, 1L).accepted
+    val resRev1 = views.create(id, project.ref, source, Async).accepted
+    val resRev2 = views.tag(id, project.ref, tag, 1L, 1L, Async).accepted
 
     val exchange = ElasticSearchViews.referenceExchange(views)
 

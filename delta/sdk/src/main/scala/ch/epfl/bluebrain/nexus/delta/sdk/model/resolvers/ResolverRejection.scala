@@ -10,14 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -207,6 +208,12 @@ object ResolverRejection {
       extends ResolverRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused by a failure to perform consistent write.
+    */
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
+      extends ResolverRejection(rejection.reason)
+
+  /**
     * Rejection returned when the returned state is the initial state after a Resolvers.evaluation plus a Resolvers.next
     * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
     */
@@ -232,6 +239,9 @@ object ResolverRejection {
 
   implicit val resolverOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     WrappedOrganizationRejection.apply
+
+  implicit val resolverIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, ResolverRejection] = ResolverEvaluationError.apply
 

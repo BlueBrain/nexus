@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -105,6 +106,12 @@ object ElasticSearchViewRejection {
     * @param rejection the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
+      extends ElasticSearchViewRejection(rejection.reason)
+
+  /**
+    * Signals a rejection caused by a failure to indexing.
+    */
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends ElasticSearchViewRejection(rejection.reason)
 
   /**
@@ -236,6 +243,10 @@ object ElasticSearchViewRejection {
   implicit val orgToElasticSearchRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     WrappedOrganizationRejection.apply
 
+  implicit val elasticSearchViewIndexingActionRejectionMapper
+      : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
+
   implicit final val jsonLdRejectionMapper: Mapper[JsonLdRejection, ElasticSearchViewRejection] = {
     case JsonLdRejection.UnexpectedId(id, sourceId)        => UnexpectedElasticSearchViewId(id, sourceId)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
@@ -288,6 +299,7 @@ object ElasticSearchViewRejection {
       case AuthorizationFailed                    => StatusCodes.Forbidden
       case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
       case ElasticSearchViewEvaluationError(_)    => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_)      => StatusCodes.InternalServerError
       case WrappedElasticSearchClientError(error) => error.errorCode.getOrElse(StatusCodes.InternalServerError)
       case _                                      => StatusCodes.BadRequest
     }

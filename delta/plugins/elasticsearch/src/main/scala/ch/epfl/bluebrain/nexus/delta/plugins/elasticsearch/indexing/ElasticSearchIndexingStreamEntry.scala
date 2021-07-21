@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
@@ -20,6 +21,19 @@ import org.apache.jena.graph.Node
 final case class ElasticSearchIndexingStreamEntry(
     resource: IndexingData
 )(implicit cr: RemoteContextResolution) {
+
+  def writeOrNone(index: IndexLabel, view: IndexingElasticSearchView): Task[Option[ElasticSearchBulk]] =
+    if (containsSchema(view.resourceSchemas) && containsTypes(view.resourceTypes))
+      deleteOrIndex(
+        index,
+        view.includeMetadata,
+        view.includeDeprecated,
+        view.sourceAsText
+      )
+    else if (containsSchema(view.resourceSchemas))
+      delete(index).map(Some.apply)
+    else
+      Task.none
 
   private val ctx: ContextValue =
     ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)

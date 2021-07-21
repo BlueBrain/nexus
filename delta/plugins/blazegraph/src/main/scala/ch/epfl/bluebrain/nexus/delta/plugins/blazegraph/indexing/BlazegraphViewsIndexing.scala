@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.BlazegraphViewsCache
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task}
@@ -28,7 +27,7 @@ object BlazegraphViewsIndexing {
     def onEvent = (event: BlazegraphViewEvent) =>
       views
         .fetch(event.id, event.project)
-        .redeemCauseWith(_ => IO.unit, res => cache.put(ViewRef(res.value.project, res.value.id), res))
+        .redeemCauseWith(_ => IO.unit, res => cache.put(res.value.project, res.value.id, res))
 
     apply("BlazegraphViewsIndex", retry, views, onEvent)
   }

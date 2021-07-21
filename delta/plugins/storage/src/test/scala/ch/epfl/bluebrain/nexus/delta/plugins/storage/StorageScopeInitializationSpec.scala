@@ -43,7 +43,7 @@ class StorageScopeInitializationSpec
 
   implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  private val storages = StoragesSetup.init(org, project, allowedPerms: _*)
+  private val storages = StoragesSetup.init(org, project, IndexingActionDummy(), allowedPerms: _*)
 
   "A StorageScopeInitialization" should {
     val init = new StorageScopeInitialization(storages, sa)

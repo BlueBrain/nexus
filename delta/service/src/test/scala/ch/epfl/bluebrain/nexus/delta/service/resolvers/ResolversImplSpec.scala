@@ -31,5 +31,7 @@ class ResolversImplSpec
     EventLog
       .postgresEventLog[Envelope[ResolverEvent]](EventLogUtils.toEnvelope)
       .hideErrors
-      .flatMap(ResolversImpl(resolversConfig, _, orgs, projects, resolverContextResolution, (_, _) => IO.unit))
+      .flatMap(
+        ResolversImpl(resolversConfig, _, orgs, projects, resolverContextResolution, (_, _) => IO.unit, indexingAction)
+      )
 }

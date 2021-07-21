@@ -8,9 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -38,11 +41,13 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param source     the resource payload
     * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param indexing   the type of indexing for this action
     */
   def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -52,12 +57,14 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param schema     the identifier that will be expanded to the schema reference to validate the resource
     * @param source     the resource payload
+    * @param indexing   the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -69,13 +76,15 @@ trait Resources {
     *                   A None value uses the currently available resource schema reference.
     * @param rev        the current revision of the resource
     * @param source     the resource payload
+    * @param indexing   the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      source: Json
+      source: Json,
+      indexing: Indexing
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -87,7 +96,8 @@ trait Resources {
     *                   A None value uses the currently available resource schema reference.
     * @param tag        the tag name
     * @param tagRev     the tag revision
-    * @param rev        the current revision of the resource
+    * @param rev       the current revision of the resource
+    * @param indexing  the type of indexing for this action
     */
   def tag(
       id: IdSegment,
@@ -95,7 +105,8 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
@@ -105,13 +116,15 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
     *                   A None value uses the currently available resource schema reference.
-    * @param rev       the revision of the resource
+    * @param rev        the revision of the resource
+    * @param indexing  the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long
+      rev: Long,
+      indexing: Indexing
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
@@ -187,6 +200,13 @@ trait Resources {
 }
 
 object Resources {
+
+  /**
+    * Create an [[EventExchangeValue]] for a resource.
+    * @return
+    */
+  def eventExchangeValue(res: DataResource)(implicit enc: JsonLdEncoder[Resource]): EventExchangeValue[Resource, Unit] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
     * The resources module type.

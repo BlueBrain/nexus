@@ -82,17 +82,21 @@ class BlazegraphViewsRoutes(
             projectRef(projects).apply { implicit ref =>
               // Create a view without id segment
               concat(
-                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash) { source =>
-                  operationName(s"$prefixSegment/views/{org}/{project}") {
-                    authorizeFor(ref, Write).apply {
-                      emit(
-                        Created,
-                        views.create(ref, source).mapValue(_.metadata).rejectWhen(decodingFailedOrViewNotFound)
-                      )
+                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingType) {
+                  (source, indexing) =>
+                    operationName(s"$prefixSegment/views/{org}/{project}") {
+                      authorizeFor(ref, Write).apply {
+                        emit(
+                          Created,
+                          views
+                            .create(ref, source, indexing)
+                            .mapValue(_.metadata)
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
+                      }
                     }
-                  }
                 },
-                idSegment { id =>
+                (idSegment & indexingType) { (id, indexing) =>
                   concat(
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                       concat(
@@ -104,7 +108,7 @@ class BlazegraphViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .create(id, ref, source)
+                                    .create(id, ref, source, indexing)
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -112,7 +116,7 @@ class BlazegraphViewsRoutes(
                                 // Update a view
                                 emit(
                                   views
-                                    .update(id, ref, rev, source)
+                                    .update(id, ref, rev, source, indexing)
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -122,7 +126,7 @@ class BlazegraphViewsRoutes(
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
                           authorizeFor(ref, Write).apply {
-                            emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
+                            emit(views.deprecate(id, ref, rev, indexing).mapValue(_.metadata).rejectOn[ViewNotFound])
                           }
                         },
                         // Fetch a view
@@ -196,7 +200,10 @@ class BlazegraphViewsRoutes(
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
-                                  views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                                  views
+                                    .tag(id, ref, tag, tagRev, rev, indexing)
+                                    .mapValue(_.metadata)
+                                    .rejectOn[ViewNotFound]
                                 )
                               }
                             }

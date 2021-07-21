@@ -52,7 +52,7 @@ class ResolverScopeInitializationSpec
     )
     val rcr        = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     val (o, p)     = ProjectSetup.init(List(org), List(project)).accepted
-    ResolversDummy(o, p, rcr, (_, _) => IO.unit).accepted
+    ResolversDummy(o, p, rcr, (_, _) => IO.unit, IndexingActionDummy()).accepted
   }
   "A ResolverScopeInitialization" should {
     val init = new ResolverScopeInitialization(resolvers, sa)

@@ -117,7 +117,7 @@ class ElasticSearchViewsRoutesSpec
   private val (orgs, projs)       = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   private val allowedPerms        = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
   private val (acls, permissions) = AclSetup.initWithPerms(allowedPerms, Set(realm)).accepted
-  private val views               = ElasticSearchViewsSetup.init(orgs, projs, permissions)
+  private val views               = ElasticSearchViewsSetup.init(orgs, projs, IndexingActionDummy(), permissions)
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)
