@@ -32,6 +32,14 @@ That means that when those get updated, the schemas importing them must be also 
 
 @@@
 
+## Indexing
+
+All the API calls modifying a schema(creation, update, tagging, deprecation) can specify whether the schema should be indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+- `async` - (default value) the schema will be indexed asynchronously
+- `sync` - the schema will be indexed synchronously and the API call won't return until the indexing is finished
+
 ## Create using POST
 
 ```
