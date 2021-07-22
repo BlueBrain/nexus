@@ -8,11 +8,12 @@ on:
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
+      - '.github/workflows/ci-snapshot.yml'
 jobs:
   publish-snapshot:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
