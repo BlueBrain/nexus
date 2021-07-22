@@ -71,6 +71,14 @@ Afterwards, by defining multiple projections, the data can be adapted to the cli
 
 @ref:[More information](composite-view-api.md)
 
+## Indexing
+
+All the API calls modifying a view(creation, update, tagging, deprecation) can specify whether the view should be indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+- `async` - (default value) the view will be indexed asynchronously
+- `sync` - the view will be indexed synchronously and the API call won't return until the indexing is finished
+
 ## List views
 
 ```

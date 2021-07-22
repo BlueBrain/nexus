@@ -113,6 +113,13 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-write-permission` (`files/write`).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.amazon.default-max-file-size` (10G).
 
+## Indexing
+
+All the API calls modifying a storage(creation, update, tagging, deprecation) can specify whether the storage should be indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+- `async` - (default value) the storage will be indexed asynchronously
+- `sync` - the storage will be indexed synchronously and the API call won't return until the indexing is finished
 
 ## Create using POST
 
