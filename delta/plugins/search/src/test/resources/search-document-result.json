@@ -1,0 +1,41 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/search-document.json",
+  "@id" : "http://localhost/neurosciencegraph/data/traces/28c68330-1649-4702-b608-5cde6349a2d8",
+  "@type" : [
+    "http://schema.org/Dataset",
+    "http://www.w3.org/ns/prov#Entity",
+    "https://neuroshapes.org/Trace",
+    "https://neuroshapes.org/SingleCellSimulationTrace"
+  ],
+  "name" : "S1HL_L6_LBC_cNAC_5",
+  "brainRegion" : {
+    "label" : "S1HL",
+    "identifier" : "http://uri.interlex.org/paxinos/uris/rat/labels/798"
+  },
+  "contributors" : [
+    {
+      "label" : "Anil Tuncel",
+      "identifier" : "http://localhost/nexus/v1/realms/bbp/users/tuncel"
+    }
+  ],
+  "createdBy" : "http://localhost/v1/realms/bbp/users/broman",
+  "description" : "This dataset is about simulated electrophysiology traces for cell instance S1HL_L6_LBC_cNAC_5. The dataset contains one distribution of the traces in RAB file format.",
+  "license" : {
+    "identifier" : "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "organizations" : [
+    {
+      "label" : "École Polytechnique Fédérale de Lausanne",
+      "identifier" : "https://www.grid.ac/institutes/grid.5333.6"
+    }
+  ],
+  "project" : {
+    "label" : "copies/sscx",
+    "identifier" : "http://localhost/v1/projects/copies/sscx"
+  },
+  "subjectSpecies" : {
+    "label" : "Rattus norvegicus",
+    "identifier" : "http://purl.obolibrary.org/obo/NCBITaxon_10116"
+  },
+  "_self" : "http://localhost/v1/resources/copies/sscx/_/https:%2F%2Fbbp.epfl.ch%2Fneurosciencegraph%2Fdata%2Ftraces%2F28c68330-1649-4702-b608-5cde6349a2d8"
+}

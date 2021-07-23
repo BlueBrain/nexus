@@ -1,0 +1,319 @@
+{
+  "@id": "http://localhost/neurosciencegraph/data/traces/28c68330-1649-4702-b608-5cde6349a2d8",
+  "@type": [
+    "http://schema.org/Dataset",
+    "https://neuroshapes.org/Trace",
+    "http://www.w3.org/ns/prov#Entity",
+    "https://neuroshapes.org/SingleCellSimulationTrace"
+  ],
+  "http://schema.org/dateCreated": [
+    {
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+      "@value": "2021-05-18T18:31:14.687696+02:00"
+    }
+  ],
+  "http://schema.org/description": [
+    {
+      "@value": "This dataset is about simulated electrophysiology traces for cell instance S1HL_L6_LBC_cNAC_5. The dataset contains one distribution of the traces in RAB file format."
+    }
+  ],
+  "http://schema.org/distribution": [
+    {
+      "@type": [
+        "http://schema.org/DataDownload"
+      ],
+      "http://schema.org/contentSize": [
+        {
+          "http://schema.org/unitCode": [
+            {
+              "@value": "bytes"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": 595176
+            }
+          ]
+        }
+      ],
+      "http://schema.org/contentUrl": [
+        {
+          "@id": "http://localhost/nexus/v1/files/public/sscx/476b625e-7146-4090-8fec-2cb028fcb5af"
+        }
+      ],
+      "http://schema.org/encodingFormat": [
+        {
+          "@value": "application/rab"
+        }
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "S1HL_L6_LBC_cNAC_5.rab"
+        }
+      ],
+      "http://www.w3.org/ns/prov#atLocation": [
+        {
+          "@type": [
+            "http://www.w3.org/ns/prov#Location"
+          ],
+          "https://neuroshapes.org/location": [
+            {
+              "@value": "file:///gpfs/bbp.cscs.ch/data/project/proj109/nexus/public/sscx/b/e/5/e/8/8/f/2/S1HL_L6_LBC_cNAC_5.rab"
+            }
+          ],
+          "https://neuroshapes.org/store": [
+            {
+              "@id": "http://localhost/neurosciencegraph/data/4820323e-bee0-48d2-824f-9d9d404dbbee"
+            }
+          ]
+        }
+      ],
+      "https://neuroshapes.org/digest": [
+        {
+          "http://schema.org/algorithm": [
+            {
+              "@value": "SHA-256"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": "d9a1b8ec1f2afccfe80e26bcae30c81f1c6e2d93d7720c9071368d93b14599db"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "http://schema.org/isPartOf": [
+    {
+      "@id": "http://localhost/neurosciencegraph/data/traces/ceb6e006-1ae3-4d3e-8be6-010af894f99d",
+      "@type": [
+        "https://neuroshapes.org/Trace"
+      ]
+    }
+  ],
+  "http://schema.org/name": [
+    {
+      "@value": "S1HL_L6_LBC_cNAC_5"
+    }
+  ],
+  "http://www.w3.org/2004/02/skos/core#note": [
+    {
+      "@value": "SSCX Simulation Data"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": [
+    {
+      "@id": "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/createdAt": [
+    {
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+      "@value": "2021-07-14T06:51:55.600Z"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/createdBy": [
+    {
+      "@id": "http://localhost/v1/realms/bbp/users/broman"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/deprecated": [
+    {
+      "@value": false
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/incoming": [
+    {
+      "@id": "http://localhost/v1/resources/copies/sscx/_/https:%2F%2Fbbp.epfl.ch%2Fneurosciencegraph%2Fdata%2Ftraces%2F28c68330-1649-4702-b608-5cde6349a2d8/incoming"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/outgoing": [
+    {
+      "@id": "http://localhost/v1/resources/copies/sscx/_/https:%2F%2Fbbp.epfl.ch%2Fneurosciencegraph%2Fdata%2Ftraces%2F28c68330-1649-4702-b608-5cde6349a2d8/outgoing"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/project": [
+    {
+      "@id": "http://localhost/v1/projects/copies/sscx"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/rev": [
+    {
+      "@value": 2
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/schemaProject": [
+    {
+      "@id": "http://localhost/v1/projects/copies/sscx"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/self": [
+    {
+      "@id": "http://localhost/v1/resources/copies/sscx/_/https:%2F%2Fbbp.epfl.ch%2Fneurosciencegraph%2Fdata%2Ftraces%2F28c68330-1649-4702-b608-5cde6349a2d8"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/updatedAt": [
+    {
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+      "@value": "2021-07-14T12:06:58.661Z"
+    }
+  ],
+  "https://bluebrain.github.io/nexus/vocabulary/updatedBy": [
+    {
+      "@id": "http://localhost/v1/realms/bbp/users/broman"
+    }
+  ],
+  "https://neuroshapes.org/annotation": [
+    {
+      "@type": [
+        "http://localhost/nexus/v1/resources/public/sscx/_/ETypeAnnotation",
+        "https://neuroshapes.org/Annotation"
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "E-type annotation"
+        }
+      ],
+      "https://neuroshapes.org/hasBody": [
+        {
+          "@id": "http://uri.interlex.org/base/ilx_0738201",
+          "@type": [
+            "https://neuroshapes.org/EType",
+            "https://neuroshapes.org/AnnotationBody"
+          ],
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "cNAC"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@type": [
+        "https://neuroshapes.org/Annotation",
+        "http://localhost/nexus/v1/resources/public/sscx/_/MTypeAnnotation"
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "M-type annotation"
+        }
+      ],
+      "https://neuroshapes.org/hasBody": [
+        {
+          "@id": "http://uri.interlex.org/base/ilx_0383233",
+          "@type": [
+            "https://neuroshapes.org/AnnotationBody",
+            "https://neuroshapes.org/MType"
+          ],
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "L6_LBC"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/brainLocation": [
+    {
+      "@type": [
+        "https://neuroshapes.org/BrainLocation"
+      ],
+      "https://neuroshapes.org/brainRegion": [
+        {
+          "@id": "http://uri.interlex.org/paxinos/uris/rat/labels/798",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "S1HL"
+            }
+          ],
+          "http://www.w3.org/2004/02/skos/core#prefLabel": [
+            {
+              "@value": "primary somatosensory cortex, hindlimb region"
+            }
+          ]
+        }
+      ],
+      "https://neuroshapes.org/layer": [
+        {
+          "@id": "http://purl.obolibrary.org/obo/UBERON_0005395",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "layer 6"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/contribution": [
+    {
+      "@type": [
+        "https://neuroshapes.org/Contribution"
+      ],
+      "http://www.w3.org/ns/prov#agent": [
+        {
+          "@id": "https://www.grid.ac/institutes/grid.5333.6",
+          "@type": [
+            "http://www.w3.org/ns/prov#Agent",
+            "http://schema.org/Organization"
+          ]
+        }
+      ]
+    },
+    {
+      "@type": [
+        "https://neuroshapes.org/Contribution"
+      ],
+      "http://www.w3.org/ns/prov#agent": [
+        {
+          "@id": "http://localhost/nexus/v1/realms/bbp/users/tuncel",
+          "@type": [
+            "http://www.w3.org/ns/prov#Agent",
+            "http://schema.org/Person"
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/objectOfStudy": [
+    {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+      "@type": [
+        "https://neuroshapes.org/ObjectOfStudy"
+      ],
+      "http://www.w3.org/2000/01/rdf-schema#label": [
+        {
+          "@value": "Single Cell"
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/subject": [
+    {
+      "@type": [
+        "https://neuroshapes.org/Subject"
+      ],
+      "https://neuroshapes.org/species": [
+        {
+          "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "Rattus norvegicus"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "http://schema.org/license": [
+    {
+      "@id": "https://creativecommons.org/licenses/by/4.0/",
+      "@type": [
+        "https://neuroshapes.org/License"
+      ]
+    }
+  ]
+}

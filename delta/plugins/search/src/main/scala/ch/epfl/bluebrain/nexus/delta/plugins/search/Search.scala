@@ -27,6 +27,7 @@ object Search {
   }
 
   object contexts {
-    val fieldsConfig = nxvContexts + "fields-config.json"
+    val fieldsConfig   = nxvContexts + "fields-config.json"
+    val searchDocument = nxvContexts + "search-document.json"
   }
 }
