@@ -20,8 +20,12 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
 
   many[RemoteContextResolution].addEffect(
     for {
-      fieldsConfig <- ContextValue.fromFile("contexts/fields-config.json")
-    } yield RemoteContextResolution.fixed(contexts.fieldsConfig -> fieldsConfig)
+      fieldsConfig   <- ContextValue.fromFile("contexts/fields-config.json")
+      searchDocument <- ContextValue.fromFile("contexts/search-document.json")
+    } yield RemoteContextResolution.fixed(
+      contexts.fieldsConfig   -> fieldsConfig,
+      contexts.searchDocument -> searchDocument
+    )
   )
 
   make[SearchRoutes].from {
