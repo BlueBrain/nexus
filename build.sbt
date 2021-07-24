@@ -641,7 +641,8 @@ lazy val searchPlugin = project
     sdk                  % "provided;test->test",
     sdkViews             % Provided,
     sdkTestkit           % "test->compile;test->test",
-    elasticsearchPlugin  % Provided,
+    blazegraphPlugin     % "provided;test->compile;test->test",
+    elasticsearchPlugin  % "provided;test->compile;test->test",
     compositeViewsPlugin % Provided
   )
   .settings(
