@@ -1,0 +1,24 @@
+Model:
+  name: RdfModel
+  origin: directory
+  source: ./rdfmodel
+  context:
+    iri: "./rdfmodel/jsonldcontext.json"
+
+Store:
+  name: BlueBrainNexus
+  endpoint: https://sandbox.bluebrainnexus.io/v1
+  searchendpoints:
+    sparql:
+      endpoint: "https://bluebrain.github.io/nexus/vocabulary/defaultSparqlIndex"
+  vocabulary:
+    iri: "https://bluebrain.github.io/nexus/contexts/metadata.json"
+    namespace: "https://bluebrain.github.io/nexus/vocabulary/"
+    deprecated_property: "https://bluebrain.github.io/nexus/vocabulary/deprecated"
+    project_property: "https://bluebrain.github.io/nexus/vocabulary/project"
+  max_connection: 50
+  versioned_id_template: "{x.id}?rev={x._store_metadata._rev}"
+  file_resource_mapping: https://raw.githubusercontent.com/BlueBrain/nexus-forge/master/examples/configurations/nexus-store/file-to-resource-mapping.hjson
+
+Formatters:
+  identifier: https://bbp.epfl.ch/neurosciencegraph/data/{}/{}

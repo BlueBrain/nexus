@@ -1,0 +1,73 @@
+{
+    type: [
+        Dataset
+        NeuronMorphology
+    ]
+    id: forge.format("identifier", "neuronmorphologies", x.neurons[0]["idString"])
+    brainLocation:
+    {
+        type: BrainLocation
+        brainRegion:
+        {
+            id: f"http://api.brain-map.org/api/v2/data/Structure/{x.neurons[0]['soma']['allenId']}"
+            label: x.neurons[0]["allenLabel"]
+        }
+        coordinatesInBrainAtlas:
+        {
+            valueX: x.neurons[0]["soma"]["x"]
+            valueY: x.neurons[0]["soma"]["y"]
+            valueZ: x.neurons[0]["soma"]["z"]
+        }
+    }
+    contribution:
+    {
+        type: Contribution
+        agent:
+        {
+            type: Organization
+            id: https://www.grid.ac/institutes/grid.443970.d
+            label: "Janelia Research Campus"
+        }
+    }
+    distribution: forge.attach(f"./mouselight/{x.neurons[0]['idString']}.swc", content_type="application/swc")
+    identifier: x.neurons[0]["idString"]
+    name: x.neurons[0]["idString"]
+    generation:
+    {
+        type: Generation
+        activity:
+        {
+            type: "nsg:NeuronMorphologyReconstruction"
+            hadProtocol:{
+                
+            }
+        }
+    }
+    subject:
+    {
+        type: Subject
+        species: {
+            id: http://purl.obolibrary.org/obo/NCBITaxon_10090
+            label: Mus musculus
+        }
+        strain: {
+            label: x.neurons[0]["sample"]["strain"]
+        }
+    }    
+    license:
+    {
+        type: License
+        id: https://mouselight.janelia.org
+    }
+    objectOfStudy:
+    {
+        type: ObjectOfStudy
+        id: http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells
+        label: Single Cell
+    }
+    dateCreated: x.neurons[0]["sample"]["date"]
+    version: x.neurons[0]["annotationSpace"]["version"]
+    description: x.neurons[0]["annotationSpace"]["description"]
+    virus: x.neurons[0]["label"]["virus"]
+    fluorophore: x.neurons[0]["label"]["fluorophore"]
+}
