@@ -632,7 +632,7 @@ take a look at the @ref:[benchmarks section](../../delta/benchmarks/v1.4.2.md) t
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
-1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/){ open=new },
+1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new },
     @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new }, 
     @link:[BlazeGraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
@@ -655,7 +655,8 @@ should narrow the scope:
 
 ### Cassandra
 
-Nexus uses @link:[Cassandra](https://cassandra.apache.org/){ open=new } as its _primary store_ as it scales well in terms of reads with the
+Nexus uses @link:[Cassandra](https://cassandra.apache.org/_/index.html
+){ open=new } as its _primary store_ as it scales well in terms of reads with the
 number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be
 available in case of node failures or network partitions.
 
