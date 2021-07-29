@@ -1,32 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
-import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.contexts
-import ch.epfl.bluebrain.nexus.delta.plugins.search.models.SearchConfig
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.execution.Scheduler
 
 class SearchPluginModule(priority: Int) extends ModuleDef {
 
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
   make[Search].from(Search.apply)
 
-  many[RemoteContextResolution].addEffect(
-    for {
-      fieldsConfig   <- ContextValue.fromFile("contexts/fields-config.json")
-      searchDocument <- ContextValue.fromFile("contexts/search-document.json")
-    } yield RemoteContextResolution.fixed(
-      contexts.fieldsConfig   -> fieldsConfig,
-      contexts.searchDocument -> searchDocument
-    )
-  )
+  make[SearchScopeInitialization].from {
+    (views: CompositeViews, config: SearchConfig, serviceAccount: ServiceAccount, baseUri: BaseUri) =>
+      new SearchScopeInitialization(views, config.indexing, serviceAccount)(baseUri)
+  }
+
+  many[ScopeInitialization].ref[SearchScopeInitialization]
 
   make[SearchRoutes].from {
     (

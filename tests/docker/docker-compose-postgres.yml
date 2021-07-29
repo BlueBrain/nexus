@@ -29,9 +29,18 @@ services:
                   "-Dplugins.storage.storages.remote-disk.enabled=true",
                   "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                   "-Dplugins.storage.storages.amazon.enabled=true",
+                  "-Dplugins.search.enabled=true",
+                  "-Dplugins.search.fields=/config/fields.json",
+                  "-Dplugins.search.indexing.context=/config/search-context.json",
+                  "-Dplugins.search.indexing.mapping=/config/mapping.json",
+                  "-Dplugins.search.indexing.settings=/config/settings.json",
+                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
+                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
                   "-Djdbc-read-journal.refresh-interval=500ms"]
     ports:
       - "8080"
+    volumes:
+      - ./config:/config
     deploy:
       resources:
         limits:
