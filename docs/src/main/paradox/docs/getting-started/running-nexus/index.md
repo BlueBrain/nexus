@@ -655,8 +655,7 @@ should narrow the scope:
 
 ### Cassandra
 
-Nexus uses @link:[Cassandra](https://cassandra.apache.org/_/index.html
-){ open=new } as its _primary store_ as it scales well in terms of reads with the
+Nexus uses @link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new } as its _primary store_ as it scales well in terms of reads with the
 number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be
 available in case of node failures or network partitions.
 
