@@ -5,11 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.models.SearchRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.search.models.SearchRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.WrappedElasticSearchClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, contexts => nxvContexts}
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
@@ -91,8 +92,4 @@ object Search {
         } yield results
       }
     }
-  object contexts {
-    val fieldsConfig   = nxvContexts + "fields-config.json"
-    val searchDocument = nxvContexts + "search-document.json"
-  }
 }

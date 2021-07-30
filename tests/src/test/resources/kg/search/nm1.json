@@ -1,0 +1,70 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://localhost/nm1",
+  "@type": [
+    "Entity",
+    "NeuronMorphology",
+    "Dataset",
+    "ReconstructedCell"
+  ],
+  "annotation": {
+    "@type": [
+      "Annotation",
+      "nsg:MTypeAnnotation"
+    ],
+    "hasBody": {
+      "@id": "http://uri.interlex.org/base/ilx_0383192",
+      "@type": [
+        "MType",
+        "AnnotationBody"
+      ],
+      "label": "L1_DAC"
+    },
+    "name": "M-type Annotation"
+  },
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0008933",
+      "label": "primary somatosensory cortex"
+    },
+    "layer": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0005390",
+      "label": "layer 1"
+    }
+  },
+  "contribution": [
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "http://localhost/users/john-doe",
+        "@type": [
+          "Person",
+          "Agent"
+        ]
+      }
+    },
+    {
+      "@type": "Contribution",
+      "agent": {
+        "@id": "http://localhost/orgs/epfl",
+        "@type": [
+          "Organization"
+        ]
+      }
+    }
+  ],
+  "description": "This dataset is about an in vitro-filled neuron morphology from layer 1 with m-type L1_DAC. The distribution contains the neuron morphology in ASC and in SWC file format.",
+  "license": {
+    "@id": "https://bbp.epfl.ch/license1",
+    "@type": "License"
+  },
+  "name": "NM1",
+  "subject": {
+    "@type": "Subject",
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+      "label": "Rattus norvegicus"
+    }
+  }
+}
