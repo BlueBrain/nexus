@@ -1,0 +1,127 @@
+{
+  "fields": [
+    {
+      "name":  "project",
+      "label": "Project",
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "@type",
+      "label": "Types",
+      "format": "uri",
+      "array": true
+    },
+    {
+      "name":  "name",
+      "label": "Name",
+      "array": false,
+      "format": "text"
+    },
+    {
+      "name":  "description",
+      "label": "Description",
+      "array": false,
+      "format": "text"
+    },
+    {
+      "name":  "brainRegion",
+      "label": "Brain Region",
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "subjectSpecies",
+      "label": "Subject Species",
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "contributors",
+      "label": "Contributors",
+      "array": true,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "organisations",
+      "label": "Organisations",
+      "array": true,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "license",
+      "label": "License",
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    },
+    {
+      "name":  "mType",
+      "label": "M-Type",
+      "array": true,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": "uri"
+        },
+        {
+          "name": "label",
+          "format": "text"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "https://localhost/trace1",
+  "@type": [
+    "Trace",
+    "Dataset",
+    "Entity"
+  ],
+  "annotation": {
+    "@type": [
+      "nsg:ETypeAnnotation",
+      "Annotation"
+    ],
+    "hasBody": {
+      "@id": "http://uri.interlex.org/base/ilx_0738202",
+      "@type": [
+        "EType",
+        "AnnotationBody"
+      ],
+      "label": "dSTUT",
+      "prefLabel": "Delayed stuttering electrical type"
+    },
+    "name": "E-type Annotation"
+  },
+  "brainLocation": {
+    "@type": "BrainLocation",
+    "brainRegion": {
+      "@id": "http://purl.obolibrary.org/obo/UBERON_0008933",
+      "label": "primary somatosensory cortex"
+    },
+    "layer": [
+      {
+        "@id": "http://purl.obolibrary.org/obo/UBERON_0005391",
+        "label": "layer 2"
+      },
+      {
+        "@id": "http://purl.obolibrary.org/obo/UBERON_0005392",
+        "label": "layer 3"
+      }
+    ]
+  },
+  "contribution": {
+    "@type": "Contribution",
+    "agent": {
+      "@id": "http://localhost/users/jane-jones",
+      "@type": "Agent"
+    }
+  },
+  "license": {
+    "@id": "https://bbp.epfl.ch/license2",
+    "@type": "License"
+  },
+  "name": "Trace 1",
+  "subject": {
+    "@type": "Subject",
+    "age": {
+      "period": "Post-natal",
+      "unitCode": "days",
+      "value": 14
+    },
+    "species": {
+      "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+      "label": "Rattus norvegicus"
+    }
+  }
+}

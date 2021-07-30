@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegr
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
-import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -45,10 +45,12 @@ class SearchSparqlQuerySpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
+  private val searchDocument = contexts + "search-document.json"
+
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    contexts.searchDocument -> jsonContentOf("contexts/search-document.json").topContextValueOrEmpty
+    searchDocument -> jsonContentOf("contexts/search-document.json").topContextValueOrEmpty
   )
 
   private val endpoint = blazegraphHostConfig.endpoint
@@ -64,7 +66,7 @@ class SearchSparqlQuerySpec
 
   "A search SPARQL query" should {
     val index = "myindex"
-    val ctx   = ContextValue(contexts.searchDocument)
+    val ctx   = ContextValue(searchDocument)
 
     val traceId        = iri"http://localhost/neurosciencegraph/data/traces/28c68330-1649-4702-b608-5cde6349a2d8"
     val trace          = jsonContentOf("trace.json")
