@@ -1,0 +1,10 @@
+{
+  "@context": "https://bbp.neuroshapes.org",
+  "@id": "http://localhost/users/john-doe",
+  "@type": [
+    "Person",
+    "Agent"
+  ],
+  "familyName": "Doe",
+  "givenName": "John"
+}

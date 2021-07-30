@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.http.scaladsl.server.Directives.{as, concat, entity, get, pathEndOrSingleSlash, pathPrefix, post}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives.extractQueryParams
-import ch.epfl.bluebrain.nexus.delta.plugins.search.models.SearchConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import io.circe.JsonObject
+import io.circe.syntax.EncoderOps
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 class SearchRoutes(
@@ -44,7 +46,7 @@ class SearchRoutes(
             // Get fields config
             (pathPrefix("config") & get & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/search/config") {
-                emit(config.fields)
+                emit(UIO.pure(config.fields.asJson))
               }
             }
           )

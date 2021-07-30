@@ -1,0 +1,43 @@
+{
+  "description": "{{name}} project",
+  "base": "https://bbp/nsg/data/",
+  "vocab": "https://bbp/nexus/v1/resources/{{name}}/_/",
+  "apiMappings": [
+    {
+      "namespace": "https://neuroshapes.org/dash/",
+      "prefix": "datashapes"
+    },
+    {
+      "namespace": "http://www.w3.org/ns/prov#",
+      "prefix": "prov"
+    },
+    {
+      "namespace": "https://neuroshapes.org/dash/ontology",
+      "prefix": "ontologies"
+    },
+    {
+      "namespace": "https://incf.github.io/neuroshapes/contexts/",
+      "prefix": "context"
+    },
+    {
+      "namespace": "https://provshapes.org/commons/",
+      "prefix": "provcommonshapes"
+    },
+    {
+      "namespace": "https://neuroshapes.org/commons/",
+      "prefix": "commonshapes"
+    },
+    {
+      "namespace": "https://provshapes.org/datashapes/",
+      "prefix": "provdatashapes"
+    },
+    {
+      "namespace": "https://neuroshapes.org/dash/taxonomy",
+      "prefix": "taxonomies"
+    },
+    {
+      "namespace": "http://schema.org/",
+      "prefix": "schemaorg"
+    }
+  ]
+}

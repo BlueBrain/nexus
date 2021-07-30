@@ -643,7 +643,7 @@ lazy val searchPlugin = project
     sdkTestkit           % "test->compile;test->test",
     blazegraphPlugin     % "provided;test->compile;test->test",
     elasticsearchPlugin  % "provided;test->compile;test->test",
-    compositeViewsPlugin % Provided
+    compositeViewsPlugin % "provided;test->compile;test->test",
   )
   .settings(
     name                       := "delta-search-plugin",
@@ -807,7 +807,7 @@ lazy val storage = project
   )
 
 lazy val dockerCompose = Seq(
-  composeFile := "tests/docker/docker-compose-cassandra.yml"
+  composeFile := "tests/docker/docker-compose-postgres.yml"
 )
 
 lazy val tests = project

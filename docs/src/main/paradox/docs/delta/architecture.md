@@ -153,7 +153,7 @@ The authorization flow is as follows:
 [Nexus Fusion]: ../fusion/index.md
 [Nexus CLI]: ../utilities/nexus-python-cli.md
 [Nexus Forge]: ../forge.md
-[Apache Cassandra]: https://cassandra.apache.org/
+[Apache Cassandra]: https://cassandra.apache.org/_/index.html
 [ElasticSearch]: https://www.elastic.co/elasticsearch/
 [BlazeGraph]: https://blazegraph.com/
 [Akka Cluster]: https://doc.akka.io/docs/akka/current/typed/cluster-concepts.html

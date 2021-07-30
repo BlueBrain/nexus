@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.search.models
+package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils

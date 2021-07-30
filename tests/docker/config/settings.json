@@ -1,0 +1,25 @@
+{
+  "analysis": {
+    "analyzer": {
+      "nexus": {
+        "type": "custom",
+        "tokenizer": "classic",
+        "filter": [
+          "trim",
+          "word_delimiter_nexus",
+          "lowercase"
+        ]
+      }
+    },
+    "filter": {
+      "word_delimiter_nexus": {
+        "type": "word_delimiter_graph",
+        "split_on_numerics": false,
+        "preserve_original": true
+      }
+    }
+  },
+  "index": {
+    "number_of_shards": 1
+  }
+}
