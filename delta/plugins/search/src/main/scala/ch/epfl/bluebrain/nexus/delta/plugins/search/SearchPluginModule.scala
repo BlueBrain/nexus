@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.search.models.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -16,7 +19,10 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
 
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
-  make[Search].from(Search.apply)
+  make[Search].from {
+    (compositeViews: CompositeViews, acls: Acls, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
+      Search(compositeViews, acls, esClient, config.elasticSearchIndexing)
+  }
 
   many[RemoteContextResolution].addEffect(
     for {
