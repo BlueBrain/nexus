@@ -1,0 +1,127 @@
+{
+  "fields": [
+    {
+      "array": false,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "Project",
+      "name": "project"
+    },
+    {
+      "array": true,
+      "format": "uri",
+      "label": "Types",
+      "name": "@type"
+    },
+    {
+      "array": false,
+      "format": "text",
+      "label": "Name",
+      "name": "name"
+    },
+    {
+      "array": false,
+      "format": "text",
+      "label": "Description",
+      "name": "description"
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "Brain Region",
+      "name": "brainRegion"
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "Subject Species",
+      "name": "subjectSpecies"
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "Contributors",
+      "name": "contributors"
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "Organisations",
+      "name": "organisations"
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "License",
+      "name": "license"
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "format": "uri",
+          "name": "identifier"
+        },
+        {
+          "format": "text",
+          "name": "label"
+        }
+      ],
+      "label": "M-Type",
+      "name": "mType"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://localhost/nm1",
+  "@id": "https://localhost/{{project}}/nm1",
   "@type": [
     "Entity",
     "NeuronMorphology",
