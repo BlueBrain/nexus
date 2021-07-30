@@ -5,12 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView, CompositeViewSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection.WrappedElasticSearchClientError
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, contexts => nxvContexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.search.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
-import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
@@ -30,9 +28,6 @@ trait Search {
 
 object Search {
 
-  val searchViewId       = nxv + "globalSearchView"
-  val searchProjectionId = nxv + "globalSearchProjection"
-
   final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Long)
 
   private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
@@ -51,7 +46,7 @@ object Search {
       compositeViews
         .list(
           Pagination.OnePage,
-          CompositeViewSearchParams(deprecated = Some(false), filter = _.id == searchViewId),
+          CompositeViewSearchParams(deprecated = Some(false), filter = _.id == defaultViewId),
           Ordering.by(_.createdAt)
         )
         .map(
@@ -59,7 +54,7 @@ object Search {
             .flatMap { entry =>
               val res = entry.source
               for {
-                projection   <- res.value.projections.value.find(_.id == searchProjectionId)
+                projection   <- res.value.projections.value.find(_.id == defaultProjectionId)
                 esProjection <- projection.asElasticSearch
               } yield TargetProjection(esProjection, res.value, res.rev)
             }

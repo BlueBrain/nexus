@@ -36,8 +36,8 @@ class SearchRoutes(
         extractCaller { implicit caller =>
           concat(
             // Query the underlying aggregate elasticsearch view for global search
-            (post & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/search") {
+            (pathPrefix("query") & post & pathEndOrSingleSlash) {
+              operationName(s"$prefixSegment/search/query") {
                 (extractQueryParams & entity(as[JsonObject])) { (qp, payload) =>
                   emit(search.query(payload, qp))
                 }
