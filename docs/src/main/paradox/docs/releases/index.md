@@ -19,6 +19,36 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 
 The latest stable release is **v1.5.1** released on **04.06.2021**.
 
+## v1.6.0-M1 (02.08.2021)
+
+This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
+
+ - Add support for Accept-Encoding on delta [#2589](https://github.com/BlueBrain/nexus/issues/2589)
+ - Add support for compression on the HttpClient [#2588](https://github.com/BlueBrain/nexus/issues/2588)
+ - PDF Viewer Plugin [#2566](https://github.com/BlueBrain/nexus/issues/2566)
+ - CSV, TSV Table Viewer [#2565](https://github.com/BlueBrain/nexus/issues/2565)
+ - Support JWT "aud" (audience) claim [#2546](https://github.com/BlueBrain/nexus/issues/2546)
+ - Enable consistent resource writes through the API [#2537](https://github.com/BlueBrain/nexus/issues/2537), [#2573](https://github.com/BlueBrain/nexus/issues/2573), [#1395](https://github.com/BlueBrain/nexus/issues/1395)
+ - Use separate blazegraph client for API queries [#2530](https://github.com/BlueBrain/nexus/issues/2530)
+ - Support multiple versions in the website documentation [#2529](https://github.com/BlueBrain/nexus/issues/2529)
+ - Provision a default project for a user upon his first interaction with the API while authenticated [#2520](https://github.com/BlueBrain/nexus/issues/2520)
+ - Passivate view streams after an idleTimeout [#2461](https://github.com/BlueBrain/nexus/issues/2461), [#2518](https://github.com/BlueBrain/nexus/issues/2518)
+ - Reduce integration tests footprint on a local machine [#2491](https://github.com/BlueBrain/nexus/issues/2491)
+ - Blazegraph query timeout [#2469](https://github.com/BlueBrain/nexus/issues/2469)
+ - BUGFIX: ACLs payload not handled as expected [#2626](https://github.com/BlueBrain/nexus/issues/2626)
+ - BUGFIX: Deprecating resources using the generic endpoint doesn't work [#2597](https://github.com/BlueBrain/nexus/issues/2597)
+ - BUGFIX: Listings sort parameter only allows for metadata sorting [#2596](https://github.com/BlueBrain/nexus/issues/2596), [#2592](https://github.com/BlueBrain/nexus/issues/2592)
+ - BUGFIX: Cannot download metadata or data through data cart [#2581](https://github.com/BlueBrain/nexus/issues/2581)
+ - BUGFIX: Unsupported new grant types in keycloak [#2580](https://github.com/BlueBrain/nexus/issues/2580)
+ - BUGFIX: Fusion: Saving/Deprecating views results in 404 [#2570](https://github.com/BlueBrain/nexus/issues/2570)
+ - BUGFIX: Fix data table actions and layout [#2556](https://github.com/BlueBrain/nexus/issues/2556)
+ - BUGFIX: Use enhanced notifications everywhere [#2550](https://github.com/BlueBrain/nexus/issues/2550)
+ - BUGFIX: Defaultquery text search is acting up [#2536](https://github.com/BlueBrain/nexus/issues/2536)
+ - BUGFIX: When a prefixmapping that collides with a valid Uri schema is defined, it is not used [#2532](https://github.com/BlueBrain/nexus/issues/2532)
+ - BUGFIX: Delta client crashes at startup [#2521](https://github.com/BlueBrain/nexus/issues/2521)
+ - BUGFIX: Metadata plugin doesn't show up when there is no `contribution.agent` [#2506](https://github.com/BlueBrain/nexus/issues/2506)
+ - BUGFIX: Studios don't work with AggregateSparqlView [#2484](https://github.com/BlueBrain/nexus/issues/2484)
+
 ## v1.5.1 (04.06.2021)
 
 This release contains bugfixes and minor improvements:
