@@ -224,6 +224,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/realms-api.html#realms" class="header">Realms</a>
   <ul>
+    <li><a href="../../../docs/delta/api/realms-api.html#payload" class="header">Payload</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#create" class="header">Create</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#deprecate" class="header">Deprecate</a></li>
@@ -254,6 +255,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/realms-api.html#realms" class="header">Realms</a>
   <ul>
+    <li><a href="../../../docs/delta/api/realms-api.html#payload" class="header">Payload</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#create" class="header">Create</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/realms-api.html#deprecate" class="header">Deprecate</a></li>
@@ -284,6 +286,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When modifying realms, the caller must have <code>realms/write</code> permissions on the path <code>/</code>.</p>
 <p>When reading realms, the caller must have <code>realms/read</code> permissions on the path <code>/</code>.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
+<pre><code>{
+  &quot;name&quot;: &quot;{name}&quot;,
+  &quot;openIdConfig&quot;: &quot;{openIdConfig}&quot;,
+  &quot;logo&quot;: &quot;{logo}&quot;,
+  &quot;acceptedAudiences&quot;: {acceptedAudiences}
+}
+</code></pre>
+<p>where&hellip;</p>
+<ul>
+  <li><code>{name}</code>: String - the realm name.</li>
+  <li><code>{openIdConfig}</code>: IRI - the provider <a href="https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest" title="OpenID configuration" target="_blank" rel="noopener noreferrer">OpenID configuration</a>.</li>
+  <li><code>{logo}</code>: IRI - the logo Url for the realm. This field is optional.</li>
+  <li><code>{acceptedAudiences}</code>: Array[String] - ar array of accepted <a href="https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3" title="audiences" target="_blank" rel="noopener noreferrer">audiences</a> as string values. If provided, the token should have the <code>aud</code> with some of its values matching some of the <code>acceptedAudience</code> values on the realm. This field is optional.</li>
+</ul>
 <h2><a href="#create" name="create" class="anchor"><span class="anchor-link"></span></a>Create</h2>
 <p>This operation creates a realm.</p>
 <pre><code>PUT /v1/realms/{realm}
@@ -328,7 +345,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;
 }</code></pre></dd>
 </dl>
-<p>The <code>logo</code> parameter is optional.</p>
 <h2><a href="#update" name="update" class="anchor"><span class="anchor-link"></span></a>Update</h2>
 <p>This operation updates a realm.</p>
 <pre><code>PUT /v1/realms/{realm}?rev={previous_rev}

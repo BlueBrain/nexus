@@ -229,6 +229,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
@@ -268,6 +269,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
@@ -348,6 +350,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{project}</code>: String - the user friendly reference to the project from where the resolution process will attempt to  find the @id&rsquo;s. It follows the format <code>{organization}/{project}</code>.</li>
   <li><code>{identity}</code>: Json object - the identity against which to enforce ACLs during resolution process. Can&rsquo;t be defined if <code>useCurrentCaller</code> is set to <code>true</code></li>
   <li><code>{useCurrentCaller}</code>: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can&rsquo;t be <code>true</code> when <code>_identity_</code> is defined.</li>
+</ul>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a resolver(creation, update, tagging, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the resolver will be indexed asynchronously</li>
+  <li><code>sync</code> - the resolver will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/resolvers/{org_label}/{project_label}

@@ -224,6 +224,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
+    <li><a href="../../../docs/delta/api/schemas-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#update" class="header">Update</a></li>
@@ -257,6 +258,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/schemas-api.html#schemas" class="header">Schemas</a>
   <ul>
+    <li><a href="../../../docs/delta/api/schemas-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/schemas-api.html#update" class="header">Update</a></li>
@@ -296,6 +298,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When reading schemas, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
 <p>From Delta v1.5, remote contexts and <code>owl:imports</code> are only resolved during creates and updates. That means that when those get updated, the schemas importing them must be also updated to take the changes into account.</p></div>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a schema(creation, update, tagging, deprecation) can specify whether the schema should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the schema will be indexed asynchronously</li>
+  <li><code>sync</code> - the schema will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
+</ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/schemas/{org_label}/{project_label}
   {...}

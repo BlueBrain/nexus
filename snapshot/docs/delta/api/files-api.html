@@ -224,6 +224,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#link-using-post" class="header">Link using POST</a></li>
@@ -258,6 +259,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../../docs/delta/api/files-api.html#files" class="header">Files</a>
   <ul>
+    <li><a href="../../../docs/delta/api/files-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/files-api.html#link-using-post" class="header">Link using POST</a></li>
@@ -291,6 +293,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Each file belongs to a <code>project</code> identifier by the label <code>{project_label}</code> inside an <code>organization</code> identifier by the label <code>{org_label}</code>.</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
 <p>When creating, updating and reading files, the caller must have the permissions defined on the storage associated to the file on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a file(creation, update, tagging, deprecation) can specify whether the file should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the file will be indexed asynchronously</li>
+  <li><code>sync</code> - the file will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
+</ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/files/{org_label}/{project_label}?storage={storageId}
 </code></pre>

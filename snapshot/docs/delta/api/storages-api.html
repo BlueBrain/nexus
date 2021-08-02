@@ -230,6 +230,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -269,6 +270,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -374,6 +376,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-max-file-size</code> (10G).</li>
+</ul>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a storage(creation, update, tagging, deprecation) can specify whether the storage should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the storage will be indexed asynchronously</li>
+  <li><code>sync</code> - the storage will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/storages/{org_label}/{project_label}

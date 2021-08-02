@@ -224,6 +224,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m1-02-08-2021-" class="header">v1.6.0-M1 (02.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
@@ -259,6 +260,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m1-02-08-2021-" class="header">v1.6.0-M1 (02.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-4-2-20-10-2020-" class="header">v1.4.2 (20.10.2020)</a></li>
@@ -291,6 +293,35 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
 <p>The latest stable release is <strong>v1.5.1</strong> released on <strong>04.06.2021</strong>.</p>
+<h2><a href="#v1-6-0-m1-02-08-2021-" name="v1-6-0-m1-02-08-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M1 (02.08.2021)</h2>
+<p>This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:</p>
+<ul>
+  <li>Add support for Accept-Encoding on delta <a href="https://github.com/BlueBrain/nexus/issues/2589">#2589</a></li>
+  <li>Add support for compression on the HttpClient <a href="https://github.com/BlueBrain/nexus/issues/2588">#2588</a></li>
+  <li>PDF Viewer Plugin <a href="https://github.com/BlueBrain/nexus/issues/2566">#2566</a></li>
+  <li>CSV, TSV Table Viewer <a href="https://github.com/BlueBrain/nexus/issues/2565">#2565</a></li>
+  <li>Support JWT &ldquo;aud&rdquo; (audience) claim <a href="https://github.com/BlueBrain/nexus/issues/2546">#2546</a></li>
+  <li>Enable consistent resource writes through the API <a href="https://github.com/BlueBrain/nexus/issues/2537">#2537</a>, <a href="https://github.com/BlueBrain/nexus/issues/2573">#2573</a>, <a href="https://github.com/BlueBrain/nexus/issues/1395">#1395</a></li>
+  <li>Use separate blazegraph client for API queries <a href="https://github.com/BlueBrain/nexus/issues/2530">#2530</a></li>
+  <li>Support multiple versions in the website documentation <a href="https://github.com/BlueBrain/nexus/issues/2529">#2529</a></li>
+  <li>Provision a default project for a user upon his first interaction with the API while authenticated <a href="https://github.com/BlueBrain/nexus/issues/2520">#2520</a></li>
+  <li>Passivate view streams after an idleTimeout <a href="https://github.com/BlueBrain/nexus/issues/2461">#2461</a>, <a href="https://github.com/BlueBrain/nexus/issues/2518">#2518</a></li>
+  <li>Reduce integration tests footprint on a local machine <a href="https://github.com/BlueBrain/nexus/issues/2491">#2491</a></li>
+  <li>Blazegraph query timeout <a href="https://github.com/BlueBrain/nexus/issues/2469">#2469</a></li>
+  <li>BUGFIX: ACLs payload not handled as expected <a href="https://github.com/BlueBrain/nexus/issues/2626">#2626</a></li>
+  <li>BUGFIX: Deprecating resources using the generic endpoint doesn&rsquo;t work <a href="https://github.com/BlueBrain/nexus/issues/2597">#2597</a></li>
+  <li>BUGFIX: Listings sort parameter only allows for metadata sorting <a href="https://github.com/BlueBrain/nexus/issues/2596">#2596</a>, <a href="https://github.com/BlueBrain/nexus/issues/2592">#2592</a></li>
+  <li>BUGFIX: Cannot download metadata or data through data cart <a href="https://github.com/BlueBrain/nexus/issues/2581">#2581</a></li>
+  <li>BUGFIX: Unsupported new grant types in keycloak <a href="https://github.com/BlueBrain/nexus/issues/2580">#2580</a></li>
+  <li>BUGFIX: Fusion: Saving/Deprecating views results in 404 <a href="https://github.com/BlueBrain/nexus/issues/2570">#2570</a></li>
+  <li>BUGFIX: Fix data table actions and layout <a href="https://github.com/BlueBrain/nexus/issues/2556">#2556</a></li>
+  <li>BUGFIX: Use enhanced notifications everywhere <a href="https://github.com/BlueBrain/nexus/issues/2550">#2550</a></li>
+  <li>BUGFIX: Defaultquery text search is acting up <a href="https://github.com/BlueBrain/nexus/issues/2536">#2536</a></li>
+  <li>BUGFIX: When a prefixmapping that collides with a valid Uri schema is defined, it is not used <a href="https://github.com/BlueBrain/nexus/issues/2532">#2532</a></li>
+  <li>BUGFIX: Delta client crashes at startup <a href="https://github.com/BlueBrain/nexus/issues/2521">#2521</a></li>
+  <li>BUGFIX: Metadata plugin doesn&rsquo;t show up when there is no <code>contribution.agent</code> <a href="https://github.com/BlueBrain/nexus/issues/2506">#2506</a></li>
+  <li>BUGFIX: Studios don&rsquo;t work with AggregateSparqlView <a href="https://github.com/BlueBrain/nexus/issues/2484">#2484</a></li>
+</ul>
 <h2><a href="#v1-5-1-04-06-2021-" name="v1-5-1-04-06-2021-" class="anchor"><span class="anchor-link"></span></a>v1.5.1 (04.06.2021)</h2>
 <p>This release contains bugfixes and minor improvements:</p>
 <ul>
