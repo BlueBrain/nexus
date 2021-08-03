@@ -1,6 +1,6 @@
 {
   "@context": "https://bbp.neuroshapes.org",
-  "@id": "https://localhost/trace1",
+  "@id": "https://localhost/{{project}}/trace1",
   "@type": [
     "Trace",
     "Dataset",

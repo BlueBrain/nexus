@@ -1,0 +1,103 @@
+{
+  "hits" : {
+    "hits" : [
+      {
+        "_id" : "https://localhost/nm1",
+        "_index" : "delta_8de2de75-6f28-4771-b618-30c4115b2b92_dbcac8ba-22cb-4708-9ccc-9002e112b6fc_1",
+        "_score" : 1.0,
+        "_source" : {
+          "@id" : "https://localhost/nm1",
+          "@type" : [
+            "https://neuroshapes.org/NeuronMorphology",
+            "http://www.w3.org/ns/prov#Entity",
+            "http://schema.org/Dataset",
+            "https://neuroshapes.org/ReconstructedCell"
+          ],
+          "brainRegion" : {
+            "identifier" : "http://purl.obolibrary.org/obo/UBERON_0008933",
+            "label" : "primary somatosensory cortex"
+          },
+          "contributors" : [
+            {
+              "identifier" : "http://localhost/users/john-doe",
+              "label" : "John Doe"
+            }
+          ],
+          "createdBy" : "http://delta:8080/v1/realms/test-wgrmocwltqpnfkqy/users/lomcuvflvrfimdjy",
+          "description" : "This dataset is about an in vitro-filled neuron morphology from layer 1 with m-type L1_DAC. The distribution contains the neuron morphology in ASC and in SWC file format.",
+          "license" : {
+            "identifier" : "https://bbp.epfl.ch/license1"
+          },
+          "name" : "NM1",
+          "organizations" : [
+            {
+              "identifier" : "http://localhost/orgs/epfl",
+              "label" : "EPFL"
+            }
+          ],
+          "project" : {
+            "identifier" : "http://delta:8080/v1/projects/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais",
+            "label" : "kbgoikgoiqxj0sc/bkqd8cg2k3f5ais"
+          },
+          "subjectSpecies" : {
+            "identifier" : "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+            "label" : "Rattus norvegicus"
+          },
+          "_self" : "http://delta:8080/v1/resources/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais/_/https:%2F%2Flocalhost%2Fnm1"
+        },
+        "_type" : "_doc"
+      },
+      {
+        "_id" : "https://localhost/trace1",
+        "_index" : "delta_8de2de75-6f28-4771-b618-30c4115b2b92_dbcac8ba-22cb-4708-9ccc-9002e112b6fc_1",
+        "_score" : 1.0,
+        "_source" : {
+          "@id" : "https://localhost/trace1",
+          "@type" : [
+            "http://schema.org/Dataset",
+            "http://www.w3.org/ns/prov#Entity",
+            "https://neuroshapes.org/Trace"
+          ],
+          "brainRegion" : {
+            "identifier" : "http://purl.obolibrary.org/obo/UBERON_0008933",
+            "label" : "primary somatosensory cortex"
+          },
+          "contributors" : [
+            {
+              "identifier" : "http://localhost/users/jane-jones",
+              "label" : "Jane Jones"
+            }
+          ],
+          "createdBy" : "http://delta:8080/v1/realms/test-wgrmocwltqpnfkqy/users/lomcuvflvrfimdjy",
+          "license" : {
+            "identifier" : "https://bbp.epfl.ch/license2"
+          },
+          "name" : "Trace 1",
+          "project" : {
+            "identifier" : "http://delta:8080/v1/projects/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais",
+            "label" : "kbgoikgoiqxj0sc/bkqd8cg2k3f5ais"
+          },
+          "subjectSpecies" : {
+            "identifier" : "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+            "label" : "Rattus norvegicus"
+          },
+          "_self" : "http://delta:8080/v1/resources/kbgoikgoiqxj0sc/bkqd8cg2k3f5ais/_/https:%2F%2Flocalhost%2Ftrace1"
+        },
+        "_type" : "_doc"
+      }
+    ],
+    "max_score" : 1.0,
+    "total" : {
+      "relation" : "eq",
+      "value" : 2
+    }
+  },
+  "timed_out" : false,
+  "took" : 224,
+  "_shards" : {
+    "failed" : 0,
+    "skipped" : 0,
+    "successful" : 1,
+    "total" : 1
+  }
+}

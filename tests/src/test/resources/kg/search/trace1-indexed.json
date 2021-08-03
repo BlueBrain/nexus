@@ -1,0 +1,32 @@
+{
+  "@id" : "https://localhost/{{project}}/trace1",
+  "@type" : [
+    "http://schema.org/Dataset",
+    "http://www.w3.org/ns/prov#Entity",
+    "https://neuroshapes.org/Trace"
+  ],
+  "brainRegion" : {
+    "identifier" : "http://purl.obolibrary.org/obo/UBERON_0008933",
+    "label" : "primary somatosensory cortex"
+  },
+  "contributors" : [
+    {
+      "identifier" : "http://localhost/users/jane-jones",
+      "label" : "Jane Jones"
+    }
+  ],
+  "createdBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "license" : {
+    "identifier" : "https://bbp.epfl.ch/license2"
+  },
+  "name" : "Trace 1",
+  "project" : {
+    "identifier" : "{{deltaUri}}/projects/{{project}}",
+    "label" : "{{project}}"
+  },
+  "subjectSpecies" : {
+    "identifier" : "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+    "label" : "Rattus norvegicus"
+  },
+  "_self" : "{{deltaUri}}/resources/{{project}}/_/https:%2F%2Flocalhost%2F{{projectUrlEncoded}}%2Ftrace1"
+}
