@@ -15,4 +15,6 @@ trait Mapper[-A, B] {
 
 object Mapper {
   implicit def mapperIdentity[A]: Mapper[A, A] = (value: A) => value
+
+  final def apply[A, B](f: A => B): Mapper[A, B] = f(_)
 }

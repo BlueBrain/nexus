@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
@@ -44,13 +45,15 @@ import scala.annotation.nowarn
   * @param organizations the organizations module
   * @param projects      the projects module
   * @param files         the files module
+  * @param index         the indexing action on write operations
   */
 final class FilesRoutes(
     identities: Identities,
     acls: Acls,
     organizations: Organizations,
     projects: Projects,
-    files: Files
+    files: Files,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     storageConfig: StorageTypeConfig,
@@ -63,6 +66,8 @@ final class FilesRoutes(
   import baseUri.prefixSegment
 
   implicit private val fetchProjectUuids: FetchUuids = projects
+
+  implicit private val eventExchangeMapper = Mapper(files.eventExchangeValue(_))
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
@@ -109,21 +114,24 @@ final class FilesRoutes(
                 },
                 (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
                   "storage".as[IdSegment].?
-                ) & indexingType) { (storage, indexing) =>
+                ) & indexingMode) { (storage, mode) =>
                   operationName(s"$prefixSegment/files/{org}/{project}") {
                     concat(
                       // Link a file without id segment
                       entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                        emit(Created, files.createLink(storage, ref, filename, mediaType, path, indexing))
+                        emit(
+                          Created,
+                          files.createLink(storage, ref, filename, mediaType, path).flatTap(index(ref, _, mode))
+                        )
                       },
                       // Create a file without id segment
                       extractRequestEntity { entity =>
-                        emit(Created, files.create(storage, ref, entity, indexing))
+                        emit(Created, files.create(storage, ref, entity).flatTap(index(ref, _, mode)))
                       }
                     )
                   }
                 },
-                (idSegment & indexingType) { (id, indexing) =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
@@ -136,23 +144,29 @@ final class FilesRoutes(
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                                     emit(
                                       Created,
-                                      files.createLink(id, storage, ref, filename, mediaType, path, indexing)
+                                      files
+                                        .createLink(id, storage, ref, filename, mediaType, path)
+                                        .flatTap(index(ref, _, mode))
                                     )
                                   },
                                   // Create a file with id segment
                                   extractRequestEntity { entity =>
-                                    emit(Created, files.create(id, storage, ref, entity, indexing))
+                                    emit(Created, files.create(id, storage, ref, entity).flatTap(index(ref, _, mode)))
                                   }
                                 )
                               case (Some(rev), storage) =>
                                 concat(
                                   // Update a Link
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(files.updateLink(id, storage, ref, filename, mediaType, path, rev, indexing))
+                                    emit(
+                                      files
+                                        .updateLink(id, storage, ref, filename, mediaType, path, rev)
+                                        .flatTap(index(ref, _, mode))
+                                    )
                                   },
                                   // Update a file
                                   extractRequestEntity { entity =>
-                                    emit(files.update(id, storage, ref, rev, entity, indexing))
+                                    emit(files.update(id, storage, ref, rev, entity).flatTap(index(ref, _, mode)))
                                   }
                                 )
                             }
@@ -160,7 +174,7 @@ final class FilesRoutes(
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev, indexing).rejectOn[FileNotFound])
+                              emit(files.deprecate(id, ref, rev).flatTap(index(ref, _, mode)).rejectOn[FileNotFound])
                             }
                           },
                           // Fetch a file
@@ -181,7 +195,7 @@ final class FilesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, files.tag(id, ref, tag, tagRev, rev, indexing))
+                                emit(Created, files.tag(id, ref, tag, tagRev, rev).flatTap(index(ref, _, mode)))
                               }
                             }
                           }
@@ -224,7 +238,8 @@ object FilesRoutes {
       acls: Acls,
       organizations: Organizations,
       projects: Projects,
-      files: Files
+      files: Files,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -232,7 +247,7 @@ object FilesRoutes {
       ordering: JsonKeyOrdering
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, acls, organizations, projects, files).routes
+    new FilesRoutes(identities, acls, organizations, projects, files, index).routes
   }
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)

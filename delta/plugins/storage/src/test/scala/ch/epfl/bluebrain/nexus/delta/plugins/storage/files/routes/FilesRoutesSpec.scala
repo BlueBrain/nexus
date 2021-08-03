@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -82,8 +81,8 @@ class FilesRoutesSpec
   private val perms             = PermissionsDummy(allowedPerms.toSet).accepted
   private val realms            = RealmSetup.init(realm).accepted
   private val acls              = AclsDummy(perms, realms).accepted
-  private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg, IndexingActionDummy())
-  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files))
+  private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
@@ -103,8 +102,8 @@ class FilesRoutesSpec
           0
         )
         .accepted
-      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms), Async).accepted
-      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults), Async).accepted
+      storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
+      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
     }
 
     "fail to create a file without disk/write permission" in {

@@ -140,8 +140,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          indexingAction: IndexingAction @Id("aggregate")
+          scheduler: Scheduler
       ) =>
         ElasticSearchViews(
           cfg,
@@ -152,8 +151,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           projects,
           permissions,
           client,
-          resourceIdCheck,
-          indexingAction
+          resourceIdCheck
         )(
           uuidF,
           clock,
@@ -225,6 +223,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         orgs: Organizations,
         projects: Projects,
         views: ElasticSearchViews,
+        indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
         progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
         indexingController: ElasticSearchIndexingController,
@@ -247,7 +246,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         progresses,
         indexingController.restart,
         resourceToSchema,
-        sseEventLog
+        sseEventLog,
+        indexingAction
       )(
         baseUri,
         cfg.pagination,
@@ -319,7 +319,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      ElasticSearchViews.indexingAction(client, cache, config)(cr, baseUri)
+      new ElasticSearchIndexingAction(client, cache, config)(cr, baseUri)
   }
 
   make[ElasticSearchViewEventExchange]

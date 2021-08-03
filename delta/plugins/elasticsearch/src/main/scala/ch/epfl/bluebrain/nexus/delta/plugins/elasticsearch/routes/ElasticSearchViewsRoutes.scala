@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -48,9 +49,10 @@ import monix.execution.Scheduler
   * @param views              the elasticsearch views operations bundle
   * @param viewsQuery         the elasticsearch views query operations bundle
   * @param progresses         the statistics of the progresses for the elasticsearch views
-  * @param restartView          the action to restart a view indexing process triggered by a client
+  * @param restartView        the action to restart a view indexing process triggered by a client
   * @param resourcesToSchemas a collection of root resource segment with their corresponding schema
   * @param sseEventLog        the global eventLog of all view events
+  * @param index              the indexing action on write operations
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
@@ -62,7 +64,8 @@ final class ElasticSearchViewsRoutes(
     progresses: ProgressesStatistics,
     restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
-    sseEventLog: SseEventLog
+    sseEventLog: SseEventLog,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -81,6 +84,8 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
+
+  implicit private val eventExchangeMapper = Mapper(views.eventExchangeValue(_))
 
   implicit private val fetchProjectUuids: FetchUuids = projects
   implicit private val fetchProject: FetchProject    = projects
@@ -139,20 +144,20 @@ final class ElasticSearchViewsRoutes(
               },
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
                 // Create an elasticsearch view without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingType) {
-                  (source, execution) =>
-                    authorizeFor(ref, Write).apply {
-                      emit(
-                        Created,
-                        views
-                          .create(ref, source, execution)
-                          .mapValue(_.metadata)
-                          .rejectWhen(decodingFailedOrViewNotFound)
-                      )
-                    }
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
+                  authorizeFor(ref, Write).apply {
+                    emit(
+                      Created,
+                      views
+                        .create(ref, source)
+                        .flatTap(index(ref, _, mode))
+                        .mapValue(_.metadata)
+                        .rejectWhen(decodingFailedOrViewNotFound)
+                    )
+                  }
                 }
               },
-              (idSegment & indexingType) { (id, execution) =>
+              (idSegment & indexingMode) { (id, mode) =>
                 concat(
                   pathEndOrSingleSlash {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
@@ -166,7 +171,8 @@ final class ElasticSearchViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .create(id, ref, source, execution)
+                                    .create(id, ref, source)
+                                    .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -174,7 +180,8 @@ final class ElasticSearchViewsRoutes(
                                 // Update a view
                                 emit(
                                   views
-                                    .update(id, ref, rev, source, execution)
+                                    .update(id, ref, rev, source)
+                                    .flatTap(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -186,7 +193,8 @@ final class ElasticSearchViewsRoutes(
                           authorizeFor(ref, Write).apply {
                             emit(
                               views
-                                .deprecate(id, ref, rev, execution)
+                                .deprecate(id, ref, rev)
+                                .flatTap(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
@@ -268,7 +276,8 @@ final class ElasticSearchViewsRoutes(
                               emit(
                                 Created,
                                 views
-                                  .tag(id, ref, tag, tagRev, rev, execution)
+                                  .tag(id, ref, tag, tagRev, rev)
+                                  .flatTap(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )
@@ -363,7 +372,8 @@ object ElasticSearchViewsRoutes {
       progresses: ProgressesStatistics,
       restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
-      sseEventLog: SseEventLog
+      sseEventLog: SseEventLog,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
@@ -381,6 +391,7 @@ object ElasticSearchViewsRoutes {
       progresses,
       restartView,
       resourcesToSchemas,
-      sseEventLog
+      sseEventLog,
+      index
     ).routes
 }

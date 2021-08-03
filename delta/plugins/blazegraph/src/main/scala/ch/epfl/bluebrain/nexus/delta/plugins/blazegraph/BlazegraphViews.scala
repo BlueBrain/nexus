@@ -6,9 +6,9 @@ import cats.effect.Clock
 import cats.effect.concurrent.Deferred
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{BlazegraphViewsCache, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingStreamEntry, BlazegraphViewsIndexing}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewEvent._
@@ -18,14 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{IndexingActionFailed, IndexingFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -63,27 +61,21 @@ final class BlazegraphViews(
     projects: Projects,
     orgs: Organizations,
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
-    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
-    indexingAction: IndexingAction
+    createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
 ) {
 
   /**
     * Create a new Blazegraph view where the id is either present on the payload or self generated.
     *
-    * @param project        the project of to which the view belongs
-    * @param source         the payload to create the view
-    * @param indexing  the type of indexing for this action
+    * @param project  the project of to which the view belongs
+    * @param source   the payload to create the view
     */
-  def create(project: ProjectRef, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[BlazegraphViewRejection, ViewResource] = {
+  def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p                <- projects.fetchActiveProject(project)
       (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
       _                <- createNamespace(res)
-      _                <- indexingAction(project, eventExchangeValue(res), indexing)
-
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -93,13 +85,11 @@ final class BlazegraphViews(
     * @param id       the view identifier
     * @param project  the project to which the view belongs
     * @param source   the payload to create the view
-    * @param indexing the type of indexing for this action
     */
   def create(
       id: IdSegment,
       project: ProjectRef,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
@@ -107,8 +97,6 @@ final class BlazegraphViews(
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
       _         <- createNamespace(res)
-      _         <- indexingAction(project, eventExchangeValue(res), indexing)
-
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -117,9 +105,8 @@ final class BlazegraphViews(
     * @param id       the view identifier
     * @param project  the project to which the view belongs
     * @param view     the value of the view
-    * @param indexing the type of indexing for this action
     */
-  def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue, indexing: Indexing)(implicit
+  def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
@@ -128,8 +115,6 @@ final class BlazegraphViews(
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
       _     <- createNamespace(res)
-      _     <- indexingAction(project, eventExchangeValue(res), indexing)
-
     } yield res
   }.named("createBlazegraphView", moduleType)
 
@@ -139,21 +124,18 @@ final class BlazegraphViews(
     * @param project  the project to which the view belongs
     * @param rev      the current revision of the view
     * @param source   the view source
-    * @param indexing the type of indexing for this action
     */
   def update(
       id: IdSegment,
       project: ProjectRef,
       rev: Long,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p         <- projects.fetchActiveProject(project)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
-      _         <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
@@ -164,9 +146,8 @@ final class BlazegraphViews(
     * @param project  the project to which the view belongs
     * @param rev      the current revision of the view
     * @param view     the view value
-    * @param indexing the type of indexing for this action
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue, indexing: Indexing)(implicit
+  def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue)(implicit
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
@@ -174,8 +155,6 @@ final class BlazegraphViews(
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
-      _     <- indexingAction(project, eventExchangeValue(res), indexing)
-
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
@@ -187,22 +166,18 @@ final class BlazegraphViews(
     * @param tag      the tag label
     * @param tagRev   the target revision of the tag
     * @param rev      the current revision of the view
-    * @param indexing the type of indexing for this action
     */
   def tag(
       id: IdSegment,
       project: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
-      _   <- indexingAction(project, eventExchangeValue(res), indexing)
-
     } yield res
   }.named("tagBlazegraphView", moduleType)
 
@@ -212,19 +187,16 @@ final class BlazegraphViews(
     * @param id       the view id
     * @param project  the project to which the view belongs
     * @param rev      the current revision of the view
-    * @param indexing the type of indexing for this action
     */
   def deprecate(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), p)
-      _   <- indexingAction(project, eventExchangeValue(res), indexing)
     } yield res
   }.named("deprecateBlazegraphView", moduleType)
 
@@ -276,7 +248,7 @@ final class BlazegraphViews(
       }
     }
 
-  private def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
+  def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
     EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
@@ -413,37 +385,6 @@ object BlazegraphViews {
     ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
   }
 
-  def indexingAction(
-      client: BlazegraphClient,
-      cache: BlazegraphViewsCache,
-      indexingConfig: ExternalIndexingConfig
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IndexingAction = {
-    new IndexingAction {
-      override def execute(
-          project: ProjectRef,
-          res: EventExchangeValue[_, _]
-      ): IO[IndexingActionFailed, Unit] = {
-        (for {
-          projectViews <- cache.get(project).map { vs =>
-                            vs.filter(v => v.value.tpe == IndexingBlazegraphViewType && !v.deprecated)
-                              .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
-                          }
-          streamEntry  <- BlazegraphIndexingStreamEntry.fromEventExchange(res)
-          queries      <- projectViews
-                            .traverse { v =>
-                              streamEntry
-                                .writeOrNone(v.value)
-                                .map(_.map(q => (BlazegraphViews.namespace(v, indexingConfig), q)))
-                            }
-                            .map(_.flatten)
-          _            <- queries.parTraverse { case (index, query) =>
-                            client.bulk(index, Seq(query))
-                          }
-        } yield ()).mapError(err => IndexingFailed(err.getMessage, res.value.resource.void))
-      }
-    }
-  }
-
   private[blazegraph] def next(
       state: BlazegraphViewState,
       event: BlazegraphViewEvent
@@ -577,8 +518,7 @@ object BlazegraphViews {
       orgs: Organizations,
       projects: Projects,
       resourceIdCheck: ResourceIdCheck,
-      client: BlazegraphClient,
-      indexingAction: IndexingAction
+      client: BlazegraphClient
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -596,18 +536,7 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(
-      config,
-      eventLog,
-      contextResolution,
-      permissions,
-      cache,
-      orgs,
-      projects,
-      idAvailability,
-      createNameSpace,
-      indexingAction
-    )
+    apply(config, eventLog, contextResolution, permissions, cache, orgs, projects, idAvailability, createNameSpace)
   }
 
   private[blazegraph] def apply(
@@ -619,8 +548,7 @@ object BlazegraphViews {
       orgs: Organizations,
       projects: Projects,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit],
-      indexingAction: IndexingAction
+      createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -647,7 +575,7 @@ object BlazegraphViews {
                         contextResolution,
                         uuidF
                       )
-      views         = new BlazegraphViews(agg, eventLog, cache, projects, orgs, sourceDecoder, createNamespace, indexingAction)
+      views         = new BlazegraphViews(agg, eventLog, cache, projects, orgs, sourceDecoder, createNamespace)
       _            <- deferred.complete(views)
       _            <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views

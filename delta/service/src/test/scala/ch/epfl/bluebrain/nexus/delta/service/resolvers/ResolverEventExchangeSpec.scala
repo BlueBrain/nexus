@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverType, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IndexingActionDummy, ProjectSetup, ResolversDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -62,7 +61,7 @@ class ResolverEventExchangeSpec
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   private val resolvers: Resolvers =
-    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit, IndexingActionDummy()).accepted
+    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit).accepted
 
   "A ResolverEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
@@ -72,8 +71,8 @@ class ResolverEventExchangeSpec
               "priority": 42
             }"""
     val tag             = TagLabel.unsafe("tag")
-    val resRev1         = resolvers.create(id, project.ref, source, Async).accepted
-    val resRev2         = resolvers.tag(id, project.ref, tag, 1L, 1L, Async).accepted
+    val resRev1         = resolvers.create(id, project.ref, source).accepted
+    val resRev2         = resolvers.tag(id, project.ref, tag, 1L, 1L).accepted
     val deprecatedEvent = ResolverDeprecated(id, project.ref, ResolverType.InProject, 1, Instant.EPOCH, subject)
 
     val exchange = new ResolverEventExchange(resolvers)

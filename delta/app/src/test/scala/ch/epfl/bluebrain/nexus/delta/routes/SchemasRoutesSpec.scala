@@ -95,9 +95,9 @@ class SchemasRoutesSpec
           projs,
           schemaImports,
           resolverContextResolution,
-          (_, _) => IO.unit,
-          IndexingActionDummy()
-        ).accepted
+          (_, _) => IO.unit
+        ).accepted,
+        IndexingActionDummy()
       )
     )
 

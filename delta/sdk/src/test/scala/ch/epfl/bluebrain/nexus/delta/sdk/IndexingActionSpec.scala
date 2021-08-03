@@ -55,12 +55,12 @@ class IndexingActionSpec extends AnyWordSpecLike with Matchers with EitherValuab
   "AggregateConsistentWrite" should {
 
     "not perform the write if execution type is performant" in {
-      aggregate(project, exchangeValue, Indexing.Async).acceptedWithTimeout(100.millis) shouldEqual ()
+      aggregate(project, exchangeValue, IndexingMode.Async).acceptedWithTimeout(100.millis) shouldEqual ()
 
     }
 
     "execute the internal writes in parallel" in {
-      aggregate(project, exchangeValue, Indexing.Sync).acceptedWithTimeout(500.millis) shouldEqual ()
+      aggregate(project, exchangeValue, IndexingMode.Sync).acceptedWithTimeout(500.millis) shouldEqual ()
     }
   }
 

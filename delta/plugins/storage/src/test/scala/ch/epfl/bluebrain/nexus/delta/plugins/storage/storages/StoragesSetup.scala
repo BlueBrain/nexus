@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
@@ -27,29 +27,26 @@ trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with Co
   def init(
       org: Label,
       project: Project,
-      consistentWrite: IndexingAction,
       perms: Permission*
   )(implicit baseUri: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, subject: Subject, sc: Scheduler): Storages = {
     for {
       (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
       p                <- PermissionsDummy(perms.toSet)
-    } yield init(orgs, projects, consistentWrite, p)
+    } yield init(orgs, projects, p)
   }.accepted
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      indexingAction: IndexingAction,
       perms: Permissions
   )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): Storages =
-    init(orgs, projects, perms, config, indexingAction)
+    init(orgs, projects, perms, config)
 
   def init(
       orgs: Organizations,
       projects: Projects,
       perms: Permissions,
-      storageTypeConfig: StorageTypeConfig,
-      indexingAction: IndexingAction
+      storageTypeConfig: StorageTypeConfig
   )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): Storages = {
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
@@ -66,8 +63,7 @@ trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with Co
           (_, _) => IO.unit,
           (_, _) => IO.unit,
           crypto,
-          serviceAccount,
-          indexingAction
+          serviceAccount
         )
     } yield storages
   }.accepted
