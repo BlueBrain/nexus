@@ -28,8 +28,7 @@ class ResourcesImplSpec
                          (_, _) => UIO.unit,
                          resolverContextResolution,
                          aggregate,
-                         eventLog,
-                         indexingAction
+                         eventLog
                        )
     } yield resources
 }

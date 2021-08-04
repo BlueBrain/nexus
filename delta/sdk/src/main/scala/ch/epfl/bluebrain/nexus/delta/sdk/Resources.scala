@@ -41,13 +41,11 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param source     the resource payload
     * @param schema     the identifier that will be expanded to the schema reference to validate the resource
-    * @param indexing   the type of indexing for this action
     */
   def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -57,14 +55,12 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param schema     the identifier that will be expanded to the schema reference to validate the resource
     * @param source     the resource payload
-    * @param indexing   the type of indexing for this action
     */
   def create(
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -76,15 +72,13 @@ trait Resources {
     *                   A None value uses the currently available resource schema reference.
     * @param rev        the current revision of the resource
     * @param source     the resource payload
-    * @param indexing   the type of indexing for this action
     */
   def update(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource]
 
   /**
@@ -96,8 +90,7 @@ trait Resources {
     *                   A None value uses the currently available resource schema reference.
     * @param tag        the tag name
     * @param tagRev     the tag revision
-    * @param rev       the current revision of the resource
-    * @param indexing  the type of indexing for this action
+    * @param rev        the current revision of the resource
     */
   def tag(
       id: IdSegment,
@@ -105,8 +98,7 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**
@@ -116,15 +108,13 @@ trait Resources {
     * @param projectRef the project reference where the resource belongs
     * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
     *                   A None value uses the currently available resource schema reference.
-    * @param rev        the revision of the resource
-    * @param indexing  the type of indexing for this action
+    * @param rev       the revision of the resource
     */
   def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
   /**

@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -130,9 +129,9 @@ class ArchiveRoutesSpec
                                  allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
                                )
                              )
-      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, IndexingActionDummy(), allowedPerms: _*))
+      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, allowedPerms: _*))
       storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-      _                 <- storages.create(diskId, projectRef, storageJson, Async)
+      _                 <- storages.create(diskId, projectRef, storageJson)
       archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
       archives          <- Archives(projs, archiveDownload, archivesConfig, (_, _) => IO.unit)
       identities         = IdentitiesDummy(Map(AuthToken("subject") -> caller, AuthToken("nofileperms") -> callerNoFilePerms))
@@ -217,7 +216,7 @@ class ArchiveRoutesSpec
     val archiveCtxJson = jsonContentOf("responses/archive-resource-context.json")
 
     "create required file" in {
-      files.create(fileId, Some(diskId), project.ref, entity(), Async).accepted
+      files.create(fileId, Some(diskId), project.ref, entity()).accepted
     }
 
     "create an archive without specifying an id" in {

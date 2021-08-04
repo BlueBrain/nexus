@@ -4,11 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, ScopeInitialization}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -35,7 +35,7 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
 
   override def onProjectCreation(project: Project, subject: Identity.Subject): IO[ScopeInitializationFailed, Unit] =
     views
-      .create(defaultViewId, project.ref, defaultValue, Indexing.Async)
+      .create(defaultViewId, project.ref, defaultValue)
       .void
       .onErrorHandleWith {
         case _: ResourceAlreadyExists        => UIO.unit // nothing to do, view already exits

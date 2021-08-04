@@ -120,7 +120,7 @@ class ResolversRoutesSpec
       }
 
   private val resolvers =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit, IndexingActionDummy()).accepted
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
   private val resolverResolution = ResolverResolution(
     acls,
@@ -133,7 +133,8 @@ class ResolversRoutesSpec
 
   private val multiResolution = MultiResolution(projects, resolverResolution)
 
-  private val routes = Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution))
+  private val routes =
+    Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))

@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.{Async, Sync}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import monix.bio.IO
 
@@ -15,18 +16,29 @@ trait IndexingAction {
     *
     * @param project   the project in which the resource is located
     * @param res       the resource to perform the indexing action for
-    * @param indexing  the execution type
+    * @param indexingMode  the execution type
     */
-  def apply[R](project: ProjectRef, res: EventExchangeValue[_, _], indexing: Indexing)(implicit
+  def apply[A, AA, R](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
+      eventExchangeValueMapper: Mapper[ResourceF[A], EventExchangeValue[A, AA]],
       rejectionMapper: Mapper[IndexingActionFailed, R]
   ): IO[R, Unit] =
-    indexing match {
+    apply(project, eventExchangeValueMapper.to(res), indexingMode)
+
+  /**
+    * Perform an indexing action based on the indexing parameter.
+    *
+    * @param project   the project in which the resource is located
+    * @param res       the resource to perform the indexing action for
+    * @param indexingMode  the execution type
+    */
+  def apply[R](
+      project: ProjectRef,
+      res: EventExchangeValue[_, _],
+      indexingMode: IndexingMode
+  )(implicit rejectionMapper: Mapper[IndexingActionFailed, R]): IO[R, Unit] =
+    indexingMode match {
       case Async => IO.unit
-      case Sync  =>
-        execute(
-          project,
-          res
-        ).mapError(rejectionMapper.to)
+      case Sync  => execute(project, res).mapError(rejectionMapper.to)
     }
 
   /**

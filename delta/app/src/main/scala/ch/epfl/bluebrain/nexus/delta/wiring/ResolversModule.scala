@@ -37,12 +37,10 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
-        indexingAction: IndexingAction @Id("aggregate"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
-        scheduler: Scheduler,
-        base: BaseUri
+        scheduler: Scheduler
     ) =>
       ResolversImpl(
         config.resolvers,
@@ -50,9 +48,8 @@ object ResolversModule extends ModuleDef {
         orgs,
         projects,
         resolverContextResolution,
-        resourceIdCheck,
-        indexingAction
-      )(uuidF, clock, scheduler, as, base)
+        resourceIdCheck
+      )(uuidF, clock, scheduler, as)
   }
 
   make[MultiResolution].from {
@@ -71,13 +68,14 @@ object ResolversModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         resolvers: Resolvers,
+        indexingAction: IndexingAction @Id("aggregate"),
         multiResolution: MultiResolution,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution)(
+      new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, indexingAction)(
         baseUri,
         config.resolvers.pagination,
         s,

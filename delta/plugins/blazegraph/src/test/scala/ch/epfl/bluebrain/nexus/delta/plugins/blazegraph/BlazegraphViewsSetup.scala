@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
@@ -38,26 +38,23 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
   def init(
       org: Label,
       project: Project,
-      indexingAction: IndexingAction,
       perms: Permission*
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, s: Subject, sc: Scheduler): BlazegraphViews = {
     for {
       (orgs, projs) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    } yield init(orgs, projs, indexingAction, perms: _*)
+    } yield init(orgs, projs, perms: _*)
   }.accepted
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      indexingAction: IndexingAction,
       perms: Permission*
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): BlazegraphViews =
-    init(orgs, projects, indexingAction, PermissionsDummy(perms.toSet).accepted)
+    init(orgs, projects, PermissionsDummy(perms.toSet).accepted)
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      indexingAction: IndexingAction,
       perms: Permissions
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): BlazegraphViews = {
     for {
@@ -73,8 +70,7 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
                       orgs,
                       projects,
                       (_, _) => IO.unit,
-                      _ => IO.unit,
-                      indexingAction
+                      _ => IO.unit
                     )
     } yield views
   }.accepted

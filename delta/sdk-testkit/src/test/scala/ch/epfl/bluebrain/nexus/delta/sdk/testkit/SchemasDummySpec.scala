@@ -28,8 +28,7 @@ class SchemasDummySpec
           projs,
           schemaImports,
           resolverContextResolution,
-          (_, _) => IO.unit,
-          indexingAction
+          (_, _) => IO.unit
         )
     } yield r
 
