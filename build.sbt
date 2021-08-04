@@ -164,7 +164,8 @@ lazy val docs = project
       "https://sandbox.bluebrainnexus.io.*".r,
       "https://link.springer.com/.*".r,
       "https://shacl.org/.*".r,
-      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
+      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
+      "https://www.youtube.com/.*".r
     ),
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
