@@ -17,21 +17,6 @@ To run just some tests:
 testOnly *RemoteStorageSpec
 ```
 
-The available tags are:
-* Realms
-* Permissions
-* Acls
-* Orgs
-* Projects
-* Archives
-* Resources
-* Views
-* CompositeViews
-* Events
-* Storages
-* Search
-* Version
-
 ## Debugging
 
 Start dependencies as containers locally:
