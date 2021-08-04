@@ -28,8 +28,7 @@ class SchemasImplSpec
                          resolverContextResolution,
                          SchemasConfig(aggregate, 20),
                          eventLog,
-                         (_, _) => IO.unit,
-                         indexingAction
+                         (_, _) => IO.unit
                        )
     } yield resources
 }

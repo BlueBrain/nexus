@@ -38,7 +38,6 @@ object ResourcesModule extends ModuleDef {
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
-        indexingAction: IndexingAction @Id("aggregate"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -50,8 +49,7 @@ object ResourcesModule extends ModuleDef {
         resourceIdCheck,
         resolverContextResolution,
         config.resources.aggregate,
-        eventLog,
-        indexingAction
+        eventLog
       )(uuidF, as, clock)
   }
 
@@ -71,13 +69,19 @@ object ResourcesModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         resources: Resources,
+        indexingAction: IndexingAction @Id("aggregate"),
         sseEventLog: SseEventLog,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new ResourcesRoutes(identities, acls, organizations, projects, resources, sseEventLog)(baseUri, s, cr, ordering)
+      new ResourcesRoutes(identities, acls, organizations, projects, resources, sseEventLog, indexingAction)(
+        baseUri,
+        s,
+        cr,
+        ordering
+      )
   }
 
   many[ApiMappings].add(Resources.mappings)

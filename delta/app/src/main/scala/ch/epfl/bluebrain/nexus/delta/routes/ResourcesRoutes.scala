@@ -1,16 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-/*
-scalafmt: {
-  style = defaultWithAlign
-  maxColumn = 140
-}
- */
-
 import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -33,7 +27,8 @@ import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
-/** The resource routes
+/**
+  * The resource routes
   *
   * @param identities    the identity module
   * @param acls          the ACLs module
@@ -41,6 +36,7 @@ import monix.execution.Scheduler
   * @param projects      the projects module
   * @param resources     the resources module
   * @param sseEventLog   the global eventLog of all events
+  * @param index         the indexing action on write operations
   */
 final class ResourcesRoutes(
     identities: Identities,
@@ -48,7 +44,8 @@ final class ResourcesRoutes(
     organizations: Organizations,
     projects: Projects,
     resources: Resources,
-    sseEventLog: SseEventLog
+    sseEventLog: SseEventLog,
+    index: IndexingAction
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
@@ -62,6 +59,8 @@ final class ResourcesRoutes(
 
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
+
+  implicit private val eventExchangeMapper = Mapper(Resources.eventExchangeValue(_))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -112,14 +111,17 @@ final class ResourcesRoutes(
                   }
                 },
                 // Create a resource without schema nor id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingType) { (source, indexing) =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                   operationName(s"$prefixSegment/resources/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, resources.create(ref, resourceSchema, source, indexing).map(_.void))
+                      emit(
+                        Created,
+                        resources.create(ref, resourceSchema, source).tapEval(index(ref, _, mode)).map(_.void)
+                      )
                     }
                   }
                 },
-                (idSegment & indexingType) { (schema, indexing) =>
+                (idSegment & indexingMode) { (schema, mode) =>
                   val schemaOpt = underscoreToOption(schema)
                   concat(
                     // Create a resource with schema but without id segment
@@ -129,7 +131,11 @@ final class ResourcesRoutes(
                           entity(as[Json]) { source =>
                             emit(
                               Created,
-                              resources.create(ref, schema, source, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                              resources
+                                .create(ref, schema, source)
+                                .tapEval(index(ref, _, mode))
+                                .map(_.void)
+                                .rejectWhen(wrongJsonOrNotFound)
                             )
                           }
                         }
@@ -148,13 +154,18 @@ final class ResourcesRoutes(
                                       // Create a resource with schema and id segments
                                       emit(
                                         Created,
-                                        resources.create(id, ref, schema, source, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                        resources
+                                          .create(id, ref, schema, source)
+                                          .tapEval(index(ref, _, mode))
+                                          .map(_.void)
+                                          .rejectWhen(wrongJsonOrNotFound)
                                       )
                                     case (Some(rev), source) =>
                                       // Update a resource
                                       emit(
                                         resources
-                                          .update(id, ref, schemaOpt, rev, source, indexing)
+                                          .update(id, ref, schemaOpt, rev, source)
+                                          .tapEval(index(ref, _, mode))
                                           .map(_.void)
                                           .rejectWhen(wrongJsonOrNotFound)
                                       )
@@ -165,13 +176,22 @@ final class ResourcesRoutes(
                               (delete & parameter("rev".as[Long])) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   emit(
-                                    resources.deprecate(id, ref, schemaOpt, rev, indexing).map(_.void).rejectWhen(wrongJsonOrNotFound)
+                                    resources
+                                      .deprecate(id, ref, schemaOpt, rev)
+                                      .tapEval(index(ref, _, mode))
+                                      .map(_.void)
+                                      .rejectWhen(wrongJsonOrNotFound)
                                   )
                                 }
                               },
                               // Fetch a resource
                               (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                                emit(resources.fetch(id, ref, schemaOpt).leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
+                                emit(
+                                  resources
+                                    .fetch(id, ref, schemaOpt)
+                                    .leftWiden[ResourceRejection]
+                                    .rejectWhen(wrongJsonOrNotFound)
+                                )
                               }
                             )
                           }
@@ -201,7 +221,8 @@ final class ResourcesRoutes(
                                     emit(
                                       Created,
                                       resources
-                                        .tag(id, ref, schemaOpt, tag, tagRev, rev, indexing)
+                                        .tag(id, ref, schemaOpt, tag, tagRev, rev)
+                                        .tapEval(index(ref, _, mode))
                                         .map(_.void)
                                         .rejectWhen(wrongJsonOrNotFound)
                                     )
@@ -230,7 +251,8 @@ final class ResourcesRoutes(
 
 object ResourcesRoutes {
 
-  /** @return the [[Route]] for resources
+  /**
+    * @return the [[Route]] for resources
     */
   def apply(
       identities: Identities,
@@ -238,12 +260,13 @@ object ResourcesRoutes {
       orgs: Organizations,
       projects: Projects,
       resources: Resources,
-      sseEventLog: SseEventLog
+      sseEventLog: SseEventLog,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ResourcesRoutes(identities, acls, orgs, projects, resources, sseEventLog).routes
+  ): Route = new ResourcesRoutes(identities, acls, orgs, projects, resources, sseEventLog, index).routes
 
 }

@@ -69,7 +69,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          indexingAction: IndexingAction @Id("aggregate"),
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
           crypto: Crypto,
@@ -84,8 +83,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects,
           resourceIdCheck,
           crypto,
-          serviceAccount,
-          indexingAction
+          serviceAccount
         )(
           client,
           uuidF,
@@ -104,6 +102,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         storages: Storages,
+        indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -111,7 +110,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, acls, organizations, projects, storages)(
+        new StoragesRoutes(identities, acls, organizations, projects, storages, indexingAction)(
           baseUri,
           crypto,
           paginationConfig,
@@ -136,13 +135,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           storages: Storages,
           resourceIdCheck: ResourceIdCheck,
-          consistentWrite: IndexingAction @Id("aggregate"),
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck, consistentWrite)(
+        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck)(
           client,
           uuidF,
           clock,
@@ -159,13 +157,20 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         files: Files,
+        indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, acls, organizations, projects, files)(baseUri, storageConfig, s, cr, ordering)
+      new FilesRoutes(identities, acls, organizations, projects, files, indexingAction)(
+        baseUri,
+        storageConfig,
+        s,
+        cr,
+        ordering
+      )
   }
 
   many[ServiceDependency].addSet {
