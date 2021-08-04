@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
-import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.config.S3Config
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
@@ -42,7 +41,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   private val s3Client = S3Client.builder
-    .endpointOverride(new URI(s"http://${System.getProperty("minio:9000")}"))
+    .endpointOverride(new URI(s"http://${sys.props.getOrElse("minio-url", "localhost:9000")}"))
     .credentialsProvider(credentialsProvider)
     .region(Region.US_EAST_1)
     .build
@@ -136,7 +135,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   "creating a s3 storage" should {
-    "fail creating an S3Storage with an invalid bucket" taggedAs StorageTag in {
+    "fail creating an S3Storage with an invalid bucket" in {
       val payload = jsonContentOf(
         "/kg/storages/s3.json",
         "storageId" -> s"https://bluebrain.github.io/nexus/vocabulary/missing",
@@ -154,7 +153,7 @@ class S3StorageSpec extends StorageSpec {
   }
 
   s"Linking in S3" should {
-    "link an existing file" taggedAs StorageTag in {
+    "link an existing file" in {
       val payload = Json.obj(
         "filename"  -> Json.fromString("logo.png"),
         "path"      -> Json.fromString(logoKey),
@@ -178,7 +177,7 @@ class S3StorageSpec extends StorageSpec {
     }
   }
 
-  "fail to link a nonexistent file" taggedAs StorageTag in {
+  "fail to link a nonexistent file" in {
     val payload = Json.obj(
       "filename"  -> Json.fromString("logo.png"),
       "path"      -> Json.fromString("non/existent.png"),

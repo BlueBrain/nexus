@@ -248,7 +248,6 @@ lazy val testkit = project
       distageDocker,
       distageTestkit,
       monixBio,
-      scalate,
       scalaTest
     ),
     addCompilerPlugin(kindProjector)
@@ -643,7 +642,7 @@ lazy val searchPlugin = project
     sdkTestkit           % "test->compile;test->test",
     blazegraphPlugin     % "provided;test->compile;test->test",
     elasticsearchPlugin  % "provided;test->compile;test->test",
-    compositeViewsPlugin % "provided;test->compile;test->test",
+    compositeViewsPlugin % "provided;test->compile;test->test"
   )
   .settings(
     name                       := "delta-search-plugin",
@@ -806,21 +805,16 @@ lazy val storage = project
     }
   )
 
-lazy val dockerCompose = Seq(
-  composeFile := "tests/docker/docker-compose-postgres.yml"
-)
-
 lazy val tests = project
   .in(file("tests"))
   .dependsOn(testkit)
-  .enablePlugins(DockerComposePlugin)
-  .settings(noPublish ++ dockerCompose)
+  .settings(noPublish)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                     := "tests",
-    moduleName               := "tests",
-    coverageFailOnMinimum    := false,
-    libraryDependencies     ++= Seq(
+    name                               := "tests",
+    moduleName                         := "tests",
+    coverageFailOnMinimum              := false,
+    libraryDependencies               ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,
@@ -836,8 +830,11 @@ lazy val tests = project
       alpakkaSse      % Test,
       uuidGenerator   % Test
     ),
-    Test / parallelExecution := false,
-    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports")
+    Test / parallelExecution           := false,
+    Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    // Scalate gets errors with layering with this project so we disable it
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+    Test / fork                        := true
   )
 
 lazy val root = project
@@ -1029,7 +1026,6 @@ ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
-Global / excludeLintKeys        += tests / composeFile
 Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.RealmsTag
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity, Realm}
 import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
@@ -32,7 +31,7 @@ class RealmsSpec extends BaseSpec {
   "manage realms" should {
     val rev = 1L
 
-    "create realm" taggedAs RealmsTag in {
+    "create realm" in {
       val body = jsonContentOf(
         "/iam/realms/create.json",
         "realm" -> testRealmUri
@@ -50,7 +49,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "recreate realm" taggedAs RealmsTag in {
+    "recreate realm" in {
       val body = jsonContentOf(
         "/iam/realms/create.json",
         "realm" -> testRealmUri
@@ -68,7 +67,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "fetch realm" taggedAs RealmsTag in {
+    "fetch realm" in {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
@@ -81,7 +80,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "update realm" taggedAs RealmsTag in {
+    "update realm" in {
       val body =
         jsonContentOf(
           "/iam/realms/update.json",
@@ -102,7 +101,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "fetch updated realm" taggedAs RealmsTag in {
+    "fetch updated realm" in {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
@@ -115,7 +114,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "deprecate realm" taggedAs RealmsTag in {
+    "deprecate realm" in {
       deltaClient.delete[Json](s"/realms/${testRealm.name}?rev=${rev + 2}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(
@@ -129,7 +128,7 @@ class RealmsSpec extends BaseSpec {
       }
     }
 
-    "fetch deprecated realm" taggedAs RealmsTag in {
+    "fetch deprecated realm" in {
       deltaClient.get[Json](s"/realms/${testRealm.name}", Identity.ServiceAccount) { (json, result) =>
         result.status shouldEqual StatusCodes.OK
         filterRealmKeys(json) shouldEqual jsonContentOf(

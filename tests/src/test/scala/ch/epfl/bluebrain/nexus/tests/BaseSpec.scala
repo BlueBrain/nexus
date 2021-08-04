@@ -46,7 +46,7 @@ trait BaseSpec
 
   implicit val config: TestsConfig = load[TestsConfig](ConfigFactory.load(), "tests")
 
-  val deltaUrl: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1")
+  val deltaUrl: Uri = Uri(s"http://${sys.props.getOrElse("delta-url", "localhost:8080")}/v1")
 
   private[tests] val deltaClient = HttpClient(deltaUrl)
 

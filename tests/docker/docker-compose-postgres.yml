@@ -10,7 +10,7 @@ services:
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       KAMON_ENABLED: "false"
-    image: bluebrain/nexus-delta:latest<localBuild>
+    image: bluebrain/nexus-delta:latest
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--", "./bin/delta-app",
                   "-Xmx512m",
                   "-Dapp.http.interface=0.0.0.0",
@@ -21,11 +21,14 @@ services:
                   "-Dapp.database.postgres.host=postgres",
                   "-Dapp.database.postgres.tables-autocreate=true",
                   "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
                   "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
                   "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
                   "-Dplugins.blazegraph.indexing.max-time-window=50ms",
                   "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
+                  "-Dplugins.composite-views.sources.max-batch-size=50",
+                  "-Dplugins.composite-views.sources.max-time-window=50ms",
                   "-Dplugins.storage.storages.remote-disk.enabled=true",
                   "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                   "-Dplugins.storage.storages.amazon.enabled=true",
@@ -38,7 +41,7 @@ services:
                   "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
                   "-Djdbc-read-journal.refresh-interval=500ms"]
     ports:
-      - "8080"
+      - 8080:8080
     volumes:
       - ./config:/config
     deploy:
@@ -66,11 +69,14 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
   #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+  #                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
   #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
   #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-  #                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
+  #                  "-Dplugins.composite-views.sources.max-batch-size=50",
+  #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
@@ -83,7 +89,9 @@ services:
   #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
   #                  "-Djdbc-read-journal.refresh-interval=500ms"]
   #    ports:
-  #      - "8080"
+  #      - 8081:8080
+  #    volumes:
+  #      - ./config:/config
   #    deploy:
   #     resources:
   #       limits:
@@ -105,11 +113,14 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
   #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+  #                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
   #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
   #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-  #                  "-Dplugins.composite-views.indexing.max-time-window=50ms",
+  #                  "-Dplugins.composite-views.sources.max-batch-size=50",
+  #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
@@ -122,14 +133,16 @@ services:
   #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
   #                  "-Djdbc-read-journal.refresh-interval=500ms"
   #    ports:
-  #      - "8080"
+  #      - 8082:8080
+  #    volumes:
+  #      - ./config:/config
   #    deploy:
   #      resources:
   #        limits:
   #          memory: 768M
 
   keycloak:
-    image: jboss/keycloak:11.0.1<skipPull>
+    image: jboss/keycloak:15.0.0
     environment:
       JAVA_OPTS: "-Xms64m -Xmx256m"
       KEYCLOAK_USER: "admin"
@@ -137,14 +150,14 @@ services:
       KEYCLOAK_FRONTEND_URL: "http://keycloak:8080/auth"
       DB_VENDOR: H2
     ports:
-      - "8080"
+      - 9090:8080
     deploy:
       resources:
         limits:
           memory: 384M
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.12.0<skipPull>
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.4
     environment:
       ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
@@ -155,25 +168,25 @@ services:
       timeout: 20s
       retries: 3
     ports:
-      - "9200"
+      - 9200:9200
     deploy:
       resources:
         limits:
           memory: 384M
 
   blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.5<skipPull>
+    image: bluebrain/blazegraph-nexus:2.1.5
     environment:
       JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
     ports:
-      - "9999"
+      - 9999:9999
     deploy:
       resources:
         limits:
           memory: 384M
 
   postgres:
-    image: library/postgres:12.2<skipPull>
+    image: library/postgres:12.2
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"
@@ -196,7 +209,7 @@ services:
                   "-Dkamon.modules.prometheus-reporter.enabled=false",
                   "-Dkamon.modules.jaeger.enabled=false" ]
     ports:
-      - "8080"
+      - 8090:8080
     volumes:
       - /tmp/storage:/data
     deploy:
@@ -205,7 +218,7 @@ services:
           memory: 256M
 
   minio:
-    image: minio/minio:RELEASE.2020-09-21T22-31-59Z<skipPull>
+    image: minio/minio:RELEASE.2021-07-30T00-02-00Z
     command: server /data
     environment:
       MINIO_ACCESS_KEY: "MY_ACCESS_KEY"
@@ -225,6 +238,6 @@ services:
           - nexustest.delta.bbp
           - foobar.delta.bbp
     ports:
-      - "9000"
+      - 9000:9000
     volumes:
       - /tmp/minio:/data

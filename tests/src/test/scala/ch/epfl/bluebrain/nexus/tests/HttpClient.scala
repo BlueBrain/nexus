@@ -133,6 +133,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
         |Identity: $identity
         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
         |Status code: ${response.status}
+        |Body: ${body.getOrElse("None")}
         |Response:
         |$a
         |""".stripMargin
@@ -287,8 +288,6 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
 object HttpClient {
 
   private val logger = Logger[this.type]
-
-  val deltaUrl: Uri = Uri(s"http://${System.getProperty("delta:8080")}/v1")
 
   val tokensMap: ConcurrentHashMap[Identity, Authorization] = new ConcurrentHashMap[Identity, Authorization]
 
