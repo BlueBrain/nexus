@@ -150,7 +150,7 @@ final class ElasticSearchViewsRoutes(
                       Created,
                       views
                         .create(ref, source)
-                        .flatTap(index(ref, _, mode))
+                        .tapEval(index(ref, _, mode))
                         .mapValue(_.metadata)
                         .rejectWhen(decodingFailedOrViewNotFound)
                     )
@@ -172,7 +172,7 @@ final class ElasticSearchViewsRoutes(
                                   Created,
                                   views
                                     .create(id, ref, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -181,7 +181,7 @@ final class ElasticSearchViewsRoutes(
                                 emit(
                                   views
                                     .update(id, ref, rev, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -194,7 +194,7 @@ final class ElasticSearchViewsRoutes(
                             emit(
                               views
                                 .deprecate(id, ref, rev)
-                                .flatTap(index(ref, _, mode))
+                                .tapEval(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
@@ -277,7 +277,7 @@ final class ElasticSearchViewsRoutes(
                                 Created,
                                 views
                                   .tag(id, ref, tag, tagRev, rev)
-                                  .flatTap(index(ref, _, mode))
+                                  .tapEval(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .rejectWhen(decodingFailedOrViewNotFound)
                               )

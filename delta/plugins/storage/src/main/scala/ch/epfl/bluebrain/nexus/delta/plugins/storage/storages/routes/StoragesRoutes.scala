@@ -133,7 +133,7 @@ final class StoragesRoutes(
                     authorizeFor(ref, Write).apply {
                       emit(
                         Created,
-                        storages.create(ref, Secret(source)).flatTap(index(ref, _, mode)).mapValue(_.metadata)
+                        storages.create(ref, Secret(source)).tapEval(index(ref, _, mode)).mapValue(_.metadata)
                       )
                     }
                   }
@@ -167,7 +167,7 @@ final class StoragesRoutes(
                                     Created,
                                     storages
                                       .create(id, ref, Secret(source))
-                                      .flatTap(index(ref, _, mode))
+                                      .tapEval(index(ref, _, mode))
                                       .mapValue(_.metadata)
                                   )
                                 case (Some(rev), source) =>
@@ -175,7 +175,7 @@ final class StoragesRoutes(
                                   emit(
                                     storages
                                       .update(id, ref, rev, Secret(source))
-                                      .flatTap(index(ref, _, mode))
+                                      .tapEval(index(ref, _, mode))
                                       .mapValue(_.metadata)
                                   )
                               }
@@ -187,7 +187,7 @@ final class StoragesRoutes(
                               emit(
                                 storages
                                   .deprecate(id, ref, rev)
-                                  .flatTap(index(ref, _, mode))
+                                  .tapEval(index(ref, _, mode))
                                   .mapValue(_.metadata)
                                   .rejectOn[StorageNotFound]
                               )
@@ -227,7 +227,7 @@ final class StoragesRoutes(
                                   Created,
                                   storages
                                     .tag(id, ref, tag, tagRev, rev)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                 )
                               }

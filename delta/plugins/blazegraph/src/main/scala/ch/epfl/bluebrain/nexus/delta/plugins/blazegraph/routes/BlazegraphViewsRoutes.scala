@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.persistence.query.NoOffset
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
@@ -95,7 +94,7 @@ class BlazegraphViewsRoutes(
                         Created,
                         views
                           .create(ref, source)
-                          .flatTap(index(ref, _, mode))
+                          .tapEval(index(ref, _, mode))
                           .mapValue(_.metadata)
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )
@@ -115,7 +114,7 @@ class BlazegraphViewsRoutes(
                                   Created,
                                   views
                                     .create(id, ref, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -124,7 +123,7 @@ class BlazegraphViewsRoutes(
                                 emit(
                                   views
                                     .update(id, ref, rev, source)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -137,7 +136,7 @@ class BlazegraphViewsRoutes(
                             emit(
                               views
                                 .deprecate(id, ref, rev)
-                                .flatTap(index(ref, _, mode))
+                                .tapEval(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectOn[ViewNotFound]
                             )
@@ -216,7 +215,7 @@ class BlazegraphViewsRoutes(
                                   Created,
                                   views
                                     .tag(id, ref, tag, tagRev, rev)
-                                    .flatTap(index(ref, _, mode))
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectOn[ViewNotFound]
                                 )

@@ -137,7 +137,7 @@ final class ResolversRoutes(
                   // Create a resolver without an id segment
                   (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (payload, mode) =>
                     authorizeWrite {
-                      emit(Created, resolvers.create(ref, payload).flatTap(index(ref, _, mode)).map(_.void))
+                      emit(Created, resolvers.create(ref, payload).tapEval(index(ref, _, mode)).map(_.void))
                     }
                   }
                 },
@@ -167,11 +167,11 @@ final class ResolversRoutes(
                                   // Create a resolver with an id segment
                                   emit(
                                     Created,
-                                    resolvers.create(id, ref, payload).flatTap(index(ref, _, mode)).map(_.void)
+                                    resolvers.create(id, ref, payload).tapEval(index(ref, _, mode)).map(_.void)
                                   )
                                 case (Some(rev), payload) =>
                                   // Update a resolver
-                                  emit(resolvers.update(id, ref, rev, payload).flatTap(index(ref, _, mode)).map(_.void))
+                                  emit(resolvers.update(id, ref, rev, payload).tapEval(index(ref, _, mode)).map(_.void))
                               }
                             }
                           },
@@ -181,7 +181,7 @@ final class ResolversRoutes(
                               emit(
                                 resolvers
                                   .deprecate(id, ref, rev)
-                                  .flatTap(index(ref, _, mode))
+                                  .tapEval(index(ref, _, mode))
                                   .map(_.void)
                                   .rejectOn[ResolverNotFound]
                               )
@@ -214,7 +214,7 @@ final class ResolversRoutes(
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
-                                  resolvers.tag(id, ref, tag, tagRev, rev).flatTap(index(ref, _, mode)).map(_.void)
+                                  resolvers.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
                                 )
                               }
                             }

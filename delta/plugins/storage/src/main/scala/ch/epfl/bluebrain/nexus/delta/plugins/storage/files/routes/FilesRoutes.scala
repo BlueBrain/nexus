@@ -121,12 +121,12 @@ final class FilesRoutes(
                       entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
                         emit(
                           Created,
-                          files.createLink(storage, ref, filename, mediaType, path).flatTap(index(ref, _, mode))
+                          files.createLink(storage, ref, filename, mediaType, path).tapEval(index(ref, _, mode))
                         )
                       },
                       // Create a file without id segment
                       extractRequestEntity { entity =>
-                        emit(Created, files.create(storage, ref, entity).flatTap(index(ref, _, mode)))
+                        emit(Created, files.create(storage, ref, entity).tapEval(index(ref, _, mode)))
                       }
                     )
                   }
@@ -146,12 +146,12 @@ final class FilesRoutes(
                                       Created,
                                       files
                                         .createLink(id, storage, ref, filename, mediaType, path)
-                                        .flatTap(index(ref, _, mode))
+                                        .tapEval(index(ref, _, mode))
                                     )
                                   },
                                   // Create a file with id segment
                                   extractRequestEntity { entity =>
-                                    emit(Created, files.create(id, storage, ref, entity).flatTap(index(ref, _, mode)))
+                                    emit(Created, files.create(id, storage, ref, entity).tapEval(index(ref, _, mode)))
                                   }
                                 )
                               case (Some(rev), storage) =>
@@ -161,12 +161,12 @@ final class FilesRoutes(
                                     emit(
                                       files
                                         .updateLink(id, storage, ref, filename, mediaType, path, rev)
-                                        .flatTap(index(ref, _, mode))
+                                        .tapEval(index(ref, _, mode))
                                     )
                                   },
                                   // Update a file
                                   extractRequestEntity { entity =>
-                                    emit(files.update(id, storage, ref, rev, entity).flatTap(index(ref, _, mode)))
+                                    emit(files.update(id, storage, ref, rev, entity).tapEval(index(ref, _, mode)))
                                   }
                                 )
                             }
@@ -174,7 +174,7 @@ final class FilesRoutes(
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev).flatTap(index(ref, _, mode)).rejectOn[FileNotFound])
+                              emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
                             }
                           },
                           // Fetch a file
@@ -195,7 +195,7 @@ final class FilesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, files.tag(id, ref, tag, tagRev, rev).flatTap(index(ref, _, mode)))
+                                emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
                               }
                             }
                           }

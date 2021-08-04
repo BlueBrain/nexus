@@ -106,7 +106,7 @@ final class SchemasRoutes(
                 (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, schemas.create(ref, source).flatTap(index(ref, _, mode)).map(_.void))
+                      emit(Created, schemas.create(ref, source).tapEval(index(ref, _, mode)).map(_.void))
                     }
                   }
                 },
@@ -123,11 +123,11 @@ final class SchemasRoutes(
                                   // Create a schema with id segment
                                   emit(
                                     Created,
-                                    schemas.create(id, ref, source).flatTap(index(ref, _, mode)).map(_.void)
+                                    schemas.create(id, ref, source).tapEval(index(ref, _, mode)).map(_.void)
                                   )
                                 case (Some(rev), source) =>
                                   // Update a schema
-                                  emit(schemas.update(id, ref, rev, source).flatTap(index(ref, _, mode)).map(_.void))
+                                  emit(schemas.update(id, ref, rev, source).tapEval(index(ref, _, mode)).map(_.void))
                               }
                             }
                           },
@@ -137,7 +137,7 @@ final class SchemasRoutes(
                               emit(
                                 schemas
                                   .deprecate(id, ref, rev)
-                                  .flatTap(index(ref, _, mode))
+                                  .tapEval(index(ref, _, mode))
                                   .map(_.void)
                                   .rejectOn[SchemaNotFound]
                               )
@@ -173,7 +173,7 @@ final class SchemasRoutes(
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
-                                  schemas.tag(id, ref, tag, tagRev, rev).flatTap(index(ref, _, mode)).map(_.void)
+                                  schemas.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
                                 )
                               }
                             }

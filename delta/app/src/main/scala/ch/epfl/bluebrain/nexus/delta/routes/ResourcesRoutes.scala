@@ -116,7 +116,7 @@ final class ResourcesRoutes(
                     authorizeFor(ref, Write).apply {
                       emit(
                         Created,
-                        resources.create(ref, resourceSchema, source).flatTap(index(ref, _, mode)).map(_.void)
+                        resources.create(ref, resourceSchema, source).tapEval(index(ref, _, mode)).map(_.void)
                       )
                     }
                   }
@@ -133,7 +133,7 @@ final class ResourcesRoutes(
                               Created,
                               resources
                                 .create(ref, schema, source)
-                                .flatTap(index(ref, _, mode))
+                                .tapEval(index(ref, _, mode))
                                 .map(_.void)
                                 .rejectWhen(wrongJsonOrNotFound)
                             )
@@ -156,7 +156,7 @@ final class ResourcesRoutes(
                                         Created,
                                         resources
                                           .create(id, ref, schema, source)
-                                          .flatTap(index(ref, _, mode))
+                                          .tapEval(index(ref, _, mode))
                                           .map(_.void)
                                           .rejectWhen(wrongJsonOrNotFound)
                                       )
@@ -165,7 +165,7 @@ final class ResourcesRoutes(
                                       emit(
                                         resources
                                           .update(id, ref, schemaOpt, rev, source)
-                                          .flatTap(index(ref, _, mode))
+                                          .tapEval(index(ref, _, mode))
                                           .map(_.void)
                                           .rejectWhen(wrongJsonOrNotFound)
                                       )
@@ -178,7 +178,7 @@ final class ResourcesRoutes(
                                   emit(
                                     resources
                                       .deprecate(id, ref, schemaOpt, rev)
-                                      .flatTap(index(ref, _, mode))
+                                      .tapEval(index(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)
                                   )
@@ -222,7 +222,7 @@ final class ResourcesRoutes(
                                       Created,
                                       resources
                                         .tag(id, ref, schemaOpt, tag, tagRev, rev)
-                                        .flatTap(index(ref, _, mode))
+                                        .tapEval(index(ref, _, mode))
                                         .map(_.void)
                                         .rejectWhen(wrongJsonOrNotFound)
                                     )
