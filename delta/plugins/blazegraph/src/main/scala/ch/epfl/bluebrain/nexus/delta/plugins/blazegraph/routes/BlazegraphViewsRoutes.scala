@@ -77,7 +77,7 @@ class BlazegraphViewsRoutes(
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
-  implicit private val eventExchangeMapper = Mapper(views.eventExchangeValue(_))
+  implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {

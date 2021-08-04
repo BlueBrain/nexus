@@ -248,9 +248,6 @@ final class BlazegraphViews(
       }
     }
 
-  def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
-
   /**
     * List views.
     *
@@ -338,6 +335,9 @@ object BlazegraphViews {
   val moduleTag = "view"
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
+
+  def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * Constructs a projectionId for a blazegraph view
