@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterKey, filterMetadataKeys}
-import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import monix.bio.Task
@@ -124,7 +123,7 @@ class RemoteStorageSpec extends StorageSpec {
   }
 
   "creating a remote storage" should {
-    "fail creating a RemoteDiskStorage without folder" taggedAs StorageTag in {
+    "fail creating a RemoteDiskStorage without folder" in {
       val payload = jsonContentOf(
         "/kg/storages/remote-disk.json",
         "endpoint" -> externalEndpoint,

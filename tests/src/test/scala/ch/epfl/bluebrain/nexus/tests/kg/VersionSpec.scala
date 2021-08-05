@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
-import ch.epfl.bluebrain.nexus.tests.Tags.VersionTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
@@ -21,7 +20,7 @@ class VersionSpec extends BaseSpec with EitherValuable {
       }
     }
 
-    "return the dependencies and plugin versions" taggedAs VersionTag in {
+    "return the dependencies and plugin versions" in {
       aclDsl.addPermissionAnonymous("/", Permission.Version.Read).runSyncUnsafe()
 
       deltaClient.get[Json]("/version", Identity.Anonymous) { (json, response) =>

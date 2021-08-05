@@ -15,7 +15,7 @@ class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer) ext
 
   private val logger = Logger[this.type]
 
-  private val elasticUrl    = s"http://${System.getProperty("elasticsearch:9200")}"
+  private val elasticUrl    = s"http://${sys.props.getOrElse("elasticsearch-url", "localhost:9200")}"
   private val elasticClient = HttpClient(elasticUrl)
 
   def createTemplate(): Task[StatusCode] = {

@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
-import ch.epfl.bluebrain.nexus.tests.Tags.SearchTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
 import io.circe.literal._
@@ -22,7 +21,7 @@ class SearchSpec extends BaseSpec {
 
   "init project" should {
 
-    "add necessary permissions for user" taggedAs SearchTag in {
+    "add necessary permissions for user" in {
       aclDsl.addPermission(
         "/",
         Rick,
@@ -30,7 +29,7 @@ class SearchSpec extends BaseSpec {
       )
     }
 
-    "succeed if payload is correct" taggedAs SearchTag in {
+    "succeed if payload is correct" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Rick)
         _ <- adminDsl.createProject(orgId, projId1, kgDsl.projectJson(path = "/kg/projects/bbp.json", name = id1), Rick)
@@ -38,7 +37,7 @@ class SearchSpec extends BaseSpec {
       } yield succeed
     }
 
-    "create contexts" taggedAs SearchTag in {
+    "create contexts" in {
       projects.parTraverse { project =>
         for {
           _ <- deltaClient.post[Json](s"/resources/$project/_/", jsonContentOf("/kg/search/neuroshapes.json"), Rick) {
@@ -58,7 +57,7 @@ class SearchSpec extends BaseSpec {
 
   "adding resources" should {
 
-    "work" taggedAs SearchTag in {
+    "work" in {
       projects.parTraverse { project =>
         for {
           _ <- deltaClient.post[Json](s"/resources/$project/_/", jsonContentOf("/kg/search/agent1.json"), Rick) {
@@ -95,7 +94,7 @@ class SearchSpec extends BaseSpec {
   }
 
   "searching resources" should {
-    "list all resources" taggedAs SearchTag in eventually {
+    "list all resources" in eventually {
       for {
         _ <- deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
                response.status shouldEqual StatusCodes.OK
@@ -127,7 +126,7 @@ class SearchSpec extends BaseSpec {
       } yield succeed
     }
 
-    "remove permissions" taggedAs SearchTag in {
+    "remove permissions" in {
       for {
         _ <- aclDsl.deletePermission(
                s"/$orgId",
@@ -143,7 +142,7 @@ class SearchSpec extends BaseSpec {
       } yield succeed
     }
 
-    "list resources only from the projects the user has access to" taggedAs SearchTag in {
+    "list resources only from the projects the user has access to" in {
       for {
         _ <- deltaClient.post[Json]("/search/query", json"""{"size": 100}""", Rick) { (body, response) =>
                response.status shouldEqual StatusCodes.OK
@@ -177,7 +176,7 @@ class SearchSpec extends BaseSpec {
 
   "config endpoint" should {
 
-    "return config" taggedAs SearchTag in {
+    "return config" in {
       deltaClient.get[Json]("/search/config", Rick) { (body, response) =>
         response.status shouldEqual StatusCodes.OK
         body shouldEqual jsonContentOf("/kg/search/config.json")
