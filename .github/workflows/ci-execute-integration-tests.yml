@@ -1,8 +1,6 @@
 name: Delta Execute Integration Tests
 on:
-  push:
-    branches:
-      - master
+  pull_request:
     paths:
       - 'delta/**'
       - 'storage/**'
@@ -12,7 +10,7 @@ on:
       - '.github/workflows/ci-execute-integration-tests.yml'
 jobs:
   tests:
-    runs-on: nise-cg029
+    runs-on: it
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
