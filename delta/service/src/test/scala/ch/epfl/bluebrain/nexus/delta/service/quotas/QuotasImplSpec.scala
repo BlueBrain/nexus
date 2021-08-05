@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.QuotasConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.Quota
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.{QuotasDisabled, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}

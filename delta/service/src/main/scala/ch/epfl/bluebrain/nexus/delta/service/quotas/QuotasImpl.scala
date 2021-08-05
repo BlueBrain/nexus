@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.quotas
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.QuotasConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotasDisabled
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
