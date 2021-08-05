@@ -7,10 +7,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import io.circe.generic.semiauto._
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto._
 import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.math.Ordering.Implicits._
 
 /**
@@ -48,23 +50,33 @@ object ProjectCountsCollection {
   /**
     * The counts for a single project
     *
-    * @param eventsCount                the number of events existing on the project
-    * @param resourcesCount             the number of resources existing on the project
+    * @param events                     the number of events existing on the project
+    * @param resources                  the number of resources existing on the project
     * @param lastProcessedEventDateTime the time when the last count entry was created
     */
-  final case class ProjectCount(eventsCount: Long, resourcesCount: Long, lastProcessedEventDateTime: Instant)
+  final case class ProjectCount(events: Long, resources: Long, lastProcessedEventDateTime: Instant)
 
   object ProjectCount {
 
     implicit val projectCountSemigroup: Semigroup[ProjectCount] =
       (x: ProjectCount, y: ProjectCount) =>
         ProjectCount(
-          x.eventsCount + y.eventsCount,
-          x.resourcesCount + y.resourcesCount,
+          x.events + y.events,
+          x.resources + y.resources,
           x.lastProcessedEventDateTime.max(y.lastProcessedEventDateTime)
         )
 
-    implicit val projectCountCodec: Codec[ProjectCount] = deriveCodec[ProjectCount]
+    implicit val projectCountCodec: Codec[ProjectCount] = {
+      @nowarn("cat=unused")
+      implicit val config: Configuration = Configuration.default.copy(
+        transformMemberNames = {
+          case "events"    => "eventsCount"
+          case "resources" => "resourcesCount"
+          case other       => other
+        }
+      )
+      deriveConfiguredCodec[ProjectCount]
+    }
 
     implicit val projectCountJsonLdEncoder: JsonLdEncoder[ProjectCount] =
       JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))

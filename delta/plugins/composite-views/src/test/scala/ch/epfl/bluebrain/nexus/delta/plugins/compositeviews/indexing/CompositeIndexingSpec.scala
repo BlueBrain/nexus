@@ -406,7 +406,7 @@ class CompositeIndexingSpec
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         Some(CompositeView.Interval(2500.millis))
       )
-      val modifiedCount = initCount.copy(eventsCount = initCount.eventsCount + 1)
+      val modifiedCount = initCount.copy(events = initCount.events + 1)
       val result        = views.update(viewId, project1.ref, 2, view).accepted
 
       Thread.sleep(1 * 3000)

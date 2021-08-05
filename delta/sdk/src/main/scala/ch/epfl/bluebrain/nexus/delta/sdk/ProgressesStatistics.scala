@@ -43,13 +43,13 @@ class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: Proje
     */
   def statistics(count: ProjectCount, projectionId: ProjectionId): UIO[ProgressStatistics] =
     progressCache.get(projectionId).map {
-      case None           => ProgressStatistics(0, 0, 0, count.eventsCount, Some(count.lastProcessedEventDateTime), None)
+      case None           => ProgressStatistics(0, 0, 0, count.events, Some(count.lastProcessedEventDateTime), None)
       case Some(progress) =>
         ProgressStatistics(
           progress.processed,
           progress.discarded,
           progress.failed,
-          count.eventsCount,
+          count.events,
           Some(count.lastProcessedEventDateTime),
           Some(progress.timestamp)
         )

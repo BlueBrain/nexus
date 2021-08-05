@@ -62,7 +62,7 @@ object ProjectsCounts {
   ): Task[ProjectsCounts] = {
 
     val cache =
-      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.eventsCount)
+      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.events)
 
     def buildStream: Stream[Task, Unit] =
       Stream
