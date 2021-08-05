@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import io.circe.literal._
 import io.circe.syntax._
 import io.circe.{Decoder, Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -43,6 +44,15 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   private val `application/x-ndjson`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                       = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
+  private val emptyResults                                       = json"""{
+                                                                            "hits": {
+                                                                              "hits": [],
+                                                                              "total": {
+                                                                                "relation": "eq",
+                                                                                "value": 0
+                                                                              }
+                                                                            }
+                                                                          }"""
 
   /**
     * Fetches the service description information (name and version)
@@ -160,17 +170,17 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     }
 
   /**
-    * Search for the provided ''query'' inside the ''indices''
+    * Search for the provided ''query'' inside the ''index''
     *
     * @param params  the filter parameters
-    * @param indices the indices to use on search (if empty, searches in all the indices)
+    * @param index   the indices to use on search
     * @param qp      the query parameters
     * @param page    the pagination information
     * @param sort    the sorting criteria
     */
   def search(
       params: ResourcesSearchParams,
-      indices: Set[String],
+      index: String,
       qp: Query
   )(
       page: Pagination,
@@ -178,23 +188,23 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(implicit base: BaseUri): HttpResult[SearchResults[JsonObject]] =
     search(
       QueryBuilder(params).withPage(page).withTotalHits(true).withSort(sort),
-      indices,
+      index,
       qp
     )
 
   /**
-    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchResults]].
+    * Search for the provided ''query'' inside the ''index'' returning a parsed result as a [[SearchResults]].
     *
     * @param query        the search query
-    * @param indices      the indices to use on search (if empty, searches in all the indices)
+    * @param index        the index to use on search
     * @param qp           the optional query parameters
     */
   def search(
       query: QueryBuilder,
-      indices: Set[String],
+      index: String,
       qp: Query
   ): HttpResult[SearchResults[JsonObject]] = {
-    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    val searchEndpoint = (endpoint / index / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     client.fromJsonTo[SearchResults[JsonObject]](Post(searchEndpoint, query.build))
   }
 
@@ -213,21 +223,21 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(
       sort: SortList = SortList.empty
   ): HttpResult[Json] = {
-    val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
-    val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    val payload        = q.withSort(sort).withTotalHits(true).build
-    client.toJson(Post(searchEndpoint, payload))
+    if (indices.isEmpty)
+      IO.pure(emptyResults)
+    else {
+      val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
+      val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+      val payload        = q.withSort(sort).withTotalHits(true).build
+      client.toJson(Post(searchEndpoint, payload))
+    }
   }
 
   private def discardEntity(resp: HttpResponse) =
     UIO.delay(resp.discardEntityBytes()) >> IO.unit
 
-  private def indexPath(indices: Set[String]): String =
-    if (indices.isEmpty) allIndexPath else indices.mkString(",")
-
   private def indexPathAndQuery(indices: Set[String], query: QueryBuilder): (String, QueryBuilder) = {
     indices.toList match {
-      case Nil           => (allIndexPath, query)
       case single :: Nil => (single, query)
       case more          => (allIndexPath, query.withIndices(more))
     }

@@ -442,7 +442,7 @@ class CompositeIndexingSpec
       val results = esClient
         .search(
           QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-          Set(idx(view).value),
+          idx(view).value,
           Query.Empty
         )
         .accepted
