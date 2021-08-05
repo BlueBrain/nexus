@@ -119,7 +119,7 @@ class ProjectsRoutesSpec
 
   private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
 
-  private val projectStats = ProjectCount(10L, Instant.EPOCH)
+  private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
@@ -541,7 +541,8 @@ class ProjectsRoutesSpec
         response.asJson shouldEqual json"""{
           "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
           "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
-          "value" : 10
+          "eventsCount" : 10,
+          "resourcesCount" : 10
         }"""
       }
     }

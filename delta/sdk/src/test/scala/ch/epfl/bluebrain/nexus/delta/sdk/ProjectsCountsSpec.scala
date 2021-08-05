@@ -97,8 +97,8 @@ class ProjectsCountsSpec
       val counts = ProjectsCounts(projection, stream).accepted
       eventually {
         val currentCounts = counts.get().accepted
-        currentCounts.get(project1).value shouldEqual ProjectCount(25, now.plusSeconds(25))
-        currentCounts.get(project2).value shouldEqual ProjectCount(15, now.plusSeconds(40))
+        currentCounts.get(project1).value shouldEqual ProjectCount(25, 25, now.plusSeconds(25))
+        currentCounts.get(project2).value shouldEqual ProjectCount(15, 15, now.plusSeconds(40))
         currentCounts.get(project3).value // it has already consumed some element
         currentCounts.get(ProjectRef.unsafe("other", "other")) shouldEqual None
       }
@@ -108,9 +108,9 @@ class ProjectsCountsSpec
       val currentProgress = projection.progress(ProjectsCounts.projectionId).accepted
       val counts          = ProjectCountsCollection(
         Map(
-          project1 -> ProjectCount(25, now.plusSeconds(25)),
-          project2 -> ProjectCount(15, now.plusSeconds(40)),
-          project3 -> ProjectCount(10, now.plusSeconds(50))
+          project1 -> ProjectCount(25, 25, now.plusSeconds(25)),
+          project2 -> ProjectCount(15, 15, now.plusSeconds(40)),
+          project3 -> ProjectCount(10, 10, now.plusSeconds(50))
         )
       )
       currentProgress shouldEqual ProjectionProgress(Sequence(50), now.plusSeconds(50), 50, 0L, 0L, 0L, counts)
