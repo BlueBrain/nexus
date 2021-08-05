@@ -213,8 +213,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(
       sort: SortList = SortList.empty
   ): HttpResult[Json] = {
-    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    val payload        = QueryBuilder(query).withSort(sort).withTotalHits(true).build
+    val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
+    val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    val payload        = q.withSort(sort).withTotalHits(true).build
     client.toJson(Post(searchEndpoint, payload))
   }
 
@@ -223,6 +224,14 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
 
   private def indexPath(indices: Set[String]): String =
     if (indices.isEmpty) allIndexPath else indices.mkString(",")
+
+  private def indexPathAndQuery(indices: Set[String], query: QueryBuilder): (String, QueryBuilder) = {
+    indices.toList match {
+      case Nil           => (allIndexPath, query)
+      case single :: Nil => (single, query)
+      case more          => (allIndexPath, query.withIndices(more))
+    }
+  }
 
   implicit private val resolvedServiceDescriptionDecoder: Decoder[ResolvedServiceDescription] =
     Decoder.instance { hc =>
