@@ -45,7 +45,7 @@ class ElasticSearchClientSpec
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private def searchAllIn(index: IndexLabel): Seq[JsonObject] =

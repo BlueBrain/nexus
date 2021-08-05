@@ -33,7 +33,8 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
     externalIndexing,
     10,
     1.minute,
-    Refresh.False
+    Refresh.False,
+    2000
   )
 
   def init(

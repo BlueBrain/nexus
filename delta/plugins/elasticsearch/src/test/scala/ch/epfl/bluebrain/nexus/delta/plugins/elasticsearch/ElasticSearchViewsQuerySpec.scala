@@ -79,7 +79,7 @@ class ElasticSearchViewsQuerySpec
   implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private val realm                  = Label.unsafe("myrealm")

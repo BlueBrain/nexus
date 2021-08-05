@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
-class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorSystem) {
+class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int)(implicit as: ActorSystem) {
   import as.dispatcher
   private val serviceName                                        = Name.unsafe("elasticsearch")
   private val docPath                                            = "_doc"
@@ -237,10 +237,9 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     UIO.delay(resp.discardEntityBytes()) >> IO.unit
 
   private def indexPathAndQuery(indices: Set[String], query: QueryBuilder): (String, QueryBuilder) = {
-    indices.toList match {
-      case single :: Nil => (single, query)
-      case more          => (allIndexPath, query.withIndices(more))
-    }
+    val indexPath = indices.mkString(",")
+    if (indexPath.length < maxIndexPathLength) (indexPath, query)
+    else (allIndexPath, query.withIndices(indices))
   }
 
   implicit private val resolvedServiceDescriptionDecoder: Decoder[ResolvedServiceDescription] =
