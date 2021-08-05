@@ -29,7 +29,7 @@
         {
             type: Organization
             id: https://www.grid.ac/institutes/grid.417881.3
-            label: "Allen Institute for Brain Science"
+            name: Allen Institute for Brain Science
         }
     }
     distribution: forge.attach(f"./allen_cell_types_database/specimen_{x.specimen__id}/reconstruction.swc", content_type="application/swc")
@@ -40,9 +40,13 @@
         type: Generation
         activity:
         {
-            type: "nsg:NeuronMorphologyReconstruction"
-            hadProtocol:{
-                
+            type: nsg:NeuronMorphologyReconstruction
+            hadProtocol:
+            {
+                type: Protocol
+                id: http://help.brain-map.org/display/celltypes/Documentation?preview=/8323525/10813530/CellTypes_Morph_Overview.pdf
+                name: Technical White Paper: Cell Morphology and Histology
+                description: Protocol used to generate Allen Cell Types Database.
             }
         }
     }
@@ -52,7 +56,7 @@
         name: x.donor__name
         species: {
             label: x.donor__species
-        },
+        }
         identifier: x.donor__id
         age: 
         { 
@@ -62,7 +66,7 @@
         }
         strain: {
             label: x.line_name
-        },
+        }
         sex: {
             label: x.donor__sex
         }
@@ -77,6 +81,14 @@
         type: ObjectOfStudy
         id: http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells
         label: Single Cell
+    }
+    derivation:
+    {
+        type: Derivation
+        entity: {
+            name: x.specimen__name
+            identifier: x.specimen__id
+        }
     }
     cell_reporter_status: x.cell_reporter_status
     csl__normalized_depth: x.csl__normalized_depth
