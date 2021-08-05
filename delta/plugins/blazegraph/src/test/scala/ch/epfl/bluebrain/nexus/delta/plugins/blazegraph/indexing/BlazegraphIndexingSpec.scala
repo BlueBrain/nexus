@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -177,7 +176,7 @@ class BlazegraphIndexingSpec
 
   private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
 
-  private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, IndexingActionDummy(), permissions.query)
+  private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
   private val indexingCleanup        = new BlazegraphIndexingCleanup(blazegraphClient, cache)
   private val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
   BlazegraphIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
@@ -185,7 +184,7 @@ class BlazegraphIndexingSpec
   "BlazegraphIndexing" should {
 
     "index resources for project1" in {
-      val view = views.create(viewId, project1.ref, indexingValue, Async).accepted.asInstanceOf[IndexingViewResource]
+      val view = views.create(viewId, project1.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
         triplesFor(res2Proj1, value2Proj1),
@@ -193,7 +192,7 @@ class BlazegraphIndexingSpec
       )
     }
     "index resources for project2" in {
-      val view = views.create(viewId, project2.ref, indexingValue, Async).accepted.asInstanceOf[IndexingViewResource]
+      val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
         triplesFor(res1Proj2, value1Proj2),
@@ -202,7 +201,7 @@ class BlazegraphIndexingSpec
     }
     "index resources with metadata" in {
       val indexVal     = indexingValue.copy(includeMetadata = true)
-      val project1View = views.update(viewId, project1.ref, 1L, indexVal, Async).accepted.asInstanceOf[IndexingViewResource]
+      val project1View = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         project1View,
         triplesWithMetadataFor(res2Proj1, value2Proj1, project1.ref),
@@ -211,7 +210,7 @@ class BlazegraphIndexingSpec
     }
     "index resources including deprecated" in {
       val indexVal = indexingValue.copy(includeDeprecated = true)
-      val view     = views.update(viewId, project1.ref, 2L, indexVal, Async).accepted.asInstanceOf[IndexingViewResource]
+      val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
         triplesFor(res2Proj1, value2Proj1),
@@ -221,7 +220,7 @@ class BlazegraphIndexingSpec
     }
     "index resources constrained by schema" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
-      val view     = views.update(viewId, project1.ref, 3L, indexVal, Async).accepted.asInstanceOf[IndexingViewResource]
+      val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(
         view,
         triplesFor(res3Proj1, value3Proj1),
@@ -236,7 +235,7 @@ class BlazegraphIndexingSpec
 
     "index resources with type" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
-      val view     = views.update(viewId, project1.ref, 4L, indexVal, Async).accepted.asInstanceOf[IndexingViewResource]
+      val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(view, triplesFor(res3Proj1, value3Proj1))
     }
 

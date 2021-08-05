@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissi
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectsBehaviors}
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -20,7 +21,8 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
       pagination,
       cacheIndexing,
       persist,
-      AutomaticProvisioningConfig.disabled
+      AutomaticProvisioningConfig.disabled,
+      QuotasConfig(0, enabled = false, Map.empty)
     )
 
   override def create: Task[Projects] =

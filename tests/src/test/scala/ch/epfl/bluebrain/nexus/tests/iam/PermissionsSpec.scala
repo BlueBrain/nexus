@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
 import akka.http.scaladsl.model.StatusCodes
-import ch.epfl.bluebrain.nexus.tests.Tags.PermissionsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
@@ -13,7 +12,7 @@ class PermissionsSpec extends BaseSpec {
     val permission1 = Permission(genString(8), genString(8))
     val permission2 = Permission(genString(8), genString(8))
 
-    "clear permissions" taggedAs PermissionsTag in {
+    "clear permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         runTask {
           response.status shouldEqual StatusCodes.OK
@@ -28,21 +27,21 @@ class PermissionsSpec extends BaseSpec {
       }
     }
 
-    "add permissions" taggedAs PermissionsTag in {
+    "add permissions" in {
       permissionDsl.addPermissions(
         permission1,
         permission2
       )
     }
 
-    "check added permissions" taggedAs PermissionsTag in {
+    "check added permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         response.status shouldEqual StatusCodes.OK
         permissions.permissions shouldEqual Permission.minimalPermissions + permission1 + permission2
       }
     }
 
-    "subtract permissions" taggedAs PermissionsTag in {
+    "subtract permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         runTask {
           response.status shouldEqual StatusCodes.OK
@@ -58,14 +57,14 @@ class PermissionsSpec extends BaseSpec {
       }
     }
 
-    "check subtracted permissions" taggedAs PermissionsTag in {
+    "check subtracted permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         response.status shouldEqual StatusCodes.OK
         permissions.permissions shouldEqual Permission.minimalPermissions + permission1
       }
     }
 
-    "replace permissions" taggedAs PermissionsTag in {
+    "replace permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         runTask {
           response.status shouldEqual StatusCodes.OK
@@ -84,14 +83,14 @@ class PermissionsSpec extends BaseSpec {
       }
     }
 
-    "check replaced permissions" taggedAs PermissionsTag in {
+    "check replaced permissions" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         response.status shouldEqual StatusCodes.OK
         permissions.permissions shouldEqual Permission.minimalPermissions + permission1 + permission2
       }
     }
 
-    "reject subtracting minimal permission" taggedAs PermissionsTag in {
+    "reject subtracting minimal permission" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         runTask {
           response.status shouldEqual StatusCodes.OK
@@ -109,7 +108,7 @@ class PermissionsSpec extends BaseSpec {
       }
     }
 
-    "reject replacing minimal permission" taggedAs PermissionsTag in {
+    "reject replacing minimal permission" in {
       deltaClient.get[Permissions]("/permissions", Identity.ServiceAccount) { (permissions, response) =>
         runTask {
           response.status shouldEqual StatusCodes.OK

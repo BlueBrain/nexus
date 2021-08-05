@@ -38,7 +38,6 @@ object SchemasModule extends ModuleDef {
         schemaImports: SchemaImports,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
-        indexingAction: IndexingAction @Id("aggregate"),
         clock: Clock[UIO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing]
@@ -50,8 +49,7 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         config.schemas,
         eventLog,
-        resourceIdCheck,
-        indexingAction
+        resourceIdCheck
       )(uuidF, as, clock)
   }
 
@@ -72,12 +70,13 @@ object SchemasModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         schemas: Schemas,
+        indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new SchemasRoutes(identities, acls, organizations, projects, schemas)(baseUri, s, cr, ordering)
+      new SchemasRoutes(identities, acls, organizations, projects, schemas, indexingAction)(baseUri, s, cr, ordering)
   }
 
   many[ApiMappings].add(Schemas.mappings)

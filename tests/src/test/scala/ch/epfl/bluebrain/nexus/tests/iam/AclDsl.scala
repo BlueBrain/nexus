@@ -70,7 +70,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
               assertResponse
             }
           case None    =>
-            cl.put[Json](s"/acls$path", payload, Identity.ServiceAccount) {
+            cl.patch[Json](s"/acls$path", payload, Identity.ServiceAccount) {
               assertResponse
             }
         }

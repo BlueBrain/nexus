@@ -164,6 +164,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(ResourcesModule)
   include(IdentitiesModule)
   include(VersionModule)
+  include(QuotasModule)
 
   private def projection[A: Decoder: Encoder](
       empty: => A,

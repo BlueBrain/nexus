@@ -142,8 +142,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          indexingAction: IndexingAction @Id("aggregate")
+          scheduler: Scheduler
       ) =>
         BlazegraphViews(
           cfg,
@@ -154,8 +153,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           orgs,
           projects,
           resourceIdCheck,
-          client,
-          indexingAction
+          client
         )(
           uuidF,
           clock,
@@ -187,6 +185,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         projects: Projects,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
+        indexingAction: IndexingAction @Id("aggregate"),
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
         indexingController: BlazegraphIndexingController,
         baseUri: BaseUri,
@@ -195,7 +194,16 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, indexingController.restart)(
+      new BlazegraphViewsRoutes(
+        views,
+        viewsQuery,
+        identities,
+        acls,
+        projects,
+        progresses,
+        indexingController.restart,
+        indexingAction
+      )(
         baseUri,
         s,
         cr,
@@ -243,8 +251,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      BlazegraphViews.indexingAction(client, cache, config.indexing)(cr, baseUri)
-
+      new BlazegraphIndexingAction(client, cache, config.indexing)(cr, baseUri)
   }
 
   make[BlazegraphViewEventExchange]

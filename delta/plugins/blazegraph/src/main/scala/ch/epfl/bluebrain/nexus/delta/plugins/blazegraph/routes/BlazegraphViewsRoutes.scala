@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.persistence.query.NoOffset
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
@@ -28,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, IndexingAction, ProgressesStatistics, Projects}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -39,12 +40,13 @@ import monix.execution.Scheduler
 /**
   * The Blazegraph views routes
   *
-  * @param views      the blazegraph views operations bundle
-  * @param identities the identity module
-  * @param acls       the ACLs module
-  * @param projects   the projects module
-  * @param progresses the statistics of the progresses for the blazegraph views
-  * @param restartView  the action to restart a view indexing process triggered by a client
+  * @param views       the blazegraph views operations bundle
+  * @param identities  the identity module
+  * @param acls        the ACLs module
+  * @param projects    the projects module
+  * @param progresses  the statistics of the progresses for the blazegraph views
+  * @param restartView the action to restart a view indexing process triggered by a client
+  * @param index       the indexing action on write operations
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
@@ -53,7 +55,8 @@ class BlazegraphViewsRoutes(
     acls: Acls,
     projects: Projects,
     progresses: ProgressesStatistics,
-    restartView: RestartView
+    restartView: RestartView,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -74,6 +77,8 @@ class BlazegraphViewsRoutes(
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.statistics))
 
+  implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
+
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       concat(
@@ -82,21 +87,21 @@ class BlazegraphViewsRoutes(
             projectRef(projects).apply { implicit ref =>
               // Create a view without id segment
               concat(
-                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingType) {
-                  (source, indexing) =>
-                    operationName(s"$prefixSegment/views/{org}/{project}") {
-                      authorizeFor(ref, Write).apply {
-                        emit(
-                          Created,
-                          views
-                            .create(ref, source, indexing)
-                            .mapValue(_.metadata)
-                            .rejectWhen(decodingFailedOrViewNotFound)
-                        )
-                      }
+                (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
+                  operationName(s"$prefixSegment/views/{org}/{project}") {
+                    authorizeFor(ref, Write).apply {
+                      emit(
+                        Created,
+                        views
+                          .create(ref, source)
+                          .tapEval(index(ref, _, mode))
+                          .mapValue(_.metadata)
+                          .rejectWhen(decodingFailedOrViewNotFound)
+                      )
                     }
+                  }
                 },
-                (idSegment & indexingType) { (id, indexing) =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}/{id}")) {
                       concat(
@@ -108,7 +113,8 @@ class BlazegraphViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .create(id, ref, source, indexing)
+                                    .create(id, ref, source)
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -116,7 +122,8 @@ class BlazegraphViewsRoutes(
                                 // Update a view
                                 emit(
                                   views
-                                    .update(id, ref, rev, source, indexing)
+                                    .update(id, ref, rev, source)
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectWhen(decodingFailedOrViewNotFound)
                                 )
@@ -126,7 +133,13 @@ class BlazegraphViewsRoutes(
                         (delete & parameter("rev".as[Long])) { rev =>
                           // Deprecate a view
                           authorizeFor(ref, Write).apply {
-                            emit(views.deprecate(id, ref, rev, indexing).mapValue(_.metadata).rejectOn[ViewNotFound])
+                            emit(
+                              views
+                                .deprecate(id, ref, rev)
+                                .tapEval(index(ref, _, mode))
+                                .mapValue(_.metadata)
+                                .rejectOn[ViewNotFound]
+                            )
                           }
                         },
                         // Fetch a view
@@ -201,7 +214,8 @@ class BlazegraphViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .tag(id, ref, tag, tagRev, rev, indexing)
+                                    .tag(id, ref, tag, tagRev, rev)
+                                    .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectOn[ViewNotFound]
                                 )
@@ -289,7 +303,8 @@ object BlazegraphViewsRoutes {
       acls: Acls,
       projects: Projects,
       progresses: ProgressesStatistics,
-      restartView: RestartView
+      restartView: RestartView,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -297,6 +312,6 @@ object BlazegraphViewsRoutes {
       ordering: JsonKeyOrdering,
       pc: PaginationConfig
   ): Route = {
-    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, restartView).routes
+    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, restartView, index).routes
   }
 }

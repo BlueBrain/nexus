@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
@@ -12,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IndexingActionDummy, ProjectSetup, SchemasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.IO
@@ -73,14 +72,13 @@ class SchemaReferenceExchangeSpec
       projs,
       schemaImports,
       resolverContextResolution,
-      (_, _) => IO.unit,
-      IndexingActionDummy()
+      (_, _) => IO.unit
     ).accepted
 
   "A SchemaReferenceExchange" should {
     val tag     = TagLabel.unsafe("tag")
-    val resRev1 = schemas.create(schema.id, project.ref, schema.source, Async).accepted
-    val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L, Async).accepted
+    val resRev1 = schemas.create(schema.id, project.ref, schema.source).accepted
+    val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L).accepted
 
     val exchange = Schemas.referenceExchange(schemas)
 

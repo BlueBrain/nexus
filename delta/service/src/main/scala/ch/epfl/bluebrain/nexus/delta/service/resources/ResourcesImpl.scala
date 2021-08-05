@@ -35,22 +35,19 @@ final class ResourcesImpl private (
     orgs: Organizations,
     projects: Projects,
     eventLog: EventLog[Envelope[ResourceEvent]],
-    sourceParser: JsonLdSourceResolvingParser[ResourceRejection],
-    indexingAction: IndexingAction
+    sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 ) extends Resources {
 
   override def create(
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                          <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("createResource", moduleType)
 
@@ -58,8 +55,7 @@ final class ResourcesImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       schema: IdSegment,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -67,7 +63,6 @@ final class ResourcesImpl private (
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
-      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
   }.named("createResource", moduleType)
 
@@ -76,17 +71,14 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       rev: Long,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
       project               <- projects.fetchActiveProject(projectRef)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
-      res                   <-
-        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
-      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
+      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
     } yield res
   }.named("updateResource", moduleType)
 
@@ -96,30 +88,26 @@ final class ResourcesImpl private (
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
-      _            <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res).named("tagResource", moduleType)
 
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       project      <- projects.fetchActiveProject(projectRef)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
-      _            <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res).named("deprecateResource", moduleType)
 
   override def fetch(
@@ -242,8 +230,7 @@ object ResourcesImpl {
       resourceIdCheck: ResourceIdCheck,
       contextResolution: ResolverContextResolution,
       config: AggregateConfig,
-      eventLog: EventLog[Envelope[ResourceEvent]],
-      indexingAction: IndexingAction
+      eventLog: EventLog[Envelope[ResourceEvent]]
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
@@ -256,8 +243,7 @@ object ResourcesImpl {
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
       contextResolution,
       config,
-      eventLog,
-      indexingAction
+      eventLog
     )
 
   private[resources] def apply(
@@ -267,8 +253,7 @@ object ResourcesImpl {
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       config: AggregateConfig,
-      eventLog: EventLog[Envelope[ResourceEvent]],
-      consistentWrite: IndexingAction
+      eventLog: EventLog[Envelope[ResourceEvent]]
   )(implicit
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
@@ -280,8 +265,7 @@ object ResourcesImpl {
         orgs,
         projects,
         eventLog,
-        JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF),
-        consistentWrite
+        JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
       )
     )
 

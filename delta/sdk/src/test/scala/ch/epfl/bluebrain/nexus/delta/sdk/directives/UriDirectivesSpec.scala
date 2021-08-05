@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
@@ -99,9 +99,9 @@ class UriDirectivesSpec
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
         },
-        (pathPrefix("indexing") & indexingType & pathEndOrSingleSlash) {
-          case Indexing.Async => complete("async")
-          case Indexing.Sync  => complete("sync")
+        (pathPrefix("indexing") & indexingMode & pathEndOrSingleSlash) {
+          case IndexingMode.Async => complete("async")
+          case IndexingMode.Sync  => complete("sync")
         },
         (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)

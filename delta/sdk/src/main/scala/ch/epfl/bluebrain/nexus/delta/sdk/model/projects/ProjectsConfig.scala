@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.{AutomaticProvisioningConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import pureconfig.ConfigReader
@@ -25,6 +26,7 @@ import scala.annotation.nowarn
   * @param cacheIndexing         configuration of the cache indexing process
   * @param persistProgressConfig configuration for the persistence of progress of projections
   * @param automaticProvisioning configuration for automatic provisioning of projects
+  * @param quotas                quotas for projects
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
@@ -32,7 +34,8 @@ final case class ProjectsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     persistProgressConfig: SaveProgressConfig,
-    automaticProvisioning: AutomaticProvisioningConfig
+    automaticProvisioning: AutomaticProvisioningConfig,
+    quotas: QuotasConfig
 )
 
 object ProjectsConfig {
@@ -54,7 +57,7 @@ object ProjectsConfig {
 
   object AutomaticProvisioningConfig {
 
-    val disabled = AutomaticProvisioningConfig(
+    val disabled: AutomaticProvisioningConfig = AutomaticProvisioningConfig(
       enabled = false,
       permissions = Set.empty,
       enabledRealms = Map.empty,
@@ -115,6 +118,7 @@ object ProjectsConfig {
       ProjectFields(Some(description), apiMappings, base, vocab)
     )
   }
-  implicit final val projectConfigReader: ConfigReader[ProjectsConfig]             =
+
+  implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
     deriveReader[ProjectsConfig]
 }

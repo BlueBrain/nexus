@@ -9,16 +9,19 @@
   "name": "Nexus Test",
   "openIdConfig": "{{realm}}/.well-known/openid-configuration",
   "_label": "{{label}}",
-  "_grantTypes": [
+  "_grantTypes" : [
+    "urn:openid:params:grant-type:ciba",
     "password",
     "clientCredentials",
     "refreshToken",
     "authorizationCode",
+    "urn:ietf:params:oauth:grant-type:device_code",
     "implicit"
-  ],
+    ],
   "_issuer": "{{realm}}",
   "_authorizationEndpoint": "{{realm}}/protocol/openid-connect/auth",
   "_tokenEndpoint": "{{realm}}/protocol/openid-connect/token",
+  "_revocationEndpoint": "{{realm}}/protocol/openid-connect/revoke",
   "_userInfoEndpoint": "{{realm}}/protocol/openid-connect/userinfo",
   "_endSessionEndpoint": "{{realm}}/protocol/openid-connect/logout",
   "_rev": {{rev}},
