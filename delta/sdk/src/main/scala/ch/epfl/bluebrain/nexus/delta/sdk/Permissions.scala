@@ -204,6 +204,13 @@ object Permissions {
     final val write: Permission = Permission.unsafe("resolvers/write")
   }
 
+  /**
+    * Quotas permissions.
+    */
+  object quotas {
+    final val read: Permission = Permission.unsafe("quotas/read")
+  }
+
   private[delta] def next(
       minimum: Set[Permission]
   )(state: PermissionsState, event: PermissionsEvent): PermissionsState = {

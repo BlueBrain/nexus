@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.{AutomaticProvisioningConfig, QuotasConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import pureconfig.ConfigReader
@@ -25,6 +25,7 @@ import scala.annotation.nowarn
   * @param cacheIndexing         configuration of the cache indexing process
   * @param persistProgressConfig configuration for the persistence of progress of projections
   * @param automaticProvisioning configuration for automatic provisioning of projects
+  * @param quotas                quotas for projects
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
@@ -32,7 +33,8 @@ final case class ProjectsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     persistProgressConfig: SaveProgressConfig,
-    automaticProvisioning: AutomaticProvisioningConfig
+    automaticProvisioning: AutomaticProvisioningConfig,
+    quotas: QuotasConfig
 )
 
 object ProjectsConfig {
@@ -54,7 +56,7 @@ object ProjectsConfig {
 
   object AutomaticProvisioningConfig {
 
-    val disabled = AutomaticProvisioningConfig(
+    val disabled: AutomaticProvisioningConfig = AutomaticProvisioningConfig(
       enabled = false,
       permissions = Set.empty,
       enabledRealms = Map.empty,
@@ -115,6 +117,35 @@ object ProjectsConfig {
       ProjectFields(Some(description), apiMappings, base, vocab)
     )
   }
-  implicit final val projectConfigReader: ConfigReader[ProjectsConfig]             =
+
+  /**
+    * The configuration for quotas on projects
+    *
+    * @param resources maximum number of resources per project
+    * @param enabled   flag to enable or disable project quotas
+    * @param custom    custom quotas for certain projects
+    */
+  final case class QuotasConfig(resources: Int, enabled: Boolean, custom: Map[ProjectRef, Int])
+  object QuotasConfig {
+
+    @nowarn("cat=unused")
+    implicit final val quotasConfigReader: ConfigReader[QuotasConfig] = {
+
+      implicit val customMapReader: ConfigReader[Map[ProjectRef, Int]] = genericMapReader[ProjectRef, Int] { key =>
+        key.split("/").toList match {
+          case orgStr :: projectStr :: Nil =>
+            (Label(orgStr), Label(projectStr))
+              .mapN(ProjectRef(_, _))
+              .leftMap(err => CannotConvert(key, classOf[ProjectRef].getSimpleName, err.getMessage))
+          case _                           =>
+            Left(CannotConvert(key, classOf[ProjectRef].getSimpleName, "Wrong format"))
+        }
+      }
+
+      deriveReader[QuotasConfig]
+    }
+  }
+
+  implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
     deriveReader[ProjectsConfig]
 }
