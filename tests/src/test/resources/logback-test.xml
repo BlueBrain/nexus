@@ -16,6 +16,5 @@
     <logger name="akka.event" level="WARN" />
     <logger name="akka.remote" level="WARN" />
     <logger name="akka.cluster" level="WARN" />
-    <logger name="org.fusesource.scalate" level="ERROR" />
 
 </configuration>

@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.compositeviews.Jerry
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.CompositeViewsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Views}
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
@@ -33,7 +32,7 @@ class CompositeViewsSpec extends BaseSpec {
   private val songsProject  = "songs"
 
   "Creating projects" should {
-    "add necessary permissions for user" taggedAs CompositeViewsTag in {
+    "add necessary permissions for user" in {
       aclDsl.addPermissions(
         "/",
         Jerry,
@@ -41,7 +40,7 @@ class CompositeViewsSpec extends BaseSpec {
       )
     }
 
-    "succeed if payload is correct" taggedAs CompositeViewsTag in {
+    "succeed if payload is correct" in {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
@@ -55,7 +54,7 @@ class CompositeViewsSpec extends BaseSpec {
       } yield succeed
     }
 
-    "wait until in project resolver is created" taggedAs CompositeViewsTag in {
+    "wait until in project resolver is created" in {
       eventually {
         deltaClient.get[Json](s"/resolvers/$orgId/$bandsProject", Jerry) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -78,7 +77,7 @@ class CompositeViewsSpec extends BaseSpec {
   }
 
   "Uploading data" should {
-    "upload context" taggedAs CompositeViewsTag in {
+    "upload context" in {
       val context = jsonContentOf("/kg/views/composite/context.json")
       List(songsProject, albumsProject, bandsProject).parTraverse { projectId =>
         deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { (_, response) =>
@@ -87,7 +86,7 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "upload songs" taggedAs CompositeViewsTag in {
+    "upload songs" in {
       root.each.json
         .getAll(
           jsonContentOf("/kg/views/composite/songs1.json")
@@ -99,7 +98,7 @@ class CompositeViewsSpec extends BaseSpec {
         }
     }
 
-    "upload albums" taggedAs CompositeViewsTag in {
+    "upload albums" in {
       root.each.json
         .getAll(
           jsonContentOf("/kg/views/composite/albums.json")
@@ -111,7 +110,7 @@ class CompositeViewsSpec extends BaseSpec {
         }
     }
 
-    "upload bands" taggedAs CompositeViewsTag in {
+    "upload bands" in {
       root.each.json
         .getAll(
           jsonContentOf("/kg/views/composite/bands.json")
@@ -128,7 +127,7 @@ class CompositeViewsSpec extends BaseSpec {
 
     def jerryToken = tokensMap.get(Jerry).credentials.token()
 
-    "create a composite view" taggedAs CompositeViewsTag in {
+    "create a composite view" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -151,10 +150,10 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" taggedAs CompositeViewsTag in
+    "wait for data to be indexed after creation" in
       resetAndWait
 
-    "reject creating a composite view with remote source endpoint with a wrong suffix" taggedAs CompositeViewsTag in {
+    "reject creating a composite view with remote source endpoint with a wrong suffix" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -171,7 +170,7 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "reject creating a composite view with wrong remote source token" taggedAs CompositeViewsTag in {
+    "reject creating a composite view with wrong remote source token" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -195,7 +194,7 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "reject creating a composite view with remote source endpoint with a wrong hostname" taggedAs CompositeViewsTag in {
+    "reject creating a composite view with remote source endpoint with a wrong hostname" in {
       val view = jsonContentOf(
         "/kg/views/composite/composite-view.json",
         replacements(
@@ -225,7 +224,7 @@ class CompositeViewsSpec extends BaseSpec {
     )
 
   "searching the projections" should {
-    "find all bands" taggedAs CompositeViewsTag in {
+    "find all bands" in {
       waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
@@ -238,7 +237,7 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "find all albums" taggedAs CompositeViewsTag in {
+    "find all albums" in {
       waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/albums/_search", sortAscendingById, Jerry) {
@@ -253,7 +252,7 @@ class CompositeViewsSpec extends BaseSpec {
   }
 
   "uploading more data" should {
-    "upload more songs" taggedAs CompositeViewsTag in {
+    "upload more songs" in {
       root.each.json
         .getAll(
           jsonContentOf("/kg/views/composite/songs2.json")
@@ -265,12 +264,12 @@ class CompositeViewsSpec extends BaseSpec {
         }
     }
 
-    "waiting for data to be indexed" taggedAs CompositeViewsTag in
+    "waiting for data to be indexed" in
       resetAndWait
   }
 
   "searching the projections with more data" should {
-    "find all bands" taggedAs CompositeViewsTag in {
+    "find all bands" in {
       waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/bands/_search", sortAscendingById, Jerry) {
@@ -283,7 +282,7 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "find all albums" taggedAs CompositeViewsTag in {
+    "find all albums" in {
       waitForView()
       eventually {
         deltaClient.post[Json](s"/views/$orgId/bands/composite/projections/albums/_search", sortAscendingById, Jerry) {
@@ -333,7 +332,7 @@ class CompositeViewsSpec extends BaseSpec {
   }
 
   "Delete composite views" should {
-    "be ok" taggedAs CompositeViewsTag in {
+    "be ok" in {
       deltaClient.delete[Json](s"/views/$orgId/bands/composite?rev=1", Jerry) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
       }

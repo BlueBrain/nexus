@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.acls.Marge
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
-import ch.epfl.bluebrain.nexus.tests.Tags.AclsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.{AclEntry, AclListing, Permission, User}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import monix.execution.Scheduler.Implicits.global
@@ -30,11 +29,11 @@ class AclsSpec extends BaseSpec {
     val defaultPermissions    = Permission.Projects.list.toSet
     val restrictedPermissions = defaultPermissions.filterNot(_ == Permission.Projects.Write)
 
-    "add permissions for user on /" taggedAs AclsTag in {
+    "add permissions for user on /" in {
       aclDsl.addPermissions("/", Marge, defaultPermissions)
     }
 
-    "fetch permissions for user" taggedAs AclsTag in {
+    "fetch permissions for user" in {
       deltaClient.get[AclListing]("/acls/?self=false", Identity.ServiceAccount) { (acls, result) =>
         result.status shouldEqual StatusCodes.OK
         acls._results.head.acl
@@ -47,14 +46,14 @@ class AclsSpec extends BaseSpec {
       }
     }
 
-    "delete some permissions for user" taggedAs AclsTag in
+    "delete some permissions for user" in
       aclDsl.deletePermission(
         "/",
         Marge,
         Permission.Projects.Write
       )
 
-    "check if permissions were removed" taggedAs AclsTag in {
+    "check if permissions were removed" in {
       deltaClient.get[AclListing]("/acls/?self=false", Identity.ServiceAccount) { (acls, response) =>
         response.status shouldEqual StatusCodes.OK
         acls._results.head.acl
@@ -67,7 +66,7 @@ class AclsSpec extends BaseSpec {
       }
     }
 
-    "add permissions for user on paths with depth1" taggedAs AclsTag in {
+    "add permissions for user on paths with depth1" in {
       orgs.parTraverse { org =>
         aclDsl.addPermissions(
           s"/$org",
@@ -77,7 +76,7 @@ class AclsSpec extends BaseSpec {
       }
     }
 
-    "add permissions for user on /orgpath/projectpath1 and /orgpath/projectpath2" taggedAs AclsTag in {
+    "add permissions for user on /orgpath/projectpath1 and /orgpath/projectpath2" in {
       crossProduct.parTraverse { case (org, project) =>
         aclDsl.addPermissions(
           s"/$org/$project",
@@ -95,7 +94,7 @@ class AclsSpec extends BaseSpec {
         .head
         .permissions shouldEqual expectedPermissions
 
-    "list permissions on /*/*" taggedAs AclsTag in {
+    "list permissions on /*/*" in {
       deltaClient.get[AclListing]("/acls/*/*", Marge) { (acls, response) =>
         response.status shouldEqual StatusCodes.OK
         crossProduct.foreach { case (org, project) =>
@@ -105,7 +104,7 @@ class AclsSpec extends BaseSpec {
       }
     }
 
-    "list permissions on /orgpath1/*" taggedAs AclsTag in {
+    "list permissions on /orgpath1/*" in {
       deltaClient.get[AclListing](s"/acls/$orgPath1/*", Marge) { (acls, response) =>
         response.status shouldEqual StatusCodes.OK
         acls._total shouldEqual 2
@@ -116,7 +115,7 @@ class AclsSpec extends BaseSpec {
       }
     }
 
-    "list permissions on /*/* with ancestors" taggedAs AclsTag in {
+    "list permissions on /*/* with ancestors" in {
       deltaClient.get[AclListing]("/acls/*/*?ancestors=true", Marge) { (acls, response) =>
         response.status shouldEqual StatusCodes.OK
         acls._results
