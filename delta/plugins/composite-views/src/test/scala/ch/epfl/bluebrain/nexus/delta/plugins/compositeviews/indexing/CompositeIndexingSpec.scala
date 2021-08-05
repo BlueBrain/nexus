@@ -211,7 +211,7 @@ class CompositeIndexingSpec
   private val projectsCountsCache: MutableMap[ProjectRef, ProjectCount] = MutableMap.empty
   private val restartProjectionsCache                                   = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
 
-  private val initCount = ProjectCount(1, Instant.EPOCH)
+  private val initCount = ProjectCount(1, 1, Instant.EPOCH)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection] =
@@ -406,7 +406,7 @@ class CompositeIndexingSpec
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         Some(CompositeView.Interval(2500.millis))
       )
-      val modifiedCount = initCount.copy(value = initCount.value + 1)
+      val modifiedCount = initCount.copy(eventsCount = initCount.eventsCount + 1)
       val result        = views.update(viewId, project1.ref, 2, view).accepted
 
       Thread.sleep(1 * 3000)

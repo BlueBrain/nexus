@@ -132,7 +132,7 @@ class DeltaClientSpec
   "Getting project statistics" should {
 
     "work" in {
-      deltaClient.projectCount(source).accepted shouldEqual ProjectCount(10L, Instant.EPOCH)
+      deltaClient.projectCount(source).accepted shouldEqual ProjectCount(10, 10, Instant.EPOCH)
     }
 
     "fail if project is unknown" in {

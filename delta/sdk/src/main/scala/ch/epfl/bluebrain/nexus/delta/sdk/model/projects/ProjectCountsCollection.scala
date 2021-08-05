@@ -29,10 +29,13 @@ final case class ProjectCountsCollection(value: Map[ProjectRef, ProjectCount]) e
   /**
     * Increments the counts for the passed project ''projectRef''.
     * The remaining instant on that project will be the latest, between the already existing and the passed ''instant''.
-    * The remaining count will be the current count (if some) + 1
+    * The remaining event count will be the current event count (if some) + 1
+    * The remaining resources count will be the current resources count (if some) + 1 (when rev == 1) or + 0 (when rev > 1)
     */
-  def increment(projectRef: ProjectRef, instant: Instant): ProjectCountsCollection =
-    ProjectCountsCollection(value |+| Map(projectRef -> ProjectCount(1, instant)))
+  def increment(projectRef: ProjectRef, rev: Long, instant: Instant): ProjectCountsCollection = {
+    val resourcesIncrement = if (rev == 1L) 1L else 0L
+    ProjectCountsCollection(value |+| Map(projectRef -> ProjectCount(1, resourcesIncrement, instant)))
+  }
 }
 
 object ProjectCountsCollection {
@@ -45,16 +48,21 @@ object ProjectCountsCollection {
   /**
     * The counts for a single project
     *
-    * @param value  the number of events existing on the project
+    * @param eventsCount                the number of events existing on the project
+    * @param resourcesCount             the number of resources existing on the project
     * @param lastProcessedEventDateTime the time when the last count entry was created
     */
-  final case class ProjectCount(value: Long, lastProcessedEventDateTime: Instant)
+  final case class ProjectCount(eventsCount: Long, resourcesCount: Long, lastProcessedEventDateTime: Instant)
 
   object ProjectCount {
 
     implicit val projectCountSemigroup: Semigroup[ProjectCount] =
       (x: ProjectCount, y: ProjectCount) =>
-        ProjectCount(x.value + y.value, x.lastProcessedEventDateTime.max(y.lastProcessedEventDateTime))
+        ProjectCount(
+          x.eventsCount + y.eventsCount,
+          x.resourcesCount + y.resourcesCount,
+          x.lastProcessedEventDateTime.max(y.lastProcessedEventDateTime)
+        )
 
     implicit val projectCountCodec: Codec[ProjectCount] = deriveCodec[ProjectCount]
 

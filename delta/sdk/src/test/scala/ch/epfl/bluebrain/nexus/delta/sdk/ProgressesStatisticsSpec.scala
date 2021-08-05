@@ -20,7 +20,7 @@ class ProgressesStatisticsSpec extends AnyWordSpecLike with Matchers with IOValu
     val project      = ProjectRef.unsafe("org", "project")
     val now          = Instant.now()
     val nowMinus5    = now.minusSeconds(5)
-    val projectStats = ProjectCount(10, now)
+    val projectStats = ProjectCount(10, 10, now)
 
     val projectsCounts = new ProjectsCounts {
       override def get(): UIO[ProjectCountsCollection]                 =

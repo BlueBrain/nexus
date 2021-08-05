@@ -104,9 +104,9 @@ class CompositeViewsRoutesSpec
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats       = ProjectCount(10, nowPlus5)
-  private val otherProjectStats  = ProjectCount(100, nowPlus5)
-  private val remoteProjectStats = ProjectCount(1000, nowPlus5)
+  private val projectStats       = ProjectCount(10, 10, nowPlus5)
+  private val otherProjectStats  = ProjectCount(100, 100, nowPlus5)
+  private val remoteProjectStats = ProjectCount(1000, 1000, nowPlus5)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =

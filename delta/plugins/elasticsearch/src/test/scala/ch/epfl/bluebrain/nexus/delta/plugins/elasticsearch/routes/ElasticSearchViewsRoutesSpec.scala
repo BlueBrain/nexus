@@ -121,7 +121,7 @@ class ElasticSearchViewsRoutesSpec
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, now)
+  private val projectStats = ProjectCount(10, 10, now)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
