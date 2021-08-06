@@ -1,0 +1,30 @@
+{
+  "query": {
+    "bool": {
+      "must": {
+        "bool": {
+          "filter": [
+            {
+              "term": {
+                "_constrainedBy": "http://nexus.example.com/testSchema"
+              }
+            }
+          ]
+        }
+      },
+      "filter": {
+        "terms": {
+          "_index": [
+            "index1",
+            "index2"
+          ]
+        }
+      }
+    }
+  },
+  "sort": [
+    {
+      "@id": "asc"
+    }
+  ]
+}
