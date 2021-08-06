@@ -8,7 +8,7 @@ import akka.http.scaladsl.model._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
@@ -29,7 +29,7 @@ import scala.concurrent.duration._
 /**
   * A client that provides some of the functionality of the elasticsearch API.
   */
-class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorSystem) {
+class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength: Int)(implicit as: ActorSystem) {
   import as.dispatcher
   private val serviceName                                        = Name.unsafe("elasticsearch")
   private val docPath                                            = "_doc"
@@ -160,17 +160,17 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
     }
 
   /**
-    * Search for the provided ''query'' inside the ''indices''
+    * Search for the provided ''query'' inside the ''index''
     *
     * @param params  the filter parameters
-    * @param indices the indices to use on search (if empty, searches in all the indices)
+    * @param index   the indices to use on search
     * @param qp      the query parameters
     * @param page    the pagination information
     * @param sort    the sorting criteria
     */
   def search(
       params: ResourcesSearchParams,
-      indices: Set[String],
+      index: String,
       qp: Query
   )(
       page: Pagination,
@@ -178,23 +178,23 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(implicit base: BaseUri): HttpResult[SearchResults[JsonObject]] =
     search(
       QueryBuilder(params).withPage(page).withTotalHits(true).withSort(sort),
-      indices,
+      index,
       qp
     )
 
   /**
-    * Search for the provided ''query'' inside the ''indices'' returning a parsed result as a [[SearchResults]].
+    * Search for the provided ''query'' inside the ''index'' returning a parsed result as a [[SearchResults]].
     *
     * @param query        the search query
-    * @param indices      the indices to use on search (if empty, searches in all the indices)
+    * @param index        the index to use on search
     * @param qp           the optional query parameters
     */
   def search(
       query: QueryBuilder,
-      indices: Set[String],
+      index: String,
       qp: Query
   ): HttpResult[SearchResults[JsonObject]] = {
-    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+    val searchEndpoint = (endpoint / index / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
     client.fromJsonTo[SearchResults[JsonObject]](Post(searchEndpoint, query.build))
   }
 
@@ -213,16 +213,24 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri)(implicit as: ActorS
   )(
       sort: SortList = SortList.empty
   ): HttpResult[Json] = {
-    val searchEndpoint = (endpoint / indexPath(indices) / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
-    val payload        = QueryBuilder(query).withSort(sort).withTotalHits(true).build
-    client.toJson(Post(searchEndpoint, payload))
+    if (indices.isEmpty)
+      emptyResults
+    else {
+      val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
+      val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
+      val payload        = q.withSort(sort).withTotalHits(true).build
+      client.toJson(Post(searchEndpoint, payload))
+    }
   }
 
   private def discardEntity(resp: HttpResponse) =
     UIO.delay(resp.discardEntityBytes()) >> IO.unit
 
-  private def indexPath(indices: Set[String]): String =
-    if (indices.isEmpty) allIndexPath else indices.mkString(",")
+  private def indexPathAndQuery(indices: Set[String], query: QueryBuilder): (String, QueryBuilder) = {
+    val indexPath = indices.mkString(",")
+    if (indexPath.length < maxIndexPathLength) (indexPath, query)
+    else (allIndexPath, query.withIndices(indices))
+  }
 
   implicit private val resolvedServiceDescriptionDecoder: Decoder[ResolvedServiceDescription] =
     Decoder.instance { hc =>

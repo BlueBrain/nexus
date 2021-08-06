@@ -52,7 +52,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchClient].from {
     (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
-      new ElasticSearchClient(client, cfg.base)(as.classicSystem)
+      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(as.classicSystem)
   }
 
   make[IndexingSource].named("elasticsearch-source").from {

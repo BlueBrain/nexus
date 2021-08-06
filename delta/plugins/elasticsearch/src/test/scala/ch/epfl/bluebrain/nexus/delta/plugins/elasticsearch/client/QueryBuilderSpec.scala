@@ -47,6 +47,23 @@ class QueryBuilderSpec extends AnyWordSpecLike with Matchers with TestHelpers wi
         )
       QueryBuilder(params).build shouldEqual expected
     }
+
+    "add indices filter if there is no query" in {
+      val expected = jsonObjectContentOf("/query/no-query-sort-with-indices.json")
+      QueryBuilder.empty
+        .withSort(SortList(List(Sort("@id"))))
+        .withIndices(Set("index1", "index2"))
+        .build shouldEqual expected
+
+    }
+
+    "add indices filter if there is a query" in {
+      val expected = jsonObjectContentOf("/query/query-sort-with-indices.json")
+      QueryBuilder(ResourcesSearchParams(schema = Some(schema)))
+        .withSort(SortList(List(Sort("@id"))))
+        .withIndices(Set("index1", "index2"))
+        .build shouldEqual expected
+    }
   }
 
 }

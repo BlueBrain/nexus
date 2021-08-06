@@ -98,7 +98,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       schemeRef    <- expandResourceRef(schema, projectValue)
       p             = params.withSchema(schemeRef)
       search       <- client
-                        .search(p, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
+                        .search(p, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
                         .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -111,7 +111,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     for {
       view   <- fetchDefaultView(project)
       search <- client
-                  .search(params, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
+                  .search(params, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
                   .mapError(WrappedElasticSearchClientError)
     } yield search
 
