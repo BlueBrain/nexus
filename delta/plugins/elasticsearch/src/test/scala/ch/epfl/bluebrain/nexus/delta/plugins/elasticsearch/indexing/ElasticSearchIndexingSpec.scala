@@ -99,7 +99,8 @@ class ElasticSearchIndexingSpec
     externalIndexing,
     10,
     1.minute,
-    Refresh.False
+    Refresh.False,
+    2000
   )
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
@@ -107,7 +108,7 @@ class ElasticSearchIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
+  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, config.maxIndexPathLength)
 
   private val idPrefix = Iri.unsafe("https://example.com")
 
@@ -198,7 +199,7 @@ class ElasticSearchIndexingSpec
   ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
 
   private def listAll(index: IndexLabel) =
-    esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
+    esClient.search(QueryBuilder.empty.withPage(page), index.value, Query.Empty).accepted
 
   private val page = FromPagination(0, 5000)
 
