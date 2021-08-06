@@ -55,7 +55,8 @@ class DeltaClientSpec
   val stats = """{
           "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
           "lastProcessedEventDateTime" : "1970-01-01T00:00:00Z",
-          "value" : 10
+          "eventsCount" : 10,
+          "resourcesCount" : 10
         }"""
 
   implicit val sc: Scheduler = Scheduler.global
