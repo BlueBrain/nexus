@@ -8,7 +8,7 @@ import akka.http.scaladsl.model._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{emptyResults, ResourcesSearchParams}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.{ScoredSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.literal._
 import io.circe.syntax._
 import io.circe.{Decoder, Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -44,15 +43,6 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val `application/x-ndjson`: MediaType.WithFixedCharset =
     MediaType.applicationWithFixedCharset("x-ndjson", HttpCharsets.`UTF-8`, "json")
   private val defaultQuery                                       = Map(ignoreUnavailable -> "true", allowNoIndices -> "true")
-  private val emptyResults                                       = json"""{
-                                                                            "hits": {
-                                                                              "hits": [],
-                                                                              "total": {
-                                                                                "relation": "eq",
-                                                                                "value": 0
-                                                                              }
-                                                                            }
-                                                                          }"""
 
   /**
     * Fetches the service description information (name and version)
@@ -224,7 +214,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
       sort: SortList = SortList.empty
   ): HttpResult[Json] = {
     if (indices.isEmpty)
-      IO.pure(emptyResults)
+      emptyResults
     else {
       val (indexPath, q) = indexPathAndQuery(indices, QueryBuilder(query))
       val searchEndpoint = (endpoint / indexPath / searchPath).withQuery(Uri.Query(defaultQuery ++ qp.toMap))
