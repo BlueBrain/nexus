@@ -136,6 +136,7 @@ final class BlazegraphViews(
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
+      _         <- createNamespace(res)
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
@@ -155,6 +156,7 @@ final class BlazegraphViews(
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
+      _     <- createNamespace(res)
     } yield res
   }.named("updateBlazegraphView", moduleType)
 
@@ -178,6 +180,7 @@ final class BlazegraphViews(
       p   <- projects.fetchActiveProject(project)
       iri <- expandIri(id, p)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
+      _   <- createNamespace(res)
     } yield res
   }.named("tagBlazegraphView", moduleType)
 

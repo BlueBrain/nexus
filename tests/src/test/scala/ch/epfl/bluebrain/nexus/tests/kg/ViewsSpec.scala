@@ -414,5 +414,23 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .runSyncUnsafe()
       }
     }
+
+    "create a another SPARQL view" in {
+      val payload = jsonContentOf("/kg/views/sparql-view.json")
+      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2", payload, ScoobyDoo) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "update a new SPARQL view with indexing=sync" in {
+      val payload = jsonContentOf("/kg/views/sparql-view.json").mapObject(
+        _.remove("resourceTag").remove("resourceTypes").remove("resourceSchemas")
+      )
+      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2?rev=1&indexing=sync", payload, ScoobyDoo) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+      }
+    }
+
   }
 }
