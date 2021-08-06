@@ -8,7 +8,7 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
@@ -104,6 +104,7 @@ class ResourcesRoutesSpec
       projs,
       resourceResolution,
       (_, _) => IO.unit,
+      QuotasDummy.neverReached,
       resolverContextResolution
     ).accepted
   private val sseEventLog    = new SseEventLogDummy(

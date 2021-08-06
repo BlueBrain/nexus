@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -61,7 +61,7 @@ class ResolverEventExchangeSpec
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   private val resolvers: Resolvers =
-    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit).accepted
+    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit, QuotasDummy.neverReached).accepted
 
   "A ResolverEventExchange" should {
     val id              = iri"http://localhost/${genString()}"

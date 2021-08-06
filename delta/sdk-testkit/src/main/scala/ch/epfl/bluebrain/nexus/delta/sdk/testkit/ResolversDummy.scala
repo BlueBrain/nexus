@@ -45,7 +45,8 @@ class ResolversDummy private (
     projects: Projects,
     semaphore: IOSemaphore,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
-    idAvailability: IdAvailability[ResourceAlreadyExists]
+    idAvailability: IdAvailability[ResourceAlreadyExists],
+    quotas: Quotas
 )(implicit clock: Clock[UIO])
     extends Resolvers {
 
@@ -178,7 +179,7 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(findResolver, idAvailability)(state, command)
+        event      <- Resolvers.evaluate(findResolver, idAvailability, quotas)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
@@ -209,12 +210,14 @@ object ResolversDummy {
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
+    * @param validateQuotas     checks if the quotas have been reached
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
@@ -222,5 +225,5 @@ object ResolversDummy {
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability, quotas)
 }

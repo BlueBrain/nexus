@@ -38,6 +38,7 @@ object ResourcesModule extends ModuleDef {
         schemas: Schemas,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        quotas: Quotas,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -47,6 +48,7 @@ object ResourcesModule extends ModuleDef {
         projects,
         ResourceResolution.schemaResource(acls, resolvers, schemas),
         resourceIdCheck,
+        quotas,
         resolverContextResolution,
         config.resources.aggregate,
         eventLog

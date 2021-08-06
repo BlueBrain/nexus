@@ -20,6 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
@@ -93,6 +95,11 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
       )
+
+  /**
+    * Signals a rejection caused when interacting with the quotas API
+    */
+  final case class WrappedQuotaRejection(rejection: QuotaReached) extends ElasticSearchViewRejection(rejection.reason)
 
   /**
     * Signals a rejection caused when interacting with the projects API
@@ -237,6 +244,9 @@ object ElasticSearchViewRejection {
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends ElasticSearchViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
 
+  implicit val elasticsearchQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
+    WrappedQuotaRejection(_)
+
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, ElasticSearchViewRejection] =
     WrappedProjectRejection.apply
 
@@ -273,6 +283,7 @@ object ElasticSearchViewRejection {
           JsonObject(keywords.tpe -> "ElasticSearchViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedElasticSearchClientError(rejection)                     =>
           rejection.jsonBody.flatMap(_.asObject).getOrElse(obj.add(keywords.tpe, "ElasticSearchClientError".asJson))
+        case WrappedQuotaRejection(rejection)                               => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)                        => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                             => rejection.asJsonObject
         case InvalidJsonLdFormat(_, ConversionError(details, _))            => obj.add("details", details.asJson)
@@ -294,6 +305,7 @@ object ElasticSearchViewRejection {
       case ViewNotFound(_, _)                     => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
+      case WrappedQuotaRejection(rej)             => (rej: QuotaRejection).status
       case WrappedOrganizationRejection(rej)      => rej.status
       case WrappedProjectRejection(rej)           => rej.status
       case AuthorizationFailed                    => StatusCodes.Forbidden

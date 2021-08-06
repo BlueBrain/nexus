@@ -134,6 +134,7 @@ object HttpResponseFields {
       case ResolverRejection.TagNotFound(_)                        => StatusCodes.NotFound
       case ResolverRejection.InvalidResolution(_, _, _)            => StatusCodes.NotFound
       case ResolverRejection.InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
+      case ResolverRejection.WrappedQuotaRejection(rej)            => (rej: QuotaRejection).status
       case ResolverRejection.WrappedProjectRejection(rej)          => rej.status
       case ResolverRejection.WrappedOrganizationRejection(rej)     => rej.status
       case ResolverRejection.ResourceAlreadyExists(_, _)           => StatusCodes.Conflict
@@ -150,6 +151,7 @@ object HttpResponseFields {
       case ResourceRejection.ResourceNotFound(_, _, _)         => StatusCodes.NotFound
       case ResourceRejection.TagNotFound(_)                    => StatusCodes.NotFound
       case ResourceRejection.InvalidSchemaRejection(_, _, _)   => StatusCodes.NotFound
+      case ResourceRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case ResourceRejection.WrappedOrganizationRejection(rej) => rej.status
       case ResourceRejection.WrappedProjectRejection(rej)      => rej.status
       case ResourceRejection.ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
@@ -167,6 +169,7 @@ object HttpResponseFields {
       case SchemaRejection.SchemaNotFound(_, _)              => StatusCodes.NotFound
       case SchemaRejection.ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case SchemaRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
+      case SchemaRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case SchemaRejection.WrappedProjectRejection(rej)      => rej.status
       case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status
       case SchemaRejection.SchemaEvaluationError(_)          => StatusCodes.InternalServerError
@@ -179,6 +182,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case _: QuotaRejection.QuotasDisabled            => StatusCodes.NotFound
       case QuotaRejection.WrappedProjectRejection(rej) => (rej: ProjectRejection).status
+      case _: QuotaRejection.QuotaReached              => StatusCodes.Forbidden
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =

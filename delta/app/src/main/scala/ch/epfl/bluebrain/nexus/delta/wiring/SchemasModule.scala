@@ -38,6 +38,7 @@ object SchemasModule extends ModuleDef {
         schemaImports: SchemaImports,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        quotas: Quotas,
         clock: Clock[UIO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing]
@@ -49,7 +50,8 @@ object SchemasModule extends ModuleDef {
         resolverContextResolution,
         config.schemas,
         eventLog,
-        resourceIdCheck
+        resourceIdCheck,
+        quotas
       )(uuidF, as, clock)
   }
 

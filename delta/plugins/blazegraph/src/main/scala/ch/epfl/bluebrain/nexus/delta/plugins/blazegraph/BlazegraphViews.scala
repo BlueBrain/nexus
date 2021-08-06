@@ -427,6 +427,7 @@ object BlazegraphViews {
       validateRef: ValidateRef,
       viewRefResolution: ViewRefResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       maxViewRefs: Int
   )(state: BlazegraphViewState, cmd: BlazegraphViewCommand)(implicit
       clock: Clock[UIO],
@@ -448,16 +449,18 @@ object BlazegraphViews {
           } yield ()
       }
 
-    def create(c: CreateBlazegraphView) = state match {
-      case Initial =>
-        for {
-          _ <- validate(c.value)
-          t <- IOUtils.instant
-          u <- uuidF()
-          _ <- idAvailability(c.project, c.id)
-        } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
-    }
+    def create(c: CreateBlazegraphView) =
+      state match {
+        case Initial =>
+          for {
+            _ <- quotas.reachedForResources(c.project, c.subject)
+            _ <- validate(c.value)
+            t <- IOUtils.instant
+            u <- uuidF()
+            _ <- idAvailability(c.project, c.id)
+          } yield BlazegraphViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
+        case _       => IO.raiseError(ResourceAlreadyExists(c.id, c.project))
+      }
 
     def update(c: UpdateBlazegraphView) = state match {
       case Initial                                  =>
@@ -521,6 +524,7 @@ object BlazegraphViews {
       orgs: Organizations,
       projects: Projects,
       resourceIdCheck: ResourceIdCheck,
+      quotas: Quotas,
       client: BlazegraphClient
   )(implicit
       uuidF: UUIDF,
@@ -539,7 +543,18 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(config, eventLog, contextResolution, permissions, cache, orgs, projects, idAvailability, createNameSpace)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      permissions,
+      cache,
+      orgs,
+      projects,
+      idAvailability,
+      quotas,
+      createNameSpace
+    )
   }
 
   private[blazegraph] def apply(
@@ -551,6 +566,7 @@ object BlazegraphViews {
       orgs: Organizations,
       projects: Projects,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
   )(implicit
       uuidF: UUIDF,
@@ -571,6 +587,7 @@ object BlazegraphViews {
                         validatePermissions(permissions),
                         viewResolution(deferred),
                         idAvailability,
+                        quotas,
                         validateRef(deferred)
                       )
       sourceDecoder = new JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue](
@@ -603,6 +620,7 @@ object BlazegraphViews {
       validateP: ValidatePermission,
       viewResolution: ViewRefResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       validateRef: ValidateRef
   )(implicit
       as: ActorSystem[Nothing],
@@ -614,7 +632,7 @@ object BlazegraphViews {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateP, validateRef, viewResolution, idAvailability, config.maxViewRefs),
+      evaluate = evaluate(validateP, validateRef, viewResolution, idAvailability, quotas, config.maxViewRefs),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

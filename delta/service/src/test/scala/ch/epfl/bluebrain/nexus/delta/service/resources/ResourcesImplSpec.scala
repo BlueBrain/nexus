@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.resources
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
@@ -26,6 +26,7 @@ class ResourcesImplSpec
                          projs,
                          resourceResolution,
                          (_, _) => UIO.unit,
+                         QuotasDummy.neverReached,
                          resolverContextResolution,
                          aggregate,
                          eventLog

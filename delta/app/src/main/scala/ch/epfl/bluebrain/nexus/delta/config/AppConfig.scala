@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig

@@ -52,7 +52,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProjectsCounts, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProjectsCountsDummy, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
@@ -213,13 +213,7 @@ class CompositeIndexingSpec
 
   private val initCount = ProjectCount(1, 1, Instant.EPOCH)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection] =
-      UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
-
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] =
-      UIO.delay(projectsCountsCache.get(project))
-  }
+  private val projectsCounts = new ProjectsCountsDummy(ProjectCountsCollection(projectsCountsCache.toMap))
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
 

@@ -243,13 +243,14 @@ object ResolversImpl {
   private def aggregate(
       config: AggregateConfig,
       findResolver: FindResolver,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Resolvers.next,
-      evaluate = Resolvers.evaluate(findResolver, idAvailability),
+      evaluate = Resolvers.evaluate(findResolver, idAvailability, quotas),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -270,6 +271,7 @@ object ResolversImpl {
     * @param projects          a Projects instance
     * @param contextResolution the context resolver
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
+    * @param quotas    checks if the quotas have been reached
     */
   final def apply(
       config: ResolversConfig,
@@ -277,7 +279,8 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      quotas: Quotas
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -290,7 +293,8 @@ object ResolversImpl {
       orgs,
       projects,
       contextResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
+      quotas
     )
 
   private[resolvers] def apply(
@@ -299,7 +303,8 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -308,7 +313,7 @@ object ResolversImpl {
   ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
+      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability, quotas)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)

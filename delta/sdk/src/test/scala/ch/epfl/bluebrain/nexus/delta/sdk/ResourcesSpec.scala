@@ -63,7 +63,7 @@ class ResourcesSpec
     val resourceResolution = ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
     val eval: (ResourceState, ResourceCommand) => IO[ResourceRejection, ResourceEvent] =
-      evaluate(resourceResolution, (_, _) => IO.unit)
+      evaluate(resourceResolution, (_, _) => IO.unit, QuotasDummy.neverReached)
 
     val myId   = nxv + "myid"
     val types  = Set(nxv + "Custom")
@@ -214,6 +214,17 @@ class ResourcesSpec
         )
       }
 
+      "reject with QuotaReached" in {
+        val eval = evaluate(resourceResolution, (_, _) => IO.unit, QuotasDummy.alwaysReached)(_, _)
+        forAll(List(Latest(schemas.resources), Latest(schema1.id))) { schemaRef =>
+          val myIdResource = ResourceGen.resource(myId, projectRef, source, schemaRef)
+          val comp         = myIdResource.compacted
+          val exp          = myIdResource.expanded
+          eval(Initial, CreateResource(myId, projectRef, schemaRef, source, comp, exp, caller))
+            .rejectedWith[WrappedQuotaRejection]
+        }
+      }
+
       "reject with ResourceSchemaUnexpected" in {
         val current     = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
         val otherSchema = Some(Latest(schema2.id))
@@ -233,7 +244,11 @@ class ResourcesSpec
         eval(current, CreateResource(myId, projectRef, Latest(schema1.id), source, compacted, expanded, caller))
           .rejectedWith[ResourceAlreadyExists]
 
-        evaluate(resourceResolution, (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+        evaluate(
+          resourceResolution,
+          (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)),
+          QuotasDummy.neverReached
+        )(
           Initial,
           CreateResource(myId, projectRef, Latest(schema1.id), source, compacted, expanded, caller)
         ).rejected shouldEqual ResourceAlreadyExists(myId, projectRef)

@@ -32,7 +32,8 @@ final class SchemasDummy private (
     schemaImports: SchemaImports,
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
-    idAvailability: IdAvailability[ResourceAlreadyExists]
+    idAvailability: IdAvailability[ResourceAlreadyExists],
+    quotas: Quotas
 )(implicit clock: Clock[UIO])
     extends Schemas {
 
@@ -137,7 +138,7 @@ final class SchemasDummy private (
     semaphore.withPermit {
       for {
         state     <- currentState(cmd.project, cmd.id)
-        event     <- Schemas.evaluate(idAvailability)(state, cmd)
+        event     <- Schemas.evaluate(idAvailability, quotas)(state, cmd)
         _         <- journal.add(event)
         (am, base) = project.apiMappings -> project.base
         res       <- IO.fromOption(Schemas.next(state, event).toResource(am, base), UnexpectedInitialState(cmd.id))
@@ -162,13 +163,15 @@ object SchemasDummy {
     * @param schemaImports     resolves the OWL imports from a Schema
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
+    * @param quotas            the quotas module
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
@@ -184,7 +187,8 @@ object SchemasDummy {
         contextResolution,
         uuidF
       ),
-      idAvailability
+      idAvailability,
+      quotas
     )
 
 }

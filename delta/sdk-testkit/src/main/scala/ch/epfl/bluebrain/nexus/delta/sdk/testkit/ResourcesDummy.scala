@@ -41,12 +41,13 @@ final class ResourcesDummy private (
     projects: Projects,
     resourceResolution: ResourceResolution[Schema],
     idAvailability: IdAvailability[ResourceAlreadyExists],
+    quotas: Quotas,
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 )(implicit clock: Clock[UIO])
     extends Resources {
 
-  private val eval = Resources.evaluate(resourceResolution, idAvailability)(_, _)
+  private val eval = Resources.evaluate(resourceResolution, idAvailability, quotas)(_, _)
 
   override def create(
       projectRef: ProjectRef,
@@ -205,16 +206,19 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs     the organizations operations bundle
-    * @param projects the projects operations bundle
-    * @param resourceResolution   to resolve schemas using resolvers
-    * @param contextResolution the context resolver
+    * @param orgs               the organizations operations bundle
+    * @param projects           the projects operations bundle
+    * @param resourceResolution to resolve schemas using resolvers
+    * @param idAvailability     to resolve schemas using resolvers
+    * @param quotas             the quotas module
+    * @param contextResolution  the context resolver
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
@@ -227,6 +231,7 @@ object ResourcesDummy {
       projects,
       resourceResolution,
       idAvailability,
+      quotas,
       sem,
       parser
     )
@@ -238,6 +243,7 @@ object ResourcesDummy {
     * @param projects           the projects operations bundle
     * @param resourceResolution to resolve schemas using resolvers
     * @param idAvailability     to resolve schemas using resolvers
+    * @param quotas             the quotas module
     * @param contextResolution  the context resolver
     * @param journal            underlying [[Journal]]
     */
@@ -246,6 +252,7 @@ object ResourcesDummy {
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       contextResolution: ResolverContextResolution,
       journal: ResourcesJournal
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
@@ -258,6 +265,7 @@ object ResourcesDummy {
       projects,
       resourceResolution,
       idAvailability,
+      quotas,
       sem,
       parser
     )

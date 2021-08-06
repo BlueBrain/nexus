@@ -48,6 +48,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
+  make[ServiceAccountConfig].from(appCfg.serviceAccount)
   make[DatabaseConfig].from { appCfg.database }
   make[ProjectsConfig].from { appCfg.projects }
   make[DatabaseFlavour].from { appCfg.database.flavour }

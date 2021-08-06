@@ -165,13 +165,14 @@ object SchemasImpl {
 
   private def aggregate(
       config: AggregateConfig,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Schemas.next,
-      evaluate = Schemas.evaluate(idAvailability),
+      evaluate = Schemas.evaluate(idAvailability, quotas),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -201,7 +202,8 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      quotas: Quotas
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] =
     apply(
       orgs,
@@ -210,7 +212,8 @@ object SchemasImpl {
       contextResolution,
       config,
       eventLog,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
+      quotas
     )
 
   private[schemas] def apply(
@@ -220,7 +223,8 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit uuidF: UUIDF = UUIDF.random, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
@@ -229,7 +233,7 @@ object SchemasImpl {
         uuidF
       )
     for {
-      agg                 <- aggregate(config.aggregate, idAvailability)
+      agg                 <- aggregate(config.aggregate, idAvailability, quotas)
       cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
     } yield {
       new SchemasImpl(

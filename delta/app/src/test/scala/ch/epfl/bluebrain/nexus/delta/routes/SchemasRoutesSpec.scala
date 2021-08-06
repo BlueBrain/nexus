@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, SchemaImports}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -95,7 +95,8 @@ class SchemasRoutesSpec
           projs,
           schemaImports,
           resolverContextResolution,
-          (_, _) => IO.unit
+          (_, _) => IO.unit,
+          QuotasDummy.neverReached
         ).accepted,
         IndexingActionDummy()
       )

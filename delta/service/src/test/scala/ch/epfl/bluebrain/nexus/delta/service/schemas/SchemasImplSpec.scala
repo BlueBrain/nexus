@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.schemas
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{SchemaEvent, SchemasConfig}
@@ -28,7 +28,8 @@ class SchemasImplSpec
                          resolverContextResolution,
                          SchemasConfig(aggregate, 20),
                          eventLog,
-                         (_, _) => IO.unit
+                         (_, _) => IO.unit,
+                         QuotasDummy.neverReached
                        )
     } yield resources
 }

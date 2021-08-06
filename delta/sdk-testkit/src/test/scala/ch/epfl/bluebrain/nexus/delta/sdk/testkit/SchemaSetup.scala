@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, Resolve, SchemaImports}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects, QuotasDummy, Resolve, SchemaImports}
 import monix.bio.{IO, UIO}
 
 object SchemaSetup {
@@ -38,7 +38,8 @@ object SchemaSetup {
              projects,
              new SchemaImports(resolveSchema, resolveResource),
              new ResolverContextResolution(rcr, resolveResource),
-             (_, _) => IO.unit
+             (_, _) => IO.unit,
+             QuotasDummy.neverReached
            )
       // Creating schemas
       _ <- schemasToCreate.traverse(schema => s.create(schema.id, schema.project, schema.source))

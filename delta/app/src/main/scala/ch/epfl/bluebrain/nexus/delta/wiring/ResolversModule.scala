@@ -37,6 +37,7 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        quotas: Quotas,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF,
@@ -48,7 +49,8 @@ object ResolversModule extends ModuleDef {
         orgs,
         projects,
         resolverContextResolution,
-        resourceIdCheck
+        resourceIdCheck,
+        quotas
       )(uuidF, clock, scheduler, as)
   }
 

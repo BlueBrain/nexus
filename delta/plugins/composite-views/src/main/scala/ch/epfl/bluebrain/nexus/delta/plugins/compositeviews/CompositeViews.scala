@@ -480,6 +480,7 @@ object CompositeViews {
       validateSource: ValidateSource,
       validateProjection: ValidateProjection,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       maxSources: Int,
       maxProjections: Int
   )(
@@ -524,6 +525,7 @@ object CompositeViews {
         for {
           t     <- IOUtils.instant
           u     <- uuidF()
+          _     <- quotas.reachedForResources(c.project, c.subject)
           value <- fieldsToValue(Initial, c.value, c.projectBase)
           _     <- validate(value, u, 1)
           _     <- idAvailability(c.project, c.id)
@@ -595,6 +597,7 @@ object CompositeViews {
       deltaClient: DeltaClient,
       contextResolution: ResolverContextResolution,
       resourceIdCheck: ResourceIdCheck,
+      quotas: Quotas,
       crypto: Crypto
   )(implicit
       uuidF: UUIDF,
@@ -606,7 +609,20 @@ object CompositeViews {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val cre: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
-    apply(config, eventLog, permissions, orgs, projects, acls, client, cre, contextResolution, idAvailability, crypto)
+    apply(
+      config,
+      eventLog,
+      permissions,
+      orgs,
+      projects,
+      acls,
+      client,
+      cre,
+      contextResolution,
+      idAvailability,
+      quotas,
+      crypto
+    )
   }
 
   private[compositeviews] def apply(
@@ -620,6 +636,7 @@ object CompositeViews {
       checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit],
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       crypto: Crypto
   )(implicit
       uuidF: UUIDF,
@@ -674,7 +691,17 @@ object CompositeViews {
         }
         .void
 
-    apply(config, eventLog, orgs, projects, validateSource, validateProjection, idAvailability, contextResolution)
+    apply(
+      config,
+      eventLog,
+      orgs,
+      projects,
+      validateSource,
+      validateProjection,
+      idAvailability,
+      quotas,
+      contextResolution
+    )
   }
 
   private[compositeviews] def apply(
@@ -685,6 +712,7 @@ object CompositeViews {
       validateSource: ValidateSource,
       validateProjection: ValidateProjection,
       idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas,
       contextResolution: ResolverContextResolution
   )(implicit
       uuidF: UUIDF,
@@ -692,7 +720,7 @@ object CompositeViews {
       as: ActorSystem[Nothing],
       sc: Scheduler
   ): Task[CompositeViews] = for {
-    agg          <- aggregate(config, validateSource, validateProjection, idAvailability)
+    agg          <- aggregate(config, validateSource, validateProjection, idAvailability, quotas)
     index        <- UIO.delay(cache(config))
     sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config)
     views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
@@ -704,14 +732,22 @@ object CompositeViews {
       config: CompositeViewsConfig,
       validateS: ValidateSource,
       validateP: ValidateProjection,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]) = {
 
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(validateS, validateP, idAvailability, config.sources.maxSources, config.maxProjections),
+      evaluate = evaluate(
+        validateS,
+        validateP,
+        idAvailability,
+        quotas,
+        config.sources.maxSources,
+        config.maxProjections
+      ),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy

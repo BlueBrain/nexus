@@ -451,7 +451,8 @@ object ElasticSearchViews {
       projects: Projects,
       permissions: Permissions,
       client: ElasticSearchClient,
-      resourceIdCheck: ResourceIdCheck
+      resourceIdCheck: ResourceIdCheck,
+      quotas: Quotas
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -461,7 +462,18 @@ object ElasticSearchViews {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
 
-    apply(config, eventLog, contextResolution, cache, orgs, projects, permissions, validIndex(client), idAvailability)
+    apply(
+      config,
+      eventLog,
+      contextResolution,
+      cache,
+      orgs,
+      projects,
+      permissions,
+      validIndex(client),
+      idAvailability,
+      quotas
+    )
   }
 
   private[elasticsearch] def apply(
@@ -473,7 +485,8 @@ object ElasticSearchViews {
       projects: Projects,
       permissions: Permissions,
       validateIndex: ValidateIndex,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -512,7 +525,8 @@ object ElasticSearchViews {
                     validateIndex,
                     viewResolution(deferred),
                     validateRef(deferred),
-                    idAvailability
+                    idAvailability,
+                    quotas
                   )
       decoder   = ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
       views     = new ElasticSearchViews(agg, eventLog, cache, orgs, projects, decoder)
@@ -549,7 +563,8 @@ object ElasticSearchViews {
       validateIndex: ValidateIndex,
       viewResolution: ViewRefResolution,
       validateRef: ValidateRef,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
+      idAvailability: IdAvailability[ResourceAlreadyExists],
+      quotas: Quotas
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]): UIO[ElasticSearchViewAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -562,7 +577,8 @@ object ElasticSearchViews {
         viewResolution,
         idAvailability,
         config.indexing.prefix,
-        config.maxViewRefs
+        config.maxViewRefs,
+        quotas
       ),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
@@ -621,7 +637,8 @@ object ElasticSearchViews {
       viewRefResolution: ViewRefResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
       indexingPrefix: String,
-      maxViewRefs: Int
+      maxViewRefs: Int,
+      quotas: Quotas
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -648,6 +665,7 @@ object ElasticSearchViews {
         for {
           t <- IOUtils.instant
           u <- uuidF()
+          _ <- quotas.reachedForResources(c.project, c.subject)
           _ <- validate(u, 1L, c.value)
           _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
@@ -681,7 +699,17 @@ object ElasticSearchViews {
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(
-          ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+          ElasticSearchViewTagAdded(
+            c.id,
+            c.project,
+            s.value.tpe,
+            s.uuid,
+            c.targetRev,
+            c.tag,
+            s.rev + 1L,
+            _,
+            c.subject
+          )
         )
     }
 
@@ -693,7 +721,9 @@ object ElasticSearchViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject))
+        IOUtils.instant.map(
+          ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject)
+        )
     }
 
     cmd match {

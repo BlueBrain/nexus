@@ -18,6 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
@@ -189,6 +191,11 @@ object StorageRejection {
       )
 
   /**
+    * Signals a rejection caused when interacting with the quotas API
+    */
+  final case class WrappedQuotaRejection(rejection: QuotaReached) extends StorageFetchRejection(rejection.reason)
+
+  /**
     * Rejection returned when the associated project is invalid
     *
     * @param rejection the rejection which occurred with the project
@@ -223,11 +230,13 @@ object StorageRejection {
 
   private val logger: Logger = Logger("StorageRejection")
 
-  implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection] = {
+  implicit val storageJsonLdRejectionMapper: Mapper[JsonLdRejection, StorageRejection]   = {
     case UnexpectedId(id, payloadIri)                      => UnexpectedStorageId(id, payloadIri)
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
+  implicit val storageQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
+    WrappedQuotaRejection(_)
 
   implicit val storageProjectRejectionMapper: Mapper[ProjectRejection, StorageFetchRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
@@ -255,6 +264,7 @@ object StorageRejection {
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "StorageEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
+        case WrappedQuotaRejection(rejection)                     => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
@@ -277,6 +287,7 @@ object StorageRejection {
       case DefaultStorageNotFound(_)         => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case WrappedProjectRejection(rej)      => rej.status
       case WrappedOrganizationRejection(rej) => rej.status
       case StorageNotAccessible(_, _)        => StatusCodes.BadRequest

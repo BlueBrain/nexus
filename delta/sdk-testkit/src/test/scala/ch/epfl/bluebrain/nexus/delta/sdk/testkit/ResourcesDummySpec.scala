@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resources}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -23,7 +23,14 @@ class ResourcesDummySpec
     for {
       (orgs, projs) <- projectSetup
       r             <-
-        ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution)
+        ResourcesDummy(
+          orgs,
+          projs,
+          resourceResolution,
+          (_, _) => IO.unit,
+          QuotasDummy.neverReached,
+          resolverContextResolution
+        )
     } yield r
 
 }

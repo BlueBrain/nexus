@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -80,7 +80,7 @@ class FilesSpec
   )
 
   "The Files state machine" when {
-    val eval = evaluate((_, _) => IO.unit)(_, _)
+    val eval = evaluate((_, _) => IO.unit, QuotasDummy.neverReached)(_, _)
     "evaluating an incoming command" should {
 
       "create a new event from a CreateFile command" in {
@@ -140,8 +140,15 @@ class FilesSpec
 
       "reject with ResourceAlreadyExists" in {
         val command = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
-        val eval    = evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(_, _)
+        val eval    =
+          evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)), QuotasDummy.neverReached)(_, _)
         eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
+      }
+
+      "reject with QuotaReached" in {
+        val command = CreateFile(id, projectRef, storageRef, DiskStorageType, attributes, bob)
+        val eval    = evaluate((_, _) => IO.unit, QuotasDummy.alwaysReached)(_, _)
+        eval(Initial, command).rejectedWith[WrappedQuotaRejection]
       }
 
       "reject with FileNotFound" in {

@@ -24,13 +24,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -123,11 +123,8 @@ class BlazegraphViewsRoutesSpec
   private val nowMinus5    = now.minusSeconds(5)
   private val projectStats = ProjectCount(10, 10, now)
 
-  val projectsCounts       = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-  }
+  val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
+
   val viewsProgressesCache =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
