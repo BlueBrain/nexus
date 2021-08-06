@@ -271,7 +271,7 @@ object ResolversImpl {
     * @param projects          a Projects instance
     * @param contextResolution the context resolver
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
-    * @param quotas    checks if the quotas have been reached
+    * @param quotas            the quotas module
     */
   final def apply(
       config: ResolversConfig,

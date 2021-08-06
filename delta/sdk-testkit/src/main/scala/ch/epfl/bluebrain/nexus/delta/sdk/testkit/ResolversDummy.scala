@@ -210,7 +210,7 @@ object ResolversDummy {
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
-    * @param validateQuotas     checks if the quotas have been reached
+    * @param quotas            the quotas module
     */
   def apply(
       orgs: Organizations,

@@ -510,7 +510,7 @@ object Files {
     * @param projects        the projects operations bundle
     * @param storages        the storages operations bundle
     * @param resourceIdCheck to check whether an id already exists on another module upon creation
-    * @param quotas  checks if the quotas have been reached
+    * @param quotas          the quotas module
     */
   final def apply(
       config: FilesConfig,
