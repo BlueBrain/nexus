@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -45,7 +45,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
+      project                    <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -59,7 +59,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -75,7 +75,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project               <- projects.fetchProject(projectRef, notDeprecated)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -92,7 +92,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project      <- projects.fetchProject(projectRef, notDeprecated)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -105,7 +105,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project      <- projects.fetchProject(projectRef, notDeprecated)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)

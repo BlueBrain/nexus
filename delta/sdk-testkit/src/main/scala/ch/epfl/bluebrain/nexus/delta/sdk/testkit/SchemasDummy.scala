@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
@@ -42,7 +42,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
+      project                    <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -54,7 +54,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -68,7 +68,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project               <- projects.fetchProject(projectRef, notDeprecated)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -83,7 +83,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project <- projects.fetchProject(projectRef, notDeprecated)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res
@@ -94,7 +94,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
+      project <- projects.fetchProject(projectRef, notDeprecated)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res

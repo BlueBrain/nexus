@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Quotas, QuotasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
@@ -362,7 +362,7 @@ trait ProjectsBehaviors {
     }
 
     "fetch a project which has not been deprecated nor its organization" in {
-      projects.fetchProject(anotherRef, Set(NotDeprecated, VerifyQuotaResources)).accepted shouldEqual
+      projects.fetchProject(anotherRef, notDeprecatedWithResourceQuotas).accepted shouldEqual
         anotherProjResource.value
     }
 
@@ -371,12 +371,12 @@ trait ProjectsBehaviors {
       val projects = create(QuotasDummy.alwaysReached).accepted
       projects.create(ref, payload).accepted
 
-      projects.fetchProject(ref, Set(NotDeprecated, VerifyQuotaResources)).rejectedWith[RejectionWrapper] shouldEqual
+      projects.fetchProject(ref, notDeprecatedWithResourceQuotas).rejectedWith[RejectionWrapper] shouldEqual
         RejectionWrapper(WrappedQuotaRejection(QuotaReached(ref, 0)))
     }
 
     "not fetch a deprecated project with ProjectFetchOptions.NotDeprecated" in {
-      projects.fetchProject(ref, Set(NotDeprecated)).rejectedWith[RejectionWrapper] shouldEqual
+      projects.fetchProject(ref, notDeprecated).rejectedWith[RejectionWrapper] shouldEqual
         RejectionWrapper(ProjectIsDeprecated(ref))
     }
 
@@ -387,11 +387,11 @@ trait ProjectsBehaviors {
       (organizations.create(orgLabel, None) >>
         projects.create(projectRef, anotherPayload)(Identity.Anonymous)).accepted
 
-      projects.fetchProject(projectRef, Set(NotDeprecated)).accepted.ref shouldEqual projectRef
+      projects.fetchProject(projectRef, notDeprecated).accepted.ref shouldEqual projectRef
 
       organizations.deprecate(orgLabel, 1L).accepted
 
-      projects.fetchProject(projectRef, Set(NotDeprecated)).rejected shouldEqual
+      projects.fetchProject(projectRef, notDeprecated).rejected shouldEqual
         RejectionWrapper(WrappedOrganizationRejection(OrganizationIsDeprecated(orgLabel)))
 
       projects.fetchProject(projectRef, Set.empty).accepted

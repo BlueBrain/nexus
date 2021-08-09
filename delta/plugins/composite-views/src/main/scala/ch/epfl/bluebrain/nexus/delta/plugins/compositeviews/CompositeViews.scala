@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -91,7 +91,7 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
+      p   <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       iri <- expandIri(id, p)
       res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, p.base), p)
     } yield res
@@ -107,7 +107,7 @@ final class CompositeViews private (
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
+      p            <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, p.base), p)
     } yield res
@@ -125,7 +125,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
+      p         <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <-
@@ -152,7 +152,7 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, Set(NotDeprecated))
+      p     <- projects.fetchProject(project, notDeprecated)
       iri   <- expandIri(id, p)
       source = value.toJson(iri)
       res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, p.base), p)
@@ -172,7 +172,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, Set(NotDeprecated))
+      p         <- projects.fetchProject(project, notDeprecated)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(
@@ -200,7 +200,7 @@ final class CompositeViews private (
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, Set(NotDeprecated))
+      p   <- projects.fetchProject(project, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
@@ -218,7 +218,7 @@ final class CompositeViews private (
       subject: Subject
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, Set(NotDeprecated))
+      p   <- projects.fetchProject(project, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(DeprecateCompositeView(iri, project, rev, subject), p)
     } yield res

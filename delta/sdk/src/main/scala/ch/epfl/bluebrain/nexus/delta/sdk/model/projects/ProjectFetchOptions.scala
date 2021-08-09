@@ -16,4 +16,7 @@ object ProjectFetchOptions {
     * Project that does not have a quota restriction
     */
   final case object VerifyQuotaResources extends ProjectFetchOptions
+
+  val notDeprecated: Set[ProjectFetchOptions]                   = Set(NotDeprecated)
+  val notDeprecatedWithResourceQuotas: Set[ProjectFetchOptions] = Set(NotDeprecated, VerifyQuotaResources)
 }
