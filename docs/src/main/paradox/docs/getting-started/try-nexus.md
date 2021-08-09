@@ -102,7 +102,7 @@ pip install neurom
 
 The notebooks used for this tutorial are maintained in the Nexus GitHub repository under `/docs/src/main/paradox/docs/getting-started/notebooks`.
 
-To clone the repository, you will need to install @link:[Git](https://git-scm.com/){ open = new } (if not already present on your system), then open the terminal, navigate to your preferred location, and type:
+To clone the repository, you will need to install @link:[Git](https://git-scm.com/){ open=new } (if not already present on your system), then open the terminal, navigate to your preferred location, and type:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
@@ -239,11 +239,11 @@ We see that the original `id` will be formatted to a type identifier, that the `
 concatenated, and finally that for the `gender`, we will check to see if the value exists in an ontology (and is thus 
 already standardized).
 
-@link:[Read more about mapping with Forge.](https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping){ open = new }
+@link:[Read more about mapping with Forge.](https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping){ open=new }
 
 In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide 
 mappers for both data sources. You can check the mappers 
-@link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open = new }. 
+@link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open=new }. 
 There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. 
 For MouseLight, there's only one mapper, as both morphologies and traces are in the same data source.
 
@@ -251,9 +251,9 @@ For MouseLight, there's only one mapper, as both morphologies and traces are in 
 
 - @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
 - @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
-- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open = new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
-To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open = new }, go to the notebook directory, and run Jupyter:
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
@@ -309,9 +309,9 @@ The example notebooks will use these endpoints to collect and download the datas
 
 - @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
 - @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
-- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open = new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
-To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open = new }, go to the notebook directory, and run Jupyter:
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
