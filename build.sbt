@@ -162,6 +162,8 @@ lazy val docs = project
       "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
       "http://example.com/.*".r,
       "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
+      "http://ml-neuronbrowser.janelia.org/".r,
+      "http://mouselight.janelia.org/".r,
       "https://movies.com/movieId/1".r,
       "https://link.springer.com/.*".r,
       "https://sandbox.bluebrainnexus.io.*".r,
