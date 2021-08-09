@@ -2,13 +2,13 @@
 
 In this tutorial, you will use the core features of the Nexus ecosystem through our sandbox. This requires minimal technical knowledge but the ability to install a Python library and run a jupyter notebook.
 
-In the @ref:[first step](try-nexus-movieslens.md#configuring-your-project-in-nexus-fusion), you'll learn:
+In the @ref:[first step](try-nexus-movielens.md#configuring-your-project-in-nexus-fusion), you'll learn:
 
 - to login into our @link:[Nexus Sandbox](https://sandbox.bluebrainnexus.io/){ open=new },
 - create an organization and project,
 - get your personal token.
 
-In the @ref:[second step](try-nexus-movieslens.md#working-with-data-in-nexus-forge), you'll learn:
+In the @ref:[second step](try-nexus-movielens.md#working-with-data-in-nexus-forge), you'll learn:
 
 - install Nexus Forge,
 - configure a Knowledge Graph forge,
@@ -16,12 +16,12 @@ In the @ref:[second step](try-nexus-movieslens.md#working-with-data-in-nexus-for
 - load the transformed data into the project,
 - search for data using a SPARQL query.
 
-In the @ref:[third step](try-nexus-movieslens.md#exploring-the-graph-in-nexus-fusion), you'll learn:
+In the @ref:[third step](try-nexus-movielens.md#exploring-the-graph-in-nexus-fusion), you'll learn:
 
 - create a Studio in Nexus Fusion,
 - visualize and filter loaded data.
 
-Finally, check our @ref:[Learn More](try-nexus-movieslens.md#learn-more) section for more advanced tutorials based on the same datasets.
+Finally, check our @ref:[Learn More](try-nexus-movielens.md#learn-more) section for more advanced tutorials based on the same datasets.
 
 ## Configuring your Project in Nexus Fusion
 
