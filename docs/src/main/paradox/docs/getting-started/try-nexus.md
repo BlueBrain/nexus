@@ -12,15 +12,15 @@ In this tutorial, you'll learn to interact with the knowledge graph through thes
 
 > This tutorial is also part of the @link:[edX EPFL Simulation Neuroscience MOOC](https://www.edx.org/course/simulation-neuroscience).
 
-In Step 0, you'll learn to setup your Python environment if you want to run the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).
+In @ref:[Step 0](try-nexus.md#step-0-python-setup), you'll learn to setup your Python environment if you want to run the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).
 
-In Step 1, you'll learn about the Nexus Sandbox deployment, a dedicated environment for this tutorial. You'll use Nexus Fusion to login and access your dedicated project instantiated in Nexus Delta.
+In @ref:[Step 1](try-nexus.md#step-1-nexus-setup), you'll learn about the Nexus Sandbox deployment, a dedicated environment for this tutorial. You'll use Nexus Fusion to login and access your dedicated project instantiated in Nexus Delta.
 
-In Step 2, you'll learn to download and register data from the Allen Institute for Brain Science (AIBS). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
+In @ref:[Step 2](try-nexus.md#step-2-download-and-register-data-from-a-single-source), you'll learn to download and register data from the Allen Institute for Brain Science (AIBS). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
 
-In Step 3, you'll learn to download and register data from multiple sources (AIBS and MouseLight). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
+In @ref:[Step 3](try-nexus.md#step-3-download-and-register-rata-from-multiple-sources), you'll learn to download and register data from multiple sources (AIBS and MouseLight). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
 
-In Step 4, you'll learn to organize your data on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
+In @ref:[Step 4](try-nexus.md#step-4-organize-and-visualize-cells-in-nexus-fusion), you'll learn to organize your data on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
 
 Let's go!
 
@@ -311,7 +311,7 @@ jupyter notebook dataset_from_different_sources.ipynb
 
 ### 3.3. Check Resources in the Sandbox
 
-Go back to @ref:[section 2.7](try-nexus.md#section-2.7) to learn how to check resources in the Sandbox.
+Go back to @ref:[section 2.7](try-nexus.md#2.7.-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
 
 ## Step 4: Organize and Visualize Cells in Nexus Fusion
 
@@ -767,7 +767,7 @@ Congratulations! You've created your very first studio, which rounds up this tut
 
 ### Another Tutorial with the MovieLens Dataset
 
-Nexus can be used to manage more than neuroscience data. If you want to try it, head over to our @ref:[MovieLens Tutorial](./try-nexus-movieslens.md)!
+Nexus can be used to manage more than neuroscience data. If you want to try it, head over to our @ref:[MovieLens Tutorial](./try-nexus-movielens.md)!
 
 ### Querying knowledge graph using SPARQL
 
