@@ -58,6 +58,8 @@ object ProjectCountsCollection {
 
   object ProjectCount {
 
+    val emptyEpoch: ProjectCount = ProjectCount(0, 0, Instant.EPOCH)
+
     implicit val projectCountSemigroup: Semigroup[ProjectCount] =
       (x: ProjectCount, y: ProjectCount) =>
         ProjectCount(

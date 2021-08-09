@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -85,7 +86,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -109,7 +110,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -135,7 +136,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri     <- generateId(project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -160,7 +161,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri     <- expandIri(id, project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -183,7 +184,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecated)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -213,7 +214,7 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecated)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -243,7 +244,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecated)
       iri     <- expandIri(id, project)
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
@@ -290,7 +291,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecated)
       iri     <- expandIri(id, project)
       res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
     } yield res
@@ -309,7 +310,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecated)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
     } yield res

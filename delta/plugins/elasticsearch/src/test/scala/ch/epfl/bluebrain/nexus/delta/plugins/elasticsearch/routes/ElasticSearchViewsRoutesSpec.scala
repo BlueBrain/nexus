@@ -26,12 +26,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -123,11 +123,7 @@ class ElasticSearchViewsRoutesSpec
   private val nowMinus5    = now.minusSeconds(5)
   private val projectStats = ProjectCount(10, 10, now)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-  }
+  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
 
   private val viewsQuery = new DummyElasticSearchViewsQuery(views)
 

@@ -69,12 +69,16 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if the project/its organization is deprecated.
+    * Fetches and validate the project, rejecting if the project does not exists or if it does not fulfill the passed ''options''.
     *
     * @param ref             the project reference
+    * @param options         the set of project options to be fulfilled
     * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchActiveProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project]
+  def fetchProject[R](ref: ProjectRef, options: Set[ProjectFetchOptions])(implicit
+      subject: Subject,
+      rejectionMapper: Mapper[ProjectRejection, R]
+  ): IO[R, Project]
 
   /**
     * Fetches the current project, rejecting if the project does not exists.

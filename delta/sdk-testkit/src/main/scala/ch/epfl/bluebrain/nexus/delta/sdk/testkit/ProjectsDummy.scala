@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -27,6 +28,7 @@ import java.util.UUID
   * @param cache                the cache to store resources
   * @param semaphore            a semaphore for serializing write operations on the journal
   * @param organizations        an Organizations instance
+  * @param quotas               a Quotas instance
   * @param scopeInitializations the collection of registered scope initializations
   * @param defaultApiMappings   the default api mappings
   */
@@ -35,6 +37,7 @@ final class ProjectsDummy private (
     cache: ProjectsCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
+    quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
     defaultApiMappings: ApiMappings
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
@@ -88,13 +91,20 @@ final class ProjectsDummy private (
       .map(_.flatMap(_.toResource))
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
 
-  override def fetchActiveProject[R](
-      ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    (organizations.fetchActiveOrganization(ref.organization) >>
+  override def fetchProject[R](
+      ref: ProjectRef,
+      options: Set[ProjectFetchOptions]
+  )(implicit subject: Subject, rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+    (IO.when(options.contains(ProjectFetchOptions.NotDeprecated))(
+      organizations.fetchActiveOrganization(ref.organization).void
+    ) >>
       fetch(ref).flatMap {
-        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource if options.contains(ProjectFetchOptions.NotDeprecated) && resource.deprecated =>
+          IO.raiseError(ProjectIsDeprecated(ref))
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaResources)                 =>
+          quotas.reachedForResources[WrappedQuotaRejection](ref, subject).as(resource.value)
+        case resource                                                                               =>
+          IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
@@ -146,11 +156,13 @@ object ProjectsDummy {
     * Creates a project dummy instance
     *
     * @param organizations        an Organizations instance
+    * @param quotas               a Quotas instance
     * @param scopeInitializations the collection of registered scope initializations
     * @param defaultApiMappings   the default api mappings
     */
   def apply(
       organizations: Organizations,
+      quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
@@ -163,6 +175,7 @@ object ProjectsDummy {
       cache,
       sem,
       organizations,
+      quotas,
       scopeInitializations,
       defaultApiMappings
     )
@@ -171,10 +184,12 @@ object ProjectsDummy {
     * Creates a project dummy instance where ownerPermissions don't matter
     *
     * @param organizations      an Organizations instance
+    * @param quotas             a Quotas instance
     * @param defaultApiMappings the default api mappings
     */
   def apply(
       organizations: Organizations,
+      quotas: Quotas,
       defaultApiMappings: ApiMappings
   )(implicit
       base: BaseUri,
@@ -186,7 +201,7 @@ object ProjectsDummy {
       r        <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a        <- AclsDummy(p, r)
       scopeInit = Set[ScopeInitialization](OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous)))
-      p        <- apply(organizations, scopeInit, defaultApiMappings)
+      p        <- apply(organizations, quotas, scopeInit, defaultApiMappings)
     } yield p
 
 }

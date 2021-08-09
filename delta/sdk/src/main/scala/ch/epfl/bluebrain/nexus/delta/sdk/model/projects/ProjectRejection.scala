@@ -10,6 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -113,8 +115,16 @@ object ProjectRejection {
     */
   final case class ProjectEvaluationError(err: EvaluationError) extends ProjectRejection("Unexpected evaluation error")
 
+  /**
+    * Signals a rejection caused when interacting with the quotas API
+    */
+  final case class WrappedQuotaRejection(rejection: QuotaReached) extends ProjectRejection(rejection.reason)
+
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit val projectQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
+    WrappedQuotaRejection(_)
 
   implicit def projectRejectionEncoder(implicit C: ClassTag[ProjectCommand]): Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
@@ -127,6 +137,7 @@ object ProjectRejection {
         case ProjectEvaluationError(EvaluationTimeout(C(cmd), t)) =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for project '${cmd.ref}' after '$t'"
           JsonObject(keywords.tpe -> "ProjectEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case WrappedQuotaRejection(rejection)                     => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
         case ProjectInitializationFailed(rejection)               => default.add("details", rejection.reason.asJson)
         case IncorrectRev(provided, expected)                     =>

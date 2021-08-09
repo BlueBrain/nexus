@@ -30,11 +30,18 @@ object QuotaRejection {
     */
   final case class WrappedProjectRejection(rej: ProjectNotFound) extends QuotaRejection(rej.reason)
 
+  /**
+    * Signals a rejection caused when the quota for a project is reached
+    */
+  final case class QuotaReached(project: ProjectRef, resources: Int)
+      extends QuotaRejection(s"Quotas for project '$project' reached. Maximum resources allowed: '$resources'.")
+
   implicit val quotaProjectRejectionMapper: Mapper[ProjectNotFound, QuotaRejection] =
     WrappedProjectRejection(_)
 
   implicit val quotaRejectionEncoder: Encoder.AsObject[QuotaRejection] =
     Encoder.AsObject.instance {
+      case r: QuotaReached                    => JsonObject(keywords.tpe -> "QuotaReached".asJson, "reason" -> r.reason.asJson)
       case r: QuotasDisabled                  => JsonObject(keywords.tpe -> "QuotasDisabled".asJson, "reason" -> r.reason.asJson)
       case WrappedProjectRejection(rejection) => (rejection: ProjectRejection).asJsonObject
     }
