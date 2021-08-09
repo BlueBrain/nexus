@@ -119,6 +119,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
+      case ProjectRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
@@ -179,6 +180,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case _: QuotaRejection.QuotasDisabled            => StatusCodes.NotFound
       case QuotaRejection.WrappedProjectRejection(rej) => (rej: ProjectRejection).status
+      case _: QuotaRejection.QuotaReached              => StatusCodes.Forbidden
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =

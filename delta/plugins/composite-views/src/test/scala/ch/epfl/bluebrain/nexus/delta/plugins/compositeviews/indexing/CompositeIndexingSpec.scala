@@ -217,8 +217,7 @@ class CompositeIndexingSpec
     override def get(): UIO[ProjectCountsCollection] =
       UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
 
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] =
-      UIO.delay(projectsCountsCache.get(project))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
