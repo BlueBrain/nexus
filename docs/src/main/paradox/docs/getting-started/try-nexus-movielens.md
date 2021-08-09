@@ -180,5 +180,68 @@ And there are the results:
 ![](../assets/try-nexus-sandbox-studio-results.png)
 @@@
 
-Good job! You just finished the introductory course to Nexus using our Sandbox. You can now install Nexus locally or 
+Good job! You just finished this introductory course to Nexus using our Sandbox. You can now install Nexus locally or 
 continue with the tutorials below.
+
+## Learn More
+
+### Querying knowledge graph using SPARQL
+
+This tutorial introduces the basics of SPARQL, a query language for querying RDF based knowledge graph. 
+It also demonstrates how to query a Nexus SparqlView.
+
+You will build queries to explore and navigate a knowledge graph using SPARQL and Nexus.
+
+You will learn:
+
+- the basics of the SPARQL query language,
+- how to connect to and query a SparqlView in Nexus.
+
+You will need Python 3.5 or higher with support for Jupyter notebook.
+
+This tutorial code is available on:
+
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
+
+### Querying a Knowledge Graph using Elasticsearch
+
+The goal of this notebook is to learn how to connect to an Elasticsearch view and run queries against it.
+
+It is not a tutorial about the Elasticsearch DSL language for which many well written 
+@link:[learning resources are available](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html){ open=new }.
+
+You will build a simple python client to connect to a Nexus ElasticSearchView and query a knowledge graph using Elasticsearch DSL.
+
+You will learn how to connect to and query a ElasticSearchView in Nexus.
+
+You will need Python 3.5 or higher with support for Jupyter notebook.
+
+The tutorial code is available on:
+
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
+
+### Linking data on the web
+
+In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data 
+principles to extend and enrich a knowledge graph.
+
+You will build a simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities 
+available on the web as structured data and extend and enrich their metadata.
+
+You will learn:
+
+- an understanding of linked data principles,
+- how to query data stored in a Nexus SparqlView,
+- how to query structured data on the web,
+- how to extend the metadata of entities managed within Blue Brain Nexus with external structured data on the web: we target @link:[Wikidata](https://www.wikidata.org/wiki/Wikidata:Main_Page){ open=new } as an example,
+- how to update entities within Blue Brain Nexus using the @link:[SDK](https://github.com/BlueBrain/nexus-python-sdk){ open=new } and enrich their metadata.
+
+You will need Python 3.6 or higher with support for Jupyter notebook.
+
+This tutorial code is available on:
+
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
+
