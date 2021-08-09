@@ -33,6 +33,7 @@ final class ProjectsImpl private (
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
     organizations: Organizations,
+    quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
     defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
@@ -91,13 +92,20 @@ final class ProjectsImpl private (
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProjectAt", moduleType)
 
-  override def fetchActiveProject[R](
-      ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    (organizations.fetchActiveOrganization(ref.organization) >>
+  override def fetchProject[R](
+      ref: ProjectRef,
+      options: Set[ProjectFetchOptions]
+  )(implicit subject: Subject, rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+    (IO.when(options.contains(ProjectFetchOptions.NotDeprecated))(
+      organizations.fetchActiveOrganization(ref.organization).void
+    ) >>
       fetch(ref).flatMap {
-        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource if options.contains(ProjectFetchOptions.NotDeprecated) && resource.deprecated =>
+          IO.raiseError(ProjectIsDeprecated(ref))
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaResources)                 =>
+          quotas.reachedForResources[WrappedQuotaRejection](ref, subject).as(resource.value)
+        case resource                                                                               =>
+          IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
@@ -215,6 +223,7 @@ object ProjectsImpl {
       eventLog: EventLog[Envelope[ProjectEvent]],
       cache: ProjectsCache,
       organizations: Organizations,
+      quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings
   )(implicit base: BaseUri): ProjectsImpl =
@@ -223,6 +232,7 @@ object ProjectsImpl {
       eventLog,
       cache,
       organizations,
+      quotas,
       scopeInitializations,
       defaultApiMappings
     )
@@ -233,7 +243,7 @@ object ProjectsImpl {
     * @param config               the projects configuration
     * @param eventLog             the event log for [[ProjectEvent]]
     * @param organizations        an instance of the organizations module
-    * @param acls                 an instance of the acl module
+    * @param quotas               an instance of the quotas module
     * @param scopeInitializations the collection of registered scope initializations
     * @param defaultApiMappings   the default api mappings
     */
@@ -241,6 +251,7 @@ object ProjectsImpl {
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
+      quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings
   )(implicit
@@ -258,6 +269,7 @@ object ProjectsImpl {
                    eventLog,
                    index,
                    organizations,
+                   quotas,
                    scopeInitializations,
                    defaultApiMappings
                  )

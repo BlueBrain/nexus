@@ -33,6 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -79,7 +80,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -99,7 +100,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -120,7 +121,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecatedWithResourceQuotas)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -152,7 +153,7 @@ final class Storages private (
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecated)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -175,7 +176,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecated)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -200,7 +201,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -219,7 +220,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
     } yield res

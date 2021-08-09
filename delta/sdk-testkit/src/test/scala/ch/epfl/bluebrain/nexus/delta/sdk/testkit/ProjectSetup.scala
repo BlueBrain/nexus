@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
@@ -40,7 +40,7 @@ object ProjectSetup {
       _ <- orgsToCreate
              .traverse(o.create(_, None))
              .hideErrorsWith(r => new IllegalStateException(r.reason))
-      p <- ProjectsDummy(o, defaultApiMappings)
+      p <- ProjectsDummy(o, QuotasDummy.neverReached, defaultApiMappings)
       // Creating projects
       _ <- projectsToCreate.traverse { c =>
              p.create(c.ref, ProjectGen.projectFields(c))

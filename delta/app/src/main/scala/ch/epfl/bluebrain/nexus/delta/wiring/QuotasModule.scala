@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.QuotasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.service.quotas.QuotasImpl
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
@@ -20,10 +19,8 @@ import monix.execution.Scheduler
 object QuotasModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[QuotasConfig].from((cfg: AppConfig) => cfg.projects.quotas)
-
-  make[Quotas].from { (projects: Projects, config: QuotasConfig) =>
-    new QuotasImpl(projects)(config)
+  make[Quotas].from { (projects: Projects, projectsCounts: ProjectsCounts, cfg: AppConfig) =>
+    new QuotasImpl(projects, projectsCounts)(cfg.projects.quotas, cfg.serviceAccount)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/quotas.json").map { ctx =>
