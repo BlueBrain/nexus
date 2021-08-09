@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.EventsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
 import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
@@ -35,7 +34,7 @@ class EventsSpec extends BaseSpec with Inspectors {
 
   "creating projects" should {
 
-    "add necessary permissions for user" taggedAs EventsTag in {
+    "add necessary permissions for user" in {
       aclDsl.addPermissions(
         "/",
         BugsBunny,
@@ -43,21 +42,21 @@ class EventsSpec extends BaseSpec with Inspectors {
       )
     }
 
-    "succeed creating project 1 if payload is correct" taggedAs EventsTag in {
+    "succeed creating project 1 if payload is correct" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, BugsBunny)
         _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = id), BugsBunny)
       } yield succeed
     }
 
-    "succeed creating project 2 if payload is correct" taggedAs EventsTag in {
+    "succeed creating project 2 if payload is correct" in {
       for {
         _ <- adminDsl.createOrganization(orgId2, orgId2, BugsBunny)
         _ <- adminDsl.createProject(orgId2, projId, kgDsl.projectJson(name = id2), BugsBunny)
       } yield succeed
     }
 
-    "wait for default project events" taggedAs EventsTag in {
+    "wait for default project events" in {
       val endpoints = List(
         s"/views/$id/nxv:defaultElasticSearchIndex",
         s"/views/$id/nxv:defaultSparqlIndex",
@@ -78,7 +77,7 @@ class EventsSpec extends BaseSpec with Inspectors {
       }
     }
 
-    "wait for storages to be indexed" taggedAs EventsTag in {
+    "wait for storages to be indexed" in {
       val endpoints = List(
         s"/storages/$id",
         s"/storages/$id2"
@@ -97,7 +96,7 @@ class EventsSpec extends BaseSpec with Inspectors {
 
   "fetching events" should {
 
-    "add events to project" taggedAs EventsTag in {
+    "add events to project" in {
       //Created event
       val payload = jsonContentOf(
         "/kg/resources/simple-resource.json",
@@ -164,40 +163,10 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
-    "fetch resource events filtered by project" taggedAs EventsTag in {
+    "fetch resource events filtered by project" in {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 11L) { seq =>
-                   val projectEvents = seq.drop(5)
-                   projectEvents.size shouldEqual 6
-                   projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
-                     "ResourceCreated",
-                     "ResourceUpdated",
-                     "ResourceTagAdded",
-                     "ResourceDeprecated",
-                     "FileCreated",
-                     "FileUpdated"
-                   )
-                   val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
-                   json shouldEqual jsonContentOf(
-                     "/kg/events/events.json",
-                     replacements(
-                       BugsBunny,
-                       "resources"        -> s"${config.deltaUri}/resources/$id",
-                       "organizationUuid" -> uuids._1,
-                       "projectUuid"      -> uuids._2,
-                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
-                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
-                     ): _*
-                   )
-                 }
-      } yield succeed
-    }
-
-    "fetch resource events filtered by organization 1" taggedAs EventsTag in {
-      for {
-        uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
-        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 12L) { seq =>
+        _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>
                    val projectEvents = seq.drop(6)
                    projectEvents.size shouldEqual 6
                    projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
@@ -224,12 +193,42 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
-    "fetch resource events filtered by organization 2" taggedAs EventsTag in {
+    "fetch resource events filtered by organization 1" in {
+      for {
+        uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
+        _     <- deltaClient.sseEvents(s"/resources/$orgId/events", BugsBunny, initialEventId, take = 13L) { seq =>
+                   val projectEvents = seq.drop(7)
+                   projectEvents.size shouldEqual 6
+                   projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
+                     "ResourceCreated",
+                     "ResourceUpdated",
+                     "ResourceTagAdded",
+                     "ResourceDeprecated",
+                     "FileCreated",
+                     "FileUpdated"
+                   )
+                   val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
+                   json shouldEqual jsonContentOf(
+                     "/kg/events/events.json",
+                     replacements(
+                       BugsBunny,
+                       "resources"        -> s"${config.deltaUri}/resources/$id",
+                       "organizationUuid" -> uuids._1,
+                       "projectUuid"      -> uuids._2,
+                       "project"          -> s"${config.deltaUri}/projects/$orgId/$projId",
+                       "schemaProject"    -> s"${config.deltaUri}/projects/$orgId/$projId"
+                     ): _*
+                   )
+                 }
+      } yield succeed
+    }
+
+    "fetch resource events filtered by organization 2" in {
       for {
         uuids <- adminDsl.getUuids(orgId2, projId, BugsBunny)
         _     <-
-          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 7L) { seq =>
-            val projectEvents = seq.drop(6)
+          deltaClient.sseEvents(s"/resources/$orgId2/events", BugsBunny, initialEventId, take = 8L) { seq =>
+            val projectEvents = seq.drop(7)
             projectEvents.size shouldEqual 1
             projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List("ResourceCreated")
             val json          = Json.arr(projectEvents.flatMap(_._2.map(events.filterFields)): _*)
@@ -248,7 +247,7 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
-    "fetch global events" taggedAs EventsTag in {
+    "fetch global events" in {
       // Only for cassandra, it is difficult to get the current sequence value with PostgreSQL
       Task
         .when(initialEventId.isDefined) {

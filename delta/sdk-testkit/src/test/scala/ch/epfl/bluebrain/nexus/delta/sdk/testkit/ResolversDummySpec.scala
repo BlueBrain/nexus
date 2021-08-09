@@ -20,5 +20,5 @@ class ResolversDummySpec
     with ResolversBehaviors {
 
   override def create: UIO[Resolvers] =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit, indexingAction)
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit)
 }

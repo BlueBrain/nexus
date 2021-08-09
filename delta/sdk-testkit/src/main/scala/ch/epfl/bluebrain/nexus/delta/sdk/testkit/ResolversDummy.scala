@@ -45,49 +45,45 @@ class ResolversDummy private (
     projects: Projects,
     semaphore: IOSemaphore,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
-    idAvailability: IdAvailability[ResourceAlreadyExists],
-    inde: IndexingAction
-)(implicit clock: Clock[UIO], base: BaseUri)
+    idAvailability: IdAvailability[ResourceAlreadyExists]
+)(implicit clock: Clock[UIO])
     extends Resolvers {
 
-  override def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  override def create(
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _                    <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
-    } yield res
-
-  override def create(id: IdSegment, projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
-    for {
-      p             <- projects.fetchActiveProject(projectRef)
-      iri           <- expandIri(id, p)
-      resolverValue <- sourceDecoder(p, iri, source)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _             <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      resolverValue: ResolverValue,
-      indexing: Indexing
-  )(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
+    for {
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      resolverValue <- sourceDecoder(p, iri, source)
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
+    } yield res
+
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      resolverValue: ResolverValue
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _     <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, indexing: Indexing)(implicit
+  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
@@ -95,7 +91,6 @@ class ResolversDummy private (
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _             <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
 
     } yield res
 
@@ -103,8 +98,7 @@ class ResolversDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      resolverValue: ResolverValue,
-      indexing: Indexing
+      resolverValue: ResolverValue
   )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
@@ -113,7 +107,6 @@ class ResolversDummy private (
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _     <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
   override def tag(
@@ -121,8 +114,7 @@ class ResolversDummy private (
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
@@ -130,17 +122,15 @@ class ResolversDummy private (
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
-      _   <- inde(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
 
-  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: Indexing)(implicit
+  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
-      _   <- inde(projectRef, Resolvers.eventExchangeValue(res), executionType)
     } yield res
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource] =
@@ -209,7 +199,7 @@ object ResolversDummy {
   implicit private val eventLens: Lens[ResolverEvent, ResolverIdentifier] =
     (event: ResolverEvent) => (event.project, event.id)
 
-  implicit private val lens: Lens[Resolver, ResolverIdentifier]                   =
+  implicit private val lens: Lens[Resolver, ResolverIdentifier]    =
     (resolver: Resolver) => resolver.project -> resolver.id
 
   /**
@@ -219,20 +209,18 @@ object ResolversDummy {
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
-    * @param indexingAction     the indexingAction
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      indexingAction: IndexingAction
-  )(implicit clock: Clock[UIO], uuidF: UUIDF, base: BaseUri): UIO[ResolversDummy] =
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
       cache        <- ResourceCache[ResolverIdentifier, Resolver]
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability, indexingAction)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability)
 }

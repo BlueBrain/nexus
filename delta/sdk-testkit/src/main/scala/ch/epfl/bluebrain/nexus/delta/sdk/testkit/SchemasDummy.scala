@@ -32,29 +32,25 @@ final class SchemasDummy private (
     schemaImports: SchemaImports,
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
-    idAvailability: IdAvailability[ResourceAlreadyExists],
-    indexingAction: IndexingAction
+    idAvailability: IdAvailability[ResourceAlreadyExists]
 )(implicit clock: Clock[UIO])
     extends Schemas {
 
   override def create(
       projectRef: ProjectRef,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project                    <- projects.fetchActiveProject(projectRef)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
-      _                          <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -62,15 +58,13 @@ final class SchemasDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
-      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      source: Json,
-      indexing: Indexing
+      source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
       project               <- projects.fetchActiveProject(projectRef)
@@ -78,7 +72,6 @@ final class SchemasDummy private (
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
-      _                     <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def tag(
@@ -86,27 +79,23 @@ final class SchemasDummy private (
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
-      _       <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
       project <- projects.fetchActiveProject(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
-      _       <- indexingAction(projectRef, eventExchangeValue(res), indexing)
     } yield res
 
   override def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[SchemaFetchRejection, SchemaResource] =
@@ -173,15 +162,13 @@ object SchemasDummy {
     * @param schemaImports     resolves the OWL imports from a Schema
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
-    * @param indexingAction    the indexing action
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      indexingAction: IndexingAction
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
@@ -197,8 +184,7 @@ object SchemasDummy {
         contextResolution,
         uuidF
       ),
-      idAvailability,
-      indexingAction
+      idAvailability
     )
 
 }

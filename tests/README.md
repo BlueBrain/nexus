@@ -2,42 +2,20 @@
 
 Starts the delta ecosystem with docker-compose and run tests on it
 
-Relies on sbt-docker-compose: 
-https://github.com/Tapad/sbt-docker-compose
+First, run:
+```shell
+docker-compose -f docker/docker-compose-postgres.yml up -d # or docker/docker-compose-cassandra.yml
+```
 
 To run the all the tests:
 ```sbtshell
-dockerComposeTest skipBuild
+test
 ```
 
-To reuse a docker-compose instance:
-```
-dockerComposeUp skipBuild
-```
-Which will gives an instance id to run tests:
+To run just some tests:
 ```sbtshell
-dockerComposeTest <instance_id>
+testOnly *RemoteStorageSpec
 ```
-All tests are designed to be run several times in a row without having to start and stop the docker-compose instance
-
-To run just some tests, we can just provide tags:
-```sbtshell
-dockerComposeTest <instance_id> -tags:tag1,tag2
-```
-
-The available tags are:
-* Realms
-* Permissions
-* Acls
-* Orgs
-* Projects
-* Archives
-* Resources
-* Views
-* CompositeViews
-* Events
-* Storages
-* Version
 
 ## Debugging
 
@@ -168,8 +146,7 @@ docker run --name fusion \
 
 Run the tests with a custom configuration that sets the following VM options:
 ```
--D"delta:8080"="localhost:8080"
--D"keycloak:8080"="localhost:8081"
--D"elasticsearch:9200"="localhost:9200"
--D"blazegraph:9999"="localhost:9999"
+-D"delta-url"="localhost:8080"
+-D"keycloak-url"="localhost:8081"
+-D"elasticsearch-url"="localhost:9200"
 ```

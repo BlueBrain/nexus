@@ -123,7 +123,7 @@ class CompositeIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
+  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, 2000)
   private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
@@ -211,7 +211,7 @@ class CompositeIndexingSpec
   private val projectsCountsCache: MutableMap[ProjectRef, ProjectCount] = MutableMap.empty
   private val restartProjectionsCache                                   = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
 
-  private val initCount = ProjectCount(1, Instant.EPOCH)
+  private val initCount = ProjectCount(1, 1, Instant.EPOCH)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection] =
@@ -406,7 +406,7 @@ class CompositeIndexingSpec
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         Some(CompositeView.Interval(2500.millis))
       )
-      val modifiedCount = initCount.copy(value = initCount.value + 1)
+      val modifiedCount = initCount.copy(events = initCount.events + 1)
       val result        = views.update(viewId, project1.ref, 2, view).accepted
 
       Thread.sleep(1 * 3000)
@@ -442,7 +442,7 @@ class CompositeIndexingSpec
       val results = esClient
         .search(
           QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-          Set(idx(view).value),
+          idx(view).value,
           Query.Empty
         )
         .accepted

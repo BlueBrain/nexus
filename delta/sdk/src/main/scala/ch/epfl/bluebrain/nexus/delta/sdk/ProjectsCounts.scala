@@ -62,7 +62,7 @@ object ProjectsCounts {
   ): Task[ProjectsCounts] = {
 
     val cache =
-      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.value)
+      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.events)
 
     def buildStream: Stream[Task, Unit] =
       Stream
@@ -74,10 +74,10 @@ object ProjectsCounts {
           val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
           stream(progress.offset)
             .map { env =>
-              env.toMessage.as(env.event.project)
+              env.toMessage.as(env.event)
             }
             .mapAccumulate(initial) { (acc, msg) =>
-              (msg.as(acc.value.increment(msg.value, msg.timestamp)), msg.value)
+              (msg.as(acc.value.increment(msg.value.project, msg.value.rev, msg.timestamp)), msg.value.project)
             }
             .evalMap { case (acc, projectRef) =>
               cache.put(projectRef, acc.value.value(projectRef)).as(acc)

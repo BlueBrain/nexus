@@ -619,7 +619,7 @@ The decision to go with single node deployments or clustered deployments can be 
 
 The Nexus distribution is made up of docker images which can be run on any host operating system and each of the "off
 the shelf" products also offer docker as a deployment option. We would generally recommend using a container
-orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new }, @link:[OpenShift](https://www.openshift.com/){ open=new } or
+orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new }, @link:[OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift){ open=new } or
 @link:[Docker Swarm](https://docs.docker.com/engine/swarm/){ open=new } as they offer good management capabilities, discovery, load
 balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can
 occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within

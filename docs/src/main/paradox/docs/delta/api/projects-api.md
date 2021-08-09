@@ -298,3 +298,29 @@ Request
 
 Response
 :   @@snip [sse.json](assets/projects/sse.json)
+
+
+## Fetch statistics
+
+@@@ note { .warning }
+
+This endpoint is experimental and the response structure might change in the future.
+
+@@@
+
+```
+GET /v1/projects/{org_label}/{label}/statistics
+```
+It returns:
+
+- the dateTime of the latest consumed event (`lastProcessedEventDateTime`).
+- the number of consumed events (`eventsCount`).
+- the number of consumed resources (`resourcesCount`). A resource might be made of multiple events (create, update, deprecate), so this number will always be smaller or equal to `eventsCount`.
+
+**Example**
+
+Request
+:   @@snip [fetch-statistics.sh](assets/projects/fetch-statistics.sh)
+
+Response
+:   @@snip [fetched-statistics.json](assets/projects/fetched-statistics.json)

@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
@@ -172,6 +173,12 @@ object HttpResponseFields {
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case SchemaRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
+    }
+
+  implicit val responseFieldsQuotas: HttpResponseFields[QuotaRejection] =
+    HttpResponseFields {
+      case _: QuotaRejection.QuotasDisabled            => StatusCodes.NotFound
+      case QuotaRejection.WrappedProjectRejection(rej) => (rej: ProjectRejection).status
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =

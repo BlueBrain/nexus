@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import com.typesafe.scalalogging.Logger
-import io.circe.JsonObject
+import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import monix.bio.UIO
 
 package object model {
@@ -69,5 +70,11 @@ package object model {
   val defaultElasticsearchSettings: UIO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("defaults/default-settings.json")
     .logAndDiscardErrors("loading default elasticsearch settings")
+    .memoize
+
+  val emptyResults: UIO[Json] = ClasspathResourceUtils
+    .ioJsonObjectContentOf("defaults/empty-results.json")
+    .logAndDiscardErrors("loading empty elasticsearch results")
+    .map(_.asJson)
     .memoize
 }

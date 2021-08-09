@@ -117,11 +117,11 @@ class ElasticSearchViewsRoutesSpec
   private val (orgs, projs)       = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   private val allowedPerms        = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
   private val (acls, permissions) = AclSetup.initWithPerms(allowedPerms, Set(realm)).accepted
-  private val views               = ElasticSearchViewsSetup.init(orgs, projs, IndexingActionDummy(), permissions)
+  private val views               = ElasticSearchViewsSetup.init(orgs, projs, permissions)
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, now)
+  private val projectStats = ProjectCount(10, 10, now)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
@@ -181,7 +181,8 @@ class ElasticSearchViewsRoutesSpec
         statisticsProgress,
         restart,
         resourceToSchemaMapping,
-        sseEventLog
+        sseEventLog,
+        IndexingActionDummy()
       )
     )
 

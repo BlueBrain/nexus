@@ -121,7 +121,7 @@ class BlazegraphViewsRoutesSpec
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, now)
+  private val projectStats = ProjectCount(10, 10, now)
 
   val projectsCounts       = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection]                 =
@@ -141,7 +141,7 @@ class BlazegraphViewsRoutesSpec
   var restartedView: Option[(ProjectRef, Iri)] = None
 
   private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, IndexingActionDummy(), perms)
+  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, perms)
 
   val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
@@ -151,7 +151,18 @@ class BlazegraphViewsRoutesSpec
   )
 
   private val routes =
-    Route.seal(BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projs, statisticsProgress, restart))
+    Route.seal(
+      BlazegraphViewsRoutes(
+        views,
+        viewsQuery,
+        identities,
+        acls,
+        projs,
+        statisticsProgress,
+        restart,
+        IndexingActionDummy()
+      )
+    )
 
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {

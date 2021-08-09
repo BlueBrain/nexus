@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.ViewsTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
 import monix.bio.Task
@@ -25,14 +24,14 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
   val projects = List(fullId, fullId2)
 
   "creating projects" should {
-    "add necessary permissions for user" taggedAs ViewsTag in {
+    "add necessary permissions for user" in {
       for {
         _ <- aclDsl.addPermission("/", ScoobyDoo, Organizations.Create)
         _ <- aclDsl.addPermissionAnonymous(s"/$fullId2", Views.Query)
       } yield succeed
     }
 
-    "succeed if payload is correct" taggedAs ViewsTag in {
+    "succeed if payload is correct" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, ScoobyDoo)
         _ <- adminDsl.createProject(orgId, projId, kgDsl.projectJson(name = fullId), ScoobyDoo)
@@ -42,7 +41,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
   }
 
   "creating the view" should {
-    "create a context" taggedAs ViewsTag in {
+    "create a context" in {
       val payload = jsonContentOf("/kg/views/context.json")
 
       projects.parTraverse { project =>
@@ -53,7 +52,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "wait until in project resolver is created" taggedAs ViewsTag in {
+    "wait until in project resolver is created" in {
       eventually {
         deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -62,7 +61,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "create an ElasticSearch view" taggedAs ViewsTag in {
+    "create an ElasticSearch view" in {
       val payload = jsonContentOf("/kg/views/elastic-view.json")
 
       projects.parTraverse { project =>
@@ -72,14 +71,14 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "create an Sparql view that index tags" taggedAs ViewsTag in {
+    "create an Sparql view that index tags" in {
       val payload = jsonContentOf("/kg/views/sparql-view.json")
       deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
 
-    "get the created SparqlView" taggedAs ViewsTag in {
+    "get the created SparqlView" in {
       deltaClient.get[Json](s"/views/$fullId/test-resource:testSparqlView", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
 
@@ -97,7 +96,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "create an AggregateSparqlView" taggedAs ViewsTag in {
+    "create an AggregateSparqlView" in {
       val payload = jsonContentOf("/kg/views/agg-sparql-view.json", "project1" -> fullId, "project2" -> fullId2)
 
       deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggView", payload, ScoobyDoo) { (_, response) =>
@@ -105,7 +104,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "create an AggregateElasticSearchView" taggedAs ViewsTag in {
+    "create an AggregateElasticSearchView" in {
       val payload = jsonContentOf("/kg/views/agg-elastic-view.json", "project1" -> fullId, "project2" -> fullId2)
 
       deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggEsView", payload, ScoobyDoo) { (_, response) =>
@@ -113,7 +112,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "get the created AggregateElasticSearchView" taggedAs ViewsTag in {
+    "get the created AggregateElasticSearchView" in {
       deltaClient.get[Json](s"/views/$fullId2/test-resource:testAggEsView", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
 
@@ -133,7 +132,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "get an AggregateSparqlView" taggedAs ViewsTag in {
+    "get an AggregateSparqlView" in {
       deltaClient.get[Json](s"/views/$fullId2/test-resource:testAggView", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
@@ -152,7 +151,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "post instances" taggedAs ViewsTag in {
+    "post instances" in {
       (1 to 8).toList.parTraverse { i =>
         val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
@@ -169,21 +168,21 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "wait until in project view is indexed" taggedAs ViewsTag in eventually {
+    "wait until in project view is indexed" in eventually {
       deltaClient.get[Json](s"/views/$fullId", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 4
+        _total.getOption(json).value shouldEqual 5
         response.status shouldEqual StatusCodes.OK
       }
     }
 
-    "wait until all instances are indexed in default view of project 2" taggedAs ViewsTag in eventually {
+    "wait until all instances are indexed in default view of project 2" in eventually {
       deltaClient.get[Json](s"/resources/$fullId2/resource", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         _total.getOption(json).value shouldEqual 4
       }
     }
 
-    "return 400 with bad query instances" taggedAs ViewsTag in {
+    "return 400 with bad query instances" in {
       val query = Json.obj("query" -> Json.obj("other" -> Json.obj()))
       deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", query, ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.BadRequest
@@ -198,7 +197,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
     val matchAll         = Json.obj("query" -> Json.obj("match_all" -> Json.obj())) deepMerge sort
 
-    "search instances on project 1" taggedAs ViewsTag in eventually {
+    "search instances on project 1" in eventually {
       deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -214,7 +213,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project 2" taggedAs ViewsTag in eventually {
+    "search instances on project 2" in eventually {
       deltaClient.post[Json](s"/views/$fullId2/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -230,7 +229,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project AggregatedElasticSearchView when logged" taggedAs ViewsTag in eventually {
+    "search instances on project AggregatedElasticSearchView when logged" in eventually {
       deltaClient.post[Json](
         s"/views/$fullId2/test-resource:testAggEsView/_search",
         sortedMatchCells,
@@ -244,7 +243,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project AggregatedElasticSearchView as anonymous" taggedAs ViewsTag in eventually {
+    "search instances on project AggregatedElasticSearchView as anonymous" in eventually {
       deltaClient.post[Json](s"/views/$fullId2/test-resource:testAggEsView/_search", sortedMatchCells, Anonymous) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -254,17 +253,17 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "fetch statistics for testView" taggedAs ViewsTag in {
+    "fetch statistics for testView" in {
       import scala.concurrent.duration._
       Task.sleep(3.seconds) >> // allow indexing to complete for postgres
         deltaClient.get[Json](s"/views/$fullId/test-resource:testView/statistics", ScoobyDoo) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           val expected = jsonContentOf(
             "/kg/views/statistics.json",
-            "total"     -> "13",
-            "processed" -> "13",
+            "total"     -> "14",
+            "processed" -> "14",
             "evaluated" -> "6",
-            "discarded" -> "7",
+            "discarded" -> "8",
             "remaining" -> "0"
           )
           filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
@@ -281,7 +280,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         |order by ?s
       """.stripMargin
 
-    "search instances in SPARQL endpoint in project 1" taggedAs ViewsTag in {
+    "search instances in SPARQL endpoint in project 1" in {
       deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -289,7 +288,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 2" taggedAs ViewsTag in {
+    "search instances in SPARQL endpoint in project 2" in {
       deltaClient.sparqlQuery[Json](s"/views/$fullId2/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -297,7 +296,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in AggregateSparqlView when logged" taggedAs ViewsTag in {
+    "search instances in AggregateSparqlView when logged" in {
       deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:testAggView/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -305,7 +304,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in AggregateSparqlView as anonymous" taggedAs ViewsTag in {
+    "search instances in AggregateSparqlView as anonymous" in {
       deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:testAggView/sparql", query, Anonymous) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -313,14 +312,14 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "fetch statistics for defaultSparqlIndex" taggedAs ViewsTag in {
+    "fetch statistics for defaultSparqlIndex" in {
       deltaClient.get[Json](s"/views/$fullId/nxv:defaultSparqlIndex/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "13",
-          "processed" -> "13",
-          "evaluated" -> "13",
+          "total"     -> "14",
+          "processed" -> "14",
+          "evaluated" -> "14",
           "discarded" -> "0",
           "remaining" -> "0"
         )
@@ -328,7 +327,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 1 with custom SparqlView" taggedAs ViewsTag in {
+    "search instances in SPARQL endpoint in project 1 with custom SparqlView" in {
       deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -336,7 +335,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "tag resources resource" taggedAs ViewsTag in {
+    "tag resources resource" in {
       (1 to 5).toList.parTraverse { i =>
         val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
@@ -351,7 +350,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags added" taggedAs ViewsTag in {
+    "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags added" in {
       eventually {
         deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
           (json, response) =>
@@ -361,7 +360,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "remove @type on a resource" taggedAs ViewsTag in {
+    "remove @type on a resource" in {
       val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance1.json"))
       val id           = `@id`.getOption(payload).value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
@@ -375,7 +374,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project 1 after removed @type" taggedAs ViewsTag in eventually {
+    "search instances on project 1 after removed @type" in eventually {
       deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -391,7 +390,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "deprecate a resource" taggedAs ViewsTag in {
+    "deprecate a resource" in {
       val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance2.json"))
       val id           = payload.asObject.value("@id").value.asString.value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
@@ -400,7 +399,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project 1 after deprecated" taggedAs ViewsTag in eventually {
+    "search instances on project 1 after deprecated" in eventually {
       deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
         (json, result) =>
           result.status shouldEqual StatusCodes.OK
@@ -415,5 +414,23 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
             .runSyncUnsafe()
       }
     }
+
+    "create a another SPARQL view" in {
+      val payload = jsonContentOf("/kg/views/sparql-view.json")
+      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2", payload, ScoobyDoo) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "update a new SPARQL view with indexing=sync" in {
+      val payload = jsonContentOf("/kg/views/sparql-view.json").mapObject(
+        _.remove("resourceTag").remove("resourceTypes").remove("resourceSchemas")
+      )
+      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2?rev=1&indexing=sync", payload, ScoobyDoo) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+      }
+    }
+
   }
 }

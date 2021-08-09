@@ -43,7 +43,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       contexts.schemasMetadata       -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted,
       contexts.statistics            -> ContextValue.fromFile("contexts/statistics.json").accepted,
       contexts.tags                  -> ContextValue.fromFile("contexts/tags.json").accepted,
-      contexts.version               -> ContextValue.fromFile("/contexts/version.json").accepted
+      contexts.version               -> ContextValue.fromFile("/contexts/version.json").accepted,
+      contexts.quotas                -> ContextValue.fromFile("/contexts/quotas.json").accepted
     )
 
   implicit val ordering: JsonKeyOrdering =

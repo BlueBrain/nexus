@@ -4,14 +4,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileD
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.sdk.Indexing.Async
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, IndexingActionDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup}
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -47,9 +46,9 @@ class FileEventExchangeSpec
     )
   )
 
-  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg, IndexingActionDummy())
+  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg)
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-  storages.create(diskId, projectRef, storageJson, Async).accepted
+  storages.create(diskId, projectRef, storageJson).accepted
 
   "A FileEventExchange" should {
     val id     = iri"http://localhost/${genString()}"
@@ -74,8 +73,8 @@ class FileEventExchangeSpec
 
     val exchange = new FileEventExchange(files)
 
-    val resRev1         = files.create(id, Some(diskId), project.ref, entity(), Async).accepted
-    val resRev2         = files.tag(id, project.ref, tag, 1L, 1L, Async).accepted
+    val resRev1         = files.create(id, Some(diskId), project.ref, entity()).accepted
+    val resRev2         = files.tag(id, project.ref, tag, 1L, 1L).accepted
     val deprecatedEvent = FileDeprecated(id, project.ref, 1, Instant.EPOCH, subject)
 
     "return the latest resource state from the event" in {

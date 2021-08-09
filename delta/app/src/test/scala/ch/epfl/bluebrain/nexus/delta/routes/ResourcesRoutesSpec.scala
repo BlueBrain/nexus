@@ -104,8 +104,7 @@ class ResourcesRoutesSpec
       projs,
       resourceResolution,
       (_, _) => IO.unit,
-      resolverContextResolution,
-      IndexingActionDummy()
+      resolverContextResolution
     ).accepted
   private val sseEventLog    = new SseEventLogDummy(
     List(
@@ -120,7 +119,8 @@ class ResourcesRoutesSpec
     { case ev: ResourceEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
   )
 
-  private val routes = Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog))
+  private val routes =
+    Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
 
   val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
 

@@ -90,8 +90,8 @@ class StoragesRoutesSpec
   private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   implicit private val c    = crypto
 
-  private val storages = StoragesSetup.init(orgs, projs, IndexingActionDummy(), perms)
-  private val routes   = Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages))
+  private val storages = StoragesSetup.init(orgs, projs, perms)
+  private val routes   = Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages, IndexingActionDummy()))
 
   "Storage routes" should {
 

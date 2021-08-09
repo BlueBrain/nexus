@@ -42,60 +42,57 @@ final class ResolversImpl private (
     index: ResolversCache,
     orgs: Organizations,
     projects: Projects,
-    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
-    indexingAction: IndexingAction
-)(implicit base: BaseUri)
-    extends Resolvers {
+    sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
+) extends Resolvers {
 
-  override def create(projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def create(
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
       p                    <- projects.fetchActiveProject(projectRef)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _                    <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
-    } yield res
-  }.named("createResolver", moduleType)
-
-  override def create(id: IdSegment, projectRef: ProjectRef, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
-    for {
-      p             <- projects.fetchActiveProject(projectRef)
-      iri           <- expandIri(id, p)
-      resolverValue <- sourceDecoder(p, iri, source)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _             <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
   }.named("createResolver", moduleType)
 
   override def create(
       id: IdSegment,
       projectRef: ProjectRef,
-      resolverValue: ResolverValue,
-      indexing: Indexing
-  )(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
+    for {
+      p             <- projects.fetchActiveProject(projectRef)
+      iri           <- expandIri(id, p)
+      resolverValue <- sourceDecoder(p, iri, source)
+      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
+    } yield res
+  }.named("createResolver", moduleType)
+
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      resolverValue: ResolverValue
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
       p     <- projects.fetchActiveProject(projectRef)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
-      _     <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json, indexing: Indexing)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
       p             <- projects.fetchActiveProject(projectRef)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _             <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -103,8 +100,7 @@ final class ResolversImpl private (
       id: IdSegment,
       projectRef: ProjectRef,
       rev: Long,
-      resolverValue: ResolverValue,
-      indexing: Indexing
+      resolverValue: ResolverValue
   )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
@@ -113,7 +109,6 @@ final class ResolversImpl private (
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
-      _     <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -122,8 +117,7 @@ final class ResolversImpl private (
       projectRef: ProjectRef,
       tag: TagLabel,
       tagRev: Long,
-      rev: Long,
-      indexing: Indexing
+      rev: Long
   )(implicit
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
@@ -131,18 +125,18 @@ final class ResolversImpl private (
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
-      _   <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), indexing)
     } yield res
   }.named("tagResolver", moduleType)
 
-  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long, executionType: Indexing)(implicit
-      subject: Identity.Subject
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def deprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long
+  )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
     for {
       p   <- projects.fetchActiveProject(projectRef)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
-      _   <- indexingAction(projectRef, Resolvers.eventExchangeValue(res), executionType)
     } yield res
   }.named("deprecateResolver", moduleType)
 
@@ -276,7 +270,6 @@ object ResolversImpl {
     * @param projects          a Projects instance
     * @param contextResolution the context resolver
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
-    * @param indexingAction    the indexing action
     */
   final def apply(
       config: ResolversConfig,
@@ -284,14 +277,12 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck,
-      indexingAction: IndexingAction
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      base: BaseUri
+      as: ActorSystem[Nothing]
   ): Task[Resolvers] =
     apply(
       config,
@@ -299,8 +290,7 @@ object ResolversImpl {
       orgs,
       projects,
       contextResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
-      indexingAction
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     )
 
   private[resolvers] def apply(
@@ -309,21 +299,19 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      indexingAction: IndexingAction
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
       scheduler: Scheduler,
-      as: ActorSystem[Nothing],
-      base: BaseUri
+      as: ActorSystem[Nothing]
   ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
       agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder, indexingAction)
+      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)
       _            <- startIndexing(config, eventLog, index, resolvers)
     } yield resolvers
   }

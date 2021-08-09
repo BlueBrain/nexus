@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Indexing, OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -207,11 +207,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     idSegment.flatMap(idSegmentRef(_))
 
   /**
-    * Creates [[Indexing]] from `indexing` query param. Defaults to [[Indexing.Async]].
+    * Creates [[IndexingMode]] from `indexing` query param. Defaults to [[IndexingMode.Async]].
     */
-  val indexingType: Directive1[Indexing] = parameter("indexing".as[String].?).flatMap {
-    case None | Some("async") => provide(Indexing.Async)
-    case Some("sync")         => provide(Indexing.Sync)
+  val indexingMode: Directive1[IndexingMode] = parameter("indexing".as[String].?).flatMap {
+    case None | Some("async") => provide(IndexingMode.Async)
+    case Some("sync")         => provide(IndexingMode.Sync)
     case Some(_)              =>
       reject(
         MalformedQueryParamRejection(
