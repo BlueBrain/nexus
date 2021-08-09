@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
@@ -45,7 +46,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project                    <- projects.fetchActiveProject(projectRef)
+      project                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -58,7 +59,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -73,7 +74,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -89,7 +90,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res).named("tagSchema", moduleType)
@@ -100,7 +101,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
@@ -165,14 +166,13 @@ object SchemasImpl {
 
   private def aggregate(
       config: AggregateConfig,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Schemas.next,
-      evaluate = Schemas.evaluate(idAvailability, quotas),
+      evaluate = Schemas.evaluate(idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -202,8 +202,7 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      resourceIdCheck: ResourceIdCheck,
-      quotas: Quotas
+      resourceIdCheck: ResourceIdCheck
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] =
     apply(
       orgs,
@@ -212,8 +211,7 @@ object SchemasImpl {
       contextResolution,
       config,
       eventLog,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
-      quotas
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     )
 
   private[schemas] def apply(
@@ -223,8 +221,7 @@ object SchemasImpl {
       contextResolution: ResolverContextResolution,
       config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit uuidF: UUIDF = UUIDF.random, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
@@ -233,7 +230,7 @@ object SchemasImpl {
         uuidF
       )
     for {
-      agg                 <- aggregate(config.aggregate, idAvailability, quotas)
+      agg                 <- aggregate(config.aggregate, idAvailability)
       cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
     } yield {
       new SchemasImpl(

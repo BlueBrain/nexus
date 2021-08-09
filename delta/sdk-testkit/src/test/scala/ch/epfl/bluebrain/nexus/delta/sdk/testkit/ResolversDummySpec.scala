@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -20,5 +20,5 @@ class ResolversDummySpec
     with ResolversBehaviors {
 
   override def create: UIO[Resolvers] =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit, QuotasDummy.neverReached)
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit)
 }

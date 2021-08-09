@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
@@ -73,7 +72,7 @@ class StoragesSpec
 
   private val perms = PermissionsDummy(allowedPerms.toSet).accepted
 
-  private val eval = evaluate(access, (_, _) => IO.unit, QuotasDummy.neverReached, perms, config, crypto)(_, _)
+  private val eval = evaluate(access, (_, _) => IO.unit, perms, config, crypto)(_, _)
 
   "The Storages state machine" when {
 
@@ -204,19 +203,12 @@ class StoragesSpec
         val eval    = evaluate(
           access,
           (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)),
-          QuotasDummy.neverReached,
           perms,
           config,
           crypto
         )(_, _)
         val command = CreateStorage(dId, project, diskFields, Secret(Json.obj()), bob)
         eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
-      }
-
-      "reject with QuotaReached" in {
-        val eval    = evaluate(access, (_, _) => IO.unit, QuotasDummy.alwaysReached, perms, config, crypto)(_, _)
-        val command = CreateStorage(dId, project, diskFields, Secret(Json.obj()), bob)
-        eval(Initial, command).rejectedWith[WrappedQuotaRejection]
       }
 
       "reject with StorageNotFound" in {
@@ -297,7 +289,7 @@ class StoragesSpec
         remoteDisk  = None
       )
       // format: on
-      val eval                      = evaluate(access, (_, _) => IO.unit, QuotasDummy.neverReached, perms, config, crypto)(_, _)
+      val eval                      = evaluate(access, (_, _) => IO.unit, perms, config, crypto)(_, _)
       forAll(list) { case (current, cmd) =>
         eval(current, cmd).rejectedWith[InvalidStorageType]
       }

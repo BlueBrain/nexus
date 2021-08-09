@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
@@ -70,7 +70,6 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
                       orgs,
                       projects,
                       (_, _) => IO.unit,
-                      QuotasDummy.neverReached,
                       _ => IO.unit
                     )
     } yield views

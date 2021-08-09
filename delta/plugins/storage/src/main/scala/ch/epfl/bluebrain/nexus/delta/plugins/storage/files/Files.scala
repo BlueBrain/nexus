@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -85,7 +86,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -109,7 +110,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -135,7 +136,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri     <- generateId(project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -160,7 +161,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri     <- expandIri(id, project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -183,7 +184,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -213,7 +214,7 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -243,7 +244,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri     <- expandIri(id, project)
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
@@ -290,7 +291,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri     <- expandIri(id, project)
       res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
     } yield res
@@ -309,7 +310,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
     } yield res
@@ -503,14 +504,12 @@ object Files {
   /**
     * Constructs a Files instance
     *
-    * @param config          the files configuration
-    * @param eventLog        the event log for FileEvent
-    * @param acls            the acls operations bundle
-    * @param orgs            the organizations operations bundle
-    * @param projects        the projects operations bundle
-    * @param storages        the storages operations bundle
-    * @param resourceIdCheck to check whether an id already exists on another module upon creation
-    * @param quotas          the quotas module
+    * @param config   the files configuration
+    * @param eventLog the event log for FileEvent
+    * @param acls     the acls operations bundle
+    * @param orgs     the organizations operations bundle
+    * @param projects the projects operations bundle
+    * @param storages the storages operations bundle
     */
   final def apply(
       config: FilesConfig,
@@ -520,8 +519,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages,
-      resourceIdCheck: ResourceIdCheck,
-      quotas: Quotas
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -531,7 +529,7 @@ object Files {
   ): Task[Files] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability, quotas)
+    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability)
   }
 
   private[files] def apply(
@@ -542,8 +540,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
@@ -554,7 +551,7 @@ object Files {
     implicit val classicAs: ClassicActorSystem  = as.classicSystem
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
-      agg  <- aggregate(config.aggregate, idAvailability, quotas)
+      agg  <- aggregate(config.aggregate, idAvailability)
       files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
       _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
@@ -562,14 +559,13 @@ object Files {
 
   private def aggregate(
       config: AggregateConfig,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(idAvailability, quotas),
+      evaluate = evaluate(idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -667,17 +663,14 @@ object Files {
     }
   }
 
-  private[files] def evaluate(
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
-  )(
+  private[files] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
       state: FileState,
       cmd: FileCommand
   )(implicit clock: Clock[UIO]): IO[FileRejection, FileEvent] = {
 
     def create(c: CreateFile) = state match {
       case Initial =>
-        (quotas.reachedForResources(c.project, c.subject) >> IOUtils.instant <* idAvailability(c.project, c.id))
+        (IOUtils.instant <* idAvailability(c.project, c.id))
           .map(FileCreated(c.id, c.project, c.storage, c.storageType, c.attributes, 1L, _, c.subject))
       case _       =>
         IO.raiseError(ResourceAlreadyExists(c.id, c.project))
@@ -698,8 +691,10 @@ object Files {
       case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case s: Current if s.deprecated   => IO.raiseError(FileIsDeprecated(c.id))
       case s: Current                   =>
+        // format: off
         IOUtils.instant
           .map(FileAttributesUpdated(c.id, c.project, c.mediaType, c.bytes, c.digest, s.rev + 1L, _, c.subject))
+      // format: on
     }
 
     def tag(c: TagFile) = state match {
@@ -715,8 +710,7 @@ object Files {
       case Initial                      => IO.raiseError(FileNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case s: Current if s.deprecated   => IO.raiseError(FileIsDeprecated(c.id))
-      case s: Current                   =>
-        IOUtils.instant.map(FileDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
+      case s: Current                   => IOUtils.instant.map(FileDeprecated(c.id, c.project, s.rev + 1L, _, c.subject))
     }
 
     cmd match {

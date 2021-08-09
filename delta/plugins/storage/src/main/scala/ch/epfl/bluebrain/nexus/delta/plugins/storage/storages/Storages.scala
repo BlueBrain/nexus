@@ -33,6 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -79,7 +80,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -99,7 +100,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -120,7 +121,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -152,7 +153,7 @@ final class Storages private (
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -175,7 +176,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -200,7 +201,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -219,7 +220,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
     } yield res
@@ -448,9 +449,7 @@ object Storages {
     * @param orgs              a organizations operations bundle
     * @param projects          a projects operations bundle
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
-    * @param quotas            the quotas module
     * @param crypto            the cypher to use in order to encrypt/decrypt sensitive fields
-    * @param serviceAccount    the system service account
     */
   final def apply(
       config: StoragesConfig,
@@ -460,7 +459,6 @@ object Storages {
       orgs: Organizations,
       projects: Projects,
       resourceIdCheck: ResourceIdCheck,
-      quotas: Quotas,
       crypto: Crypto,
       serviceAccount: ServiceAccount
   )(implicit
@@ -484,7 +482,6 @@ object Storages {
       projects,
       storageAccess,
       idAvailability,
-      quotas,
       crypto,
       serviceAccount
     )
@@ -499,7 +496,6 @@ object Storages {
       projects: Projects,
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas,
       crypto: Crypto,
       serviceAccount: ServiceAccount
   )(implicit
@@ -509,7 +505,7 @@ object Storages {
       as: ActorSystem[Nothing]
   ): Task[Storages] =
     for {
-      agg          <- aggregate(config, access, idAvailability, quotas, permissions, crypto)
+      agg          <- aggregate(config, access, idAvailability, permissions, crypto)
       index        <- UIO.delay(cache(config))
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
@@ -546,7 +542,6 @@ object Storages {
       config: StoragesConfig,
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas,
       permissions: Permissions,
       crypto: Crypto
   )(implicit
@@ -557,7 +552,7 @@ object Storages {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(access, idAvailability, quotas, permissions, config.storageTypeConfig, crypto),
+      evaluate = evaluate(access, idAvailability, permissions, config.storageTypeConfig, crypto),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
@@ -606,7 +601,6 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas,
       permissions: Permissions,
       config: StorageTypeConfig,
       crypto: Crypto
@@ -668,7 +662,6 @@ object Storages {
     def create(c: CreateStorage) = state match {
       case Initial =>
         for {
-          _       <- quotas.reachedForResources(c.project, c.subject)
           value   <- validateAndReturnValue(c.id, c.fields)
           instant <- IOUtils.instant
           _       <- idAvailability(c.project, c.id)
@@ -696,17 +689,14 @@ object Storages {
       case s: Current if s.deprecated                             => IO.raiseError(StorageIsDeprecated(c.id))
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
-        IOUtils.instant.map(
-          StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
-        )
+        IOUtils.instant.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
     }
 
     def deprecate(c: DeprecateStorage) = state match {
       case Initial                      => IO.raiseError(StorageNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
       case s: Current if s.deprecated   => IO.raiseError(StorageIsDeprecated(c.id))
-      case s: Current                   =>
-        IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1L, _, c.subject))
+      case s: Current                   => IOUtils.instant.map(StorageDeprecated(c.id, c.project, s.value.tpe, s.rev + 1L, _, c.subject))
     }
 
     cmd match {

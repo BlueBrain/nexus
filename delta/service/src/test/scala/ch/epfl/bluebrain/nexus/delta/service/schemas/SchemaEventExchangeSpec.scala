@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.SchemaDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -75,8 +75,7 @@ class SchemaEventExchangeSpec
       projs,
       schemaImports,
       resolverContextResolution,
-      (_, _) => IO.unit,
-      QuotasDummy.neverReached
+      (_, _) => IO.unit
     ).accepted
 
   "A SchemaEventExchange" should {

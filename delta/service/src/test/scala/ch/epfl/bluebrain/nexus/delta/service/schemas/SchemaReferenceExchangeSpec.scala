@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -72,8 +72,7 @@ class SchemaReferenceExchangeSpec
       projs,
       schemaImports,
       resolverContextResolution,
-      (_, _) => IO.unit,
-      QuotasDummy.neverReached
+      (_, _) => IO.unit
     ).accepted
 
   "A SchemaReferenceExchange" should {

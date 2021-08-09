@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
@@ -32,7 +31,6 @@ class CompositeViewsStmSpec
     with IOValues
     with TestHelpers
     with CompositeViewsFixture {
-
   "A CompositeViews STM" when {
 
     val validSource: ValidateSource                            = _ => IO.unit
@@ -64,7 +62,7 @@ class CompositeViewsStmSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 2)(_, _)
+    val eval = evaluate(validSource, validProjection, allIdsAvailable, 3, 2)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
@@ -72,33 +70,29 @@ class CompositeViewsStmSpec
         val expected = CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
         eval(Initial, cmd).accepted shouldEqual expected
       }
-      "raise a QuotaReached rejection" in {
-        val eval = evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.alwaysReached, 3, 2)(_, _)
-        eval(Initial, cmd).rejectedWith[WrappedQuotaRejection]
-      }
       "raise a ViewAlreadyExists rejection" in {
         eval(current(), cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise a ResourceAlreadyExists rejection" in {
-        val eval = evaluate(validSource, validProjection, noIdsAvailable, QuotasDummy.neverReached, 3, 2)(_, _)
+        val eval = evaluate(validSource, validProjection, noIdsAvailable, 3, 2)(_, _)
         eval(Initial, cmd).rejected shouldEqual ResourceAlreadyExists(cmd.id, cmd.project)
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 2)(Initial, cmd)
+        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(Initial, cmd)
           .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 2)(Initial, cmd)
+        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(Initial, cmd)
           .rejectedWith[CrossProjectSourceProjectNotFound]
       }
 
       "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 1, 2)(Initial, cmd)
+        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(Initial, cmd)
           .rejectedWith[TooManySources]
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 1)(Initial, cmd)
+        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(Initial, cmd)
           .rejectedWith[TooManyProjections]
       }
     }
@@ -116,11 +110,11 @@ class CompositeViewsStmSpec
         eval(Initial, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 2)(current(), cmd)
+        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(current(), cmd)
           .rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 2)(current(), cmd)
+        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(current(), cmd)
           .rejectedWith[CrossProjectSourceProjectNotFound]
       }
       "raise a ViewIsDeprecated rejection" in {
@@ -128,13 +122,11 @@ class CompositeViewsStmSpec
       }
 
       "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 1, 2)(current(), cmd)
-          .rejectedWith[TooManySources]
+        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(current(), cmd).rejectedWith[TooManySources]
       }
 
       "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, QuotasDummy.neverReached, 3, 1)(current(), cmd)
-          .rejectedWith[TooManyProjections]
+        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(current(), cmd).rejectedWith[TooManyProjections]
       }
     }
 

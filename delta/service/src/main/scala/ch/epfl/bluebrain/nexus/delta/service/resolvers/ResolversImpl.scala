@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValue
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -50,7 +51,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -62,7 +63,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -75,7 +76,7 @@ final class ResolversImpl private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -89,7 +90,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -105,7 +106,7 @@ final class ResolversImpl private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -122,7 +123,7 @@ final class ResolversImpl private (
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -134,7 +135,7 @@ final class ResolversImpl private (
       rev: Long
   )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -243,14 +244,13 @@ object ResolversImpl {
   private def aggregate(
       config: AggregateConfig,
       findResolver: FindResolver,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
       next = Resolvers.next,
-      evaluate = Resolvers.evaluate(findResolver, idAvailability, quotas),
+      evaluate = Resolvers.evaluate(findResolver, idAvailability),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = config.snapshotStrategy.strategy,
       stopStrategy = config.stopStrategy.persistentStrategy
@@ -271,7 +271,6 @@ object ResolversImpl {
     * @param projects          a Projects instance
     * @param contextResolution the context resolver
     * @param resourceIdCheck   to check whether an id already exists on another module upon creation
-    * @param quotas            the quotas module
     */
   final def apply(
       config: ResolversConfig,
@@ -279,8 +278,7 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck,
-      quotas: Quotas
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -293,8 +291,7 @@ object ResolversImpl {
       orgs,
       projects,
       contextResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
-      quotas
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     )
 
   private[resolvers] def apply(
@@ -303,8 +300,7 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -313,7 +309,7 @@ object ResolversImpl {
   ): Task[Resolvers] = {
     for {
       index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability, quotas)
+      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
       resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)

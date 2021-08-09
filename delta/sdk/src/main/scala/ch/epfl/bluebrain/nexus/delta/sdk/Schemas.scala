@@ -241,10 +241,7 @@ object Schemas {
   }
 
   @SuppressWarnings(Array("OptionGet"))
-  private[delta] def evaluate(
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
-  )(
+  private[delta] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
       state: SchemaState,
       cmd: SchemaCommand
   )(implicit clock: Clock[UIO] = IO.clock): IO[SchemaRejection, SchemaEvent] = {
@@ -265,7 +262,6 @@ object Schemas {
       state match {
         case Initial =>
           for {
-            _     <- quotas.reachedForResources(c.project, c.subject)
             graph <- toGraph(c.id, c.expanded)
             _     <- validate(c.id, graph)
             t     <- IOUtils.instant

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, Permissions, Projects, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, Permissions, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import monix.bio.{IO, Task, UIO}
@@ -34,7 +34,6 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
                       _ => UIO.unit,
                       (_, _, _) => UIO.unit,
                       (_, _) => IO.unit,
-                      QuotasDummy.neverReached,
                       resolverCtx
                     )
     } yield views
@@ -63,7 +62,6 @@ trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClo
           _ => IO.unit,
           resolverCtx,
           (_, _) => IO.unit,
-          QuotasDummy.neverReached,
           crypto
         )
     } yield views

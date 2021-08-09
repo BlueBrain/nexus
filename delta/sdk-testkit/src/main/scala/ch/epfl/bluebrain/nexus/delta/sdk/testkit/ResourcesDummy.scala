@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -41,13 +42,12 @@ final class ResourcesDummy private (
     projects: Projects,
     resourceResolution: ResourceResolution[Schema],
     idAvailability: IdAvailability[ResourceAlreadyExists],
-    quotas: Quotas,
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 )(implicit clock: Clock[UIO])
     extends Resources {
 
-  private val eval = Resources.evaluate(resourceResolution, idAvailability, quotas)(_, _)
+  private val eval = Resources.evaluate(resourceResolution, idAvailability)(_, _)
 
   override def create(
       projectRef: ProjectRef,
@@ -55,7 +55,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project                    <- projects.fetchActiveProject(projectRef)
+      project                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -68,7 +68,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -83,7 +83,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -100,7 +100,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchActiveProject(projectRef)
+      project      <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -113,7 +113,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchActiveProject(projectRef)
+      project      <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -206,19 +206,16 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs               the organizations operations bundle
-    * @param projects           the projects operations bundle
-    * @param resourceResolution to resolve schemas using resolvers
-    * @param idAvailability     to resolve schemas using resolvers
-    * @param quotas             the quotas module
-    * @param contextResolution  the context resolver
+    * @param orgs     the organizations operations bundle
+    * @param projects the projects operations bundle
+    * @param resourceResolution   to resolve schemas using resolvers
+    * @param contextResolution the context resolver
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas,
       contextResolution: ResolverContextResolution
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
@@ -231,7 +228,6 @@ object ResourcesDummy {
       projects,
       resourceResolution,
       idAvailability,
-      quotas,
       sem,
       parser
     )
@@ -243,7 +239,6 @@ object ResourcesDummy {
     * @param projects           the projects operations bundle
     * @param resourceResolution to resolve schemas using resolvers
     * @param idAvailability     to resolve schemas using resolvers
-    * @param quotas             the quotas module
     * @param contextResolution  the context resolver
     * @param journal            underlying [[Journal]]
     */
@@ -252,7 +247,6 @@ object ResourcesDummy {
       projects: Projects,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas,
       contextResolution: ResolverContextResolution,
       journal: ResourcesJournal
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
@@ -265,7 +259,6 @@ object ResourcesDummy {
       projects,
       resourceResolution,
       idAvailability,
-      quotas,
       sem,
       parser
     )

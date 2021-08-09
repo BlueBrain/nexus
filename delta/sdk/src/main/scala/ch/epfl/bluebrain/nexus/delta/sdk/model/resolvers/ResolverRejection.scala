@@ -17,8 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Ta
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
@@ -195,11 +193,6 @@ object ResolverRejection {
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
   /**
-    * Signals a rejection caused when interacting with the quotas API
-    */
-  final case class WrappedQuotaRejection(rejection: QuotaReached) extends ResolverRejection(rejection.reason)
-
-  /**
     * Rejection returned when the associated project is invalid
     *
     * @param rejection the rejection which occurred with the project
@@ -239,9 +232,6 @@ object ResolverRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit val resolverQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
-    WrappedQuotaRejection(_)
-
   implicit val projectRejectionMapper: Mapper[ProjectRejection, ResolverRejection] = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
@@ -266,7 +256,6 @@ object ResolverRejection {
         case ResolverEvaluationError(EvaluationTimeout(C(cmd), t)) =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ResolverEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedQuotaRejection(rejection)                      => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                           => obj.add("details", rdf.asJson)

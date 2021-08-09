@@ -31,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -90,7 +91,7 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
       iri <- expandIri(id, p)
       res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
     } yield res
@@ -109,7 +110,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
+      p            <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
@@ -129,7 +130,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchActiveProject(project)
+      p     <- projects.fetchProject(project, Set(NotDeprecated, VerifyQuotaResources))
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
@@ -152,7 +153,7 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
     } yield res
@@ -174,7 +175,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchActiveProject(project)
+      p     <- projects.fetchProject(project, Set(NotDeprecated))
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
@@ -199,7 +200,7 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
@@ -220,7 +221,7 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
     } yield res
@@ -451,8 +452,7 @@ object ElasticSearchViews {
       projects: Projects,
       permissions: Permissions,
       client: ElasticSearchClient,
-      resourceIdCheck: ResourceIdCheck,
-      quotas: Quotas
+      resourceIdCheck: ResourceIdCheck
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -462,18 +462,7 @@ object ElasticSearchViews {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
 
-    apply(
-      config,
-      eventLog,
-      contextResolution,
-      cache,
-      orgs,
-      projects,
-      permissions,
-      validIndex(client),
-      idAvailability,
-      quotas
-    )
+    apply(config, eventLog, contextResolution, cache, orgs, projects, permissions, validIndex(client), idAvailability)
   }
 
   private[elasticsearch] def apply(
@@ -485,8 +474,7 @@ object ElasticSearchViews {
       projects: Projects,
       permissions: Permissions,
       validateIndex: ValidateIndex,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       uuidF: UUIDF,
       clock: Clock[UIO],
@@ -525,8 +513,7 @@ object ElasticSearchViews {
                     validateIndex,
                     viewResolution(deferred),
                     validateRef(deferred),
-                    idAvailability,
-                    quotas
+                    idAvailability
                   )
       decoder   = ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution)
       views     = new ElasticSearchViews(agg, eventLog, cache, orgs, projects, decoder)
@@ -563,8 +550,7 @@ object ElasticSearchViews {
       validateIndex: ValidateIndex,
       viewResolution: ViewRefResolution,
       validateRef: ValidateRef,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]): UIO[ElasticSearchViewAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
@@ -577,8 +563,7 @@ object ElasticSearchViews {
         viewResolution,
         idAvailability,
         config.indexing.prefix,
-        config.maxViewRefs,
-        quotas
+        config.maxViewRefs
       ),
       tagger = EventTags.forProjectScopedEvent(moduleTag, moduleType),
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
@@ -637,8 +622,7 @@ object ElasticSearchViews {
       viewRefResolution: ViewRefResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists],
       indexingPrefix: String,
-      maxViewRefs: Int,
-      quotas: Quotas
+      maxViewRefs: Int
   )(state: ElasticSearchViewState, cmd: ElasticSearchViewCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -665,7 +649,6 @@ object ElasticSearchViews {
         for {
           t <- IOUtils.instant
           u <- uuidF()
-          _ <- quotas.reachedForResources(c.project, c.subject)
           _ <- validate(u, 1L, c.value)
           _ <- idAvailability(c.project, c.id)
         } yield ElasticSearchViewCreated(c.id, c.project, u, c.value, c.source, 1L, t, c.subject)
@@ -699,17 +682,7 @@ object ElasticSearchViews {
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(
-          ElasticSearchViewTagAdded(
-            c.id,
-            c.project,
-            s.value.tpe,
-            s.uuid,
-            c.targetRev,
-            c.tag,
-            s.rev + 1L,
-            _,
-            c.subject
-          )
+          ElasticSearchViewTagAdded(c.id, c.project, s.value.tpe, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
         )
     }
 
@@ -721,9 +694,7 @@ object ElasticSearchViews {
       case s: Current if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current                   =>
-        IOUtils.instant.map(
-          ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject)
-        )
+        IOUtils.instant.map(ElasticSearchViewDeprecated(c.id, c.project, s.value.tpe, s.uuid, s.rev + 1L, _, c.subject))
     }
 
     cmd match {

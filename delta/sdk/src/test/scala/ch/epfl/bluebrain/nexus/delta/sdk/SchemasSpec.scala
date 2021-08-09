@@ -50,7 +50,7 @@ class SchemasSpec
     val schemaUpdated = SchemaGen.schema(myId, project.value.ref, sourceUpdated)
 
     "evaluating an incoming command" should {
-      val eval = evaluate((_, _) => IO.unit, QuotasDummy.neverReached)(_, _)
+      val eval = evaluate((_, _) => IO.unit)(_, _)
       "create a new event from a CreateSchema command" in {
         eval(Initial, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)).accepted shouldEqual
           SchemaCreated(myId, project.value.ref, source, compacted, expanded, 1L, epoch, subject)
@@ -118,16 +118,10 @@ class SchemasSpec
 
       "reject with ResourceAlreadyExists" in {
         val command = CreateSchema(myId, project.value.ref, source, compacted, expanded, subject)
-        val eval    =
-          evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)), QuotasDummy.neverReached)(_, _)
-        eval(Initial, command).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
-      }
-
-      "reject with QuotaReached" in {
-        val eval = evaluate((_, _) => IO.unit, QuotasDummy.alwaysReached)(_, _)
-
-        eval(Initial, CreateSchema(myId, project.value.ref, source, compacted, expanded, subject))
-          .rejectedWith[WrappedQuotaRejection]
+        evaluate((project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+          Initial,
+          command
+        ).rejected shouldEqual ResourceAlreadyExists(command.id, command.project)
       }
 
       "reject with SchemaNotFound" in {

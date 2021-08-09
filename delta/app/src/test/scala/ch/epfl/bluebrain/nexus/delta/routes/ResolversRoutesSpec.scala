@@ -120,7 +120,7 @@ class ResolversRoutesSpec
       }
 
   private val resolvers =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit, QuotasDummy.neverReached).accepted
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
   private val resolverResolution = ResolverResolution(
     acls,

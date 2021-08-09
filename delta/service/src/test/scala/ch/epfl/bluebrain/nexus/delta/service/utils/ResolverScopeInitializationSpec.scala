@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.utils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
@@ -52,7 +52,7 @@ class ResolverScopeInitializationSpec
     )
     val rcr        = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
     val (o, p)     = ProjectSetup.init(List(org), List(project)).accepted
-    ResolversDummy(o, p, rcr, (_, _) => IO.unit, QuotasDummy.neverReached).accepted
+    ResolversDummy(o, p, rcr, (_, _) => IO.unit).accepted
   }
   "A ResolverScopeInitialization" should {
     val init = new ResolverScopeInitialization(resolvers, sa)

@@ -21,8 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
@@ -229,11 +227,6 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Signals a rejection caused when interacting with the quotas API
-    */
-  final case class WrappedQuotaRejection(rejection: QuotaReached) extends CompositeViewRejection(rejection.reason)
-
-  /**
     * Signals a rejection caused when interacting with the projects API
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends CompositeViewRejection(rejection.reason)
@@ -306,9 +299,6 @@ object CompositeViewRejection {
   final case class WrappedElasticSearchClientError(error: HttpClientError)
       extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
 
-  implicit val compositeQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
-    WrappedQuotaRejection(_)
-
   implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, CompositeViewRejection] =
     WrappedProjectRejection.apply
 
@@ -339,7 +329,6 @@ object CompositeViewRejection {
           val reason =
             s"Timeout while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedQuotaRejection(rejection)                           => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                    =>
@@ -369,7 +358,6 @@ object CompositeViewRejection {
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedQuotaRejection(rej)             => (rej: QuotaRejection).status
       case WrappedProjectRejection(rej)           => rej.status
       case WrappedOrganizationRejection(rej)      => rej.status
       case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError

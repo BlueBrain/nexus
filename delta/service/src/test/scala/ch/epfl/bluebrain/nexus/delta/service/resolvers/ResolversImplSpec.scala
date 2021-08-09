@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent
@@ -32,14 +32,6 @@ class ResolversImplSpec
       .postgresEventLog[Envelope[ResolverEvent]](EventLogUtils.toEnvelope)
       .hideErrors
       .flatMap(
-        ResolversImpl(
-          resolversConfig,
-          _,
-          orgs,
-          projects,
-          resolverContextResolution,
-          (_, _) => IO.unit,
-          QuotasDummy.neverReached
-        )
+        ResolversImpl(resolversConfig, _, orgs, projects, resolverContextResolution, (_, _) => IO.unit)
       )
 }

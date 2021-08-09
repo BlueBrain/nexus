@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.Schemas
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -28,8 +28,7 @@ class SchemasDummySpec
           projs,
           schemaImports,
           resolverContextResolution,
-          (_, _) => IO.unit,
-          QuotasDummy.neverReached
+          (_, _) => IO.unit
         )
     } yield r
 

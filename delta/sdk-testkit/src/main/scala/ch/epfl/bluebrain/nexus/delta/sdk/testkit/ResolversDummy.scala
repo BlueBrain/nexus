@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{NotDeprecated, VerifyQuotaResources}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -45,8 +46,7 @@ class ResolversDummy private (
     projects: Projects,
     semaphore: IOSemaphore,
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue],
-    idAvailability: IdAvailability[ResourceAlreadyExists],
-    quotas: Quotas
+    idAvailability: IdAvailability[ResourceAlreadyExists]
 )(implicit clock: Clock[UIO])
     extends Resolvers {
 
@@ -55,7 +55,7 @@ class ResolversDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -66,7 +66,7 @@ class ResolversDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -78,7 +78,7 @@ class ResolversDummy private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated, VerifyQuotaResources))
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -88,7 +88,7 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -104,7 +104,7 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -120,7 +120,7 @@ class ResolversDummy private (
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -129,7 +129,7 @@ class ResolversDummy private (
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, Set(NotDeprecated))
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -179,7 +179,7 @@ class ResolversDummy private (
     semaphore.withPermit {
       for {
         state      <- currentState(command.project, command.id)
-        event      <- Resolvers.evaluate(findResolver, idAvailability, quotas)(state, command)
+        event      <- Resolvers.evaluate(findResolver, idAvailability)(state, command)
         _          <- journal.add(event)
         resourceOpt = Resolvers.next(state, event).toResource(project.apiMappings, project.base)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(command.id, project.ref))
@@ -210,14 +210,12 @@ object ResolversDummy {
     * @param projects          the projects operations bundle
     * @param contextResolution the context resolver
     * @param idAvailability    checks if an id is available upon creation
-    * @param quotas            the quotas module
     */
   def apply(
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
@@ -225,5 +223,5 @@ object ResolversDummy {
       sem          <- IOSemaphore(1L)
       sourceDecoder =
         new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability, quotas)
+    } yield new ResolversDummy(journal, cache, orgs, projects, sem, sourceDecoder, idAvailability)
 }

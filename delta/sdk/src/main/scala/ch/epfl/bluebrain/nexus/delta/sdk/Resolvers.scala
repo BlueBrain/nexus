@@ -293,8 +293,7 @@ object Resolvers {
 
   private[delta] def evaluate(
       findResolver: FindResolver,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(state: ResolverState, command: ResolverCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResolverRejection, ResolverEvent] = {
@@ -339,7 +338,6 @@ object Resolvers {
       case Initial    =>
         for {
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)
-          _   <- quotas.reachedForResources(c.project, c.subject)
           now <- instant
           _   <- idAvailability(c.project, c.id)
         } yield ResolverCreated(
@@ -381,7 +379,7 @@ object Resolvers {
         )
     }
 
-    def tag(c: TagResolver): IO[ResolverRejection, ResolverTagAdded] = state match {
+    def addTag(c: TagResolver): IO[ResolverRejection, ResolverTagAdded] = state match {
       // Resolver can't be found
       case Initial                                               =>
         IO.raiseError(ResolverNotFound(c.id, c.project))
@@ -434,7 +432,7 @@ object Resolvers {
     command match {
       case c: CreateResolver    => create(c)
       case c: UpdateResolver    => update(c)
-      case c: TagResolver       => tag(c)
+      case c: TagResolver       => addTag(c)
       case c: DeprecateResolver => deprecate(c)
     }
   }

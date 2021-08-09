@@ -41,6 +41,7 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         eventLog: EventLog[Envelope[ProjectEvent]],
         organizations: Organizations,
+        quotas: Quotas,
         baseUri: BaseUri,
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
@@ -53,6 +54,7 @@ object ProjectsModule extends ModuleDef {
         config.projects,
         eventLog,
         organizations,
+        quotas,
         scopeInitializations,
         mappings.merge
       )(baseUri, uuidF, as, scheduler, clock)

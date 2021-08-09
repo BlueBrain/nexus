@@ -249,8 +249,7 @@ object Resources {
   @SuppressWarnings(Array("OptionGet"))
   private[delta] def evaluate(
       resourceResolution: ResourceResolution[Schema],
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      quotas: Quotas
+      idAvailability: IdAvailability[ResourceAlreadyExists]
   )(state: ResourceState, cmd: ResourceCommand)(implicit
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
@@ -275,7 +274,8 @@ object Resources {
           resolved <- resourceResolution
                         .resolve(schemaRef, projectRef)(caller)
                         .mapError(InvalidSchemaRejection(schemaRef, projectRef, _))
-          schema   <- IO.raiseWhen(resolved.deprecated)(SchemaIsDeprecated(resolved.value.id)).as(resolved)
+          schema   <-
+            if (resolved.deprecated) IO.raiseError(SchemaIsDeprecated(resolved.value.id)) else IO.pure(resolved)
           dataGraph = graph ++ schema.value.ontologies
           report   <- ShaclEngine(dataGraph, schema.value.shapes, reportDetails = true, validateShapes = false)
                         .mapError(ResourceShaclEngineRejection(id, schemaRef, _))
@@ -287,7 +287,6 @@ object Resources {
         case Initial =>
           // format: off
           for {
-            _                          <- quotas.reachedForResources(c.project, c.subject)
             (schemaRev, schemaProject) <- validate(c.project, c.schema, c.caller, c.id, c.expanded)
             types                       = c.expanded.cursor.getTypes.getOrElse(Set.empty)
             t                          <- IOUtils.instant

@@ -69,7 +69,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          quotas: Quotas,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
           crypto: Crypto,
@@ -83,7 +82,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           orgs,
           projects,
           resourceIdCheck,
-          quotas,
           crypto,
           serviceAccount
         )(
@@ -137,13 +135,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           storages: Storages,
           resourceIdCheck: ResourceIdCheck,
-          quotas: Quotas,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck, quotas)(
+        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck)(
           client,
           uuidF,
           clock,

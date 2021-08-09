@@ -23,8 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
@@ -155,11 +153,6 @@ object FileRejection {
       extends FileRejection(ServiceError.AuthorizationFailed.reason)
 
   /**
-    * Signals a rejection caused when interacting with the quotas API
-    */
-  final case class WrappedQuotaRejection(rejection: QuotaReached) extends FileRejection(rejection.reason)
-
-  /**
     * Rejection returned when attempting to create/update a file and the unmarshaller fails
     */
   final case class WrappedAkkaRejection(rejection: Rejection) extends FileRejection(rejection.toString)
@@ -250,9 +243,6 @@ object FileRejection {
     */
   final case class FileEvaluationError(err: EvaluationError) extends FileRejection("Unexpected evaluation error")
 
-  implicit val fileQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
-    WrappedQuotaRejection(_)
-
   implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection]                 = {
     case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
     case value                                            => WrappedProjectRejection(value)
@@ -280,7 +270,6 @@ object FileRejection {
         case FileEvaluationError(EvaluationTimeout(C(cmd), t)) =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for file '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "FileEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedQuotaRejection(rejection)                  => (rejection: QuotaRejection).asJsonObject
         case WrappedAkkaRejection(rejection)                   => rejection.asJsonObject
         case WrappedStorageRejection(rejection)                => rejection.asJsonObject
         case SaveRejection(_, _, rejection)                    =>
@@ -309,7 +298,6 @@ object FileRejection {
       case FileNotFound(_, _)                                              => (StatusCodes.NotFound, Seq.empty)
       case ResourceAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
       case IncorrectRev(_, _)                                              => (StatusCodes.Conflict, Seq.empty)
-      case WrappedQuotaRejection(rej)                                      => ((rej: QuotaRejection).status, (rej: QuotaRejection).headers)
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
       case WrappedProjectRejection(rej)                                    => (rej.status, rej.headers)

@@ -76,7 +76,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
   val filteredResolvers: FindResolver = (_, _) => UIO.none
 
-  private def eval = evaluate(filteredResolvers, (_, _) => IO.unit, QuotasDummy.neverReached)(_, _)
+  private def eval = evaluate(filteredResolvers, (_, _) => IO.unit)(_, _)
 
   "The Resolvers evaluation" when {
     implicit val sc: Scheduler = Scheduler.global
@@ -145,14 +145,12 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       }
 
       "fail if a resource already exists with the same id" in {
-        val eval = evaluate(
-          filteredResolvers,
-          (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)),
-          QuotasDummy.neverReached
-        )(_, _)
         forAll(List(createInProject, createCrossProject)) { command =>
-          eval(Initial, command).rejectedWith[ResolverRejection] shouldEqual
-            ResourceAlreadyExists(command.id, command.project)
+          evaluate(filteredResolvers, (project, id) => IO.raiseError(ResourceAlreadyExists(id, project)))(
+            Initial,
+            command
+          )
+            .rejectedWith[ResolverRejection] shouldEqual ResourceAlreadyExists(command.id, command.project)
         }
       }
 
@@ -168,15 +166,6 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         )
       }
 
-      "fail if quota is reached" in {
-        val eval = evaluate(
-          filteredResolvers,
-          (_, _) => IO.unit,
-          QuotasDummy.alwaysReached
-        )(_, _)
-        eval(Initial, createInProject).rejectedWith[WrappedQuotaRejection]
-      }
-
       "fail if no identities are provided for a cross-project resolver" in {
         val invalidValue = crossProjectValue.copy(identityResolution = ProvidedIdentities(Set.empty))
         eval(Initial, createCrossProject.copy(value = invalidValue))
@@ -185,8 +174,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver, (_, _) => IO.unit, QuotasDummy.neverReached)(Initial, createInProject)
-          .rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(Initial, createInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if some provided identities don't belong to the caller for a cross-project resolver" in {
@@ -269,8 +257,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
       "fail if the priority already exists" in {
         val findResolver: FindResolver = (_, _) => UIO(Some(nxv + "same-prio"))
-        evaluate(findResolver, (_, _) => IO.unit, QuotasDummy.neverReached)(inProjectCurrent, updateInProject)
-          .rejectedWith[PriorityAlreadyExists]
+        evaluate(findResolver, (_, _) => IO.unit)(inProjectCurrent, updateInProject).rejectedWith[PriorityAlreadyExists]
       }
 
       "fail if no identities are provided for a cross-project resolver" in {

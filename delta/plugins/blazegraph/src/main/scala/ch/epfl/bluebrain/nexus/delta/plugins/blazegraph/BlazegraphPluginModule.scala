@@ -134,7 +134,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           log: EventLog[Envelope[BlazegraphViewEvent]],
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          quotas: Quotas,
           client: BlazegraphClient @Id("blazegraph-indexing-client"),
           permissions: Permissions,
           cache: BlazegraphViewsCache,
@@ -154,7 +153,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           orgs,
           projects,
           resourceIdCheck,
-          quotas,
           client
         )(
           uuidF,

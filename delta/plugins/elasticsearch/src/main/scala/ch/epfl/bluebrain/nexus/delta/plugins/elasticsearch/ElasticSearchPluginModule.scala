@@ -132,7 +132,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           log: EventLog[Envelope[ElasticSearchViewEvent]],
           contextResolution: ResolverContextResolution,
           resourceIdCheck: ResourceIdCheck,
-          quotas: Quotas,
           client: ElasticSearchClient,
           permissions: Permissions,
           cache: ElasticSearchViewCache,
@@ -152,8 +151,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           projects,
           permissions,
           client,
-          resourceIdCheck,
-          quotas
+          resourceIdCheck
         )(
           uuidF,
           clock,

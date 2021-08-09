@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCountsDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectsCountsDummy, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -116,7 +116,7 @@ class ProjectsRoutesSpec
     )
   )
 
-  private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
+  private val projectDummy = ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
 
   private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 

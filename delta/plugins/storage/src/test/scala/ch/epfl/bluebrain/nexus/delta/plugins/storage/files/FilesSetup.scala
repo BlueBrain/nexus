@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, Projects, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Organizations, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
@@ -73,18 +73,7 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       storagesPerms <- PermissionsDummy(storagePermissions.toSet)
       storages       = StoragesSetup.init(orgs, projects, storagesPerms, storageTypeConfig)
       eventLog      <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      files         <-
-        Files(
-          filesConfig,
-          config,
-          eventLog,
-          acls,
-          orgs,
-          projects,
-          storages,
-          (_, _) => IO.unit,
-          QuotasDummy.neverReached
-        )
+      files         <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, (_, _) => IO.unit)
     } yield files -> storages
   }.accepted
 }

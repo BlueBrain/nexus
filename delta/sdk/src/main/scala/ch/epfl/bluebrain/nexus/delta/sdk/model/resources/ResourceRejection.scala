@@ -16,8 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -178,11 +176,6 @@ object ResourceRejection {
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResourceFetchRejection(rejection.reason)
 
   /**
-    * Signals a rejection caused when interacting with the quotas API
-    */
-  final case class WrappedQuotaRejection(rejection: QuotaReached) extends ResourceFetchRejection(rejection.reason)
-
-  /**
     * Signals a rejection caused when interacting with the organizations API
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
@@ -229,9 +222,6 @@ object ResourceRejection {
     case value                                            => WrappedProjectRejection(value)
   }
 
-  implicit val resourceQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
-    WrappedQuotaRejection(_)
-
   implicit def resourceRejectionEncoder(implicit
       C: ClassTag[ResourceCommand],
       base: BaseUri
@@ -247,7 +237,6 @@ object ResourceRejection {
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resource '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ResourceEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
-        case WrappedQuotaRejection(rejection)                      => (rejection: QuotaRejection).asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
         case WrappedIndexingActionRejection(rejection)             => rejection.asJsonObject
         case ResourceShaclEngineRejection(_, _, details)           => obj.add("details", details.asJson)
