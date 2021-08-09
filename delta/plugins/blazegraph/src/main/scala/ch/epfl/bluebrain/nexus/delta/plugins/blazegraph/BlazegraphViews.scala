@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -72,7 +73,7 @@ final class BlazegraphViews(
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p                <- projects.fetchActiveProject(project)
+      p                <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       (iri, viewValue) <- sourceDecoder(p, source)
       res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
       _                <- createNamespace(res)
@@ -92,7 +93,7 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchActiveProject(project)
+      p         <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
@@ -110,7 +111,7 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchActiveProject(project)
+      p     <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
@@ -132,7 +133,7 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchActiveProject(project)
+      p         <- projects.fetchProject(project, notDeprecated)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
@@ -152,7 +153,7 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchActiveProject(project)
+      p     <- projects.fetchProject(project, notDeprecated)
       iri   <- expandIri(id, p)
       source = view.toJson(iri)
       res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
@@ -177,7 +178,7 @@ final class BlazegraphViews(
       rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
       _   <- createNamespace(res)
@@ -197,7 +198,7 @@ final class BlazegraphViews(
       rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchActiveProject(project)
+      p   <- projects.fetchProject(project, notDeprecated)
       iri <- expandIri(id, p)
       res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), p)
     } yield res

@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectsCountsDummy, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitiali
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -117,15 +116,11 @@ class ProjectsRoutesSpec
     )
   )
 
-  private val projectDummy = ProjectsDummy(orgs, Set(aopd), defaultApiMappings).accepted
+  private val projectDummy = ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
 
   private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(ProjectCountsCollection(Map(ProjectRef.unsafe("org1", "proj") -> projectStats)))
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-  }
+  private val projectsCounts = ProjectsCountsDummy(ProjectRef.unsafe("org1", "proj") -> projectStats)
 
   private val provisioning = ProjectProvisioning(acls, projectDummy, provisioningConfig)
 
