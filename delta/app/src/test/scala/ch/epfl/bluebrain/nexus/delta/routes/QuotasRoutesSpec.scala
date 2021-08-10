@@ -63,7 +63,7 @@ class QuotasRoutesSpec
     )
     .accepted
 
-  implicit private val config            = QuotasConfig(None, None, enabled = true, Map.empty)
+  implicit private val config            = QuotasConfig(Some(5), Some(10), enabled = true, Map.empty)
   implicit private val serviceAccountCfg = ServiceAccountConfig(ServiceAccount(User("internal", Label.unsafe("sa"))))
 
   private val projectsCounts = ProjectsCountsDummy(project.ref -> ProjectCount.emptyEpoch)
@@ -79,7 +79,8 @@ class QuotasRoutesSpec
       "succeed" in {
         Get(s"/v1/quotas/org/project") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual json"""{"@context": "${contexts.quotas}", "@type": "Quota", "resources": 100}"""
+          response.asJson shouldEqual
+            json"""{"@context": "${contexts.quotas}", "@type": "Quota", "resources": 5, "events": 10}"""
         }
       }
 
