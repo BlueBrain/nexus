@@ -27,6 +27,10 @@ register data from multiple sources (AIBS and MouseLight). You'll use Nexus Forg
 In @ref:[Step 4](try-nexus.md#step-4-organize-and-visualize-cells-in-nexus-fusion), you'll learn to organize your data 
 on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
 
+In @ref:[Step 5](try-nexus.md#step-5-finding-similar-datasets-using-recommendations), you'll learn to prepare your data
+in order to search for similar datasets across the data your have integrated in Blue Brain Nexus.
+
+
 Let's go!
 
 > You can use the side menu to navigate between the page's sections.
@@ -107,7 +111,7 @@ pip install neurom
 
 The notebooks used for this tutorial are maintained in the Nexus GitHub repository under `/docs/src/main/paradox/docs/getting-started/notebooks`.
 
-To clone the repository, you will need to install @link:[Git](https://git-scm.com/){ open = new } (if not already present on your system), then open the terminal, navigate to your preferred location, and type:
+To clone the repository, you will need to install @link:[Git](https://git-scm.com/){ open=new } (if not already present on your system), then open the terminal, navigate to your preferred location, and type:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
@@ -244,11 +248,11 @@ We see that the original `id` will be formatted to a type identifier, that the `
 concatenated, and finally that for the `gender`, we will check to see if the value exists in an ontology (and is thus 
 already standardized).
 
-@link:[Read more about mapping with Forge.](https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping){ open = new }
+@link:[Read more about mapping with Forge.](https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping){ open=new }
 
 In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide 
 mappers for both data sources. You can check the mappers 
-@link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open = new }. 
+@link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open=new }. 
 There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. 
 For MouseLight, there's only one mapper, as both morphologies and traces are in the same data source.
 
@@ -256,9 +260,9 @@ For MouseLight, there's only one mapper, as both morphologies and traces are in 
 
 - @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
 - @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
-- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open = new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
-To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open = new }, go to the notebook directory, and run Jupyter:
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
@@ -314,9 +318,9 @@ The example notebooks will use these endpoints to collect and download the datas
 
 - @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
 - @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
-- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open = new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
-To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open = new }, go to the notebook directory, and run Jupyter:
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
 
 ```bash
 git clone https://github.com/BlueBrain/nexus.git
@@ -336,7 +340,7 @@ jupyter notebook dataset_from_different_sources.ipynb
 
 ### 3.3. Check Resources in the Sandbox
 
-Go back to @ref:[section 2.7](try-nexus.md#2-7-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
+Go back to @ref:[section 2.7](try-nexus.md#27-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
 
 ## Step 4: Organize and Visualize Cells in Nexus Fusion
 
@@ -557,7 +561,7 @@ Finally, the last improvement would be to shorten our IDs. For this we can use a
 }
 ```
 
-By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. `https://bbp.epfl.ch/nexus/v1/resources/nise/ulbrich1/_/` (resp. `https://bbp.epfl.ch/nexus/v1/vocabs/nise/ulbrich1/`).
+By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. `https://bbp.epfl.ch/nexus/v1/resources/github-users/adulbrich/_/` (resp. `https://bbp.epfl.ch/nexus/v1/vocabs/github-users/adulbrich/`).
 
 > ⚠️ To check because a property does not expand to the default project vocab if it is not present in the payload context.
 
@@ -816,8 +820,45 @@ SPARQL query above. The results should look like this:
 
 > TODO: ADD SCREENSHOT OF EPHYS TABLE
 
-Congratulations! You've created your very first studio, which rounds up this tutorial. To learn more, scroll down or 
+Congratulations! You've created your very first studio, which completes this tutorial step.
+
+## Step 5: Finding Similar Datasets using Recommendations
+
+In this section, you will .....
+
+### 5.1. Recommendations
+
+...
+
+### 5.2. Running the Notebook
+
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexuss.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
+
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
+
+```bash
+git clone https://github.com/BlueBrain/nexus.git
+```
+
+```bash
+cd nexus
+```
+
+```bash
+cd docs/src/main/paradox/docs/getting-started/notebooks
+```
+
+```bash
+jupyter MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
+```
+
+Well done! You have now completed the last part of this tutorial. To learn more, scroll down or 
 navigate to our documentation or start contributing to our Github repositories.
+
+If you have reached this tutorial via the @link:[Simulation Neuroscience MOOC](https://www.edx.org/course/simulation-neuroscience),
+you can now head back to the @link:[edX platform](https://www.edx.org/course/simulation-neuroscience) and complete this week assignment.
 
 ## Learn More
 
