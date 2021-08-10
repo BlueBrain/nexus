@@ -133,7 +133,7 @@ Signature:
   }[]
 ```
 
-#### Defaults
+#### Default Facets Configuration
 
 The Facet configs are an optional field. The default will allow users to filter by project and @type.
 
@@ -191,9 +191,9 @@ The table will render the value found via the dataIndex property as simple text.
   ```
 - description: Will render a description using the enriched markdown template viewer (see @ref:[Description Viewer](admin.md#resource-descriptions))
 
-#### Defaults
+#### Default Fields Configuration
 
-IF no fields property exists on the `SearchConfig`, the following default values will be used:
+If no fields property exists on the `SearchConfig`, the following default values will be used:
 
 ```
 {
