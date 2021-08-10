@@ -63,7 +63,7 @@ class QuotasRoutesSpec
     )
     .accepted
 
-  implicit private val config            = QuotasConfig(resources = 100, enabled = true, Map.empty)
+  implicit private val config            = QuotasConfig(None, None, enabled = true, Map.empty)
   implicit private val serviceAccountCfg = ServiceAccountConfig(ServiceAccount(User("internal", Label.unsafe("sa"))))
 
   private val projectsCounts = ProjectsCountsDummy(project.ref -> ProjectCount.emptyEpoch)

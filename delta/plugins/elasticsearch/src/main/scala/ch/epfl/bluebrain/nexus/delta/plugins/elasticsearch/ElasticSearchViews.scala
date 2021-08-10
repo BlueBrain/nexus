@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -91,7 +91,7 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p   <- projects.fetchProject(project, notDeprecatedWithQuotas)
       iri <- expandIri(id, p)
       res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
     } yield res
@@ -110,7 +110,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p            <- projects.fetchProject(project, notDeprecatedWithQuotas)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
     } yield res
@@ -130,7 +130,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p     <- projects.fetchProject(project, notDeprecatedWithQuotas)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
@@ -153,7 +153,7 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
     } yield res
@@ -175,7 +175,7 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecated)
+      p     <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
@@ -200,7 +200,7 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
@@ -221,7 +221,7 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
     } yield res
