@@ -158,12 +158,19 @@ lazy val docs = project
     moduleName                       := "docs",
     // paradox settings
     paradoxValidationIgnorePaths    ++= List(
-      "http://www.w3.org/2001/XMLSchema.*".r,
+      "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
+      "http://example.com/.*".r,
+      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
+      "https://www.janelia.org".r,
+      "http://mouselight.janelia.org/".r,
+      "http://ml-neuronbrowser.janelia.org".r,
       "https://movies.com/movieId/1".r,
-      "https://sandbox.bluebrainnexus.io.*".r,
       "https://link.springer.com/.*".r,
+      "https://sandbox.bluebrainnexus.io.*".r,
       "https://shacl.org/.*".r,
-      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
+      "http://www.w3.org/2001/XMLSchema.*".r,
+      "https://www.youtube.com/.*".r,
+      "https://web.stanford.edu/.*".r
     ),
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
