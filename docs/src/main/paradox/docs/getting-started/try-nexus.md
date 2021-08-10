@@ -340,7 +340,7 @@ jupyter notebook dataset_from_different_sources.ipynb
 
 ### 3.3. Check Resources in the Sandbox
 
-Go back to @ref:[section 2.7](try-nexus.md#27-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
+Go back to @ref:[section 2.7](try-nexus.md#2-7-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
 
 ## Step 4: Organize and Visualize Cells in Nexus Fusion
 
