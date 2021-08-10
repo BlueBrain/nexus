@@ -616,18 +616,24 @@ by type or search for a specific term in the name, label, or description.
 
 Click on a resource to open the Resource view.
 
-> TODO: ADD SCREENSHOT OF PROPER RESOURCE VIEW (WITH MULTIPLE PLUGINS)
+@@@ div { .center }
+![Resource View with Plugins](../assets/tutorial-resource-view-with-plugins.png)
+@@@
 
 Depending on the resource data type, you might see one or more "plugins". Plugins are components that will show up for 
 specific resources or properties. For example, if you registered a neuron morphology and the data is properly attached 
 through the distribution, you will be able to see a 3D morphology browser plugin.
 
-> TODO: ADD SCREENSHOT OF NEURON MORPHO PLUGIN
+@@@ div { .center }
+![Morphology Plugin](../assets/tutorial-morphology-plugin.png)
+@@@
 
 More importantly, you will find the Admin plugin at the bottom of the view. Expand it and you will see the actual 
 resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.
 
-> TODO: ADD SCREENSHOT OF ADMIN PLUGIN
+@@@ div { .center }
+![Admin Plugin](../assets/tutorial-admin-plugin.png)
+@@@
 
 Here's an example of the JSON payload of the neuron morphology resource previously registered (context left out for clarity):
 
