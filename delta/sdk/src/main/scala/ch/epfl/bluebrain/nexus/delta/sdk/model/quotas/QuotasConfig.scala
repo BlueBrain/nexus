@@ -20,13 +20,13 @@ import scala.annotation.nowarn
   * @param custom    custom quotas for certain projects
   */
 final case class QuotasConfig(
-    resources: Option[Int],
-    events: Option[Int],
-    enabled: Boolean,
-    custom: Map[ProjectRef, QuotaConfig]
+    private val resources: Option[Int],
+    private val events: Option[Int],
+    private val enabled: Boolean,
+    private val custom: Map[ProjectRef, QuotaConfig]
 ) {
-  def lookup(project: ProjectRef): QuotaConfig =
-    custom.getOrElse(project, QuotaConfig(resources, events))
+  def lookup(project: ProjectRef): Option[QuotaConfig] =
+    Option.when(enabled)(custom.getOrElse(project, QuotaConfig(resources, events)))
 
 }
 

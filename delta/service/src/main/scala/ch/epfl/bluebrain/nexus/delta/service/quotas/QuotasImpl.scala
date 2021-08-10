@@ -57,5 +57,5 @@ final class QuotasImpl(
     }
 
   private def quotasFromConfig(ref: ProjectRef) =
-    Either.cond(quotaConfig.enabled, Quota(quotaConfig.lookup(ref)), QuotasDisabled(ref))
+    quotaConfig.lookup(ref).toRight(QuotasDisabled(ref)).map(Quota(_))
 }
