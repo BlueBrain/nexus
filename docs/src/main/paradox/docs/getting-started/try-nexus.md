@@ -830,11 +830,44 @@ Congratulations! You've created your very first studio, which completes this tut
 
 ## Step 5: Finding Similar Datasets using Recommendations
 
-In this section, you will .....
+In this section, you will first learn about recommendation system, then reuse the data your have integrated in Nexus in 
+previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or 
+electrophysiology recordings. 
 
-### 5.1. Recommendations
+### 5.1. Introduction to Recommendations
 
-...
+Recommendation systems are widely used in many domains, for example, steaming services provide recommendations for 
+movies or songs, online stores generate product recommendations, etc. Such systems allow selecting the most relevant 
+entities from the vast space of all the available choices. This selection can be based on different criteria, 
+for example, various features of target entities (movie genre, country, cast), user profiles, and interactions with 
+the entities of interest (for example, previously watched movies). 
+
+In a similar way, there is a need for recommendation systems that help us to explore our Knowledge Graphs when they 
+become overwhelmingly large. Given a node in a Knowledge Graph (corresponding to, for example, a neuron morphology 
+dataset), we may want to recommend a set of most similar nodes according to some complex criteria.
+
+One of the most common techniques for building a recommendation system is based on entity embedding that represents 
+each entity with a numerical vector. Given a starting entity (a neuron morphology dataset), the task of finding similar 
+entities can be reduced to a simple search for the nearest neighbors in the vector space of our embedding.
+
+One of the first modern approaches to entity embedding reflecting their semantic similarity was developed by the 
+Natural Language Processing (NLP) community and is called @link:[word2vec](https://arxiv.org/abs/1301.3781). To 
+generate vector representations of words, it trains a neural network on a large text corpus from which word contexts 
+are extracted. The resulting vector representation is able to capture the semantic similarity between different words.
+ 
+Similarity to word2vec, @link:[node2vec](https://dl.acm.org/doi/abs/10.1145/2939672.2939754) builds vector 
+representations of graph nodes. To generate 'context' for different nodes, this approach performs random walks and 
+explores the neighborhood of a given node. 
+
+Finally, another derivative of word2vec, adapted specifically for building node embedding on Knowledge Graphs, is 
+called @link:[rdf2vec](https://madoc.bib.uni-mannheim.de/41307/1/Ristoski_RDF2Vec.pdf). 
+
+In this tutorial, we use rdf2vec in order to build a toy recommendation system for exploring similar neuron morphologies 
+and electrophysiology recordings.
+
+Further reading on graph embedding:
+- @link:[Graph embedding techniques, applications, and performance: A survey](https://www.sciencedirect.com/science/article/pii/S0950705118301540)
+- @link:[Knowledge Graph Embedding: A Survey of Approaches and Applications](https://ieeexplore.ieee.org/abstract/document/8047276)
 
 ### 5.2. Running the Notebook
 
