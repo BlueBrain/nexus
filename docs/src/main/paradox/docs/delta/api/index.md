@@ -2,7 +2,7 @@
 
 * @ref:[Content Negotiation](content-negotiation.md)
 * @ref:[Error Signaling](error-signaling.md)
-* @ref:[Version endpoint](version.md)
+* @ref:[Version](version.md)
 * @ref:[Authentication & Authorization](authentication.md)
 * @ref:[Identities](identities.md)
 * @ref:[Permissions](permissions-api.md)
@@ -10,6 +10,7 @@
 * @ref:[ACLs](acls-api.md)
 * @ref:[Organizations](orgs-api.md)
 * @ref:[Projects](projects-api.md)
+* @ref:[Quotas](quotas.md)
 * @ref:[Schemas](schemas-api.md)
 * @ref:[Resources](resources-api.md)
 * @ref:[Resolvers](resolvers-api.md)
@@ -22,22 +23,26 @@
 
 # API Reference
 
-Nexus Delta expose a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport 
-format is JSON based, specifically @link:[JSON-LD](https://json-ld.org/){ open=new }.
+Nexus Delta exposes a RESTful interface over HTTP(S) for synchronous communication. The generally adopted transport 
+format is JSON based, specifically @link:[JSON-LD](https://json-ld.org/){ open=new }. However, other response formats are supported through @ref:[Content-Negotiation](content-negotiation.md)
 
 The API provides access and management of several primary resource types.
 
+## Identities
+Identities endpoint can be used to fetch user identities.
+
+@ref:[Operations on identities](identities.md)
+
+## Permissions
+A permission is the basic unit to provide a way to limit applications' access to sensitive information.
+
+@ref:[Operations on permisions](permissions-api.md)
 
 ## Realms 
 A realm provides with the necessary information to perform authentication against a certain 
 @link:[OIDC](https://en.wikipedia.org/wiki/OpenID_Connect){ open=new } provider .  
 
 @ref:[Operations on realms](realms-api.md)
-
-## Permissions 
-A permission is the basic unit to provide a way to limit applications' access to sensitive information.  
-
-@ref:[Operations on permisions](permissions-api.md)
 
 ## ACLs
 
@@ -51,11 +56,6 @@ In order to restrict applications' access to data by placing restrictions on the
 An ACL defines the set of **permissions** that certain **identities** have on a concrete **path**.
 
 @ref:[Operations on ACLs](acls-api.md)
-
-## Identities
-Identities endpoint can be used to fetch user identities.
-
-@ref:[Operations on identities](identities.md)
 
 
 ## Organizations 
@@ -71,11 +71,23 @@ resolution and indices (ElasticSearch index and Blazegraph namespace).
 
 @ref:[Operations on projects](projects-api.md)
 
+## Quotas
+Defines the maximum number of resources and events that can exist in a certain scope.
+
+@ref:[Operations on quotas](quotas.md)
+
 ## Schemas
 
 A schema is a resource which defines a set of rules and constrains using @link:[SHACL](https://www.w3.org/TR/shacl/){ open=new }. 
 
 @ref:[Operations on schemas](schemas-api.md)
+
+## Resources
+
+A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`,
+`storages`, `files` or `data`.
+
+@ref:[Operations on resources](resources-api.md)
 
 ## Resolvers
 
@@ -106,13 +118,6 @@ A file is a binary attachment resource.
 An archive is a collection of resources stored inside an archive file. The archiving format chosen for this purpose is tar (or tarball).
 
 @ref:[Operations on archives](archives-api.md)
-
-## Resources
-
-A resource is the most generic entity on the Knowledge Graph. Resources can be `schemas`, `resolvers`, `views`,
-`storages`, `files` or `data`.
-
-@ref:[Operations on resources](resources-api.md)
 
 ## Resource Lifecycle
 

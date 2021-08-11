@@ -20,14 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Quotas, QuotasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithEventQuotas, notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -39,7 +39,8 @@ trait ProjectsBehaviors {
     with IOFixedClock
     with TestHelpers
     with CancelAfterFailure
-    with OptionValues =>
+    with OptionValues
+    with Inspectors =>
 
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
@@ -362,8 +363,11 @@ trait ProjectsBehaviors {
     }
 
     "fetch a project which has not been deprecated nor its organization" in {
-      projects.fetchProject(anotherRef, notDeprecatedWithResourceQuotas).accepted shouldEqual
-        anotherProjResource.value
+      forAll(
+        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
+      ) { options =>
+        projects.fetchProject(anotherRef, options).accepted shouldEqual anotherProjResource.value
+      }
     }
 
     "not fetch a project with ProjectFetchOptions.VerifyQuotaResources" in {
@@ -371,13 +375,22 @@ trait ProjectsBehaviors {
       val projects = create(QuotasDummy.alwaysReached).accepted
       projects.create(ref, payload).accepted
 
-      projects.fetchProject(ref, notDeprecatedWithResourceQuotas).rejectedWith[RejectionWrapper] shouldEqual
-        RejectionWrapper(WrappedQuotaRejection(QuotaReached(ref, 0)))
+      forAll(List(notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas)) { options =>
+        projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
+          RejectionWrapper(WrappedQuotaRejection(QuotaResourcesReached(ref, 0)))
+      }
+
+      projects.fetchProject(ref, notDeprecatedWithEventQuotas).rejectedWith[RejectionWrapper] shouldEqual
+        RejectionWrapper(WrappedQuotaRejection(QuotaEventsReached(ref, 0)))
     }
 
     "not fetch a deprecated project with ProjectFetchOptions.NotDeprecated" in {
-      projects.fetchProject(ref, notDeprecated).rejectedWith[RejectionWrapper] shouldEqual
-        RejectionWrapper(ProjectIsDeprecated(ref))
+      forAll(
+        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
+      ) { options =>
+        projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
+          RejectionWrapper(ProjectIsDeprecated(ref))
+      }
     }
 
     "not fetch a project with a deprecated organization with fetchActive" in {

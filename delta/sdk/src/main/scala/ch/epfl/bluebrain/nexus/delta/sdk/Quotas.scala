@@ -24,4 +24,12 @@ trait Quotas {
     */
   def reachedForResources[R](ref: ProjectRef, subject: Subject)(implicit mapper: Mapper[QuotaReached, R]): IO[R, Unit]
 
+  /**
+    * Verify that the quotas for events on the current project haven't been reached.
+    *
+    * @param ref th project reference
+    * @return Returns in the regular channel if no quotas have been reached or in the error channel otherwise
+    */
+  def reachedForEvents[R](ref: ProjectRef, subject: Subject)(implicit mapper: Mapper[QuotaReached, R]): IO[R, Unit]
+
 }
