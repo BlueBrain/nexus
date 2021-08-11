@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import monix.bio.Task
+import org.scalatest.Inspectors
 
-class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures {
+class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with ConfigFixtures with Inspectors {
 
   val projectsConfig: ProjectsConfig =
     ProjectsConfig(
@@ -22,7 +23,7 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
       cacheIndexing,
       persist,
       AutomaticProvisioningConfig.disabled,
-      QuotasConfig(0, enabled = false, Map.empty)
+      QuotasConfig(None, None, enabled = false, Map.empty)
     )
 
   override def create(quotas: Quotas): Task[Projects] =

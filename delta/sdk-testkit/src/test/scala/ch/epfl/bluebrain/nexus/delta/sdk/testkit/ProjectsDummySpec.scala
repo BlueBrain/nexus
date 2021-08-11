@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 class ProjectsDummySpec
     extends AnyWordSpecLike
@@ -17,7 +17,8 @@ class ProjectsDummySpec
     with TestHelpers
     with CancelAfterFailure
     with OptionValues
-    with ProjectsBehaviors {
+    with ProjectsBehaviors
+    with Inspectors {
 
   override def create(quotas: Quotas): UIO[Projects] =
     ProjectsDummy(

@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithResourceQuotas}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -73,10 +73,10 @@ final class CompositeViews private (
     * @param project  the parent project of the view
     * @param value    the view configuration
     */
-  def create(project: ProjectRef, value: CompositeViewFields)(implicit
-      subject: Subject,
-      baseUri: BaseUri
-  ): IO[CompositeViewRejection, ViewResource] =
+  def create(
+      project: ProjectRef,
+      value: CompositeViewFields
+  )(implicit subject: Subject, baseUri: BaseUri): IO[CompositeViewRejection, ViewResource] =
     uuidF().flatMap(uuid => create(uuid.toString, project, value))
 
   /**
@@ -86,12 +86,13 @@ final class CompositeViews private (
     * @param project  the parent project of the view
     * @param value    the view configuration
     */
-  def create(id: IdSegment, project: ProjectRef, value: CompositeViewFields)(implicit
-      subject: Subject,
-      baseUri: BaseUri
-  ): IO[CompositeViewRejection, ViewResource] = {
+  def create(
+      id: IdSegment,
+      project: ProjectRef,
+      value: CompositeViewFields
+  )(implicit subject: Subject, baseUri: BaseUri): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p   <- projects.fetchProject(project, notDeprecatedWithQuotas)
       iri <- expandIri(id, p)
       res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, p.base), p)
     } yield res
@@ -107,7 +108,7 @@ final class CompositeViews private (
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p            <- projects.fetchProject(project, notDeprecatedWithQuotas)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, p.base), p)
     } yield res
@@ -125,7 +126,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedWithResourceQuotas)
+      p         <- projects.fetchProject(project, notDeprecatedWithQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <-
@@ -152,7 +153,7 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecated)
+      p     <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = value.toJson(iri)
       res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, p.base), p)
@@ -172,7 +173,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecated)
+      p         <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(
@@ -200,7 +201,7 @@ final class CompositeViews private (
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
@@ -214,11 +215,13 @@ final class CompositeViews private (
     * @param rev     the current view revision
     * @param subject the subject that initiated the action
     */
-  def deprecate(id: IdSegment, project: ProjectRef, rev: Long)(implicit
-      subject: Subject
-  ): IO[CompositeViewRejection, ViewResource] = {
+  def deprecate(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Long
+  )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateCompositeView(iri, project, rev, subject), p)
     } yield res
