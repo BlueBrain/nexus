@@ -105,14 +105,14 @@ object StoragesStatistics {
     def fileEventToStatEntry(f: FileEvent): Task[((ProjectRef, Iri), StorageStatEntry)] = f match {
       case c: FileCreated if !c.attributes.digest.computed =>
         UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, c.instant))
-      case c: FileCreated                                                    =>
+      case c: FileCreated                                  =>
         UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, c.attributes.bytes, c.instant))
-      case u: FileUpdated                                                    => UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, u.attributes.bytes, u.instant))
-      case fau: FileAttributesUpdated                                        =>
+      case u: FileUpdated                                  => UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, u.attributes.bytes, u.instant))
+      case fau: FileAttributesUpdated                      =>
         fetchFileStorage(fau.id, fau.project).map { storageIri =>
           (fau.project, storageIri) -> StorageStatEntry(0L, fau.bytes, fau.instant)
         }
-      case other                                                             =>
+      case other                                           =>
         fetchFileStorage(other.id, other.project).map { storageIri =>
           (other.project, storageIri) -> StorageStatEntry(0L, 0L, other.instant)
         }
