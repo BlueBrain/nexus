@@ -1,4 +1,4 @@
-# Try Nexus
+# Try Nexus with Neuroscience Datasets
 
 Welcome to our Nexus tutorial! Nexus is an open-source data and metadata management suite. With Nexus, your data is catalogued and indexed as a knowledge graph, all interconnected.
 
@@ -12,15 +12,24 @@ In this tutorial, you'll learn to interact with the knowledge graph through thes
 
 > This tutorial is also part of the @link:[edX EPFL Simulation Neuroscience MOOC](https://www.edx.org/course/simulation-neuroscience).
 
-In @ref:[Step 0](try-nexus.md#step-0-python-setup), you'll learn to setup your Python environment if you want to run the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).
+In @ref:[Step 0](try-nexus.md#step-0-python-setup), you'll learn to setup your Python environment if you want to run 
+the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).
 
-In @ref:[Step 1](try-nexus.md#step-1-nexus-setup), you'll learn about the Nexus Sandbox deployment, a dedicated environment for this tutorial. You'll use Nexus Fusion to login and access your dedicated project instantiated in Nexus Delta.
+In @ref:[Step 1](try-nexus.md#step-1-nexus-setup), you'll learn about the Nexus Sandbox deployment, a dedicated 
+environment for this tutorial. You'll use Nexus Fusion to login and access your dedicated project instantiated in Nexus Delta.
 
-In @ref:[Step 2](try-nexus.md#step-2-download-and-register-data-from-a-single-source), you'll learn to download and register data from the Allen Institute for Brain Science (AIBS). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
+In @ref:[Step 2](try-nexus.md#step-2-download-and-register-data-from-a-single-source), you'll learn to download and 
+register data from the Allen Institute for Brain Science (AIBS). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
 
-In @ref:[Step 3](try-nexus.md#step-3-download-and-register-data-from-multiple-sources), you'll learn to download and register data from multiple sources (AIBS and MouseLight). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
+In @ref:[Step 3](try-nexus.md#step-3-download-and-register-data-from-multiple-sources), you'll learn to download and 
+register data from multiple sources (AIBS and MouseLight). You'll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.
 
-In @ref:[Step 4](try-nexus.md#step-4-organize-and-visualize-cells-in-nexus-fusion), you'll learn to organize your data on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
+In @ref:[Step 4](try-nexus.md#step-4-organize-and-visualize-cells-in-nexus-fusion), you'll learn to organize your data 
+on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
+
+In @ref:[Step 5](try-nexus.md#step-5-finding-similar-datasets-using-recommendations), you'll learn to prepare your data
+in order to search for similar datasets across the data you have integrated in Blue Brain Nexus.
+
 
 Let's go!
 
@@ -88,15 +97,11 @@ You will need the @link:[Allen SDK](https://allensdk.readthedocs.io/en/latest/in
 pip install allensdk
 ```
 
-> ⚠️ allensdk 2.11.2 requires pandas<=0.25.3,>=0.25.1, but you have pandas 1.2.5 which is incompatible.
-
 To work with morphologies, you will need @link:[Blue Brain's NeuroM](https://neurom.readthedocs.io/en/stable/index.html){ open=new } package. This will install Blue Brain's MorphIO as well.
 
 ```bash
 pip install neurom
 ```
-
-> ⚠️ neurom 2.3.1 requires pandas>=1.0.5, but you have pandas 0.25.3 which is incompatible.
 
 #### Clone the Nexus Repository
 
@@ -552,9 +557,7 @@ Finally, the last improvement would be to shorten our IDs. For this we can use a
 }
 ```
 
-By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. `https://bbp.epfl.ch/nexus/v1/resources/nise/ulbrich1/_/` (resp. `https://bbp.epfl.ch/nexus/v1/vocabs/nise/ulbrich1/`).
-
-> ⚠️ To check because a property does not expand to the default project vocab if it is not present in the payload context.
+By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. `https://bbp.epfl.ch/nexus/v1/resources/github-users/adulbrich/_/` (resp. `https://bbp.epfl.ch/nexus/v1/vocabs/github-users/adulbrich/`).
 
 The context can also point to another resource so that it is defined once and can be re-used in multiple resources. 
 In Nexus, a default context for the @link:[Nexus-specific metadata](https://bluebrain.github.io/nexus/contexts/metadata.json){ open=new } is defined.
@@ -607,18 +610,24 @@ by type or search for a specific term in the name, label, or description.
 
 Click on a resource to open the Resource view.
 
-> TODO: ADD SCREENSHOT OF PROPER RESOURCE VIEW (WITH MULTIPLE PLUGINS)
+@@@ div { .center }
+![Resource View with Plugins](../assets/tutorial-resource-view-with-plugins.png)
+@@@
 
 Depending on the resource data type, you might see one or more "plugins". Plugins are components that will show up for 
 specific resources or properties. For example, if you registered a neuron morphology and the data is properly attached 
 through the distribution, you will be able to see a 3D morphology browser plugin.
 
-> TODO: ADD SCREENSHOT OF NEURON MORPHO PLUGIN
+@@@ div { .center }
+![Morphology Plugin](../assets/tutorial-morphology-plugin.png)
+@@@
 
 More importantly, you will find the Admin plugin at the bottom of the view. Expand it and you will see the actual 
 resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.
 
-> TODO: ADD SCREENSHOT OF ADMIN PLUGIN
+@@@ div { .center }
+![Admin Plugin](../assets/tutorial-admin-plugin.png)
+@@@
 
 Here's an example of the JSON payload of the neuron morphology resource previously registered (context left out for clarity):
 
@@ -811,8 +820,78 @@ SPARQL query above. The results should look like this:
 
 > TODO: ADD SCREENSHOT OF EPHYS TABLE
 
-Congratulations! You've created your very first studio, which rounds up this tutorial. To learn more, scroll down or 
-navigate to our documentation or start contributing to our Github repositories.
+Congratulations! You've created your very first studio, which completes this tutorial step.
+
+## Step 5: Finding Similar Datasets using Recommendations
+
+In this section, you will first learn about recommendation systems, then reuse the data you have integrated in Nexus in 
+previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or 
+electrophysiology recording. 
+
+### 5.1. Introduction to Recommendations
+
+Recommendation systems are widely used in many domains, for example, streaming services provide recommendations for 
+movies or songs, online stores generate product recommendations, etc. Such systems allow selecting the most relevant 
+entities from the vast space of all the available choices. This selection can be based on different criteria, 
+for example, various features of target entities (movie genre, country, cast), user profiles, and interactions with 
+the entities of interest (for example, previously watched movies). 
+
+In a similar way, there is a need for recommendation systems that help us to explore our Knowledge Graphs when they 
+become overwhelmingly large. Given a node in a Knowledge Graph (corresponding to, for example, a neuron morphology 
+dataset), we may want to recommend a set of most similar nodes according to some complex criteria.
+
+One of the most common techniques for building a recommendation system is based on entity embedding that represents 
+each entity with a numerical vector. Given a starting entity (a neuron morphology dataset), the task of finding similar 
+entities can be reduced to a simple search for the nearest neighbors in the vector space of our embedding.
+
+One of the first modern approaches to entity embedding reflecting their semantic similarity was developed by the 
+Natural Language Processing (NLP) community and is called @link:[word2vec](https://arxiv.org/abs/1301.3781). To 
+generate vector representations of words, it trains a neural network on a large text corpus from which word contexts 
+are extracted. The resulting vector representation is able to capture the semantic similarity between different words.
+ 
+Similarity to word2vec, @link:[node2vec](https://dl.acm.org/doi/abs/10.1145/2939672.2939754) builds vector 
+representations of graph nodes. To generate 'context' for different nodes, this approach performs random walks and 
+explores the neighborhood of a given node. 
+
+Finally, another derivative of word2vec, adapted specifically for building node embedding on Knowledge Graphs, is 
+called @link:[rdf2vec](https://madoc.bib.uni-mannheim.de/41307/1/Ristoski_RDF2Vec.pdf). 
+
+In this tutorial, we use rdf2vec in order to build a toy recommendation system for exploring similar neuron morphologies 
+and electrophysiology recordings.
+
+Further reads on graph embedding:
+- @link:[Graph embedding techniques, applications, and performance: A survey](https://www.sciencedirect.com/science/article/pii/S0950705118301540)
+- @link:[Knowledge Graph Embedding: A Survey of Approaches and Applications](https://ieeexplore.ieee.org/abstract/document/8047276)
+
+### 5.2. Running the Notebook
+
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexuss.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
+- @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
+
+To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
+
+```bash
+git clone https://github.com/BlueBrain/nexus.git
+```
+
+```bash
+cd nexus
+```
+
+```bash
+cd docs/src/main/paradox/docs/getting-started/notebooks
+```
+
+```bash
+jupyter MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
+```
+
+Well done! You have now completed the last part of this tutorial. To learn more, scroll down or 
+navigate to our documentation, or start contributing to our Github repositories.
+
+If you have reached this tutorial via the @link:[Simulation Neuroscience MOOC](https://www.edx.org/course/simulation-neuroscience),
+you can now head back to the @link:[edX platform](https://www.edx.org/course/simulation-neuroscience) and complete this week assignment.
 
 ## Learn More
 
