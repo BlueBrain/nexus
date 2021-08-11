@@ -160,6 +160,7 @@ lazy val docs = project
     // paradox settings
     paradoxValidationIgnorePaths    ++= List(
       "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
+      "https://dl.acm.org/*".r,
       "http://example.com/.*".r,
       "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
       "https://www.janelia.org".r,
@@ -168,6 +169,7 @@ lazy val docs = project
       "https://movies.com/movieId/1".r,
       "https://link.springer.com/.*".r,
       "https://sandbox.bluebrainnexus.io.*".r,
+      "https://www.sciencedirect.com/*".r,
       "https://shacl.org/.*".r,
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://www.youtube.com/.*".r,
