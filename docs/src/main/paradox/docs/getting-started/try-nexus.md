@@ -885,7 +885,7 @@ cd docs/src/main/paradox/docs/getting-started/notebooks
 ```
 
 ```bash
-jupyter MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
+jupyter notebook MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
 ```
 
 Well done! You have now completed the last part of this tutorial. To learn more, scroll down or 
