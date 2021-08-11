@@ -6,8 +6,6 @@
       "@id": "https://bluebrain.github.io/nexus/vocabulary/storageId",
       "@type": "@id"
     },
-    "files": "https://bluebrain.github.io/nexus/vocabulary/files",
-    "spaceUsed": "https://bluebrain.github.io/nexus/vocabulary/spaceUsed",
     "lastProcessedEventDateTime": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/lastProcessedEventDateTime",
       "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
