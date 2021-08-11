@@ -28,7 +28,7 @@ In @ref:[Step 4](try-nexus.md#step-4-organize-and-visualize-cells-in-nexus-fusio
 on the web for easier sharing and publishing. You'll use Nexus Fusion on the Sandbox deployment.
 
 In @ref:[Step 5](try-nexus.md#step-5-finding-similar-datasets-using-recommendations), you'll learn to prepare your data
-in order to search for similar datasets across the data your have integrated in Blue Brain Nexus.
+in order to search for similar datasets across the data you have integrated in Blue Brain Nexus.
 
 
 Let's go!
@@ -97,15 +97,11 @@ You will need the @link:[Allen SDK](https://allensdk.readthedocs.io/en/latest/in
 pip install allensdk
 ```
 
-> ⚠️ allensdk 2.11.2 requires pandas<=0.25.3,>=0.25.1, but you have pandas 1.2.5 which is incompatible.
-
 To work with morphologies, you will need @link:[Blue Brain's NeuroM](https://neurom.readthedocs.io/en/stable/index.html){ open=new } package. This will install Blue Brain's MorphIO as well.
 
 ```bash
 pip install neurom
 ```
-
-> ⚠️ neurom 2.3.1 requires pandas>=1.0.5, but you have pandas 0.25.3 which is incompatible.
 
 #### Clone the Nexus Repository
 
@@ -563,8 +559,6 @@ Finally, the last improvement would be to shorten our IDs. For this we can use a
 
 By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. `https://bbp.epfl.ch/nexus/v1/resources/github-users/adulbrich/_/` (resp. `https://bbp.epfl.ch/nexus/v1/vocabs/github-users/adulbrich/`).
 
-> ⚠️ To check because a property does not expand to the default project vocab if it is not present in the payload context.
-
 The context can also point to another resource so that it is defined once and can be re-used in multiple resources. 
 In Nexus, a default context for the @link:[Nexus-specific metadata](https://bluebrain.github.io/nexus/contexts/metadata.json){ open=new } is defined.
 
@@ -830,13 +824,13 @@ Congratulations! You've created your very first studio, which completes this tut
 
 ## Step 5: Finding Similar Datasets using Recommendations
 
-In this section, you will first learn about recommendation system, then reuse the data your have integrated in Nexus in 
+In this section, you will first learn about recommendation systems, then reuse the data you have integrated in Nexus in 
 previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or 
-electrophysiology recordings. 
+electrophysiology recording. 
 
 ### 5.1. Introduction to Recommendations
 
-Recommendation systems are widely used in many domains, for example, steaming services provide recommendations for 
+Recommendation systems are widely used in many domains, for example, streaming services provide recommendations for 
 movies or songs, online stores generate product recommendations, etc. Such systems allow selecting the most relevant 
 entities from the vast space of all the available choices. This selection can be based on different criteria, 
 for example, various features of target entities (movie genre, country, cast), user profiles, and interactions with 
@@ -865,7 +859,7 @@ called @link:[rdf2vec](https://madoc.bib.uni-mannheim.de/41307/1/Ristoski_RDF2Ve
 In this tutorial, we use rdf2vec in order to build a toy recommendation system for exploring similar neuron morphologies 
 and electrophysiology recordings.
 
-Further reading on graph embedding:
+Further reads on graph embedding:
 - @link:[Graph embedding techniques, applications, and performance: A survey](https://www.sciencedirect.com/science/article/pii/S0950705118301540)
 - @link:[Knowledge Graph Embedding: A Survey of Approaches and Applications](https://ieeexplore.ieee.org/abstract/document/8047276)
 
@@ -894,7 +888,7 @@ jupyter MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
 ```
 
 Well done! You have now completed the last part of this tutorial. To learn more, scroll down or 
-navigate to our documentation or start contributing to our Github repositories.
+navigate to our documentation, or start contributing to our Github repositories.
 
 If you have reached this tutorial via the @link:[Simulation Neuroscience MOOC](https://www.edx.org/course/simulation-neuroscience),
 you can now head back to the @link:[edX platform](https://www.edx.org/course/simulation-neuroscience) and complete this week assignment.
