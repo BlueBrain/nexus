@@ -860,6 +860,7 @@ In this tutorial, we use rdf2vec in order to build a toy recommendation system f
 and electrophysiology recordings.
 
 Further reads on graph embedding:
+
 - @link:[Graph embedding techniques, applications, and performance: A survey](https://www.sciencedirect.com/science/article/pii/S0950705118301540)
 - @link:[Knowledge Graph Embedding: A Survey of Approaches and Applications](https://ieeexplore.ieee.org/abstract/document/8047276)
 
