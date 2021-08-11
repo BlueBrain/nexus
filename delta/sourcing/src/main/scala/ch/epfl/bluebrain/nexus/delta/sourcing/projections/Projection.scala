@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PostgresConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfig, PostgresConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra.CassandraProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection
 import fs2.Stream
@@ -70,6 +71,23 @@ object Projection {
     val sw = new StringWriter
     t.printStackTrace(new PrintWriter(sw))
     sw.toString
+  }
+
+  /**
+    * Create a projection according to the database configuration
+    */
+  def apply[A: Decoder: Encoder](
+      config: DatabaseConfig,
+      empty: => A,
+      system: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): Task[Projection[A]] = {
+    implicit val as: ActorSystem[Nothing] = system
+    implicit val c: Clock[UIO]            = clock
+    config.flavour match {
+      case Postgres  => Projection.postgres(config.postgres, empty)
+      case Cassandra => Projection.cassandra(config.cassandra, empty)
+    }
   }
 
   /**

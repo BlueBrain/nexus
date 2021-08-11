@@ -33,9 +33,9 @@ class StorageFieldsSpec
       }
 
       "be created from Json-LD without optional values" in {
-        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "maxFileSize", "volume")
+        val jsonNoDefaults = json.removeKeys("readPermission", "writePermission", "capacity", "maxFileSize", "volume")
         sourceDecoder(project, jsonNoDefaults).accepted._2 shouldEqual
-          DiskStorageFields(default = true, None, None, None, None)
+          DiskStorageFields(default = true, None, None, None, None, None)
       }
     }
 

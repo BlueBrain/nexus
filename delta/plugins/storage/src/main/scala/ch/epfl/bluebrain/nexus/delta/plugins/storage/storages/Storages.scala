@@ -270,7 +270,7 @@ final class Storages private (
     }
 
   private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
-    cache.get(project).map { resources =>
+    cache.values(project).map { resources =>
       resources
         .filter(res => res.value.project == project && res.value.default && !res.deprecated)
         .toList
@@ -304,7 +304,7 @@ final class Storages private (
       ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
     params.project
-      .fold(cache.values)(cache.get)
+      .fold(cache.values)(cache.values)
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(

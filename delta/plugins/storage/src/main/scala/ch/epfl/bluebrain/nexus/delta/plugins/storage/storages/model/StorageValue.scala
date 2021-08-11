@@ -71,6 +71,7 @@ object StorageValue {
       volume: AbsolutePath,
       readPermission: Permission,
       writePermission: Permission,
+      capacity: Option[Long],
       maxFileSize: Long
   ) extends StorageValue {
 
