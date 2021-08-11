@@ -103,7 +103,7 @@ object StoragesStatistics {
 
     // Build the storage stat entry from the file event
     def fileEventToStatEntry(f: FileEvent): Task[((ProjectRef, Iri), StorageStatEntry)] = f match {
-      case c: FileCreated if c.attributes.digest == Digest.NotComputedDigest =>
+      case c: FileCreated if !c.attributes.digest.computed =>
         UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, c.instant))
       case c: FileCreated                                                    =>
         UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, c.attributes.bytes, c.instant))
