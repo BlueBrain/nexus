@@ -32,6 +32,15 @@ final case class QuotasConfig(
 
 object QuotasConfig {
 
+  final private case class QuotasConfigInternal(
+      resources: Option[Int],
+      events: Option[Int],
+      enabled: Boolean,
+      custom: Map[ProjectRef, QuotaConfig]
+  ) {
+    def toQuotasConfig: QuotasConfig = QuotasConfig(resources, events, enabled, custom)
+  }
+
   /**
     * The configuration for a single quota
     *
@@ -70,9 +79,10 @@ object QuotasConfig {
         }
       }
 
-    deriveReader[QuotasConfig].emap { config =>
-      (QuotaConfig(config.resources, config.events) :: config.custom.values.toList).foldM(config) { (config, entry) =>
-        validate(entry.resources, entry.events).as(config)
+    deriveReader[QuotasConfigInternal].emap { config =>
+      (QuotaConfig(config.resources, config.events) :: config.custom.values.toList).foldM(config.toQuotasConfig) {
+        (config, entry) =>
+          validate(entry.resources, entry.events).as(config)
       }
     }
   }
