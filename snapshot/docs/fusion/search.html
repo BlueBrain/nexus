@@ -144,7 +144,8 @@ BlueBrain/nexus
   <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -182,7 +183,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -231,12 +233,12 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/search.html#example-searchconfig" class="header">Example SearchConfig</a></li>
       <li><a href="../../docs/fusion/search.html#facets" class="header">Facets</a>
       <ul>
-        <li><a href="../../docs/fusion/search.html#defaults" class="header">Defaults</a></li>
+        <li><a href="../../docs/fusion/search.html#default-facets-configuration" class="header">Default Facets Configuration</a></li>
       </ul></li>
       <li><a href="../../docs/fusion/search.html#fields" class="header">Fields</a>
       <ul>
         <li><a href="../../docs/fusion/search.html#special-properties" class="header">Special properties</a></li>
-        <li><a href="../../docs/fusion/search.html#defaults" class="header">Defaults</a></li>
+        <li><a href="../../docs/fusion/search.html#default-fields-configuration" class="header">Default Fields Configuration</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../docs/fusion/search.html#search-results" class="header">Search Results</a>
@@ -290,12 +292,12 @@ BlueBrain/nexus
       <li><a href="../../docs/fusion/search.html#example-searchconfig" class="header">Example SearchConfig</a></li>
       <li><a href="../../docs/fusion/search.html#facets" class="header">Facets</a>
       <ul>
-        <li><a href="../../docs/fusion/search.html#defaults" class="header">Defaults</a></li>
+        <li><a href="../../docs/fusion/search.html#default-facets-configuration" class="header">Default Facets Configuration</a></li>
       </ul></li>
       <li><a href="../../docs/fusion/search.html#fields" class="header">Fields</a>
       <ul>
         <li><a href="../../docs/fusion/search.html#special-properties" class="header">Special properties</a></li>
-        <li><a href="../../docs/fusion/search.html#defaults" class="header">Defaults</a></li>
+        <li><a href="../../docs/fusion/search.html#default-fields-configuration" class="header">Default Fields Configuration</a></li>
       </ul></li>
     </ul></li>
     <li><a href="../../docs/fusion/search.html#search-results" class="header">Search Results</a>
@@ -441,7 +443,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     displayIndex?: number;
   }[]
 </code></pre>
-<h4><a href="#defaults" name="defaults" class="anchor"><span class="anchor-link"></span></a>Defaults</h4>
+<h4><a href="#default-facets-configuration" name="default-facets-configuration" class="anchor"><span class="anchor-link"></span></a>Default Facets Configuration</h4>
 <p>The Facet configs are an optional field. The default will allow users to filter by project and @type.</p>
 <pre><code>{
   propertyKey: &#39;_project&#39;,
@@ -488,8 +490,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </code></li>
   <li>description: Will render a description using the enriched markdown template viewer (see <a href="admin.html#resource-descriptions">Description Viewer</a>)</li>
 </ul>
-<h4><a href="#defaults" name="defaults" class="anchor"><span class="anchor-link"></span></a>Defaults</h4>
-<p>IF no fields property exists on the <code>SearchConfig</code>, the following default values will be used:</p>
+<h4><a href="#default-fields-configuration" name="default-fields-configuration" class="anchor"><span class="anchor-link"></span></a>Default Fields Configuration</h4>
+<p>If no fields property exists on the <code>SearchConfig</code>, the following default values will be used:</p>
 <pre><code>{
   title: &#39;Label&#39;,
   dataIndex: &#39;label&#39;,

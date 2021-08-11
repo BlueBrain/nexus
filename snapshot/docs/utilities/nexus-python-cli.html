@@ -144,7 +144,8 @@ BlueBrain/nexus
   <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -182,7 +183,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -229,7 +231,7 @@ BlueBrain/nexus
     <li><a href="../../docs/utilities/nexus-python-cli.html#create-a-project" class="header">Create a project</a>
     <ul>
       <li><a href="../../docs/utilities/nexus-python-cli.html#select-an-organization" class="header">Select an organization</a></li>
-      <li><a href="../../docs/utilities/nexus-python-cli.html#create-a-project" class="header">Create a project</a></li>
+      <li><a href="../../docs/utilities/nexus-python-cli.html#create-your-own-project" class="header">Create your own project</a></li>
     </ul></li>
     <li><a href="../../docs/utilities/nexus-python-cli.html#ingest-data" class="header">Ingest data</a>
     <ul>
@@ -283,7 +285,7 @@ BlueBrain/nexus
     <li><a href="../../docs/utilities/nexus-python-cli.html#create-a-project" class="header">Create a project</a>
     <ul>
       <li><a href="../../docs/utilities/nexus-python-cli.html#select-an-organization" class="header">Select an organization</a></li>
-      <li><a href="../../docs/utilities/nexus-python-cli.html#create-a-project" class="header">Create a project</a></li>
+      <li><a href="../../docs/utilities/nexus-python-cli.html#create-your-own-project" class="header">Create your own project</a></li>
     </ul></li>
     <li><a href="../../docs/utilities/nexus-python-cli.html#ingest-data" class="header">Ingest data</a>
     <ul>
@@ -391,7 +393,7 @@ organization selected.
 | $ORGLABEL     |             | https://sandbox.bluebrainnexus.io/v1/orgs/$ORGLABEL                    | False      |
 +---------------+-------------+------------------------------------------------------------------------+------------+</code></pre></dd>
 </dl>
-<h3><a href="#create-a-project" name="create-a-project" class="anchor"><span class="anchor-link"></span></a>Create a project</h3>
+<h3><a href="#create-your-own-project" name="create-your-own-project" class="anchor"><span class="anchor-link"></span></a>Create your own project</h3>
 <p>A project is created with a label and within an organization. The label should be made of alphanumerical characters and its length should be between 3 and 32 (it should match the regex: [a-zA-Z0-9-_]{3,32}).</p>
 <p>Pick a label (hereafter referred to as $PROJECTLABEL) and create a project using the following command. It is recommended to use your username to avoid collision of projects labels within an organization.</p>
 <dl>

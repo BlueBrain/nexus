@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Try Nexus · Blue Brain Nexus</title>
+<title>Try Nexus with Neuroscience Datasets · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Try Nexus
+Try Nexus with Neuroscience Datasets
 </span>
 </div>
 </div>
@@ -144,7 +144,8 @@ BlueBrain/nexus
   <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html" class="active page">Try Nexus</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="active page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -182,7 +183,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -222,16 +224,62 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/getting-started/try-nexus.html#try-nexus" class="header">Try Nexus</a>
+  <li><a href="../../docs/getting-started/try-nexus.html#try-nexus-with-neuroscience-datasets" class="header">Try Nexus with Neuroscience Datasets</a>
   <ul>
-    <li><a href="../../docs/getting-started/try-nexus.html#configuring-your-project-in-nexus-fusion" class="header">Configuring your Project in Nexus Fusion</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html#working-with-data-in-nexus-forge" class="header">Working with Data in Nexus Forge</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html#exploring-the-graph-in-nexus-fusion" class="header">Exploring the Graph in Nexus Fusion</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-0-python-setup" class="header">Step 0: Python Setup</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#running-python-and-jupyter-locally" class="header">Running Python and Jupyter Locally</a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#install-miniconda" class="header">Install Miniconda</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#create-an-environment" class="header">Create an environment</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#switch-to-the-environment" class="header">Switch to the environment</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#install-" class="header">Install <a href="https://github.com/BlueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a></a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#install-additional-packages" class="header">Install Additional Packages</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#clone-the-nexus-repository" class="header">Clone the Nexus Repository</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#running-notebooks-in-binder-or-google-colaboratory" class="header">Running Notebooks in Binder or Google Colaboratory</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-1-nexus-setup" class="header">Step 1: Nexus Setup</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#1-1-using-the-sandbox" class="header">1.1. Using the Sandbox</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#1-2-running-your-own-instance-of-nexus" class="header">1.2. Running your Own Instance of Nexus</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-2-download-and-register-data-from-a-single-source" class="header">Step 2: Download and Register Data from a Single Source</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-1-data-vs-metadata" class="header">2.1. Data vs Metadata</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-2-provenance" class="header">2.2. Provenance</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-3-allen-institute-for-brain-science-data" class="header">2.3. Allen Institute for Brain Science Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-5-mappers" class="header">2.5. Mappers</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-6-running-the-notebook" class="header">2.6. Running the Notebook</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-7-check-resources-in-the-sandbox" class="header">2.7. Check Resources in the Sandbox</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-3-download-and-register-data-from-multiple-sources" class="header">Step 3: Download and Register Data from Multiple Sources</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-1-mouselight-data" class="header">3.1. MouseLight Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-2-running-the-notebook" class="header">3.2. Running the Notebook</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-3-check-resources-in-the-sandbox" class="header">3.3. Check Resources in the Sandbox</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-4-organize-and-visualize-cells-in-nexus-fusion" class="header">Step 4: Organize and Visualize Cells in Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-1-sparql-and-rdf" class="header">4.1. SPARQL and RDF</a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#4-1-1-optional-improving-json-ld-id-context-and-more" class="header">4.1.1. (Optional) Improving JSON-LD: ID, Context and More</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#4-1-2-optional-improving-sparql-prefixes" class="header">4.1.2. (Optional) Improving SPARQL: Prefixes</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-2-project-and-resource-views" class="header">4.2. Project and Resource Views</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-3-query-neuroscience-data" class="header">4.3. Query Neuroscience Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-4-create-a-studio" class="header">4.4. Create a Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-5-finding-similar-datasets-using-recommendations" class="header">Step 5: Finding Similar Datasets using Recommendations</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#5-1-introduction-to-recommendations" class="header">5.1. Introduction to Recommendations</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#5-2-running-the-notebook" class="header">5.2. Running the Notebook</a></li>
+    </ul></li>
     <li><a href="../../docs/getting-started/try-nexus.html#learn-more" class="header">Learn More</a>
     <ul>
-      <li><a href="../../docs/getting-started/try-nexus.html#querying-knowledge-graph-using-sparql" class="header">Querying knowledge graph using SPARQL</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#querying-a-knowledge-graph-using-elasticsearch" class="header">Querying a Knowledge Graph using Elasticsearch</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#linking-data-on-the-web" class="header">Linking data on the web</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#another-tutorial-with-the-movielens-dataset" class="header">Another Tutorial with the MovieLens Dataset</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -254,16 +302,62 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../docs/getting-started/try-nexus.html#try-nexus" class="header">Try Nexus</a>
+  <li><a href="../../docs/getting-started/try-nexus.html#try-nexus-with-neuroscience-datasets" class="header">Try Nexus with Neuroscience Datasets</a>
   <ul>
-    <li><a href="../../docs/getting-started/try-nexus.html#configuring-your-project-in-nexus-fusion" class="header">Configuring your Project in Nexus Fusion</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html#working-with-data-in-nexus-forge" class="header">Working with Data in Nexus Forge</a></li>
-    <li><a href="../../docs/getting-started/try-nexus.html#exploring-the-graph-in-nexus-fusion" class="header">Exploring the Graph in Nexus Fusion</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-0-python-setup" class="header">Step 0: Python Setup</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#running-python-and-jupyter-locally" class="header">Running Python and Jupyter Locally</a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#install-miniconda" class="header">Install Miniconda</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#create-an-environment" class="header">Create an environment</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#switch-to-the-environment" class="header">Switch to the environment</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#install-" class="header">Install <a href="https://github.com/BlueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a></a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#install-additional-packages" class="header">Install Additional Packages</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#clone-the-nexus-repository" class="header">Clone the Nexus Repository</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#running-notebooks-in-binder-or-google-colaboratory" class="header">Running Notebooks in Binder or Google Colaboratory</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-1-nexus-setup" class="header">Step 1: Nexus Setup</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#1-1-using-the-sandbox" class="header">1.1. Using the Sandbox</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#1-2-running-your-own-instance-of-nexus" class="header">1.2. Running your Own Instance of Nexus</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-2-download-and-register-data-from-a-single-source" class="header">Step 2: Download and Register Data from a Single Source</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-1-data-vs-metadata" class="header">2.1. Data vs Metadata</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-2-provenance" class="header">2.2. Provenance</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-3-allen-institute-for-brain-science-data" class="header">2.3. Allen Institute for Brain Science Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-5-mappers" class="header">2.5. Mappers</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-6-running-the-notebook" class="header">2.6. Running the Notebook</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#2-7-check-resources-in-the-sandbox" class="header">2.7. Check Resources in the Sandbox</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-3-download-and-register-data-from-multiple-sources" class="header">Step 3: Download and Register Data from Multiple Sources</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-1-mouselight-data" class="header">3.1. MouseLight Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-2-running-the-notebook" class="header">3.2. Running the Notebook</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#3-3-check-resources-in-the-sandbox" class="header">3.3. Check Resources in the Sandbox</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-4-organize-and-visualize-cells-in-nexus-fusion" class="header">Step 4: Organize and Visualize Cells in Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-1-sparql-and-rdf" class="header">4.1. SPARQL and RDF</a>
+      <ul>
+        <li><a href="../../docs/getting-started/try-nexus.html#4-1-1-optional-improving-json-ld-id-context-and-more" class="header">4.1.1. (Optional) Improving JSON-LD: ID, Context and More</a></li>
+        <li><a href="../../docs/getting-started/try-nexus.html#4-1-2-optional-improving-sparql-prefixes" class="header">4.1.2. (Optional) Improving SPARQL: Prefixes</a></li>
+      </ul></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-2-project-and-resource-views" class="header">4.2. Project and Resource Views</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-3-query-neuroscience-data" class="header">4.3. Query Neuroscience Data</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#4-4-create-a-studio" class="header">4.4. Create a Studio</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/try-nexus.html#step-5-finding-similar-datasets-using-recommendations" class="header">Step 5: Finding Similar Datasets using Recommendations</a>
+    <ul>
+      <li><a href="../../docs/getting-started/try-nexus.html#5-1-introduction-to-recommendations" class="header">5.1. Introduction to Recommendations</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#5-2-running-the-notebook" class="header">5.2. Running the Notebook</a></li>
+    </ul></li>
     <li><a href="../../docs/getting-started/try-nexus.html#learn-more" class="header">Learn More</a>
     <ul>
-      <li><a href="../../docs/getting-started/try-nexus.html#querying-knowledge-graph-using-sparql" class="header">Querying knowledge graph using SPARQL</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#querying-a-knowledge-graph-using-elasticsearch" class="header">Querying a Knowledge Graph using Elasticsearch</a></li>
-      <li><a href="../../docs/getting-started/try-nexus.html#linking-data-on-the-web" class="header">Linking data on the web</a></li>
+      <li><a href="../../docs/getting-started/try-nexus.html#another-tutorial-with-the-movielens-dataset" class="header">Another Tutorial with the MovieLens Dataset</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -282,135 +376,604 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#try-nexus" name="try-nexus" class="anchor"><span class="anchor-link"></span></a>Try Nexus</h1>
-<p>In this tutorial, you will use the core features of the Nexus ecosystem through our sandbox. This requires minimal technical knowledge but the ability to install a Python library and run a jupyter notebook.</p>
-<p>In the <a href="try-nexus.html#configuring-your-project-in-nexus-fusion">first step</a>, you&rsquo;ll learn:</p>
+<h1><a href="#try-nexus-with-neuroscience-datasets" name="try-nexus-with-neuroscience-datasets" class="anchor"><span class="anchor-link"></span></a>Try Nexus with Neuroscience Datasets</h1>
+<p>Welcome to our Nexus tutorial! Nexus is an open-source data and metadata management suite. With Nexus, your data is catalogued and indexed as a knowledge graph, all interconnected.</p>
+<p>Nexus consists of different products, such as:</p>
 <ul>
-  <li>to login into our <a href="https://sandbox.bluebrainnexus.io/" title="Nexus Sandbox" target="_blank" rel="noopener noreferrer">Nexus Sandbox</a>,</li>
-  <li>create an organization and project,</li>
-  <li>get your personal token.</li>
+  <li>Nexus Delta: our core data management platform</li>
+  <li>Nexus Fusion: your web interface to access the metadata and data stored in the knowledge graph</li>
+  <li>Nexus Forge: a Python library to work with knowledge graphs, and in particular Nexus Delta</li>
 </ul>
-<p>In the <a href="try-nexus.html#working-with-data-in-nexus-forge">second step</a>, you&rsquo;ll learn:</p>
-<ul>
-  <li>install Nexus Forge,</li>
-  <li>configure a Knowledge Graph forge,</li>
-  <li>transform data,</li>
-  <li>load the transformed data into the project,</li>
-  <li>search for data using a SPARQL query.</li>
-</ul>
-<p>In the <a href="try-nexus.html#exploring-the-graph-in-nexus-fusion">third step</a>, you&rsquo;ll learn:</p>
-<ul>
-  <li>create a Studio in Nexus Fusion,</li>
-  <li>visualize and filter loaded data.</li>
-</ul>
-<p>Finally, check our <a href="try-nexus.html#learn-more">Learn More</a> section for more advanced tutorials based on the same datasets.</p>
-<h2><a href="#configuring-your-project-in-nexus-fusion" name="configuring-your-project-in-nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Configuring your Project in Nexus Fusion</h2>
-<p>The <a href="https://sandbox.bluebrainnexus.io/" title="Nexus Sandbox" target="_blank" rel="noopener noreferrer">Nexus Sandbox</a> is a deployment of Nexus Delta and Fusion publicly available to anybody.</p>
-<p>Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages the underlying knowledge graph).</p>
-<p>Please bear in mind that the data stored in the Nexus Sandbox is being purged at regular intervals. We recommend you do not store any sensitive data in this environment since it is accessible to many other users.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-home-not-logged-in.png" alt="sandbox-home" /></p></div>
-<p>The first step is to login, by clicking in the upper right corner of the screen. You can login with your Github credentials.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-log-in-github-realm.png" alt="1-sandbox-login" /></p></div>
-<p>Once logged in, you can navigate to the <a href="../fusion/admin.html">Admin</a> interface through the left navigation sidebar, in order to create the correct organizations and projects for your data to live.</p>
-<p>For this tutorial, you can use an existing organization called <code>nexustutorial</code> (by clicking on the so-named organization), or you can create your own organization (by clicking the <code>Create Organization</code> button at the top).</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-logged-in.png" alt="2-sandbox-admin" /></p></div>
-<p>In an organization, you will find the list of existing projects, and you can create your own. Projects (as well as organizations) support permissions, which means that you cannot edit any organizations or projects.</p>
-<p>For this tutorial, you will need to create your own project.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-organization.png" /></p></div>
-<p>Choose a name and a description for your project. For more information about advanced settings, see <a href="../fusion/admin.html#organizations-and-projects-indexes">here</a>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-create-project-form.png" /></p></div>
-<p>Once the project is created, you&rsquo;ll land on the project view. There is no resources at first. Wait for it.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-project.png" /></p></div>
-<p>You will quickly see that the project has finished indexing (top right corner).</p><div class="half center">
-<p><img src="../assets/try-nexus-sandbox-project-finished-indexing.png" /></p></div>
-<p>Which means that the system has created default indices and storage for you.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-admin-project-indexed.png" /></p></div>
-<p>We&rsquo;re all set! We now have a project to host our ressources and datasets. Let&rsquo;s move on to the second part of this turotial.</p>
-<h2><a href="#working-with-data-in-nexus-forge" name="working-with-data-in-nexus-forge" class="anchor"><span class="anchor-link"></span></a>Working with Data in Nexus Forge</h2>
-<p>We’ll load the <a href="http://files.grouplens.org/datasets/movielens/" title="MovieLens" target="_blank" rel="noopener noreferrer">MovieLens</a> dataset into the created project within Nexus Delta using the python framework <a href="https://nexus-forge.readthedocs.io/en/latest/" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a>.</p>
-<p>A <a href="https://jupyter.org/" title="jupyter" target="_blank" rel="noopener noreferrer">jupyter</a> notebook is available for this part of the tutorial and can be spawn easily using Google Colab, binder, or locally:</p>
-<ul>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
-  <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb" title="binder" target="_blank" rel="noopener noreferrer">binder</a></li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-</ul>
-<p>For local execution, Nexus Forge can be installed using these <a href="https://nexus-forge.readthedocs.io/en/latest/#installation" title="instructions" target="_blank" rel="noopener noreferrer">instructions</a>. Make sure that the jupyter notebook|lab is launched in the same virtual environment where Nexus Forge is installed. Alternatively, set up a specialized <a href="https://ipython.readthedocs.io/en/stable/install/kernel_install.html" title="kernel" target="_blank" rel="noopener noreferrer">kernel</a>.</p>
-<p>If you want to try some other examples of Nexus Forge, you can use these <a href="https://mybinder.org/v2/gh/BlueBrain/nexus-forge/master?filepath=examples%2Fnotebooks%2Fgetting-started" title="notebooks" target="_blank" rel="noopener noreferrer">notebooks</a>.</p>
-<p>The next step is to use this query to create a Studio view in Nexus Fusion.</p>
-<h2><a href="#exploring-the-graph-in-nexus-fusion" name="exploring-the-graph-in-nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Exploring the Graph in Nexus Fusion</h2>
-<p>Login the Sandbox and navigate your your previously created project.</p>
-<p>Click on the <code>Manage Studios for this project</code> button on the top right corner of the project.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-project-view.png" /></p></div>
-<p>Studios are listed here. Click on <code>Create Studio</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-project-studios.png" /></p></div>
-<p>Give a name to your Studio and click <code>Save</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-studio-form.png" /></p></div>
-<p>Here&rsquo;s your empty Studio. Click the button to <code>Add Workspace</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-studio-view.png" /></p></div>
-<p>Give a name to your Workspace and click <code>Save</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-workspace-form.png" /></p></div>
-<p>You now have one Workspace configured. Click the button to <code>Add Dashboard</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-studio-view-one-workspace.png" /></p></div>
-<p>In order to query the graph in a Studio Dashboard, a small modification of the previous query is necessary. You can find more information about it in the <a href="../fusion/studio.html#sparql-query-requirements">Studio docs</a>.</p>
-<pre class="prettyprint"><code class="language-sparql">PREFIX vocab: &lt;https://sandbox.bluebrainnexus.io/v1/vocabs/&gt;
-PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
-SELECT DISTINCT ?self ?title
-WHERE {
-?id nxv:self ?self ;
-    nxv:deprecated false ;
-    vocab:title ?title ;
-    ^vocab:movieId / vocab:tag &quot;thought-provoking&quot; .
-}
-LIMIT 20
+<p>In this tutorial, you&rsquo;ll learn to interact with the knowledge graph through these different tools. Nexus can be used for any kind of data although this tutorial focuses on neuroscience data.</p>
+<blockquote>
+  <p>This tutorial is also part of the <a href="https://www.edx.org/course/simulation-neuroscience" title="edX EPFL Simulation Neuroscience MOOC">edX EPFL Simulation Neuroscience MOOC</a>.</p>
+</blockquote>
+<p>In <a href="try-nexus.html#step-0-python-setup">Step 0</a>, you&rsquo;ll learn to setup your Python environment if you want to run the Jupyter notebooks locally. You can skip this step if you use Binder or Google Colaboratory (preferred).</p>
+<p>In <a href="try-nexus.html#step-1-nexus-setup">Step 1</a>, you&rsquo;ll learn about the Nexus Sandbox deployment, a dedicated environment for this tutorial. You&rsquo;ll use Nexus Fusion to login and access your dedicated project instantiated in Nexus Delta.</p>
+<p>In <a href="try-nexus.html#step-2-download-and-register-data-from-a-single-source">Step 2</a>, you&rsquo;ll learn to download and register data from the Allen Institute for Brain Science (AIBS). You&rsquo;ll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.</p>
+<p>In <a href="try-nexus.html#step-3-download-and-register-data-from-multiple-sources">Step 3</a>, you&rsquo;ll learn to download and register data from multiple sources (AIBS and MouseLight). You&rsquo;ll use Nexus Forge in a Jupyter notebook to interact with Nexus Delta.</p>
+<p>In <a href="try-nexus.html#step-4-organize-and-visualize-cells-in-nexus-fusion">Step 4</a>, you&rsquo;ll learn to organize your data on the web for easier sharing and publishing. You&rsquo;ll use Nexus Fusion on the Sandbox deployment.</p>
+<p>In <a href="try-nexus.html#step-5-finding-similar-datasets-using-recommendations">Step 5</a>, you&rsquo;ll learn to prepare your data in order to search for similar datasets across the data you have integrated in Blue Brain Nexus.</p>
+<p>Let&rsquo;s go!</p>
+<blockquote>
+  <p>You can use the side menu to navigate between the page&rsquo;s sections.</p>
+</blockquote>
+<h2><a href="#step-0-python-setup" name="step-0-python-setup" class="anchor"><span class="anchor-link"></span></a>Step 0: Python Setup</h2>
+<p>In this tutorial, you are encouraged to run <a href="https://github.com/BlueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a> to interact with Nexus. Nexus Forge is a python library. We provide Jupyter Notebooks with examples.</p>
+<p>You can either run the notebooks in <a href="https://mybinder.org/" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a> or <a href="https://colab.research.google.com/" title="Google Colaboratory" target="_blank" rel="noopener noreferrer">Google Colaboratory</a>, or run them locally.</p>
+<h3><a href="#running-python-and-jupyter-locally" name="running-python-and-jupyter-locally" class="anchor"><span class="anchor-link"></span></a>Running Python and Jupyter Locally</h3>
+<p>Here is a step-by-step guide to setup your Python environment to work with <a href="https://github.com/BlueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a>, <a href="https://jupyter.org/" title="Jupyter" target="_blank" rel="noopener noreferrer">Jupyter</a>, and the <a href="https://allensdk.readthedocs.io/en/latest/index.html" title="Allen SDK" target="_blank" rel="noopener noreferrer">Allen SDK</a>.</p>
+<p>This is not mandatory, feel free to use your preferred method. If you are using Binder or Google Colaboratory, you can skip this section.</p>
+<h4><a href="#install-miniconda" name="install-miniconda" class="anchor"><span class="anchor-link"></span></a>Install Miniconda</h4>
+<p>Go to <a href="https://docs.conda.io/en/latest/miniconda.html" title="Miniconda" target="_blank" rel="noopener noreferrer">Miniconda</a> and download and install the latest for your operating system.</p>
+<h4><a href="#create-an-environment" name="create-an-environment" class="anchor"><span class="anchor-link"></span></a>Create an environment</h4>
+<p>Open the terminal and type:</p>
+<pre class="prettyprint"><code class="language-bash">conda create -yn kgforge python=3.7
 </code></pre>
-<p>Choose a name for your Dashboard, copy the query. Click <code>Save</code>.</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-dashboard-form.png" /></p></div>
-<p>And there are the results:</p><div class="center">
-<p><img src="../assets/try-nexus-sandbox-studio-results.png" /></p></div>
-<p>Good job! You just finished the introductory course to Nexus using our Sandbox. You can now install Nexus locally or continue with the tutorials below.</p>
+<blockquote>
+  <p>The Allen SDK is rated for Python 3.6 and 3.7. You can try installing a more recent version of Python but it might not work. Nexus Forge works with Python 3.6 and above.</p>
+</blockquote>
+<h4><a href="#switch-to-the-environment" name="switch-to-the-environment" class="anchor"><span class="anchor-link"></span></a>Switch to the environment</h4>
+<p>In the terminal, type:</p>
+<pre class="prettyprint"><code class="language-bash">conda activate kgforge
+</code></pre>
+<h3><a href="#install-" name="install-" class="anchor"><span class="anchor-link"></span></a>Install <a href="https://github.com/BlueBrain/nexus-forge" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a></h3>
+<p>In the terminal, with the environment active, type:</p>
+<pre class="prettyprint"><code class="language-bash">pip install nexusforge
+</code></pre>
+<p>You can also install the development version directly from GitHub:</p>
+<pre class="prettyprint"><code class="language-bash">pip install git+https://github.com/BlueBrain/nexus-forge.git@&lt;branch-name&gt;
+</code></pre>
+<h4><a href="#install-additional-packages" name="install-additional-packages" class="anchor"><span class="anchor-link"></span></a>Install Additional Packages</h4>
+<p>To avoid any issues, install <a href="https://jupyter.org/" title="Jupyter" target="_blank" rel="noopener noreferrer">Jupyter</a> in your environment.</p>
+<pre class="prettyprint"><code class="language-bash">pip install jupyterlab
+</code></pre>
+<p>You will need the <a href="https://allensdk.readthedocs.io/en/latest/index.html" title="Allen SDK" target="_blank" rel="noopener noreferrer">Allen SDK</a> to get data from their database.</p>
+<pre class="prettyprint"><code class="language-bash">pip install allensdk
+</code></pre>
+<p>To work with morphologies, you will need <a href="https://neurom.readthedocs.io/en/stable/index.html" title="Blue Brain&#39;s NeuroM" target="_blank" rel="noopener noreferrer">Blue Brain&rsquo;s NeuroM</a> package. This will install Blue Brain&rsquo;s MorphIO as well.</p>
+<pre class="prettyprint"><code class="language-bash">pip install neurom
+</code></pre>
+<h4><a href="#clone-the-nexus-repository" name="clone-the-nexus-repository" class="anchor"><span class="anchor-link"></span></a>Clone the Nexus Repository</h4>
+<p>The notebooks used for this tutorial are maintained in the Nexus GitHub repository under <code>/docs/src/main/paradox/docs/getting-started/notebooks</code>.</p>
+<p>To clone the repository, you will need to install <a href="https://git-scm.com/" title="Git" target="_blank" rel="noopener noreferrer">Git</a> (if not already present on your system), then open the terminal, navigate to your preferred location, and type:</p>
+<pre class="prettyprint"><code class="language-bash">git clone https://github.com/BlueBrain/nexus.git
+</code></pre>
+<h3><a href="#running-notebooks-in-binder-or-google-colaboratory" name="running-notebooks-in-binder-or-google-colaboratory" class="anchor"><span class="anchor-link"></span></a>Running Notebooks in Binder or Google Colaboratory</h3>
+<h2><a href="#step-1-nexus-setup" name="step-1-nexus-setup" class="anchor"><span class="anchor-link"></span></a>Step 1: Nexus Setup</h2>
+<p>We run the latest version of Nexus publicly for education. You can also use the instance in your organization (if any), or setup Nexus from scratch.</p>
+<h3><a href="#1-1-using-the-sandbox" name="1-1-using-the-sandbox" class="anchor"><span class="anchor-link"></span></a>1.1. Using the Sandbox</h3>
+<p>The <a href="https://sandbox.bluebrainnexus.io/web/" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> is a deployment of Nexus for educational purposes.</p>
+<p>Once on the Sandbox homepage, click on the top right corner on the login button.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-login.jpeg" alt="Sandbox Home" /></p></div>
+<p>We offer for the moment one identity providers (IdP):</p>
+<ul>
+  <li>Github</li>
+</ul>
+<p>You will need an account on either one to be able to continue this tutorial.</p>
+<p>Click on the IdP of your choice and allow Nexus to have access. You are now logged in.</p>
+<p>Once logged in, you can get your token. The token is your secure, private, code that you will use in the rest of this tutorial to interact with Nexus.</p>
+<p>Additionally, the Sandbox environment automatically provisions a project for you so you don&rsquo;t have to. Navigate to the Admin page and you will see the list of organisations in Nexus. A project is contained in an organisation. The organisation where your project is created depends on your identity provider. If you logged in with GitHub for example, your project was create under the <code>github-users</code> organisation.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-orgs.png" alt="Sandbox Home" /></p></div>
+<p>Navigate to the correct organisation then search or scroll down to find your project (i.e. your username). You will need the names of the organisation and project for the next parts of the tutorial.</p>
+<h3><a href="#1-2-running-your-own-instance-of-nexus" name="1-2-running-your-own-instance-of-nexus" class="anchor"><span class="anchor-link"></span></a>1.2. Running your Own Instance of Nexus</h3>
+<p>We do not recommend to setup your own instance for this tutorial. If you are interested to install your own instance, <a href="running-nexus/index.html">check our guide</a>.</p>
+<h2><a href="#step-2-download-and-register-data-from-a-single-source" name="step-2-download-and-register-data-from-a-single-source" class="anchor"><span class="anchor-link"></span></a>Step 2: Download and Register Data from a Single Source</h2>
+<p>In this section, you will learn about metadata (and MINDS), provenance, and integrate data from the Allen Institute for Brain Science in Nexus.</p>
+<h3><a href="#2-1-data-vs-metadata" name="2-1-data-vs-metadata" class="anchor"><span class="anchor-link"></span></a>2.1. Data vs Metadata</h3>
+<p>When we talk about data, we&rsquo;re mostly talking about binary or text files. When we hear metadata, it means &ldquo;data about the data&rdquo;.</p>
+<p>In neuroscience, you will have images of brain slices. You will have images of stained cells. You will find files of 3D-morphologies or electrophysiology recordings of the cell or neuron.</p>
+<p>The brain is big, and the amount of data collected grows every second.</p>
+<p>As a result, it quickly become extremely difficult for groups of scientists to manage, track, share, and work with this data.</p>
+<p>To solve this growing pain, we can add metadata, or context, to the data collected. Specifically for neuroscience, we designed MINDS. MINDS is the Minimal Information about a Neuroscience DataSet.</p><div class="center">
+<p><img src="../assets/MINDS_diagram.png" alt="MINDS Diagram" /></p></div>
+<p>In the diagram above, you can see that your data (which we will call <a href="https://schema.org/Dataset" title="Dataset" target="_blank" rel="noopener noreferrer">Dataset</a> from now on) has now additional properties:</p>
+<ul>
+  <li>Subject: Species, age etc. of subject from which dataset was generated</li>
+  <li>Brain Location: Brain region or 3D coordinates within a brain atlas</li>
+  <li>Data Types: Type of the data stored in the dataset</li>
+  <li>Contributions: The agent (scientists, organizations) to whom the dataset is attributed to</li>
+  <li>Distribution: Direct link to the dataset binaries (downloadURL) or web page describing how to download them (accessURL)</li>
+  <li>License: Dataset license (e.g. CC BY 4.0)</li>
+</ul>
+<p>You can check the details of MINDS by visiting <a href="https://incf.github.io/neuroshapes/" title="Neuroshapes" target="_blank" rel="noopener noreferrer">Neuroshapes</a>. Neuroshapes provide open schemas for <a href="https://en.wikipedia.org/wiki/FAIR_data" title="F.A.I.R." target="_blank" rel="noopener noreferrer">F.A.I.R.</a> neuroscience data.</p>
+<h3><a href="#2-2-provenance" name="2-2-provenance" class="anchor"><span class="anchor-link"></span></a>2.2. Provenance</h3>
+<p>You have just seen how we can add metadata to our datasets to give more context. This allows scientists to find their data as well as their peers&rsquo; more easily.</p>
+<p>Another important factor to consider is where the data comes from, i.e. what experiment generated it, who conducted the experiment, and what data was used to derive the new data.</p>
+<p>Luckily for us, some good folks have defined a <a href="https://www.w3.org/TR/prov-o/" title="provenance data model" target="_blank" rel="noopener noreferrer">provenance data model</a> that we can use.</p><div class="center">
+<p><img src="../assets/PROV_diagram.png" alt="PROV Diagram" /></p></div>
+<p>The diagram above is the basic representation of provenance. Our Dataset is an extension of the Entity. The Entity itself was generated by an Activity, which itself used (or not) another Entity. Finally, the Activity is associated with an Agent (e.g. a Person or Institution).</p>
+<p>There are ways to add more details, for example with &ldquo;qualified&rdquo; relations. You can read more about it in the <a href="https://www.w3.org/TR/prov-o/" title="W3C PROV specification" target="_blank" rel="noopener noreferrer">W3C PROV specification</a>.</p>
+<h3><a href="#2-3-allen-institute-for-brain-science-data" name="2-3-allen-institute-for-brain-science-data" class="anchor"><span class="anchor-link"></span></a>2.3. Allen Institute for Brain Science Data</h3>
+<p>The goal of the Allen Institute for Brain Science (AIBS) is to accelerate the understanding of how the brain works.</p>
+<p>The AIBS has its data (mouse and human brains) available online for free. For the purpose of this tutorial, we&rsquo;re mostly interested in Cells. Check out their <a href="https://celltypes.brain-map.org/" title="data portal" target="_blank" rel="noopener noreferrer">data portal</a>.</p>
+<p>You can for example access a <a href="https://celltypes.brain-map.org/experiment/morphology/614777438" title="cell&#39;s morphology page" target="_blank" rel="noopener noreferrer">cell&rsquo;s morphology page</a> and browse and download the morphology data. Or you can head to the <a href="https://celltypes.brain-map.org/experiment/electrophysiology/614777438" title="cell&#39;s electrophysiology page" target="_blank" rel="noopener noreferrer">cell&rsquo;s electrophysiology page</a> to do the same.</p>
+<p>You can either download and get the required information directly from their portal, or use the Allen SDK (Software Development Kit) to do so from your Python script (as shown in the example notebooks).</p>
+<h3><a href="#2-5-mappers" name="2-5-mappers" class="anchor"><span class="anchor-link"></span></a>2.5. Mappers</h3>
+<p>In Nexus Forge, a mapper will map, transform, and format fields from one source into another. In the case of Nexus, it will map the fields from a data source such as the AIBS to the formats supported by Nexus (the JSON payloads or resources).</p>
+<p>More specifically, let&rsquo;s imagine that we have a data source <code>x</code> that contains the following fields:</p>
+<pre class="prettyprint"><code class="language-json">{ 
+    &quot;id&quot; : 123,
+    &quot;givenName&quot; : &quot;john&quot;,
+    &quot;familyName&quot; : &quot;doe&quot;,
+    &quot;gender&quot; : &quot;male&quot;
+}
+</code></pre>
+<p>We want to map these to the fields <code>id</code>, <code>name</code>, and <code>gender</code>. This is how it could look like:</p>
+<pre class="prettyprint"><code class="language-json">{ 
+    &quot;id&quot; : forge.format(&quot;identifier&quot;, x.id)
+    &quot;name&quot; : f&quot;{x.givenName}/{x.familyName}&quot;,
+    &quot;sex&quot; : forge.resolve(text=x.gender, scope=&quot;ontologies&quot;, target=&quot;terms&quot;)
+}
+</code></pre>
+<p>We see that the original <code>id</code> will be formatted to a type identifier, that the <code>givenName</code> and <code>familyName</code> were concatenated, and finally that for the <code>gender</code>, we will check to see if the value exists in an ontology (and is thus already standardized).</p>
+<p><a href="https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping" title="Read more about mapping with Forge." target="_blank" rel="noopener noreferrer">Read more about mapping with Forge.</a></p>
+<p>In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide mappers for both data sources. You can check the mappers <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings" title="directly on GitHub" target="_blank" rel="noopener noreferrer">directly on GitHub</a>. There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. For MouseLight, there&rsquo;s only one mapper, as both morphologies and traces are in the same data source.</p>
+<h3><a href="#2-6-running-the-notebook" name="2-6-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>2.6. Running the Notebook</h3>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
+</ul>
+<p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
+<pre class="prettyprint"><code class="language-bash">git clone https://github.com/BlueBrain/nexus.git
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd nexus
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd docs/src/main/paradox/docs/getting-started/notebooks
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">jupyter notebook one_cell_minds.ipynb
+</code></pre>
+<h3><a href="#2-7-check-resources-in-the-sandbox" name="2-7-check-resources-in-the-sandbox" class="anchor"><span class="anchor-link"></span></a>2.7. Check Resources in the Sandbox</h3>
+<p>Once you have registered resources through Nexus Forge (in the notebook), you can check that they are effectively present in Nexus. Navigate to the <a href="https://sandbox.bluebrainnexus.io/web/" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> then to the correct organisation and project. In the project page, you will have the list of all resources present in your project (Default Query), including the ones that you just integrated. Depending on how you ran the notebook, you should find at least one NeuronMorphology and one Trace resource.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>Click on a card to open the resource view. In the admin section of the view, you can see the actual JSON payload (explained in part 4) and additional metadata related to your dataset.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-resource.png" alt="Sandbox Home" /></p></div>
+<h2><a href="#step-3-download-and-register-data-from-multiple-sources" name="step-3-download-and-register-data-from-multiple-sources" class="anchor"><span class="anchor-link"></span></a>Step 3: Download and Register Data from Multiple Sources</h2>
+<p>In this section, you will integrate additional data from MouseLight and the Allen Institute for Brain Science.</p>
+<h3><a href="#3-1-mouselight-data" name="3-1-mouselight-data" class="anchor"><span class="anchor-link"></span></a>3.1. MouseLight Data</h3>
+<p>The <a href="https://www.janelia.org/" title="Janelia Research Campus" target="_blank" rel="noopener noreferrer">Janelia Research Campus</a> makes MouseLight available to the scientific community. <a href="http://mouselight.janelia.org/" title="MouseLight" target="_blank" rel="noopener noreferrer">MouseLight</a> generates complete morphological reconstructions of individual neurons from datasets of whole mouse brains imaged at sub-micron resolution.</p>
+<p>You can access the <a href="http://ml-neuronbrowser.janelia.org/" title="MouseLight data" target="_blank" rel="noopener noreferrer">MouseLight data</a> directly in the browser. You can also access it programmatically through different endpoints, such as <a href="http://ml-neuronbrowser.janelia.org/graphql/" title="GraphQL" target="_blank" rel="noopener noreferrer">GraphQL</a>.</p>
+<p>The example notebooks will use these endpoints to collect and download the datasets and their metadata.</p>
+<h3><a href="#3-2-running-the-notebook" name="3-2-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>3.2. Running the Notebook</h3>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
+</ul>
+<p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
+<pre class="prettyprint"><code class="language-bash">git clone https://github.com/BlueBrain/nexus.git
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd nexus
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd docs/src/main/paradox/docs/getting-started/notebooks
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">jupyter notebook dataset_from_different_sources.ipynb
+</code></pre>
+<h3><a href="#3-3-check-resources-in-the-sandbox" name="3-3-check-resources-in-the-sandbox" class="anchor"><span class="anchor-link"></span></a>3.3. Check Resources in the Sandbox</h3>
+<p>Go back to <a href="try-nexus.html#2-7-check-resources-in-the-sandbox">section 2.7</a> to learn how to check resources in the Sandbox.</p>
+<h2><a href="#step-4-organize-and-visualize-cells-in-nexus-fusion" name="step-4-organize-and-visualize-cells-in-nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Step 4: Organize and Visualize Cells in Nexus Fusion</h2>
+<p>Nexus Fusion allows you to browse the data stored in Nexus. Our extensible architecture also enables the development of visualization plugins.</p>
+<h3><a href="#4-1-sparql-and-rdf" name="4-1-sparql-and-rdf" class="anchor"><span class="anchor-link"></span></a>4.1. SPARQL and RDF</h3>
+<p><a href="https://www.w3.org/TR/sparql11-query/" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a> is an RDF query language. In other words, it&rsquo;s a way to request a subset of data from a database that conforms to the <a href="https://en.wikipedia.org/wiki/Resource_Description_Framework" title="RDF (Resource Description Framework)" target="_blank" rel="noopener noreferrer">RDF (Resource Description Framework)</a> model.</p>
+<p>When writing data to Nexus, the different payloads are stored in a long table, each row representing a resource. The data is then synced to our RDF database and thus converted to a graph. When reading the data, you can query this graph with SPARQL.</p>
+<p>Let us take a JSON-LD example payload:</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@type&quot;: [
+    &quot;http://schema.org/Dataset&quot;,
+    &quot;http://www.w3.org/ns/prov#Entity&quot;
+  ],
+  &quot;http://schema.org/description&quot;: &quot;My first dataset&quot;,
+  &quot;http://schema.org/name&quot;: &quot;Dataset&quot;,
+  &quot;http://schema.org/distribution&quot;: [
+    {
+      &quot;@type&quot;: &quot;http://schema.org/DataDownload&quot;,
+      &quot;http://schema.org/contentUrl&quot;: {
+        &quot;@id&quot;: &quot;http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb&quot;
+      },
+      &quot;http://schema.org/name&quot;: &quot;mesh-gradient.png&quot;
+    }
+  ]
+}
+</code></pre>
+<p>You can copy and paste this JSON-LD payload in the <a href="https://json-ld.org/playground/" title="JSON-LD Playground" target="_blank" rel="noopener noreferrer">JSON-LD Playground</a> and see the expanded results.</p>
+<p>Here&rsquo;s what it would look like as an RDF graph:</p><div class="center">
+<p><img src="../assets/json-to-graph.png" alt="RDF Graph of JSON Payload" /></p></div>
+<p>The graph is composed of triples of the form <code>Subject - predicate -&gt; Object</code>. In the example above, <code>_:b0</code> would be a subject (in our case <code>_:b0</code> is just an arbitrary ID for the payload), <code>&lt;http://schema.org/name&gt;</code> is a predicate, and <code>Dataset</code> an object.</p>
+<p>If we want to query this graph and return only the name and description of <code>Dataset</code> data types, we can write a simple SPARQL query:</p>
+<pre class="prettyprint"><code class="language-sparql">SELECT ?name ?description
+WHERE {
+    ?resource &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://schema.org/Dataset&gt; ;
+              &lt;http://schema.org/name&gt;                          ?name ;
+              &lt;http://schema.org/description&gt;                   ?description .
+}
+</code></pre>
+<p>This would result in the following table:</p>
+<table>
+  <thead>
+    <tr>
+      <th>name </th>
+      <th>description </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dataset </td>
+      <td>My first dataset </td>
+    </tr>
+  </tbody>
+</table>
+<p>Let&rsquo;s decompose this query. The <code>SELECT</code> statement lists all the fields (i.e. variables) that we want to display. The <code>WHERE</code> clause shows how to get to these fields: which graph paths (or traversals) do we need to do to get to that field. In the <code>WHERE</code> clause, semi-colons <code>;</code> indicate that we are still talking about the same <code>Subject</code> but with different <code>predicate</code>s. A full stop <code>.</code> indicates that the statement is finished, i.e. that we have finished talking about a specific <code>Subject</code>. A <code>WHERE</code> clause can have multiple statements. If an <code>Object</code> in the statement has a value, it has to match, otherwise it won&rsquo;t give any results. If the <code>Object</code> is prefixed by a question mark <code>?</code> it becomes a variable. Variables can have any names.</p>
+<p>If not using semi-colons, we could have written the query as three separate statements:</p>
+<pre class="prettyprint"><code class="language-sparql">SELECT ?name ?description
+WHERE {
+    ?resource &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt; &lt;http://schema.org/Dataset&gt; .
+    ?resource &lt;http://schema.org/name&gt;                          ?name .
+    ?resource &lt;http://schema.org/description&gt;                   ?description .
+}
+</code></pre>
+<p>Let&rsquo;s imagine that we now want to also get the <code>contentUrl</code>, the query can be adapted to:</p>
+<pre class="prettyprint"><code class="language-sparql">SELECT ?name ?description ?contentUrl
+WHERE {
+    ?resource       &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;   &lt;http://schema.org/Dataset&gt; ;
+                    &lt;http://schema.org/name&gt;                            ?name ;
+                    &lt;http://schema.org/description&gt;                     ?description ;
+                    &lt;http://schema.org/distribution&gt;                    ?distribution .
+    ?distribution   &lt;http://schema.org/contentUrl&gt;                      ?contentUrl .
+}
+</code></pre>
+<p>This would result in the following table:</p>
+<table>
+  <thead>
+    <tr>
+      <th>name </th>
+      <th>description </th>
+      <th>contentURL </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dataset </td>
+      <td>My first dataset </td>
+      <td><a href="http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb">http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb</a> </td>
+    </tr>
+  </tbody>
+</table>
+<p>If there were more resources that matched the same graph patterns, the query would have returned them as well.</p>
+<h4><a href="#4-1-1-optional-improving-json-ld-id-context-and-more" name="4-1-1-optional-improving-json-ld-id-context-and-more" class="anchor"><span class="anchor-link"></span></a>4.1.1. (Optional) Improving JSON-LD: ID, Context and More</h4>
+<p>The JSON-LD payload above is quite verbose. Let&rsquo;s have a look at the different ways to improve it.</p>
+<p>The first thing to notice is that if I want to reference my dataset, I don&rsquo;t have an identifier. The node in the graph is a blank node <code>_:b0</code>. I can easily add an ID like this:</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@id&quot;: &quot;http://example.com/my_gradient_dataset&quot;,
+  &quot;@type&quot;: [
+    &quot;http://schema.org/Dataset&quot;,
+    &quot;http://www.w3.org/ns/prov#Entity&quot;
+  ],
+  &quot;http://schema.org/description&quot;: &quot;My first dataset&quot;,
+  &quot;http://schema.org/name&quot;: &quot;Dataset&quot;,
+  &quot;http://schema.org/distribution&quot;: [
+    {
+      &quot;@type&quot;: &quot;http://schema.org/DataDownload&quot;,
+      &quot;http://schema.org/contentUrl&quot;: {
+        &quot;@id&quot;: &quot;http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb&quot;
+      },
+      &quot;http://schema.org/name&quot;: &quot;mesh-gradient.png&quot;
+    }
+  ]
+}
+</code></pre>
+<p>Instead of <code>_:b0</code>, the node will be identified by <code>http://example.com/my_gradient_dataset</code>. The <code>@id</code> uniquely identifies node objects.</p>
+<p>Can we now make the JSON-LD less verbose and easier to read? Yes, by defining a context. A context defines the short-hand names used in the JSON-LD payload. In particular, a context can contain a <code>vocab</code>.</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot; : {
+    &quot;@vocab&quot; : &quot;http://schema.org/&quot;
+  },
+  &quot;@id&quot; : &quot;http://example.com/my_gradient_dataset&quot;,
+  &quot;@type&quot;: [
+    &quot;Dataset&quot;,
+    &quot;http://www.w3.org/ns/prov#Entity&quot;
+  ],
+  &quot;description&quot;: &quot;My first dataset&quot;,
+  &quot;name&quot;: &quot;Dataset&quot;,
+  &quot;distribution&quot;: [
+    {
+      &quot;@type&quot;: &quot;DataDownload&quot;,
+      &quot;contentUrl&quot;: {
+        &quot;@id&quot;: &quot;http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb&quot;
+      },
+      &quot;name&quot;: &quot;mesh-gradient.png&quot;
+    }
+  ]
+}
+</code></pre>
+<p>If you copy the above snippet to the <a href="https://json-ld.org/playground/" title="JSON-LD Playground" target="_blank" rel="noopener noreferrer">JSON-LD Playground</a> and look at the expanded form, you will notice that the properties all expand with the <code>http://schema.org/</code> prefix. Don&rsquo;t hesitate to do the same for the ones below. Play a little with the payload to see what happens to the expanded form.</p>
+<p>But what if we want to shorten specific values? We can add them in the context as well.</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot; : {
+    &quot;@vocab&quot; : &quot;http://schema.org/&quot;,
+    &quot;Entity&quot; : &quot;http://www.w3.org/ns/prov#Entity&quot;
+  },
+  &quot;@id&quot; : &quot;http://example.com/my_gradient_dataset&quot;,
+  &quot;@type&quot;: [
+    &quot;Dataset&quot;,
+    &quot;Entity&quot;
+  ],
+  &quot;description&quot;: &quot;My first dataset&quot;,
+  &quot;name&quot;: &quot;Dataset&quot;,
+  &quot;distribution&quot;: [
+    {
+      &quot;@type&quot;: &quot;DataDownload&quot;,
+      &quot;contentUrl&quot;: {
+        &quot;@id&quot;: &quot;http://example.com/cfb62f82-6d54-4e35-ab5e-3a3a164a04fb&quot;
+      },
+      &quot;name&quot;: &quot;mesh-gradient.png&quot;
+    }
+  ]
+}
+</code></pre>
+<p>Finally, the last improvement would be to shorten our IDs. For this we can use a base.</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot; : {
+    &quot;@base&quot; : &quot;http://example.com/&quot;,
+    &quot;@vocab&quot; : &quot;http://schema.org/&quot;,
+    &quot;Entity&quot; : &quot;http://www.w3.org/ns/prov#Entity&quot;
+  },
+  &quot;@id&quot; : &quot;my_gradient_dataset&quot;,
+  &quot;@type&quot;: [
+    &quot;Dataset&quot;,
+    &quot;Entity&quot;
+  ],
+  &quot;description&quot;: &quot;My first dataset&quot;,
+  &quot;name&quot;: &quot;Dataset&quot;,
+  &quot;distribution&quot;: [
+    {
+      &quot;@type&quot;: &quot;DataDownload&quot;,
+      &quot;contentUrl&quot;: {
+        &quot;@id&quot;: &quot;cfb62f82-6d54-4e35-ab5e-3a3a164a04fb&quot;
+      },
+      &quot;name&quot;: &quot;mesh-gradient.png&quot;
+    }
+  ]
+}
+</code></pre>
+<p>By default, in Nexus, the base (resp. vocab) defaults to your project, e.g. <code>https://bbp.epfl.ch/nexus/v1/resources/github-users/adulbrich/_/</code> (resp. <code>https://bbp.epfl.ch/nexus/v1/vocabs/github-users/adulbrich/</code>).</p>
+<p>The context can also point to another resource so that it is defined once and can be re-used in multiple resources. In Nexus, a default context for the <a href="https://bluebrain.github.io/nexus/contexts/metadata.json" title="Nexus-specific metadata" target="_blank" rel="noopener noreferrer">Nexus-specific metadata</a> is defined.</p>
+<p>There&rsquo;s much more to the <a href="https://w3c.github.io/json-ld-syntax/" title="JSON-LD syntax" target="_blank" rel="noopener noreferrer">JSON-LD syntax</a>. Don&rsquo;t hesitate to have a look for a more detailed explanation.</p>
+<h4><a href="#4-1-2-optional-improving-sparql-prefixes" name="4-1-2-optional-improving-sparql-prefixes" class="anchor"><span class="anchor-link"></span></a>4.1.2. (Optional) Improving SPARQL: Prefixes</h4>
+<p>The SPARQL query above was quite verbose in the sense that we had to write the full URI for predicates, similarly to the full properties URIs in the JSON payload.</p>
+<p>There is a way to shorten these with <code>PREFIX</code> statements. Prefixes are similar to the base and vocabs for JSON-LD in their use.</p>
+<pre class="prettyprint"><code class="language-sparql">PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX schema: &lt;http://schema.org/&gt;
+SELECT ?name ?description ?contentUrl
+WHERE {
+    ?resource       rdf:type            schema:Dataset ;
+                    schema:name         ?name ;
+                    schema:description  ?description ;
+                    schema:distribution ?distribution .
+    ?distribution   schema:contentUrl   ?contentUrl .
+}
+</code></pre>
+<p>The new query will yield the exact same results as the one defined earlier, but is much more readable. By defining prefixes, we can replace long URIs by the prefix and the actual property. This means that for example <code>&lt;http://schema.org/distribution&gt;</code> becomes <code>schema:distribution</code>.</p>
+<blockquote>
+  <p>You will often see that instead of <code>rdf:type</code> (the shortened version of <code>&lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#type&gt;</code>), people use <code>a</code>. This is an RDF specific keyword to point to types. In the example above, the line would then be <code>?resource a schema:Dataset</code>.</p>
+</blockquote>
+<p>You can learn more about SPARQL in the <a href="https://www.w3.org/TR/sparql11-query/" title="official documentation">official documentation</a>.</p>
+<h3><a href="#4-2-project-and-resource-views" name="4-2-project-and-resource-views" class="anchor"><span class="anchor-link"></span></a>4.2. Project and Resource Views</h3>
+<p>As you saw in the example above, we can use SPARQL to query the cells in our Nexus project.</p>
+<p>Let&rsquo;s start by accessing your Nexus instance or the <a href="https://sandbox.bluebrainnexus.io/web/" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a>. Go to Admin page (from the left hand side menu), and navigate to your organization and project.</p>
+<blockquote>
+  <p>In the Sandbox, the organization corresponds to the identity provider used, and the project to your username. For example, if you used GitHub, the organization will be <code>github-users</code> and your project will be your GitHub username.</p>
+</blockquote>
+<p>In the Project view, you will have the list of all resources that you&rsquo;ve registered within your project. You can filter by type or search for a specific term in the name, label, or description.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>Click on a resource to open the Resource view.</p><div class="center">
+<p><img src="../assets/tutorial-resource-view-with-plugins.png" alt="Resource View with Plugins" /></p></div>
+<p>Depending on the resource data type, you might see one or more &ldquo;plugins&rdquo;. Plugins are components that will show up for specific resources or properties. For example, if you registered a neuron morphology and the data is properly attached through the distribution, you will be able to see a 3D morphology browser plugin.</p><div class="center">
+<p><img src="../assets/tutorial-morphology-plugin.png" alt="Morphology Plugin" /></p></div>
+<p>More importantly, you will find the Admin plugin at the bottom of the view. Expand it and you will see the actual resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.</p><div class="center">
+<p><img src="../assets/tutorial-admin-plugin.png" alt="Admin Plugin" /></p></div>
+<p>Here&rsquo;s an example of the JSON payload of the neuron morphology resource previously registered (context left out for clarity):</p>
+<pre class="prettyprint"><code class="language-json">{
+  &quot;@context&quot;: {...},
+  &quot;@id&quot;: &quot;https://bbp.epfl.ch/neurosciencegraph/data/neuronmorphologies/491ea474-34f1-4143-8e1d-9f077602d36e&quot;,
+  &quot;@type&quot;: [
+    &quot;Dataset&quot;,
+    &quot;NeuronMorphology&quot;
+  ],
+  &quot;apicalDendrite&quot;: &quot;spiny&quot;,
+  &quot;brainLocation&quot;: {
+    &quot;@type&quot;: &quot;BrainLocation&quot;,
+    &quot;brainRegion&quot;: {
+      &quot;@id&quot;: &quot;mba:778&quot;,
+      &quot;label&quot;: &quot;VISp5&quot;
+    },
+    &quot;coordinatesInBrainAtlas&quot;: {
+      &quot;valueX&quot;: 8881,
+      &quot;valueY&quot;: 953.839501299405,
+      &quot;valueZ&quot;: 7768.22695782726
+    },
+    &quot;hemisphere&quot;: &quot;right&quot;,
+    &quot;layer&quot;: &quot;5&quot;
+  },
+  &quot;cell_reporter_status&quot;: &quot;positive&quot;,
+  &quot;contribution&quot;: {
+    &quot;@type&quot;: &quot;Contribution&quot;,
+    &quot;agent&quot;: {
+      &quot;@id&quot;: &quot;https://www.grid.ac/institutes/grid.417881.3&quot;,
+      &quot;@type&quot;: &quot;Organization&quot;,
+      &quot;label&quot;: &quot;Allen Institute for Brain Science&quot;
+    }
+  },
+  &quot;csl__normalized_depth&quot;: 0.478343598387418,
+  &quot;distribution&quot;: {
+    &quot;@type&quot;: &quot;DataDownload&quot;,
+    &quot;atLocation&quot;: {
+      &quot;@type&quot;: &quot;Location&quot;,
+      &quot;store&quot;: {
+        &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/diskStorageDefault&quot;
+      }
+    },
+    &quot;contentSize&quot;: {
+      &quot;unitCode&quot;: &quot;bytes&quot;,
+      &quot;value&quot;: 83865
+    },
+    &quot;contentUrl&quot;: &quot;https://sandbox.bluebrainnexus.io/v1/files/github-users/adulbrich/30704eaf-7c87-4d74-8d41-50f673961580&quot;,
+    &quot;digest&quot;: {
+      &quot;algorithm&quot;: &quot;SHA-256&quot;,
+      &quot;value&quot;: &quot;833a94e1b6de4b4bc5beef4ccc75f84cfec9d5e5f40752d7cefb0ed1f545bbda&quot;
+    },
+    &quot;encodingFormat&quot;: &quot;application/swc&quot;,
+    &quot;name&quot;: &quot;reconstruction.swc&quot;
+  },
+  &quot;generation&quot;: {
+    &quot;@type&quot;: &quot;Generation&quot;,
+    &quot;activity&quot;: {
+      &quot;@type&quot;: &quot;NeuronMorphologyReconstruction&quot;,
+      &quot;hadProtocol&quot;: {}
+    }
+  },
+  &quot;identifier&quot;: 485909730,
+  &quot;license&quot;: {
+    &quot;@id&quot;: &quot;https://alleninstitute.org/legal/terms-use/&quot;,
+    &quot;@type&quot;: &quot;License&quot;
+  },
+  &quot;name&quot;: &quot;Cux2-CreERT2;Ai14-205530.03.02.01&quot;,
+  &quot;nr__average_contraction&quot;: 0.891127894162828,
+  &quot;nr__average_parent_daughter_ratio&quot;: 0.844376941289302,
+  &quot;nr__max_euclidean_distance&quot;: 446.97383394351,
+  &quot;nr__number_bifurcations&quot;: 18,
+  &quot;nr__number_stems&quot;: 7,
+  &quot;nr__reconstruction_type&quot;: &quot;dendrite-only&quot;,
+  &quot;objectOfStudy&quot;: {
+    &quot;@id&quot;: &quot;http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells&quot;,
+    &quot;@type&quot;: &quot;ObjectOfStudy&quot;,
+    &quot;label&quot;: &quot;Single Cell&quot;
+  },
+  &quot;subject&quot;: {
+    &quot;@type&quot;: &quot;Subject&quot;,
+    &quot;age&quot;: {
+      &quot;period&quot;: &quot;Post-natal&quot;
+    },
+    &quot;identifier&quot;: 485250100,
+    &quot;name&quot;: &quot;Cux2-CreERT2;Ai14-205530&quot;,
+    &quot;sex&quot;: {},
+    &quot;species&quot;: {
+      &quot;label&quot;: &quot;Mus musculus&quot;
+    },
+    &quot;strain&quot;: {
+      &quot;label&quot;: &quot;Cux2-CreERT2&quot;
+    }
+  },
+  &quot;tag__apical&quot;: &quot;intact&quot;
+}
+</code></pre>
+<h3><a href="#4-3-query-neuroscience-data" name="4-3-query-neuroscience-data" class="anchor"><span class="anchor-link"></span></a>4.3. Query Neuroscience Data</h3>
+<p>Going back to the project view, you will notice a link to the <code>SPARQL Query Editor</code>. Let&rsquo;s click on it and start experimenting.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>We want to list the morphologies that we previously registered in our project. Let&rsquo;s write some SPARQL to retrieve it.</p>
+<pre class="prettyprint"><code class="language-sparql">PREFIX nxv: &lt;https://bluebrain.github.io/nexus/vocabulary/&gt;
+PREFIX nsg: &lt;https://neuroshapes.org/&gt;
+PREFIX schema: &lt;http://schema.org/&gt;
+PREFIX prov: &lt;http://www.w3.org/ns/prov#&gt;
+PREFIX rdf: &lt;http://www.w3.org/1999/02/22-rdf-syntax-ns#&gt;
+PREFIX rdfs: &lt;http://www.w3.org/2000/01/rdf-schema#&gt;
+PREFIX skos: &lt;http://www.w3.org/2004/02/skos/core#&gt;
+SELECT DISTINCT ?self ?name  ?brainRegion ?brainRegionLayer ?subjectSpecies ?subjectStrain ?registered_by ?registeredAt
+WHERE {
+?entity nxv:self                                            ?self ;
+        a                                                   nsg:NeuronMorphology ;
+        schema:name                                         ?name ;
+        nxv:createdBy                                       ?registered_by ;
+        nxv:createdAt                                       ?registeredAt ;
+        nxv:deprecated                                      false ;
+        nsg:brainLocation / nsg:brainRegion / rdfs:label    ?brainRegion ;
+        nsg:brainLocation / nsg:layer                       ?brainRegionLayer ;
+        nsg:subject / nsg:species / rdfs:label              ?subjectSpecies ;
+        nsg:subject / nsg:strain / rdfs:label               ?subjectStrain.    
+} 
+LIMIT 1000     
+</code></pre>
+<p>We list a couple more prefixes in this query. Even though we don&rsquo;t use most of them, they are common ones.</p>
+<p>We introduce a new notation to traverse the graph: slashes <code>/</code>. This helps us writing more succinct queries by not referencing a temporary variable every time we want to traverse a node.</p>
+<p>Finally, you will notice the <code>self</code>. This is an internal Nexus property (in addition to <code>createdBy</code> and <code>createdAt</code>, as illustrated by the use of the <code>nxv</code> prefix) that points to the actual source of the resource. We will need the self to open the resource view from a Studio (see next section).</p>
+<blockquote>
+  <p>Note that we have have a <code>LIMIT 1000</code> clause at the end. This will limit the number of returned results in case there are more than 1000.</p>
+</blockquote>
+<p>Here&rsquo;s the result of the above query:</p>
+<table>
+  <thead>
+    <tr>
+      <th>self </th>
+      <th>name </th>
+      <th>brainRegion </th>
+      <th>brainRegionLayer </th>
+      <th>subjectSpecies </th>
+      <th>subjectStrain </th>
+      <th>registered_by </th>
+      <th>registeredAt </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="https://sandbox.bluebrainnexus.io/v1/resources/github-users/adulbrich/_/...">https://sandbox.bluebrainnexus.io/v1/resources/github-users/adulbrich/_/...</a> </td>
+      <td>Cux2-CreERT2;Ai14-205530.03.02.01 </td>
+      <td>VISp5 </td>
+      <td>5 </td>
+      <td>Mus musculus </td>
+      <td>Cux2-CreERT2 </td>
+      <td><a href="https://sandbox.bluebrainnexus.io/v1/realms/github/users/adulbrich">https://sandbox.bluebrainnexus.io/v1/realms/github/users/adulbrich</a> </td>
+      <td>2021-07-27T18:58:45.238Z</td>
+    </tr>
+  </tbody>
+</table>
+<h3><a href="#4-4-create-a-studio" name="4-4-create-a-studio" class="anchor"><span class="anchor-link"></span></a>4.4. Create a Studio</h3>
+<p>Go back to your project view in the Admin section of the Sandbox. In the top right corner, click on &ldquo;Manage Studios for this Project&rdquo;.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
+<p>You will land on:</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-studios-admin.png" alt="Sandbox Home" /></p></div>
+<p>On this page you can create a new studio. A Studio is a dedicated web page in your project that you can organise into pages (workspaces) and sections (dashboards) and list your data in a logical way. The tables are powered by SPARQL queries and the data present in your project.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-studio-empty.png" alt="Sandbox Home" /></p></div>
+<p>Start by creating a Workspace.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png" alt="Sandbox Home" /></p></div>
+<p>Then create a Dashboard, using the SPARQL query above.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png" alt="Sandbox Home" /></p></div>
+<p>Because we are using the self, clicking on a row of the newly created table will open the resource view.</p>
+<p>It&rsquo;s your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above. The results should look like this:</p>
+<blockquote>
+  <p>TODO: ADD SCREENSHOT OF EPHYS TABLE</p>
+</blockquote>
+<p>Congratulations! You&rsquo;ve created your very first studio, which completes this tutorial step.</p>
+<h2><a href="#step-5-finding-similar-datasets-using-recommendations" name="step-5-finding-similar-datasets-using-recommendations" class="anchor"><span class="anchor-link"></span></a>Step 5: Finding Similar Datasets using Recommendations</h2>
+<p>In this section, you will first learn about recommendation systems, then reuse the data you have integrated in Nexus in previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or electrophysiology recording. </p>
+<h3><a href="#5-1-introduction-to-recommendations" name="5-1-introduction-to-recommendations" class="anchor"><span class="anchor-link"></span></a>5.1. Introduction to Recommendations</h3>
+<p>Recommendation systems are widely used in many domains, for example, streaming services provide recommendations for movies or songs, online stores generate product recommendations, etc. Such systems allow selecting the most relevant entities from the vast space of all the available choices. This selection can be based on different criteria, for example, various features of target entities (movie genre, country, cast), user profiles, and interactions with the entities of interest (for example, previously watched movies). </p>
+<p>In a similar way, there is a need for recommendation systems that help us to explore our Knowledge Graphs when they become overwhelmingly large. Given a node in a Knowledge Graph (corresponding to, for example, a neuron morphology dataset), we may want to recommend a set of most similar nodes according to some complex criteria.</p>
+<p>One of the most common techniques for building a recommendation system is based on entity embedding that represents each entity with a numerical vector. Given a starting entity (a neuron morphology dataset), the task of finding similar entities can be reduced to a simple search for the nearest neighbors in the vector space of our embedding.</p>
+<p>One of the first modern approaches to entity embedding reflecting their semantic similarity was developed by the Natural Language Processing (NLP) community and is called <a href="https://arxiv.org/abs/1301.3781" title="word2vec">word2vec</a>. To generate vector representations of words, it trains a neural network on a large text corpus from which word contexts are extracted. The resulting vector representation is able to capture the semantic similarity between different words.</p>
+<p>Similarity to word2vec, <a href="https://dl.acm.org/doi/abs/10.1145/2939672.2939754" title="node2vec">node2vec</a> builds vector representations of graph nodes. To generate &lsquo;context&rsquo; for different nodes, this approach performs random walks and explores the neighborhood of a given node. </p>
+<p>Finally, another derivative of word2vec, adapted specifically for building node embedding on Knowledge Graphs, is called <a href="https://madoc.bib.uni-mannheim.de/41307/1/Ristoski_RDF2Vec.pdf" title="rdf2vec">rdf2vec</a>. </p>
+<p>In this tutorial, we use rdf2vec in order to build a toy recommendation system for exploring similar neuron morphologies and electrophysiology recordings.</p>
+<p>Further reads on graph embedding: - <a href="https://www.sciencedirect.com/science/article/pii/S0950705118301540" title="Graph embedding techniques, applications, and performance: A survey">Graph embedding techniques, applications, and performance: A survey</a> - <a href="https://ieeexplore.ieee.org/abstract/document/8047276" title="Knowledge Graph Embedding: A Survey of Approaches and Applications">Knowledge Graph Embedding: A Survey of Approaches and Applications</a></p>
+<h3><a href="#5-2-running-the-notebook" name="5-2-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>5.2. Running the Notebook</h3>
+<ul>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexuss.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
+  <li><a href="https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F" title="Binder" target="_blank" rel="noopener noreferrer">Binder</a></li>
+</ul>
+<p>To run the notebook locally, open your terminal, clone the <a href="https://github.com/BlueBrain/nexus" title="Nexus repository" target="_blank" rel="noopener noreferrer">Nexus repository</a>, go to the notebook directory, and run Jupyter:</p>
+<pre class="prettyprint"><code class="language-bash">git clone https://github.com/BlueBrain/nexus.git
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd nexus
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">cd docs/src/main/paradox/docs/getting-started/notebooks
+</code></pre>
+<pre class="prettyprint"><code class="language-bash">jupyter MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb
+</code></pre>
+<p>Well done! You have now completed the last part of this tutorial. To learn more, scroll down or navigate to our documentation, or start contributing to our Github repositories.</p>
+<p>If you have reached this tutorial via the <a href="https://www.edx.org/course/simulation-neuroscience" title="Simulation Neuroscience MOOC">Simulation Neuroscience MOOC</a>, you can now head back to the <a href="https://www.edx.org/course/simulation-neuroscience" title="edX platform">edX platform</a> and complete this week assignment.</p>
 <h2><a href="#learn-more" name="learn-more" class="anchor"><span class="anchor-link"></span></a>Learn More</h2>
-<h3><a href="#querying-knowledge-graph-using-sparql" name="querying-knowledge-graph-using-sparql" class="anchor"><span class="anchor-link"></span></a>Querying knowledge graph using SPARQL</h3>
-<p>This tutorial introduces the basics of SPARQL, a query language for querying RDF based knowledge graph. It also demonstrates how to query a Nexus SparqlView.</p>
-<p>You&rsquo;ll build queries to explore and navigate a knowledge graph using SPARQL and Nexus.</p>
-<p>You&rsquo;ll learn:</p>
-<ul>
-  <li>the basics of the SPARQL query language,</li>
-  <li>how to connect to and query a SparqlView in Nexus.</li>
-</ul>
-<p>You&rsquo;ll need Python 3.5 or higher with support for Jupyter notebook.</p>
-<p>This tutorial code is available on:</p>
-<ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
-</ul>
-<h3><a href="#querying-a-knowledge-graph-using-elasticsearch" name="querying-a-knowledge-graph-using-elasticsearch" class="anchor"><span class="anchor-link"></span></a>Querying a Knowledge Graph using Elasticsearch</h3>
-<p>The goal of this notebook is to learn how to connect to an Elasticsearch view and run queries against it.</p>
-<p>It is not a tutorial about the Elasticsearch DSL language for which many well written <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="learning resources are available" target="_blank" rel="noopener noreferrer">learning resources are available</a>.</p>
-<p>You&rsquo;ll build a simple python client to connect to a Nexus ElasticSearchView and query a knowledge graph using Elasticsearch DSL.</p>
-<p>You&rsquo;ll learn how to connect to and query a ElasticSearchView in Nexus.</p>
-<p>You&rsquo;ll need Python 3.5 or higher with support for Jupyter notebook.</p>
-<p>The tutorial code is available on:</p>
-<ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
-</ul>
-<h3><a href="#linking-data-on-the-web" name="linking-data-on-the-web" class="anchor"><span class="anchor-link"></span></a>Linking data on the web</h3>
-<p>In this tutorial, we demonstrate how to consume structured data published on the web according to the Linked data principles to extend and enrich a knowledge graph.</p>
-<p>You&rsquo;ll build a simple pipeline to query entities managed within Blue Brain Nexus, connect them with entities available on the web as structured data and extend and enrich their metadata.</p>
-<p>You&rsquo;ll learn:</p>
-<ul>
-  <li>an understanding of linked data principles,</li>
-  <li>how to query data stored in a Nexus SparqlView,</li>
-  <li>how to query structured data on the web,</li>
-  <li>how to extend the metadata of entities managed within Blue Brain Nexus with external structured data on the web: we target <a href="https://www.wikidata.org/wiki/Wikidata:Main_Page" title="Wikidata" target="_blank" rel="noopener noreferrer">Wikidata</a> as an example,</li>
-  <li>how to update entities within Blue Brain Nexus using the <a href="https://github.com/BlueBrain/nexus-python-sdk" title="SDK" target="_blank" rel="noopener noreferrer">SDK</a> and enrich their metadata.</li>
-</ul>
-<p>You&rsquo;ll need Python 3.5 or higher with support for Jupyter notebook.</p>
-<p>This tutorial code is available on:</p>
-<ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb" title="Google Colab" target="_blank" rel="noopener noreferrer">Google Colab</a></li>
-</ul>
+<h3><a href="#another-tutorial-with-the-movielens-dataset" name="another-tutorial-with-the-movielens-dataset" class="anchor"><span class="anchor-link"></span></a>Another Tutorial with the MovieLens Dataset</h3>
+<p>Nexus can be used to manage more than neuroscience data. If you want to try it, head over to our <a href="try-nexus-movielens.html">MovieLens Tutorial</a>!</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/try-nexus.md" title="Edit this page" class="md-source-file md-edit">
@@ -442,13 +1005,13 @@ Understanding Knowledge Graphs
 </span>
 </div>
 </a>
-<a href="../../docs/getting-started/running-nexus/index.html" title="Running Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/getting-started/try-nexus-movielens.html" title="Try Nexus with the MovieLens Dataset" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Running Nexus
+Try Nexus with the MovieLens Dataset
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

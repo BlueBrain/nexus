@@ -144,7 +144,8 @@ BlueBrain/nexus
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
-    <li><a href="../../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="active page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -182,7 +183,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -735,7 +737,7 @@ $
 </ul>
 <p>Each of the Nexus services and &ldquo;off the shelf&rdquo; products can be deployed as a single instance or as a cluster (with one exception at this point being BlazeGraph which doesn&rsquo;t come with a clustering option). The advantages for deploying clusters are generally higher availability, capacity and throughput at the cost of higher latency, consistency and having to potentially deal with network instability.</p>
 <p>The decision to go with single node deployments or clustered deployments can be revisited later on and mixed setups (some services single node while others clustered) are also possible.</p>
-<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>, <a href="https://www.openshift.com/" title="OpenShift" target="_blank" rel="noopener noreferrer">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/" title="Docker Swarm" target="_blank" rel="noopener noreferrer">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
+<p>The Nexus distribution is made up of docker images which can be run on any host operating system and each of the &ldquo;off the shelf&rdquo; products also offer docker as a deployment option. We would generally recommend using a container orchestration solution like <a href="https://kubernetes.io/" title="Kubernetes" target="_blank" rel="noopener noreferrer">Kubernetes</a>, <a href="https://www.redhat.com/en/technologies/cloud-computing/openshift" title="OpenShift" target="_blank" rel="noopener noreferrer">OpenShift</a> or <a href="https://docs.docker.com/engine/swarm/" title="Docker Swarm" target="_blank" rel="noopener noreferrer">Docker Swarm</a> as they offer good management capabilities, discovery, load balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within OpenShift.</p>
 <h3><a href="#choice-of-hardware" name="choice-of-hardware" class="anchor"><span class="anchor-link"></span></a>Choice of hardware</h3>
 <p>Depending on the target throughput, usage profiles and data volume the hardware specification can vary greatly; please take a look at the <a href="../../delta/benchmarks/v1.4.2.html">benchmarks section</a> to get an idea of what you should expect in terms of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb should narrow the scope:</p>
 <ol>
@@ -827,7 +829,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/getting-started/try-nexus.html" title="Try Nexus" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/getting-started/try-nexus-movielens.html" title="Try Nexus with the MovieLens Dataset" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -836,7 +838,7 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Try Nexus
+Try Nexus with the MovieLens Dataset
 </span>
 </div>
 </a>

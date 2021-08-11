@@ -144,7 +144,8 @@ BlueBrain/nexus
   <li><a href="../../../docs/getting-started/index.html" class="page">Getting Started</a>
   <ul>
     <li><a href="../../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
-    <li><a href="../../../docs/getting-started/try-nexus.html" class="page">Try Nexus</a></li>
+    <li><a href="../../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
@@ -182,7 +183,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -190,6 +191,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="active page">Projects</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -235,6 +237,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-specific-version-" class="header">Fetch (specific version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#list" class="header">List</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -269,6 +272,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-specific-version-" class="header">Fetch (specific version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#list" class="header">List</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -1020,6 +1024,30 @@ data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/met
 event:ProjectDeprecated
 id:0d5a5250-b1a7-11eb-a162-35a8ee728fbb</code></pre></dd>
 </dl>
+<h2><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h2><div class="callout note warning"><div class="callout-title">Note</div>
+<p>This endpoint is experimental and the response structure might change in the future.</p></div>
+<pre><code>GET /v1/projects/{org_label}/{label}/statistics
+</code></pre>
+<p>It returns:</p>
+<ul>
+  <li>the dateTime of the latest consumed event (<code>lastProcessedEventDateTime</code>).</li>
+  <li>the number of consumed events (<code>eventsCount</code>).</li>
+  <li>the number of consumed resources (<code>resourcesCount</code>). A resource might be made of multiple events (create, update, deprecate), so this number will always be smaller or equal to <code>eventsCount</code>.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/fetch-statistics.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/projects/myorg/myproject/statistics&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/fetched-statistics.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
+  &quot;lastProcessedEventDateTime&quot;: &quot;2021-05-10T00:00:00Z&quot;,
+  &quot;eventsCount&quot;: 10,
+  &quot;resourcesCount&quot;: 8
+}</code></pre></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/projects-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -1051,13 +1079,13 @@ Organizations
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/schemas-api.html" title="Schemas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/quotas.html" title="Quotas" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Schemas
+Quotas
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
