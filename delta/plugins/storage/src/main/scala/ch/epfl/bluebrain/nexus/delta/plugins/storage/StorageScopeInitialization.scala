@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
+import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -28,6 +28,7 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
     volume = None,
     readPermission = None,
     writePermission = None,
+    capacity = None,
     maxFileSize = None
   )
 

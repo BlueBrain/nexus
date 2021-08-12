@@ -287,6 +287,26 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
     }
   }
 
+  "getting statistics" should {
+    "return the correct statistics" in eventually {
+      deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId/statistics", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterKey("lastProcessedEventDateTime")(json) shouldEqual jsonContentOf("/kg/storages/statistics.json")
+      }
+    }
+
+    "fail for an unknown storage" in eventually {
+      deltaClient.get[Json](s"/storages/$fullId/nxv:fail/statistics", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.NotFound
+        json shouldEqual jsonContentOf(
+          "/kg/storages/not-found.json",
+          "storageId" -> (nxv + "fail"),
+          "projId"    -> s"$fullId"
+        )
+      }
+    }
+  }
+
   private def attachmentString(filename: String): String = {
     val encodedFilename = BaseEncoding.base64().encode(filename.getBytes(Charsets.UTF_8))
     s"=?UTF-8?B?$encodedFilename?="

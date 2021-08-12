@@ -23,7 +23,7 @@ class ElasticSearchIndexingAction(
     extends IndexingAction {
   override protected def execute(project: ProjectRef, res: EventExchangeValue[_, _]): IO[IndexingActionFailed, Unit] =
     (for {
-      projectViews <- cache.get(project).map { vs =>
+      projectViews <- cache.values(project).map { vs =>
                         vs.filter(v => v.value.tpe == ElasticSearchViewType.ElasticSearch && !v.deprecated)
                           .map(_.map(_.asInstanceOf[IndexingElasticSearchView]))
                       }

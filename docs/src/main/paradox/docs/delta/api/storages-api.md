@@ -36,6 +36,7 @@ local file-system structure and that Nexus has read and write access to the targ
   "volume": "{volume}",
   "readPermission": "{read_permission}",
   "writePermission": "{write_permission}",
+  "capacity": "{capacity}",
   "maxFileSize": {max_file_size}
 }
 ```
@@ -46,6 +47,7 @@ local file-system structure and that Nexus has read and write access to the targ
 - `{volume}`: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-volume` (`/tmp`).
 - `{read_permission}`: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-read-permission` (`resources/read`).
 - `{write_permission}`: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-write-permission` (`files/write`).
+- `{capacity}`: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-capacity` (None).
 - `{max_file_size}`: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag `plugins.storage.storages.disk.default-max-file-size` (10G).
 
 ### Remote disk storage
@@ -382,3 +384,28 @@ Request
 
 Response
 :   @@snip [sse.json](assets/storages/sse.json)
+
+## Fetch statistics
+
+@@@ note { .warning }
+
+This endpoint is experimental and the response structure might change in the future.
+
+@@@
+
+```
+GET /v1/storages/{org_label}/{project_label}/{storage_id}/statistics
+```
+It returns:
+
+- the instant of the latest consumed event (`lastProcessedEventDateTime`).
+- the number of physical files stored on the storage  (`files`).
+- the space used by this file on the given storage (`spaceUsed`).
+
+**Example**
+
+Request
+:   @@snip [fetch-statistics.sh](assets/storages/fetch-statistics.sh)
+
+Response
+:   @@snip [fetched-statistics.json](assets/storages/fetched-statistics.json)
