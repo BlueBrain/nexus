@@ -30,12 +30,6 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
       case _               => UIO.none
     }
 
-  private def resourceToValue(
-      resourceIO: IO[SchemaRejection, SchemaResource]
-  )(implicit enc: JsonLdEncoder[A]): UIO[Option[EventExchangeValue[A, M]]] =
-    resourceIO
-      .map { res =>
-        Some(Schemas.eventExchangeValue(res))
-      }
-      .onErrorHandle(_ => None)
+  private def resourceToValue(resourceIO: IO[SchemaRejection, SchemaResource])(implicit enc: JsonLdEncoder[A]) =
+    resourceIO.map(Schemas.eventExchangeValue).redeem(_ => None, Some(_))
 }

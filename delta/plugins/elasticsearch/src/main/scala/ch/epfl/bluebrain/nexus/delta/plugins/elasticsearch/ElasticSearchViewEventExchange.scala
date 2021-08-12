@@ -3,9 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchView, ElasticSearchViewEvent, ElasticSearchViewRejection, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue}
 import monix.bio.{IO, UIO}
 
 /**
@@ -31,12 +30,8 @@ class ElasticSearchViewEventExchange(views: ElasticSearchViews)(implicit base: B
       case _                          => UIO.none
     }
 
-  private def resourceToValue(
-      resourceIO: IO[ElasticSearchViewRejection, ViewResource]
-  )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
-    resourceIO
-      .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata)))
-      }
-      .onErrorHandle(_ => None)
+  private def resourceToValue(resourceIO: IO[ElasticSearchViewRejection, ViewResource])(implicit
+      enc: JsonLdEncoder[A]
+  ) =
+    resourceIO.map(ElasticSearchViews.eventExchangeValue).redeem(_ => None, Some(_))
 }
