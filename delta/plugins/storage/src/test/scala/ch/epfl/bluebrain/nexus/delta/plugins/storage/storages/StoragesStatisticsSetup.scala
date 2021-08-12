@@ -9,12 +9,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import monix.bio.{IO, UIO}
 
-object StorageStatisticsSetup {
+object StoragesStatisticsSetup {
 
-  def init(projects: Map[ProjectRef, Project], stats: Map[ProjectRef, Map[Iri, StorageStatEntry]]): StoragesStatistics =
+  def init(stats: Map[Project, Map[Iri, StorageStatEntry]]): StoragesStatistics =
     new StoragesStatistics {
 
-      override def get(): UIO[StorageStatsCollection] = UIO.pure(StorageStatsCollection(stats))
+      private val projectsMap: Map[ProjectRef, Project] = stats.keys.groupBy(_.ref).map {
+        case (ref, set) if set.size == 1 => ref -> set.head
+        case (ref, set)                  =>
+          throw new IllegalArgumentException(
+            s"All provided projects must have a distinct reference, $ref appears ${set.size} times"
+          )
+      }
+
+      private val statsByProjectRef = stats.map { case (project, value) =>
+        project.ref -> value
+      }
+
+      override def get(): UIO[StorageStatsCollection] = UIO.pure(StorageStatsCollection(statsByProjectRef))
 
       override def get(project: ProjectRef): UIO[Map[Iri, StorageStatEntry]] =
         get().map(_.value.getOrElse(project, Map.empty[Iri, StorageStatEntry]))
@@ -24,7 +36,7 @@ object StorageStatisticsSetup {
           project: ProjectRef
       ): IO[StorageRejection.StorageFetchRejection, StorageStatsCollection.StorageStatEntry] =
         for {
-          p    <- IO.fromOption(projects.get(project), WrappedProjectRejection(ProjectNotFound(project)))
+          p    <- IO.fromOption(projectsMap.get(project), WrappedProjectRejection(ProjectNotFound(project)))
           iri  <- Storages.expandIri(idSegment, p)
           stat <- IO.fromOptionEval(get(project).map(_.get(iri)), StorageNotFound(iri, project))
         } yield stat

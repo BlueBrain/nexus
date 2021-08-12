@@ -92,10 +92,9 @@ class StoragesRoutesSpec
   private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   implicit private val c    = crypto
 
-  private val storageStatistics = StorageStatisticsSetup.init(
-    Map(project.value.ref -> project.value),
+  private val storageStatistics = StoragesStatisticsSetup.init(
     Map(
-      project.value.ref   -> Map(
+      project.value -> Map(
         dId  -> StorageStatEntry(10L, 1000L, Instant.ofEpochMilli(1000L)),
         rdId -> StorageStatEntry(50L, 5000L, Instant.ofEpochMilli(5000L)),
         s3Id -> StorageStatEntry(100L, 10000L, Instant.ofEpochMilli(10000L))

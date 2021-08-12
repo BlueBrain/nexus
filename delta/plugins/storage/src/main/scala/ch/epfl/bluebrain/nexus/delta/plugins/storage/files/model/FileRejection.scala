@@ -143,6 +143,16 @@ object FileRejection {
       extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
 
   /**
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not contain
+    * a ''file'' fieldName
+    */
+  final case class FileTooLarge(maxFileSize: Long, storageAvailableSpace: Option[Long])
+      extends FileRejection(
+        s"File size exceeds the max file size for the storage ($maxFileSize bytes)${storageAvailableSpace
+          .fold("") { r => s" or its remaining available space ($r bytes)" }}."
+      )
+
+  /**
     * Rejection returned when attempting to interact with a file and the caller does not have the right permissions
     * defined in the storage.
     *
@@ -298,6 +308,7 @@ object FileRejection {
       case FileNotFound(_, _)                                              => (StatusCodes.NotFound, Seq.empty)
       case ResourceAlreadyExists(_, _)                                     => (StatusCodes.Conflict, Seq.empty)
       case IncorrectRev(_, _)                                              => (StatusCodes.Conflict, Seq.empty)
+      case FileTooLarge(_, _)                                              => (StatusCodes.PayloadTooLarge, Seq.empty)
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
       case WrappedProjectRejection(rej)                                    => (rej.status, rej.headers)
