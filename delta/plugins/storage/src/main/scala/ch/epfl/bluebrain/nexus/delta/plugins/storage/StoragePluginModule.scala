@@ -160,13 +160,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           orgs: Organizations,
           projects: Projects,
           storages: Storages,
+          storagesStatistics: StoragesStatistics,
           resourceIdCheck: ResourceIdCheck,
           clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, resourceIdCheck)(
+        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, storagesStatistics, resourceIdCheck)(
           client,
           uuidF,
           clock,

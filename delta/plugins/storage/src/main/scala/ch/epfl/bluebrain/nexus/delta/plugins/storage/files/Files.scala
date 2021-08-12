@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fileSchema}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage, StorageType}
@@ -64,7 +64,8 @@ final class Files(
     acls: Acls,
     orgs: Organizations,
     projects: Projects,
-    storages: Storages
+    storages: Storages,
+    storagesStatistics: StoragesStatistics
 )(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
 
   // format: off
@@ -459,7 +460,15 @@ final class Files(
 
   private def extractFileAttributes(iri: Iri, entity: HttpEntity, storage: Storage): IO[FileRejection, FileAttributes] =
     for {
-      (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize)
+      storageAvailableSpace <- storage.storageValue.capacity.fold(UIO.none[Long]) { capacity =>
+                                 storagesStatistics
+                                   .get(storage.id, storage.project)
+                                   .redeem(
+                                     _ => Some(capacity),
+                                     stat => Some(capacity - stat.spaceUsed)
+                                   )
+                               }
+      (description, source) <- formDataExtractor(iri, entity, storage.storageValue.maxFileSize, storageAvailableSpace)
       attributes            <- SaveFile(storage).apply(description, source).mapError(SaveRejection(iri, storage.id, _))
     } yield attributes
 
@@ -519,6 +528,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages,
+      storagesStatistics: StoragesStatistics,
       resourceIdCheck: ResourceIdCheck
   )(implicit
       client: HttpClient,
@@ -529,7 +539,7 @@ object Files {
   ): Task[Files] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, idAvailability)
+    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, storagesStatistics, idAvailability)
   }
 
   private[files] def apply(
@@ -540,6 +550,7 @@ object Files {
       orgs: Organizations,
       projects: Projects,
       storages: Storages,
+      storagesStatistics: StoragesStatistics,
       idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit
       client: HttpClient,
@@ -552,7 +563,7 @@ object Files {
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
       agg  <- aggregate(config.aggregate, idAvailability)
-      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages)
+      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
       _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }

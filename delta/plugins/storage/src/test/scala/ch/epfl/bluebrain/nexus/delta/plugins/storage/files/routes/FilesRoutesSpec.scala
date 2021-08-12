@@ -103,7 +103,9 @@ class FilesRoutesSpec
         )
         .accepted
       storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
-      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
+      storages
+        .create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge json"""{"capacity":5000}"""))
+        .accepted
     }
 
     "fail to create a file without disk/write permission" in {
@@ -156,6 +158,13 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1", entity()) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("/file/errors/already-exists.json", "id" -> file1)
+      }
+    }
+
+    "reject the creation of a file that is too large" in {
+      Put("/v1/files/org/proj/file-too-large", randomEntity(filename = "large-file.txt", 1100)) ~> routes ~> check {
+        status shouldEqual StatusCodes.PayloadTooLarge
+        response.asJson shouldEqual jsonContentOf("/file/errors/file-too-large.json")
       }
     }
 
