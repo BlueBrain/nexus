@@ -19,13 +19,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Quotas, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithEventQuotas, notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, OptionValues}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -37,7 +39,8 @@ trait ProjectsBehaviors {
     with IOFixedClock
     with TestHelpers
     with CancelAfterFailure
-    with OptionValues =>
+    with OptionValues
+    with Inspectors =>
 
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
@@ -109,9 +112,9 @@ trait ProjectsBehaviors {
     orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
   }.accepted
 
-  def create: Task[Projects]
+  def create(quotas: Quotas): Task[Projects]
 
-  lazy val projects: Projects = create.accepted
+  lazy val projects: Projects = create(QuotasDummy.neverReached).accepted
 
   val ref = ProjectRef.unsafe("org", "proj")
 
@@ -360,30 +363,51 @@ trait ProjectsBehaviors {
     }
 
     "fetch a project which has not been deprecated nor its organization" in {
-      projects.fetchActiveProject(anotherRef).accepted shouldEqual anotherProjResource.value
+      forAll(
+        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
+      ) { options =>
+        projects.fetchProject(anotherRef, options).accepted shouldEqual anotherProjResource.value
+      }
     }
 
-    "not fetch a deprecated project with fetchActive" in {
-      projects.fetchActiveProject(ref).rejectedWith[RejectionWrapper] shouldEqual RejectionWrapper(
-        ProjectIsDeprecated(ref)
-      )
+    "not fetch a project with ProjectFetchOptions.VerifyQuotaResources" in {
+      val ref      = ProjectRef.unsafe("org", "other")
+      val projects = create(QuotasDummy.alwaysReached).accepted
+      projects.create(ref, payload).accepted
+
+      forAll(List(notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas)) { options =>
+        projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
+          RejectionWrapper(WrappedQuotaRejection(QuotaResourcesReached(ref, 0)))
+      }
+
+      projects.fetchProject(ref, notDeprecatedWithEventQuotas).rejectedWith[RejectionWrapper] shouldEqual
+        RejectionWrapper(WrappedQuotaRejection(QuotaEventsReached(ref, 0)))
+    }
+
+    "not fetch a deprecated project with ProjectFetchOptions.NotDeprecated" in {
+      forAll(
+        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
+      ) { options =>
+        projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
+          RejectionWrapper(ProjectIsDeprecated(ref))
+      }
     }
 
     "not fetch a project with a deprecated organization with fetchActive" in {
       val orgLabel   = Label.unsafe(genString())
       val projectRef = ProjectRef(orgLabel, Label.unsafe(genString()))
 
-      (
-        organizations.create(orgLabel, None) >>
-          projects.create(projectRef, anotherPayload)(Identity.Anonymous)
-      ).accepted
+      (organizations.create(orgLabel, None) >>
+        projects.create(projectRef, anotherPayload)(Identity.Anonymous)).accepted
 
-      projects.fetchActiveProject(projectRef).accepted.ref shouldEqual projectRef
+      projects.fetchProject(projectRef, notDeprecated).accepted.ref shouldEqual projectRef
 
       organizations.deprecate(orgLabel, 1L).accepted
 
-      projects.fetchActiveProject(projectRef).rejected shouldEqual
+      projects.fetchProject(projectRef, notDeprecated).rejected shouldEqual
         RejectionWrapper(WrappedOrganizationRejection(OrganizationIsDeprecated(orgLabel)))
+
+      projects.fetchProject(projectRef, Set.empty).accepted
     }
   }
 

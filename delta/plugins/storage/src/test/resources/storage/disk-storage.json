@@ -7,5 +7,6 @@
   "default": true,
   "readPermission": "disk/read",
   "writePermission": "disk/write",
+  "capacity": 1000,
   "maxFileSize": 50
 }

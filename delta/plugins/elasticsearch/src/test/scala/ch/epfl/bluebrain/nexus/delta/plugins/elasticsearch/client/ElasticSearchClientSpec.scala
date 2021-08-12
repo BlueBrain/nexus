@@ -45,11 +45,11 @@ class ElasticSearchClientSpec
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private def searchAllIn(index: IndexLabel): Seq[JsonObject] =
-    client.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted.sources
+    client.search(QueryBuilder.empty.withPage(page), index.value, Query.Empty).accepted.sources
 
   "An ElasticSearch Client" should {
 
@@ -135,12 +135,12 @@ class ElasticSearchClientSpec
       val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
         .withPage(page)
         .withSort(SortList(List(Sort("-field1"))))
-      client.search(query, Set(index.value), Query.Empty).accepted shouldEqual
+      client.search(query, index.value, Query.Empty).accepted shouldEqual
         SearchResults(2, Vector(jobj"""{ "field1" : 3 }""", jobj"""{ "field1" : 1, "field2" : "value2"}"""))
           .copy(token = Some("[1]"))
 
       val query2 = QueryBuilder(jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }""").withPage(page)
-      client.search(query2, Set(index.value), Query.Empty).accepted shouldEqual
+      client.search(query2, index.value, Query.Empty).accepted shouldEqual
         ScoredSearchResults(1, 1f, Vector(ScoredResultEntry(1f, jobj"""{ "field1" : 3 }""")))
     }
 

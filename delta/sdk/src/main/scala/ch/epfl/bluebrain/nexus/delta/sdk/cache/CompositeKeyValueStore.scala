@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.cache
 
 import akka.actor.typed.ActorSystem
 import cats.implicits._
-import monix.bio.UIO
-import scala.collection.concurrent.Map
+import monix.bio.{IO, UIO}
+
+import scala.collection.concurrent.{Map => ConcurrentMap}
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters._
@@ -17,13 +18,13 @@ import scala.jdk.CollectionConverters._
 final class CompositeKeyValueStore[K1, K2, V] private (
     baseName: String,
     clock: (Long, V) => Long,
-    firstLevelCache: Map[K1, KeyValueStore[K2, V]]
+    firstLevelCache: ConcurrentMap[K1, KeyValueStore[K2, V]]
 )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig) {
 
   /**
     * Fetches values for the provided first-level key.
     */
-  def get(key1: K1): UIO[Vector[V]] = getOrCreate(key1).values
+  def get(key1: K1): UIO[Map[K2, V]] = getOrCreate(key1).entries
 
   /**
     * Fetches values for the composite key
@@ -37,6 +38,32 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     getOrCreate(key1).put(key2, value)
 
   /**
+    * Adds the passed map to the store, replacing the current key and values values if they already exists.
+    */
+  def putAll(values: Map[K1, Map[K2, V]]): UIO[Unit] = IO
+    .traverse(values) { case (key1, kv) =>
+      getOrCreate(key1).putAll(kv)
+    }
+    .void
+
+  /**
+    * @return all the entries in the store
+    */
+  def entries: UIO[Map[K1, Map[K2, V]]] = firstLevelCache.foldLeft(IO.pure(Map.empty[K1, Map[K2, V]])) {
+    case (acc, (key1, kv)) =>
+      acc.flatMap { a =>
+        kv.entries.map { m =>
+          a + (key1 -> m)
+        }
+      }
+  }
+
+  /**
+    * Fetches values for the provided first-level key.
+    */
+  def values(key1: K1): UIO[Vector[V]] = firstLevelCache.get(key1).fold(UIO.pure(Vector.empty[V]))(_.values)
+
+  /**
     * Returns all entries of the cache
     */
   def values: UIO[Vector[V]] = UIO.pure(firstLevelCache.values.toVector).flatMap(_.flatTraverse(_.values))
@@ -48,7 +75,7 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     * @param f    function to filter the element on the second level cache to be selected
     */
   def find(key1: K1, f: V => Boolean): UIO[Option[V]] =
-    get(key1).flatMap {
+    values(key1).flatMap {
       case IndexedSeq() => UIO.none
       case values       => UIO.pure(values.find(f))
     }

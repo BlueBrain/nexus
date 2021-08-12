@@ -5,10 +5,11 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, WrappedElasticSearchClientError}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{projectToElasticSearchRejectionMapper, AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceRef}
@@ -93,12 +94,12 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      projectValue <- projects.fetchActiveProject[ElasticSearchViewRejection](project)
+      projectValue <- projects.fetchProject(project, notDeprecated)
       view         <- fetchDefaultView(project)
       schemeRef    <- expandResourceRef(schema, projectValue)
       p             = params.withSchema(schemeRef)
       search       <- client
-                        .search(p, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
+                        .search(p, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
                         .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -111,7 +112,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     for {
       view   <- fetchDefaultView(project)
       search <- client
-                  .search(params, Set(ElasticSearchViews.index(view, config)), Uri.Query.Empty)(pagination, sort)
+                  .search(params, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
                   .mapError(WrappedElasticSearchClientError)
     } yield search
 

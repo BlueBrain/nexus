@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
@@ -21,17 +21,19 @@ import scala.annotation.nowarn
 /**
   * Configuration for the Storages module.
   *
-  * @param aggregate         configuration of the underlying aggregate
-  * @param keyValueStore     configuration of the underlying key/value store
-  * @param pagination        configuration for how pagination should behave in listing operations
-  * @param cacheIndexing     configuration of the cache indexing process
-  * @param storageTypeConfig configuration of each of the storage types
+  * @param aggregate             configuration of the underlying aggregate
+  * @param keyValueStore         configuration of the underlying key/value store
+  * @param pagination            configuration for how pagination should behave in listing operations
+  * @param cacheIndexing         configuration of the cache indexing process
+  * @param persistProgressConfig configuration for the persistence of progress of projections
+  * @param storageTypeConfig     configuration of each of the storage types
   */
 final case class StoragesConfig(
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
+    persistProgressConfig: SaveProgressConfig,
     storageTypeConfig: StorageTypeConfig
 )
 
@@ -41,17 +43,19 @@ object StoragesConfig {
   implicit val storageConfigReader: ConfigReader[StoragesConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
-        obj              <- cursor.asObjectCursor
-        aggregateCursor  <- obj.atKey("aggregate")
-        aggregate        <- ConfigReader[AggregateConfig].from(aggregateCursor)
-        kvStoreCursor    <- obj.atKey("key-value-store")
-        kvStore          <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
-        paginationCursor <- obj.atKey("pagination")
-        pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
-        indexingCursor   <- obj.atKey("cache-indexing")
-        indexing         <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
-        storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
-      } yield StoragesConfig(aggregate, kvStore, pagination, indexing, storageType)
+        obj                   <- cursor.asObjectCursor
+        aggregateCursor       <- obj.atKey("aggregate")
+        aggregate             <- ConfigReader[AggregateConfig].from(aggregateCursor)
+        kvStoreCursor         <- obj.atKey("key-value-store")
+        kvStore               <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
+        paginationCursor      <- obj.atKey("pagination")
+        pagination            <- ConfigReader[PaginationConfig].from(paginationCursor)
+        indexingCursor        <- obj.atKey("cache-indexing")
+        indexing              <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
+        persistProgressCursor <- obj.atKey("persist-progress-config")
+        persistProgress       <- ConfigReader[SaveProgressConfig].from(persistProgressCursor)
+        storageType           <- ConfigReader[StorageTypeConfig].from(cursor)
+      } yield StoragesConfig(aggregate, kvStore, pagination, indexing, persistProgress, storageType)
     }
 
   /**
@@ -128,6 +132,7 @@ object StoragesConfig {
     * @param defaultReadPermission  the default permission required in order to download a file from a disk storage
     * @param defaultWritePermission the default permission required in order to upload a file to a disk storage
     * @param showLocation           flag to decide whether or not to show the absolute location of the files in the metadata response
+    * @param defaultCapacity        the default capacity available to store the files
     * @param defaultMaxFileSize     the default maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageConfig(
@@ -137,6 +142,7 @@ object StoragesConfig {
       defaultReadPermission: Permission,
       defaultWritePermission: Permission,
       showLocation: Boolean,
+      defaultCapacity: Option[Long],
       defaultMaxFileSize: Long
   ) extends StorageTypeEntryConfig
 

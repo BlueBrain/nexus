@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
@@ -45,7 +46,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project                    <- projects.fetchActiveProject(projectRef)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -58,7 +59,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -73,7 +74,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -89,7 +90,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res).named("tagSchema", moduleType)
@@ -100,7 +101,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)

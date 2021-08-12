@@ -26,7 +26,7 @@ class BlazegraphIndexingAction(
       res: EventExchange.EventExchangeValue[_, _]
   ): IO[ServiceError.IndexingActionFailed, Unit] = {
     for {
-      projectViews <- cache.get(project).map { vs =>
+      projectViews <- cache.values(project).map { vs =>
                         vs.filter(v => v.value.tpe == BlazegraphViewType.IndexingBlazegraphView && !v.deprecated)
                           .map(_.map(_.asInstanceOf[IndexingBlazegraphView]))
                       }

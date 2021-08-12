@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -62,9 +63,12 @@ class QuotasRoutesSpec
     )
     .accepted
 
-  implicit private val config = QuotasConfig(resources = 100, enabled = true, Map.empty)
+  implicit private val config            = QuotasConfig(Some(5), Some(10), enabled = true, Map.empty)
+  implicit private val serviceAccountCfg = ServiceAccountConfig(ServiceAccount(User("internal", Label.unsafe("sa"))))
 
-  private val quotas = new QuotasImpl(projects)
+  private val projectsCounts = ProjectsCountsDummy(project.ref -> ProjectCount.emptyEpoch)
+
+  private val quotas = new QuotasImpl(projects, projectsCounts)
 
   private val routes = Route.seal(new QuotasRoutes(identities, acls, projects, quotas).routes)
 
@@ -75,7 +79,8 @@ class QuotasRoutesSpec
       "succeed" in {
         Get(s"/v1/quotas/org/project") ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual json"""{"@context": "${contexts.quotas}", "@type": "Quota", "resources": 100}"""
+          response.asJson shouldEqual
+            json"""{"@context": "${contexts.quotas}", "@type": "Quota", "resources": 5, "events": 10}"""
         }
       }
 

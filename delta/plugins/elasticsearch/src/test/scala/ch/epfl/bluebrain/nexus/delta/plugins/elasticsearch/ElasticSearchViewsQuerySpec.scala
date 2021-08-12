@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
@@ -79,12 +79,13 @@ class ElasticSearchViewsQuerySpec
   implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
   private val bob: Caller            = Caller(User("Bob", realm), Set(User("Bob", realm), Group("users", realm)))
+  private val charlie: Caller        = Caller(User("Charlie", realm), Set(User("Charlie", realm), Group("users", realm)))
   private val anon: Caller           = Caller(Anonymous, Set(Anonymous))
 
   private val project1        = ProjectGen.project("org", "proj")
@@ -340,6 +341,13 @@ class ElasticSearchViewsQuerySpec
       val result =
         views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
+    }
+
+    "get no results if user has access to no projects" in {
+      val proj   = aggView1Proj2.value.project
+      val result =
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(charlie).accepted
+      extractSources(result).toSet shouldEqual Set.empty
     }
   }
 

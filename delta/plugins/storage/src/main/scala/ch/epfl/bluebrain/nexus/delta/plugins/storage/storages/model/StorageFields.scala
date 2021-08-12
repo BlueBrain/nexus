@@ -70,6 +70,7 @@ object StorageFields {
     * @param volume          the volume this storage is going to use to save files
     * @param readPermission  the permission required in order to download a file from this storage
     * @param writePermission the permission required in order to upload a file to this storage
+    * @param capacity        the capacity available (in bytes) to store files
     * @param maxFileSize     the maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageFields(
@@ -77,6 +78,7 @@ object StorageFields {
       volume: Option[AbsolutePath],
       readPermission: Option[Permission],
       writePermission: Option[Permission],
+      capacity: Option[Long],
       maxFileSize: Option[Long]
   ) extends StorageFields {
     override val tpe: StorageType = StorageType.DiskStorage
@@ -91,6 +93,7 @@ object StorageFields {
           volume.getOrElse(config.disk.defaultVolume),
           readPermission.getOrElse(config.disk.defaultReadPermission),
           writePermission.getOrElse(config.disk.defaultWritePermission),
+          capacity.orElse(config.disk.defaultCapacity),
           computeMaxFileSize(maxFileSize, config.disk.defaultMaxFileSize)
         )
       )

@@ -123,7 +123,7 @@ class CompositeIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
+  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, 2000)
   private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
@@ -217,8 +217,7 @@ class CompositeIndexingSpec
     override def get(): UIO[ProjectCountsCollection] =
       UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
 
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] =
-      UIO.delay(projectsCountsCache.get(project))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
@@ -442,7 +441,7 @@ class CompositeIndexingSpec
       val results = esClient
         .search(
           QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-          Set(idx(view).value),
+          idx(view).value,
           Query.Empty
         )
         .accepted

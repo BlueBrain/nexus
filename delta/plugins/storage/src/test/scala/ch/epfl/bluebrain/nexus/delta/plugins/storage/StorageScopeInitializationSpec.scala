@@ -58,6 +58,7 @@ class StorageScopeInitializationSpec
         volume = config.disk.defaultVolume,
         readPermission = config.disk.defaultReadPermission,
         writePermission = config.disk.defaultWritePermission,
+        capacity = config.disk.defaultCapacity,
         maxFileSize = config.disk.defaultMaxFileSize
       )
       resource.rev shouldEqual 1L

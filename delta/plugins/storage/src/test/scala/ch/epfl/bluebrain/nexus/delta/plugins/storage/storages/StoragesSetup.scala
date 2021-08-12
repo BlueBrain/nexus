@@ -22,7 +22,7 @@ import monix.execution.Scheduler
 
 trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with ConfigFixtures with IOFixedClock {
 
-  val serviceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
+  val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
   def init(
       org: Label,
@@ -51,7 +51,7 @@ trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with Co
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      config      = StoragesConfig(aggregate, keyValueStore, pagination, indexing, storageTypeConfig)
+      config      = StoragesConfig(aggregate, keyValueStore, pagination, indexing, persist, storageTypeConfig)
       storages   <-
         Storages(
           config,

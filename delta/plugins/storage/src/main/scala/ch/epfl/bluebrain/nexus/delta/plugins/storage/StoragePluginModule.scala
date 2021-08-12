@@ -12,11 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => fil
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -29,6 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -102,6 +104,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         storages: Storages,
+        storagesStatistics: StoragesStatistics,
         indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
@@ -110,7 +113,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, acls, organizations, projects, storages, indexingAction)(
+        new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, indexingAction)(
           baseUri,
           crypto,
           paginationConfig,
@@ -122,6 +125,29 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[EventLog[Envelope[FileEvent]]].fromEffect { databaseEventLog[FileEvent](_, _) }
+
+  make[Projection[StorageStatsCollection]].fromEffect {
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      Projection(database, StorageStatsCollection.empty, system, clock)
+  }
+
+  make[StoragesStatistics].fromEffect {
+    (
+        files: Files,
+        storages: Storages,
+        projection: Projection[StorageStatsCollection],
+        eventLog: EventLog[Envelope[FileEvent]],
+        cfg: StoragePluginConfig,
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      StoragesStatistics(files, storages, projection, eventLog.eventsByTag(Files.moduleType, _), cfg.storages)(
+        uuidF,
+        as,
+        sc
+      )
+  }
 
   make[Files]
     .fromEffect {
