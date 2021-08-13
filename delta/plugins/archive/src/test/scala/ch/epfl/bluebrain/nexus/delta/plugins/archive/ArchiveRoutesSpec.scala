@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDown
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
@@ -129,7 +129,8 @@ class ArchiveRoutesSpec
                                  allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
                                )
                              )
-      (files, storages) <- IO.delay(FilesSetup.init(orgs, projs, acls, cfg, allowedPerms: _*))
+      (files, storages) <-
+        IO.delay(FilesSetup.init(orgs, projs, acls, StoragesStatisticsSetup.init(Map.empty), cfg, allowedPerms: _*))
       storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
       _                 <- storages.create(diskId, projectRef, storageJson)
       archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)

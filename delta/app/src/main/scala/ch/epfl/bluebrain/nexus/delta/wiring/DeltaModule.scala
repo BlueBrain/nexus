@@ -25,14 +25,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
-import io.circe.{Decoder, Encoder}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -48,9 +47,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseConfig].from { appCfg.database }
+  make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
+    definition.initialize.as(appCfg.database)
+  }
   make[ProjectsConfig].from { appCfg.projects }
-  make[DatabaseFlavour].from { appCfg.database.flavour }
+  make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
@@ -111,15 +112,20 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
+  make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
+    DatabaseDefinitions(config.database)(system)
+  )
+
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
   make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
-  make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    projection(ProjectCountsCollection.empty, system, clock)
+  make[Projection[ProjectCountsCollection]].fromEffect {
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      Projection(database, ProjectCountsCollection.empty, system, clock)
   }
 
-  make[Projection[Unit]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    projection((), system, clock)
+  make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    Projection(database, (), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {
@@ -165,19 +171,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(IdentitiesModule)
   include(VersionModule)
   include(QuotasModule)
-
-  private def projection[A: Decoder: Encoder](
-      empty: => A,
-      system: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): Task[Projection[A]] = {
-    implicit val as: ActorSystem[Nothing] = system
-    implicit val c: Clock[UIO]            = clock
-    appCfg.database.flavour match {
-      case Postgres  => Projection.postgres(appCfg.database.postgres, empty)
-      case Cassandra => Projection.cassandra(appCfg.database.cassandra, empty)
-    }
-  }
 }
 
 object DeltaModule {

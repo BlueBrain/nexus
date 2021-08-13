@@ -30,12 +30,6 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
       case _                 => UIO.none
     }
 
-  private def resourceToValue(
-      resourceIO: IO[ResolverRejection, ResolverResource]
-  )(implicit enc: JsonLdEncoder[A]): UIO[Option[EventExchangeValue[A, M]]] =
-    resourceIO
-      .map { res =>
-        Some(Resolvers.eventExchangeValue(res))
-      }
-      .onErrorHandle(_ => None)
+  private def resourceToValue(resourceIO: IO[ResolverRejection, ResolverResource])(implicit enc: JsonLdEncoder[A]) =
+    resourceIO.map(Resolvers.eventExchangeValue).redeem(_ => None, Some(_))
 }

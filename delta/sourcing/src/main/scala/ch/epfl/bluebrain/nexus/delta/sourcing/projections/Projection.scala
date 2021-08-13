@@ -2,7 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, PostgresConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfig, PostgresConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra.CassandraProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection
 import fs2.Stream
@@ -73,6 +74,23 @@ object Projection {
   }
 
   /**
+    * Create a projection according to the database configuration
+    */
+  def apply[A: Decoder: Encoder](
+      config: DatabaseConfig,
+      empty: => A,
+      system: ActorSystem[Nothing],
+      clock: Clock[UIO]
+  ): Task[Projection[A]] = {
+    implicit val as: ActorSystem[Nothing] = system
+    implicit val c: Clock[UIO]            = clock
+    config.flavour match {
+      case Postgres  => Projection.postgres(config.postgres, empty)
+      case Cassandra => Projection.cassandra(config.cassandra, empty)
+    }
+  }
+
+  /**
     * Create a projection for Cassandra
     */
   def cassandra[A: Encoder: Decoder](
@@ -90,7 +108,7 @@ object Projection {
       empty: => A,
       throwableToString: Throwable => String = Projection.stackTraceAsString
   )(implicit clock: Clock[UIO]): Task[Projection[A]] =
-    PostgresProjection[A](postgresConfig.transactor, empty, throwableToString)
+    Task.delay(PostgresProjection[A](postgresConfig.transactor, empty, throwableToString))
 
   /**
     * A Projection that records its progress in memory.

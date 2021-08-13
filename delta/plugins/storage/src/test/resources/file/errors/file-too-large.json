@@ -1,0 +1,5 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/error.json",
+  "@type": "FileTooLarge",
+  "reason": "File size exceeds the max file size for the storage (1000 bytes) or its remaining available space (5000 bytes)."
+}

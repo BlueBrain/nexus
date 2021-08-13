@@ -67,7 +67,7 @@ final class FilesRoutes(
 
   implicit private val fetchProjectUuids: FetchUuids = projects
 
-  implicit private val eventExchangeMapper = Mapper(files.eventExchangeValue(_))
+  implicit private val eventExchangeMapper = Mapper(Files.eventExchangeValue(_))
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {

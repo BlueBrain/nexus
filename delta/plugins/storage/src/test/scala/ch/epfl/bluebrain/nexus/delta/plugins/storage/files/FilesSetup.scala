@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup, StoragesStatistics, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -59,12 +59,13 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       acls: Acls,
       storageTypeConfig: StorageTypeConfig
   )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) =
-    init(orgs, projects, acls, storageTypeConfig, allowedPerms: _*)
+    init(orgs, projects, acls, StoragesStatisticsSetup.init(Map.empty), storageTypeConfig, allowedPerms: _*)
 
   def init(
       orgs: Organizations,
       projects: Projects,
       acls: Acls,
+      storageStatistics: StoragesStatistics,
       storageTypeConfig: StorageTypeConfig,
       storagePermissions: Permission*
   )(implicit config: StorageTypeConfig, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) = {
@@ -73,7 +74,8 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       storagesPerms <- PermissionsDummy(storagePermissions.toSet)
       storages       = StoragesSetup.init(orgs, projects, storagesPerms, storageTypeConfig)
       eventLog      <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      files         <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, (_, _) => IO.unit)
+      files         <-
+        Files(filesConfig, config, eventLog, acls, orgs, projects, storages, storageStatistics, (_, _) => IO.unit)
     } yield files -> storages
   }.accepted
 }

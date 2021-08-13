@@ -5,10 +5,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -22,10 +23,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.testkit._
-import org.scalatest.matchers.should.Matchers
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 import slick.jdbc.JdbcBackend
 
+import java.time.Instant
 import java.util.UUID
 
 class StoragesRoutesSpec
@@ -83,15 +85,26 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, indexing, config)
+  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, indexing, persist, config)
 
   private val perms         = PermissionsDummy(allowedPerms.toSet).accepted
   private val acls          = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
   private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   implicit private val c    = crypto
 
+  private val storageStatistics = StoragesStatisticsSetup.init(
+    Map(
+      project.value -> Map(
+        dId  -> StorageStatEntry(10L, 1000L, Instant.ofEpochMilli(1000L)),
+        rdId -> StorageStatEntry(50L, 5000L, Instant.ofEpochMilli(5000L)),
+        s3Id -> StorageStatEntry(100L, 10000L, Instant.ofEpochMilli(10000L))
+      )
+    )
+  )
+
   private val storages = StoragesSetup.init(orgs, projs, perms)
-  private val routes   = Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages, IndexingActionDummy()))
+  private val routes   =
+    Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages, storageStatistics, IndexingActionDummy()))
 
   "Storage routes" should {
 
@@ -349,6 +362,32 @@ class StoragesRoutesSpec
             response.status shouldEqual StatusCodes.Forbidden
             response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
           }
+      }
+    }
+
+    "get storage statistics for an existing entry" in {
+      Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual jsonContentOf("storage/statistics.json")
+      }
+    }
+
+    "fail to get storage statistics for an unknown storage" in {
+      Get("/v1/storages/myorg/myproject/unknown/statistics") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf(
+          "/storage/errors/not-found.json",
+          "id"   -> (nxv + "unknown"),
+          "proj" -> "myorg/myproject"
+        )
+      }
+    }
+
+    "fail to get storage statistics for an existing entry without resources/read permission" in {
+      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissions.read)), 8L).accepted
+      Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 

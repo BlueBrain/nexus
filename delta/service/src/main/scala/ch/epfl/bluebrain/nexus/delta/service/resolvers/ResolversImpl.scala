@@ -159,7 +159,7 @@ final class ResolversImpl private (
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     params.project
-      .fold(index.values)(index.get)
+      .fold(index.values)(index.values)
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(

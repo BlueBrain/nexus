@@ -256,11 +256,6 @@ final class Storages private (
       )(fetchBy(_, project))
       .named("fetchStorage", moduleType)
 
-  def eventExchangeValue(res: StorageResource)(implicit
-      enc: JsonLdEncoder[Storage]
-  ) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source.value, enc), JsonLdValue(res.value.metadata))
-
   private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
     fetch(id.toLatest, project).flatMap { storage =>
       storage.value.tags.get(id.tag) match {
@@ -270,7 +265,7 @@ final class Storages private (
     }
 
   private def fetchDefaults(project: ProjectRef): IO[DefaultStorageNotFound, List[StorageResource]] =
-    cache.get(project).map { resources =>
+    cache.values(project).map { resources =>
       resources
         .filter(res => res.value.project == project && res.value.default && !res.deprecated)
         .toList
@@ -304,7 +299,7 @@ final class Storages private (
       ordering: Ordering[StorageResource]
   ): UIO[UnscoredSearchResults[StorageResource]] =
     params.project
-      .fold(cache.values)(cache.get)
+      .fold(cache.values)(cache.values)
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
@@ -428,16 +423,23 @@ object Storages {
 
   implicit private[storages] val logger: Logger = Logger[Storages]
 
-  private val emptyObject = Json.obj()
-
   /**
     * Create a reference exchange from a [[Storages]] instance
     */
   def referenceExchange(storages: Storages)(implicit crypto: Crypto): ReferenceExchange =
     ReferenceExchange[Storage](
       storages.fetch(_, _),
-      (s: Storage) => Storage.encryptSource(s.source, crypto).getOrElse(emptyObject)
+      (s: Storage) => Storage.encryptSourceUnsafe(s.source, crypto)
     )
+
+  def eventExchangeValue(res: StorageResource)(implicit
+      enc: JsonLdEncoder[Storage],
+      crypto: Crypto
+  ): EventExchangeValue[Storage, Storage.Metadata] = {
+    val secret = res.value.source
+    val source = Storage.encryptSourceUnsafe(secret, crypto)
+    EventExchangeValue(ReferenceExchangeValue(res, source, enc), JsonLdValue(res.value.metadata))
+  }
 
   /**
     * Constructs a Storages instance

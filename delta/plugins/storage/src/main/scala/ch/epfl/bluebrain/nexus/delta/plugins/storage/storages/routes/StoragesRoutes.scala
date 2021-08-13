@@ -5,10 +5,10 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, Secret}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -49,6 +49,7 @@ final class StoragesRoutes(
     organizations: Organizations,
     projects: Projects,
     storages: Storages,
+    storagesStatistics: StoragesStatistics,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -65,7 +66,7 @@ final class StoragesRoutes(
 
   implicit private val fetchProjectUuids: FetchUuids = projects
 
-  implicit private val eventExchangeMapper = Mapper(storages.eventExchangeValue(_))
+  implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -83,7 +84,6 @@ final class StoragesRoutes(
     }
   }
 
-  @SuppressWarnings(Array("OptionGet"))
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       pathPrefix("storages") {
@@ -206,7 +206,7 @@ final class StoragesRoutes(
                         authorizeFor(ref, Read).apply {
                           val sourceIO = storages
                             .fetch(id, ref)
-                            .map(res => Storage.encryptSource(res.value.source, crypto).toOption.get)
+                            .map(res => Storage.encryptSourceUnsafe(res.value.source, crypto))
                           emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
                         }
                       }
@@ -235,6 +235,11 @@ final class StoragesRoutes(
                           }
                         )
                       }
+                    },
+                    (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                      authorizeFor(ref, Read).apply {
+                        emit(storagesStatistics.get(id, ref).leftWiden[StorageRejection])
+                      }
                     }
                   )
                 }
@@ -258,6 +263,7 @@ object StoragesRoutes {
       organizations: Organizations,
       projects: Projects,
       storages: Storages,
+      storagesStatistics: StoragesStatistics,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -267,7 +273,7 @@ object StoragesRoutes {
       crypto: Crypto
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    new StoragesRoutes(identities, acls, organizations, projects, storages, index).routes
+    new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, index).routes
   }
 
 }

@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
@@ -267,12 +268,15 @@ class FilesSpec
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val (files, storages) = FilesSetup.init(orgs, projs, acls, cfg, allowedPerms.toSeq: _*)
+    val storageStatistics =
+      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Instant.EPOCH))))
+
+    val (files, storages) = FilesSetup.init(orgs, projs, acls, storageStatistics, cfg, allowedPerms.toSeq: _*)
 
     "creating a file" should {
 
       "create storages for files" in {
-        val payload = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+        val payload = diskFieldsJson.map(_ deepMerge json"""{"capacity": 320, "maxFileSize": 300, "volume": "$path"}""")
         storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =
@@ -308,6 +312,20 @@ class FilesSpec
       "reject if file id already exists" in {
         files.create("file1", None, projectRef, entity()).rejected shouldEqual
           ResourceAlreadyExists(file1, projectRef)
+      }
+
+      val aliceCaller = Caller(alice, Set(alice, Group("mygroup", realm), Authenticated(realm)))
+
+      "reject if the file exceeds max file size for the storage" in {
+        files
+          .create("file-too-long", Some(remoteId), projectRef, randomEntity("large_file", 280))(aliceCaller)
+          .rejected shouldEqual FileTooLarge(300L, None)
+      }
+
+      "reject if the file exceeds the remaining available space on the storage" in {
+        files
+          .create("file-too-long", Some(diskId), projectRef, randomEntity("large_file", 250))
+          .rejected shouldEqual FileTooLarge(300L, Some(220))
       }
 
       "reject if storage does not exist" in {
