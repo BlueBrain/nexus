@@ -40,7 +40,7 @@ services:
                  "-Dplugins.search.indexing.settings=/config/settings.json",
                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
+                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210813T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
     ports:
@@ -164,7 +164,7 @@ services:
       - 9999:9999
 
   cassandra:
-    image: cassandra:3.11.8
+    image: cassandra:3.11.11
     environment:
       JVM_OPTS: "-Xms8g -Xmx8g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0"
       MAX_HEAP_SIZE: "8G"
@@ -197,7 +197,7 @@ services:
       - 8090:8090
     volumes:
       - /tmp/storage:/data
-    user: "1002"
+    user: "1000"
 
   minio:
     image: minio/minio:RELEASE.2021-07-30T00-02-00Z

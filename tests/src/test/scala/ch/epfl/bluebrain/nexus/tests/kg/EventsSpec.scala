@@ -254,8 +254,8 @@ class EventsSpec extends BaseSpec with Inspectors {
           for {
             uuids  <- adminDsl.getUuids(orgId, projId, BugsBunny)
             uuids2 <- adminDsl.getUuids(orgId2, projId, BugsBunny)
-            _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 19) { seq =>
-                        val projectEvents = seq.drop(12)
+            _      <- deltaClient.sseEvents(s"/resources/events", BugsBunny, initialEventId, take = 21) { seq =>
+                        val projectEvents = seq.drop(14)
                         projectEvents.size shouldEqual 7
                         projectEvents.flatMap(_._1) should contain theSameElementsInOrderAs List(
                           "ResourceCreated",
