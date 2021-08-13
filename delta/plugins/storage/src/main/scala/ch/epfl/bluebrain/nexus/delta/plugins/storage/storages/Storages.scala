@@ -256,11 +256,6 @@ final class Storages private (
       )(fetchBy(_, project))
       .named("fetchStorage", moduleType)
 
-  def eventExchangeValue(res: StorageResource)(implicit
-      enc: JsonLdEncoder[Storage]
-  ) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source.value, enc), JsonLdValue(res.value.metadata))
-
   private def fetchBy(id: IdSegmentRef.Tag, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
     fetch(id.toLatest, project).flatMap { storage =>
       storage.value.tags.get(id.tag) match {
@@ -428,16 +423,23 @@ object Storages {
 
   implicit private[storages] val logger: Logger = Logger[Storages]
 
-  private val emptyObject = Json.obj()
-
   /**
     * Create a reference exchange from a [[Storages]] instance
     */
   def referenceExchange(storages: Storages)(implicit crypto: Crypto): ReferenceExchange =
     ReferenceExchange[Storage](
       storages.fetch(_, _),
-      (s: Storage) => Storage.encryptSource(s.source, crypto).getOrElse(emptyObject)
+      (s: Storage) => Storage.encryptSourceUnsafe(s.source, crypto)
     )
+
+  def eventExchangeValue(res: StorageResource)(implicit
+      enc: JsonLdEncoder[Storage],
+      crypto: Crypto
+  ): EventExchangeValue[Storage, Storage.Metadata] = {
+    val secret = res.value.source
+    val source = Storage.encryptSourceUnsafe(secret, crypto)
+    EventExchangeValue(ReferenceExchangeValue(res, source, enc), JsonLdValue(res.value.metadata))
+  }
 
   /**
     * Constructs a Storages instance

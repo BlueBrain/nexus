@@ -85,7 +85,7 @@ final class ElasticSearchViewsRoutes(
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
 
-  implicit private val eventExchangeMapper = Mapper(views.eventExchangeValue(_))
+  implicit private val eventExchangeMapper = Mapper(ElasticSearchViews.eventExchangeValue(_))
 
   implicit private val fetchProjectUuids: FetchUuids = projects
   implicit private val fetchProject: FetchProject    = projects
