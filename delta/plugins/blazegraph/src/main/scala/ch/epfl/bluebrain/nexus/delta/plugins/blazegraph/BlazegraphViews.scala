@@ -340,9 +340,6 @@ object BlazegraphViews {
 
   val expandIri: ExpandIri[InvalidBlazegraphViewId] = new ExpandIri(InvalidBlazegraphViewId.apply)
 
-  def eventExchangeValue(res: ViewResource)(implicit enc: JsonLdEncoder[BlazegraphView]) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
-
   /**
     * Constructs a projectionId for a blazegraph view
     */
@@ -388,6 +385,11 @@ object BlazegraphViews {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
   }
+
+  def eventExchangeValue(
+      res: ViewResource
+  )(implicit enc: JsonLdEncoder[BlazegraphView]): EventExchangeValue[BlazegraphView, BlazegraphView.Metadata] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   private[blazegraph] def next(
       state: BlazegraphViewState,

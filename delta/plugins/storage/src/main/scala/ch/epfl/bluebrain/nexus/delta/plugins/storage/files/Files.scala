@@ -251,9 +251,6 @@ final class Files(
     } yield res
   }.named("updateFileAttributes", moduleType)
 
-  def eventExchangeValue(res: FileResource)(implicit enc: JsonLdEncoder[File]) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value))
-
   /**
     * Update an existing file attributes
     *
@@ -509,6 +506,11 @@ object Files {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => files.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[File](fetch(_, _), _.asJson)
   }
+
+  def eventExchangeValue(
+      res: FileResource
+  )(implicit enc: JsonLdEncoder[File], config: StorageTypeConfig): EventExchangeValue[File, File] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value))
 
   /**
     * Constructs a Files instance

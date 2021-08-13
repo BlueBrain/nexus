@@ -66,7 +66,7 @@ final class StoragesRoutes(
 
   implicit private val fetchProjectUuids: FetchUuids = projects
 
-  implicit private val eventExchangeMapper = Mapper(storages.eventExchangeValue(_))
+  implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -84,7 +84,6 @@ final class StoragesRoutes(
     }
   }
 
-  @SuppressWarnings(Array("OptionGet"))
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       pathPrefix("storages") {
@@ -207,7 +206,7 @@ final class StoragesRoutes(
                         authorizeFor(ref, Read).apply {
                           val sourceIO = storages
                             .fetch(id, ref)
-                            .map(res => Storage.encryptSource(res.value.source, crypto).toOption.get)
+                            .map(res => Storage.encryptSourceUnsafe(res.value.source, crypto))
                           emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
                         }
                       }

@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue}
 import monix.bio.{IO, UIO}
 
 /**
@@ -32,16 +31,6 @@ class StorageEventExchange(storages: Storages)(implicit base: BaseUri, crypto: C
       case _                => UIO.none
     }
 
-  private def resourceToValue(
-      resourceIO: IO[StorageRejection, StorageResource]
-  )(implicit enc: JsonLdEncoder[A]): UIO[Option[EventExchangeValue[A, M]]] =
-    resourceIO
-      .map { res =>
-        val secret = res.value.source
-        Storage
-          .encryptSource(secret, crypto)
-          .toOption
-          .map(source => EventExchangeValue(ReferenceExchangeValue(res, source, enc), JsonLdValue(res.value.metadata)))
-      }
-      .onErrorHandle(_ => None)
+  private def resourceToValue(resourceIO: IO[StorageRejection, StorageResource])(implicit enc: JsonLdEncoder[A]) =
+    resourceIO.map(Storages.eventExchangeValue).redeem(_ => None, Some(_))
 }

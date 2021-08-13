@@ -227,11 +227,6 @@ final class ElasticSearchViews private (
     } yield res
   }.named("deprecateElasticSearchView", moduleType)
 
-  def eventExchangeValue(res: ViewResource)(implicit
-      enc: JsonLdEncoder[ElasticSearchView]
-  ) =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
-
   /**
     * Retrieves a current ElasticSearchView resource.
     *
@@ -439,6 +434,11 @@ object ElasticSearchViews {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
   }
+
+  def eventExchangeValue(res: ViewResource)(implicit
+      enc: JsonLdEncoder[ElasticSearchView]
+  ): EventExchangeValue[ElasticSearchView, ElasticSearchView.Metadata] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
