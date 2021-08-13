@@ -38,6 +38,11 @@ sealed trait StorageValue extends Product with Serializable {
   def algorithm: DigestAlgorithm
 
   /**
+    * @return the maximum allocated capacity for the storage
+    */
+  def capacity: Option[Long]
+
+  /**
     * @return the maximum allowed file size (in bytes) for uploaded files
     */
   def maxFileSize: Long
@@ -98,6 +103,7 @@ object StorageValue {
   ) extends StorageValue {
 
     override val tpe: StorageType             = StorageType.S3Storage
+    override val capacity: Option[Long]       = None
     override val secrets: Set[Secret[String]] = Set.empty ++ accessKey ++ secretKey
 
     def address(bucket: String): Uri =
@@ -156,7 +162,9 @@ object StorageValue {
       writePermission: Permission,
       maxFileSize: Long
   ) extends StorageValue {
+
     override val tpe: StorageType             = StorageType.RemoteDiskStorage
+    override val capacity: Option[Long]       = None
     override val secrets: Set[Secret[String]] = Set.empty ++ credentials
 
     /**

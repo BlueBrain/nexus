@@ -3,19 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{NoOffset, Offset, TimeBasedUUID}
 import akka.stream.Materializer
-import akka.stream.alpakka.cassandra.CassandraSessionSettings
-import akka.stream.alpakka.cassandra.scaladsl.{CassandraSession, CassandraSessionRegistry}
+import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.CassandraConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra.CassandraProjection._
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.utils.CassandraUtils
 import com.datastax.oss.driver.api.core.cql.{BatchStatement, BatchType, PreparedStatement, Row}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -212,77 +212,9 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
       }
 }
 
-private class CassandraProjectionInitialization(session: CassandraSession, config: CassandraConfig) {
-
-  private val projectionsErrorsTable   = "projections_errors"
-  private val projectionsProgressTable = "projections_progress"
-
-  // TODO: The replication factor could be fetched from akka configuration but it is pretty complicated.
-  private val createKeyspace: String =
-    s"""CREATE KEYSPACE IF NOT EXISTS ${config.keyspace}
-       |WITH REPLICATION = { 'class' : 'SimpleStrategy','replication_factor':1 }""".stripMargin
-
-  private val createProjectionsProgressDll =
-    s"""CREATE TABLE IF NOT EXISTS ${config.keyspace}.$projectionsProgressTable
-       |(
-       |    projection_id     text primary key,
-       |    offset            timeuuid,
-       |    timestamp         bigint,
-       |    processed         bigint,
-       |    discarded         bigint,
-       |    warnings          bigint,
-       |    failed            bigint,
-       |    value             text,
-       |    value_timestamp   bigint
-       |)""".stripMargin
-
-  private val createProjectionsFailuresDll =
-    s"""CREATE TABLE IF NOT EXISTS ${config.keyspace}.$projectionsErrorsTable
-       |(
-       |    projection_id     text,
-       |    offset            timeuuid,
-       |    timestamp         bigint,
-       |    persistence_id    text,
-       |    sequence_nr       bigint,
-       |    value             text,
-       |    value_timestamp   bigint,
-       |    severity          text,
-       |    error_type        text,
-       |    message           text,
-       |    PRIMARY KEY ((projection_id), timestamp, persistence_id, sequence_nr)
-       |)
-       |    WITH CLUSTERING ORDER BY (timestamp ASC, persistence_id ASC, sequence_nr ASC)""".stripMargin
-
-  def initialize(): Task[Unit] = {
-
-    def keyspace =
-      Task.when(config.keyspaceAutocreate) {
-        Task.deferFuture(session.executeDDL(createKeyspace)).void >>
-          Task.delay(logger.info(s"Created keyspace '${config.keyspace}'"))
-      }
-
-    def projectionsProgress =
-      Task.when(config.tablesAutocreate) {
-        Task.deferFuture(session.executeDDL(createProjectionsProgressDll)).void >>
-          Task.delay(logger.info(s"Created table '${config.keyspace}.$projectionsProgressTable'"))
-      }
-
-    def projectionsFailures =
-      Task.when(config.tablesAutocreate) {
-        Task.deferFuture(session.executeDDL(createProjectionsFailuresDll)).void >>
-          Task.delay(logger.info(s"Created table '${config.keyspace}.$projectionsErrorsTable'"))
-      }
-
-    keyspace >> projectionsProgress >> projectionsFailures
-  }
-}
-
 object CassandraProjection {
 
   private[cassandra] val logger: Logger = Logger[CassandraProjection.type]
-
-  private[projections] def session(implicit as: ActorSystem[Nothing]): Task[CassandraSession] =
-    Task.delay(CassandraSessionRegistry.get(as).sessionFor(CassandraSessionSettings("akka.persistence.cassandra")))
 
   /**
     * Creates a cassandra projection with the given configuration
@@ -293,9 +225,6 @@ object CassandraProjection {
       empty: => A,
       throwableToString: Throwable => String
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): Task[CassandraProjection[A]] =
-    for {
-      s <- session
-      _ <- new CassandraProjectionInitialization(s, config).initialize()
-    } yield new CassandraProjection[A](s, empty, throwableToString, config)
+    CassandraUtils.session.map(s => new CassandraProjection[A](s, empty, throwableToString, config))
 
 }

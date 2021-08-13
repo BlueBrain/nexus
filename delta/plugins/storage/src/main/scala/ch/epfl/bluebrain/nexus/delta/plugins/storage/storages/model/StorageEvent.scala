@@ -152,7 +152,7 @@ object StorageEvent {
     implicit val identityEncoder: Encoder.AsObject[Identity]     = Identity.persistIdentityDecoder
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-      Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).toOption.get)
+      Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
     implicit val projectRefEncoder: Encoder[ProjectRef]          = Encoder.instance(_.id.asJson)
 
     Encoder.encodeJsonObject.contramapObject { event =>

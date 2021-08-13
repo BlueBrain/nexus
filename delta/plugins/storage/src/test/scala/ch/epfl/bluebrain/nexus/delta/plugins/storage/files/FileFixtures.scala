@@ -57,4 +57,11 @@ trait FileFixtures extends EitherValuable with IOValues {
         Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, content), Map("filename" -> filename))
       )
       .toEntity()
+
+  def randomEntity(filename: String, size: Int): MessageEntity =
+    Multipart
+      .FormData(
+        Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, "0" * size), Map("filename" -> filename))
+      )
+      .toEntity()
 }

@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, Indexin
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -188,13 +187,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     )
 
   make[Projection[ProjectsEventsInstantCollection]].fromEffect {
-    (dbCfg: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      implicit val s = system
-      implicit val c = clock
-      dbCfg.flavour match {
-        case Postgres  => Projection.postgres(dbCfg.postgres, ProjectsEventsInstantCollection.empty)
-        case Cassandra => Projection.cassandra(dbCfg.cassandra, ProjectsEventsInstantCollection.empty)
-      }
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      Projection(database, ProjectsEventsInstantCollection.empty, system, clock)
   }
 
   make[IndexingStreamAwake].fromEffect {
