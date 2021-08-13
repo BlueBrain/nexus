@@ -1,23 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import akka.actor.typed.ActorSystem
 import akka.persistence.query.{Offset, TimeBasedUUID}
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.CassandraConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.AkkaPersistenceCassandraSpec.cassandraConfig
 import com.datastax.oss.driver.api.core.uuid.Uuids
+import org.scalatest.DoNotDiscover
 
-class CassandraProjectionSpec extends AkkaPersistenceCassandraSpec with ProjectionSpec {
+@DoNotDiscover
+class CassandraProjectionSpec extends ProjectionSpec {
 
   import monix.execution.Scheduler.Implicits.global
-
-  private val cassandraConfig = CassandraConfig(
-    Set(s"${cassandraHostConfig.host}:${cassandraHostConfig.port}"),
-    "delta",
-    "delta_snapshot",
-    "cassandra",
-    Secret("cassandra"),
-    keyspaceAutocreate = true,
-    tablesAutocreate = true
-  )
+  implicit val actorSystem: ActorSystem[Nothing] = AkkaPersistenceCassandraSpec.actorSystem
 
   override lazy val projections: Projection[SomeEvent] =
     Projection.cassandra(cassandraConfig, SomeEvent.empty, throwableToString).runSyncUnsafe()

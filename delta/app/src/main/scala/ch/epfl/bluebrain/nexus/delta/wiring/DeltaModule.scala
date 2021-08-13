@@ -25,11 +25,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -47,9 +47,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseConfig].from { appCfg.database }
+  make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
+    definition.initialize.as(appCfg.database)
+  }
   make[ProjectsConfig].from { appCfg.projects }
-  make[DatabaseFlavour].from { appCfg.database.flavour }
+  make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
@@ -108,6 +110,10 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, PATCH, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
+  )
+
+  make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
+    DatabaseDefinitions(config.database)(system)
   )
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
