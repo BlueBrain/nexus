@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.service.projects.{ProjectEventExchange, ProjectProvisioning, ProjectsImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -31,10 +30,7 @@ object ProjectsModule extends ModuleDef {
     def merge: ApiMappings = value.foldLeft(ApiMappings.empty)(_ + _)
   }
 
-  make[EventLog[Envelope[ProjectEvent]]].fromEffect {
-    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
-      databaseEventLog[ProjectEvent](flavour, as)
-  }
+  make[EventLog[Envelope[ProjectEvent]]].fromEffect { databaseEventLog[ProjectEvent](_, _) }
 
   make[ApiMappingsCollection].from { (mappings: Set[ApiMappings]) =>
     ApiMappingsCollection(mappings)

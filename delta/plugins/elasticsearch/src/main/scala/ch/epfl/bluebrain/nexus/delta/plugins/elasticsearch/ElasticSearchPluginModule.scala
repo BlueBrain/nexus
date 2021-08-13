@@ -26,8 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsCo
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -42,10 +42,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewsConfig].from { ElasticSearchViewsConfig.load(_) }
 
-  make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect {
-    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
-      databaseEventLog[ElasticSearchViewEvent](flavour, as)
-  }
+  make[EventLog[Envelope[ElasticSearchViewEvent]]].fromEffect { databaseEventLog[ElasticSearchViewEvent](_, _) }
 
   make[HttpClient].named("elasticsearch-client").from {
     (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
@@ -190,7 +187,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     )
 
   make[Projection[ProjectsEventsInstantCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
       Projection(database, ProjectsEventsInstantCollection.empty, system, clock)
   }
 

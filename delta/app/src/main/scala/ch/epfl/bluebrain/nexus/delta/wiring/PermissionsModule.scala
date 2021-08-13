@@ -13,8 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -26,10 +25,7 @@ import monix.execution.Scheduler
 object PermissionsModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[PermissionsEvent]]].fromEffect {
-    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
-      databaseEventLog[PermissionsEvent](flavour, as)
-  }
+  make[EventLog[Envelope[PermissionsEvent]]].fromEffect { databaseEventLog[PermissionsEvent](_, _) }
 
   make[Permissions].fromEffect {
     (cfg: AppConfig, log: EventLog[Envelope[PermissionsEvent]], as: ActorSystem[Nothing], clock: Clock[UIO]) =>

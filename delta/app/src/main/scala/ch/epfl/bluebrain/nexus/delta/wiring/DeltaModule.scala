@@ -47,9 +47,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseConfig].from { appCfg.database }
+  make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
+    definition.initialize.as(appCfg.database)
+  }
   make[ProjectsConfig].from { appCfg.projects }
-  make[DatabaseFlavour].from { appCfg.database.flavour }
+  make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
@@ -111,27 +113,19 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   )
 
   make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
-    DatabaseDefinitions(config.database)(system).tapEval(_.initialize)
+    DatabaseDefinitions(config.database)(system)
   )
 
-  make[EventLog[Envelope[Event]]].fromEffect {
-    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
-      databaseEventLog[Event](flavour, as)
-  }
-
-  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect {
-    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
-      databaseEventLog[ProjectScopedEvent](flavour, as)
-  }
+  make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
+  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
   make[Projection[ProjectCountsCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
       Projection(database, ProjectCountsCollection.empty, system, clock)
   }
 
-  make[Projection[Unit]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
-      Projection(database, (), system, clock)
+  make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    Projection(database, (), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {
