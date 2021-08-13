@@ -108,7 +108,7 @@ object Projection {
       empty: => A,
       throwableToString: Throwable => String = Projection.stackTraceAsString
   )(implicit clock: Clock[UIO]): Task[Projection[A]] =
-    PostgresProjection[A](postgresConfig.transactor, empty, throwableToString)
+    Task.delay(PostgresProjection[A](postgresConfig.transactor, empty, throwableToString))
 
   /**
     * A Projection that records its progress in memory.

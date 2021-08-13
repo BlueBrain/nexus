@@ -1,36 +1,24 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import java.sql.DriverManager
-
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresHostConfig
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerCommandExecutor, DockerContainer, DockerContainerState, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.sql.DriverManager
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 trait PostgresDocker extends DockerKitWithFactory {
   import scala.concurrent.duration._
 
-  val PostgresAdvertisedPort = 5432
-  val PostgresExposedPort    = 44444
-  val PostgresUser           = "postgres"
-  val PostgresPassword       = "postgres"
-
-  val postgresHostConfig: PostgresHostConfig =
-    PostgresHostConfig(
-      dockerExecutor.host,
-      PostgresExposedPort
-    )
-
   val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.2")
     .withPorts((PostgresAdvertisedPort, Some(PostgresExposedPort)))
     .withEnv(s"POSTGRES_USER=$PostgresUser", s"POSTGRES_PASSWORD=$PostgresPassword")
     .withReadyChecker(
       new PostgresReadyChecker(PostgresUser, PostgresPassword, postgresHostConfig)
-        .looped(15, 1.second)
+        .looped(20, 1.second)
     )
 
   abstract override def dockerContainers: List[DockerContainer] =
@@ -52,6 +40,12 @@ class PostgresReadyChecker(user: String, password: String, config: PostgresHostC
 }
 
 object PostgresDocker {
+  val PostgresExposedPort    = 44444
+  val PostgresAdvertisedPort = 5432
+  val PostgresUser           = "postgres"
+  val PostgresPassword       = "postgres"
+
+  val postgresHostConfig: PostgresHostConfig = PostgresHostConfig("127.0.0.1", PostgresExposedPort)
 
   final case class PostgresHostConfig(host: String, port: Int)
 

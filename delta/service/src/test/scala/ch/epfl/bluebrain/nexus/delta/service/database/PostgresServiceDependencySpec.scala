@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
