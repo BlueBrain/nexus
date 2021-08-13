@@ -243,6 +243,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -283,6 +284,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -317,6 +319,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;volume&quot;: &quot;{volume}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
+  &quot;capacity&quot;: &quot;{capacity}&quot;,
   &quot;maxFileSize&quot;: {max_file_size}
 }
 </code></pre>
@@ -326,6 +329,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{volume}</code>: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-volume</code> (<code>/tmp</code>).</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-write-permission</code> (<code>files/write</code>).</li>
+  <li><code>{capacity}</code>: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-capacity</code> (None).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-max-file-size</code> (10G).</li>
 </ul>
 <h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3>
@@ -875,6 +879,30 @@ id:57ca3a00-b254-11eb-b48a-9d94c78eda08
 data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,&quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;],&quot;@type&quot;:&quot;StorageDeprecated&quot;,&quot;_constrainedBy&quot;:&quot;https://bluebrain.github.io/nexus/schemas/storages.json&quot;,&quot;_instant&quot;:&quot;2021-05-11T12:29:27.821Z&quot;,&quot;_organizationUuid&quot;:&quot;ea8c261e-b53f-45ec-8bb8-d7cbce0918cf&quot;,&quot;_project&quot;:&quot;http://localhost:8080/v1/projects/myorg/myproject&quot;,&quot;_projectUuid&quot;:&quot;4e9d83e3-c521-46d9-83d1-f552d9a636d4&quot;,&quot;_resourceId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_rev&quot;:4,&quot;_storageId&quot;:&quot;http://localhost:8080/v1/resources/myorg/myproject/_/remote&quot;,&quot;_subject&quot;:&quot;http://localhost:8080/v1/anonymous&quot;,&quot;_types&quot;:[&quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,&quot;https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage&quot;]}
 event:StorageDeprecated
 id:8714dae0-b254-11eb-b48a-9d94c78eda08</code></pre></dd>
+</dl>
+<h2><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h2><div class="callout note warning"><div class="callout-title">Note</div>
+<p>This endpoint is experimental and the response structure might change in the future.</p></div>
+<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}/statistics
+</code></pre>
+<p>It returns:</p>
+<ul>
+  <li>the instant of the latest consumed event (<code>lastProcessedEventDateTime</code>).</li>
+  <li>the number of physical files stored on the storage (<code>files</code>).</li>
+  <li>the space used by this file on the given storage (<code>spaceUsed</code>).</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-statistics.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/statistics&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetched-statistics.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : &quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;,
+  &quot;files&quot; : 50,
+  &quot;lastProcessedEventDateTime&quot; : &quot;1970-01-01T00:00:05Z&quot;,
+  &quot;spaceUsed&quot; : 5000
+}</code></pre></dd>
 </dl>
 </div>
 <div>
