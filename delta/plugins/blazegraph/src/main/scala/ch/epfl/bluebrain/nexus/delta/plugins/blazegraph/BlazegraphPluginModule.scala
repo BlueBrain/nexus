@@ -21,7 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -36,7 +37,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewsConfig].from { BlazegraphViewsConfig.load(_) }
 
-  make[EventLog[Envelope[BlazegraphViewEvent]]].fromEffect { databaseEventLog[BlazegraphViewEvent](_, _) }
+  make[EventLog[Envelope[BlazegraphViewEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[BlazegraphViewEvent](flavour, as)
+  }
 
   make[HttpClient].named("http-indexing-client").from {
     (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>

@@ -14,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.service.organizations.{OrganizationEventExchange, OrganizationsImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -26,7 +27,10 @@ import monix.execution.Scheduler
 object OrganizationsModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[OrganizationEvent]]].fromEffect { databaseEventLog[OrganizationEvent](_, _) }
+  make[EventLog[Envelope[OrganizationEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[OrganizationEvent](flavour, as)
+  }
 
   make[Organizations].fromEffect {
     (

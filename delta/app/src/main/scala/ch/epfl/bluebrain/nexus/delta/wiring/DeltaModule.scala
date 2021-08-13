@@ -25,11 +25,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -110,16 +110,28 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
-  make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
-  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
+  make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
+    DatabaseDefinitions(config.database)(system).tapEval(_.initialize)
+  )
+
+  make[EventLog[Envelope[Event]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[Event](flavour, as)
+  }
+
+  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[ProjectScopedEvent](flavour, as)
+  }
 
   make[Projection[ProjectCountsCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
       Projection(database, ProjectCountsCollection.empty, system, clock)
   }
 
-  make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    Projection(database, (), system, clock)
+  make[Projection[Unit]].fromEffect {
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
+      Projection(database, (), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {

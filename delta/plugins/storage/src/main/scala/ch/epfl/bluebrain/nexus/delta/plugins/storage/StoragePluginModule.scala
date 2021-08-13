@@ -28,8 +28,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -47,7 +47,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
+  make[EventLog[Envelope[StorageEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[StorageEvent](flavour, as)
+  }
 
   make[HttpClient].named("storage").from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
     def defaultHttpClientConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
@@ -124,10 +127,13 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       }
   }
 
-  make[EventLog[Envelope[FileEvent]]].fromEffect { databaseEventLog[FileEvent](_, _) }
+  make[EventLog[Envelope[FileEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[FileEvent](flavour, as)
+  }
 
   make[Projection[StorageStatsCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], _: DatabaseDefinitions) =>
       Projection(database, StorageStatsCollection.empty, system, clock)
   }
 

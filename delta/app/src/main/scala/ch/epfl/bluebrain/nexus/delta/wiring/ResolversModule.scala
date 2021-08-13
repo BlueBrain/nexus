@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -27,7 +28,10 @@ import monix.execution.Scheduler
 object ResolversModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
+  make[EventLog[Envelope[ResolverEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[ResolverEvent](flavour, as)
+  }
 
   make[Resolvers].fromEffect {
     (

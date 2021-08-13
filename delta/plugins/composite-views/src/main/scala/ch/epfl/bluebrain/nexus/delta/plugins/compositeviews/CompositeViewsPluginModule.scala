@@ -25,7 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
@@ -38,7 +39,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 
-  make[EventLog[Envelope[CompositeViewEvent]]].fromEffect { databaseEventLog[CompositeViewEvent](_, _) }
+  make[EventLog[Envelope[CompositeViewEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[CompositeViewEvent](flavour, as)
+  }
 
   make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
     val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)

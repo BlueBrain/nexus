@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -28,7 +29,10 @@ import monix.execution.Scheduler
 object RealmsModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[RealmEvent]]].fromEffect { databaseEventLog[RealmEvent](_, _) }
+  make[EventLog[Envelope[RealmEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[RealmEvent](flavour, as)
+  }
 
   make[Realms].fromEffect {
     (

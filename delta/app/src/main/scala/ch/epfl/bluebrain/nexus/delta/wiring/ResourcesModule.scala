@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -25,7 +26,10 @@ import monix.execution.Scheduler
   */
 object ResourcesModule extends ModuleDef {
 
-  make[EventLog[Envelope[ResourceEvent]]].fromEffect { databaseEventLog[ResourceEvent](_, _) }
+  make[EventLog[Envelope[ResourceEvent]]].fromEffect {
+    (flavour: DatabaseFlavour, as: ActorSystem[Nothing], _: DatabaseDefinitions) =>
+      databaseEventLog[ResourceEvent](flavour, as)
+  }
 
   make[Resources].fromEffect {
     (
