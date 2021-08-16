@@ -96,6 +96,7 @@ lazy val byteBuddyAgent       = "net.bytebuddy"                 % "byte-buddy-ag
 lazy val caffeine             = "com.github.ben-manes.caffeine" % "caffeine"                        % caffeineVersion
 lazy val catsCore             = "org.typelevel"                %% "cats-core"                       % catsVersion
 lazy val catsEffect           = "org.typelevel"                %% "cats-effect"                     % catsEffectVersion
+lazy val catsEffectLaws       = "org.typelevel"                %% "cats-effect-laws"                % catsEffectVersion
 lazy val catsRetry            = "com.github.cb372"             %% "cats-retry"                      % catsRetryVersion
 lazy val circeCore            = "io.circe"                     %% "circe-core"                      % circeVersion
 lazy val circeGeneric         = "io.circe"                     %% "circe-generic"                   % circeVersion
@@ -159,7 +160,7 @@ lazy val docs = project
     // paradox settings
     paradoxValidationIgnorePaths    ++= List(
       "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
-      "https://dl.acm.org/*".r,
+      "https://dl.acm.org/.*".r,
       "http://example.com/.*".r,
       "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
       "https://www.janelia.org".r,
@@ -168,7 +169,7 @@ lazy val docs = project
       "https://movies.com/movieId/1".r,
       "https://link.springer.com/.*".r,
       "https://sandbox.bluebrainnexus.io.*".r,
-      "https://www.sciencedirect.com/*".r,
+      "https://www.sciencedirect.com/.*".r,
       "https://shacl.org/.*".r,
       "http://www.w3.org/2001/XMLSchema.*".r,
       "https://www.youtube.com/.*".r,
@@ -191,10 +192,13 @@ lazy val docs = project
                          |""".stripMargin)
     },
     Compile / paradoxNavigationDepth := 4,
-    Compile / paradoxProperties     ++= Map(
-      "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
-      "project.version.short" -> "v1.5.x"
-    ),
+    Compile / paradoxProperties     ++=
+      Map(
+        "github.base_url"       -> "https://github.com/BlueBrain/nexus/tree/master",
+        "project.version.short" -> "Snapshot",
+        "current.url"           -> "https://bluebrainnexus.io/docs/",
+        "version.snapshot"      -> "true"
+      ),
     paradoxRoots                     := List("docs/index.html"),
     previewPath                      := "docs/index.html",
     previewFixedPort                 := Some(4001),
@@ -208,6 +212,7 @@ lazy val docs = project
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
+        (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
         (storagePlugin / Compile / resourceDirectory).value / "contexts"
       )
@@ -252,7 +257,6 @@ lazy val testkit = project
       distageDocker,
       distageTestkit,
       monixBio,
-      scalate,
       scalaTest
     ),
     addCompilerPlugin(kindProjector)
@@ -319,6 +323,7 @@ lazy val sourcing = project
       streamz,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
+      catsEffectLaws         % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork          := true
@@ -409,7 +414,7 @@ lazy val sdkViews = project
     name       := "delta-sdk-views",
     moduleName := "delta-sdk-views"
   )
-  .dependsOn(sdk, testkit % "test->compile")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -446,20 +451,6 @@ lazy val service = project
     Test / fork          := true
   )
 
-lazy val migration = project
-  .in(file("delta/migration"))
-  .settings(
-    name       := "delta-migration",
-    moduleName := "delta-migration"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(sdk, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
-  .settings(
-    libraryDependencies ++= Seq(
-      circeOptics
-    )
-  )
-
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -468,7 +459,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(service, migration, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
+  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
   .settings(
     libraryDependencies  ++= Seq(
       akkaDistributedData,
@@ -490,6 +481,7 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       val pluginsTarget      = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
@@ -498,7 +490,8 @@ lazy val app = project
           bgFile             -> (pluginsTarget / bgFile.getName),
           storageFile        -> (pluginsTarget / storageFile.getName),
           archiveFile        -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName)
+          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile         -> (pluginsTarget / searchFile.getName)
         )
       )
     },
@@ -521,12 +514,14 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
-        (compositeViewsFile, "plugins/" + compositeViewsFile.getName)
+        (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
+        (searchFile, "plugins/" + searchFile.getName)
       )
     }
   )
@@ -548,7 +543,6 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration  % Provided,
     sdk        % "provided;test->test",
     sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
@@ -583,7 +577,6 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration  % Provided,
     sdk        % "provided;test->test",
     sdkViews   % "provided;test->test",
     sdkTestkit % "test->compile;test->test"
@@ -615,7 +608,6 @@ lazy val compositeViewsPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration           % Provided,
     sdk                 % "provided;test->test",
     sdkViews            % Provided,
     sdkTestkit          % "test->compile;test->test",
@@ -649,13 +641,47 @@ lazy val compositeViewsPlugin = project
     Test / fork                := true
   )
 
+lazy val searchPlugin = project
+  .in(file("delta/plugins/search"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk                  % "provided;test->test",
+    sdkViews             % Provided,
+    sdkTestkit           % "test->compile;test->test",
+    blazegraphPlugin     % "provided;test->compile;test->test",
+    elasticsearchPlugin  % "provided;test->compile;test->test",
+    compositeViewsPlugin % "provided;test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-search-plugin",
+    moduleName                 := "delta-search-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp     % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
+    addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
+    assembly / assemblyJarName := "search.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
+    Test / fork                := true
+  )
+
 lazy val storagePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % Provided,
-    migration  % Provided,
     sdkTestkit % "test->compile;test->test"
   )
   .settings(
@@ -693,7 +719,6 @@ lazy val archivePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    migration     % Provided, // required to avoid error 'Symbol 'type ch.epfl.bluebrain.nexus.migration.FilesMigration' is missing from the classpath.'
     sdk           % Provided,
     storagePlugin % "provided;test->test",
     sdkTestkit    % "test;test->test"
@@ -725,7 +750,7 @@ lazy val archivePlugin = project
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, storagePlugin, archivePlugin, testPlugin)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
@@ -789,21 +814,16 @@ lazy val storage = project
     }
   )
 
-lazy val dockerCompose = Seq(
-  composeFile := "tests/docker/docker-compose-cassandra.yml"
-)
-
 lazy val tests = project
   .in(file("tests"))
   .dependsOn(testkit)
-  .enablePlugins(DockerComposePlugin)
-  .settings(noPublish ++ dockerCompose)
+  .settings(noPublish)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                     := "tests",
-    moduleName               := "tests",
-    coverageFailOnMinimum    := false,
-    libraryDependencies     ++= Seq(
+    name                               := "tests",
+    moduleName                         := "tests",
+    coverageFailOnMinimum              := false,
+    libraryDependencies               ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,
@@ -819,8 +839,11 @@ lazy val tests = project
       alpakkaSse      % Test,
       uuidGenerator   % Test
     ),
-    Test / parallelExecution := false,
-    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports")
+    Test / parallelExecution           := false,
+    Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    // Scalate gets errors with layering with this project so we disable it
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+    Test / fork                        := true
   )
 
 lazy val root = project
@@ -1012,7 +1035,6 @@ ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
-Global / excludeLintKeys        += tests / composeFile
 Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
