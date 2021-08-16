@@ -269,7 +269,7 @@ class FilesSpec
     )
 
     val storageStatistics =
-      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Instant.EPOCH))))
+      StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Some(Instant.EPOCH)))))
 
     val (files, storages) = FilesSetup.init(orgs, projs, acls, storageStatistics, cfg, allowedPerms.toSeq: _*)
 
