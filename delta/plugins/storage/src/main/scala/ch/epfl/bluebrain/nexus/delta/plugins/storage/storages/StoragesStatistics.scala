@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -98,23 +98,24 @@ object StoragesStatistics {
     val cache =
       CompositeKeyValueStore[ProjectRef, Iri, StorageStatEntry](
         id,
-        (_, stats) => stats.lastProcessedEventDateTime.toEpochMilli
+        (_, stats) => stats.lastProcessedEventDateTime.fold(0L)(_.toEpochMilli)
       )
 
     // Build the storage stat entry from the file event
     def fileEventToStatEntry(f: FileEvent): Task[((ProjectRef, Iri), StorageStatEntry)] = f match {
       case c: FileCreated if !c.attributes.digest.computed =>
-        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, c.instant))
+        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, Some(c.instant)))
       case c: FileCreated                                  =>
-        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, c.attributes.bytes, c.instant))
-      case u: FileUpdated                                  => UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, u.attributes.bytes, u.instant))
+        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, c.attributes.bytes, Some(c.instant)))
+      case u: FileUpdated                                  =>
+        UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, u.attributes.bytes, Some(u.instant)))
       case fau: FileAttributesUpdated                      =>
         fetchFileStorage(fau.id, fau.project).map { storageIri =>
-          (fau.project, storageIri) -> StorageStatEntry(0L, fau.bytes, fau.instant)
+          (fau.project, storageIri) -> StorageStatEntry(0L, fau.bytes, Some(fau.instant))
         }
       case other                                           =>
         fetchFileStorage(other.id, other.project).map { storageIri =>
-          (other.project, storageIri) -> StorageStatEntry(0L, 0L, other.instant)
+          (other.project, storageIri) -> StorageStatEntry(0L, 0L, Some(other.instant))
         }
     }
 
@@ -157,7 +158,7 @@ object StoragesStatistics {
           override def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry] =
             for {
               iri <- fetchStorageId(idSegment, project)
-              res <- IO.fromOptionEval(cache.get(project, iri), StorageNotFound(iri, project))
+              res <- cache.get(project, iri).map(_.getOrElse(StorageStatEntry.empty))
             } yield res
         }
       )

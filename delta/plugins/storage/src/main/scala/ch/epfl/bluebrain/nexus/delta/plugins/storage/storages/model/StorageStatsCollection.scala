@@ -31,9 +31,12 @@ object StorageStatsCollection {
     * @param spaceUsed   the space used by the files for this storage
     * @param lastProcessedEventDateTime the time when the last entry was created
     */
-  final case class StorageStatEntry(files: Long, spaceUsed: Long, lastProcessedEventDateTime: Instant)
+  final case class StorageStatEntry(files: Long, spaceUsed: Long, lastProcessedEventDateTime: Option[Instant])
 
   object StorageStatEntry {
+
+    val empty = StorageStatEntry(0L, 0L, None)
+
     implicit val storageStatEntrySemigroup: Semigroup[StorageStatEntry] =
       (x: StorageStatEntry, y: StorageStatEntry) =>
         StorageStatEntry(
