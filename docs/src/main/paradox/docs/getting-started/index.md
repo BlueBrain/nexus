@@ -1,7 +1,8 @@
 @@@ index
 
 - @ref:[Understanding Knowledge Graphs](understanding-knowledge-graphs.md)
-- @ref:[Try Nexus](try-nexus.md)
+- @ref:[Neuroscience Tutorial](try-nexus.md)
+- @ref:[MovieLens Tutorial](try-nexus-movielens.md)
 - @ref:[Running Nexus](running-nexus/index.md)
 
 @@@

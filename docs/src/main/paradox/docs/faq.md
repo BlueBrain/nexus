@@ -113,7 +113,7 @@ In order to find more information about RDF and JSON-LD, please visit this page,
 
 ### What is Elasticsearch?
 
-@link:[Elasticsearch](https://www.elastic.co/elastic-stack){ open=new } is a document oriented search engine with an 
+@link:[Elasticsearch](https://www.elastic.co/elastic-stack/){ open=new } is a document oriented search engine with an 
 HTTP endpoint and schema-free JSON document. It is able to aggregate data based on specific queries enabling the 
 exploration of trends and patterns.
 

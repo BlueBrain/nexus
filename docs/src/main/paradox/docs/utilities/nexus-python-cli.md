@@ -69,7 +69,7 @@ Command
 Output
 :   @@snip [create-org-out.sh](assets/create-org-out.sh)
 
-### Create a project
+### Create your own project
 
 A project is created with a label and within an organization. The label should be made of alphanumerical characters and its length should be between 3 and 32 (it should match the regex: [a-zA-Z0-9-_]{3,32}).
 
