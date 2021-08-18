@@ -157,12 +157,15 @@ class StoragesStatisticsSpec
       (_: Offset) => stream
     ).accepted
 
-    val storage1Stats = StorageStatEntry(3L, 85L, Instant.ofEpochMilli(7000L))
-    val storage2Stats = StorageStatEntry(1L, 20L, Instant.ofEpochMilli(2000L))
+    val storage1Stats = StorageStatEntry(3L, 85L, Some(Instant.ofEpochMilli(7000L)))
+    val storage2Stats = StorageStatEntry(1L, 20L, Some(Instant.ofEpochMilli(2000L)))
 
     "be computed" in eventually {
       stats.get(storage1, project1).accepted shouldEqual storage1Stats
       stats.get(storage2, project2).accepted shouldEqual storage2Stats
+
+      // Existing storage without any file
+      stats.get(nxv + "storage3", project2).accepted shouldEqual StorageStatEntry.empty
     }
 
     "retrieve its offset" in eventually {

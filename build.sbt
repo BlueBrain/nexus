@@ -1,3 +1,5 @@
+import scala.io.Source
+
 /*
 scalafmt: {
   maxColumn = 150
@@ -158,23 +160,12 @@ lazy val docs = project
     name                             := "docs",
     moduleName                       := "docs",
     // paradox settings
-    paradoxValidationIgnorePaths    ++= List(
-      "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
-      "https://dl.acm.org/.*".r,
-      "http://example.com/.*".r,
-      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
-      "https://www.janelia.org".r,
-      "http://mouselight.janelia.org/".r,
-      "http://ml-neuronbrowser.janelia.org".r,
-      "https://movies.com/movieId/1".r,
-      "https://link.springer.com/.*".r,
-      "https://sandbox.bluebrainnexus.io.*".r,
-      "https://www.sciencedirect.com/.*".r,
-      "https://shacl.org/.*".r,
-      "http://www.w3.org/2001/XMLSchema.*".r,
-      "https://www.youtube.com/.*".r,
-      "https://web.stanford.edu/.*".r
-    ),
+    paradoxValidationIgnorePaths    ++= {
+      val source      = Source.fromFile(file("docs/ignore-paths.txt"))
+      val ignorePaths = source.getLines().map(_.r).toList
+      source.close()
+      ignorePaths
+    },
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")

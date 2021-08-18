@@ -95,9 +95,9 @@ class StoragesRoutesSpec
   private val storageStatistics = StoragesStatisticsSetup.init(
     Map(
       project.value -> Map(
-        dId  -> StorageStatEntry(10L, 1000L, Instant.ofEpochMilli(1000L)),
-        rdId -> StorageStatEntry(50L, 5000L, Instant.ofEpochMilli(5000L)),
-        s3Id -> StorageStatEntry(100L, 10000L, Instant.ofEpochMilli(10000L))
+        dId  -> StorageStatEntry(10L, 1000L, Some(Instant.ofEpochMilli(1000L))),
+        rdId -> StorageStatEntry(50L, 5000L, Some(Instant.ofEpochMilli(5000L))),
+        s3Id -> StorageStatEntry(100L, 10000L, Some(Instant.ofEpochMilli(10000L)))
       )
     )
   )

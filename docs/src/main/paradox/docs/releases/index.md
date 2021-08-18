@@ -19,6 +19,21 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 
 The latest stable release is **v1.5.1** released on **04.06.2021**.
 
+## v1.6.0-M2 (17.08.2021)
+
+This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
+
+ - Initial full text search on all projects (based on access) [#2610](https://github.com/BlueBrain/nexus/issues/2610)
+ - Restrict volume of data through quotas (static configuration) [#2525](https://github.com/BlueBrain/nexus/issues/2525)
+ - Repurpose the search bar to enable jump to project [#2609](https://github.com/BlueBrain/nexus/issues/2609)
+ - Ability to paginate search results based on user view port or preference [#2623](https://github.com/BlueBrain/nexus/issues/2623)
+ - Mooc tutorial update [#2652](https://github.com/BlueBrain/nexus/pull/2652)
+ - BUGFIX: Fix database initialization failures [#2689](https://github.com/BlueBrain/nexus/issues/2689)
+ - BUGFIX: Fix SVG import in Fusion [#1553](https://github.com/BlueBrain/nexus/issues/1553)
+ - BUGFIX: Create Blazegraph namespace on view updates [#2668](https://github.com/BlueBrain/nexus/issues/2668)
+ - BUGFIX: Cannot edit the JSON payload of a View [#1407](https://github.com/BlueBrain/nexus/issues/1407)
+
+
 ## v1.6.0-M1 (02.08.2021)
 
 This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
