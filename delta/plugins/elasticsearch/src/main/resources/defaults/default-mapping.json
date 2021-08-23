@@ -56,6 +56,10 @@
       "type": "boolean",
       "copy_to": "_all_fields"
     },
+    "_markedAsDeprecated": {
+      "type": "boolean",
+      "copy_to": "_all_fields"
+    },
     "_createdAt": {
       "type": "date",
       "copy_to": "_all_fields"
