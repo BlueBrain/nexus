@@ -14,8 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
+import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule.ResourcesDeletionWithPriority
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -27,30 +29,38 @@ object ResourcesModule extends ModuleDef {
 
   make[EventLog[Envelope[ResourceEvent]]].fromEffect { databaseEventLog[ResourceEvent](_, _) }
 
-  make[Resources].fromEffect {
+  make[ResourcesAggregate].fromEffect {
     (
         config: AppConfig,
-        eventLog: EventLog[Envelope[ResourceEvent]],
         acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
         resolvers: Resolvers,
         schemas: Schemas,
-        resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
         as: ActorSystem[Nothing],
-        clock: Clock[UIO],
+        clock: Clock[UIO]
+    ) =>
+      ResourcesImpl.aggregate(
+        config.resources.aggregate,
+        ResourceResolution.schemaResource(acls, resolvers, schemas),
+        resourceIdCheck
+      )(as, clock)
+  }
+
+  many[ResourcesDeletionWithPriority].add {
+    (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
+      1 -> DataDeletion(agg, resources, dbCleanup)
+  }
+
+  make[Resources].from {
+    (
+        eventLog: EventLog[Envelope[ResourceEvent]],
+        agg: ResourcesAggregate,
+        organizations: Organizations,
+        projects: Projects,
+        resolverContextResolution: ResolverContextResolution,
         uuidF: UUIDF
     ) =>
-      ResourcesImpl(
-        organizations,
-        projects,
-        ResourceResolution.schemaResource(acls, resolvers, schemas),
-        resourceIdCheck,
-        resolverContextResolution,
-        config.resources.aggregate,
-        eventLog
-      )(uuidF, as, clock)
+      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(uuidF)
   }
 
   make[ResolverContextResolution].from {

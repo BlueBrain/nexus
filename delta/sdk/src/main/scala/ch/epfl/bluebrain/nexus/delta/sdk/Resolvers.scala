@@ -163,6 +163,17 @@ trait Resolvers {
     list(pagination, params.copy(project = Some(projectRef)), ordering)
 
   /**
+    * A terminating stream of events for resolvers. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the resolver belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]]
+
+  /**
     * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
     * are recorded.
     *

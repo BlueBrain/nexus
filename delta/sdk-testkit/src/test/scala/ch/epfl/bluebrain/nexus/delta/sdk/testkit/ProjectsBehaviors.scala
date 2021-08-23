@@ -6,23 +6,25 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Quotas, QuotasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated, notDeprecatedWithEventQuotas, notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import com.datastax.oss.driver.api.core.uuid.Uuids
 import monix.bio.Task
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -124,7 +126,7 @@ trait ProjectsBehaviors {
       val project = projects.create(ref, payload).accepted
 
       project shouldEqual resourceFor(
-        projectFromRef(ref, uuid, orgUuid, payload),
+        projectFromRef(ref, uuid, orgUuid, markedForDeletion = false, payload),
         1L,
         subject
       )
@@ -165,7 +167,7 @@ trait ProjectsBehaviors {
 
     "update a project" in {
       projects.update(ref, 1L, newPayload).accepted shouldEqual resourceFor(
-        projectFromRef(ref, uuid, orgUuid, newPayload),
+        projectFromRef(ref, uuid, orgUuid, markedForDeletion = false, newPayload),
         2L,
         subject
       )
@@ -173,7 +175,7 @@ trait ProjectsBehaviors {
 
     "deprecate a project" in {
       projects.deprecate(ref, 2L).accepted shouldEqual resourceFor(
-        projectFromRef(ref, uuid, orgUuid, newPayload),
+        projectFromRef(ref, uuid, orgUuid, markedForDeletion = false, newPayload),
         3L,
         subject,
         deprecated = true
@@ -188,19 +190,41 @@ trait ProjectsBehaviors {
       projects.deprecate(ref, 3L).rejectedWith[ProjectRejection] shouldEqual ProjectIsDeprecated(ref)
     }
 
-    val deprecatedResource = resourceFor(
-      projectFromRef(ref, uuid, orgUuid, newPayload),
-      3L,
+    "delete a project" in {
+      projects.delete(ref, 3L).accepted shouldEqual Projects.uuidFrom(ref, epoch) -> resourceFor(
+        projectFromRef(ref, uuid, orgUuid, markedForDeletion = true, newPayload),
+        4L,
+        subject,
+        deprecated = true,
+        markedForDeletion = true
+      )
+    }
+
+    "fetch project deletion status" in {
+      val uuid = Uuids.nameBased(Uuids.startOf(epoch.toEpochMilli), ref.toString)
+      projects
+        .fetchDeletionStatus(ref, uuid)
+        .accepted shouldEqual ResourcesDeletionStatus(Deleting, ref, subject, epoch, subject, epoch, epoch)
+    }
+
+    "fail fetching project deletion status" in {
+      projects.fetchDeletionStatus(ref, UUID.randomUUID()).rejectedWith[ProjectNotDeleted]
+    }
+
+    val resource = resourceFor(
+      projectFromRef(ref, uuid, orgUuid, markedForDeletion = true, newPayload),
+      4L,
       subject,
-      deprecated = true
+      deprecated = true,
+      markedForDeletion = true
     )
 
     "fetch a project" in {
-      projects.fetch(ref).accepted shouldEqual deprecatedResource
+      projects.fetch(ref).accepted shouldEqual resource
     }
 
-    "fetch a deprecated project with fetchProject" in {
-      projects.fetchProject(ref).accepted shouldEqual deprecatedResource.value
+    "fetch a project with fetchProject" in {
+      projects.fetchProject(ref).accepted shouldEqual resource.value
     }
 
     "fetch a project by uuid" in {
@@ -209,7 +233,7 @@ trait ProjectsBehaviors {
 
     "fetch a project at a given revision" in {
       projects.fetchAt(ref, 1L).accepted shouldEqual
-        resourceFor(projectFromRef(ref, uuid, orgUuid, payload), 1L, subject)
+        resourceFor(projectFromRef(ref, uuid, orgUuid, markedForDeletion = false, payload), 1L, subject)
     }
 
     "fetch a project by uuid at a given revision" in {
@@ -255,7 +279,7 @@ trait ProjectsBehaviors {
 
     val anotherRef          = ProjectRef.unsafe("org2", "proj2")
     val anotherProjResource = resourceFor(
-      projectFromRef(anotherRef, uuid, orgUuid, anotherPayload),
+      projectFromRef(anotherRef, uuid, orgUuid, markedForDeletion = false, anotherPayload),
       1L,
       Identity.Anonymous
     )
@@ -269,13 +293,13 @@ trait ProjectsBehaviors {
     "list projects without filters nor pagination" in {
       val results = projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => true), order).accepted
 
-      results shouldEqual SearchResults(2L, Vector(deprecatedResource, anotherProjResource))
+      results shouldEqual SearchResults(2L, Vector(resource, anotherProjResource))
     }
 
     "list projects without filers but paginated" in {
       val results = projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => true), order).accepted
 
-      results shouldEqual SearchResults(2L, Vector(deprecatedResource))
+      results shouldEqual SearchResults(2L, Vector(resource))
     }
 
     "list deprecated projects" in {
@@ -284,7 +308,7 @@ trait ProjectsBehaviors {
           .list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true), filter = _ => true), order)
           .accepted
 
-      results shouldEqual SearchResults(1L, Vector(deprecatedResource))
+      results shouldEqual SearchResults(1L, Vector(resource))
     }
 
     "list projects from organization org" in {
@@ -317,6 +341,7 @@ trait ProjectsBehaviors {
       ref        -> ProjectCreated,
       ref        -> ProjectUpdated,
       ref        -> ProjectDeprecated,
+      ref        -> ProjectMarkedForDeletion,
       anotherRef -> ProjectCreated
     )
 
@@ -324,7 +349,7 @@ trait ProjectsBehaviors {
       val events = projects
         .events()
         .map { e => (e.event.project, e.eventType, e.offset) }
-        .take(4L)
+        .take(allEvents.size.toLong)
         .compile
         .toList
 
@@ -335,7 +360,7 @@ trait ProjectsBehaviors {
       val events = projects
         .events(Sequence(2L))
         .map { e => (e.event.project, e.eventType, e.offset) }
-        .take(2L)
+        .take(3L)
         .compile
         .toList
 
@@ -364,7 +389,12 @@ trait ProjectsBehaviors {
 
     "fetch a project which has not been deprecated nor its organization" in {
       forAll(
-        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
+        List(
+          notDeprecatedOrDeleted,
+          notDeprecatedOrDeletedWithQuotas,
+          notDeprecatedOrDeletedWithEventQuotas,
+          notDeprecatedOrDeletedWithResourceQuotas
+        )
       ) { options =>
         projects.fetchProject(anotherRef, options).accepted shouldEqual anotherProjResource.value
       }
@@ -375,22 +405,23 @@ trait ProjectsBehaviors {
       val projects = create(QuotasDummy.alwaysReached).accepted
       projects.create(ref, payload).accepted
 
-      forAll(List(notDeprecatedWithQuotas, notDeprecatedWithResourceQuotas)) { options =>
+      forAll(List(notDeprecatedOrDeletedWithQuotas, notDeprecatedOrDeletedWithResourceQuotas)) { options =>
         projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
           RejectionWrapper(WrappedQuotaRejection(QuotaResourcesReached(ref, 0)))
       }
 
-      projects.fetchProject(ref, notDeprecatedWithEventQuotas).rejectedWith[RejectionWrapper] shouldEqual
+      projects.fetchProject(ref, notDeprecatedOrDeletedWithEventQuotas).rejectedWith[RejectionWrapper] shouldEqual
         RejectionWrapper(WrappedQuotaRejection(QuotaEventsReached(ref, 0)))
     }
 
     "not fetch a deprecated project with ProjectFetchOptions.NotDeprecated" in {
-      forAll(
-        List(notDeprecated, notDeprecatedWithQuotas, notDeprecatedWithEventQuotas, notDeprecatedWithResourceQuotas)
-      ) { options =>
-        projects.fetchProject(ref, options).rejectedWith[RejectionWrapper] shouldEqual
-          RejectionWrapper(ProjectIsDeprecated(ref))
-      }
+      projects.fetchProject(ref, Set(NotDeprecated, VerifyQuotaResources)).rejectedWith[RejectionWrapper] shouldEqual
+        RejectionWrapper(ProjectIsDeprecated(ref))
+    }
+
+    "not fetch a deleted project with ProjectFetchOptions.NotDeleted" in {
+      projects.fetchProject(ref, Set(NotDeprecated, NotDeleted)).rejectedWith[RejectionWrapper] shouldEqual
+        RejectionWrapper(ProjectIsMarkedForDeletion(ref))
     }
 
     "not fetch a project with a deprecated organization with fetchActive" in {
@@ -400,11 +431,11 @@ trait ProjectsBehaviors {
       (organizations.create(orgLabel, None) >>
         projects.create(projectRef, anotherPayload)(Identity.Anonymous)).accepted
 
-      projects.fetchProject(projectRef, notDeprecated).accepted.ref shouldEqual projectRef
+      projects.fetchProject(projectRef, notDeprecatedOrDeleted).accepted.ref shouldEqual projectRef
 
       organizations.deprecate(orgLabel, 1L).accepted
 
-      projects.fetchProject(projectRef, notDeprecated).rejected shouldEqual
+      projects.fetchProject(projectRef, notDeprecatedOrDeleted).rejected shouldEqual
         RejectionWrapper(WrappedOrganizationRejection(OrganizationIsDeprecated(orgLabel)))
 
       projects.fetchProject(projectRef, Set.empty).accepted

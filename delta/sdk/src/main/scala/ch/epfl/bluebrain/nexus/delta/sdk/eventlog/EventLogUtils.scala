@@ -106,6 +106,24 @@ object EventLogUtils {
       )
 
   /**
+    * Fetch current events related to the given project
+    * @param projects a [[Projects]] instance
+    * @param eventLog a [[EventLog]] instance
+    * @param projectRef the project ref where the events belongs
+    * @param offset the requested offset
+    * @param rejectionMapper to fit the project rejection to one handled by the caller
+    */
+  def currentProjectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(
+      implicit rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    projects
+      .fetch(projectRef)
+      .bimap(
+        rejectionMapper.to,
+        p => currentEvents(eventLog, Projects.projectTag(projectRef), p.createdAt, offset)
+      )
+
+  /**
     * Fetch events related to the given project
     * @param orgs a [[Organizations]] instance
     * @param eventLog a [[EventLog]] instance
@@ -132,5 +150,16 @@ object EventLogUtils {
           OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
         )
         eventLog.eventsByTag(tag, maxOffset)
+    }
+
+  private def currentEvents[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
+    eventLog.flavour match {
+      case Postgres  => eventLog.currentEventsByTag(tag, offset)
+      case Cassandra =>
+        val maxOffset = OffsetUtils.offsetOrdering.max(
+          offset,
+          OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
+        )
+        eventLog.currentEventsByTag(tag, maxOffset)
     }
 }

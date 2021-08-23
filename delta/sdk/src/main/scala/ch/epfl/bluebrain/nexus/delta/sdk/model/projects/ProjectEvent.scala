@@ -139,6 +139,27 @@ object ProjectEvent {
       subject: Subject
   ) extends ProjectEvent
 
+  /**
+    * Evidence that a project has been marked for deletion.
+    *
+    * @param label             the label (segment) of the project
+    * @param uuid              the permanent identifier for the project
+    * @param organizationLabel the parent organization label
+    * @param organizationUuid  the parent organization uuid
+    * @param rev               the revision number that this event generates
+    * @param instant           the timestamp associated to this event
+    * @param subject           the identity associated to this event
+    */
+  final case class ProjectMarkedForDeletion(
+      label: Label,
+      uuid: UUID,
+      override val organizationLabel: Label,
+      organizationUuid: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent
+
   private val context = ContextValue(contexts.metadata, contexts.projects)
 
   @nowarn("cat=unused")

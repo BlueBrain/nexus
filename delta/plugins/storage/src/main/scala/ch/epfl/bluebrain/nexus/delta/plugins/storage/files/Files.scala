@@ -87,7 +87,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -111,7 +111,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -137,7 +137,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri     <- generateId(project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -162,7 +162,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri     <- expandIri(id, project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -185,7 +185,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -215,7 +215,7 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -245,7 +245,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
@@ -289,7 +289,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
     } yield res
@@ -308,7 +308,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
     } yield res
@@ -360,6 +360,18 @@ final class Files(
         case None      => IO.raiseError(TagNotFound(id.tag))
       }
     }
+
+  /**
+    * A terminating stream of events for files. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the files belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events
@@ -494,8 +506,7 @@ object Files {
     */
   val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
 
-  private[files] type FilesAggregate =
-    Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
+  type FilesAggregate = Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
 
   private val logger: Logger = Logger[Files]
 
@@ -514,13 +525,6 @@ object Files {
 
   /**
     * Constructs a Files instance
-    *
-    * @param config   the files configuration
-    * @param eventLog the event log for FileEvent
-    * @param acls     the acls operations bundle
-    * @param orgs     the organizations operations bundle
-    * @param projects the projects operations bundle
-    * @param storages the storages operations bundle
     */
   final def apply(
       config: FilesConfig,
@@ -531,43 +535,30 @@ object Files {
       projects: Projects,
       storages: Storages,
       storagesStatistics: StoragesStatistics,
-      resourceIdCheck: ResourceIdCheck
+      agg: FilesAggregate
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[Files] = {
-    val idAvailability: IdAvailability[ResourceAlreadyExists] =
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, storagesStatistics, idAvailability)
-  }
-
-  private[files] def apply(
-      config: FilesConfig,
-      storageTypeConfig: StorageTypeConfig,
-      eventLog: EventLog[Envelope[FileEvent]],
-      acls: Acls,
-      orgs: Organizations,
-      projects: Projects,
-      storages: Storages,
-      storagesStatistics: StoragesStatistics,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      client: HttpClient,
-      uuidF: UUIDF,
-      clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem  = as.classicSystem
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
-      agg  <- aggregate(config.aggregate, idAvailability)
-      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
+      files <- Task.delay(
+                 new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
+               )
+      _     <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
+  }
+
+  def aggregate(
+      config: AggregateConfig,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[FilesAggregate] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    aggregate(config, idAvailability)
   }
 
   private def aggregate(

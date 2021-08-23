@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import cats.Eq
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -18,6 +19,8 @@ final case class AbsolutePath private (value: Path) extends AnyVal {
 }
 
 object AbsolutePath {
+
+  implicit val absolutePathEq: Eq[AbsolutePath] = Eq.fromUniversalEquals[AbsolutePath]
 
   /**
     * Safely constructs an absolute path.

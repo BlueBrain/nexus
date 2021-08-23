@@ -29,7 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra,
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -116,6 +116,10 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     DatabaseDefinitions(config.database)(system)
   )
 
+  make[DatabaseCleanup].from { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
+    DatabaseCleanup(config)(system)
+  }
+
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
   make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
@@ -157,7 +161,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[EntityType]) =>
-    new ResourceIdCheck(idCheck, moduleTypes)
+    ResourceIdCheck(idCheck, moduleTypes)
   }
 
   include(PermissionsModule)
@@ -174,6 +178,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 }
 
 object DeltaModule {
+
+  type ResourcesDeletionWithPriority = (Int, ResourcesDeletion)
 
   /**
     * Complete service wiring definitions.

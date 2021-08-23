@@ -136,6 +136,11 @@ sealed trait FileBytesInstances extends ValueInstances {
 
 sealed trait ValueInstances extends LowPriorityValueInstances {
 
+  implicit def ioCompleteWithReject[E: JsonLdEncoder: HttpResponseFields, A: JsonLdEncoder](
+      io: IO[E, Complete[A]]
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =
+    ResponseToJsonLd(io.mapError(Complete(_)).attempt)
+
   implicit def uioValueWithReject[E: JsonLdEncoder](
       io: UIO[Reject[E]]
   )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToJsonLd =

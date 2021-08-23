@@ -80,6 +80,7 @@ object ProjectState {
     * @param organizationUuid  the parent organization uuid
     * @param rev               the current state revision
     * @param deprecated        the current state deprecation status
+    * @param markedForDeletion the current marked for deletion status
     * @param description       an optional project description
     * @param apiMappings       the project API mappings
     * @param base              the base Iri for generated resource IDs
@@ -96,6 +97,7 @@ object ProjectState {
       organizationUuid: UUID,
       rev: Long,
       deprecated: Boolean,
+      markedForDeletion: Boolean,
       description: Option[String],
       apiMappings: ApiMappings,
       base: ProjectBase,
@@ -115,14 +117,15 @@ object ProjectState {
       */
     def project: Project =
       Project(
-        label = label,
-        uuid = uuid,
-        organizationLabel = organizationLabel,
-        organizationUuid = organizationUuid,
-        description = description,
-        apiMappings = apiMappings,
-        base = base,
-        vocab = vocab
+        label,
+        uuid,
+        organizationLabel,
+        organizationUuid,
+        description,
+        apiMappings,
+        base,
+        vocab,
+        markedForDeletion
       )
 
     /**

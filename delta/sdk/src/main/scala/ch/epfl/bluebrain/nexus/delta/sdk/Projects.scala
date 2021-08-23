@@ -15,10 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourcesDeletionStatus}
+import com.datastax.oss.driver.api.core.uuid.Uuids
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
+import java.time.Instant
 import java.util.UUID
 
 trait Projects {
@@ -56,10 +58,24 @@ trait Projects {
     * @param rev    the current project revision
     * @param caller a reference to the subject that initiated the action
     */
-  def deprecate(
-      ref: ProjectRef,
-      rev: Long
-  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource]
+  def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource]
+
+  /**
+    * Deletes an existing project.
+    *
+    * @param ref    the project reference
+    * @param rev    the current project revision
+    * @param caller a reference to the subject that initiated the action
+    */
+  def delete(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, (UUID, ProjectResource)]
+
+  /**
+    * Fetches a project deletion status resource based on its reference.
+    *
+    * @param ref  the project reference
+    * @param uuid the uuid generated when a project was deleted (based on the deletion instant)
+    */
+  def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus]
 
   /**
     * Fetches a project resource based on its reference.
@@ -195,17 +211,26 @@ object Projects {
     */
   final val moduleType: String = "project"
 
+  /**
+    * Generates a UUID from the ''project'' and an ''instant''
+    */
+  def uuidFrom(project: ProjectRef, instant: Instant): UUID =
+    Uuids.nameBased(Uuids.startOf(instant.toEpochMilli), project.toString)
+
   private[delta] def next(defaultApiMappings: ApiMappings)(state: ProjectState, event: ProjectEvent): ProjectState =
     (state, event) match {
       // format: off
       case (Initial, ProjectCreated(label, uuid, orgLabel, orgUuid, _, desc, am, base, vocab, instant, subject))  =>
-        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, desc, defaultApiMappings + am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
+        Current(label, uuid, orgLabel, orgUuid, 1L, deprecated = false, markedForDeletion = false, desc, defaultApiMappings + am, ProjectBase.unsafe(base.value), vocab.value, instant, subject, instant, subject)
 
       case (c: Current, ProjectUpdated(_, _, _, _, rev, desc, am, base, vocab, instant, subject))                 =>
         c.copy(description = desc, apiMappings = defaultApiMappings + am, base = ProjectBase.unsafe(base.value), vocab = vocab.value, rev = rev, updatedAt = instant, updatedBy = subject)
 
       case (c: Current, ProjectDeprecated(_, _, _, _, rev, instant, subject))                                     =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject, apiMappings = defaultApiMappings + c.apiMappings)
+
+      case (c: Current, ProjectMarkedForDeletion(_, _, _, _, rev, instant, subject))                              =>
+        c.copy(rev = rev, markedForDeletion = true, updatedAt = instant, updatedBy = subject, apiMappings = defaultApiMappings + c.apiMappings)
 
       case (s, _)                                                                                                => s
       // format: on
@@ -245,13 +270,15 @@ object Projects {
 
     def update(c: UpdateProject) =
       state match {
-        case Initial                      =>
+        case Initial                           =>
           IO.raiseError(ProjectNotFound(c.ref))
-        case s: Current if c.rev != s.rev =>
+        case s: Current if c.rev != s.rev      =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated   =>
+        case s: Current if s.deprecated        =>
           IO.raiseError(ProjectIsDeprecated(c.ref))
-        case s: Current                   =>
+        case s: Current if s.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
+        case s: Current                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
               instant.map(ProjectUpdated(s.label, s.uuid, s.organizationLabel, s.organizationUuid, s.rev + 1, c.description, c.apiMappings, c.base, c.vocab,_, c.subject))
@@ -260,23 +287,40 @@ object Projects {
 
     def deprecate(c: DeprecateProject) =
       state match {
-        case Initial                      =>
+        case Initial                           =>
           IO.raiseError(ProjectNotFound(c.ref))
-        case s: Current if c.rev != s.rev =>
+        case s: Current if c.rev != s.rev      =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated   =>
+        case s: Current if s.deprecated        =>
           IO.raiseError(ProjectIsDeprecated(c.ref))
-        case s: Current                   =>
+        case s: Current if s.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
+        case s: Current                        =>
           // format: off
           fetchAndValidateOrg(c.ref.organization) >>
               instant.map(ProjectDeprecated(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
           // format: on
       }
 
+    def delete(c: DeleteProject) =
+      state match {
+        case Initial                           =>
+          IO.raiseError(ProjectNotFound(c.ref))
+        case s: Current if c.rev != s.rev      =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if s.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(c.ref))
+        case s: Current                        =>
+          // format: off
+            instant.map(ProjectMarkedForDeletion(s.label, s.uuid,s.organizationLabel, s.organizationUuid,s.rev + 1, _, c.subject))
+        // format: on
+      }
+
     command match {
       case c: CreateProject    => create(c)
       case c: UpdateProject    => update(c)
       case c: DeprecateProject => deprecate(c)
+      case c: DeleteProject    => delete(c)
     }
   }
 }

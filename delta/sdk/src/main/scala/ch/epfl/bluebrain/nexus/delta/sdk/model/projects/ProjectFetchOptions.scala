@@ -13,6 +13,11 @@ object ProjectFetchOptions {
   final case object NotDeprecated extends ProjectFetchOptions
 
   /**
+    * Not deleted project
+    */
+  final case object NotDeleted extends ProjectFetchOptions
+
+  /**
     * Project that does not have a quota restriction for resources
     */
   final case object VerifyQuotaResources extends ProjectFetchOptions
@@ -22,9 +27,18 @@ object ProjectFetchOptions {
     */
   final case object VerifyQuotaEvents extends ProjectFetchOptions
 
-  val notDeprecated: Set[ProjectFetchOptions]                   = Set(NotDeprecated)
-  val notDeprecatedWithResourceQuotas: Set[ProjectFetchOptions] = Set(NotDeprecated, VerifyQuotaResources)
-  val notDeprecatedWithEventQuotas: Set[ProjectFetchOptions]    = Set(NotDeprecated, VerifyQuotaEvents)
-  val notDeprecatedWithQuotas: Set[ProjectFetchOptions]         = Set(NotDeprecated, VerifyQuotaResources, VerifyQuotaEvents)
-  val allQuotas: Set[ProjectFetchOptions]                       = Set(VerifyQuotaResources, VerifyQuotaEvents)
+  val notDeprecatedOrDeleted: Set[ProjectFetchOptions] =
+    Set(NotDeprecated, NotDeleted)
+
+  val notDeprecatedOrDeletedWithResourceQuotas: Set[ProjectFetchOptions] =
+    Set(NotDeprecated, NotDeleted, VerifyQuotaResources)
+
+  val notDeprecatedOrDeletedWithEventQuotas: Set[ProjectFetchOptions] =
+    Set(NotDeprecated, NotDeleted, VerifyQuotaEvents)
+
+  val notDeprecatedOrDeletedWithQuotas: Set[ProjectFetchOptions] =
+    Set(NotDeprecated, NotDeleted, VerifyQuotaResources, VerifyQuotaEvents)
+
+  val allQuotas: Set[ProjectFetchOptions] =
+    Set(VerifyQuotaResources, VerifyQuotaEvents)
 }

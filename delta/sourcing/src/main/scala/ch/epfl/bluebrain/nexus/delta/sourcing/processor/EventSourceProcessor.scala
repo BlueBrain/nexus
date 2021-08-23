@@ -14,6 +14,7 @@ import monix.bio.IO
 import monix.execution.Scheduler
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.StopResponse
 import com.datastax.oss.driver.api.core.DriverTimeoutException
 
 import scala.concurrent.TimeoutException
@@ -278,6 +279,9 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case readOnly: AggregateRequest.ReadOnlyRequest                 =>
               stateActor ! toChildActorRequest(readOnly)
               Behaviors.same
+            case AggregateRequest.RequestStop(_, replyTo)                   =>
+              replyTo ! StopResponse
+              stopAfterInactivity(context.self)
             case Idle                                                       =>
               stopAfterInactivity(context.self)
             case ChildActorResponse.AppendResult(_, _)                      =>
@@ -320,11 +324,14 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
             case readOnly: AggregateRequest.ReadOnlyRequest             =>
               stateActor ! toChildActorRequest(readOnly)
               Behaviors.same
+            case AggregateRequest.RequestStop(_, replyTo)               =>
+              replyTo ! StopResponse
+              stopAfterInactivity(context.self)
+            case Idle                                                   =>
+              stopAfterInactivity(context.self)
             case req: AggregateRequest                                  =>
               buffer.stash(req)
               Behaviors.same
-            case Idle                                                   =>
-              stopAfterInactivity(context.self)
             case _: EvaluationResultInternal                            =>
               context.log.error("Getting an evaluation result should happen within the 'evaluating' behavior")
               Behaviors.unhandled

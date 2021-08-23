@@ -80,7 +80,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, storageFields) <- sourceDecoder(p, source.value)
       res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
@@ -100,7 +100,7 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -121,7 +121,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
@@ -153,7 +153,7 @@ final class Storages private (
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri           <- expandIri(id, p)
       storageFields <- sourceDecoder(p, iri, source.value)
       res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -176,7 +176,7 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = storageFields.toJson(iri)
       res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
@@ -201,7 +201,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -220,7 +220,7 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
     } yield res
@@ -326,6 +326,18 @@ final class Storages private (
     list(pagination, params.copy(project = Some(projectRef)), ordering)
 
   /**
+    * A terminating stream of events for storages. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the storage belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
+
+  /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
     * are recorded.
     *
@@ -402,10 +414,9 @@ final class Storages private (
 @SuppressWarnings(Array("MaxParameters"))
 object Storages {
 
-  private[storages] type StoragesAggregate =
-    Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
-  private[storages] type StoragesCache     = CompositeKeyValueStore[ProjectRef, Iri, StorageResource]
-  private[storages] type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
+  type StoragesAggregate = Aggregate[String, StorageState, StorageCommand, StorageEvent, StorageRejection]
+  type StoragesCache     = CompositeKeyValueStore[ProjectRef, Iri, StorageResource]
+  type StorageAccess     = (Iri, StorageValue) => IO[StorageNotAccessible, Unit]
 
   /**
     * The storages module type.
@@ -443,80 +454,32 @@ object Storages {
 
   /**
     * Constructs a Storages instance
-    *
-    * @param config            the storage configuration
-    * @param eventLog          the event log for StorageEvent
-    * @param contextResolution the resolution of contexts (static and from within the project)
-    * @param permissions       a permissions operations bundle
-    * @param orgs              a organizations operations bundle
-    * @param projects          a projects operations bundle
-    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
-    * @param crypto            the cypher to use in order to encrypt/decrypt sensitive fields
     */
   final def apply(
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
       contextResolution: ResolverContextResolution,
-      permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
-      resourceIdCheck: ResourceIdCheck,
-      crypto: Crypto,
+      cache: StoragesCache,
+      agg: StoragesAggregate,
       serviceAccount: ServiceAccount
   )(implicit
-      client: HttpClient,
       uuidF: UUIDF,
-      clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Storages] = {
-    implicit val classicAs: actor.ActorSystem                 = as.classicSystem
-    implicit val storageTypeConfig: StorageTypeConfig         = config.storageTypeConfig
-    val idAvailability: IdAvailability[ResourceAlreadyExists] =
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
-    apply(
-      config,
-      eventLog,
-      contextResolution,
-      permissions,
-      orgs,
-      projects,
-      storageAccess,
-      idAvailability,
-      crypto,
-      serviceAccount
-    )
+    for {
+      sourceDecoder <-
+        Task.delay(
+          new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
+        )
+      storages       = new Storages(agg, eventLog, cache, orgs, projects, sourceDecoder, serviceAccount)
+      _             <- startIndexing(config, eventLog, cache, storages)
+    } yield storages
   }
 
-  private[storage] def apply(
-      config: StoragesConfig,
-      eventLog: EventLog[Envelope[StorageEvent]],
-      contextResolution: ResolverContextResolution,
-      permissions: Permissions,
-      orgs: Organizations,
-      projects: Projects,
-      access: StorageAccess,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      crypto: Crypto,
-      serviceAccount: ServiceAccount
-  )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[Storages] =
-    for {
-      agg          <- aggregate(config, access, idAvailability, permissions, crypto)
-      index        <- UIO.delay(cache(config))
-      sourceDecoder =
-        new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
-      storages      =
-        new Storages(agg, eventLog, index, orgs, projects, sourceDecoder, serviceAccount)
-      _            <- startIndexing(config, eventLog, index, storages)
-    } yield storages
-
-  private def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
+  def cache(config: StoragesConfig)(implicit as: ActorSystem[Nothing]): StoragesCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, StorageResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
@@ -540,7 +503,21 @@ object Storages {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "storages indexing")
     )
 
-  private def aggregate(
+  def aggregate(
+      config: StoragesConfig,
+      resourceIdCheck: ResourceIdCheck,
+      permissions: Permissions,
+      crypto: Crypto
+  )(implicit client: HttpClient, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[StoragesAggregate] = {
+    implicit val classicAs: actor.ActorSystem                 = as.classicSystem
+    implicit val storageTypeConfig: StorageTypeConfig         = config.storageTypeConfig
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
+    aggregate(config, storageAccess, idAvailability, permissions, crypto)
+  }
+
+  private[storages] def aggregate(
       config: StoragesConfig,
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],

@@ -20,13 +20,14 @@ import scala.annotation.nowarn
 /**
   * Configuration for the Projects module.
   *
-  * @param aggregate             configuration of the underlying aggregate
-  * @param keyValueStore         configuration of the underlying key/value store
-  * @param pagination            configuration for how pagination should behave in listing operations
-  * @param cacheIndexing         configuration of the cache indexing process
-  * @param persistProgressConfig configuration for the persistence of progress of projections
-  * @param automaticProvisioning configuration for automatic provisioning of projects
-  * @param quotas                quotas for projects
+  * @param aggregate              configuration of the underlying aggregate
+  * @param keyValueStore          configuration of the underlying key/value store
+  * @param pagination             configuration for how pagination should behave in listing operations
+  * @param cacheIndexing          configuration of the cache indexing process
+  * @param persistProgressConfig  configuration for the persistence of progress of projections
+  * @param automaticProvisioning  configuration for automatic provisioning of projects
+  * @param quotas                 quotas for projects
+  * @param allowResourcesDeletion flag to decide whether to allow resources deletion
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
@@ -35,7 +36,8 @@ final case class ProjectsConfig(
     cacheIndexing: CacheIndexingConfig,
     persistProgressConfig: SaveProgressConfig,
     automaticProvisioning: AutomaticProvisioningConfig,
-    quotas: QuotasConfig
+    quotas: QuotasConfig,
+    allowResourcesDeletion: Boolean
 )
 
 object ProjectsConfig {

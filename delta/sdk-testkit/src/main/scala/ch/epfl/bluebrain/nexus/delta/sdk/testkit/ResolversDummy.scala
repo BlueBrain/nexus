@@ -55,7 +55,7 @@ class ResolversDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -66,7 +66,7 @@ class ResolversDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -78,7 +78,7 @@ class ResolversDummy private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -88,7 +88,7 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -104,7 +104,7 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -120,7 +120,7 @@ class ResolversDummy private (
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -129,7 +129,7 @@ class ResolversDummy private (
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -150,6 +150,14 @@ class ResolversDummy private (
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     cache.list(pagination, params, ordering)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEvents(offset).filter(e => e.event.project == projectRef))
 
   override def events(
       projectRef: ProjectRef,

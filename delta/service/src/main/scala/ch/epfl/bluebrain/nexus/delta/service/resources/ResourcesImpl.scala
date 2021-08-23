@@ -45,7 +45,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -59,7 +59,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -75,7 +75,7 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -92,7 +92,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -105,7 +105,7 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -133,6 +133,12 @@ final class ResourcesImpl private (
       offset: Offset
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
     eventLog.projectEvents(projects, projectRef, offset)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   override def events(
       organization: Label,
@@ -189,14 +195,22 @@ object ResourcesImpl {
   type ResourcesAggregate =
     Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
+  def aggregate(
+      config: AggregateConfig,
+      resourceResolution: ResourceResolution[Schema],
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] =
+    aggregate(
+      config,
+      resourceResolution,
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    )
+
   private def aggregate(
       config: AggregateConfig,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): UIO[ResourcesAggregate] = {
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -216,58 +230,24 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
-    * @param orgs the organization operations bundle
-    * @param projects the project operations bundle
-    * @param resourceResolution to resolve schemas using resolvers
-    * @param resourceIdCheck to check whether an id already exists on another module upon creation
+    * @param orgs              the organization operations bundle
+    * @param projects          the project operations bundle
     * @param contextResolution the context resolver
-    * @param config   the aggregate configuration
-    * @param eventLog the event log for [[ResourceEvent]]
+    * @param eventLog          the event log for [[ResourceEvent]]
     */
   final def apply(
       orgs: Organizations,
       projects: Projects,
-      resourceResolution: ResourceResolution[Schema],
-      resourceIdCheck: ResourceIdCheck,
+      agg: ResourcesAggregate,
       contextResolution: ResolverContextResolution,
-      config: AggregateConfig,
       eventLog: EventLog[Envelope[ResourceEvent]]
-  )(implicit
-      uuidF: UUIDF,
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): UIO[Resources] =
-    apply(
+  )(implicit uuidF: UUIDF = UUIDF.random): Resources =
+    new ResourcesImpl(
+      agg,
       orgs,
       projects,
-      resourceResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)),
-      contextResolution,
-      config,
-      eventLog
-    )
-
-  private[resources] def apply(
-      orgs: Organizations,
-      projects: Projects,
-      resourceResolution: ResourceResolution[Schema],
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      contextResolution: ResolverContextResolution,
-      config: AggregateConfig,
-      eventLog: EventLog[Envelope[ResourceEvent]]
-  )(implicit
-      uuidF: UUIDF = UUIDF.random,
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): UIO[Resources] =
-    aggregate(config, resourceResolution, idAvailability).map(agg =>
-      new ResourcesImpl(
-        agg,
-        orgs,
-        projects,
-        eventLog,
-        JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
-      )
+      eventLog,
+      JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     )
 
 }

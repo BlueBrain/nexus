@@ -36,7 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectFetchOptions, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -92,7 +92,7 @@ final class CompositeViews private (
       value: CompositeViewFields
   )(implicit subject: Subject, baseUri: BaseUri): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedWithQuotas)
+      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
       iri <- expandIri(id, p)
       res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, p.base), p)
     } yield res
@@ -108,7 +108,7 @@ final class CompositeViews private (
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, notDeprecatedWithQuotas)
+      p            <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, p.base), p)
     } yield res
@@ -126,7 +126,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedWithQuotas)
+      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <-
@@ -153,7 +153,7 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
+      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = value.toJson(iri)
       res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, p.base), p)
@@ -173,7 +173,7 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
+      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
       iri       <- expandIri(id, p)
       viewValue <- sourceDecoder(p, iri, source)
       res       <- eval(
@@ -201,7 +201,7 @@ final class CompositeViews private (
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), p)
     } yield res
@@ -219,9 +219,28 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
+  )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] =
+    deprecate(id, project, notDeprecatedOrDeletedWithEventQuotas, rev)
+
+  /**
+    * Deprecate a view without any extra checks on the projects API.
+    * @see [[deprecate(id, project, rev)]]
+    */
+  private[compositeviews] def deprecateWithoutProjectChecks(
+      id: IdSegment,
+      project: ProjectRef,
+      rev: Long
+  )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] =
+    deprecate(id, project, Set.empty, rev)
+
+  private def deprecate(
+      id: IdSegment,
+      project: ProjectRef,
+      projectFetchOptions: Set[ProjectFetchOptions],
+      rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(project, projectFetchOptions)
       iri <- expandIri(id, p)
       res <- eval(DeprecateCompositeView(iri, project, rev, subject), p)
     } yield res
@@ -350,6 +369,18 @@ final class CompositeViews private (
         )
       }
       .named("listCompositeViews", moduleType)
+
+  /**
+    * A terminating stream of events for views. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the elasticsearch view belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The
@@ -591,47 +622,33 @@ object CompositeViews {
   def apply(
       config: CompositeViewsConfig,
       eventLog: EventLog[Envelope[CompositeViewEvent]],
-      permissions: Permissions,
       orgs: Organizations,
       projects: Projects,
+      cache: CompositeViewsCache,
+      agg: CompositeViewsAggregate,
+      contextResolution: ResolverContextResolution
+  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[CompositeViews] =
+    for {
+      sourceDecoder <- Task.delay(CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config))
+      views          = new CompositeViews(agg, eventLog, cache, orgs, projects, sourceDecoder)
+      _             <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
+    } yield views
+
+  def aggregate(
+      config: CompositeViewsConfig,
+      projects: Projects,
       acls: Acls,
+      permissions: Permissions,
+      resourceIdCheck: ResourceIdCheck,
       client: ElasticSearchClient,
       deltaClient: DeltaClient,
-      contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck,
       crypto: Crypto
   )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
       as: ActorSystem[Nothing],
-      sc: Scheduler,
-      baseUri: BaseUri
-  ): Task[CompositeViews] = {
-    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    val cre: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
-    apply(config, eventLog, permissions, orgs, projects, acls, client, cre, contextResolution, idAvailability, crypto)
-  }
-
-  private[compositeviews] def apply(
-      config: CompositeViewsConfig,
-      eventLog: EventLog[Envelope[CompositeViewEvent]],
-      permissions: Permissions,
-      orgs: Organizations,
-      projects: Projects,
-      acls: Acls,
-      client: ElasticSearchClient,
-      checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit],
-      contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      crypto: Crypto
-  )(implicit
+      baseUri: BaseUri,
       uuidF: UUIDF,
-      clock: Clock[UIO],
-      as: ActorSystem[Nothing],
-      sc: Scheduler,
-      baseUri: BaseUri
-  ): Task[CompositeViews] = {
+      clock: Clock[UIO]
+  ): UIO[CompositeViewsAggregate] = {
 
     def validateAcls(cpSource: CrossProjectSource) =
       acls
@@ -650,24 +667,10 @@ object CompositeViews {
       case None                     => IO.unit
     }
 
-    def validateSource: ValidateSource = {
-      case _: ProjectSource             => IO.unit
-      case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
-      case rs: RemoteProjectSource      =>
-        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _)) >> validateCrypto(rs.token)
-    }
-
     def validatePermission(permission: Permission) =
       permissions.fetchPermissionSet.flatMap { perms =>
         IO.when(!perms.contains(permission))(IO.raiseError(PermissionIsNotDefined(permission)))
       }
-
-    def validateProjection: ValidateProjection = {
-      case (sparql: SparqlProjection, _, _)         => validatePermission(sparql.permission)
-      case (es: ElasticSearchProjection, uuid, rev) =>
-        validatePermission(es.permission) >>
-          validateIndex(es, index(es, uuid, rev, config.elasticSearchIndexing.prefix))
-    }
 
     def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
       client
@@ -678,33 +681,29 @@ object CompositeViews {
         }
         .void
 
-    apply(config, eventLog, orgs, projects, validateSource, validateProjection, idAvailability, contextResolution)
+    val checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
+
+    val validateSource: ValidateSource = {
+      case _: ProjectSource             => IO.unit
+      case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
+      case rs: RemoteProjectSource      =>
+        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _)) >> validateCrypto(rs.token)
+    }
+
+    val validateProjection: ValidateProjection = {
+      case (sparql: SparqlProjection, _, _)         => validatePermission(sparql.permission)
+      case (es: ElasticSearchProjection, uuid, rev) =>
+        validatePermission(es.permission) >>
+          validateIndex(es, index(es, uuid, rev, config.elasticSearchIndexing.prefix))
+    }
+
+    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
+      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+
+    aggregate(config, validateSource, validateProjection, idAvailability)
   }
 
-  private[compositeviews] def apply(
-      config: CompositeViewsConfig,
-      eventLog: EventLog[Envelope[CompositeViewEvent]],
-      orgs: Organizations,
-      projects: Projects,
-      validateSource: ValidateSource,
-      validateProjection: ValidateProjection,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      contextResolution: ResolverContextResolution
-  )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
-      as: ActorSystem[Nothing],
-      sc: Scheduler
-  ): Task[CompositeViews] = for {
-    agg          <- aggregate(config, validateSource, validateProjection, idAvailability)
-    index        <- UIO.delay(cache(config))
-    sourceDecoder = CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config)
-    views         = new CompositeViews(agg, eventLog, index, orgs, projects, sourceDecoder)
-    _            <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, index)
-
-  } yield views
-
-  private def aggregate(
+  private[compositeviews] def aggregate(
       config: CompositeViewsConfig,
       validateS: ValidateSource,
       validateP: ValidateProjection,
@@ -727,7 +726,7 @@ object CompositeViews {
     )
   }
 
-  private def cache(config: CompositeViewsConfig)(implicit as: ActorSystem[Nothing]): CompositeViewsCache = {
+  def cache(config: CompositeViewsConfig)(implicit as: ActorSystem[Nothing]): CompositeViewsCache = {
     implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
     val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)

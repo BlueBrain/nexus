@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Id
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -40,7 +41,8 @@ class ProjectsRoutesSpec
     with OptionValues
     with TestMatchers
     with Inspectors
-    with RouteFixtures {
+    with RouteFixtures
+    with ConfigFixtures {
 
   private val projectUuid           = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(projectUuid)
@@ -115,6 +117,18 @@ class ProjectsRoutesSpec
       Some(PrefixIri.unsafe(iri"http://example.com/vocab/"))
     )
   )
+
+  implicit private val projectsConfig: ProjectsConfig =
+    ProjectsConfig(
+      aggregate,
+      keyValueStore,
+      pagination,
+      cacheIndexing,
+      persist,
+      AutomaticProvisioningConfig.disabled,
+      QuotasConfig(None, None, enabled = false, Map.empty),
+      allowResourcesDeletion = true
+    )
 
   private val projectDummy = ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
 

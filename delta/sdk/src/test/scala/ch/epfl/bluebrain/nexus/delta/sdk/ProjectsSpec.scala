@@ -83,6 +83,9 @@ class ProjectsSpec
 
         eval(current, DeprecateProject(ref, 1L, subject)).accepted shouldEqual
           ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
+
+        eval(current, DeleteProject(ref, 1L, subject)).accepted shouldEqual
+          ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
       }
 
       "reject with IncorrectRev" in {
@@ -146,6 +149,14 @@ class ProjectsSpec
           .rejectedWith[ProjectAlreadyExists]
       }
 
+      "do not reject with ProjectIsDeprecated" in {
+        val cur = current.copy(deprecated = true)
+        val cmd = DeleteProject(ref, 1L, subject)
+        eval(cur, cmd).accepted shouldEqual
+          ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2L, epoch, subject)
+
+      }
+
     }
 
     "producing next state" should {
@@ -153,6 +164,7 @@ class ProjectsSpec
       val defaultMappings = ApiMappings("a" -> (nxv + "a"))
       val next            = Projects.next(defaultMappings)(_, _)
       val c               = current.copy(apiMappings = current.apiMappings + defaultMappings)
+
       "create a new ProjectCreated state" in {
         next(
           Initial,
@@ -181,6 +193,13 @@ class ProjectsSpec
 
         next(current, ProjectDeprecated(label, uuid, orgLabel, orgUuid, 2L, time2, subject)) shouldEqual
           c.copy(rev = 2L, deprecated = true, updatedAt = time2, updatedBy = subject)
+      }
+
+      "create new ProjectMarkedForDeletion state" in {
+        next(Initial, ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2L, time2, subject)) shouldEqual Initial
+
+        next(current, ProjectMarkedForDeletion(label, uuid, orgLabel, orgUuid, 2L, time2, subject)) shouldEqual
+          c.copy(rev = 2L, markedForDeletion = true, updatedAt = time2, updatedBy = subject)
       }
     }
   }
