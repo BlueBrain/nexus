@@ -17,11 +17,11 @@
         </encoder>
     </appender>
 
-    <root level="${LOG_LEVEL:-DEBUG}">
+    <root level="${LOG_LEVEL:-INFO}">
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="ch.epfl.bluebrain.nexus" additivity="false" level="${LOG_LEVEL:-DEBUG}">
+    <logger name="ch.epfl.bluebrain.nexus" additivity="false" level="${LOG_LEVEL:-INFO}">
         <appender-ref ref="STDOUT" />
     </logger>
 

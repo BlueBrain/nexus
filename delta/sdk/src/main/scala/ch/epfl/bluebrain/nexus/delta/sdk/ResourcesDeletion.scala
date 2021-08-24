@@ -50,7 +50,6 @@ object ResourcesDeletion {
           stream
             .groupWithin(50, 10.seconds)
             .evalTap { events =>
-              println("------->>>>" + events.map(_.persistenceId).toList.mkString(", "))
               val idsList = events.map(ev => lensId.get(ev.event).toString).toList.distinct
               Task.parTraverseUnordered(idsList)(id => stopActor(s"${projectRef}_${id}")) >>
                 dbCleanup.deleteAll(moduleType, encodedProject, idsList).as(ResourcesDeleted)
