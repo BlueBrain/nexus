@@ -56,7 +56,7 @@
       "type": "boolean",
       "copy_to": "_all_fields"
     },
-    "_markedAsDeprecated": {
+    "_markedForDeletion": {
       "type": "boolean",
       "copy_to": "_all_fields"
     },
