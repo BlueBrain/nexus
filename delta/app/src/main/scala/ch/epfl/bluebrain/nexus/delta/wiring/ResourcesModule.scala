@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, E
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule.ResourcesDeletionWithPriority
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -46,9 +45,8 @@ object ResourcesModule extends ModuleDef {
       )(as, clock)
   }
 
-  many[ResourcesDeletionWithPriority].add {
-    (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
-      1 -> DataDeletion(agg, resources, dbCleanup)
+  many[ResourcesDeletion].add { (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
+    DataDeletion(agg, resources, dbCleanup)
   }
 
   make[Resources].from {

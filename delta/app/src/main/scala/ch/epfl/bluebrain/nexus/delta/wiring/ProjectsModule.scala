@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.service.projects._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule.ResourcesDeletionWithPriority
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -27,6 +25,7 @@ import monix.execution.Scheduler
 /**
   * Projects wiring
   */
+@SuppressWarnings(Array("UnsafeTraversableMethods"))
 object ProjectsModule extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
@@ -89,25 +88,11 @@ object ProjectsModule extends ModuleDef {
       )(baseUri, uuidF, as, scheduler)
   }
 
-  many[ResourcesDeletionWithPriority].add {
-    (cache: ProjectsCache, agg: ProjectsAggregate, dbCleanup: DatabaseCleanup) =>
-      // This priority has to be bigger than any other module, since we want projects to be handled after other resources
-      100 -> ProjectDeletion(cache, agg, dbCleanup)
-  }
+  make[ResourcesDeletion].named("aggregate").from {
+    (deletions: Set[ResourcesDeletion], cache: ProjectsCache, agg: ProjectsAggregate, dbCleanup: DatabaseCleanup) =>
+      val list = deletions.toList :+ ProjectDeletion(cache, agg, dbCleanup)
+      ResourcesDeletion.combine(NonEmptyList(list.head, list.tail))
 
-  make[ResourcesDeletion].fromEffect { (deletions: Set[ResourcesDeletionWithPriority]) =>
-    deletions.toList.sortBy { case (priority, _) => priority } match {
-      case (_, head) :: tail =>
-        val priorities = deletions.map { case (priority, _) => priority }.toList.distinct
-        Task
-          .raiseWhen(priorities.size < deletions.size)(
-            new IllegalArgumentException(
-              s"some of the ResourcesDeletion priorities are duplicated '${priorities.mkString(",")}'"
-            )
-          )
-          .as(ResourcesDeletion.combine(NonEmptyList(head, tail.map(_._2))))
-      case Nil               => Task.raiseError(new IllegalArgumentException("No ResourcesDeletion found"))
-    }
   }
 
   make[Projection[ResourcesDeletionStatusCollection]].fromEffect {
@@ -121,7 +106,7 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         cache: DeletionStatusCache,
         projection: Projection[ResourcesDeletionStatusCollection],
-        resourcesDeletion: ResourcesDeletion,
+        resourcesDeletion: ResourcesDeletion @Id("aggregate"),
         clock: Clock[UIO],
         uuidF: UUIDF,
         as: ActorSystem[Nothing],

@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversA
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversDeletion, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule.ResourcesDeletionWithPriority
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -70,9 +69,9 @@ object ResolversModule extends ModuleDef {
       )(uuidF, scheduler, as)
   }
 
-  many[ResourcesDeletionWithPriority].add {
+  many[ResourcesDeletion].add {
     (cache: ResolversCache, agg: ResolversAggregate, resolvers: Resolvers, dbCleanup: DatabaseCleanup) =>
-      2 -> ResolversDeletion(cache, agg, resolvers, dbCleanup)
+      ResolversDeletion(cache, agg, resolvers, dbCleanup)
   }
 
   make[MultiResolution].from {

@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasDeletion, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
-import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule.ResourcesDeletionWithPriority
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -52,9 +51,9 @@ object SchemasModule extends ModuleDef {
       SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(uuidF)
   }
 
-  many[ResourcesDeletionWithPriority].add {
+  many[ResourcesDeletion].add {
     (cache: SchemasCache, agg: SchemasAggregate, schemas: Schemas, dbCleanup: DatabaseCleanup) =>
-      3 -> SchemasDeletion(cache, agg, schemas, dbCleanup)
+      SchemasDeletion(cache, agg, schemas, dbCleanup)
   }
 
   make[SchemaImports].from {

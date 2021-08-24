@@ -86,7 +86,7 @@ class ProjectsDeletionStream(
       }
       .flatMap { initialProgress =>
         projects
-          .events() // Start from noOffset even if we have the progress, since might be that the service was shutdown in the middle of a deletion
+          .events(initialProgress.offset)
           .collect { case env @ Envelope(_: ProjectMarkedForDeletion, _, _, _, _, _) =>
             env.toMessage
           }

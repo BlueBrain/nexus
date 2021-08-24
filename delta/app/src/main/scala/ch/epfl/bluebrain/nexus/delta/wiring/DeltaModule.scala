@@ -179,8 +179,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
 object DeltaModule {
 
-  type ResourcesDeletionWithPriority = (Int, ResourcesDeletion)
-
   /**
     * Complete service wiring definitions.
     *

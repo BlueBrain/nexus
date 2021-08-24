@@ -102,15 +102,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[(Int, ResourcesDeletion)].add {
+  many[ResourcesDeletion].add {
     (
         cache: CompositeViewsCache,
         agg: CompositeViewsAggregate,
         views: CompositeViews,
         dbCleanup: DatabaseCleanup,
         sa: ServiceAccount
-    ) =>
-      6 -> CompositeViewsDeletion(cache, agg, views, dbCleanup, sa)
+    ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
   make[IndexingSource].named("composite-source").from {

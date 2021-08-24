@@ -19,7 +19,7 @@ final class ProjectDeletion private (cache: ProjectsCache, stopActor: StopActor,
     cache.remove(projectRef).as(CachesDeleted)
 
   override def deleteRegistry(projectRef: ProjectRef): Task[ResourcesDeleted] =
-    stopActor(projectRef.persistenceId) >>
+    stopActor(projectRef.toString) >>
       dbCleanup.deleteAll(Projects.moduleType, UrlUtils.encode(projectRef.toString)).as(ResourcesDeleted)
 }
 

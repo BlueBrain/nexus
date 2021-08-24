@@ -138,7 +138,7 @@ final class ProjectsRoutes(
                     },
                     // Deprecate/delete project
                     (delete & pathEndOrSingleSlash) {
-                      parameters("rev".as[Long], "wipe".?(false)) {
+                      parameters("rev".as[Long], "prune".?(false)) {
                         case (rev, true) if config.allowResourcesDeletion =>
                           authorizeFor(ref, projectsPermissions.delete).apply {
                             emit(projects.delete(ref, rev).map { case (uuid, value) =>

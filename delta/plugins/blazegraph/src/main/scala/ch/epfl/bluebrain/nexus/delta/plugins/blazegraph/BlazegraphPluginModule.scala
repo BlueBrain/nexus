@@ -176,7 +176,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         )
     }
 
-  many[(Int, ResourcesDeletion)].add {
+  many[ResourcesDeletion].add {
     (
         cache: BlazegraphViewsCache,
         agg: BlazegraphViewsAggregate,
@@ -184,7 +184,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         dbCleanup: DatabaseCleanup,
         sa: ServiceAccount
     ) =>
-      5 -> BlazegraphViewsDeletion(cache, agg, views, dbCleanup, sa)
+      BlazegraphViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
   make[BlazegraphViewsQuery].from {

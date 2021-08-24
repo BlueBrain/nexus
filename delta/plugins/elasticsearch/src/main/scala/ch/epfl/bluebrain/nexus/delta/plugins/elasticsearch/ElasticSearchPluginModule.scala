@@ -173,15 +173,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         )
     }
 
-  many[(Int, ResourcesDeletion)].add {
+  many[ResourcesDeletion].add {
     (
         cache: ElasticSearchViewCache,
         agg: ElasticSearchViewAggregate,
         views: ElasticSearchViews,
         dbCleanup: DatabaseCleanup,
         sa: ServiceAccount
-    ) =>
-      4 -> ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
+    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
   make[ElasticSearchViewsQuery].from {
