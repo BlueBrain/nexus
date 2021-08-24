@@ -10,6 +10,7 @@
   "@type": "{{type}}",
   "_rev": {{rev}},
   "_deprecated": {{deprecated}},
+  "_markedForDeletion": {{markedForDeletion}},
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/{{schema}}.json"
