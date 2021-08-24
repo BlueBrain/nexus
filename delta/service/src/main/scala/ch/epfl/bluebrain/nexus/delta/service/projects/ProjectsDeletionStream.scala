@@ -96,7 +96,7 @@ class ProjectsDeletionStream(
             Task
               .traverse(
                 List(
-                  resourcesDeletion.deleteData(project),
+                  resourcesDeletion.freeResources(project),
                   resourcesDeletion.deleteCaches(project),
                   resourcesDeletion.deleteRegistry(project)
                 )

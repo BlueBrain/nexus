@@ -12,7 +12,7 @@ import monix.bio.Task
 final class ProjectDeletion private (cache: ProjectsCache, stopActor: StopActor, dbCleanup: DatabaseCleanup)
     extends ResourcesDeletion {
 
-  override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+  override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     Task.pure(ResourcesDataDeleted)
 
   override def deleteCaches(projectRef: ProjectRef): Task[CachesDeleted] =

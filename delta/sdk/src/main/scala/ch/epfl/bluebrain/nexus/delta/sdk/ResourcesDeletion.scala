@@ -18,7 +18,7 @@ trait ResourcesDeletion {
   /**
     * Deletes all the data associated with a projects' resources (for views, it deletes the indices, for files it deletes the binaries)
     */
-  def deleteData(projectRef: ProjectRef): Task[ResourcesDeletionProgress.ResourcesDataDeleted]
+  def freeResources(projectRef: ProjectRef): Task[ResourcesDeletionProgress.ResourcesDataDeleted]
 
   /**
     * Deletes the caches for the passed ''projectRef''
@@ -71,8 +71,8 @@ object ResourcesDeletion {
   def combine(resourcesDeletion: NonEmptyList[ResourcesDeletion]): ResourcesDeletion =
     new ResourcesDeletion {
 
-      override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
-        Task.traverse(resourcesDeletion.value) { _.deleteData(projectRef) }.map(_.head)
+      override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+        Task.traverse(resourcesDeletion.value) { _.freeResources(projectRef) }.map(_.head)
 
       override def deleteCaches(projectRef: ProjectRef): Task[CachesDeleted] =
         Task.traverse(resourcesDeletion.value) { _.deleteCaches(projectRef) }.map(_.head)

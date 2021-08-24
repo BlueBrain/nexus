@@ -22,7 +22,7 @@ final class CompositeViewsDeletion(
 
   implicit private val subject: Subject = serviceAccount.subject
 
-  override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+  override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     getViews(projectRef)
       .flatMap { viewsList =>
         Task.traverse(viewsList) { view =>

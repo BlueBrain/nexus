@@ -16,7 +16,7 @@ final class SchemasDeletion private (
     dbCleanup: DatabaseCleanup
 ) extends ProjectScopedResourcesDeletion(stopActor, currentEvents, dbCleanup, Schemas.moduleType)(_.id) {
 
-  override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+  override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     Task.pure(ResourcesDataDeleted)
 
   override def deleteCaches(projectRef: ProjectRef): Task[CachesDeleted] =

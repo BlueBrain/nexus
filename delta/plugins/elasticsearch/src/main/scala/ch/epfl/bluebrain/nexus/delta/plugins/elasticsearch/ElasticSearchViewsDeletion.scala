@@ -22,7 +22,7 @@ final class ElasticSearchViewsDeletion(
 
   implicit private val subject: Subject = serviceAccount.subject
 
-  override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+  override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     cache
       .values(projectRef)
       .flatMap { viewsList =>

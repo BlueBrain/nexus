@@ -30,7 +30,7 @@ final class FilesDeletion(
     rej => new IllegalArgumentException(rej.reason)
 
   // TODO: So far we only delete files from ''DiskStorage''. To be implemented for S3Storages and RemoteDiskStorages
-  override def deleteData(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
+  override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     currentEvents(projectRef, NoOffset).flatMap { stream =>
       stream
         .collect {
