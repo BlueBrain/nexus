@@ -48,8 +48,11 @@ object ResourcesDeletionStatus {
     deriveConfiguredEncoder[ResourcesDeletionStatus]
   }
 
-  implicit val resourcesDeletionStatusDecoder: Decoder[ResourcesDeletionStatus] =
+  @nowarn("cat=unused")
+  implicit def resourcesDeletionStatusDecoder(implicit base: BaseUri): Decoder[ResourcesDeletionStatus] = {
+    implicit val subjectDecoder: Decoder[Subject] = Identity.subjectIdDecoder(base)
     deriveConfiguredDecoder
+  }
 
   implicit def resourcesDeletionStatusJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourcesDeletionStatus] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.deletionStatus))

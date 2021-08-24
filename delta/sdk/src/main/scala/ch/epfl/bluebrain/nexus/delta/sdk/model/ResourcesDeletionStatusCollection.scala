@@ -16,11 +16,9 @@ object ResourcesDeletionStatusCollection {
 
   val empty: ResourcesDeletionStatusCollection = ResourcesDeletionStatusCollection(Map.empty)
 
-  implicit def resourcesDeletionStatusCollectionEncoder(implicit
-      base: BaseUri
-  ): Encoder[ResourcesDeletionStatusCollection] =
+  implicit def resourcesDeletionStatusColEncoder(implicit base: BaseUri): Encoder[ResourcesDeletionStatusCollection] =
     Encoder.encodeMap[UUID, ResourcesDeletionStatus].contramap(_.value)
 
-  implicit val resourcesDeletionStatusCollectionDecoder: Decoder[ResourcesDeletionStatusCollection] =
+  implicit def resourcesDeletionStatusColDecoder(implicit base: BaseUri): Decoder[ResourcesDeletionStatusCollection] =
     Decoder.decodeMap[UUID, ResourcesDeletionStatus].map(ResourcesDeletionStatusCollection(_))
 }

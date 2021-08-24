@@ -184,6 +184,15 @@ object Identity {
   def subjectIdEncoder(implicit base: BaseUri): Encoder[Subject] =
     Encoder.encodeJson.contramap(_.id.asJson)
 
+  def subjectIdDecoder(implicit base: BaseUri): Decoder[Subject] =
+    Decoder[Iri].emap(iri =>
+      Identity.unsafe(iri) match {
+        case Right(s: Subject) => Right(s)
+        case Left(err)         => Left(err.toString)
+        case Right(_)          => Left(s"Identity '$iri' is not a subject")
+      }
+    )
+
   def identityIdEncoder(implicit base: BaseUri): Encoder[Identity] =
     Encoder.encodeJson.contramap(_.id.asJson)
 
