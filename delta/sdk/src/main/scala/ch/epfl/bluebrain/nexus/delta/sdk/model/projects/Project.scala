@@ -27,6 +27,7 @@ import scala.annotation.nowarn
   * @param apiMappings       the API mappings
   * @param base              the base Iri for generated resource IDs
   * @param vocab             an optional vocabulary for resources with no context
+  * @param markedForDeletion the project marked for deletion status
   */
 final case class Project(
     label: Label,
@@ -36,7 +37,8 @@ final case class Project(
     description: Option[String],
     apiMappings: ApiMappings,
     base: ProjectBase,
-    vocab: Iri
+    vocab: Iri,
+    markedForDeletion: Boolean
 ) {
 
   /**
@@ -48,7 +50,7 @@ final case class Project(
   /**
     * @return [[Project]] metadata
     */
-  def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid, apiMappings)
+  def metadata: Metadata = Metadata(label, uuid, organizationLabel, organizationUuid, apiMappings, markedForDeletion)
 
   /**
     * @return the [[Project]] source
@@ -69,7 +71,8 @@ object Project {
       uuid: UUID,
       organizationLabel: Label,
       organizationUuid: UUID,
-      effectiveApiMappings: ApiMappings
+      effectiveApiMappings: ApiMappings,
+      markedForDeletion: Boolean
   )
 
   /**
@@ -85,12 +88,14 @@ object Project {
 
   val context: ContextValue = ContextValue(contexts.projects)
 
-  implicit private[Project] val config: Configuration = Configuration.default.copy(transformMemberNames = {
+  @nowarn("cat=unused")
+  implicit private val config: Configuration = Configuration.default.copy(transformMemberNames = {
     case "label"                => nxv.label.prefix
     case "uuid"                 => nxv.uuid.prefix
     case "organizationLabel"    => nxv.organizationLabel.prefix
     case "organizationUuid"     => nxv.organizationUuid.prefix
     case "effectiveApiMappings" => nxv.effectiveApiMappings.prefix
+    case "markedForDeletion"    => nxv.markedForDeletion.prefix
     case other                  => other
   })
 
@@ -128,6 +133,7 @@ object Project {
       case "_uuid"              => Ordering[UUID] on (_.uuid)
       case "_organizationLabel" => Ordering[String] on (_.organizationLabel.value)
       case "_organizationUuid"  => Ordering[UUID] on (_.organizationUuid)
+      case "_markedForDeletion" => Ordering[Boolean] on (_.markedForDeletion)
     }
 
 }

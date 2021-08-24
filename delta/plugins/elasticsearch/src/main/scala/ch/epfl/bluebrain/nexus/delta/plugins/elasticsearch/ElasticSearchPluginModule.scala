@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{ElasticSearchViewAggregate, ElasticSearchViewCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
@@ -22,15 +23,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -124,40 +126,62 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ElasticSearchViews.cache(config)(as)
   }
 
+  make[Deferred[Task, ElasticSearchViews]].fromEffect(Deferred[Task, ElasticSearchViews])
+
+  make[ElasticSearchViewAggregate].fromEffect {
+    (
+        config: ElasticSearchViewsConfig,
+        permissions: Permissions,
+        client: ElasticSearchClient,
+        deferred: Deferred[Task, ElasticSearchViews],
+        resourceIdCheck: ResourceIdCheck,
+        as: ActorSystem[Nothing],
+        uuidF: UUIDF,
+        clock: Clock[UIO]
+    ) =>
+      ElasticSearchViews.aggregate(config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
+  }
+
   make[ElasticSearchViews]
     .fromEffect {
       (
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
           contextResolution: ResolverContextResolution,
-          resourceIdCheck: ResourceIdCheck,
-          client: ElasticSearchClient,
-          permissions: Permissions,
           cache: ElasticSearchViewCache,
+          agg: ElasticSearchViewAggregate,
+          deferred: Deferred[Task, ElasticSearchViews],
           orgs: Organizations,
           projects: Projects,
-          clock: Clock[UIO],
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
         ElasticSearchViews(
+          deferred,
           cfg,
           log,
           contextResolution,
           cache,
+          agg,
           orgs,
-          projects,
-          permissions,
-          client,
-          resourceIdCheck
+          projects
         )(
           uuidF,
-          clock,
           scheduler,
           as
         )
     }
+
+  many[ResourcesDeletion].add {
+    (
+        cache: ElasticSearchViewCache,
+        agg: ElasticSearchViewAggregate,
+        views: ElasticSearchViews,
+        dbCleanup: DatabaseCleanup,
+        sa: ServiceAccount
+    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
+  }
 
   make[ElasticSearchViewsQuery].from {
     (

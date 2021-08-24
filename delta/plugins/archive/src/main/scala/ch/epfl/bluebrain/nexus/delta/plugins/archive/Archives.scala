@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.notDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.notDeprecatedOrDeleted
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
@@ -72,7 +72,7 @@ class Archives(
       value: ArchiveValue
   )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p   <- projects.fetchProject(project, notDeprecated)
+      p   <- projects.fetchProject(project, notDeprecatedOrDeleted)
       iri <- expandIri(id, p)
       res <- eval(CreateArchive(iri, project, value, subject), p)
     } yield res).named("createArchive", moduleType)
@@ -87,7 +87,7 @@ class Archives(
     */
   def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p            <- projects.fetchProject(project, notDeprecated)
+      p            <- projects.fetchProject(project, notDeprecatedOrDeleted)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateArchive(iri, project, value, subject), p)
     } yield res).named("createArchive", moduleType)
@@ -108,7 +108,7 @@ class Archives(
       source: Json
   )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p     <- projects.fetchProject(project, notDeprecated)
+      p     <- projects.fetchProject(project, notDeprecatedOrDeleted)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateArchive(iri, project, value, subject), p)

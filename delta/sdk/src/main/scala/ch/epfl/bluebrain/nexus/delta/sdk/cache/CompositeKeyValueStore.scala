@@ -27,6 +27,15 @@ final class CompositeKeyValueStore[K1, K2, V] private (
   def get(key1: K1): UIO[Map[K2, V]] = getOrCreate(key1).entries
 
   /**
+    * Removes the ''key1'' from the cache
+    */
+  def remove(key1: K1): UIO[Unit] = {
+    val inner = getOrCreate(key1)
+    inner.entries.flatMap(entries => UIO.traverse(entries.keys)(inner.remove)) >>
+      UIO.delay(firstLevelCache.remove(key1)).void
+  }
+
+  /**
     * Fetches values for the composite key
     */
   def get(key1: K1, key2: K2): UIO[Option[V]] = getOrCreate(key1).get(key2)
@@ -40,11 +49,10 @@ final class CompositeKeyValueStore[K1, K2, V] private (
   /**
     * Adds the passed map to the store, replacing the current key and values values if they already exists.
     */
-  def putAll(values: Map[K1, Map[K2, V]]): UIO[Unit] = IO
-    .traverse(values) { case (key1, kv) =>
+  def putAll(values: Map[K1, Map[K2, V]]): UIO[Unit] =
+    IO.traverse(values) { case (key1, kv) =>
       getOrCreate(key1).putAll(kv)
-    }
-    .void
+    }.void
 
   /**
     * @return all the entries in the store

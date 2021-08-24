@@ -17,6 +17,7 @@
   "_updatedBy": "http://localhost/v1/anonymous",
   {{/user}}
   "_deprecated" : {{deprecated}},
+  "_markedForDeletion": false,
   "_label" : "{{proj}}",
   "_organizationLabel" : "{{org}}",
   "_organizationUuid" : "{{orgUuid}}",

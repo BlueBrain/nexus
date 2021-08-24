@@ -145,6 +145,7 @@ object Vocabulary {
     val issuer                = Metadata("issuer")
     val label                 = Metadata("label")
     val maxScore              = Metadata("maxScore")
+    val markedForDeletion     = Metadata("markedForDeletion")
     val next                  = Metadata("next")
     val organizationLabel     = Metadata("organizationLabel")
     val organizationUuid      = Metadata("organizationUuid")
@@ -214,6 +215,7 @@ object Vocabulary {
 
     val acls                  = contexts + "acls.json"
     val aclsMetadata          = contexts + "acls-metadata.json"
+    val deletionStatus        = contexts + "deletion-status.json"
     val error                 = contexts + "error.json"
     val identities            = contexts + "identities.json"
     val metadata              = contexts + "metadata.json"

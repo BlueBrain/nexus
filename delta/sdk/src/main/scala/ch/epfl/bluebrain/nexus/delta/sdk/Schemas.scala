@@ -144,6 +144,17 @@ trait Schemas {
     )
 
   /**
+    * A terminating stream of events for schemas. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the schema belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]]
+
+  /**
     * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events
     * are recorded.
     *

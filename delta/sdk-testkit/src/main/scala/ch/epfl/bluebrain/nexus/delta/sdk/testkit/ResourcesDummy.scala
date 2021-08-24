@@ -55,7 +55,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -68,7 +68,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -83,7 +83,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -100,7 +100,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -113,7 +113,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -143,6 +143,14 @@ final class ResourcesDummy private (
     projects
       .fetchProject(projectRef)
       .as(journal.eventsByTag(Projects.projectTag(projectRef), offset))
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,

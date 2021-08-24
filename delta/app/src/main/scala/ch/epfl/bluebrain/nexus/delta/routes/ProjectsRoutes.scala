@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
+import akka.http.scaladsl.model.StatusCodes.SeeOther
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
@@ -13,13 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRejection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
@@ -44,7 +47,7 @@ final class ProjectsRoutes(
 )(implicit
     baseUri: BaseUri,
     defaultApiMappings: ApiMappings,
-    paginationConfig: PaginationConfig,
+    config: ProjectsConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -52,6 +55,8 @@ final class ProjectsRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+
+  implicit val paginationConfig: PaginationConfig = config.pagination
 
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
@@ -100,50 +105,72 @@ final class ProjectsRoutes(
               }
             },
             projectRef(projects).apply { ref =>
-              operationName(s"$prefixSegment/projects/{org}/{project}") {
-                concat(
-                  (put & pathEndOrSingleSlash) {
-                    parameter("rev".as[Long].?) {
-                      case None      =>
-                        // Create project
-                        authorizeFor(ref, projectsPermissions.create).apply {
-                          entity(as[ProjectFields]) { fields =>
-                            emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
-                          }
-                        }
-                      case Some(rev) =>
-                        // Update project
-                        authorizeFor(ref, projectsPermissions.write).apply {
-                          entity(as[ProjectFields]) { fields =>
-                            emit(projects.update(ref, rev, fields).mapValue(_.metadata))
-                          }
-                        }
-                    }
-                  },
-                  (get & pathEndOrSingleSlash) {
-                    authorizeFor(ref, projectsPermissions.read).apply {
+              concat(
+                operationName(s"$prefixSegment/projects/{org}/{project}") {
+                  concat(
+                    (put & pathEndOrSingleSlash) {
                       parameter("rev".as[Long].?) {
-                        case Some(rev) => // Fetch project at specific revision
-                          emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
-                        case None      => // Fetch project
-                          emit(projects.fetch(ref).leftWiden[ProjectRejection])
+                        case None      =>
+                          // Create project
+                          authorizeFor(ref, projectsPermissions.create).apply {
+                            entity(as[ProjectFields]) { fields =>
+                              emit(StatusCodes.Created, projects.create(ref, fields).mapValue(_.metadata))
+                            }
+                          }
+                        case Some(rev) =>
+                          // Update project
+                          authorizeFor(ref, projectsPermissions.write).apply {
+                            entity(as[ProjectFields]) { fields =>
+                              emit(projects.update(ref, rev, fields).mapValue(_.metadata))
+                            }
+                          }
+                      }
+                    },
+                    (get & pathEndOrSingleSlash) {
+                      authorizeFor(ref, projectsPermissions.read).apply {
+                        parameter("rev".as[Long].?) {
+                          case Some(rev) => // Fetch project at specific revision
+                            emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
+                          case None      => // Fetch project
+                            emit(projects.fetch(ref).leftWiden[ProjectRejection])
+                        }
+                      }
+                    },
+                    // Deprecate/delete project
+                    (delete & pathEndOrSingleSlash) {
+                      parameters("rev".as[Long], "prune".?(false)) {
+                        case (rev, true) if config.allowResourcesDeletion =>
+                          authorizeFor(ref, projectsPermissions.delete).apply {
+                            emit(projects.delete(ref, rev).map { case (uuid, value) =>
+                              val location = Location(ResourceUris.project(ref).accessUri / "deletions" / uuid.toString)
+                              Complete(SeeOther, Seq(location), value.map(_.metadata))
+                            })
+                          }
+                        case (rev, _)                                     =>
+                          authorizeFor(ref, projectsPermissions.write).apply {
+                            emit(projects.deprecate(ref, rev).mapValue(_.metadata))
+                          }
                       }
                     }
-                  },
-                  // Deprecate project
-                  (delete & pathEndOrSingleSlash) {
-                    authorizeFor(ref, projectsPermissions.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(projects.deprecate(ref, rev).mapValue(_.metadata)) }
+                  )
+                },
+                operationName(s"$prefixSegment/projects/{org}/{project}/deletions") {
+                  // Project deletion status
+                  (pathPrefix("deletions") & get & uuid & pathEndOrSingleSlash) { uuid =>
+                    authorizeFor(ref, resources.read).apply {
+                      emit(projects.fetchDeletionStatus(ref, uuid).leftWiden[ProjectRejection])
                     }
-                  },
+                  }
+                },
+                operationName(s"$prefixSegment/projects/{org}/{project}/statistics") {
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, resources.read).apply {
                       emit(IO.fromOptionEval(projectsCounts.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection])
                     }
                   }
-                )
-              }
+                }
+              )
             },
             // list projects for an organization
             (get & label & pathEndOrSingleSlash & extractUri & fromPaginated & provisionProject & projectsSearchParams &
@@ -174,7 +201,7 @@ object ProjectsRoutes {
   )(implicit
       baseUri: BaseUri,
       defaultApiMappings: ApiMappings,
-      paginationConfig: PaginationConfig,
+      config: ProjectsConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
