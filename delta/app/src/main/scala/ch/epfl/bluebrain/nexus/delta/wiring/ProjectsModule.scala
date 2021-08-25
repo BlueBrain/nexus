@@ -89,8 +89,14 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[ResourcesDeletion].named("aggregate").from {
-    (deletions: Set[ResourcesDeletion], cache: ProjectsCache, agg: ProjectsAggregate, dbCleanup: DatabaseCleanup) =>
-      val list = deletions.toList :+ ProjectDeletion(cache, agg, dbCleanup)
+    (
+        deletions: Set[ResourcesDeletion],
+        cache: ProjectsCache,
+        agg: ProjectsAggregate,
+        projectsCounts: ProjectsCounts,
+        dbCleanup: DatabaseCleanup
+    ) =>
+      val list = deletions.toList :+ ProjectDeletion(cache, agg, projectsCounts, dbCleanup)
       ResourcesDeletion.combine(NonEmptyList(list.head, list.tail))
 
   }

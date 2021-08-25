@@ -218,6 +218,8 @@ class CompositeIndexingSpec
       UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
 
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+
+    override def remove(project: ProjectRef): UIO[Unit] = UIO.pure(projectsCountsCache.remove(project)).void
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
