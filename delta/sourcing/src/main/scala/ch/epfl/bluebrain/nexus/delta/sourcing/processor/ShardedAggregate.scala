@@ -116,6 +116,16 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
       )
     )
 
+  /**
+    * Stops the entity with the given __id__
+    *
+    * @param id the entity identifier
+    */
+  override def stop(id: String): Task[Unit] =
+    send(id, { askTo: ActorRef[StopResponse.type] => RequestStop(id, askTo) })
+      .named("stopCurrentActor", component, Map("entity.type" -> entityTypeKey.name))
+      .void
+
   private def send[A](entityId: String, askTo: ActorRef[A] => ProcessorCommand): Task[A] = {
     val ref = clusterSharding.entityRefFor(entityTypeKey, entityId)
 

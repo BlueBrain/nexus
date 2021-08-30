@@ -74,7 +74,7 @@ class ProjectEventExchangeSpec
       result.value.source shouldEqual project.asJson
       result.value.resource shouldEqual ProjectGen.resourceFor(project, subject = subject)
       result.metadata.value shouldEqual
-        Metadata(project.label, uuid, project.organizationLabel, project.organizationUuid, project.apiMappings)
+        Metadata(project.label, uuid, project.organizationLabel, project.organizationUuid, project.apiMappings, false)
     }
 
     "return None at a particular tag" in {

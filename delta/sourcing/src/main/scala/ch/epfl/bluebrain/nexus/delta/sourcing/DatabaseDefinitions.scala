@@ -15,7 +15,7 @@ import monix.bio.Task
 /**
   * DDLs for each database supported
   */
-trait DatabaseDefinitions {
+sealed trait DatabaseDefinitions {
 
   /**
     * Initialize the DDLs

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecatedOrDeleted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceRef}
@@ -94,7 +94,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       sort: SortList
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
-      projectValue <- projects.fetchProject(project, notDeprecated)
+      projectValue <- projects.fetchProject(project, notDeprecatedOrDeleted)
       view         <- fetchDefaultView(project)
       schemeRef    <- expandResourceRef(schema, projectValue)
       p             = params.withSchema(schemeRef)

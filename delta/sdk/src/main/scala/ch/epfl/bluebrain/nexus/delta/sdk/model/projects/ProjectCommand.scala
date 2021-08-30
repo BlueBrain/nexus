@@ -68,4 +68,13 @@ object ProjectCommand {
     * @param subject           the identity associated to this command
     */
   final case class DeprecateProject(ref: ProjectRef, rev: Long, subject: Subject) extends ProjectCommand
+
+  /**
+    * Command that signals the intent to delete a project.
+    *
+    * @param ref               the project ref
+    * @param rev               the last known revision of the project
+    * @param subject           the identity associated to this command
+    */
+  final case class DeleteProject(ref: ProjectRef, rev: Long, subject: Subject) extends ProjectCommand
 }

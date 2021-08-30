@@ -62,6 +62,12 @@ object ProjectRejection {
   }
 
   /**
+    * Signals that the current project is expected to be deleted but it isn't
+    */
+  final case class ProjectNotDeleted(projectRef: ProjectRef)
+      extends ProjectRejection(s"Project '$projectRef' is not marked for deletion")
+
+  /**
     * Signals that a project cannot be created because one with the same identifier already exists.
     */
   final case class ProjectAlreadyExists(projectRef: ProjectRef)
@@ -83,6 +89,12 @@ object ProjectRejection {
     def apply(projectRef: ProjectRef): ProjectIsDeprecated =
       ProjectIsDeprecated(s"Project '$projectRef' is deprecated.")
   }
+
+  /**
+    * Signals and attempt to update/deprecate/delete a project that is already marked for deletion.
+    */
+  final case class ProjectIsMarkedForDeletion(projectRef: ProjectRef)
+      extends ProjectRejection(s"Project '$projectRef' is marked for deletion.")
 
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.

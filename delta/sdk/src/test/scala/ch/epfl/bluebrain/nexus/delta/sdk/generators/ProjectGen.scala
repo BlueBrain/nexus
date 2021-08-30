@@ -30,6 +30,7 @@ object ProjectGen extends OptionValues {
       base: Iri = nxv.base,
       vocab: Iri = nxv.base,
       deprecated: Boolean = false,
+      markedForDeletion: Boolean = false,
       subject: Subject = Anonymous
   ): Current =
     Current(
@@ -39,6 +40,7 @@ object ProjectGen extends OptionValues {
       orgUuid,
       rev,
       deprecated,
+      markedForDeletion,
       description,
       mappings,
       ProjectBase.unsafe(base),
@@ -53,6 +55,7 @@ object ProjectGen extends OptionValues {
       ref: ProjectRef,
       uuid: UUID = UUID.randomUUID(),
       orgUuid: UUID = UUID.randomUUID(),
+      markedForDeletion: Boolean = false,
       projectFields: ProjectFields
   )(implicit baseUri: BaseUri): Project =
     Project(
@@ -63,7 +66,8 @@ object ProjectGen extends OptionValues {
       projectFields.description,
       projectFields.apiMappings,
       ProjectBase.unsafe(projectFields.baseOrGenerated(ref).value),
-      projectFields.vocabOrGenerated(ref).value
+      projectFields.vocabOrGenerated(ref).value,
+      markedForDeletion
     )
 
   def project(
@@ -74,7 +78,8 @@ object ProjectGen extends OptionValues {
       description: Option[String] = None,
       mappings: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base,
-      vocab: Iri = nxv.base
+      vocab: Iri = nxv.base,
+      markedForDeletion: Boolean = false
   ): Project =
     Project(
       Label.unsafe(label),
@@ -84,7 +89,8 @@ object ProjectGen extends OptionValues {
       description,
       mappings,
       ProjectBase.unsafe(base),
-      vocab
+      vocab,
+      markedForDeletion
     )
 
   def projectFields(project: Project): ProjectFields =
@@ -99,7 +105,8 @@ object ProjectGen extends OptionValues {
       project: Project,
       rev: Long = 1L,
       subject: Subject = Anonymous,
-      deprecated: Boolean = false
+      deprecated: Boolean = false,
+      markedForDeletion: Boolean = false
   ): ProjectResource =
     currentState(
       project.organizationLabel.value,
@@ -111,8 +118,9 @@ object ProjectGen extends OptionValues {
       project.apiMappings,
       project.base.iri,
       project.vocab,
-      deprecated = deprecated,
-      subject = subject
+      deprecated,
+      markedForDeletion,
+      subject
     ).toResource.value
 
 }

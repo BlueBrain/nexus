@@ -32,6 +32,11 @@ trait ProjectsCounts {
     * Retrieve the current counts (and latest instant) of events for the passed ''project''
     */
   def get(project: ProjectRef): UIO[Option[ProjectCount]]
+
+  /**
+    * Remove the counts for the given project
+    */
+  def remove(project: ProjectRef): UIO[Unit]
 }
 
 object ProjectsCounts {
@@ -97,6 +102,8 @@ object ProjectsCounts {
           override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
 
           override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
+
+          override def remove(project: ProjectRef): UIO[Unit] = cache.remove(project)
         }
       )
   }

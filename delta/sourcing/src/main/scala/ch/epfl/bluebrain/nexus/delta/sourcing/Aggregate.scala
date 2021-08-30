@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EvaluationIO
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 
 /**
   * An aggregate based on event sourcing that can be controlled through commands;
@@ -40,5 +40,11 @@ trait Aggregate[Id, State, Command, Event, Rejection] {
     *         successfully, or the rejection of the __command__ in otherwise
     */
   def dryRun(id: Id, command: Command): EvaluationIO[Rejection, Event, State]
+
+  /**
+    * Stops the entity with the given __id__
+    * @param id the entity identifier
+    */
+  def stop(id: Id): Task[Unit]
 
 }

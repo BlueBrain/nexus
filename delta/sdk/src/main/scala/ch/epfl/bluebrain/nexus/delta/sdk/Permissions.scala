@@ -163,6 +163,7 @@ object Permissions {
   object projects {
     final val read: Permission   = Permission.unsafe("projects/read")
     final val write: Permission  = Permission.unsafe("projects/write")
+    final val delete: Permission = Permission.unsafe("projects/delete")
     final val create: Permission = Permission.unsafe("projects/create")
   }
 

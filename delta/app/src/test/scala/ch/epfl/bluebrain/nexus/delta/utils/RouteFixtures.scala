@@ -113,20 +113,22 @@ trait RouteFixtures extends TestHelpers with IOValues {
       organizationUuid: UUID,
       rev: Long = 1L,
       deprecated: Boolean = false,
+      markedForDeletion: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
       "projects/project-route-metadata-response.json",
-      "project"          -> ref,
-      "rev"              -> rev,
-      "deprecated"       -> deprecated,
-      "createdBy"        -> createdBy.id,
-      "updatedBy"        -> updatedBy.id,
-      "label"            -> label,
-      "uuid"             -> uuid,
-      "organization"     -> organizationLabel,
-      "organizationUuid" -> organizationUuid
+      "project"           -> ref,
+      "rev"               -> rev,
+      "deprecated"        -> deprecated,
+      "markedForDeletion" -> markedForDeletion,
+      "createdBy"         -> createdBy.id,
+      "updatedBy"         -> updatedBy.id,
+      "label"             -> label,
+      "uuid"              -> uuid,
+      "organization"      -> organizationLabel,
+      "organizationUuid"  -> organizationUuid
     )
 
   def orgMetadata(

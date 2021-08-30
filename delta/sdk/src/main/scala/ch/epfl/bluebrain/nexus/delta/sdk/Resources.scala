@@ -157,6 +157,17 @@ trait Resources {
     fetch(resourceRef.toIdSegmentRef, projectRef, None).mapError(rejectionMapper.to)
 
   /**
+    * A terminating stream of events for resources. It finishes the stream after emitting all known events.
+    *
+    * @param projectRef the project reference where the resource belongs
+    * @param offset     the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]]
+
+  /**
     * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
     * are recorded.
     *

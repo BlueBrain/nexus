@@ -42,7 +42,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -54,7 +54,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -68,7 +68,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -83,7 +83,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res
@@ -94,7 +94,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res
@@ -108,6 +108,14 @@ final class SchemasDummy private (
         res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
       } yield res
     )(fetchBy(_, projectRef))
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEvents(offset).filter(e => e.event.project == projectRef))
 
   override def events(
       projectRef: ProjectRef,

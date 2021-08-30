@@ -4,38 +4,29 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, uuidFrom}
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.allQuotas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
-import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{DeletionStatusCache, ProjectsCache, ProjectsJournal}
+import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
 
-/**
-  * A dummy Projects implementation
-  *
-  * @param journal              the journal to store events
-  * @param cache                the cache to store resources
-  * @param semaphore            a semaphore for serializing write operations on the journal
-  * @param organizations        an Organizations instance
-  * @param quotas               a Quotas instance
-  * @param scopeInitializations the collection of registered scope initializations
-  * @param defaultApiMappings   the default api mappings
-  */
 final class ProjectsDummy private (
     journal: ProjectsJournal,
     cache: ProjectsCache,
+    deletionCache: DeletionStatusCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
     quotas: Quotas,
@@ -44,9 +35,10 @@ final class ProjectsDummy private (
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
-  override def create(ref: ProjectRef, fields: ProjectFields)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def create(
+      ref: ProjectRef,
+      fields: ProjectFields
+  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     for {
       resource <- eval(
                     CreateProject(
@@ -63,9 +55,11 @@ final class ProjectsDummy private (
                     .mapError(ProjectInitializationFailed)
     } yield resource
 
-  override def update(ref: ProjectRef, rev: Long, fields: ProjectFields)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def update(
+      ref: ProjectRef,
+      rev: Long,
+      fields: ProjectFields
+  )(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(
       UpdateProject(
         ref,
@@ -78,10 +72,33 @@ final class ProjectsDummy private (
       )
     )
 
-  override def deprecate(ref: ProjectRef, rev: Long)(implicit
-      caller: Identity.Subject
-  ): IO[ProjectRejection, ProjectResource] =
+  override def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(DeprecateProject(ref, rev, caller))
+
+  override def delete(ref: ProjectRef, rev: Long)(implicit
+      caller: Subject
+  ): IO[ProjectRejection, (UUID, ProjectResource)]                                                              =
+    for {
+      resource <- eval(DeleteProject(ref, rev, caller))
+      uuid      = uuidFrom(ref, resource.updatedAt)
+      _        <- deletionCache.update(
+                    _ + (uuid -> ResourcesDeletionStatus(
+                      progress = Deleting,
+                      project = ref,
+                      projectCreatedBy = resource.createdBy,
+                      projectCreatedAt = resource.createdAt,
+                      createdBy = caller,
+                      createdAt = resource.updatedAt,
+                      updatedAt = resource.updatedAt
+                    ))
+                  )
+    } yield uuid -> resource
+
+  override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
+    for {
+      statusMap <- deletionCache.get
+      status    <- IO.fromOption(statusMap.get(uuid).filter(_.project == ref), ProjectNotDeleted(ref))
+    } yield status
 
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     cache.fetchOr(ref, ProjectNotFound(ref))
@@ -100,15 +117,17 @@ final class ProjectsDummy private (
       organizations.fetchActiveOrganization(ref.organization).void
     ) >>
       fetch(ref).flatMap {
-        case resource if options.contains(ProjectFetchOptions.NotDeprecated) && resource.deprecated =>
+        case resource if options.contains(ProjectFetchOptions.NotDeleted) && resource.value.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(ref))
+        case resource if options.contains(ProjectFetchOptions.NotDeprecated) && resource.deprecated           =>
           IO.raiseError(ProjectIsDeprecated(ref))
-        case resource if allQuotas.subsetOf(options)                                                =>
+        case resource if allQuotas.subsetOf(options)                                                          =>
           (quotas.reachedForResources(ref, subject) >> quotas.reachedForEvents(ref, subject)).as(resource.value)
-        case resource if options.contains(ProjectFetchOptions.VerifyQuotaResources)                 =>
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaResources)                           =>
           quotas.reachedForResources(ref, subject).as(resource.value)
-        case resource if options.contains(ProjectFetchOptions.VerifyQuotaEvents)                    =>
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaEvents)                              =>
           quotas.reachedForEvents(ref, subject).as(resource.value)
-        case resource                                                                               =>
+        case resource                                                                                         =>
           IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
@@ -145,12 +164,14 @@ final class ProjectsDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.currentEvents(offset)
+
 }
 
 object ProjectsDummy {
 
-  type ProjectsJournal = Journal[ProjectRef, ProjectEvent]
-  type ProjectsCache   = ResourceCache[ProjectRef, Project]
+  type ProjectsJournal     = Journal[ProjectRef, ProjectEvent]
+  type ProjectsCache       = ResourceCache[ProjectRef, Project]
+  type DeletionStatusCache = IORef[Map[UUID, ResourcesDeletionStatus]]
 
   implicit private val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
     ProjectRef(event.organizationLabel, event.label)
@@ -172,12 +193,14 @@ object ProjectsDummy {
       defaultApiMappings: ApiMappings
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
-      journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
-      cache   <- ResourceCache[ProjectRef, Project]
-      sem     <- IOSemaphore(1L)
+      journal       <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
+      cache         <- ResourceCache[ProjectRef, Project]
+      deletionCache <- IORef.of[Map[UUID, ResourcesDeletionStatus]](Map.empty)
+      sem           <- IOSemaphore(1L)
     } yield new ProjectsDummy(
       journal,
       cache,
+      deletionCache,
       sem,
       organizations,
       quotas,
