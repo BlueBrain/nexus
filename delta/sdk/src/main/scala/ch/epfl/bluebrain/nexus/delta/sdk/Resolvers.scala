@@ -2,11 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -15,13 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.CrossProjectResolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.CrossProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import fs2.Stream
@@ -209,14 +212,6 @@ trait Resolvers {
 
 object Resolvers {
 
-  /**
-    * Create [[EventExchangeValue]] for a resolver.
-    */
-  def eventExchangeValue(res: ResolverResource)(implicit
-      enc: JsonLdEncoder[Resolver]
-  ): EventExchangeValue[Resolver, Unit] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
-
   type FindResolver = (ProjectRef, ResolverSearchParams) => UIO[Option[Iri]]
 
   /**
@@ -241,12 +236,40 @@ object Resolvers {
   )
 
   /**
+    * Create [[EventExchangeValue]] for a resolver.
+    */
+  def eventExchangeValue(res: ResolverResource)(implicit
+      enc: JsonLdEncoder[Resolver]
+  ): EventExchangeValue[Resolver, Unit] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
+
+  /**
     * Create a reference exchange from a [[Resolvers]] instance
     */
   def referenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri): ReferenceExchange = {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => resolvers.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[Resolver](fetch(_, _), _.source)
   }
+
+  /**
+    * Create a project reference finder for resolvers
+    */
+  def projectReferenceFinder(resolvers: Resolvers): ProjectReferenceFinder =
+    (project: ProjectRef) => {
+      val params = ResolverSearchParams(
+        deprecated = Some(false),
+        filter = {
+          case c: CrossProjectResolver => c.project != project && c.value.projects.value.contains(project)
+          case _                       => false
+        }
+      )
+
+      resolvers.list(OnePage, params, ProjectReferenceFinder.ordering).map {
+        _.results.foldMap { r =>
+          ProjectReferenceMap.single(r.source.value.project, r.source.id)
+        }
+      }
+    }
 
   import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 

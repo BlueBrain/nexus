@@ -48,6 +48,7 @@ final class ProjectsRoutes(
     baseUri: BaseUri,
     defaultApiMappings: ApiMappings,
     config: ProjectsConfig,
+    referenceFinder: ProjectReferenceFinder,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
@@ -202,6 +203,7 @@ object ProjectsRoutes {
       baseUri: BaseUri,
       defaultApiMappings: ApiMappings,
       config: ProjectsConfig,
+      referenceFinder: ProjectReferenceFinder,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering

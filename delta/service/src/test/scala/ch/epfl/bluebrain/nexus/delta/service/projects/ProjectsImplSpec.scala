@@ -30,7 +30,11 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
   override def create(quotas: Quotas): Task[Projects] =
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[ProjectEvent]](EventLogUtils.toEnvelope).hideErrors
-      agg        <- ProjectsImpl.aggregate(projectsConfig, organizations, ApiMappings.empty)
+      agg        <- ProjectsImpl.aggregate(
+                      projectsConfig,
+                      organizations,
+                      ApiMappings.empty
+                    )
       cache       = ProjectsImpl.cache(projectsConfig)
       deleteCache = ProjectsImpl.deletionCache(projectsConfig)
       projects   <-

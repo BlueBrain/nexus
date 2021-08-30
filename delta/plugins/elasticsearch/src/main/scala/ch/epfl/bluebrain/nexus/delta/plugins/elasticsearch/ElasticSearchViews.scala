@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -34,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFetchOptions, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -441,6 +442,14 @@ object ElasticSearchViews {
     IndexLabel.fromView(config.prefix, uuid, rev).value
 
   /**
+    * Create [[EventExchangeValue]] for a elasticsearch view.
+    */
+  def eventExchangeValue(res: ViewResource)(implicit
+      enc: JsonLdEncoder[ElasticSearchView]
+  ): EventExchangeValue[ElasticSearchView, ElasticSearchView.Metadata] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
+
+  /**
     * Create a reference exchange from a [[ElasticSearchViews]] instance
     */
   def referenceExchange(views: ElasticSearchViews): ReferenceExchange = {
@@ -448,10 +457,24 @@ object ElasticSearchViews {
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
   }
 
-  def eventExchangeValue(res: ViewResource)(implicit
-      enc: JsonLdEncoder[ElasticSearchView]
-  ): EventExchangeValue[ElasticSearchView, ElasticSearchView.Metadata] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
+  /**
+    * Create a project reference finder for elasticsearch views
+    */
+  def projectReferenceFinder(views: ElasticSearchViews): ProjectReferenceFinder =
+    (project: ProjectRef) => {
+      val params = ElasticSearchViewSearchParams(
+        deprecated = Some(false),
+        filter = {
+          case a: AggregateElasticSearchView => a.project != project && a.views.value.exists(_.project == project)
+          case _                             => false
+        }
+      )
+      views.list(OnePage, params, ProjectReferenceFinder.ordering).map {
+        _.results.foldMap { r =>
+          ProjectReferenceMap.single(r.source.value.project, r.source.id)
+        }
+      }
+    }
 
   /**
     * Constructs a new [[ElasticSearchViews]] instance.
