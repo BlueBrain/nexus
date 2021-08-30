@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -33,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFetchOptions, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -410,6 +411,14 @@ object BlazegraphViews {
   type BlazegraphViewsCache = CompositeKeyValueStore[ProjectRef, Iri, ViewResource]
 
   /**
+    * Create [[EventExchangeValue]] for a blazegraph view.
+    */
+  def eventExchangeValue(
+      res: ViewResource
+  )(implicit enc: JsonLdEncoder[BlazegraphView]): EventExchangeValue[BlazegraphView, BlazegraphView.Metadata] =
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
+
+  /**
     * Create a reference exchange from a [[BlazegraphViews]] instance
     */
   def referenceExchange(views: BlazegraphViews): ReferenceExchange = {
@@ -417,10 +426,24 @@ object BlazegraphViews {
     ReferenceExchange[BlazegraphView](fetch(_, _), _.source)
   }
 
-  def eventExchangeValue(
-      res: ViewResource
-  )(implicit enc: JsonLdEncoder[BlazegraphView]): EventExchangeValue[BlazegraphView, BlazegraphView.Metadata] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
+  /**
+    * Create a project reference finder for blazegraph views
+    */
+  def projectReferenceFinder(views: BlazegraphViews): ProjectReferenceFinder =
+    (project: ProjectRef) => {
+      val params = BlazegraphViewSearchParams(
+        deprecated = Some(false),
+        filter = {
+          case a: AggregateBlazegraphView => a.project != project && a.views.value.exists(_.project == project)
+          case _                          => false
+        }
+      )
+      views.list(OnePage, params, ProjectReferenceFinder.ordering).map {
+        _.results.foldMap { r =>
+          ProjectReferenceMap.single(r.source.value.project, r.source.id)
+        }
+      }
+    }
 
   private[blazegraph] def next(
       state: BlazegraphViewState,

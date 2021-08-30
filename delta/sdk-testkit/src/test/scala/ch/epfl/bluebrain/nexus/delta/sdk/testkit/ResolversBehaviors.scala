@@ -91,6 +91,10 @@ trait ResolversBehaviors {
 
   lazy val resolvers: Resolvers = create.accepted
 
+  lazy val finder = Resolvers.projectReferenceFinder(resolvers)
+
+  val referencedProject = ProjectRef.unsafe("org", "proj2")
+
   "The Resolvers module" when {
 
     val inProjectValue = InProjectValue(inProjectPrio)
@@ -100,9 +104,7 @@ trait ResolversBehaviors {
     val crossProjectValue = CrossProjectValue(
       crossProjectPrio,
       Set.empty,
-      NonEmptyList.of(
-        ProjectRef.unsafe("org", "proj")
-      ),
+      NonEmptyList.of(referencedProject),
       ProvidedIdentities(bob.identities)
     )
 
@@ -865,6 +867,20 @@ trait ResolversBehaviors {
       "reject if organization does not exist" in {
         val org = Label.unsafe("other")
         resolvers.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
+      }
+    }
+
+    "finding references" should {
+      "get all non-deprecated results for the given project" in {
+        val result = finder(referencedProject).accepted.value
+
+        result.size shouldEqual 1
+        result(projectRef) should contain theSameElementsAs List(
+          nxv.base / uuid.toString,
+          nxv + "cross-project-both",
+          nxv + "cross-project-payload",
+          nxv + "cross-project-from-value"
+        )
       }
     }
 

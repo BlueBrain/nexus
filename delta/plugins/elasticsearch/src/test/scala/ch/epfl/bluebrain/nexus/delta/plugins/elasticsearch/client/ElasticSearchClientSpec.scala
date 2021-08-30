@@ -54,7 +54,7 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.12.0")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.13.4")
     }
 
     "verify that an index does not exist" in {

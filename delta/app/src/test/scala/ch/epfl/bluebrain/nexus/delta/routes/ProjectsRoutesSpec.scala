@@ -7,7 +7,8 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectsCountsDummy, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, ProjectsCountsDummy, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -25,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitiali
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -130,7 +132,9 @@ class ProjectsRoutesSpec
       allowResourcesDeletion = true
     )
 
-  private val projectDummy = ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
+  implicit private val finder: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)
+  private val projectDummy                            =
+    ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
 
   private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 

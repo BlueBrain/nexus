@@ -3,10 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
@@ -19,13 +22,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceF, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, Quotas, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, Projects, Quotas, QuotasDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.datastax.oss.driver.api.core.uuid.Uuids
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -118,7 +120,19 @@ trait ProjectsBehaviors {
 
   lazy val projects: Projects = create(QuotasDummy.neverReached).accepted
 
-  val ref = ProjectRef.unsafe("org", "proj")
+  val ref: ProjectRef        = ProjectRef.unsafe("org", "proj")
+  val anotherRef: ProjectRef = ProjectRef.unsafe("org2", "proj2")
+
+  val anotherProjectReferences = ProjectReferenceMap.single(anotherRef, nxv + "id")
+
+  implicit val referenceFinder: ProjectReferenceFinder = (project: ProjectRef) => {
+    UIO.pure(
+      project match {
+        case `anotherRef` => anotherProjectReferences
+        case _            => ProjectReferenceMap.empty
+      }
+    )
+  }
 
   "The Projects operations bundle" should {
 
@@ -130,6 +144,18 @@ trait ProjectsBehaviors {
         1L,
         subject
       )
+    }
+
+    val anotherProjResource = resourceFor(
+      projectFromRef(anotherRef, uuid, orgUuid, markedForDeletion = false, anotherPayload),
+      1L,
+      Identity.Anonymous
+    )
+
+    "create another project" in {
+      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous).accepted
+
+      project shouldEqual anotherProjResource
     }
 
     "not create a project if it already exists" in {
@@ -197,6 +223,13 @@ trait ProjectsBehaviors {
         subject,
         deprecated = true,
         markedForDeletion = true
+      )
+    }
+
+    "not delete a project that has references" in {
+      projects.delete(anotherRef, rev = 1L).rejected shouldEqual ProjectIsReferenced(
+        anotherRef,
+        anotherProjectReferences
       )
     }
 
@@ -277,19 +310,6 @@ trait ProjectsBehaviors {
       projects.fetchAt(unknownUuid, uuid, 1L).rejected shouldEqual ProjectNotFound(unknownUuid, uuid)
     }
 
-    val anotherRef          = ProjectRef.unsafe("org2", "proj2")
-    val anotherProjResource = resourceFor(
-      projectFromRef(anotherRef, uuid, orgUuid, markedForDeletion = false, anotherPayload),
-      1L,
-      Identity.Anonymous
-    )
-
-    "create another project" in {
-      val project = projects.create(anotherRef, anotherPayload)(Identity.Anonymous).accepted
-
-      project shouldEqual anotherProjResource
-    }
-
     "list projects without filters nor pagination" in {
       val results = projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => true), order).accepted
 
@@ -339,10 +359,10 @@ trait ProjectsBehaviors {
 
     val allEvents = SSEUtils.list(
       ref        -> ProjectCreated,
+      anotherRef -> ProjectCreated,
       ref        -> ProjectUpdated,
       ref        -> ProjectDeprecated,
-      ref        -> ProjectMarkedForDeletion,
-      anotherRef -> ProjectCreated
+      ref        -> ProjectMarkedForDeletion
     )
 
     "get the different events from start" in {

@@ -96,6 +96,8 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     false
   )
 
+  val otherProject = ProjectRef(Label.unsafe("org"), Label.unsafe("otherproject"))
+
   val crossProjectSource = CrossProjectSource(
     iri"http://example.com/cross-project-source",
     uuid,
@@ -103,7 +105,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     Set.empty,
     None,
     false,
-    ProjectRef(Label.unsafe("org"), Label.unsafe("otherproject")),
+    otherProject,
     identities = Set(Identity.Anonymous)
   )
 
