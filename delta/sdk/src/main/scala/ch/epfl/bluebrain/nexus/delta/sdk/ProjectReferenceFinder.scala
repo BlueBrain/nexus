@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReference
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.Encoder
-import io.circe.generic.semiauto.deriveEncoder
 import monix.bio.UIO
 
 import java.time.Instant
@@ -45,7 +44,8 @@ object ProjectReferenceFinder {
           ProjectReferenceMap(x.value |+| y.value)
       }
 
-    implicit val projectReferenceMapEncoder: Encoder.AsObject[ProjectReferenceMap] = deriveEncoder[ProjectReferenceMap]
+    implicit val projectReferenceMapEncoder: Encoder.AsObject[ProjectReferenceMap] =
+      Encoder.encodeMap[ProjectRef, List[Iri]].contramapObject(_.value)
 
   }
   def ordering[A]: Ordering[ResourceF[A]] = Ordering[Instant] on (r => r.createdAt)
