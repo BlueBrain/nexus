@@ -28,9 +28,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsCo
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -342,6 +342,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewEventExchange]
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
+  many[EventExchange].named("resources").ref[ElasticSearchViewEventExchange]
   many[EventExchange].ref[ElasticSearchViewEventExchange]
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]

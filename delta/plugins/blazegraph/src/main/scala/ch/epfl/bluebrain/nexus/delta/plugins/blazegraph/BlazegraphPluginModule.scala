@@ -23,8 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -281,6 +281,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewEventExchange]
   many[EventExchange].named("view").ref[BlazegraphViewEventExchange]
+  many[EventExchange].named("resources").ref[BlazegraphViewEventExchange]
   many[EventExchange].ref[BlazegraphViewEventExchange]
   many[EntityType].add(EntityType(BlazegraphViews.moduleType))
   make[BlazegraphOnEventInstant]

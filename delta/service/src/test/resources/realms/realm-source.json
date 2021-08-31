@@ -1,0 +1,17 @@
+{
+  "_label": "realm1",
+  "name": "realm1-name",
+  "openIdConfig": "https://localhost/auth/realm1/protocol/openid-connect/",
+  "_issuer": "realm1",
+  "_grantTypes": [
+    "authorizationCode",
+    "implicit"
+  ],
+  "logo": null,
+  "acceptedAudiences": null,
+  "_authorizationEndpoint": "https://localhost/auth/realm1/protocol/openid-connect/auth",
+  "_tokenEndpoint": "https://localhost/auth/realm1/protocol/openid-connect/token",
+  "_userInfoEndpoint": "https://localhost/auth/realm1/protocol/openid-connect/userinfo",
+  "_revocationEndpoint": "https://localhost/auth/realm1/protocol/openid-connect/revocation",
+  "_endSessionEndpoint": "https://localhost/auth/realm1/protocol/openid-connect/logout"
+}

@@ -30,9 +30,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -281,5 +281,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StorageEventExchange]
   make[FileEventExchange]
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
+  many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
   many[EntityType].addSet(Set(EntityType(Storages.moduleType), EntityType(Files.moduleType)))
 }
