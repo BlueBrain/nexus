@@ -12,7 +12,7 @@ trait CassandraDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 40.seconds
 
-  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.6")
+  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.11")
     .withPorts(DefaultCqlPort -> Some(DefaultCqlPort))
     .withEnv(
       "JVM_OPTS=-Xms1g -Xmx1g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0",

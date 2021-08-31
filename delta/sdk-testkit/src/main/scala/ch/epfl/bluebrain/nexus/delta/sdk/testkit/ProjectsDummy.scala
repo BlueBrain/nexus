@@ -76,22 +76,25 @@ final class ProjectsDummy private (
     eval(DeprecateProject(ref, rev, caller))
 
   override def delete(ref: ProjectRef, rev: Long)(implicit
-      caller: Subject
+      caller: Subject,
+      referenceFinder: ProjectReferenceFinder
   ): IO[ProjectRejection, (UUID, ProjectResource)]                                                              =
     for {
-      resource <- eval(DeleteProject(ref, rev, caller))
-      uuid      = uuidFrom(ref, resource.updatedAt)
-      _        <- deletionCache.update(
-                    _ + (uuid -> ResourcesDeletionStatus(
-                      progress = Deleting,
-                      project = ref,
-                      projectCreatedBy = resource.createdBy,
-                      projectCreatedAt = resource.createdAt,
-                      createdBy = caller,
-                      createdAt = resource.updatedAt,
-                      updatedAt = resource.updatedAt
-                    ))
-                  )
+      references <- referenceFinder(ref)
+      _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
+      resource   <- eval(DeleteProject(ref, rev, caller))
+      uuid        = uuidFrom(ref, resource.updatedAt)
+      _          <- deletionCache.update(
+                      _ + (uuid -> ResourcesDeletionStatus(
+                        progress = Deleting,
+                        project = ref,
+                        projectCreatedBy = resource.createdBy,
+                        projectCreatedAt = resource.createdAt,
+                        createdBy = caller,
+                        createdAt = resource.updatedAt,
+                        updatedAt = resource.updatedAt
+                      ))
+                    )
     } yield uuid -> resource
 
   override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
@@ -213,6 +216,7 @@ object ProjectsDummy {
     *
     * @param organizations      an Organizations instance
     * @param quotas             a Quotas instance
+    * @param referenceFinder      a ProjectReferenceFinder instance
     * @param defaultApiMappings the default api mappings
     */
   def apply(

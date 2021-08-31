@@ -74,6 +74,10 @@ object ResolversModule extends ModuleDef {
       ResolversDeletion(cache, agg, resolvers, dbCleanup)
   }
 
+  many[ProjectReferenceFinder].add { (resolvers: Resolvers) =>
+    Resolvers.projectReferenceFinder(resolvers)
+  }
+
   make[MultiResolution].from {
     (acls: Acls, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
       MultiResolution(

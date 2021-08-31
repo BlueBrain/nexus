@@ -187,6 +187,10 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
       BlazegraphViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
+  many[ProjectReferenceFinder].add { (views: BlazegraphViews) =>
+    BlazegraphViews.projectReferenceFinder(views)
+  }
+
   make[BlazegraphViewsQuery].from {
     (
         acls: Acls,

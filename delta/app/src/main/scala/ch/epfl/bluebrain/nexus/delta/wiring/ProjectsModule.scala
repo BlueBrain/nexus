@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -48,6 +49,14 @@ object ProjectsModule extends ModuleDef {
     ProjectsImpl.deletionCache(config.projects)(as)
   }
 
+  make[Deferred[Task, ProjectReferenceFinder]].fromEffect(
+    Deferred[Task, ProjectReferenceFinder]
+  )
+
+  make[ProjectReferenceFinder].named("aggregate").from { (referenceFinders: Set[ProjectReferenceFinder]) =>
+    ProjectReferenceFinder.combine(referenceFinders.toList)
+  }
+
   make[ProjectsAggregate].fromEffect {
     (
         config: AppConfig,
@@ -56,7 +65,12 @@ object ProjectsModule extends ModuleDef {
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
-    ) => ProjectsImpl.aggregate(config.projects, organizations, mappings.merge)(as, clock, uuidF)
+    ) =>
+      ProjectsImpl.aggregate(
+        config.projects,
+        organizations,
+        mappings.merge
+      )(as, clock, uuidF)
   }
 
   make[Projects].fromEffect {
@@ -145,6 +159,7 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         projectsCounts: ProjectsCounts,
         projectProvisioning: ProjectProvisioning,
+        referenceFinder: ProjectReferenceFinder @Id("aggregate"),
         baseUri: BaseUri,
         mappings: ApiMappingsCollection,
         s: Scheduler,
@@ -155,6 +170,7 @@ object ProjectsModule extends ModuleDef {
         baseUri,
         mappings.merge,
         config.projects,
+        referenceFinder,
         s,
         cr,
         ordering

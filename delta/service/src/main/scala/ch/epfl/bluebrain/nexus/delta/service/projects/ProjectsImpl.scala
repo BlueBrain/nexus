@@ -82,23 +82,26 @@ final class ProjectsImpl private (
     eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", moduleType)
 
   override def delete(ref: ProjectRef, rev: Long)(implicit
-      caller: Subject
+      caller: Subject,
+      referenceFinder: ProjectReferenceFinder
   ): IO[ProjectRejection, (UUID, ProjectResource)] = {
     for {
-      resource <- eval(DeleteProject(ref, rev, caller))
-      uuid      = uuidFrom(ref, resource.updatedAt)
-      _        <- deletionCache.put(
-                    uuid,
-                    ResourcesDeletionStatus(
-                      progress = Deleting,
-                      project = ref,
-                      projectCreatedBy = resource.createdBy,
-                      projectCreatedAt = resource.createdAt,
-                      createdBy = caller,
-                      createdAt = resource.updatedAt,
-                      updatedAt = resource.updatedAt
+      references <- referenceFinder(ref)
+      _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
+      resource   <- eval(DeleteProject(ref, rev, caller))
+      uuid        = uuidFrom(ref, resource.updatedAt)
+      _          <- deletionCache.put(
+                      uuid,
+                      ResourcesDeletionStatus(
+                        progress = Deleting,
+                        project = ref,
+                        projectCreatedBy = resource.createdBy,
+                        projectCreatedAt = resource.createdAt,
+                        createdBy = caller,
+                        createdAt = resource.updatedAt,
+                        updatedAt = resource.updatedAt
+                      )
                     )
-                  )
     } yield uuid -> resource
   }.named("deleteProject", moduleType)
 

@@ -112,6 +112,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
+  many[ProjectReferenceFinder].add { (views: CompositeViews) =>
+    CompositeViews.projectReferenceFinder(views)
+  }
+
   make[IndexingSource].named("composite-source").from {
     (
         cfg: CompositeViewsConfig,

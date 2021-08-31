@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
@@ -38,7 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase, ProjectFetchOptions, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -476,6 +477,28 @@ object CompositeViews {
     val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
     ReferenceExchange[CompositeView](fetch(_, _), _.source)
   }
+
+  /**
+    * Create a project reference finder for composite views
+    */
+  def projectReferenceFinder(views: CompositeViews): ProjectReferenceFinder =
+    (project: ProjectRef) => {
+      val params = CompositeViewSearchParams(
+        deprecated = Some(false),
+        filter = { c =>
+          c.project != project && c.sources.value.exists {
+            case crossProjectSource: CrossProjectSource =>
+              crossProjectSource.project == project
+            case _                                      => false
+          }
+        }
+      )
+      views.list(OnePage, params, ProjectReferenceFinder.ordering).map {
+        _.results.foldMap { r =>
+          ProjectReferenceMap.single(r.source.value.project, r.source.id)
+        }
+      }
+    }
 
   private[compositeviews] def next(
       state: CompositeViewState,

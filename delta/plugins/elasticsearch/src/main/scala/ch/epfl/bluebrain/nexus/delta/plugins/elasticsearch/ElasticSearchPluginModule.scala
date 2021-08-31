@@ -183,6 +183,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
   }
 
+  many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>
+    ElasticSearchViews.projectReferenceFinder(views)
+  }
+
   make[ElasticSearchViewsQuery].from {
     (
         acls: Acls,

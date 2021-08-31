@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
@@ -96,6 +97,11 @@ object ProjectRejection {
   final case class ProjectIsMarkedForDeletion(projectRef: ProjectRef)
       extends ProjectRejection(s"Project '$projectRef' is marked for deletion.")
 
+  final case class ProjectIsReferenced(projectRef: ProjectRef, references: ProjectReferenceMap)
+      extends ProjectRejection(
+        s"Project $projectRef can't be deleted as it is referenced by projects '${references.value.keys.mkString(", ")}'."
+      )
+
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
     *
@@ -152,6 +158,7 @@ object ProjectRejection {
         case WrappedQuotaRejection(rejection)                     => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
         case ProjectInitializationFailed(rejection)               => default.add("details", rejection.reason.asJson)
+        case ProjectIsReferenced(_, references)                   => default.add("referencedBy", references.asJson)
         case IncorrectRev(provided, expected)                     =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
         case ProjectAlreadyExists(projectRef)                     =>

@@ -67,7 +67,10 @@ trait Projects {
     * @param rev    the current project revision
     * @param caller a reference to the subject that initiated the action
     */
-  def delete(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, (UUID, ProjectResource)]
+  def delete(ref: ProjectRef, rev: Long)(implicit
+      caller: Subject,
+      referenceFinder: ProjectReferenceFinder
+  ): IO[ProjectRejection, (UUID, ProjectResource)]
 
   /**
     * Fetches a project deletion status resource based on its reference.
