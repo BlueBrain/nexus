@@ -73,6 +73,11 @@ trait Projects {
   ): IO[ProjectRejection, (UUID, ProjectResource)]
 
   /**
+    * Fetches deletion status for all projects.
+    */
+  def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]]
+
+  /**
     * Fetches a project deletion status resource based on its reference.
     *
     * @param ref  the project reference

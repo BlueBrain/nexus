@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.allQ
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -99,11 +100,15 @@ final class ProjectsImpl private (
                         projectCreatedAt = resource.createdAt,
                         createdBy = caller,
                         createdAt = resource.updatedAt,
-                        updatedAt = resource.updatedAt
+                        updatedAt = resource.updatedAt,
+                        uuid = uuid
                       )
                     )
     } yield uuid -> resource
   }.named("deleteProject", moduleType)
+
+  override def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]] =
+    deletionCache.values.map(vector => SearchResults(vector.size.toLong, vector))
 
   override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
     for {

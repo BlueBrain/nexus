@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/deletion-status.json",
+  "progress": "Deleting",
+  "_finished": false,
+  "_createdAt": "1970-01-01T00:00:00Z",
+  "_createdBy": "{{base}}/v1/anonymous",
+  "_project": "org1/proj",
+  "_projectCreatedAt": "1970-01-01T00:00:00Z",
+  "_projectCreatedBy": "http://localhost/v1/anonymous",
+  "_self": "{{base}}/v1/projects/org1/proj/deletions/{{uuid}}",
+  "_updatedAt": "1970-01-01T00:00:00Z",
+  "_uuid": "{{uuid}}"
+}

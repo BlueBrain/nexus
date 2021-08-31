@@ -73,7 +73,8 @@ class ProjectsDeletionStream(
               projectCreatedAt = resource.createdAt,
               createdBy = resource.updatedBy,
               createdAt = resource.updatedAt,
-              updatedAt = resource.updatedAt
+              updatedAt = resource.updatedAt,
+              uuid = uuid
             )
           )
     }
