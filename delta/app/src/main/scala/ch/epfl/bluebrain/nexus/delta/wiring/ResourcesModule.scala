@@ -65,10 +65,16 @@ object ResourcesModule extends ModuleDef {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResolverContextResolution(acls, resolvers, resources, rcr)
   }
-  make[SseEventLog].from(
-    (eventLog: EventLog[Envelope[Event]], orgs: Organizations, projects: Projects, exchanges: Set[EventExchange]) =>
-      SseEventLog(eventLog, orgs, projects, exchanges)
-  )
+  make[SseEventLog]
+    .named("resources")
+    .from(
+      (
+          eventLog: EventLog[Envelope[Event]],
+          orgs: Organizations,
+          projects: Projects,
+          exchanges: Set[EventExchange] @Id("resources")
+      ) => SseEventLog(eventLog, orgs, projects, exchanges)
+    )
 
   make[ResourcesRoutes].from {
     (
@@ -78,7 +84,7 @@ object ResourcesModule extends ModuleDef {
         projects: Projects,
         resources: Resources,
         indexingAction: IndexingAction @Id("aggregate"),
-        sseEventLog: SseEventLog,
+        sseEventLog: SseEventLog @Id("resources"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -102,6 +108,7 @@ object ResourcesModule extends ModuleDef {
 
   make[ResourceEventExchange]
   many[EventExchange].ref[ResourceEventExchange]
+  many[EventExchange].named("resources").ref[ResourceEventExchange]
   many[EntityType].add(EntityType(Resources.moduleType))
 
 }

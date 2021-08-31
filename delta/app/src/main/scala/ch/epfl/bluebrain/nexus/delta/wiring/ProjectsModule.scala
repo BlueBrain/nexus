@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{DeletionStatusCache, ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.projects._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
@@ -197,4 +197,5 @@ object ProjectsModule extends ModuleDef {
     new ProjectEventExchange(projects)(base, mappings.merge)
   }
   many[EventExchange].ref[ProjectEventExchange]
+  many[EventExchange].named("resources").ref[ProjectEventExchange]
 }

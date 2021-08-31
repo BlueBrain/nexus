@@ -175,6 +175,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(IdentitiesModule)
   include(VersionModule)
   include(QuotasModule)
+  include(EventsModule)
 }
 
 object DeltaModule {

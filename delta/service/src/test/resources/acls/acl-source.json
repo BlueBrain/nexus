@@ -1,0 +1,14 @@
+{
+  "_path": "/",
+  "acl": [
+    {
+      "identity": {
+        "@id": "http://localhost/v1/anonymous",
+        "@type": "Anonymous"
+      },
+      "permissions": [
+        "resource/read"
+      ]
+    }
+  ]
+}
