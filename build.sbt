@@ -740,12 +740,12 @@ lazy val archivePlugin = project
 
 lazy val plugins = project
   .in(file("delta/plugins"))
-  .settings(shared, noPublish)
+  .settings(shared, compilation, noPublish)
   .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
-  .settings(shared, noPublish)
+  .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
@@ -840,7 +840,7 @@ lazy val tests = project
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
-  .settings(shared, noPublish)
+  .settings(compilation, shared, noPublish)
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(
@@ -930,24 +930,26 @@ lazy val compilation = {
   import sbt._
 
   Seq(
-    scalaVersion                    := scalaCompilerVersion,
-    scalacOptions                   ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-    javaSpecificationVersion        := "11",
-    javacOptions                   ++= Seq(
+    scalaVersion                           := scalaCompilerVersion,
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion               := "11",
+    javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
     ),
-    Compile / doc / scalacOptions  ++= Seq("-no-link-warnings"),
-    Compile / doc / javacOptions    := Seq("-source", javaSpecificationVersion.value),
-    autoAPIMappings                 := true,
-    apiMappings                     += {
+    Compile / packageSrc / publishArtifact := !isSnapshot.value,
+    Compile / packageDoc / publishArtifact := !isSnapshot.value,
+    Compile / doc / scalacOptions         ++= Seq("-no-link-warnings"),
+    Compile / doc / javacOptions           := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                        := true,
+    apiMappings                            += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
       ApiMappings.apiMappingFor((Compile / fullClasspath).value)("scala-library", scalaDocUrl)
     },
-    Scapegoat / dependencyClasspath := (Compile / dependencyClasspath).value
+    Scapegoat / dependencyClasspath        := (Compile / dependencyClasspath).value
   )
 }
 
