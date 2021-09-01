@@ -18,6 +18,7 @@
   "_createdAt": "2021-05-10T15:43:36.567Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",
   "_deprecated": false,
+  "_markedForDeletion": false,
   "_effectiveApiMappings": [
     {
       "_namespace": "https://bluebrain.github.io/nexus/vocabulary/",
