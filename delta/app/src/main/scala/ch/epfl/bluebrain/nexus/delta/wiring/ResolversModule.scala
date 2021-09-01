@@ -136,6 +136,7 @@ object ResolversModule extends ModuleDef {
 
   make[ResolverEventExchange]
   many[EventExchange].ref[ResolverEventExchange]
+  many[EventExchange].named("resources").ref[ResolverEventExchange]
   many[EntityType].add(EntityType(Resolvers.moduleType))
 
 }
