@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
+import java.util.UUID
+
 /**
   * Holds information about the different access Uri of a resource
   */
@@ -175,6 +177,12 @@ object ResourceUris {
     */
   def project(ref: ProjectRef): ResourceUris =
     apply(s"projects/$ref")
+
+  /**
+    * Resource uris for a project deletions
+    */
+  def projectDeletes(ref: ProjectRef, uuid: UUID): ResourceUris =
+    apply(s"projects/$ref/deletions/$uuid")
 
   /**
     * Resource uris for a resource

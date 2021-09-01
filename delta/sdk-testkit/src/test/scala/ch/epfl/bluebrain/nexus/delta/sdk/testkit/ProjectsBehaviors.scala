@@ -233,11 +233,12 @@ trait ProjectsBehaviors {
       )
     }
 
-    "fetch project deletion status" in {
-      val uuid = Uuids.nameBased(Uuids.startOf(epoch.toEpochMilli), ref.toString)
-      projects
-        .fetchDeletionStatus(ref, uuid)
-        .accepted shouldEqual ResourcesDeletionStatus(Deleting, ref, subject, epoch, subject, epoch, epoch)
+    "fetch projects deletion status" in {
+      val uuid   = Uuids.nameBased(Uuids.startOf(epoch.toEpochMilli), ref.toString)
+      val status = ResourcesDeletionStatus(Deleting, ref, subject, epoch, subject, epoch, epoch, uuid)
+      projects.fetchDeletionStatus.accepted shouldEqual SearchResults(1, List(status))
+
+      projects.fetchDeletionStatus(ref, uuid).accepted shouldEqual status
     }
 
     "fail fetching project deletion status" in {

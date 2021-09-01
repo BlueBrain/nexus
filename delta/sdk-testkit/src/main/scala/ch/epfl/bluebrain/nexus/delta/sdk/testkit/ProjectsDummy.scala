@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{DeletionStatusCache, ProjectsCache, ProjectsJournal}
@@ -78,7 +79,7 @@ final class ProjectsDummy private (
   override def delete(ref: ProjectRef, rev: Long)(implicit
       caller: Subject,
       referenceFinder: ProjectReferenceFinder
-  ): IO[ProjectRejection, (UUID, ProjectResource)]                                                              =
+  ): IO[ProjectRejection, (UUID, ProjectResource)]                                      =
     for {
       references <- referenceFinder(ref)
       _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
@@ -92,10 +93,17 @@ final class ProjectsDummy private (
                         projectCreatedAt = resource.createdAt,
                         createdBy = caller,
                         createdAt = resource.updatedAt,
-                        updatedAt = resource.updatedAt
+                        updatedAt = resource.updatedAt,
+                        uuid = uuid
                       ))
                     )
     } yield uuid -> resource
+
+  override def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]] =
+    for {
+      statusMap <- deletionCache.get
+      vector     = statusMap.values.toVector
+    } yield SearchResults(vector.size.toLong, vector)
 
   override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
     for {

@@ -1,16 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
 import java.time.Instant
+import java.util.UUID
 import scala.annotation.nowarn
 
 /**
@@ -23,6 +26,7 @@ import scala.annotation.nowarn
   * @param createdBy        the subject who initiated the deletion of resources
   * @param createdAt        the time when the deletion of resources was initiated
   * @param updatedAt        the last time when the deletion of resources was updated
+  * @param uuid        the last time when the deletion of resources was updated
   */
 final case class ResourcesDeletionStatus(
     progress: ResourcesDeletionProgress,
@@ -31,8 +35,14 @@ final case class ResourcesDeletionStatus(
     projectCreatedAt: Instant,
     createdBy: Subject,
     createdAt: Instant,
-    updatedAt: Instant
-)
+    updatedAt: Instant,
+    uuid: UUID
+) {
+  def finished: Boolean = progress match {
+    case ResourcesDeletionProgress.ResourcesDeleted => true
+    case _                                          => false
+  }
+}
 
 object ResourcesDeletionStatus {
 
@@ -43,9 +53,15 @@ object ResourcesDeletionStatus {
   })
 
   @nowarn("cat=unused")
-  implicit def resourcesDeletionStatusEncoder(implicit base: BaseUri): Encoder[ResourcesDeletionStatus] = {
+  implicit def resourcesDeletionStatusEncoder(implicit base: BaseUri): Encoder.AsObject[ResourcesDeletionStatus] = {
     implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder(base)
-    deriveConfiguredEncoder[ResourcesDeletionStatus]
+    Encoder.AsObject.instance { status =>
+      deriveConfiguredEncoder[ResourcesDeletionStatus]
+        .encodeObject(status)
+        .add(nxv.self.prefix, ResourceUris.projectDeletes(status.project, status.uuid).accessUriShortForm.asJson)
+        .add("_finished", status.finished.asJson)
+    }
+
   }
 
   @nowarn("cat=unused")
