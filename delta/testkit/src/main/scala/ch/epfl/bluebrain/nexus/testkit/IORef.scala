@@ -13,8 +13,7 @@ trait IORef[A] {
   /**
     * Obtains the current value.
     *
-    * Since `Ref` is always guaranteed to have a value, the returned action
-    * completes immediately after being bound.
+    * Since `Ref` is always guaranteed to have a value, the returned action completes immediately after being bound.
     */
   def get: UIO[A]
 
@@ -23,16 +22,15 @@ trait IORef[A] {
     *
     * The returned action completes after the reference has been successfully set.
     *
-    * Satisfies:
-    *   `r.set(fa) *> r.get == fa`
+    * Satisfies: `r.set(fa) *> r.get == fa`
     */
   def set(a: A): UIO[Unit]
 
   /**
     * Updates the current value using `f` and returns the value that was updated.
     *
-    * In case of retries caused by concurrent modifications,
-    * the returned value will be the last one before a successful update.
+    * In case of retries caused by concurrent modifications, the returned value will be the last one before a successful
+    * update.
     */
   def getAndUpdate(f: A => A): UIO[A] =
     modify { a =>
@@ -54,39 +52,34 @@ trait IORef[A] {
     }
 
   /**
-    * Obtains a snapshot of the current value, and a setter for updating it.
-    * The setter may noop (in which case `false` is returned) if another concurrent
-    * call to `access` uses its setter first.
+    * Obtains a snapshot of the current value, and a setter for updating it. The setter may noop (in which case `false`
+    * is returned) if another concurrent call to `access` uses its setter first.
     *
     * Once it has noop'd or been used once, a setter never succeeds again.
     *
-    * Satisfies:
-    *   `r.access.map(_._1) == r.get`
-    *   `r.access.flatMap { case (v, setter) => setter(f(v)) } == r.tryUpdate(f).map(_.isDefined)`
+    * Satisfies: `r.access.map(_._1) == r.get` `r.access.flatMap { case (v, setter) => setter(f(v)) } ==
+    * r.tryUpdate(f).map(_.isDefined)`
     */
   def access: UIO[(A, A => UIO[Boolean])]
 
   /**
-    * Attempts to modify the current value once, returning `false` if another
-    * concurrent modification completes between the time the variable is
-    * read and the time it is set.
+    * Attempts to modify the current value once, returning `false` if another concurrent modification completes between
+    * the time the variable is read and the time it is set.
     */
   def tryUpdate(f: A => A): UIO[Boolean]
 
   /**
-    * Like `tryUpdate` but allows the update function to return an output value of
-    * type `B`. The returned action completes with `None` if the value is not updated
-    * successfully and `Some(b)` otherwise.
+    * Like `tryUpdate` but allows the update function to return an output value of type `B`. The returned action
+    * completes with `None` if the value is not updated successfully and `Some(b)` otherwise.
     */
   def tryModify[B](f: A => (A, B)): UIO[Option[B]]
 
   /**
-    * Modifies the current value using the supplied update function. If another modification
-    * occurs between the time the current value is read and subsequently updated, the modification
-    * is retried using the new value. Hence, `f` may be invoked multiple times.
+    * Modifies the current value using the supplied update function. If another modification occurs between the time the
+    * current value is read and subsequently updated, the modification is retried using the new value. Hence, `f` may be
+    * invoked multiple times.
     *
-    * Satisfies:
-    *   `r.update(_ => a) == r.set(a)`
+    * Satisfies: `r.update(_ => a) == r.set(a)`
     */
   def update(f: A => A): UIO[Unit]
 
@@ -98,9 +91,8 @@ trait IORef[A] {
   /**
     * Update the value of this ref with a state computation.
     *
-    * The current value of this ref is used as the initial state and the computed output state
-    * is stored in this ref after computation completes. If a concurrent modification occurs,
-    * `None` is returned.
+    * The current value of this ref is used as the initial state and the computed output state is stored in this ref
+    * after computation completes. If a concurrent modification occurs, `None` is returned.
     */
   def tryModifyState[B](state: State[A, B]): UIO[Option[B]]
 
@@ -113,11 +105,11 @@ trait IORef[A] {
 object IORef {
 
   /**
-    * Like `apply` but returns the newly allocated ref directly instead of wrapping it in `F.delay`.
-    * This method is considered unsafe because it is not referentially transparent -- it allocates
-    * mutable state.
+    * Like `apply` but returns the newly allocated ref directly instead of wrapping it in `F.delay`. This method is
+    * considered unsafe because it is not referentially transparent -- it allocates mutable state.
     *
-    * @see [[Ref.unsafe]]
+    * @see
+    *   [[Ref.unsafe]]
     */
   final def unsafe[A](a: A): IORef[A] =
     fromTask(Ref.unsafe(a))
@@ -125,7 +117,8 @@ object IORef {
   /**
     * Creates an asynchronous, concurrent mutable reference initialized to the supplied value.
     *
-    * @see [[Ref.of]]
+    * @see
+    *   [[Ref.of]]
     */
   final def of[A](a: A): UIO[IORef[A]] =
     Ref[Task].of(a).hideErrors.map(fromTask)

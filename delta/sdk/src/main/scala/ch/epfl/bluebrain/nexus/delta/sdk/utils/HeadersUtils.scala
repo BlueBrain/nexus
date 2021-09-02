@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.MediaTypeNegotiator
 object HeadersUtils {
 
   /**
-    * Extracts the first mediaType found in the ''Accept'' Http request header that matches the  ''serviceMediaTypes''.
+    * Extracts the first mediaType found in the ''Accept'' Http request header that matches the ''serviceMediaTypes''.
     * If the Accept header does not match any of the service supported ''mediaTypes'', return None
     */
   def findFirst(headers: Seq[HttpHeader], serviceMediaTypes: Seq[MediaType]): Option[MediaType] = {

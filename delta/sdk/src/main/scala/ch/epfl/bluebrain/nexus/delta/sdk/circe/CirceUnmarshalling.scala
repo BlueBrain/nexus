@@ -11,8 +11,8 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 /**
-  * Unmarshallings that allow Akka Http to convert an [[HttpEntity]] to a type ''A'' using a [[Decoder]]
-  * Partially ported from ''de.heikoseeberger.akkahttpcirce.CirceSupport''.
+  * Unmarshallings that allow Akka Http to convert an [[HttpEntity]] to a type ''A'' using a [[Decoder]] Partially
+  * ported from ''de.heikoseeberger.akkahttpcirce.CirceSupport''.
   */
 trait CirceUnmarshalling {
 

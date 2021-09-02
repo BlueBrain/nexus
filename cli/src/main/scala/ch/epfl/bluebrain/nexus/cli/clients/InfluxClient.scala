@@ -24,13 +24,15 @@ trait InfluxClient[F[_]] {
   /**
     * Write an InfluxDB point to a database.
     *
-    * @param point the influxDB line protocol point to write
+    * @param point
+    *   the influxDB line protocol point to write
     */
   def write(point: InfluxPoint): F[ClientErrOr[Unit]]
 
   /**
     * Query data with influxQL
-    * @param ql the query in influxQL query language
+    * @param ql
+    *   the query in influxQL query language
     */
   def query(ql: String): F[ClientErrOr[Json]]
 
@@ -74,9 +76,12 @@ object InfluxClient {
   /**
     * Construct an instance of [[InfluxClient]].
     *
-    * @param client  the underlying HTTP client
-    * @param config  the application config
-    * @param console [[Console]] for logging
+    * @param client
+    *   the underlying HTTP client
+    * @param config
+    *   the application config
+    * @param console
+    *   [[Console]] for logging
     */
   final def apply[F[_]: Sync: Timer](
       client: Client[F],

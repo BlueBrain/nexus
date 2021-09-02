@@ -23,42 +23,50 @@ import scala.annotation.nowarn
 sealed trait StorageValue extends Product with Serializable {
 
   /**
-    * @return the storage type
+    * @return
+    *   the storage type
     */
   def tpe: StorageType
 
   /**
-    * @return ''true'' if this store is the project's default, ''false'' otherwise
+    * @return
+    *   ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
 
   /**
-    * @return the digest algorithm, e.g. "SHA-256"
+    * @return
+    *   the digest algorithm, e.g. "SHA-256"
     */
   def algorithm: DigestAlgorithm
 
   /**
-    * @return the maximum allocated capacity for the storage
+    * @return
+    *   the maximum allocated capacity for the storage
     */
   def capacity: Option[Long]
 
   /**
-    * @return the maximum allowed file size (in bytes) for uploaded files
+    * @return
+    *   the maximum allowed file size (in bytes) for uploaded files
     */
   def maxFileSize: Long
 
   /**
-    * @return a set of secrets for the current storage
+    * @return
+    *   a set of secrets for the current storage
     */
   def secrets: Set[Secret[String]]
 
   /**
-    * @return the permission required in order to download a file to this storage
+    * @return
+    *   the permission required in order to download a file to this storage
     */
   def readPermission: Permission
 
   /**
-    * @return the permission required in order to upload a file to this storage
+    * @return
+    *   the permission required in order to upload a file to this storage
     */
   def writePermission: Permission
 }
@@ -68,7 +76,8 @@ object StorageValue {
   /**
     * Resolved values to create/update a disk storage
     *
-    * @see [[StorageFields.DiskStorageFields]]
+    * @see
+    *   [[StorageFields.DiskStorageFields]]
     */
   final case class DiskStorageValue(
       default: Boolean,
@@ -87,7 +96,8 @@ object StorageValue {
   /**
     * Resolved values to create/update a S3 compatible storage
     *
-    * @see [[StorageFields.S3StorageFields]]
+    * @see
+    *   [[StorageFields.S3StorageFields]]
     */
   final case class S3StorageValue(
       default: Boolean,
@@ -114,7 +124,8 @@ object StorageValue {
       }
 
     /**
-      * @return these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
+      * @return
+      *   these settings converted to an instance of [[akka.stream.alpakka.s3.S3Settings]]
       */
     def alpakkaSettings(config: StorageTypeConfig): s3.S3Settings = {
       val (accessKeyOrDefault, secretKeyOrDefault) =
@@ -150,7 +161,8 @@ object StorageValue {
   /**
     * Resolved values to create/update a Remote disk storage
     *
-    * @see [[StorageFields.RemoteDiskStorageFields]]
+    * @see
+    *   [[StorageFields.RemoteDiskStorageFields]]
     */
   final case class RemoteDiskStorageValue(
       default: Boolean,

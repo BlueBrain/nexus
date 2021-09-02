@@ -40,8 +40,10 @@ import org.slf4j.{Logger, LoggerFactory}
 /**
   * Complete service wiring definitions.
   *
-  * @param appCfg      the application configuration
-  * @param config      the raw merged and resolved configuration
+  * @param appCfg
+  *   the application configuration
+  * @param config
+  *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
 
@@ -183,9 +185,12 @@ object DeltaModule {
   /**
     * Complete service wiring definitions.
     *
-    * @param appCfg      the application configuration
-    * @param config      the raw merged and resolved configuration
-    * @param classLoader the aggregated class loader
+    * @param appCfg
+    *   the application configuration
+    * @param config
+    *   the raw merged and resolved configuration
+    * @param classLoader
+    *   the aggregated class loader
     */
   final def apply(
       appCfg: AppConfig,

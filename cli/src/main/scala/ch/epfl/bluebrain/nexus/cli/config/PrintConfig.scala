@@ -6,7 +6,8 @@ import pureconfig.generic.semiauto.deriveConvert
 /**
   * Configuration for printing output to the client
   *
-  * @param progressInterval the optional number of events between progresses being printed.
+  * @param progressInterval
+  *   the optional number of events between progresses being printed.
   */
 final case class PrintConfig(progressInterval: Option[Int])
 

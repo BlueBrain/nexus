@@ -17,8 +17,10 @@ import monix.bio.{IO, UIO}
 /**
   * The default creation of the InProject resolver as part of the project initialization.
   *
-  * @param resolvers      the resolvers module
-  * @param serviceAccount the subject that will be recorded when performing the initialization
+  * @param resolvers
+  *   the resolvers module
+  * @param serviceAccount
+  *   the subject that will be recorded when performing the initialization
   */
 class ResolverScopeInitialization(resolvers: Resolvers, serviceAccount: ServiceAccount) extends ScopeInitialization {
 

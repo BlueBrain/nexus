@@ -30,13 +30,20 @@ import monix.execution.Scheduler
 /**
   * The resource routes
   *
-  * @param identities    the identity module
-  * @param acls          the ACLs module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param resources     the resources module
-  * @param sseEventLog   the global eventLog of all events
-  * @param index         the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param resources
+  *   the resources module
+  * @param sseEventLog
+  *   the global eventLog of all events
+  * @param index
+  *   the indexing action on write operations
   */
 final class ResourcesRoutes(
     identities: Identities,
@@ -252,7 +259,8 @@ final class ResourcesRoutes(
 object ResourcesRoutes {
 
   /**
-    * @return the [[Route]] for resources
+    * @return
+    *   the [[Route]] for resources
     */
   def apply(
       identities: Identities,

@@ -6,12 +6,14 @@ import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 
 /**
   * A Snapshot configuration that will be made every numberOfEvents and keepNSnapshots will be kept
-  * deleteEventsOnSnapshot allows to delete events prior which are older than
-  * the older snapshot
+  * deleteEventsOnSnapshot allows to delete events prior which are older than the older snapshot
   *
-  * @param numberOfEvents         the optional frequency we need to trigger snapshots
-  * @param keepNSnapshots         the optional number of snapshots we need to keep
-  * @param deleteEventsOnSnapshot the optional flag to decide if we need to delete old events
+  * @param numberOfEvents
+  *   the optional frequency we need to trigger snapshots
+  * @param keepNSnapshots
+  *   the optional number of snapshots we need to keep
+  * @param deleteEventsOnSnapshot
+  *   the optional flag to decide if we need to delete old events
   */
 // $COVERAGE-OFF$
 final case class SnapshotStrategyConfig private (
@@ -39,9 +41,12 @@ object SnapshotStrategyConfig {
   /**
     * Constructs a [[SnapshotStrategyConfig]].
     *
-    * @param numberOfEvents         the optional frequency we need to trigger snapshots
-    * @param keepNSnapshots         the optional number of snapshots we need to keep
-    * @param deleteEventsOnSnapshot the optional flag to decide if we need to delete old events
+    * @param numberOfEvents
+    *   the optional frequency we need to trigger snapshots
+    * @param keepNSnapshots
+    *   the optional number of snapshots we need to keep
+    * @param deleteEventsOnSnapshot
+    *   the optional flag to decide if we need to delete old events
     */
   final def apply(
       numberOfEvents: Option[Int],

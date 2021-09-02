@@ -21,37 +21,43 @@ import java.util.UUID
 import scala.annotation.nowarn
 
 /**
-  *  Necessary fields to create/update a composite view source.
+  * Necessary fields to create/update a composite view source.
   */
 sealed trait CompositeViewSourceFields {
 
   /**
-    * @return the id of the source
+    * @return
+    *   the id of the source
     */
   def id: Option[Iri]
 
   /**
-    * @return the schemas to filter by, empty means all
+    * @return
+    *   the schemas to filter by, empty means all
     */
   def resourceSchemas: Set[Iri]
 
   /**
-    * @return the resource types to filter by, empty means all
+    * @return
+    *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
 
   /**
-    * @return the optional tag to filter by
+    * @return
+    *   the optional tag to filter by
     */
   def resourceTag: Option[TagLabel]
 
   /**
-    * @return whether to include deprecated resources
+    * @return
+    *   whether to include deprecated resources
     */
   def includeDeprecated: Boolean
 
   /**
-    * @return the source type
+    * @return
+    *   the source type
     */
   def tpe: SourceType
 
@@ -64,7 +70,7 @@ sealed trait CompositeViewSourceFields {
 object CompositeViewSourceFields {
 
   /**
-    *  Necessary fields to create/update a project source.
+    * Necessary fields to create/update a project source.
     */
   final case class ProjectSourceFields(
       id: Option[Iri] = None,
@@ -87,7 +93,7 @@ object CompositeViewSourceFields {
   }
 
   /**
-    *  Necessary fields to create/update a cross project source.
+    * Necessary fields to create/update a cross project source.
     */
   final case class CrossProjectSourceFields(
       id: Option[Iri] = None,
@@ -113,7 +119,7 @@ object CompositeViewSourceFields {
   }
 
   /**
-    *  Necessary fields to create/update a remote project source.
+    * Necessary fields to create/update a remote project source.
     */
   final case class RemoteProjectSourceFields(
       id: Option[Iri] = None,

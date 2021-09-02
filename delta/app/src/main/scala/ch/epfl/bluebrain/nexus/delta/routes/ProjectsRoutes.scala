@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -35,9 +35,12 @@ import monix.execution.Scheduler
 
 /**
   * The project routes
-  * @param identities the identity module
-  * @param acls       the ACLs module
-  * @param projects   the projects module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param projects
+  *   the projects module
   */
 final class ProjectsRoutes(
     identities: Identities,
@@ -205,7 +208,8 @@ final class ProjectsRoutes(
 object ProjectsRoutes {
 
   /**
-    * @return the [[Route]] for projects
+    * @return
+    *   the [[Route]] for projects
     */
   def apply(
       identities: Identities,

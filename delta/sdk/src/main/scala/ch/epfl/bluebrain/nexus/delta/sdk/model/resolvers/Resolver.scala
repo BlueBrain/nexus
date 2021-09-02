@@ -19,32 +19,38 @@ import io.circe.{Encoder, Json}
 sealed trait Resolver extends Product with Serializable {
 
   /**
-    * @return the resolver id
+    * @return
+    *   the resolver id
     */
   def id: Iri
 
   /**
-    * @return a reference to the project that the resolver belongs to
+    * @return
+    *   a reference to the project that the resolver belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the resolver priority
+    * @return
+    *   the resolver priority
     */
   def priority: Priority
 
   /**
-    * @return the representation of the resolver as posted by the subject
+    * @return
+    *   the representation of the resolver as posted by the subject
     */
   def source: Json
 
   /**
-    * @return the collection of tag aliases
+    * @return
+    *   the collection of tag aliases
     */
   def tags: Map[TagLabel, Long]
 
   /**
-    * @return The underlying resolver value
+    * @return
+    *   The underlying resolver value
     */
   def value: ResolverValue
 }

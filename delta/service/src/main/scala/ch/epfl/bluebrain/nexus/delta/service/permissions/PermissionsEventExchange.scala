@@ -13,7 +13,8 @@ import monix.bio.{IO, UIO}
 /**
   * [[EventExchange]] implementation for permissions.
   *
-  * @param permissions  the permissions module
+  * @param permissions
+  *   the permissions module
   */
 class PermissionsEventExchange(permissions: Permissions)(implicit base: BaseUri) extends EventExchange {
 

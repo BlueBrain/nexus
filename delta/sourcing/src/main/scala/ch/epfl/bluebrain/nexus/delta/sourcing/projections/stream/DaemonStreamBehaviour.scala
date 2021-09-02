@@ -22,9 +22,12 @@ object DaemonStreamBehaviour {
   /**
     * Creates a behavior for a StreamSupervisor that manages the stream
     *
-    * @param streamName    the embedded stream name
-    * @param stream        the embedded stream
-    * @param retryStrategy the strategy when the stream fails
+    * @param streamName
+    *   the embedded stream name
+    * @param stream
+    *   the embedded stream
+    * @param retryStrategy
+    *   the strategy when the stream fails
     */
   private[projections] def apply[A](
       streamName: String,

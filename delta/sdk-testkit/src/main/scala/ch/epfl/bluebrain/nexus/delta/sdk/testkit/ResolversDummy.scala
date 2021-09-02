@@ -33,11 +33,16 @@ import scala.annotation.nowarn
 /**
   * A dummy Resolvers implementation
   *
-  * @param journal   the journal to store events
-  * @param cache     the cache to store resolvers
-  * @param orgs      the organizations operations bundle
-  * @param projects  the projects operations bundle
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param journal
+  *   the journal to store events
+  * @param cache
+  *   the cache to store resolvers
+  * @param orgs
+  *   the organizations operations bundle
+  * @param projects
+  *   the projects operations bundle
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 class ResolversDummy private (
     journal: ResolverJournal,
@@ -214,10 +219,14 @@ object ResolversDummy {
   /**
     * Creates a resolvers dummy instance
     *
-    * @param orgs              the organizations operations bundle
-    * @param projects          the projects operations bundle
-    * @param contextResolution the context resolver
-    * @param idAvailability    checks if an id is available upon creation
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param contextResolution
+    *   the context resolver
+    * @param idAvailability
+    *   checks if an id is available upon creation
     */
   def apply(
       orgs: Organizations,

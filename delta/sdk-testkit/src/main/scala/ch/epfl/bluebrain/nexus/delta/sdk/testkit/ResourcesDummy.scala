@@ -30,11 +30,16 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Resources implementation
   *
-  * @param journal   the journal to store events
-  * @param orgs      the organizations operations bundle
-  * @param projects  the projects operations bundle
-  * @param resourceResolution   to resolve schemas using resolvers
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param journal
+  *   the journal to store events
+  * @param orgs
+  *   the organizations operations bundle
+  * @param projects
+  *   the projects operations bundle
+  * @param resourceResolution
+  *   to resolve schemas using resolvers
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
@@ -214,10 +219,14 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs     the organizations operations bundle
-    * @param projects the projects operations bundle
-    * @param resourceResolution   to resolve schemas using resolvers
-    * @param contextResolution the context resolver
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param resourceResolution
+    *   to resolve schemas using resolvers
+    * @param contextResolution
+    *   the context resolver
     */
   def apply(
       orgs: Organizations,
@@ -243,12 +252,18 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs               the organizations operations bundle
-    * @param projects           the projects operations bundle
-    * @param resourceResolution to resolve schemas using resolvers
-    * @param idAvailability     to resolve schemas using resolvers
-    * @param contextResolution  the context resolver
-    * @param journal            underlying [[Journal]]
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param resourceResolution
+    *   to resolve schemas using resolvers
+    * @param idAvailability
+    *   to resolve schemas using resolvers
+    * @param contextResolution
+    *   the context resolver
+    * @param journal
+    *   underlying [[Journal]]
     */
   def apply(
       orgs: Organizations,

@@ -10,10 +10,14 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * Configuration for the Resolvers module.
   *
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing configuration of the cache indexing process
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
   */
 final case class ResolversConfig(
     aggregate: AggregateConfig,

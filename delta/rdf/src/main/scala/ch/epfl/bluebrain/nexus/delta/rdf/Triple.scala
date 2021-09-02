@@ -16,10 +16,8 @@ import java.util.Locale
 object Triple {
 
   /**
-    * An RDF triple.
-    * Subject must be an Iri or a blank node.
-    * Predicate must be an Iri.
-    * Object must be an Iri, a blank node or a Literal.
+    * An RDF triple. Subject must be an Iri or a blank node. Predicate must be an Iri. Object must be an Iri, a blank
+    * node or a Literal.
     */
   type Triple = (Node, Node, Node)
 

@@ -27,7 +27,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of schema rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class SchemaRejection(val reason: String) extends Product with Serializable
 
@@ -42,25 +43,30 @@ object SchemaRejection {
     * Rejection returned when a subject intends to retrieve a schema at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends SchemaFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Rejection returned when a subject intends to retrieve a schema at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a schema at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends SchemaFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to update a schema with an id that doesn't exist.
     *
-    * @param id      the schema identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class SchemaNotFound(id: Iri, project: ProjectRef)
       extends SchemaFetchRejection(s"Schema '$id' not found in project '$project'.")
@@ -68,7 +74,8 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to interact with a schema providing an id that cannot be resolved to an Iri.
     *
-    * @param id the schema identifier
+    * @param id
+    *   the schema identifier
     */
   final case class InvalidSchemaId(id: String)
       extends SchemaFetchRejection(s"Schema identifier '$id' cannot be expanded to an Iri.")
@@ -76,8 +83,10 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to create a schema but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends SchemaRejection(s"Resource '$id' already exists in project '$project'.")
@@ -85,8 +94,10 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to create a schema where the passed id does not match the id on the payload.
     *
-    * @param id        the schema identifier
-    * @param payloadId the schema identifier on the payload
+    * @param id
+    *   the schema identifier
+    * @param payloadId
+    *   the schema identifier on the payload
     */
   final case class UnexpectedSchemaId(id: Iri, payloadId: Iri)
       extends SchemaRejection(s"Schema '$id' does not match schema id on payload '$payloadId'.")
@@ -98,10 +109,13 @@ object SchemaRejection {
       extends SchemaRejection(s"Schema identifier '$id' is reserved by the platform.")
 
   /**
-    * Rejection returned when attempting to create/update a schema where the payload does not satisfy the SHACL schema constrains.
+    * Rejection returned when attempting to create/update a schema where the payload does not satisfy the SHACL schema
+    * constrains.
     *
-    * @param id      the schema identifier
-    * @param report  the SHACL validation failure report
+    * @param id
+    *   the schema identifier
+    * @param report
+    *   the SHACL validation failure report
     */
   final case class InvalidSchema(id: Iri, report: ValidationReport)
       extends SchemaRejection(s"Schema '$id' failed to validate against the constraints defined in the SHACL schema.")
@@ -109,10 +123,14 @@ object SchemaRejection {
   /**
     * Rejection returned when failed to resolve some owl imports.
     *
-    * @param id                   the schema identifier
-    * @param schemaImports        the schema imports that weren't successfully resolved
-    * @param resourceImports      the resource imports that weren't successfully resolved
-    * @param nonOntologyResources resolved resources which are not ontologies
+    * @param id
+    *   the schema identifier
+    * @param schemaImports
+    *   the schema imports that weren't successfully resolved
+    * @param resourceImports
+    *   the resource imports that weren't successfully resolved
+    * @param nonOntologyResources
+    *   resolved resources which are not ontologies
     */
   final case class InvalidSchemaResolution(
       id: Iri,
@@ -127,8 +145,10 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to create a SHACL engine.
     *
-    * @param id      the schema identifier
-    * @param details the SHACL engine errors
+    * @param id
+    *   the schema identifier
+    * @param details
+    *   the SHACL engine errors
     */
   final case class SchemaShaclEngineRejection(id: Iri, details: String)
       extends SchemaRejection(s"Schema '$id' failed to produce a SHACL engine for the SHACL schema.")
@@ -136,7 +156,8 @@ object SchemaRejection {
   /**
     * Rejection returned when attempting to update/deprecate a schema that is already deprecated.
     *
-    * @param id the schema identifier
+    * @param id
+    *   the schema identifier
     */
   final case class SchemaIsDeprecated(id: Iri) extends SchemaFetchRejection(s"Schema '$id' is deprecated.")
 
@@ -144,8 +165,10 @@ object SchemaRejection {
     * Rejection returned when a subject intends to perform an operation on the current schema, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends SchemaRejection(
@@ -183,7 +206,8 @@ object SchemaRejection {
 
   /**
     * Rejection returned when the returned state is the initial state after a Schemas.evaluation plus a Schemas.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
+    * current
     */
   final case class UnexpectedInitialState(id: Iri)
       extends SchemaRejection(s"Unexpected initial state for schema '$id'.")

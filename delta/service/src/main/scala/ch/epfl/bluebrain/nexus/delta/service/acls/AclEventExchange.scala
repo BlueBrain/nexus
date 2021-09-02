@@ -13,7 +13,8 @@ import monix.bio.{IO, UIO}
 /**
   * [[EventExchange]] implementation for acls.
   *
-  * @param acls the acls module
+  * @param acls
+  *   the acls module
   */
 class AclEventExchange(acls: Acls)(implicit base: BaseUri) extends EventExchange {
 

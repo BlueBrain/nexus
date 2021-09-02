@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{JsonLdDecoder, Configuration => JsonLdConfiguration}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import io.circe.{Encoder, Json}
@@ -25,22 +25,26 @@ sealed trait StorageFields extends Product with Serializable { self =>
   type Value <: StorageValue
 
   /**
-    * @return the storage type
+    * @return
+    *   the storage type
     */
   def tpe: StorageType
 
   /**
-    * @return the maximum allowed file size (in bytes) for uploaded files
+    * @return
+    *   the maximum allowed file size (in bytes) for uploaded files
     */
   def maxFileSize: Option[Long]
 
   /**
-    * @return the permission required in order to download a file to this storage
+    * @return
+    *   the permission required in order to download a file to this storage
     */
   def readPermission: Option[Permission]
 
   /**
-    * @return the permission required in order to upload a file to this storage
+    * @return
+    *   the permission required in order to upload a file to this storage
     */
   def writePermission: Option[Permission]
 
@@ -66,12 +70,18 @@ object StorageFields {
   /**
     * Necessary values to create/update a disk storage
     *
-    * @param default         ''true'' if this store is the project's default, ''false'' otherwise
-    * @param volume          the volume this storage is going to use to save files
-    * @param readPermission  the permission required in order to download a file from this storage
-    * @param writePermission the permission required in order to upload a file to this storage
-    * @param capacity        the capacity available (in bytes) to store files
-    * @param maxFileSize     the maximum allowed file size (in bytes) for uploaded files
+    * @param default
+    *   ''true'' if this store is the project's default, ''false'' otherwise
+    * @param volume
+    *   the volume this storage is going to use to save files
+    * @param readPermission
+    *   the permission required in order to download a file from this storage
+    * @param writePermission
+    *   the permission required in order to upload a file to this storage
+    * @param capacity
+    *   the capacity available (in bytes) to store files
+    * @param maxFileSize
+    *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class DiskStorageFields(
       default: Boolean,
@@ -102,15 +112,24 @@ object StorageFields {
   /**
     * Necessary values to create/update a S3 compatible storage
     *
-    * @param default         ''true'' if this store is the project's default, ''false'' otherwise
-    * @param bucket          the S3 compatible bucket
-    * @param endpoint        the endpoint, either a domain or a full URL
-    * @param accessKey       the AWS access key ID
-    * @param secretKey       the AWS secret key
-    * @param region          the AWS region
-    * @param readPermission  the permission required in order to download a file from this storage
-    * @param writePermission the permission required in order to upload a file to this storage
-    * @param maxFileSize     the maximum allowed file size (in bytes) for uploaded files
+    * @param default
+    *   ''true'' if this store is the project's default, ''false'' otherwise
+    * @param bucket
+    *   the S3 compatible bucket
+    * @param endpoint
+    *   the endpoint, either a domain or a full URL
+    * @param accessKey
+    *   the AWS access key ID
+    * @param secretKey
+    *   the AWS secret key
+    * @param region
+    *   the AWS region
+    * @param readPermission
+    *   the permission required in order to download a file from this storage
+    * @param writePermission
+    *   the permission required in order to upload a file to this storage
+    * @param maxFileSize
+    *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class S3StorageFields(
       default: Boolean,
@@ -147,13 +166,20 @@ object StorageFields {
   /**
     * Necessary values to create/update a Remote disk storage
     *
-    * @param default         ''true'' if this store is the project's default, ''false'' otherwise
-    * @param endpoint        the endpoint for the remote storage
-    * @param credentials     the optional credentials to access the remote storage service
-    * @param folder          the rootFolder for this storage
-    * @param readPermission  the permission required in order to download a file from this storage
-    * @param writePermission the permission required in order to upload a file to this storage
-    * @param maxFileSize     the maximum allowed file size (in bytes) for uploaded files
+    * @param default
+    *   ''true'' if this store is the project's default, ''false'' otherwise
+    * @param endpoint
+    *   the endpoint for the remote storage
+    * @param credentials
+    *   the optional credentials to access the remote storage service
+    * @param folder
+    *   the rootFolder for this storage
+    * @param readPermission
+    *   the permission required in order to download a file from this storage
+    * @param writePermission
+    *   the permission required in order to upload a file to this storage
+    * @param maxFileSize
+    *   the maximum allowed file size (in bytes) for uploaded files
     */
   final case class RemoteDiskStorageFields(
       default: Boolean,

@@ -59,9 +59,9 @@ trait OffsetUtils {
   }
 
   /**
-    * Converts the UUIDv1 inside [[TimeBasedUUID]] into an Instant.
-    * This implementation is specific for Cassandra TimeUUID, which are not EPOCH based, but 100-nanosecond units since midnight, October 15, 1582 UTC.
-    * Due to that reason, a conversion is required
+    * Converts the UUIDv1 inside [[TimeBasedUUID]] into an Instant. This implementation is specific for Cassandra
+    * TimeUUID, which are not EPOCH based, but 100-nanosecond units since midnight, October 15, 1582 UTC. Due to that
+    * reason, a conversion is required
     */
   def toInstant(timeBased: TimeBasedUUID): Instant =
     Instant.ofEpochMilli(Uuids.unixTimestamp(timeBased.value))

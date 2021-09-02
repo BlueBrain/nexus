@@ -38,9 +38,12 @@ trait Resources {
   /**
     * Creates a new resource where the id is either present on the payload or self generated.
     *
-    * @param projectRef the project reference where the resource belongs
-    * @param source     the resource payload
-    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param source
+    *   the resource payload
+    * @param schema
+    *   the identifier that will be expanded to the schema reference to validate the resource
     */
   def create(
       projectRef: ProjectRef,
@@ -51,10 +54,14 @@ trait Resources {
   /**
     * Creates a new resource with the expanded form of the passed id.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schema     the identifier that will be expanded to the schema reference to validate the resource
-    * @param source     the resource payload
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schema
+    *   the identifier that will be expanded to the schema reference to validate the resource
+    * @param source
+    *   the resource payload
     */
   def create(
       id: IdSegment,
@@ -66,12 +73,17 @@ trait Resources {
   /**
     * Updates an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference to validate the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param rev        the current revision of the resource
-    * @param source     the resource payload
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference to validate the resource. A None value
+    *   uses the currently available resource schema reference.
+    * @param rev
+    *   the current revision of the resource
+    * @param source
+    *   the resource payload
     */
   def update(
       id: IdSegment,
@@ -84,13 +96,19 @@ trait Resources {
   /**
     * Adds a tag to an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param tag        the tag name
-    * @param tagRev     the tag revision
-    * @param rev        the current revision of the resource
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    * @param tag
+    *   the tag name
+    * @param tagRev
+    *   the tag revision
+    * @param rev
+    *   the current revision of the resource
     */
   def tag(
       id: IdSegment,
@@ -104,11 +122,15 @@ trait Resources {
   /**
     * Deprecates an existing resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
-    * @param rev       the revision of the resource
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    * @param rev
+    *   the revision of the resource
     */
   def deprecate(
       id: IdSegment,
@@ -120,10 +142,13 @@ trait Resources {
   /**
     * Fetches a resource.
     *
-    * @param id         the identifier that will be expanded to the Iri of the resource with its optional rev/tag
-    * @param projectRef the project reference where the resource belongs
-    * @param schemaOpt  the optional identifier that will be expanded to the schema reference of the resource.
-    *                   A None value uses the currently available resource schema reference.
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource with its optional rev/tag
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
     */
   def fetch(
       id: IdSegmentRef,
@@ -144,11 +169,13 @@ trait Resources {
     }
 
   /**
-    * Fetch the [[DataResource]] from the provided ''projectRef'' and ''resourceRef''.
-    * Return on the error channel if the fails for one of the [[ResourceFetchRejection]]
+    * Fetch the [[DataResource]] from the provided ''projectRef'' and ''resourceRef''. Return on the error channel if
+    * the fails for one of the [[ResourceFetchRejection]]
     *
-    * @param resourceRef the resource identifier of the schema
-    * @param projectRef  the project reference where the schema belongs
+    * @param resourceRef
+    *   the resource identifier of the schema
+    * @param projectRef
+    *   the project reference where the schema belongs
     */
   def fetch[R](
       resourceRef: ResourceRef,
@@ -159,8 +186,10 @@ trait Resources {
   /**
     * A terminating stream of events for resources. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the resource belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -168,11 +197,13 @@ trait Resources {
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]]
 
   /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param projectRef the project reference where the resource belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -180,11 +211,13 @@ trait Resources {
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]]
 
   /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param organization the organization label reference where the resource belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the resource belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -192,10 +225,11 @@ trait Resources {
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]]
 
   /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]]
 }

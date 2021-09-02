@@ -10,10 +10,11 @@ import monix.bio.IO
 final case class MetadataContextValue(value: ContextValue) extends AnyVal {
 
   /**
-    * Combines the current [[MetadataContextValue]] context with a passed [[MetadataContextValue]] context.
-    * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
+    * Combines the current [[MetadataContextValue]] context with a passed [[MetadataContextValue]] context. If a keys
+    * are is repeated in both contexts, the one in ''that'' will override the current one.
     *
-    * @param that another metadata context to be merged with the current
+    * @param that
+    *   another metadata context to be merged with the current
     */
   def merge(that: MetadataContextValue): MetadataContextValue = MetadataContextValue(value merge that.value)
 }

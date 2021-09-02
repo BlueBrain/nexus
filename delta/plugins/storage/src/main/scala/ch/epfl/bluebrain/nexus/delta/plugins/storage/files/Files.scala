@@ -75,11 +75,14 @@ final class Files(
   // format: on
 
   /**
-    * Create a new file where the id is  self generated
+    * Create a new file where the id is self generated
     *
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param entity     the http FormData entity
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param entity
+    *   the http FormData entity
     */
   def create(
       storageId: Option[IdSegment],
@@ -99,10 +102,14 @@ final class Files(
   /**
     * Create a new file with the provided id
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param entity     the http FormData entity
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param entity
+    *   the http FormData entity
     */
   def create(
       id: IdSegment,
@@ -123,11 +130,16 @@ final class Files(
   /**
     * Create a new file linking where the id is self generated
     *
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def createLink(
       storageId: Option[IdSegment],
@@ -146,12 +158,18 @@ final class Files(
   /**
     * Create a new file linking it from an existing file in a storage
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def createLink(
       id: IdSegment,
@@ -171,11 +189,16 @@ final class Files(
   /**
     * Update an existing file
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param rev        the current revision of the file
-    * @param entity     the http FormData entity
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param rev
+    *   the current revision of the file
+    * @param entity
+    *   the http FormData entity
     */
   def update(
       id: IdSegment,
@@ -197,13 +220,20 @@ final class Files(
   /**
     * Update a new file linking it from an existing file in a storage
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param rev        the current revision of the file
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param rev
+    *   the current revision of the file
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def updateLink(
       id: IdSegment,
@@ -229,12 +259,18 @@ final class Files(
   /**
     * Update an existing file attributes
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param projectRef the project where the file will belong
-    * @param mediaType  the optional media type of the file
-    * @param bytes      the size of the file file in bytes
-    * @param digest     the digest information of the file
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file will belong
+    * @param mediaType
+    *   the optional media type of the file
+    * @param bytes
+    *   the size of the file file in bytes
+    * @param digest
+    *   the digest information of the file
+    * @param rev
+    *   the current revision of the file
     */
   def updateAttributes(
       id: IdSegment,
@@ -254,8 +290,10 @@ final class Files(
   /**
     * Update an existing file attributes
     *
-    * @param iri         the file iri identifier
-    * @param projectRef the project where the file will belong
+    * @param iri
+    *   the file iri identifier
+    * @param projectRef
+    *   the project where the file will belong
     */
   private[files] def updateAttributes(
       iri: Iri,
@@ -275,11 +313,16 @@ final class Files(
   /**
     * Add a tag to an existing file
     *
-    * @param id         the file identifier to expand as the iri of the storage
-    * @param projectRef the project where the file belongs
-    * @param tag        the tag name
-    * @param tagRev     the tag revision
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the storage
+    * @param projectRef
+    *   the project where the file belongs
+    * @param tag
+    *   the tag name
+    * @param tagRev
+    *   the tag revision
+    * @param rev
+    *   the current revision of the file
     */
   def tag(
       id: IdSegment,
@@ -298,9 +341,12 @@ final class Files(
   /**
     * Deprecate an existing file
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param projectRef the project where the file belongs
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file belongs
+    * @param rev
+    *   the current revision of the file
     */
   def deprecate(
       id: IdSegment,
@@ -317,8 +363,10 @@ final class Files(
   /**
     * Fetch the last version of a file content
     *
-    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project the project where the storage belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
     */
   def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse] =
     id.asTag
@@ -340,8 +388,10 @@ final class Files(
   /**
     * Fetch the last version of a file
     *
-    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project the project where the storage belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] =
     id.asTag
@@ -364,8 +414,10 @@ final class Files(
   /**
     * A terminating stream of events for files. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the files belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the files belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -374,11 +426,13 @@ final class Files(
     eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for files. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param projectRef the project reference where the files belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the files belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -387,11 +441,13 @@ final class Files(
     eventLog.projectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param organization the organization label reference where the file belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the file belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -400,10 +456,11 @@ final class Files(
     eventLog.orgEvents(orgs, organization, offset)
 
   /**
-    * A non terminating stream of events for files. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[FileEvent]] =
     eventLog.eventsByTag(moduleType, offset)

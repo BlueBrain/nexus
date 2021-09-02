@@ -26,11 +26,16 @@ trait Realms {
   /**
     * Creates a new realm using the provided configuration.
     *
-    * @param label             the realm label
-    * @param name              the name of the realm
-    * @param openIdConfig      the address of the openid configuration
-    * @param logo              an optional realm logo
-    * @param acceptedAudiences the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param label
+    *   the realm label
+    * @param name
+    *   the name of the realm
+    * @param openIdConfig
+    *   the address of the openid configuration
+    * @param logo
+    *   an optional realm logo
+    * @param acceptedAudiences
+    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     */
   def create(
       label: Label,
@@ -43,12 +48,18 @@ trait Realms {
   /**
     * Updates an existing realm using the provided configuration.
     *
-    * @param label             the realm label
-    * @param rev               the current revision of the realm
-    * @param name              the new name for the realm
-    * @param openIdConfig      the new openid configuration address
-    * @param logo              an optional new logo
-    * @param acceptedAudiences the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param label
+    *   the realm label
+    * @param rev
+    *   the current revision of the realm
+    * @param name
+    *   the new name for the realm
+    * @param openIdConfig
+    *   the new openid configuration address
+    * @param logo
+    *   an optional new logo
+    * @param acceptedAudiences
+    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
     */
   def update(
       label: Label,
@@ -62,34 +73,44 @@ trait Realms {
   /**
     * Deprecates an existing realm. A deprecated realm prevents clients from authenticating.
     *
-    * @param label the id of the realm
-    * @param rev   the revision of the realm
+    * @param label
+    *   the id of the realm
+    * @param rev
+    *   the revision of the realm
     */
   def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource]
 
   /**
     * Fetches a realm.
     *
-    * @param label the realm label
+    * @param label
+    *   the realm label
     */
   def fetch(label: Label): IO[RealmNotFound, RealmResource]
 
   /**
     * Fetches a realm at a specific revision.
     *
-    * @param label the realm label
-    * @param rev   the realm revision
-    * @return the realm as a resource at the specified revision
+    * @param label
+    *   the realm label
+    * @param rev
+    *   the realm revision
+    * @return
+    *   the realm as a resource at the specified revision
     */
   def fetchAt(label: Label, rev: Long): IO[RealmRejection.NotFound, RealmResource]
 
   /**
     * Lists realms with optional filters.
     *
-    * @param pagination the pagination settings
-    * @param params     filter parameters of the realms
-    * @param ordering   the response ordering
-    * @return a paginated results list of realms sorted by their creation date.
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters of the realms
+    * @param ordering
+    *   the response ordering
+    * @return
+    *   a paginated results list of realms sorted by their creation date.
     */
   def list(
       pagination: FromPagination,
@@ -98,17 +119,19 @@ trait Realms {
   ): UIO[UnscoredSearchResults[RealmResource]]
 
   /**
-    * A non terminating stream of events for realms. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for realms. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 
   /**
     * The current realm events. The stream stops after emitting all known events.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[RealmEvent]]
 

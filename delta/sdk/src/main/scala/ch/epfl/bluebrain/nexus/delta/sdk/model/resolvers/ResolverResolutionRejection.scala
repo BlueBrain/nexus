@@ -14,17 +14,20 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of Resolver resolution rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class ResolverResolutionRejection(val reason: String) extends Product with Serializable
 
 object ResolverResolutionRejection {
 
   /**
-    * Rejection when the access to the given project has been denied by using the identity resolution
-    * defined in the resolver
-    * @param projectRef          the project where we attempted the resolution
-    * @param identityResolution  the identity resolution used
+    * Rejection when the access to the given project has been denied by using the identity resolution defined in the
+    * resolver
+    * @param projectRef
+    *   the project where we attempted the resolution
+    * @param identityResolution
+    *   the identity resolution used
     */
   final case class ProjectAccessDenied(projectRef: ProjectRef, identityResolution: IdentityResolution)
       extends ResolverResolutionRejection(
@@ -32,9 +35,10 @@ object ResolverResolutionRejection {
       )
 
   /**
-    * Rejection returned when a resource has been found but has been filtered out because its types didn't match
-    * those declared in a cross-project resolver
-    * @param types the resource type
+    * Rejection returned when a resource has been found but has been filtered out because its types didn't match those
+    * declared in a cross-project resolver
+    * @param types
+    *   the resource type
     */
   final case class ResourceTypesDenied(projectRef: ProjectRef, types: Set[Iri])
       extends ResolverResolutionRejection(
@@ -43,7 +47,8 @@ object ResolverResolutionRejection {
 
   /**
     * Rejection when fetching the resource from the project failed
-    * @param reason a descriptive message as to why the rejection occurred
+    * @param reason
+    *   a descriptive message as to why the rejection occurred
     */
   sealed abstract class ResolutionFetchRejection(reason: String) extends ResolverResolutionRejection(reason)
 
@@ -62,9 +67,10 @@ object ResolverResolutionRejection {
   }
 
   /**
-    * Rejection returned when a subject intends to retrieve a resource using a resolver at a specific revision,
-    * but the provided revision does not exist.
-    * @param provided  the provided revision
+    * Rejection returned when a subject intends to retrieve a resource using a resolver at a specific revision, but the
+    * provided revision does not exist.
+    * @param provided
+    *   the provided revision
     */
   final case class RevisionNotFound(provided: Long)
       extends ResolutionFetchRejection(
@@ -72,9 +78,10 @@ object ResolverResolutionRejection {
       )
 
   /**
-    * Rejection returned when a subject intends to retrieve a resource using a resolver at a specific tag,
-    * but the provided tag does not exist.
-    * @param tag the provided tag
+    * Rejection returned when a subject intends to retrieve a resource using a resolver at a specific tag, but the
+    * provided tag does not exist.
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends ResolutionFetchRejection(s"Tag requested '$tag' not found.")
 
@@ -87,16 +94,18 @@ object ResolverResolutionRejection {
   /**
     * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
     *
-    * @param id the resource identifier
+    * @param id
+    *   the resource identifier
     */
   final case class InvalidId(id: String)
       extends ResolutionFetchRejection(s"The identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection the rejection when attempting to resolve with an invalid resolver
-    * (i.e deprecated, not found, invalid resolver identifier)
+    * Rejection the rejection when attempting to resolve with an invalid resolver (i.e deprecated, not found, invalid
+    * resolver identifier)
     *
-    * @param rejection the resolver rejection
+    * @param rejection
+    *   the resolver rejection
     */
   final case class WrappedResolverRejection(rejection: ResolverRejection)
       extends ResolutionFetchRejection(rejection.reason)

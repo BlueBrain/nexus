@@ -11,7 +11,8 @@ import monix.bio.{IO, UIO}
 /**
   * Storage specific [[EventExchange]] implementation.
   *
-  * @param storages the storages module
+  * @param storages
+  *   the storages module
   */
 class StorageEventExchange(storages: Storages)(implicit base: BaseUri, crypto: Crypto) extends EventExchange {
 

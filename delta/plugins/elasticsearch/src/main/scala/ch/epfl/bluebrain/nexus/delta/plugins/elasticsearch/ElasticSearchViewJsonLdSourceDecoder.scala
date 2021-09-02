@@ -22,8 +22,8 @@ import monix.bio.IO
 import scala.annotation.nowarn
 
 /**
-  * Decoder for [[ElasticSearchViewValue]] which maps some fields to string, before decoding to get around lack of support
-  * for @json in json ld library.
+  * Decoder for [[ElasticSearchViewValue]] which maps some fields to string, before decoding to get around lack of
+  * support for @json in json ld library.
   */
 //TODO remove when support for @json is added in json-ld library
 class ElasticSearchViewJsonLdSourceDecoder private (

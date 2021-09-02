@@ -13,16 +13,20 @@ sealed trait DatabaseCleanup {
   /**
     * Deletes all the rows filtered by the persistence
     *
-    * @param moduleType the first segment of the persistence id
-    * @param project    the second segment of the persistence id
-    * @param ids        the last segment of the persistence id
+    * @param moduleType
+    *   the first segment of the persistence id
+    * @param project
+    *   the second segment of the persistence id
+    * @param ids
+    *   the last segment of the persistence id
     */
   def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit]
 
   /**
     * Deletes all the rows filtered by the persistence
     *
-    * @see [[deleteAll(moduleType, project, ids)]]
+    * @see
+    *   [[deleteAll(moduleType, project, ids)]]
     */
   def deleteAll(moduleType: String, project: String): Task[Unit] =
     deleteAll(moduleType, project, Seq.empty)

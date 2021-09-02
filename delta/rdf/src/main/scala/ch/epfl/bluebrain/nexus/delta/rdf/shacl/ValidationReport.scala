@@ -14,16 +14,20 @@ import org.apache.jena.rdf.model.Resource
 /**
   * Data type that represents the outcome of validating data against a shacl schema.
   *
-  * @param conforms      true if the validation was successful and false otherwise
-  * @param targetedNodes the number of target nodes that were touched per shape
-  * @param json          the detailed message of the validator
+  * @param conforms
+  *   true if the validation was successful and false otherwise
+  * @param targetedNodes
+  *   the number of target nodes that were touched per shape
+  * @param json
+  *   the detailed message of the validator
   */
 final case class ValidationReport private (conforms: Boolean, targetedNodes: Int, json: Json) {
 
   /**
-    * @param ignoreTargetedNodes flag to decide whether or not ''targetedNodes''
-    *                         should be ignored from the validation logic
-    * @return true if the validation report has been successful or false otherwise
+    * @param ignoreTargetedNodes
+    *   flag to decide whether or not ''targetedNodes'' should be ignored from the validation logic
+    * @return
+    *   true if the validation report has been successful or false otherwise
     */
   def isValid(ignoreTargetedNodes: Boolean = false): Boolean =
     (ignoreTargetedNodes && conforms) || (!ignoreTargetedNodes && targetedNodes > 0 && conforms)

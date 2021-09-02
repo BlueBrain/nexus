@@ -11,8 +11,8 @@ import monix.bio.{IO, Task}
 object WiringInitializer {
 
   /**
-    * Combines the [[ModuleDef]] of the passed ''serviceModule'' with the ones provided by the plugins.
-    * Afterwards initializes the [[Plugin]]s and the [[Locator]].
+    * Combines the [[ModuleDef]] of the passed ''serviceModule'' with the ones provided by the plugins. Afterwards
+    * initializes the [[Plugin]] s and the [[Locator]].
     */
   def apply(
       serviceModule: ModuleDef,

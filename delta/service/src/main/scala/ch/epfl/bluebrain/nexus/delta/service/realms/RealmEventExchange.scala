@@ -12,7 +12,8 @@ import monix.bio.{IO, UIO}
 /**
   * [[EventExchange]] implementation for realms.
   *
-  * @param realms the realms module
+  * @param realms
+  *   the realms module
   */
 class RealmEventExchange(realms: Realms)(implicit base: BaseUri) extends EventExchange {
 

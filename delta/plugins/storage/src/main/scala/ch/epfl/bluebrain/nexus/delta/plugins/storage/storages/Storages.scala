@@ -71,8 +71,10 @@ final class Storages private (
   /**
     * Create a new storage where the id is either present on the payload or self generated
     *
-    * @param projectRef the project where the storage will belong
-    * @param source     the payload to create the storage
+    * @param projectRef
+    *   the project where the storage will belong
+    * @param source
+    *   the payload to create the storage
     */
   @SuppressWarnings(Array("PartialFunctionInsteadOfMatch"))
   def create(
@@ -90,9 +92,12 @@ final class Storages private (
   /**
     * Create a new storage with the provided id
     *
-    * @param id         the storage identifier to expand as the id of the storage
-    * @param projectRef the project where the storage will belong
-    * @param source     the payload to create the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage will belong
+    * @param source
+    *   the payload to create the storage
     */
   def create(
       id: IdSegment,
@@ -111,9 +116,12 @@ final class Storages private (
   /**
     * Create a new storage with the provided id and the [[StorageValue]] instead of the payload
     *
-    * @param id           the storage identifier to expand as the id of the storage
-    * @param projectRef   the project where the storage will belong
-    * @param storageFields the value of the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage will belong
+    * @param storageFields
+    *   the value of the storage
     */
   def create(
       id: IdSegment,
@@ -132,10 +140,14 @@ final class Storages private (
   /**
     * Update an existing storage with the passed Json ''payload''
     *
-    * @param id         the storage identifier to expand as the id of the storage
-    * @param projectRef the project where the storage will belong
-    * @param rev        the current revision of the storage
-    * @param source     the payload to update the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage will belong
+    * @param rev
+    *   the current revision of the storage
+    * @param source
+    *   the payload to update the storage
     */
   def update(
       id: IdSegment,
@@ -164,10 +176,14 @@ final class Storages private (
   /**
     * Update an existing storage with the passed [[StorageValue]]
     *
-    * @param id           the storage identifier to expand as the id of the storage
-    * @param projectRef   the project where the storage will belong
-    * @param rev          the current revision of the storage
-    * @param storageFields the value of the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage will belong
+    * @param rev
+    *   the current revision of the storage
+    * @param storageFields
+    *   the value of the storage
     */
   def update(
       id: IdSegment,
@@ -187,11 +203,16 @@ final class Storages private (
   /**
     * Add a tag to an existing storage
     *
-    * @param id         the storage identifier to expand as the id of the storage
-    * @param projectRef the project where the storage belongs
-    * @param tag        the tag name
-    * @param tagRev     the tag revision
-    * @param rev        the current revision of the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage belongs
+    * @param tag
+    *   the tag name
+    * @param tagRev
+    *   the tag revision
+    * @param rev
+    *   the current revision of the storage
     */
   def tag(
       id: IdSegment,
@@ -210,9 +231,12 @@ final class Storages private (
   /**
     * Deprecate an existing storage
     *
-    * @param id         the storage identifier to expand as the id of the storage
-    * @param projectRef the project where the storage belongs
-    * @param rev        the current revision of the storage
+    * @param id
+    *   the storage identifier to expand as the id of the storage
+    * @param projectRef
+    *   the project where the storage belongs
+    * @param rev
+    *   the current revision of the storage
     */
   def deprecate(
       id: IdSegment,
@@ -229,8 +253,10 @@ final class Storages private (
   /**
     * Fetch the storage using the ''resourceRef''
     *
-    * @param resourceRef the storage reference (Latest, Revision or Tag)
-    * @param project     the project where the storage belongs
+    * @param resourceRef
+    *   the storage reference (Latest, Revision or Tag)
+    * @param project
+    *   the project where the storage belongs
     */
   def fetch[R](
       resourceRef: ResourceRef,
@@ -241,8 +267,10 @@ final class Storages private (
   /**
     * Fetch the last version of a storage
     *
-    * @param id         the identifier that will be expanded to the Iri of the storage with its optional rev/tag
-    * @param project the project where the storage belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the storage with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[StorageFetchRejection, StorageResource] =
     id.asTag
@@ -275,7 +303,8 @@ final class Storages private (
   /**
     * Fetches the default storage for a project.
     *
-    * @param project   the project where to look for the default storage
+    * @param project
+    *   the project where to look for the default storage
     */
   def fetchDefault(project: ProjectRef): IO[DefaultStorageNotFound, StorageResource] =
     fetchDefaults(project)
@@ -288,10 +317,14 @@ final class Storages private (
   /**
     * Lists storages.
     *
-    * @param pagination the pagination settings
-    * @param params     filter parameters for the listing
-    * @param ordering   the response ordering
-    * @return a paginated results list
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters for the listing
+    * @param ordering
+    *   the response ordering
+    * @return
+    *   a paginated results list
     */
   def list(
       pagination: FromPagination,
@@ -312,10 +345,14 @@ final class Storages private (
   /**
     * List storages within a project.
     *
-    * @param projectRef the project the storages belong to
-    * @param pagination the pagination settings
-    * @param params     filter parameters
-    * @param ordering   the response ordering
+    * @param projectRef
+    *   the project the storages belong to
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters
+    * @param ordering
+    *   the response ordering
     */
   def list(
       projectRef: ProjectRef,
@@ -328,8 +365,10 @@ final class Storages private (
   /**
     * A terminating stream of events for storages. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the storage belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the storage belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -338,11 +377,13 @@ final class Storages private (
     eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param projectRef the project reference where the storage belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the storage belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -351,11 +392,13 @@ final class Storages private (
     eventLog.projectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param organization the organization label reference where the storage belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the storage belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -364,10 +407,11 @@ final class Storages private (
     eventLog.orgEvents(orgs, organization, offset)
 
   /**
-    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[StorageEvent]] =
     eventLog.eventsByTag(moduleType, offset)

@@ -8,7 +8,8 @@ import io.circe.{Decoder, Encoder}
 sealed trait ResourcesDeletionProgress extends Product with Serializable {
 
   /**
-    * @return true if the deletion has been completed, false otherwise
+    * @return
+    *   true if the deletion has been completed, false otherwise
     */
   def completed: Boolean =
     this match {

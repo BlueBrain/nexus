@@ -12,7 +12,8 @@ object KeyValueStoreError {
   /**
     * Signals that a timeout occurred while waiting for the desired read or write consistency across nodes.
     *
-    * @param timeout the timeout duration
+    * @param timeout
+    *   the timeout duration
     */
   final case class ReadWriteConsistencyTimeout(timeout: FiniteDuration)
       extends KeyValueStoreError(

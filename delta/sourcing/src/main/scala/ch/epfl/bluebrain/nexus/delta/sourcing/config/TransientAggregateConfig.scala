@@ -6,8 +6,10 @@ import pureconfig.ConfigReader
 /**
   * Transient aggregate configuration.
   *
-  * @param stopStrategy the stop strategy configuration for this aggregate [[EventDefinition]]
-  * @param processor    the event source processor config
+  * @param stopStrategy
+  *   the stop strategy configuration for this aggregate [[EventDefinition]]
+  * @param processor
+  *   the event source processor config
   */
 final case class TransientAggregateConfig(
     stopStrategy: StopStrategyConfig,

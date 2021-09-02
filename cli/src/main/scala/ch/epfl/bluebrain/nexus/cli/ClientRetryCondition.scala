@@ -9,20 +9,24 @@ import pureconfig.error.CannotConvert
 sealed trait ClientRetryCondition {
 
   /**
-    * Decides whether it is worth to retry or not depending on the passed [[ClientError]].
-    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+    * Decides whether it is worth to retry or not depending on the passed [[ClientError]]. The actual retry will depend
+    * on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
     *
-    * @param error the client error
-    * @return true = retry; false = do not retry
+    * @param error
+    *   the client error
+    * @return
+    *   true = retry; false = do not retry
     */
   def apply(error: ClientError): Boolean
 
   /**
-    * Decides whether it is worth to retry or not depending on the passed either of [[ClientError]].
-    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+    * Decides whether it is worth to retry or not depending on the passed either of [[ClientError]]. The actual retry
+    * will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
     *
-    * @param either an [[Either]] where the Left is a [[ClientError]]
-    * @return true = retry; false = do not retry
+    * @param either
+    *   an [[Either]] where the Left is a [[ClientError]]
+    * @return
+    *   true = retry; false = do not retry
     */
   def fromEither[A](either: ClientErrOr[A]): Boolean =
     either match {
@@ -31,20 +35,24 @@ sealed trait ClientRetryCondition {
     }
 
   /**
-    * Decide whether it is worth to avoid retrying or not depending on the passed [[ClientError]].
-    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+    * Decide whether it is worth to avoid retrying or not depending on the passed [[ClientError]]. The actual retry will
+    * depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
     *
-    * @param error the client error
-    * @return true = do not retry; false = retry
+    * @param error
+    *   the client error
+    * @return
+    *   true = do not retry; false = retry
     */
   def notRetry(error: ClientError): Boolean = !apply(error)
 
   /**
-    * Decide whether it is worth to avoid retrying or not depending on the passed either of [[ClientError]].
-    * The actual retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
+    * Decide whether it is worth to avoid retrying or not depending on the passed either of [[ClientError]]. The actual
+    * retry will depend on the [[ch.epfl.bluebrain.nexus.cli.config.RetryStrategyConfig]].
     *
-    * @param either an [[Either]] where the Left is a [[ClientError]]
-    * @return true = do not retry; false = retry
+    * @param either
+    *   an [[Either]] where the Left is a [[ClientError]]
+    * @return
+    *   true = do not retry; false = retry
     */
   def notRetryFromEither[A](either: ClientErrOr[A]): Boolean = !fromEither(either)
 
@@ -61,8 +69,8 @@ object ClientRetryCondition {
   }
 
   /**
-    * Retry when the Client response returns a HTTP Server Error (status codes 5xx) that is not a [[Status.GatewayTimeout]].
-    * Alternatively, retries when the Client returns an Unexpected error
+    * Retry when the Client response returns a HTTP Server Error (status codes 5xx) that is not a
+    * [[Status.GatewayTimeout]]. Alternatively, retries when the Client returns an Unexpected error
     */
   final case object OnServerError extends ClientRetryCondition {
     override def apply(error: ClientError): Boolean =

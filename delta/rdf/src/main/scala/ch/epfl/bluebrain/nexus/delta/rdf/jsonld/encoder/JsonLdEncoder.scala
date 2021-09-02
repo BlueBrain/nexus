@@ -21,7 +21,8 @@ trait JsonLdEncoder[A] {
   /**
     * Converts a value of type ''A'' to [[ExpandedJsonLd]] format.
     *
-    * @param value the value to be converted into a JSON-LD expanded document
+    * @param value
+    *   the value to be converted into a JSON-LD expanded document
     */
   def expand(
       value: A
@@ -29,7 +30,8 @@ trait JsonLdEncoder[A] {
 
   /**
     * Converts a value to [[CompactedJsonLd]]
-    * @param value    the value to be converted into a JSON-LD compacted document
+    * @param value
+    *   the value to be converted into a JSON-LD compacted document
     */
   def compact(
       value: A
@@ -38,7 +40,8 @@ trait JsonLdEncoder[A] {
   /**
     * Converts a value of type ''A'' to [[Dot]] format.
     *
-    * @param value    the value to be converted to Dot format
+    * @param value
+    *   the value to be converted to Dot format
     */
   def dot(
       value: A
@@ -51,7 +54,8 @@ trait JsonLdEncoder[A] {
   /**
     * Converts a value of type ''A'' to [[NTriples]] format.
     *
-    * @param value the value to be converted to n-triples format
+    * @param value
+    *   the value to be converted to n-triples format
     */
   def ntriples(
       value: A
@@ -64,7 +68,8 @@ trait JsonLdEncoder[A] {
   /**
     * Converts a value of type ''A'' to [[NQuads]] format.
     *
-    * @param value the value to be converted to n-quads format
+    * @param value
+    *   the value to be converted to n-quads format
     */
   def nquads(
       value: A
@@ -77,7 +82,8 @@ trait JsonLdEncoder[A] {
   /**
     * Converts a value of type ''A'' to [[Graph]]
     *
-    * @param value the value to be converted to Graph
+    * @param value
+    *   the value to be converted to Graph
     */
   def graph(
       value: A
@@ -94,30 +100,35 @@ object JsonLdEncoder {
   private def randomRootNode[A]: A => BNode = (_: A) => BNode.random
 
   /**
-    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json
-    * and computes the compacted and expanded form from it.
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json and computes
+    * the compacted and expanded form from it.
     *
-    * @param context the context
+    * @param context
+    *   the context
     */
   def computeFromCirce[A: Encoder](context: ContextValue): JsonLdEncoder[A] =
     computeFromCirce(randomRootNode, context)
 
   /**
-    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to to Json
-    * and computes the compacted and expanded form from it.
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to to Json and computes
+    * the compacted and expanded form from it.
     *
-    * @param id  the rootId
-    * @param ctx the context
+    * @param id
+    *   the rootId
+    * @param ctx
+    *   the context
     */
   def computeFromCirce[A: Encoder](id: IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
     computeFromCirce((_: A) => id, ctx)
 
   /**
-    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json
-    * and computes the compacted and expanded form from it.
+    * Creates a [[JsonLdEncoder]] from an implicitly available Circe Encoder that turns an ''A'' to Json and computes
+    * the compacted and expanded form from it.
     *
-    * @param fId the function to obtain the rootId
-    * @param ctx the context
+    * @param fId
+    *   the function to obtain the rootId
+    * @param ctx
+    *   the context
     */
   def computeFromCirce[A: Encoder](fId: A => IriOrBNode, ctx: ContextValue): JsonLdEncoder[A] =
     new JsonLdEncoder[A] {

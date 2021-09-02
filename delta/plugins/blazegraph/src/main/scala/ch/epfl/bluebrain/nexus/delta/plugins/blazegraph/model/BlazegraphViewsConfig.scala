@@ -21,18 +21,30 @@ import scala.util.Try
 /**
   * Configuration for the Blazegraph views module.
   *
-  * @param base           the base uri to the Blazegraph HTTP endpoint
-  * @param credentials    the Blazegraph HTTP endpoint credentials
-  * @param indexingClient configuration of the indexing Blazegraph client
-  * @param queryClient    configuration of the query Blazegraph client
-  * @param queryTimeout  the Blazegraph query timeout
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing configuration of the cache indexing process
-  * @param indexing      configuration of the external indexing process
-  * @param maxViewRefs   configuration of the maximum number of view references allowed on an aggregated view
-  * @param idleTimeout   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param base
+  *   the base uri to the Blazegraph HTTP endpoint
+  * @param credentials
+  *   the Blazegraph HTTP endpoint credentials
+  * @param indexingClient
+  *   configuration of the indexing Blazegraph client
+  * @param queryClient
+  *   configuration of the query Blazegraph client
+  * @param queryTimeout
+  *   the Blazegraph query timeout
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
+  * @param indexing
+  *   configuration of the external indexing process
+  * @param maxViewRefs
+  *   configuration of the maximum number of view references allowed on an aggregated view
+  * @param idleTimeout
+  *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   */
 final case class BlazegraphViewsConfig(
     base: Uri,
@@ -54,8 +66,10 @@ object BlazegraphViewsConfig {
   /**
     * The Blazegraph HTTP endpoint credentials
     *
-    * @param username the credentials username
-    * @param password the credentials password
+    * @param username
+    *   the credentials username
+    * @param password
+    *   the credentials password
     */
   final case class Credentials(username: String, password: Secret[String])
 

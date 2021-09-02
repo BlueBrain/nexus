@@ -29,39 +29,46 @@ import scala.util.{Failure, Success, Try}
 sealed trait Storage extends Product with Serializable {
 
   /**
-    * @return the view id
+    * @return
+    *   the view id
     */
   def id: Iri
 
   /**
-    * @return a reference to the project that the storage belongs to
+    * @return
+    *   a reference to the project that the storage belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the tag -> rev mapping
+    * @return
+    *   the tag -> rev mapping
     */
   def tags: Map[TagLabel, Long]
 
   /**
-    * @return the original json document provided at creation or update
+    * @return
+    *   the original json document provided at creation or update
     */
   def source: Secret[Json]
 
   /**
-    * @return ''true'' if this store is the project's default, ''false'' otherwise
+    * @return
+    *   ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
 
   /**
-    * @return the storage type
+    * @return
+    *   the storage type
     */
   def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
 
   /**
-    * @return [[Storage]] metadata
+    * @return
+    *   [[Storage]] metadata
     */
   def metadata: Metadata = Metadata(storageValue.algorithm)
 }
@@ -149,7 +156,8 @@ object Storage {
   /**
     * Storage metadata.
     *
-    * @param algorithm  the digest algorithm, e.g. "SHA-256"
+    * @param algorithm
+    *   the digest algorithm, e.g. "SHA-256"
     */
   final case class Metadata(algorithm: DigestAlgorithm)
 
@@ -162,8 +170,8 @@ object Storage {
     json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
 
   /**
-    * Encrypts the secretFields of the passed ''json'' using the provided ''crypto''. If that fails, it encrypts
-    * the secretFields with the value 'SECRET' while logging the error
+    * Encrypts the secretFields of the passed ''json'' using the provided ''crypto''. If that fails, it encrypts the
+    * secretFields with the value 'SECRET' while logging the error
     */
   def encryptSourceUnsafe(json: Secret[Json], crypto: Crypto): Json =
     encryptSource(json, crypto) match {

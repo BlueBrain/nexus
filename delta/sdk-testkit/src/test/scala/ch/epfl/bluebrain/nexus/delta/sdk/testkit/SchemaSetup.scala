@@ -16,8 +16,10 @@ object SchemaSetup {
   /**
     * Set up Schemas, populate some data and then eventually apply some deprecation.
     *
-    * @param schemasToCreate    Schemas to create
-    * @param schemasToDeprecate Schemas to deprecate
+    * @param schemasToCreate
+    *   Schemas to create
+    * @param schemasToDeprecate
+    *   Schemas to deprecate
     */
   def init(
       orgs: Organizations,

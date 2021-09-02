@@ -165,9 +165,12 @@ object RealmsImpl {
   /**
     * Constructs a [[Realms]] instance
     *
-    * @param realmsConfig     the realm configuration
-    * @param resolveWellKnown how to resolve the [[WellKnown]]
-    * @param eventLog         the event log for [[RealmEvent]]
+    * @param realmsConfig
+    *   the realm configuration
+    * @param resolveWellKnown
+    *   how to resolve the [[WellKnown]]
+    * @param eventLog
+    *   the event log for [[RealmEvent]]
     */
   final def apply(
       realmsConfig: RealmsConfig,

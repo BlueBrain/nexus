@@ -28,7 +28,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of Resolver rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class ResolverRejection(val reason: String) extends Product with Serializable
 
@@ -38,25 +39,30 @@ object ResolverRejection {
     * Rejection returned when a subject intends to retrieve a resolver at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends ResolverRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Rejection returned when a subject intends to retrieve a resolver at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a resolver at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends ResolverRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a resolver but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Resource '$id' already exists in project '$project'.")
@@ -64,8 +70,10 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to update a resolver with an id that doesn't exist.
     *
-    * @param id      the resolver identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResolverNotFound(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Resolver '$id' not found in project '$project'.")
@@ -73,8 +81,10 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to create a resolver where the passed id does not match the id on the payload.
     *
-    * @param id        the resolver identifier
-    * @param payloadId the resolver identifier on the payload
+    * @param id
+    *   the resolver identifier
+    * @param payloadId
+    *   the resolver identifier on the payload
     */
   final case class UnexpectedResolverId(id: Iri, payloadId: Iri)
       extends ResolverRejection(s"Resolver '$id' does not match resolver id on payload '$payloadId'.")
@@ -82,7 +92,8 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to interact with a resolver providing an id that cannot be resolved to an Iri.
     *
-    * @param id        the resolver identifier
+    * @param id
+    *   the resolver identifier
     */
   final case class InvalidResolverId(id: String)
       extends ResolverRejection(s"Resolver identifier '$id' cannot be expanded to an Iri.")
@@ -90,14 +101,16 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to resolve a resource providing an id that cannot be resolved to an Iri.
     *
-    * @param id        the resolver identifier
+    * @param id
+    *   the resolver identifier
     */
   final case class InvalidResolvedResourceId(id: String)
       extends ResolverRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as a case class
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends ResolverRejection(error.getMessage)
 
@@ -116,7 +129,8 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to create a resolver with an id that already exists.
     *
-    * @param id the resolver identifier
+    * @param id
+    *   the resolver identifier
     */
   final case class DifferentResolverType(id: Iri, found: ResolverType, expected: ResolverType)
       extends ResolverRejection(s"Resolver '$id' is of type '$expected' and can't be updated to be a '$found' .")
@@ -138,8 +152,10 @@ object ResolverRejection {
     * Rejection returned when a subject intends to perform an operation on the current resolver, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends ResolverRejection(
@@ -154,11 +170,14 @@ object ResolverRejection {
     }
 
   /**
-    * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
-    * using all resolvers of the given project
-    * @param resourceRef     the resource reference to resolve
-    * @param projectRef      the project where we want to resolve from
-    * @param report          the report for the resolution attempt
+    * Rejection returned when attempting to resolve a resourceId as a data resource or as schema using all resolvers of
+    * the given project
+    * @param resourceRef
+    *   the resource reference to resolve
+    * @param projectRef
+    *   the project where we want to resolve from
+    * @param report
+    *   the report for the resolution attempt
     */
   final case class InvalidResolution(
       resourceRef: ResourceRef,
@@ -169,12 +188,16 @@ object ResolverRejection {
       )
 
   /**
-    * Rejection returned when attempting to resolve a resourceId as a data resource or as schema
-    * using the specified resolver id
-    * @param resourceRef     the resource reference to resolve
-    * @param resolverId      the id of the resolver
-    * @param projectRef      the project where we want to resolve from
-    * @param report          the report for resolution attempt
+    * Rejection returned when attempting to resolve a resourceId as a data resource or as schema using the specified
+    * resolver id
+    * @param resourceRef
+    *   the resource reference to resolve
+    * @param resolverId
+    *   the id of the resolver
+    * @param projectRef
+    *   the project where we want to resolve from
+    * @param report
+    *   the report for resolution attempt
     */
   final case class InvalidResolverResolution(
       resourceRef: ResourceRef,
@@ -188,21 +211,24 @@ object ResolverRejection {
   /**
     * Rejection returned when attempting to update/deprecate a resolver that is already deprecated.
     *
-    * @param id the resolver identifier
+    * @param id
+    *   the resolver identifier
     */
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
   /**
     * Rejection returned when the associated project is invalid
     *
-    * @param rejection the rejection which occurred with the project
+    * @param rejection
+    *   the rejection which occurred with the project
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ResolverRejection(rejection.reason)
 
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ResolverRejection(rejection.reason)
@@ -215,7 +241,8 @@ object ResolverRejection {
 
   /**
     * Rejection returned when the returned state is the initial state after a Resolvers.evaluation plus a Resolvers.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
+    * current
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ResolverRejection(s"Unexpected initial state for resolver '$id' of project '$project'.")

@@ -28,9 +28,12 @@ trait Projects {
   /**
     * Creates a new project.
     *
-    * @param ref    the project reference
-    * @param fields the project information
-    * @param caller a reference to the subject that initiated the action
+    * @param ref
+    *   the project reference
+    * @param fields
+    *   the project information
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def create(
       ref: ProjectRef,
@@ -40,10 +43,14 @@ trait Projects {
   /**
     * Update an existing project.
     *
-    * @param ref    the project reference
-    * @param rev    the current project revision
-    * @param fields the project information
-    * @param caller a reference to the subject that initiated the action
+    * @param ref
+    *   the project reference
+    * @param rev
+    *   the current project revision
+    * @param fields
+    *   the project information
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def update(
       ref: ProjectRef,
@@ -54,18 +61,24 @@ trait Projects {
   /**
     * Deprecate an existing project.
     *
-    * @param ref    the project reference
-    * @param rev    the current project revision
-    * @param caller a reference to the subject that initiated the action
+    * @param ref
+    *   the project reference
+    * @param rev
+    *   the current project revision
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource]
 
   /**
     * Deletes an existing project.
     *
-    * @param ref    the project reference
-    * @param rev    the current project revision
-    * @param caller a reference to the subject that initiated the action
+    * @param ref
+    *   the project reference
+    * @param rev
+    *   the current project revision
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def delete(ref: ProjectRef, rev: Long)(implicit
       caller: Subject,
@@ -80,24 +93,31 @@ trait Projects {
   /**
     * Fetches a project deletion status resource based on its reference.
     *
-    * @param ref  the project reference
-    * @param uuid the uuid generated when a project was deleted (based on the deletion instant)
+    * @param ref
+    *   the project reference
+    * @param uuid
+    *   the uuid generated when a project was deleted (based on the deletion instant)
     */
   def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus]
 
   /**
     * Fetches a project resource based on its reference.
     *
-    * @param ref the project reference
+    * @param ref
+    *   the project reference
     */
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if it does not fulfill the passed ''options''.
+    * Fetches and validate the project, rejecting if the project does not exists or if it does not fulfill the passed
+    * ''options''.
     *
-    * @param ref             the project reference
-    * @param options         the set of project options to be fulfilled
-    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref
+    *   the project reference
+    * @param options
+    *   the set of project options to be fulfilled
+    * @param rejectionMapper
+    *   allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchProject[R](ref: ProjectRef, options: Set[ProjectFetchOptions])(implicit
       subject: Subject,
@@ -107,31 +127,38 @@ trait Projects {
   /**
     * Fetches the current project, rejecting if the project does not exists.
     *
-    * @param ref             the project reference
-    * @param rejectionMapper allows to transform the ProjectRejection to a rejection fit for the caller
+    * @param ref
+    *   the project reference
+    * @param rejectionMapper
+    *   allows to transform the ProjectRejection to a rejection fit for the caller
     */
   def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
     *
-    * @param ref the project reference
-    * @param rev the revision to be retrieved
+    * @param ref
+    *   the project reference
+    * @param rev
+    *   the revision to be retrieved
     */
   def fetchAt(ref: ProjectRef, rev: Long): IO[ProjectRejection.NotFound, ProjectResource]
 
   /**
     * Fetches a project resource based on its uuid.
     *
-    * @param uuid the unique project identifier
+    * @param uuid
+    *   the unique project identifier
     */
   def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource]
 
   /**
     * Fetch a project resource by its uuid and its organization uuid
     *
-    * @param orgUuid     the unique organization identifier
-    * @param projectUuid the unique project identifier
+    * @param orgUuid
+    *   the unique organization identifier
+    * @param projectUuid
+    *   the unique project identifier
     */
   def fetch(orgUuid: UUID, projectUuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetch(projectUuid).flatMap {
@@ -142,8 +169,10 @@ trait Projects {
   /**
     * Fetches a project resource at a specific revision based on its uuid.
     *
-    * @param uuid the unique project identifier
-    * @param rev  the revision to be retrieved
+    * @param uuid
+    *   the unique project identifier
+    * @param rev
+    *   the revision to be retrieved
     */
   def fetchAt(uuid: UUID, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     fetch(uuid).flatMap(resource => fetchAt(resource.value.ref, rev))
@@ -151,9 +180,12 @@ trait Projects {
   /**
     * Fetch a project resource by its uuid and its organization uuid
     *
-    * @param orgUuid     the unique organization identifier
-    * @param projectUuid the unique project identifier
-    * @param rev         the revision to be retrieved
+    * @param orgUuid
+    *   the unique organization identifier
+    * @param projectUuid
+    *   the unique project identifier
+    * @param rev
+    *   the revision to be retrieved
     */
   def fetchAt(orgUuid: UUID, projectUuid: UUID, rev: Long): IO[ProjectRejection.NotFound, ProjectResource] =
     fetchAt(projectUuid, rev).flatMap {
@@ -164,10 +196,14 @@ trait Projects {
   /**
     * Lists all projects.
     *
-    * @param pagination the pagination settings
-    * @param params     filter parameters for the listing
-    * @param ordering   the response ordering
-    * @return a paginated results list
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters for the listing
+    * @param ordering
+    *   the response ordering
+    * @return
+    *   a paginated results list
     */
   def list(
       pagination: FromPagination,
@@ -176,17 +212,19 @@ trait Projects {
   ): UIO[UnscoredSearchResults[ProjectResource]]
 
   /**
-    * A non terminating stream of events for projects. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for projects. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
 
   /**
     * The current project events. The stream stops after emitting all known events.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
 

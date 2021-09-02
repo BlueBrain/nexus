@@ -129,8 +129,8 @@ object ElasticSearchIndexingStreamEntry {
     Set(skos.prefLabel, rdf.tpe, rdfs.label, Vocabulary.schema.name).map(predicate)
 
   /**
-    * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]].
-    * It generates an [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
+    * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]]. It generates an
+    * [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
     */
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]

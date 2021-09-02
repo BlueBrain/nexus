@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 sealed trait IdSegmentRef extends Product with Serializable { self =>
 
   /**
-    * @return the inner [[IdSegment]]
+    * @return
+    *   the inner [[IdSegment]]
     */
   def value: IdSegment
 

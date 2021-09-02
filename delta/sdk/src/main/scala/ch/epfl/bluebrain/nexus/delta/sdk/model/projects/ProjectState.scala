@@ -18,22 +18,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 sealed trait ProjectState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status
+    * @return
+    *   the current deprecation status
     */
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that projects conforms to
+    * @return
+    *   the schema reference that projects conforms to
     */
   final def schema: ResourceRef = Latest(schemas.projects)
 
   /**
-    * @return the collection of known types of projects resources
+    * @return
+    *   the collection of known types of projects resources
     */
   final def types: Set[Iri] = Set(nxv.Project)
 
@@ -56,12 +60,14 @@ object ProjectState {
   final case object Initial extends ProjectState {
 
     /**
-      * @return the current state revision
+      * @return
+      *   the current state revision
       */
     override val rev: Long = 0L
 
     /**
-      * @return the current deprecation status
+      * @return
+      *   the current deprecation status
       */
     override val deprecated: Boolean = false
 
@@ -74,21 +80,36 @@ object ProjectState {
   /**
     * State used for all resources that have been created and later possibly updated or deprecated.
     *
-    * @param label             the project label
-    * @param uuid              the project unique identifier
-    * @param organizationLabel the parent organization label
-    * @param organizationUuid  the parent organization uuid
-    * @param rev               the current state revision
-    * @param deprecated        the current state deprecation status
-    * @param markedForDeletion the current marked for deletion status
-    * @param description       an optional project description
-    * @param apiMappings       the project API mappings
-    * @param base              the base Iri for generated resource IDs
-    * @param vocab             an optional vocabulary for resources with no context
-    * @param createdAt         the instant when the resource was created
-    * @param createdBy         the subject that created the resource
-    * @param updatedAt         the instant when the resource was last updated
-    * @param updatedBy         the subject that last updated the resource
+    * @param label
+    *   the project label
+    * @param uuid
+    *   the project unique identifier
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param rev
+    *   the current state revision
+    * @param deprecated
+    *   the current state deprecation status
+    * @param markedForDeletion
+    *   the current marked for deletion status
+    * @param description
+    *   an optional project description
+    * @param apiMappings
+    *   the project API mappings
+    * @param base
+    *   the base Iri for generated resource IDs
+    * @param vocab
+    *   an optional vocabulary for resources with no context
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the subject that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the subject that last updated the resource
     */
   final case class Current(
       label: Label,
@@ -113,7 +134,8 @@ object ProjectState {
     private val uris = ResourceUris.project(projectRef)
 
     /**
-      * @return the project information
+      * @return
+      *   the project information
       */
     def project: Project =
       Project(

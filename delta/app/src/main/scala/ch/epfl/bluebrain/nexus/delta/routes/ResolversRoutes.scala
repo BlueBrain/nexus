@@ -37,12 +37,18 @@ import monix.execution.Scheduler
 /**
   * The resolver routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param resolvers     the resolvers module
-  * @param index         the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param resolvers
+  *   the resolvers module
+  * @param index
+  *   the indexing action on write operations
   */
 final class ResolversRoutes(
     identities: Identities,
@@ -259,7 +265,8 @@ final class ResolversRoutes(
 object ResolversRoutes {
 
   /**
-    * @return the [[Route]] for resolvers
+    * @return
+    *   the [[Route]] for resolvers
     */
   def apply(
       identities: Identities,

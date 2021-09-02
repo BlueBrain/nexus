@@ -10,7 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * Resolver specific [[EventExchange]] implementation.
   *
-  * @param resolvers the resolvers module
+  * @param resolvers
+  *   the resolvers module
   */
 class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extends EventExchange {
 

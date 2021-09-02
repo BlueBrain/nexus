@@ -73,13 +73,20 @@ object EventLog {
   /**
     * Implementation of [[EventLog]] based on Akka Persistence.
     *
-    * @param flavour     the flavour of the event log
-    * @param firstOffset the default offset to fetch from the beginning
-    * @param readJournal the underlying akka persistence journal
-    * @param f the function to transform envelopes
-    * @param as the actor system
-    * @tparam RJ     the underlying journal typr (Cassandra / JDBC / ...)
-    * @tparam M      the event type
+    * @param flavour
+    *   the flavour of the event log
+    * @param firstOffset
+    *   the default offset to fetch from the beginning
+    * @param readJournal
+    *   the underlying akka persistence journal
+    * @param f
+    *   the function to transform envelopes
+    * @param as
+    *   the actor system
+    * @tparam RJ
+    *   the underlying journal typr (Cassandra / JDBC / ...)
+    * @tparam M
+    *   the event type
     */
   private class AkkaEventLog[RJ <: Journal, M](
       val flavour: DatabaseFlavour,
@@ -150,7 +157,8 @@ object EventLog {
 
   /**
     * Create an event log relying on akka-persistence-cassandra
-    * @param f the transformation we want to apply to the [[EventEnvelope]]
+    * @param f
+    *   the transformation we want to apply to the [[EventEnvelope]]
     */
   def cassandraEventLog[M](
       f: EventEnvelope => UIO[Option[M]]
@@ -167,7 +175,8 @@ object EventLog {
 
   /**
     * Create an event log relying on akka-persistence-jdbc
-    * @param f the transformation we want to apply to the [[EventEnvelope]]
+    * @param f
+    *   the transformation we want to apply to the [[EventEnvelope]]
     */
   def postgresEventLog[M](
       f: EventEnvelope => UIO[Option[M]]

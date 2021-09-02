@@ -19,7 +19,8 @@ trait ProjectProvisioning {
   /**
     * Provision a project for a user
     *
-    * @param subject a user to provision a project for
+    * @param subject
+    *   a user to provision a project for
     */
   def apply(subject: Subject): IO[ProjectProvisioningRejection, Unit]
 
@@ -51,9 +52,12 @@ object ProjectProvisioning {
 
   /**
     * Create an instance of [[ProjectProvisioning]]
-    * @param acls               ACLs operations
-    * @param projects           project operations
-    * @param provisioningConfig provisioning configuration
+    * @param acls
+    *   ACLs operations
+    * @param projects
+    *   project operations
+    * @param provisioningConfig
+    *   provisioning configuration
     */
   def apply(
       acls: Acls,

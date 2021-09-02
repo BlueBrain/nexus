@@ -38,10 +38,14 @@ trait ArchiveDownload {
   /**
     * Generates an akka [[Source]] of bytes representing the tar.
     *
-    * @param value          the archive value
-    * @param project        the archive parent project
-    * @param ignoreNotFound do not fail when resource references are not found
-    * @param caller         the caller to be used for checking for access
+    * @param value
+    *   the archive value
+    * @param project
+    *   the archive parent project
+    * @param ignoreNotFound
+    *   do not fail when resource references are not found
+    * @param caller
+    *   the caller to be used for checking for access
     */
   def apply(
       value: ArchiveValue,
@@ -56,10 +60,14 @@ object ArchiveDownload {
   /**
     * The default [[ArchiveDownload]] implementation.
     *
-    * @param exchanges the collection of [[ReferenceExchange]] implementations
-    * @param acls      the acls module
-    * @param files     the files module
-    * @param sort      the configuration for sorting json keys
+    * @param exchanges
+    *   the collection of [[ReferenceExchange]] implementations
+    * @param acls
+    *   the acls module
+    * @param files
+    *   the files module
+    * @param sort
+    *   the configuration for sorting json keys
     */
   class ArchiveDownloadImpl(exchanges: List[ReferenceExchange], acls: Acls, files: Files)(implicit
       sort: JsonKeyOrdering,

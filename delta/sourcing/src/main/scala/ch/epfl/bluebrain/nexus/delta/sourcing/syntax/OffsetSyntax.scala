@@ -15,7 +15,8 @@ final class OffsetSyntaxOps(private val value: Offset) extends AnyVal {
   /**
     * Offset comparison
     *
-    * @return true when ''value'' is greater than the passed  ''offset'' or when offset is ''NoOffset'', false otherwise
+    * @return
+    *   true when ''value'' is greater than the passed ''offset'' or when offset is ''NoOffset'', false otherwise
     */
   def gt(offset: Offset): Boolean =
     offset == NoOffset || value > offset

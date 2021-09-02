@@ -22,16 +22,20 @@ import scala.jdk.CollectionConverters._
 /**
   * An arbitrary key value store.
   *
-  * @tparam K the key type
-  * @tparam V the value type
+  * @tparam K
+  *   the key type
+  * @tparam V
+  *   the value type
   */
 trait KeyValueStore[K, V] {
 
   /**
     * Adds the (key, value) to the store, replacing the current value if the key already exists.
     *
-    * @param key   the key under which the value is stored
-    * @param value the value stored
+    * @param key
+    *   the key under which the value is stored
+    * @param value
+    *   the value stored
     */
   def put(key: K, value: V): UIO[Unit]
 
@@ -44,17 +48,20 @@ trait KeyValueStore[K, V] {
   /**
     * Deletes a key from the store.
     *
-    * @param key the key to be deleted from the store
+    * @param key
+    *   the key to be deleted from the store
     */
   def remove(key: K): UIO[Unit]
 
   /**
-    * Adds the (key, value) to the store only if the key does not exists.
-    * This operation is not atomic.
+    * Adds the (key, value) to the store only if the key does not exists. This operation is not atomic.
     *
-    * @param key   the key under which the value is stored
-    * @param value the value stored
-    * @return true if the value was added, false otherwise. The response is wrapped on the effect type ''F[_]''
+    * @param key
+    *   the key under which the value is stored
+    * @param value
+    *   the value stored
+    * @return
+    *   true if the value was added, false otherwise. The response is wrapped on the effect type ''F[_]''
     */
   def putIfAbsent(key: K, value: V): UIO[Boolean] =
     get(key).flatMap {
@@ -63,14 +70,17 @@ trait KeyValueStore[K, V] {
     }
 
   /**
-    * If the value for the specified key is present, attempts to compute a new mapping given the key and its current mapped value.
-    * This operation is not atomic.
+    * If the value for the specified key is present, attempts to compute a new mapping given the key and its current
+    * mapped value. This operation is not atomic.
     *
-    * @param key the key under which the value is stored
-    * @param f   the function to compute a value
-    * @return None wrapped on the effect type ''F[_]'' if the value does not exist for the given key.
-    *         Some(value) wrapped on the effect type ''F[_]''
-    *         where value is the result of computing the provided f function on the current value of the provided key
+    * @param key
+    *   the key under which the value is stored
+    * @param f
+    *   the function to compute a value
+    * @return
+    *   None wrapped on the effect type ''F[_]'' if the value does not exist for the given key. Some(value) wrapped on
+    *   the effect type ''F[_]'' where value is the result of computing the provided f function on the current value of
+    *   the provided key
     */
   def computeIfPresent(key: K, f: V => V): UIO[Option[V]] =
     get(key).flatMap {
@@ -81,40 +91,46 @@ trait KeyValueStore[K, V] {
     }
 
   /**
-    * @return all the entries in the store
+    * @return
+    *   all the entries in the store
     */
   def entries: UIO[Map[K, V]]
 
   /**
-    * Notify subscribers of changes now, otherwise they will be notified periodically
-    * with the configured `notify-subscribers-interval`.
+    * Notify subscribers of changes now, otherwise they will be notified periodically with the configured
+    * `notify-subscribers-interval`.
     */
   def flushChanges: UIO[Unit]
 
   /**
-    * @return a vector of all the values in the store
+    * @return
+    *   a vector of all the values in the store
     */
   def values: UIO[Vector[V]] =
     entries.map(_.values.toVector)
 
   /**
-    * @return a set of all the values in the store
+    * @return
+    *   a set of all the values in the store
     */
   def valuesSet: UIO[Set[V]] =
     entries.map(_.values.toSet)
 
   /**
-    * @param key the key
-    * @return an optional value for the provided key
+    * @param key
+    *   the key
+    * @return
+    *   an optional value for the provided key
     */
   def get(key: K): UIO[Option[V]]
 
   /**
-    * Fetch the value for the given key and if not, compute the new value, insert it in the store and return it
-    * This operation is not atomic.
-    * @param key the key
-    * @param op the computation yielding the value to associate with `key`, if
-    *           `key` is previously unbound.
+    * Fetch the value for the given key and if not, compute the new value, insert it in the store and return it This
+    * operation is not atomic.
+    * @param key
+    *   the key
+    * @param op
+    *   the computation yielding the value to associate with `key`, if `key` is previously unbound.
     */
   def getOrElseUpdate[E](key: K, op: => IO[E, V]): IO[E, V] =
     get(key).flatMap {
@@ -126,8 +142,10 @@ trait KeyValueStore[K, V] {
     }
 
   /**
-    * @param key the key
-    * @return an the value for the provided key when found, ''or'' otherwise on the error channel
+    * @param key
+    *   the key
+    * @return
+    *   an the value for the provided key when found, ''or'' otherwise on the error channel
     */
   def getOr[E](key: K, or: => E): IO[E, V] =
     get(key).flatMap(IO.fromOption(_, or))
@@ -135,25 +153,30 @@ trait KeyValueStore[K, V] {
   /**
     * Finds the first (key, value) pair that satisfies the predicate.
     *
-    * @param f the predicate to the satisfied
-    * @return the first (key, value) pair that satisfies the predicate or None if none are found
+    * @param f
+    *   the predicate to the satisfied
+    * @return
+    *   the first (key, value) pair that satisfies the predicate or None if none are found
     */
   def find(f: ((K, V)) => Boolean): UIO[Option[(K, V)]]
 
   /**
-    * Finds the first (key, value) pair  for which the given partial function is defined,
-    * and applies the partial function to it.
+    * Finds the first (key, value) pair for which the given partial function is defined, and applies the partial
+    * function to it.
     *
-    * @param pf the partial function
-    * @return the first (key, value) pair that satisfies the predicate or None if none are found
+    * @param pf
+    *   the partial function
+    * @return
+    *   the first (key, value) pair that satisfies the predicate or None if none are found
     */
   def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]]
 
   /**
-    * Finds the first (key, value) pair  for which the given partial function is defined,
-    * and applies the partial function to it. If nothing is found, returns on the error channel the passed ''or''.
+    * Finds the first (key, value) pair for which the given partial function is defined, and applies the partial
+    * function to it. If nothing is found, returns on the error channel the passed ''or''.
     *
-    * @param pf the partial function
+    * @param pf
+    *   the partial function
     */
   def collectFirstOr[A, E](pf: PartialFunction[(K, V), A])(or: => E): IO[E, A] =
     collectFirst(pf).flatMap(IO.fromOption(_, or))
@@ -161,8 +184,10 @@ trait KeyValueStore[K, V] {
   /**
     * Finds the first value in the store that satisfies the predicate.
     *
-    * @param f the predicate to the satisfied
-    * @return the first value that satisfies the predicate or None if none are found
+    * @param f
+    *   the predicate to the satisfied
+    * @return
+    *   the first value that satisfies the predicate or None if none are found
     */
   def findValue(f: V => Boolean): UIO[Option[V]] =
     entries.map(_.find { case (_, v) => f(v) }.map { case (_, v) => v })
@@ -182,12 +207,18 @@ object KeyValueStore {
     * Constructs a key value store backed by Akka Distributed Data with WriteAll and ReadLocal consistency
     * configuration. The store is backed by a LWWMap.
     *
-    * @param id              the ddata key
-    * @param clock           a clock function that determines the next timestamp for a provided value
-    * @param as              the implicitly underlying actor system
-    * @param config          the key value store configuration
-    * @tparam K the key type
-    * @tparam V the value type
+    * @param id
+    *   the ddata key
+    * @param clock
+    *   a clock function that determines the next timestamp for a provided value
+    * @param as
+    *   the implicitly underlying actor system
+    * @param config
+    *   the key value store configuration
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
     */
   final def distributed[K, V](
       id: String,
@@ -284,7 +315,8 @@ object KeyValueStore {
   /**
     * Constructs a local key-value store following a LRU policy
     *
-    * @param maxSize the max number of entries in the Map
+    * @param maxSize
+    *   the max number of entries in the Map
     */
   final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
     UIO.delay {

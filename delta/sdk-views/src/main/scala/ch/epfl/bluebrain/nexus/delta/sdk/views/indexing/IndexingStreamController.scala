@@ -31,9 +31,12 @@ class IndexingStreamController[V](viewType: String)(implicit as: ActorSystem[Not
   /**
     * Sends a ''command'' to the [[IndexingStreamCoordinator]]
     *
-    * @param id      the view identifier
-    * @param project the project where the view belongs
-    * @param command the command to send
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the project where the view belongs
+    * @param command
+    *   the command to send
     */
   def send(id: Iri, project: ProjectRef, command: IndexingViewCommand[V]): UIO[Unit] =
     UIO.delay {

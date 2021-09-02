@@ -14,10 +14,14 @@ import scala.annotation.nowarn
 /**
   * The configuration for quotas on projects
   *
-  * @param resources maximum number of resources per project
-  * @param events    maximum number of events per project
-  * @param enabled   flag to enable or disable project quotas
-  * @param custom    custom quotas for certain projects
+  * @param resources
+  *   maximum number of resources per project
+  * @param events
+  *   maximum number of events per project
+  * @param enabled
+  *   flag to enable or disable project quotas
+  * @param custom
+  *   custom quotas for certain projects
   */
 final case class QuotasConfig(
     private val resources: Option[Int],
@@ -44,8 +48,10 @@ object QuotasConfig {
   /**
     * The configuration for a single quota
     *
-    * @param resources maximum number of resources per project
-    * @param events    maximum number of events per project
+    * @param resources
+    *   maximum number of resources per project
+    * @param events
+    *   maximum number of events per project
     */
   final case class QuotaConfig(resources: Option[Int], events: Option[Int])
 

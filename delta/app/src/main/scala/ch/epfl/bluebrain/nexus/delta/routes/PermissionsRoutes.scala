@@ -32,8 +32,10 @@ import scala.annotation.nowarn
 /**
   * The permissions routes.
   *
-  * @param identities  the identities operations bundle
-  * @param permissions the permissions operations bundle
+  * @param identities
+  *   the identities operations bundle
+  * @param permissions
+  *   the permissions operations bundle
   */
 final class PermissionsRoutes(identities: Identities, permissions: Permissions, acls: Acls)(implicit
     baseUri: BaseUri,
@@ -126,7 +128,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
 object PermissionsRoutes {
 
   /**
-    * @return the [[Route]] for the permission resources
+    * @return
+    *   the [[Route]] for the permission resources
     */
   def apply(identities: Identities, permissions: Permissions, acls: Acls)(implicit
       baseUri: BaseUri,

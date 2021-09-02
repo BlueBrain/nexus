@@ -21,7 +21,8 @@ object Routes {
   private[this] val logger = Logger[this.type]
 
   /**
-    * @return an ExceptionHandler that ensures a descriptive message is returned to the caller
+    * @return
+    *   an ExceptionHandler that ensures a descriptive message is returned to the caller
     */
   final val exceptionHandler: ExceptionHandler = {
     def completeGeneric(): Route =
@@ -50,7 +51,8 @@ object Routes {
   }
 
   /**
-    * @return a complete RejectionHandler for all library and code rejections
+    * @return
+    *   a complete RejectionHandler for all library and code rejections
     */
   final val rejectionHandler: RejectionHandler = {
     val custom = RejectionHandling.apply { r: Rejection =>
@@ -63,7 +65,8 @@ object Routes {
   /**
     * Wraps the provided route with rejection and exception handling.
     *
-    * @param route the route to wrap
+    * @param route
+    *   the route to wrap
     */
   final def wrap(route: Route)(implicit hc: HttpConfig): Route =
     handleExceptions(exceptionHandler) {
@@ -77,7 +80,8 @@ object Routes {
   /**
     * Generates the routes for all the platform resources
     *
-    * @param storages the storages operations
+    * @param storages
+    *   the storages operations
     */
   def apply(
       storages: Storages[Task, AkkaSource]

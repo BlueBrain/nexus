@@ -13,17 +13,20 @@ import io.circe.Json
 sealed trait ResolverCommand extends Product with Serializable {
 
   /**
-    * @return the project where the resolver belongs to
+    * @return
+    *   the project where the resolver belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the resolver identifier
+    * @return
+    *   the resolver identifier
     */
   def id: Iri
 
   /**
-    * @return the identity associated to this command
+    * @return
+    *   the identity associated to this command
     */
   def subject: Subject
 }
@@ -32,11 +35,16 @@ object ResolverCommand {
 
   /**
     * Command to create a new resolver
-    * @param id                 the resolver identifier
-    * @param project            the project the resolver belongs to
-    * @param value             additional fields to configure the resolver
-    * @param source             the representation of the resolver as posted by the subject
-    * @param caller             the caller associated to this command
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param value
+    *   additional fields to configure the resolver
+    * @param source
+    *   the representation of the resolver as posted by the subject
+    * @param caller
+    *   the caller associated to this command
     */
   final case class CreateResolver(
       id: Iri,
@@ -50,12 +58,18 @@ object ResolverCommand {
 
   /**
     * Command to update an existing resolver
-    * @param id                the resolver identifier
-    * @param project           the project the resolver belongs to
-    * @param value             additional fields to configure the resolver
-    * @param source             the representation of the resolver as posted by the subject
-    * @param rev               the last known revision of the resolver
-    * @param caller            the caller associated to this command
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param value
+    *   additional fields to configure the resolver
+    * @param source
+    *   the representation of the resolver as posted by the subject
+    * @param rev
+    *   the last known revision of the resolver
+    * @param caller
+    *   the caller associated to this command
     */
   final case class UpdateResolver(
       id: Iri,
@@ -71,12 +85,18 @@ object ResolverCommand {
   /**
     * Command to tag a resolver
     *
-    * @param id        the resolver identifier
-    * @param project   the project the resolver belongs to
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the resolver
-    * @param subject   the identity associated to this command
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the resolver
+    * @param subject
+    *   the identity associated to this command
     */
   final case class TagResolver(
       id: Iri,
@@ -89,10 +109,14 @@ object ResolverCommand {
 
   /**
     * Command to deprecate a resolver
-    * @param id      the resolver identifier
-    * @param project the project the resolver belongs to
-    * @param rev     the last known revision of the resolver
-    * @param subject the identity associated to this command
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param rev
+    *   the last known revision of the resolver
+    * @param subject
+    *   the identity associated to this command
     */
   final case class DeprecateResolver(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends ResolverCommand
 

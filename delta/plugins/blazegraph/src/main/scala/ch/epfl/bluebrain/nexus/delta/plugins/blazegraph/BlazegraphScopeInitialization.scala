@@ -15,8 +15,10 @@ import monix.bio.{IO, UIO}
 /**
   * The default creation of the default SparqlView as part of the project initialization.
   *
-  * @param views          the BlazegraphViews module
-  * @param serviceAccount the subject that will be recorded when performing the initialization
+  * @param views
+  *   the BlazegraphViews module
+  * @param serviceAccount
+  *   the subject that will be recorded when performing the initialization
   */
 class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {

@@ -18,9 +18,12 @@ class ProjectionProgressStreamOps[A](val stream: Stream[Task, ProjectionProgress
 
   /**
     * Record view metrics in Kamon
-    * @param view           the view
-    * @param viewType       the view type
-    * @param additionalTags additional Kamon tags
+    * @param view
+    *   the view
+    * @param viewType
+    *   the view type
+    * @param additionalTags
+    *   additional Kamon tags
     */
   def viewMetrics(
       view: ViewIndex[_],

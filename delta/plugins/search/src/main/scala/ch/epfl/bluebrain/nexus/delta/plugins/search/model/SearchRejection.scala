@@ -14,7 +14,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of search rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class SearchRejection(val reason: String) extends Product with Serializable
 

@@ -22,14 +22,17 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 /**
-  * Event source based processor based on a Akka behavior which accepts and evaluates commands
-  * and then applies the resulting events on the current state
+  * Event source based processor based on a Akka behavior which accepts and evaluates commands and then applies the
+  * resulting events on the current state
   *
-  * @param entityId            The id of the entity
-  * @param definition          Defines the behavior to adopt for the given events
-  * @param stopAfterInactivity The function to apply when the actor is being stopped,
-  *                            implies passivation for sharded actors
-  * @param config              The configuration
+  * @param entityId
+  *   The id of the entity
+  * @param definition
+  *   Defines the behavior to adopt for the given events
+  * @param stopAfterInactivity
+  *   The function to apply when the actor is being stopped, implies passivation for sharded actors
+  * @param config
+  *   The configuration
   */
 private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
     entityId: String,
@@ -157,19 +160,15 @@ private[processor] class EventSourceProcessor[State, Command, Event, Rejection](
   }
 
   /**
-    * Behavior of the actor responsible for handling commands and events.
-    * There are multiple behaviors, each of them responsible for a different stage of a command evaluation.
+    * Behavior of the actor responsible for handling commands and events. There are multiple behaviors, each of them
+    * responsible for a different stage of a command evaluation.
     *
     * The following is a diagram of the different behaviors and their order:
     *
-    * ┌--------┐        ┌---------------┐        ┌------------┐         ┌-----------┐
-    * │        │        │               │        │            │ !dryRun │           │
-    * │ active +--------> fetchingState │--------> evaluating │---------> appending │---┐
-    * │        │        │               │        │            │---┐     │           │   │
-    * └---^----┘        └---------------┘        └------------┘   │     └-----------┘   │
-    *     │                                                       │                     │
-    *     └-------------------------------------------------------┴---------------------┘
-    *                                        dryRun
+    * ┌--------┐ ┌---------------┐ ┌------------┐ ┌-----------┐ │ │ │ │ │ │ !dryRun │ │ │ active +-------->
+    * fetchingState │--------> evaluating │---------> appending │---┐ │ │ │ │ │ │---┐ │ │ │ └---^----┘ └---------------┘
+    * └------------┘ │ └-----------┘ │ │ │ │
+    * └-------------------------------------------------------┴---------------------┘ dryRun
     */
   def behavior(): Behavior[ProcessorCommand] =
     Behaviors.setup[ProcessorCommand] { context =>
@@ -437,10 +436,13 @@ object EventSourceProcessor {
   /**
     * Create persistence id for an entity.
     *
-    * @param entityType entity type
-    * @param entityId   entity id
+    * @param entityType
+    *   entity type
+    * @param entityId
+    *   entity id
     *
-    * @return persistence ID for the entity
+    * @return
+    *   persistence ID for the entity
     */
   def persistenceId(entityType: String, entityId: String): String =
     s"$entityType-${UrlUtils.encode(entityId)}"
@@ -475,13 +477,16 @@ object EventSourceProcessor {
   }
 
   /**
-    * Event source processor relying on akka-persistence
-    * so than its state can be recovered
+    * Event source processor relying on akka-persistence so than its state can be recovered
     *
-    * @param entityId            the entity identifier
-    * @param definition          the event definition
-    * @param stopAfterInactivity the behavior to adopt when we stop the actor
-    * @param config              the config
+    * @param entityId
+    *   the entity identifier
+    * @param definition
+    *   the event definition
+    * @param stopAfterInactivity
+    *   the behavior to adopt when we stop the actor
+    * @param config
+    *   the config
     */
   def persistent[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,
@@ -499,10 +504,14 @@ object EventSourceProcessor {
   /**
     * Event source processor without persistence: if the processor is lost, so is its state
     *
-    * @param entityId            the entity identifier
-    * @param definition          the event definition
-    * @param stopAfterInactivity the behavior to adopt when we stop the actor
-    * @param config              the config
+    * @param entityId
+    *   the entity identifier
+    * @param definition
+    *   the event definition
+    * @param stopAfterInactivity
+    *   the behavior to adopt when we stop the actor
+    * @param config
+    *   the config
     */
   def transient[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       entityId: String,

@@ -21,7 +21,8 @@ trait Search {
   /**
     * Queries the underlying elasticsearch search indices that the ''caller'' has access to
     *
-    * @param payload the query payload
+    * @param payload
+    *   the query payload
     */
   def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json]
 }

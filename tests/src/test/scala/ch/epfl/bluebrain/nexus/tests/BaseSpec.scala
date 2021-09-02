@@ -128,13 +128,16 @@ trait BaseSpec
   }
 
   /**
-    * Init a new realm both in Keycloak and in Delta and
-    * Retrieve tokens for the new clients and users
+    * Init a new realm both in Keycloak and in Delta and Retrieve tokens for the new clients and users
     *
-    * @param realm the name of the realm to create
-    * @param identity the identity responsible of creating the realm in delta
-    * @param client the service account to create for the realm
-    * @param users the users to create in the realm
+    * @param realm
+    *   the name of the realm to create
+    * @param identity
+    *   the identity responsible of creating the realm in delta
+    * @param client
+    *   the service account to create for the realm
+    * @param users
+    *   the users to create in the realm
     * @return
     */
   def initRealm(

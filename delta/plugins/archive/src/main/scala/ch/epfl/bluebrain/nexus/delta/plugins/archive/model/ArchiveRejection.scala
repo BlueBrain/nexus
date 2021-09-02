@@ -29,7 +29,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of archive rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class ArchiveRejection(val reason: String) extends Product with Serializable
 
@@ -38,8 +39,10 @@ object ArchiveRejection {
   /**
     * Rejection returned when attempting to create an archive but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends ArchiveRejection(s"Resource '$id' already exists in project '$project'.")
@@ -47,9 +50,12 @@ object ArchiveRejection {
   /**
     * Rejection returned when there's at least a path collision in the archive.
     *
-    * @param duplicates the paths that have been repeated
-    * @param invalids   the paths that are invalids
-    * @param longIds    long ids for which a path must be defined
+    * @param duplicates
+    *   the paths that have been repeated
+    * @param invalids
+    *   the paths that are invalids
+    * @param longIds
+    *   long ids for which a path must be defined
     */
   final case class InvalidResourceCollection(
       duplicates: Set[AbsolutePath],
@@ -75,17 +81,20 @@ object ArchiveRejection {
   /**
     * Rejection returned when an archive doesn't exist.
     *
-    * @param id      the archive id
-    * @param project the archive parent project
+    * @param id
+    *   the archive id
+    * @param project
+    *   the archive parent project
     */
   final case class ArchiveNotFound(id: Iri, project: ProjectRef)
       extends ArchiveRejection(s"Archive '$id' not found in project '$project'.")
 
   /**
-    * Rejection returned when attempting to interact with an Archive while providing an id that cannot be
-    * resolved to an Iri.
+    * Rejection returned when attempting to interact with an Archive while providing an id that cannot be resolved to an
+    * Iri.
     *
-    * @param id the archive identifier
+    * @param id
+    *   the archive identifier
     */
   final case class InvalidArchiveId(id: String)
       extends ArchiveRejection(s"Archive identifier '$id' cannot be expanded to an Iri.")
@@ -93,24 +102,27 @@ object ArchiveRejection {
   /**
     * Wrapper for project rejections.
     *
-    * @param rejection the underlying project rejection
+    * @param rejection
+    *   the underlying project rejection
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends ArchiveRejection(rejection.reason)
 
   /**
-    * Rejection returned when the returned state is the initial state after a successful command evaluation.
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
-    * non initial state.
+    * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This
+    * should never happen since the evaluation method already guarantees that the next function returns a non initial
+    * state.
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ArchiveRejection(s"Unexpected initial state for Archive '$id' of project '$project'.")
 
   /**
-    * Rejection returned when attempting to create an Archive where the passed id does not match the id on the
-    * source json document.
+    * Rejection returned when attempting to create an Archive where the passed id does not match the id on the source
+    * json document.
     *
-    * @param id       the archive identifier
-    * @param sourceId the archive identifier in the source json document
+    * @param id
+    *   the archive identifier
+    * @param sourceId
+    *   the archive identifier in the source json document
     */
   final case class UnexpectedArchiveId(id: Iri, sourceId: Iri)
       extends ArchiveRejection(
@@ -120,7 +132,8 @@ object ArchiveRejection {
   /**
     * Rejection returned when attempting to decode an expanded JsonLD as an Archive.
     *
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends ArchiveRejection(error.getMessage)
 
@@ -135,8 +148,10 @@ object ArchiveRejection {
   /**
     * Rejection returned when a referenced resource could not be found.
     *
-    * @param ref     the resource reference
-    * @param project the project reference
+    * @param ref
+    *   the resource reference
+    * @param project
+    *   the project reference
     */
   final case class ResourceNotFound(ref: ResourceRef, project: ProjectRef)
       extends ArchiveRejection(s"The resource '${ref.toString}' was not found in project '$project'.")
@@ -144,8 +159,10 @@ object ArchiveRejection {
   /**
     * Rejection returned when the caller does not have permission to access a referenced resource.
     *
-    * @param address    the address on which the permission was checked
-    * @param permission the permission that was required
+    * @param address
+    *   the address on which the permission was checked
+    * @param permission
+    *   the permission that was required
     */
   final case class AuthorizationFailed(address: AclAddress, permission: Permission)
       extends ArchiveRejection(
@@ -155,7 +172,8 @@ object ArchiveRejection {
   /**
     * Wrapper for file rejections.
     *
-    * @param rejection the underlying file rejection
+    * @param rejection
+    *   the underlying file rejection
     */
   final case class WrappedFileRejection(rejection: FileRejection) extends ArchiveRejection(rejection.reason)
 

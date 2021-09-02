@@ -12,7 +12,8 @@ import scala.annotation.nowarn
 /**
   * Enumeration of runtime errors.
   *
-  * @param msg a description of the error
+  * @param msg
+  *   a description of the error
   */
 
 sealed abstract class StorageError(val msg: String) extends Exception with Product with Serializable {
@@ -25,7 +26,8 @@ object StorageError {
   /**
     * Generic wrapper for kg errors that should not be exposed to clients.
     *
-    * @param reason the underlying error reason
+    * @param reason
+    *   the underlying error reason
     */
   final case class InternalError(reason: String) extends StorageError(reason)
 
@@ -43,15 +45,18 @@ object StorageError {
   /**
     * Signals the inability to connect to an underlying service to perform a request.
     *
-    * @param msg a human readable description of the cause
+    * @param msg
+    *   a human readable description of the cause
     */
   final case class DownstreamServiceError(override val msg: String) extends StorageError(msg)
 
   /**
     * Signals an attempt to interact with a path that doesn't exist.
     *
-    * @param name the storage bucket name
-    * @param path the relative path to the file
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the relative path to the file
     */
   final case class PathNotFound(name: String, path: Path)
       extends StorageError(
@@ -61,8 +66,10 @@ object StorageError {
   /**
     * Signals an attempt to interact with a path that is invalid.
     *
-    * @param name the storage bucket name
-    * @param path the relative path to the file
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the relative path to the file
     */
   final case class PathInvalid(name: String, path: Path)
       extends StorageError(
@@ -72,8 +79,10 @@ object StorageError {
   /**
     * Signals that the system call to the 'nexus-fixer' binary failed.
     *
-    * @param path    the absolute path to the file
-    * @param message the error message returned by the system call
+    * @param path
+    *   the absolute path to the file
+    * @param message
+    *   the error message returned by the system call
     */
   final case class PermissionsFixingFailed(path: String, message: String)
       extends StorageError(s"Fixing permissions on the path '$path' failed with an error: $message")
@@ -81,7 +90,8 @@ object StorageError {
   /**
     * Signals an internal timeout.
     *
-    * @param msg a descriptive message on the operation that timed out
+    * @param msg
+    *   a descriptive message on the operation that timed out
     */
   final case class OperationTimedOut(override val msg: String) extends StorageError(msg)
 

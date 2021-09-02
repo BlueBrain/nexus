@@ -25,12 +25,14 @@ import scala.annotation.nowarn
 sealed trait SchemaEvent extends ProjectScopedEvent {
 
   /**
-    * @return the schema identifier
+    * @return
+    *   the schema identifier
     */
   def id: Iri
 
   /**
-    * @return the project where the schema belongs to
+    * @return
+    *   the project where the schema belongs to
     */
   def project: ProjectRef
 
@@ -41,14 +43,22 @@ object SchemaEvent {
   /**
     * Event representing a schema creation.
     *
-    * @param id          the schema identifier
-    * @param project     the project where the schema belongs
-    * @param source      the representation of the schema as posted by the subject
-    * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the list of expanded JSON-LD representation of the schema with the imports resolutions applied
-    * @param rev         the schema revision
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param source
+    *   the representation of the schema as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the schema
+    * @param expanded
+    *   the list of expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class SchemaCreated(
       id: Iri,
@@ -64,14 +74,22 @@ object SchemaEvent {
   /**
     * Event representing a schema modification.
     *
-    * @param id          the schema identifier
-    * @param project     the project where the schema belongs
-    * @param source      the representation of the schema as posted by the subject
-    * @param compacted   the compacted JSON-LD representation of the schema
-    * @param expanded    the list of expanded JSON-LD representation of the schema with the imports resolutions applied
-    * @param rev         the schema revision
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param source
+    *   the representation of the schema as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the schema
+    * @param expanded
+    *   the list of expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class SchemaUpdated(
       id: Iri,
@@ -87,13 +105,20 @@ object SchemaEvent {
   /**
     * Event representing a tag addition to a schema.
     *
-    * @param id        the schema identifier
-    * @param project   the project where the schema belongs
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''targetRev''
-    * @param rev       the schema revision
-    * @param instant   the instant when this event was created
-    * @param subject   the subject which created this event
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''targetRev''
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class SchemaTagAdded(
       id: Iri,
@@ -108,11 +133,16 @@ object SchemaEvent {
   /**
     * Event representing a schema deprecation.
     *
-    * @param id          the schema identifier
-    * @param project     the project where the schema belongs
-    * @param rev         the schema revision
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class SchemaDeprecated(
       id: Iri,

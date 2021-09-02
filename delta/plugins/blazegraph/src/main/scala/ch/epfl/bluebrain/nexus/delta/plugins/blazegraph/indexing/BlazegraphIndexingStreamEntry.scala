@@ -88,8 +88,8 @@ final case class BlazegraphIndexingStreamEntry(
 object BlazegraphIndexingStreamEntry {
 
   /**
-    * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]].
-    * It generates an [[IndexingData]] for blazegraph indexing
+    * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]]. It generates an
+    * [[IndexingData]] for blazegraph indexing
     */
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]

@@ -10,7 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * Schema specific [[EventExchange]] implementation.
   *
-  * @param schemas the schemas module
+  * @param schemas
+  *   the schemas module
   */
 class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends EventExchange {
 

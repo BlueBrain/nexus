@@ -16,7 +16,8 @@ import scala.collection.immutable.VectorMap
 
 /**
   * Report describing how the resource resolution went for each resolver
-  * @param history how the resolution went
+  * @param history
+  *   how the resolution went
   */
 final case class ResourceResolutionReport(history: Vector[ResolverReport])
 
@@ -24,7 +25,8 @@ object ResourceResolutionReport {
 
   /**
     * Creates a [[ResourceResolutionReport]]
-    * @param history the different reports for each resolver
+    * @param history
+    *   the different reports for each resolver
     */
   def apply(history: ResolverReport*): ResourceResolutionReport = new ResourceResolutionReport(Vector.from(history))
 
@@ -34,12 +36,14 @@ object ResourceResolutionReport {
   sealed trait ResolverReport extends Product with Serializable {
 
     /**
-      * @return the resolver
+      * @return
+      *   the resolver
       */
     def resolverId: Iri
 
     /**
-      * @return Causes of the failed attempts to resolve a resource with this resolver
+      * @return
+      *   Causes of the failed attempts to resolve a resource with this resolver
       */
     def rejections: VectorMap[ProjectRef, ResolverResolutionRejection]
 
@@ -50,9 +54,12 @@ object ResourceResolutionReport {
 
     /**
       * Create a [[ResolverSuccessReport]]
-      * @param resolverId the resolver
-      * @param resourceProject the project where the resource has been resolved
-      * @param rejections the eventual rejections
+      * @param resolverId
+      *   the resolver
+      * @param resourceProject
+      *   the project where the resource has been resolved
+      * @param rejections
+      *   the eventual rejections
       * @return
       */
     def success(
@@ -64,9 +71,12 @@ object ResourceResolutionReport {
 
     /**
       * Create a [[ResolverFailedReport]]
-      * @param resolverId the resolver
-      * @param first  the mandatory first rejection
-      * @param others other rejections that may have happened for other projects
+      * @param resolverId
+      *   the resolver
+      * @param first
+      *   the mandatory first rejection
+      * @param others
+      *   other rejections that may have happened for other projects
       * @return
       */
     def failed(

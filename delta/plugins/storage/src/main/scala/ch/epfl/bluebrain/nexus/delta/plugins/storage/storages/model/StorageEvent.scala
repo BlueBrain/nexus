@@ -28,17 +28,20 @@ import scala.annotation.nowarn
 sealed trait StorageEvent extends ProjectScopedEvent {
 
   /**
-    * @return the storage identifier
+    * @return
+    *   the storage identifier
     */
   def id: Iri
 
   /**
-    * @return the project where the storage belongs to
+    * @return
+    *   the project where the storage belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the storage type
+    * @return
+    *   the storage type
     */
   def tpe: StorageType
 }
@@ -48,11 +51,16 @@ object StorageEvent {
   /**
     * Event for the creation of a storage
     *
-    * @param id      the storage identifier
-    * @param project the project the storage belongs to
-    * @param value   additional fields to configure the storage
-    * @param instant the instant this event was created
-    * @param subject the subject which created this event
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param value
+    *   additional fields to configure the storage
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class StorageCreated(
       id: Iri,
@@ -69,12 +77,18 @@ object StorageEvent {
   /**
     * Event for the modification of an existing storage
     *
-    * @param id        the storage identifier
-    * @param project   the project the storage belongs to
-    * @param value     additional fields to configure the storage
-    * @param rev       the last known revision of the storage
-    * @param instant   the instant this event was created
-    * @param subject   the subject which created this event
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param value
+    *   additional fields to configure the storage
+    * @param rev
+    *   the last known revision of the storage
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class StorageUpdated(
       id: Iri,
@@ -91,14 +105,22 @@ object StorageEvent {
   /**
     * Event for to tag a storage
     *
-    * @param id        the storage identifier
-    * @param project   the project the storage belongs to
-    * @param tpe       the storage type
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the storage
-    * @param instant   the instant this event was created
-    * @param subject   the subject creating this event
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param tpe
+    *   the storage type
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the storage
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class StorageTagAdded(
       id: Iri,
@@ -114,12 +136,18 @@ object StorageEvent {
   /**
     * Event for the deprecation of a storage
     *
-    * @param id      the storage identifier
-    * @param project the project the storage belongs to
-    * @param tpe     the storage type
-    * @param rev     the last known revision of the storage
-    * @param instant the instant this event was created
-    * @param subject the subject creating this event
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project the storage belongs to
+    * @param tpe
+    *   the storage type
+    * @param rev
+    *   the last known revision of the storage
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class StorageDeprecated(
       id: Iri,

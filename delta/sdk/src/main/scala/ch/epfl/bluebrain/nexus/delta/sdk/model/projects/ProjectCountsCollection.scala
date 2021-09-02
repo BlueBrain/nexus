@@ -23,16 +23,17 @@ final case class ProjectCountsCollection(value: Map[ProjectRef, ProjectCount]) e
   /**
     * Attempts to fetch the counts for a single project
     *
-    * @param projectRef the project reference
+    * @param projectRef
+    *   the project reference
     */
   def get(projectRef: ProjectRef): Option[ProjectCount] =
     value.get(projectRef)
 
   /**
-    * Increments the counts for the passed project ''projectRef''.
-    * The remaining instant on that project will be the latest, between the already existing and the passed ''instant''.
-    * The remaining event count will be the current event count (if some) + 1
-    * The remaining resources count will be the current resources count (if some) + 1 (when rev == 1) or + 0 (when rev > 1)
+    * Increments the counts for the passed project ''projectRef''. The remaining instant on that project will be the
+    * latest, between the already existing and the passed ''instant''. The remaining event count will be the current
+    * event count (if some) + 1 The remaining resources count will be the current resources count (if some) + 1 (when
+    * rev == 1) or + 0 (when rev > 1)
     */
   def increment(projectRef: ProjectRef, rev: Long, instant: Instant): ProjectCountsCollection = {
     val resourcesIncrement = if (rev == 1L) 1L else 0L
@@ -50,9 +51,12 @@ object ProjectCountsCollection {
   /**
     * The counts for a single project
     *
-    * @param events                     the number of events existing on the project
-    * @param resources                  the number of resources existing on the project
-    * @param lastProcessedEventDateTime the time when the last count entry was created
+    * @param events
+    *   the number of events existing on the project
+    * @param resources
+    *   the number of resources existing on the project
+    * @param lastProcessedEventDateTime
+    *   the time when the last count entry was created
     */
   final case class ProjectCount(events: Long, resources: Long, lastProcessedEventDateTime: Instant)
 

@@ -60,8 +60,10 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
     *
     * If some keys are present in both documents, the passed one will override the current ones.
     *
-    * @param rootId the new root id of the resulting document
-    * @param that   the document to merge with the current one
+    * @param rootId
+    *   the new root id of the resulting document
+    * @param that
+    *   the document to merge with the current one
     */
   def merge(rootId: IriOrBNode, that: ExpandedJsonLd): ExpandedJsonLd =
     ExpandedJsonLd(rootId, obj deepMerge that.obj)
@@ -69,7 +71,8 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Merges the current document with the passed ''that'' on the matching ids while keeping the ''rootId''.
     *
-    * @see [[merge(rootId, that)]]
+    * @see
+    *   [[merge(rootId, that)]]
     */
   def merge(that: ExpandedJsonLd): ExpandedJsonLd =
     merge(rootId, that)
@@ -77,7 +80,8 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Replaces the root id value and returns a new [[ExpandedJsonLd]]
     *
-    * @param id the new root id value
+    * @param id
+    *   the new root id value
     */
   def replaceId(id: IriOrBNode): ExpandedJsonLd =
     id match {
@@ -162,7 +166,8 @@ object ExpandedJsonLd {
     * In case of multiple top level Json Object entries present after expansion has been applied, the first one with an
     * [[Iri]] is selected as the root id.
     *
-    * @param input the input Json document
+    * @param input
+    *   the input Json document
     */
   final def apply(input: Json)(implicit
       api: JsonLdApi,
@@ -196,7 +201,8 @@ object ExpandedJsonLd {
   /**
     * Constructs a [[ExpandedJsonLd]].
     *
-    * @param value the already expanded document
+    * @param value
+    *   the already expanded document
     */
   final def expanded(value: Json): Either[RdfError, ExpandedJsonLd] =
     for {
@@ -228,8 +234,10 @@ object ExpandedJsonLd {
   /**
     * Unsafely constructs a [[ExpandedJsonLd]].
     *
-    * @param rootId   the root id
-    * @param expanded the already expanded document
+    * @param rootId
+    *   the root id
+    * @param expanded
+    *   the already expanded document
     */
   final def unsafe(rootId: IriOrBNode, expanded: JsonObject): ExpandedJsonLd =
     ExpandedJsonLd(rootId, expanded)

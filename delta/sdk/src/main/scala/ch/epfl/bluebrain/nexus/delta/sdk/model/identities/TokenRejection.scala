@@ -15,7 +15,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of token rejections.
   *
-  * @param reason a descriptive message for reasons why a token is rejected by the system
+  * @param reason
+  *   a descriptive message for reasons why a token is rejected by the system
   */
 sealed abstract class TokenRejection(val reason: String) extends Product with Serializable
 

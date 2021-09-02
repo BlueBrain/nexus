@@ -12,22 +12,27 @@ import fs2.Stream
 import monix.bio.{IO, Task}
 
 /**
-  * An event log that reads events from a [[Stream]] and transforms each event to JSON in preparation for consumption by SSE routes
+  * An event log that reads events from a [[Stream]] and transforms each event to JSON in preparation for consumption by
+  * SSE routes
   */
 trait SseEventLog {
 
   /**
     * Get stream of all events as ''T''.
     *
-    * @param offset the offset to start from
+    * @param offset
+    *   the offset to start from
     */
   def stream(offset: Offset): Stream[Task, Envelope[JsonValue.Aux[Event]]]
 
   /**
-    * Get stream of events inside an organization as ''T'', transforming the error from ''OrganizationRejection'' to ''R''.
+    * Get stream of events inside an organization as ''T'', transforming the error from ''OrganizationRejection'' to
+    * ''R''.
     *
-    * @param org    the organization label
-    * @param offset the offset to start from
+    * @param org
+    *   the organization label
+    * @param offset
+    *   the offset to start from
     */
   def stream[R](
       org: Label,
@@ -37,8 +42,10 @@ trait SseEventLog {
   /**
     * Get stream of events inside a project as ''T'', transforming the error from ''ProjectRejection'' to ''R''.
     *
-    * @param project the project reference
-    * @param offset  the offset to start from
+    * @param project
+    *   the project reference
+    * @param offset
+    *   the offset to start from
     */
   def stream[R](
       project: ProjectRef,
@@ -49,8 +56,8 @@ trait SseEventLog {
 object SseEventLog {
 
   /**
-    * An event log that reads events from a [[Stream]] and transforms each event to JSON-LD that is available through ''exchanges''.
-    * The JSON-LD events are then used for consumption by SSE routes
+    * An event log that reads events from a [[Stream]] and transforms each event to JSON-LD that is available through
+    * ''exchanges''. The JSON-LD events are then used for consumption by SSE routes
     */
   def apply(
       eventLog: EventLog[Envelope[Event]],
@@ -61,9 +68,8 @@ object SseEventLog {
     apply(eventLog, orgs, projects, exchanges, Event.eventTag)
 
   /**
-    * An event log that reads events from a [[Stream]] filtered by tag ''tag'' and transforms each event to JSON-LD
-    * that is available through ''exchanges''.
-    * The JSON-LD events are then used for consumption by SSE routes
+    * An event log that reads events from a [[Stream]] filtered by tag ''tag'' and transforms each event to JSON-LD that
+    * is available through ''exchanges''. The JSON-LD events are then used for consumption by SSE routes
     */
   def apply(
       eventLog: EventLog[Envelope[Event]],

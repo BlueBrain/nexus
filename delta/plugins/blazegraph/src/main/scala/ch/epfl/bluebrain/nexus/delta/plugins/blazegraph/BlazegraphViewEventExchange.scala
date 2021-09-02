@@ -10,7 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * BlazegraphView specific [[EventExchange]] implementation.
   *
-  * @param views the blazegraph module
+  * @param views
+  *   the blazegraph module
   */
 class BlazegraphViewEventExchange(views: BlazegraphViews)(implicit base: BaseUri) extends EventExchange {
 

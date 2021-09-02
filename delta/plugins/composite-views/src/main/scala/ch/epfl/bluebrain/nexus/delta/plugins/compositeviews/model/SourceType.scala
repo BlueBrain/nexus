@@ -10,12 +10,14 @@ import io.circe.Encoder
 sealed trait SourceType {
 
   /**
-    * @return the type id
+    * @return
+    *   the type id
     */
   def tpe: Iri
 
   /**
-    * @return the full set of types
+    * @return
+    *   the full set of types
     */
   def types: Set[Iri] = Set(tpe, nxv + "CompositeViewSource")
 

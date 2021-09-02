@@ -16,13 +16,17 @@ import monix.bio.IO
 trait BlazegraphQuery {
 
   /**
-    * Queries the blazegraph common namespace of the passed composite view
-    * We check for the caller to have the necessary query permissions on all the views' projections before performing the query.
+    * Queries the blazegraph common namespace of the passed composite view We check for the caller to have the necessary
+    * query permissions on all the views' projections before performing the query.
     *
-    * @param id           the id of the composite view either in Iri or aliased form
-    * @param project      the project where the view exists
-    * @param query        the sparql query to run
-    * @param responseType the desired response type
+    * @param id
+    *   the id of the composite view either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the sparql query to run
+    * @param responseType
+    *   the desired response type
     */
   def query[R <: SparqlQueryResponse](
       id: IdSegment,
@@ -32,14 +36,19 @@ trait BlazegraphQuery {
   )(implicit caller: Caller): IO[CompositeViewRejection, R]
 
   /**
-    * Queries the blazegraph namespace of the passed composite views' projection,
-    * We check for the caller to have the necessary query permissions on the views' projections before performing the query.
+    * Queries the blazegraph namespace of the passed composite views' projection, We check for the caller to have the
+    * necessary query permissions on the views' projections before performing the query.
     *
-    * @param id           the id of the composite view either in Iri or aliased form
-    * @param projectionId the id of the composite views' target projection either in Iri or aliased form
-    * @param project      the project where the view exists
-    * @param query        the sparql query to run
-    * @param responseType the desired response type
+    * @param id
+    *   the id of the composite view either in Iri or aliased form
+    * @param projectionId
+    *   the id of the composite views' target projection either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the sparql query to run
+    * @param responseType
+    *   the desired response type
     */
   def query[R <: SparqlQueryResponse](
       id: IdSegment,
@@ -50,13 +59,17 @@ trait BlazegraphQuery {
   )(implicit caller: Caller): IO[CompositeViewRejection, R]
 
   /**
-    * Queries all the blazegraph namespaces of the passed composite views' projection
-    * We check for the caller to have the necessary query permissions on the views' projections before performing the query.
+    * Queries all the blazegraph namespaces of the passed composite views' projection We check for the caller to have
+    * the necessary query permissions on the views' projections before performing the query.
     *
-    * @param id           the id of the composite view either in Iri or aliased form
-    * @param project      the project where the view exists
-    * @param query        the sparql query to run
-    * @param responseType the desired response type
+    * @param id
+    *   the id of the composite view either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the sparql query to run
+    * @param responseType
+    *   the desired response type
     */
   def queryProjections[R <: SparqlQueryResponse](
       id: IdSegment,

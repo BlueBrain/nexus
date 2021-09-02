@@ -14,9 +14,12 @@ trait IndexingAction {
   /**
     * Perform an indexing action based on the indexing parameter.
     *
-    * @param project   the project in which the resource is located
-    * @param res       the resource to perform the indexing action for
-    * @param indexingMode  the execution type
+    * @param project
+    *   the project in which the resource is located
+    * @param res
+    *   the resource to perform the indexing action for
+    * @param indexingMode
+    *   the execution type
     */
   def apply[A, AA, R](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode)(implicit
       eventExchangeValueMapper: Mapper[ResourceF[A], EventExchangeValue[A, AA]],
@@ -27,9 +30,12 @@ trait IndexingAction {
   /**
     * Perform an indexing action based on the indexing parameter.
     *
-    * @param project   the project in which the resource is located
-    * @param res       the resource to perform the indexing action for
-    * @param indexingMode  the execution type
+    * @param project
+    *   the project in which the resource is located
+    * @param res
+    *   the resource to perform the indexing action for
+    * @param indexingMode
+    *   the execution type
     */
   def apply[R](
       project: ProjectRef,
@@ -43,8 +49,10 @@ trait IndexingAction {
 
   /**
     * Execute the indexing action.
-    * @param project        the project in which the resource is located
-    * @param res            the resource to perform the indexing action for
+    * @param project
+    *   the project in which the resource is located
+    * @param res
+    *   the resource to perform the indexing action for
     */
   protected def execute(project: ProjectRef, res: EventExchangeValue[_, _]): IO[IndexingActionFailed, Unit]
 
@@ -53,7 +61,7 @@ trait IndexingAction {
 object IndexingAction {
 
   /**
-    * An instance of [[IndexingAction]] which executes other [[IndexingAction]]s in parallel.
+    * An instance of [[IndexingAction]] which executes other [[IndexingAction]] s in parallel.
     */
   final class AggregateIndexingAction(private val internal: Seq[IndexingAction]) extends IndexingAction {
 

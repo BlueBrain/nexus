@@ -16,10 +16,14 @@ import scala.annotation.nowarn
 /**
   * Holds all the metadata information related to the file.
   *
-  * @param location  the file location
-  * @param bytes     the size of the file file in bytes
-  * @param digest    the digest information of the file
-  * @param mediaType the media type of the file
+  * @param location
+  *   the file location
+  * @param bytes
+  *   the size of the file file in bytes
+  * @param digest
+  *   the digest information of the file
+  * @param mediaType
+  *   the media type of the file
   */
 final case class RemoteDiskStorageFileAttributes(
     location: Uri,

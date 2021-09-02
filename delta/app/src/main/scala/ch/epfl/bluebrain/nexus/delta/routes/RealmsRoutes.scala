@@ -146,7 +146,8 @@ object RealmsRoutes {
   }
 
   /**
-    * @return the [[Route]] for realms
+    * @return
+    *   the [[Route]] for realms
     */
   def apply(identities: Identities, realms: Realms, acls: Acls)(implicit
       baseUri: BaseUri,

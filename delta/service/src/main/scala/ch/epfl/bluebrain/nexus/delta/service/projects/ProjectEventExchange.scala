@@ -13,7 +13,8 @@ import monix.bio.{IO, UIO}
 /**
   * Project specific [[EventExchange]] implementation for handling indexing of projects alongside its resources.
   *
-  * @param projects the projects module
+  * @param projects
+  *   the projects module
   */
 class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultApiMappings: ApiMappings)
     extends EventExchange {

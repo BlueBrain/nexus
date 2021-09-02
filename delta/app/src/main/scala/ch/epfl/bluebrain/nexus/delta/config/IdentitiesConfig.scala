@@ -7,7 +7,8 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * The identities module config.
   *
-  * @param groups the groups configuration
+  * @param groups
+  *   the groups configuration
   */
 final case class IdentitiesConfig(
     groups: GroupsConfig

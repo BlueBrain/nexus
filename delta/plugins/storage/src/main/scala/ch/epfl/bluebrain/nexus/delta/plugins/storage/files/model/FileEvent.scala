@@ -30,12 +30,14 @@ import scala.annotation.nowarn
 sealed trait FileEvent extends ProjectScopedEvent {
 
   /**
-    * @return the file identifier
+    * @return
+    *   the file identifier
     */
   def id: Iri
 
   /**
-    * @return the project where the file belongs to
+    * @return
+    *   the project where the file belongs to
     */
   def project: ProjectRef
 
@@ -46,13 +48,20 @@ object FileEvent {
   /**
     * Event for the creation of a file
     *
-    * @param id          the file identifier
-    * @param project     the project the file belongs to
-    * @param storage     the reference to the used storage
-    * @param storageType the type of storage
-    * @param attributes  the file attributes
-    * @param instant     the instant this event was created
-    * @param subject     the subject which created this event
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
+    * @param attributes
+    *   the file attributes
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class FileCreated(
       id: Iri,
@@ -68,14 +77,22 @@ object FileEvent {
   /**
     * Event for the modification of an existing file
     *
-    * @param id          the file identifier
-    * @param project     the project the file belongs to
-    * @param storage     the reference to the remote storage used
-    * @param storageType the type of storage
-    * @param attributes  the file attributes
-    * @param rev         the last known revision of the file
-    * @param instant     the instant this event was created
-    * @param subject     the subject which created this event
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the remote storage used
+    * @param storageType
+    *   the type of storage
+    * @param attributes
+    *   the file attributes
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class FileUpdated(
       id: Iri,
@@ -89,18 +106,26 @@ object FileEvent {
   ) extends FileEvent
 
   /**
-    * Event for the modification of an asynchronously computed file attributes.
-    * This event gets recorded when linking a file using a ''RemoteDiskStorage''.
-    * Since the attributes cannot be computed synchronously, ''NotComputedDigest'' and wrong size are returned
+    * Event for the modification of an asynchronously computed file attributes. This event gets recorded when linking a
+    * file using a ''RemoteDiskStorage''. Since the attributes cannot be computed synchronously, ''NotComputedDigest''
+    * and wrong size are returned
     *
-    * @param id        the file identifier
-    * @param project   the project the file belongs to
-    * @param mediaType the optional media type of the file
-    * @param bytes     the size of the file file in bytes
-    * @param digest    the digest information of the file
-    * @param rev       the last known revision of the file
-    * @param instant   the instant this event was created
-    * @param subject   the identity associated to this event
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param mediaType
+    *   the optional media type of the file
+    * @param bytes
+    *   the size of the file file in bytes
+    * @param digest
+    *   the digest information of the file
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the identity associated to this event
     */
   final case class FileAttributesUpdated(
       id: Iri,
@@ -116,13 +141,20 @@ object FileEvent {
   /**
     * Event for to tag a file
     *
-    * @param id        the file identifier
-    * @param project   the project the file belongs to
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the file
-    * @param instant   the instant this event was created
-    * @param subject   the subject creating this event
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class FileTagAdded(
       id: Iri,
@@ -136,11 +168,16 @@ object FileEvent {
 
   /**
     * Event for the deprecation of a file
-    * @param id      the file identifier
-    * @param project the project the file belongs to
-    * @param rev     the last known revision of the file
-    * @param instant the instant this event was created
-    * @param subject the subject creating this event
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
       extends FileEvent

@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 
 /**
-  * Enumeration of possible ACL address filtering. An ACL filter address is a filter which can match multiple [[AclAddress]].
+  * Enumeration of possible ACL address filtering. An ACL filter address is a filter which can match multiple
+  * [[AclAddress]].
   */
 sealed trait AclAddressFilter extends Product with Serializable {
 
@@ -19,7 +20,8 @@ sealed trait AclAddressFilter extends Product with Serializable {
 
   /**
     * Checks whether the passed ''address'' matches the current filter
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   def matches(address: AclAddress): Boolean
 

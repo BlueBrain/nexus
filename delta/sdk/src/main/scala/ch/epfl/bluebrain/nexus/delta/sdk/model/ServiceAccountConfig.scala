@@ -9,7 +9,8 @@ import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 /**
   * Configuration for the application service account.
   *
-  * @param value the service account to be used for internal operations
+  * @param value
+  *   the service account to be used for internal operations
   */
 final case class ServiceAccountConfig(value: ServiceAccount)
 

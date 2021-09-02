@@ -7,9 +7,9 @@ import monix.bio.IO
 import org.apache.jena.sparql.core.DatasetGraph
 
 /**
-  * Json-LD high level API as defined in the ''JsonLdProcessor'' interface of the Json-LD spec.
-  * Interface definition for compact, expand, frame, toRdf, fromRdf: https://www.w3.org/TR/json-ld11-api/#the-jsonldprocessor-interface
-  * Interface definition for frame: https://www.w3.org/TR/json-ld11-framing/#jsonldprocessor
+  * Json-LD high level API as defined in the ''JsonLdProcessor'' interface of the Json-LD spec. Interface definition for
+  * compact, expand, frame, toRdf, fromRdf: https://www.w3.org/TR/json-ld11-api/#the-jsonldprocessor-interface Interface
+  * definition for frame: https://www.w3.org/TR/json-ld11-framing/#jsonldprocessor
   */
 trait JsonLdApi {
   private[rdf] def compact(

@@ -11,10 +11,14 @@ import scala.annotation.nowarn
 /**
   * Type that represents a project payload for creation and update requests.
   *
-  * @param description an optional description
-  * @param apiMappings the API mappings
-  * @param base        an optional base Iri for generated resource IDs ending with ''/'' or ''#''
-  * @param vocab       an optional vocabulary for resources with no context ending with ''/'' or ''#''
+  * @param description
+  *   an optional description
+  * @param apiMappings
+  *   the API mappings
+  * @param base
+  *   an optional base Iri for generated resource IDs ending with ''/'' or ''#''
+  * @param vocab
+  *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
   */
 final case class ProjectFields(
     description: Option[String],
@@ -24,7 +28,8 @@ final case class ProjectFields(
 ) {
 
   /**
-    * @return the current base or a generated one based on the ''baseUri'' and the project ref
+    * @return
+    *   the current base or a generated one based on the ''baseUri'' and the project ref
     */
   def baseOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     base.getOrElse(
@@ -36,7 +41,8 @@ final case class ProjectFields(
     )
 
   /**
-    * @return the current vocab or a generated one based on the ''baseUri'' and the project ref
+    * @return
+    *   the current vocab or a generated one based on the ''baseUri'' and the project ref
     */
   def vocabOrGenerated(projectRef: ProjectRef)(implicit baseUri: BaseUri): PrefixIri =
     vocab.getOrElse(

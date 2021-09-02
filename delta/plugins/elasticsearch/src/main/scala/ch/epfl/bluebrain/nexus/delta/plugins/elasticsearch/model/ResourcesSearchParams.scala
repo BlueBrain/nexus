@@ -11,14 +11,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 /**
   * Search parameters for any generic resource type.
   *
-  * @param id         the optional id status of the resource
-  * @param deprecated the optional deprecation status of the resource
-  * @param rev        the optional revision of the resource
-  * @param createdBy  the optional subject who created the resource
-  * @param updatedBy  the optional subject who last updated the resource
-  * @param types      the collection of types to consider, where empty implies all resource types are to be included
-  * @param schema     schema to consider, where empty implies any schema
-  * @param q          a full text search query parameter
+  * @param id
+  *   the optional id status of the resource
+  * @param deprecated
+  *   the optional deprecation status of the resource
+  * @param rev
+  *   the optional revision of the resource
+  * @param createdBy
+  *   the optional subject who created the resource
+  * @param updatedBy
+  *   the optional subject who last updated the resource
+  * @param types
+  *   the collection of types to consider, where empty implies all resource types are to be included
+  * @param schema
+  *   schema to consider, where empty implies any schema
+  * @param q
+  *   a full text search query parameter
   */
 final case class ResourcesSearchParams(
     id: Option[Iri] = None,

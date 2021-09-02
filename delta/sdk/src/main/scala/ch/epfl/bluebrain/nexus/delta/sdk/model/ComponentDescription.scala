@@ -6,12 +6,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 sealed trait ComponentDescription extends Product with Serializable {
 
   /**
-    * @return the name of the component
+    * @return
+    *   the name of the component
     */
   def name: Name
 
   /**
-    * @return the version of the component
+    * @return
+    *   the version of the component
     */
   def version: String
 }

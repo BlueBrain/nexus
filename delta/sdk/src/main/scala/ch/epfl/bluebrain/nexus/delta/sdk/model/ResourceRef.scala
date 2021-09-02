@@ -14,12 +14,14 @@ import scala.util.Try
 sealed trait ResourceRef extends Product with Serializable { self =>
 
   /**
-    * @return the reference identifier as an iri
+    * @return
+    *   the reference identifier as an iri
     */
   def iri: Iri
 
   /**
-    * @return the original iri
+    * @return
+    *   the original iri
     */
   def original: Iri
 
@@ -41,7 +43,8 @@ object ResourceRef {
   /**
     * An unannotated reference.
     *
-    * @param iri the reference identifier as an iri
+    * @param iri
+    *   the reference identifier as an iri
     */
   final case class Latest(iri: Iri) extends ResourceRef {
     override def original: Iri = iri
@@ -50,9 +53,12 @@ object ResourceRef {
   /**
     * A reference annotated with a revision.
     *
-    * @param original the original iri
-    * @param iri      the reference identifier as an iri (without the tag or rev query parameter)
-    * @param rev      the reference revision
+    * @param original
+    *   the original iri
+    * @param iri
+    *   the reference identifier as an iri (without the tag or rev query parameter)
+    * @param rev
+    *   the reference revision
     */
   final case class Revision(original: Iri, iri: Iri, rev: Long) extends ResourceRef
 
@@ -61,8 +67,10 @@ object ResourceRef {
     /**
       * Revision constructor helper
       *
-      * @param iri the reference identifier as an iri (without the tag or rev query parameter)
-      * @param rev the reference revision
+      * @param iri
+      *   the reference identifier as an iri (without the tag or rev query parameter)
+      * @param rev
+      *   the reference revision
       */
     final def apply(iri: Iri, rev: Long): Revision =
       Revision(iri"$iri?rev=$rev", iri, rev)
@@ -80,9 +88,12 @@ object ResourceRef {
   /**
     * A reference annotated with a tag.
     *
-    * @param original the original iri
-    * @param iri      the reference identifier as an iri (without the tag or rev query parameter)
-    * @param tag      the reference tag
+    * @param original
+    *   the original iri
+    * @param iri
+    *   the reference identifier as an iri (without the tag or rev query parameter)
+    * @param tag
+    *   the reference tag
     */
   final case class Tag(original: Iri, iri: Iri, tag: TagLabel) extends ResourceRef
 
@@ -91,8 +102,10 @@ object ResourceRef {
     /**
       * Revision constructor helper
       *
-      * @param iri the reference identifier as an iri (without the tag or rev query parameter)
-      * @param tag the reference tag
+      * @param iri
+      *   the reference identifier as an iri (without the tag or rev query parameter)
+      * @param tag
+      *   the reference tag
       */
     final def apply(iri: Iri, tag: TagLabel): Tag =
       Tag(iri"$iri?tag=$tag", iri, tag)

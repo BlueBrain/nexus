@@ -71,8 +71,10 @@ final class CompositeViews private (
   /**
     * Create a new composite view with a generate id.
     *
-    * @param project  the parent project of the view
-    * @param value    the view configuration
+    * @param project
+    *   the parent project of the view
+    * @param value
+    *   the view configuration
     */
   def create(
       project: ProjectRef,
@@ -83,9 +85,12 @@ final class CompositeViews private (
   /**
     * Create a new composite view with a provided id
     *
-    * @param id      the id of the view either in Iri or aliased form
-    * @param project  the parent project of the view
-    * @param value    the view configuration
+    * @param id
+    *   the id of the view either in Iri or aliased form
+    * @param project
+    *   the parent project of the view
+    * @param value
+    *   the view configuration
     */
   def create(
       id: IdSegment,
@@ -100,12 +105,15 @@ final class CompositeViews private (
   }.named("createCompositeView", moduleType)
 
   /**
-    * Creates a new composite from a json representation. If an identifier exists in the provided json it will
-    * be used; otherwise a new identifier will be generated.
+    * Creates a new composite from a json representation. If an identifier exists in the provided json it will be used;
+    * otherwise a new identifier will be generated.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project
+    *   the parent project of the view
+    * @param source
+    *   the json representation of the view
+    * @param caller
+    *   the caller that initiated the action
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[CompositeViewRejection, ViewResource] = {
     for {
@@ -116,12 +124,15 @@ final class CompositeViews private (
   }.named("createCompositeView", moduleType)
 
   /**
-    * Creates a new composite from a json representation. If an identifier exists in the provided json it will
-    * be used as long as it matches the provided id in Iri form or as an alias; otherwise the action will be rejected.
+    * Creates a new composite from a json representation. If an identifier exists in the provided json it will be used
+    * as long as it matches the provided id in Iri form or as an alias; otherwise the action will be rejected.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project
+    *   the parent project of the view
+    * @param source
+    *   the json representation of the view
+    * @param caller
+    *   the caller that initiated the action
     */
   def create(id: IdSegment, project: ProjectRef, source: Json)(implicit
       caller: Caller
@@ -138,11 +149,16 @@ final class CompositeViews private (
   /**
     * Updates an existing composite view.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param value   the new view configuration
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param value
+    *   the new view configuration
+    * @param subject
+    *   the subject that initiated the action
     */
   def update(
       id: IdSegment,
@@ -164,11 +180,16 @@ final class CompositeViews private (
   /**
     * Updates an existing composite view.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param source  the new view configuration in json representation
-    * @param caller  the caller that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param source
+    *   the new view configuration in json representation
+    * @param caller
+    *   the caller that initiated the action
     */
   def update(id: IdSegment, project: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
@@ -187,12 +208,18 @@ final class CompositeViews private (
   /**
     * Applies a tag to an existing composite revision.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tag     the tag to apply
-    * @param tagRev  the target revision of the tag
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tag
+    *   the tag to apply
+    * @param tagRev
+    *   the target revision of the tag
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
     */
   def tag(
       id: IdSegment,
@@ -211,10 +238,14 @@ final class CompositeViews private (
   /**
     * Deprecates an existing composite view.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
     */
   def deprecate(
       id: IdSegment,
@@ -225,7 +256,8 @@ final class CompositeViews private (
 
   /**
     * Deprecate a view without any extra checks on the projects API.
-    * @see [[deprecate(id, project, rev)]]
+    * @see
+    *   [[deprecate(id, project, rev)]]
     */
   private[compositeviews] def deprecateWithoutProjectChecks(
       id: IdSegment,
@@ -250,8 +282,10 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource.
     *
-    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
-    * @param project the view parent project
+    * @param id
+    *   the identifier that will be expanded to the Iri of the view with its optional rev/tag
+    * @param project
+    *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
     id.asTag.fold(fetchRevOrLatest(id, project).map(_._2))(fetchBy(_, project)).named("fetchCompositeView", moduleType)
@@ -259,9 +293,12 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected projection.
     *
-    * @param id           the view identifier
-    * @param projectionId the view projection identifier
-    * @param project      the view parent project
+    * @param id
+    *   the view identifier
+    * @param projectionId
+    *   the view projection identifier
+    * @param project
+    *   the view parent project
     */
   def fetchProjection(
       id: IdSegment,
@@ -280,9 +317,12 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected source.
     *
-    * @param id       the view identifier
-    * @param sourceId the view source identifier
-    * @param project  the view parent project
+    * @param id
+    *   the view identifier
+    * @param sourceId
+    *   the view source identifier
+    * @param project
+    *   the view parent project
     */
   def fetchSource(
       id: IdSegment,
@@ -301,9 +341,12 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected blazegraph projection.
     *
-    * @param id           the view identifier
-    * @param projectionId the view projection identifier
-    * @param project      the view parent project
+    * @param id
+    *   the view identifier
+    * @param projectionId
+    *   the view projection identifier
+    * @param project
+    *   the view parent project
     */
   def fetchBlazegraphProjection(
       id: IdSegment,
@@ -321,9 +364,12 @@ final class CompositeViews private (
   /**
     * Retrieves a current composite view resource and its selected elasticsearch projection.
     *
-    * @param id           the view identifier
-    * @param projectionId the view projection identifier
-    * @param project      the view parent project
+    * @param id
+    *   the view identifier
+    * @param projectionId
+    *   the view projection identifier
+    * @param project
+    *   the view parent project
     */
   def fetchElasticSearchProjection(
       id: IdSegment,
@@ -352,9 +398,12 @@ final class CompositeViews private (
   /**
     * Retrieves a list of CompositeViews using specific pagination, filter and ordering configuration.
     *
-    * @param pagination the pagination configuration
-    * @param params     the filtering configuration
-    * @param ordering   the ordering configuration
+    * @param pagination
+    *   the pagination configuration
+    * @param params
+    *   the filtering configuration
+    * @param ordering
+    *   the ordering configuration
     */
   def list(
       pagination: FromPagination,
@@ -374,8 +423,10 @@ final class CompositeViews private (
   /**
     * A terminating stream of events for views. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the elasticsearch view belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -384,11 +435,12 @@ final class CompositeViews private (
     eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
-    * Retrieves the ordered collection of events for all composite views starting from the last known offset. The
-    * event corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
+    * Retrieves the ordered collection of events for all composite views starting from the last known offset. The event
+    * corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
     * retrieval of all events.
     *
-    * @param offset the starting offset for the event log
+    * @param offset
+    *   the starting offset for the event log
     */
   def events(
       offset: Offset
@@ -398,8 +450,10 @@ final class CompositeViews private (
     * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
     * are recorded.
     *
-    * @param projectRef the project reference where the elasticsearch view belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -411,8 +465,10 @@ final class CompositeViews private (
     * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
     * are recorded.
     *
-    * @param organization the organization label reference where the elasticsearch view belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -758,9 +814,12 @@ object CompositeViews {
   /**
     * The [[SourceProjectionId]] of a view source
     *
-    * @param view     the view
-    * @param rev      the revision of the view
-    * @param sourceId the source Iri
+    * @param view
+    *   the view
+    * @param rev
+    *   the revision of the view
+    * @param sourceId
+    *   the source Iri
     */
   def sourceProjection(view: CompositeView, rev: Long, sourceId: Iri): Option[SourceProjectionId] =
     view.sources.value.find(_.id == sourceId).map(sourceProjection(_, rev))
@@ -768,8 +827,10 @@ object CompositeViews {
   /**
     * The [[SourceProjectionId]] of a view source
     *
-    * @param source the view source
-    * @param rev    the revision of the view
+    * @param source
+    *   the view source
+    * @param rev
+    *   the revision of the view
     */
   def sourceProjection(source: CompositeViewSource, rev: Long): SourceProjectionId =
     SourceProjectionId(s"${source.uuid}_$rev")
@@ -777,8 +838,10 @@ object CompositeViews {
   /**
     * All projection ids
     *
-    * @param view the view
-    * @param rev  the revision of the view
+    * @param view
+    *   the view
+    * @param rev
+    *   the revision of the view
     */
   def projectionIds(view: CompositeView, rev: Long): Set[(Iri, Iri, CompositeViewProjectionId)] =
     for {
@@ -787,11 +850,14 @@ object CompositeViews {
     } yield (s.id, p.id, projectionId(sourceProjection(s, rev), p, rev))
 
   /**
-    * The [[CompositeViewProjectionId]]s of a view projection.
+    * The [[CompositeViewProjectionId]] s of a view projection.
     *
-    * @param view   the view
-    * @param source the view source
-    * @param rev    the revision of the view
+    * @param view
+    *   the view
+    * @param source
+    *   the view source
+    * @param rev
+    *   the revision of the view
     */
   def projectionIds(
       view: CompositeView,
@@ -801,11 +867,14 @@ object CompositeViews {
     view.projections.value.map(projection => projection.id -> projectionId(source, projection, rev))
 
   /**
-    * The [[CompositeViewProjectionId]]s of a view projection.
+    * The [[CompositeViewProjectionId]] s of a view projection.
     *
-    * @param view       the view
-    * @param projection the view projection
-    * @param rev        the revision of the view
+    * @param view
+    *   the view
+    * @param projection
+    *   the view projection
+    * @param rev
+    *   the revision of the view
     */
   def projectionIds(
       view: CompositeView,
@@ -817,9 +886,12 @@ object CompositeViews {
   /**
     * The [[CompositeViewProjectionId]] of a view projection.
     *
-    * @param source     the view source
-    * @param projection the view projection
-    * @param rev        the revision of the view
+    * @param source
+    *   the view source
+    * @param projection
+    *   the view projection
+    * @param rev
+    *   the revision of the view
     */
   def projectionId(
       source: CompositeViewSource,
@@ -833,9 +905,12 @@ object CompositeViews {
   /**
     * The [[CompositeViewProjectionId]] of a view projection
     *
-    * @param sourceId   the source projection id
-    * @param projection the view projection
-    * @param rev        the revision of the view
+    * @param sourceId
+    *   the source projection id
+    * @param projection
+    *   the view projection
+    * @param rev
+    *   the revision of the view
     */
   def projectionId(
       sourceId: SourceProjectionId,
@@ -852,10 +927,14 @@ object CompositeViews {
   /**
     * The Elasticsearch index for the passed projection
     *
-    * @param projection the views' Elasticsearch projection
-    * @param view       the view
-    * @param rev       the view revision
-    * @param prefix     the index prefix
+    * @param projection
+    *   the views' Elasticsearch projection
+    * @param view
+    *   the view
+    * @param rev
+    *   the view revision
+    * @param prefix
+    *   the index prefix
     */
   def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
     index(projection, view.uuid, rev, prefix)
@@ -866,10 +945,14 @@ object CompositeViews {
   /**
     * The Blazegraph namespace for the passed projection
     *
-    * @param projection the views' Blazegraph projection
-    * @param view       the view
-    * @param rev       the view revision
-    * @param prefix     the namespace prefix
+    * @param projection
+    *   the views' Blazegraph projection
+    * @param view
+    *   the view
+    * @param rev
+    *   the view revision
+    * @param prefix
+    *   the namespace prefix
     */
   def namespace(projection: SparqlProjection, view: CompositeView, rev: Long, prefix: String): String =
     s"${prefix}_${view.uuid}_${projection.uuid}_$rev"
