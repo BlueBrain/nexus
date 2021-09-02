@@ -36,7 +36,7 @@ trait BlazegraphQuery {
   )(implicit caller: Caller): IO[CompositeViewRejection, R]
 
   /**
-    * Queries the blazegraph namespace of the passed composite views' projection, We check for the caller to have the
+    * Queries the blazegraph namespace of the passed composite views' projection. We check for the caller to have the
     * necessary query permissions on the views' projections before performing the query.
     *
     * @param id
