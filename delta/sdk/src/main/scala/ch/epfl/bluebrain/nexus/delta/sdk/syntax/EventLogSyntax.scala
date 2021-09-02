@@ -20,7 +20,8 @@ trait EventLogSyntax {
 /**
   * Provide extension methods for an EventLog of Envelope[Event]
   *
-  * @param eventLog the eventLog
+  * @param eventLog
+  *   the eventLog
   */
 final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envelope[E]]) extends AnyVal {
 

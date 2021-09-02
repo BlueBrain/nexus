@@ -41,8 +41,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * Records progress against a projection identifier.
     *
-    * @param id       the projection identifier
-    * @param progress the offset to record
+    * @param id
+    *   the projection identifier
+    * @param progress
+    *   the offset to record
     */
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
@@ -58,11 +60,13 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     }
 
   /**
-    * Retrieves the progress for the specified projection projectionId. If there is no record of progress
-    * the [[ProjectionProgress.NoProgress]] is returned.
+    * Retrieves the progress for the specified projection projectionId. If there is no record of progress the
+    * [[ProjectionProgress.NoProgress]] is returned.
     *
-    * @param id an unique projectionId for a projection
-    * @return a future progress value for the specified projection projectionId
+    * @param id
+    *   an unique projectionId for a projection
+    * @return
+    *   a future progress value for the specified projection projectionId
     */
   override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
     sql"SELECT akka_offset, processed, discarded, warnings, failed, value, value_timestamp FROM projections_progress WHERE projection_id = ${id.value}"
@@ -138,8 +142,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * Record a specific event against a index failures log projectionId.
     *
-    * @param id             the project identifier
-    * @param messages       the error messages to persist
+    * @param id
+    *   the project identifier
+    * @param messages
+    *   the error messages to persist
     */
   override def recordErrors(
       id: ProjectionId,
@@ -163,8 +169,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * An event stream for all failures recorded for a projection.
     *
-    * @param id the projection identifier
-    * @return a source of the failed events
+    * @param id
+    *   the projection identifier
+    * @return
+    *   a source of the failed events
     */
   override def errors(id: ProjectionId): fs2.Stream[Task, ProjectionError[A]] =
     sql"""SELECT value, timestamp, value_timestamp, akka_offset, persistence_id, sequence_nr, severity, error_type, message from projections_errors WHERE projection_id = ${id.value} ORDER BY ordering"""

@@ -45,8 +45,8 @@ object ProjectsCounts {
   private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
 
   /**
-    * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the counts (and latest instant) for each project.
+    * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function. The underlying stream will
+    * store its progress and compute the counts (and latest instant) for each project.
     */
   def apply(
       config: ProjectsConfig,

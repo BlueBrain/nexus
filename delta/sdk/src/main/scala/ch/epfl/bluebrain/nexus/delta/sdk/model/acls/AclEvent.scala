@@ -22,7 +22,8 @@ import scala.annotation.nowarn
 sealed trait AclEvent extends UnScopedEvent {
 
   /**
-    * @return the address for the ACL
+    * @return
+    *   the address for the ACL
     */
   def address: AclAddress
 
@@ -33,10 +34,14 @@ object AclEvent {
   /**
     * A witness to ACL replace.
     *
-    * @param acl     the ACL replaced, represented as a mapping of identities to permissions
-    * @param rev     the revision that this event generated
-    * @param instant the instant when this event was recorded
-    * @param subject the subject which generated this event
+    * @param acl
+    *   the ACL replaced, represented as a mapping of identities to permissions
+    * @param rev
+    *   the revision that this event generated
+    * @param instant
+    *   the instant when this event was recorded
+    * @param subject
+    *   the subject which generated this event
     */
   final case class AclReplaced(
       acl: Acl,
@@ -50,10 +55,14 @@ object AclEvent {
   /**
     * A witness to ACL append.
     *
-    * @param acl     the ACL appended, represented as a mapping of identities to permissions
-    * @param rev     the revision that this event generated
-    * @param instant the instant when this event was recorded
-    * @param subject the subject which generated this event
+    * @param acl
+    *   the ACL appended, represented as a mapping of identities to permissions
+    * @param rev
+    *   the revision that this event generated
+    * @param instant
+    *   the instant when this event was recorded
+    * @param subject
+    *   the subject which generated this event
     */
   final case class AclAppended(
       acl: Acl,
@@ -67,10 +76,14 @@ object AclEvent {
   /**
     * A witness to ACL subtraction.
     *
-    * @param acl     the ACL subtracted, represented as a mapping of identities to permissions
-    * @param rev     the revision that this event generated
-    * @param instant the instant when this event was recorded
-    * @param subject the subject which generated this event
+    * @param acl
+    *   the ACL subtracted, represented as a mapping of identities to permissions
+    * @param rev
+    *   the revision that this event generated
+    * @param instant
+    *   the instant when this event was recorded
+    * @param subject
+    *   the subject which generated this event
     */
   final case class AclSubtracted(
       acl: Acl,
@@ -84,10 +97,14 @@ object AclEvent {
   /**
     * A witness to ACL deletion.
     *
-    * @param address the address for the ACL
-    * @param rev     the revision that this event generated
-    * @param instant the instant when this event was recorded
-    * @param subject the subject which generated this event
+    * @param address
+    *   the address for the ACL
+    * @param rev
+    *   the revision that this event generated
+    * @param instant
+    *   the instant when this event was recorded
+    * @param subject
+    *   the subject which generated this event
     */
   final case class AclDeleted(
       address: AclAddress,

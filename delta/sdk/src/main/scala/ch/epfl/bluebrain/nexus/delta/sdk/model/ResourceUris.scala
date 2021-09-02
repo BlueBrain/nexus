@@ -15,23 +15,27 @@ import java.util.UUID
 sealed trait ResourceUris extends Product with Serializable {
 
   /**
-    * @return the relative access [[Uri]]
+    * @return
+    *   the relative access [[Uri]]
     */
   private[model] def relativeAccessUri: Uri
 
   /**
-    * @return the relative access [[Uri]] in a short form
+    * @return
+    *   the relative access [[Uri]] in a short form
     */
   private[model] def relativeAccessUriShortForm: Uri
 
   /**
-    * @return the access [[Uri]]
+    * @return
+    *   the access [[Uri]]
     */
   def accessUri(implicit base: BaseUri): Uri =
     relativeAccessUri.resolvedAgainst(base.endpoint.finalSlash())
 
   /**
-    * @return the access [[Uri]] in a short form
+    * @return
+    *   the access [[Uri]] in a short form
     */
   def accessUriShortForm(implicit base: BaseUri): Uri =
     relativeAccessUriShortForm.resolvedAgainst(base.endpoint.finalSlash())
@@ -88,12 +92,15 @@ object ResourceUris {
   }
 
   /**
-    * Constructs [[ResourceUris]] from the passed arguments and an ''id'' that can be
-    * compacted based on the project mappings and base.
+    * Constructs [[ResourceUris]] from the passed arguments and an ''id'' that can be compacted based on the project
+    * mappings and base.
     *
-    * @param resourceTypeSegment the resource type segment: resolvers, schemas, resources, etc
-    * @param projectRef          the project reference
-    * @param id                  the id that can be compacted
+    * @param resourceTypeSegment
+    *   the resource type segment: resolvers, schemas, resources, etc
+    * @param projectRef
+    *   the project reference
+    * @param id
+    *   the id that can be compacted
     */
   final def apply(resourceTypeSegment: String, projectRef: ProjectRef, id: Iri)(
       mappings: ApiMappings,
@@ -108,20 +115,26 @@ object ResourceUris {
   /**
     * Constructs [[ResourceUris]] from a relative [[Uri]].
     *
-    * @param relative the relative base [[Uri]]
+    * @param relative
+    *   the relative base [[Uri]]
     */
   final def apply(relative: Uri): ResourceUris =
     RootResourceUris(relative, relative)
 
   /**
-    * Constructs [[ResourceUris]] from the passed arguments.
-    * The ''id'' and ''schema'' can be compacted based on the project mappings and base.
+    * Constructs [[ResourceUris]] from the passed arguments. The ''id'' and ''schema'' can be compacted based on the
+    * project mappings and base.
     *
-    * @param resourceTypeSegment the resource type segment: resolvers, schemas, resources, etc
-    * @param projectRef          the project reference
-    * @param schemaProject       the schema project reference
-    * @param id                  the id that can be compacted
-    * @param schema              the schema reference that can be compacted
+    * @param resourceTypeSegment
+    *   the resource type segment: resolvers, schemas, resources, etc
+    * @param projectRef
+    *   the project reference
+    * @param schemaProject
+    *   the schema project reference
+    * @param id
+    *   the id that can be compacted
+    * @param schema
+    *   the schema reference that can be compacted
     */
   private def apply(
       resourceTypeSegment: String,

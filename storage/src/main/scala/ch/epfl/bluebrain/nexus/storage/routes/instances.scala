@@ -23,8 +23,10 @@ object instances extends LowPriority {
   /**
     * `Either[Rejection,(StatusCode, A)]` => HTTP entity
     *
-    * @tparam A type to encode
-    * @return marshaller for any `A` value
+    * @tparam A
+    *   type to encode
+    * @return
+    *   marshaller for any `A` value
     */
   implicit final def eitherValueMarshaller[A: Encoder](implicit
       printer: Printer = defaultPrinter
@@ -34,7 +36,8 @@ object instances extends LowPriority {
   /**
     * `A, StatusCodeFrom` => HTTP response
     *
-    * @return marshaller for value
+    * @return
+    *   marshaller for value
     */
   implicit final def valueWithStatusCodeFromMarshaller[A: Encoder](implicit
       statusFrom: StatusFrom[A],
@@ -62,7 +65,8 @@ trait LowPriority extends FailFastCirceSupport {
   /**
     * `StatusCode, Json` => HTTP response
     *
-    * @return marshaller for JSON-LD value
+    * @return
+    *   marshaller for JSON-LD value
     */
   implicit final def jsonLdWithStatusCodeMarshaller(implicit
       printer: Printer = defaultPrinter,
@@ -77,7 +81,8 @@ trait LowPriority extends FailFastCirceSupport {
   /**
     * `Json` => HTTP entity
     *
-    * @return marshaller for JSON-LD value
+    * @return
+    *   marshaller for JSON-LD value
     */
   implicit final def jsonLdEntityMarshaller(implicit
       printer: Printer = defaultPrinter,
@@ -92,7 +97,8 @@ trait LowPriority extends FailFastCirceSupport {
   /**
     * `A` => HTTP entity
     *
-    * @return marshaller for JSON-LD value
+    * @return
+    *   marshaller for JSON-LD value
     */
   implicit final def valueEntityMarshaller[A: Encoder](implicit
       printer: Printer = defaultPrinter,
@@ -103,8 +109,10 @@ trait LowPriority extends FailFastCirceSupport {
   /**
     * `StatusCode, A` => HTTP response
     *
-    * @tparam A type to encode
-    * @return marshaller for any `A` value
+    * @tparam A
+    *   type to encode
+    * @return
+    *   marshaller for any `A` value
     */
   implicit final def valueWithStatusCodeMarshaller[A: Encoder](implicit
       printer: Printer = defaultPrinter,

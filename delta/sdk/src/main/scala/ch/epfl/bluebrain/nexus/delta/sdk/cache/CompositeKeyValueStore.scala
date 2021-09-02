@@ -11,9 +11,12 @@ import scala.jdk.CollectionConverters._
 
 /**
   * Cache based on composite keys which distributes the entries on the two levels
-  * @param baseName the unique base name for the cache
-  * @param clock    a clock function that determines the next timestamp for a provided value
-  * @param firstLevelCache the first level cache which distributes the first level of keys
+  * @param baseName
+  *   the unique base name for the cache
+  * @param clock
+  *   a clock function that determines the next timestamp for a provided value
+  * @param firstLevelCache
+  *   the first level cache which distributes the first level of keys
   */
 final class CompositeKeyValueStore[K1, K2, V] private (
     baseName: String,
@@ -55,7 +58,8 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     }.void
 
   /**
-    * @return all the entries in the store
+    * @return
+    *   all the entries in the store
     */
   def entries: UIO[Map[K1, Map[K2, V]]] = firstLevelCache.foldLeft(IO.pure(Map.empty[K1, Map[K2, V]])) {
     case (acc, (key1, kv)) =>
@@ -79,8 +83,10 @@ final class CompositeKeyValueStore[K1, K2, V] private (
   /**
     * Find a value on the second level entry
     *
-    * @param key1 select a specific entry on the first level cache
-    * @param f    function to filter the element on the second level cache to be selected
+    * @param key1
+    *   select a specific entry on the first level cache
+    * @param f
+    *   function to filter the element on the second level cache to be selected
     */
   def find(key1: K1, f: V => Boolean): UIO[Option[V]] =
     values(key1).flatMap {

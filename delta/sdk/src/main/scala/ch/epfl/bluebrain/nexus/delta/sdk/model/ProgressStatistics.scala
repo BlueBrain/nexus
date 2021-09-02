@@ -12,15 +12,24 @@ import java.time.Instant
 /**
   * Statistic for a projections' progress compared to the baseline (the project counts)
   *
-  * @param processedEvents            count of processed events
-  * @param discardedEvents            count of events dropped
-  * @param failedEvents               count of events failed
-  * @param evaluatedEvents            count of events in the stream that have been used to update an index
-  * @param remainingEvents            count of events still remaining to be processed
-  * @param totalEvents                total number of events for the project
-  * @param lastEventDateTime          datetime of the last event in the project
-  * @param lastProcessedEventDateTime time of the last processed event in the project
-  * @param delayInSeconds             indexing delay
+  * @param processedEvents
+  *   count of processed events
+  * @param discardedEvents
+  *   count of events dropped
+  * @param failedEvents
+  *   count of events failed
+  * @param evaluatedEvents
+  *   count of events in the stream that have been used to update an index
+  * @param remainingEvents
+  *   count of events still remaining to be processed
+  * @param totalEvents
+  *   total number of events for the project
+  * @param lastEventDateTime
+  *   datetime of the last event in the project
+  * @param lastProcessedEventDateTime
+  *   time of the last processed event in the project
+  * @param delayInSeconds
+  *   indexing delay
   */
 final case class ProgressStatistics(
     processedEvents: Long,

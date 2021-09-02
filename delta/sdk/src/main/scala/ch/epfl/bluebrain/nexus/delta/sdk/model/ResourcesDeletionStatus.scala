@@ -19,14 +19,22 @@ import scala.annotation.nowarn
 /**
   * The resources deletion status
   *
-  * @param progress         the current deletion progress
-  * @param project          the project where the deletion is happening
-  * @param projectCreatedBy the subject who created the project
-  * @param projectCreatedAt the subject who created the project
-  * @param createdBy        the subject who initiated the deletion of resources
-  * @param createdAt        the time when the deletion of resources was initiated
-  * @param updatedAt        the last time when the deletion of resources was updated
-  * @param uuid        the last time when the deletion of resources was updated
+  * @param progress
+  *   the current deletion progress
+  * @param project
+  *   the project where the deletion is happening
+  * @param projectCreatedBy
+  *   the subject who created the project
+  * @param projectCreatedAt
+  *   the subject who created the project
+  * @param createdBy
+  *   the subject who initiated the deletion of resources
+  * @param createdAt
+  *   the time when the deletion of resources was initiated
+  * @param updatedAt
+  *   the last time when the deletion of resources was updated
+  * @param uuid
+  *   the last time when the deletion of resources was updated
   */
 final case class ResourcesDeletionStatus(
     progress: ResourcesDeletionProgress,

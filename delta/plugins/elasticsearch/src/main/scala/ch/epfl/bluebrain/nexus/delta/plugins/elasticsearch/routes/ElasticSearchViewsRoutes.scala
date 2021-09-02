@@ -42,17 +42,28 @@ import monix.execution.Scheduler
 /**
   * The elasticsearch views routes
   *
-  * @param identities         the identity module
-  * @param acls               the ACLs module
-  * @param orgs               the organizations module
-  * @param projects           the projects module
-  * @param views              the elasticsearch views operations bundle
-  * @param viewsQuery         the elasticsearch views query operations bundle
-  * @param progresses         the statistics of the progresses for the elasticsearch views
-  * @param restartView        the action to restart a view indexing process triggered by a client
-  * @param resourcesToSchemas a collection of root resource segment with their corresponding schema
-  * @param sseEventLog        the global eventLog of all view events
-  * @param index              the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param orgs
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param views
+  *   the elasticsearch views operations bundle
+  * @param viewsQuery
+  *   the elasticsearch views query operations bundle
+  * @param progresses
+  *   the statistics of the progresses for the elasticsearch views
+  * @param restartView
+  *   the action to restart a view indexing process triggered by a client
+  * @param resourcesToSchemas
+  *   a collection of root resource segment with their corresponding schema
+  * @param sseEventLog
+  *   the global eventLog of all view events
+  * @param index
+  *   the indexing action on write operations
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
@@ -360,7 +371,8 @@ object ElasticSearchViewsRoutes {
   type RestartView = (Iri, ProjectRef) => UIO[Unit]
 
   /**
-    * @return the [[Route]] for elasticsearch views
+    * @return
+    *   the [[Route]] for elasticsearch views
     */
   def apply(
       identities: Identities,

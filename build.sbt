@@ -3,7 +3,7 @@ import scala.io.Source
 /*
 scalafmt: {
   maxColumn = 150
-  align.tokens.add = [
+  align.tokens."+" = [
     { code = ":=", owner = "Term.ApplyInfix" }
     { code = "+=", owner = "Term.ApplyInfix" }
     { code = "++=", owner = "Term.ApplyInfix" }

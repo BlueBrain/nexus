@@ -11,13 +11,18 @@ import org.http4s.{EntityEncoder, MediaType}
 import scala.util.Try
 
 /**
-  * Class representing InfluxDb line protocol point.
-  * See  [[https://docs.influxdata.com/influxdb/v1.7/write_protocols/line_protocol_reference/ InfluxDb reference]] for more details.
+  * Class representing InfluxDb line protocol point. See
+  * [[https://docs.influxdata.com/influxdb/v1.7/write_protocols/line_protocol_reference/ InfluxDb reference]] for more
+  * details.
   *
-  * @param measurement the influxDB line protocol measurement name
-  * @param tags        the influxDB line protocol tags
-  * @param values      the influxDB line protocol values
-  * @param timestamp   the optional influxDB line protocol timestamp
+  * @param measurement
+  *   the influxDB line protocol measurement name
+  * @param tags
+  *   the influxDB line protocol tags
+  * @param values
+  *   the influxDB line protocol values
+  * @param timestamp
+  *   the optional influxDB line protocol timestamp
   */
 final case class InfluxPoint(
     measurement: String,
@@ -40,7 +45,8 @@ object InfluxPoint {
   /**
     * Create a series of [[InfluxPoint]] from [[SparqlResults]].
     *
-    * @param results SPARQL query results
+    * @param results
+    *   SPARQL query results
     */
   def fromSparqlResults(
       results: SparqlResults,

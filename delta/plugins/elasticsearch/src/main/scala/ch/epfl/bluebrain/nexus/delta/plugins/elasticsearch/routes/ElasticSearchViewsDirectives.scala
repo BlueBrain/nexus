@@ -50,8 +50,8 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     }
 
   /**
-    * Extract the query parameters related to search: ''deprecated'', ''rev'', ''createdBy'', ''updatedBy'', ''type'', ''schema'', ''id'', ''q''
-    * and converts each of them to the appropriate type
+    * Extract the query parameters related to search: ''deprecated'', ''rev'', ''createdBy'', ''updatedBy'', ''type'',
+    * ''schema'', ''id'', ''q'' and converts each of them to the appropriate type
     */
   private[routes] def searchParameters(implicit
       projectRef: ProjectRef,
@@ -66,8 +66,8 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     }
 
   /**
-    * Extracts the query parameters for [[ResourcesSearchParams]] and [[SortList]].
-    * Rejects if both the ''q'' and ''sort'' query params are present, since they are incompatible.
+    * Extracts the query parameters for [[ResourcesSearchParams]] and [[SortList]]. Rejects if both the ''q'' and
+    * ''sort'' query params are present, since they are incompatible.
     */
   def searchParametersAndSortList(implicit
       projectRef: ProjectRef,

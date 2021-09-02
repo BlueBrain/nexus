@@ -7,14 +7,14 @@ import scala.{Console => ScalaConsole}
 trait Console[F[_]] {
 
   /**
-    * Prints the passed ''line'' through the console to the standard output and then terminates the line.
-    * The evaluation is delayed to the ''F'' effect type.
+    * Prints the passed ''line'' through the console to the standard output and then terminates the line. The evaluation
+    * is delayed to the ''F'' effect type.
     */
   def println(line: String): F[Unit]
 
   /**
-    * Prints the passed ''line'' through the console to the standard error and then terminates the line.
-    * The evaluation is delayed to the ''F'' effect type.
+    * Prints the passed ''line'' through the console to the standard error and then terminates the line. The evaluation
+    * is delayed to the ''F'' effect type.
     */
   def printlnErr(line: String): F[Unit]
 }

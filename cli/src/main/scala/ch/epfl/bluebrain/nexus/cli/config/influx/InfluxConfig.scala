@@ -17,13 +17,20 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * influxDB connectivity information along with the projection configuration.
   *
-  * @param endpoint           the influxDB v1.x API endpoint
-  * @param database           the database to be used
-  * @param dbCreationCommand  the command used to create an influxDB database
-  * @param offsetFile         the location where the influxDB projection offset should be read / stored
-  * @param offsetSaveInterval how frequent to save the stream offset into the offset file
-  * @param print              the configuration for printing output to the client
-  * @param projects           the project to config mapping
+  * @param endpoint
+  *   the influxDB v1.x API endpoint
+  * @param database
+  *   the database to be used
+  * @param dbCreationCommand
+  *   the command used to create an influxDB database
+  * @param offsetFile
+  *   the location where the influxDB projection offset should be read / stored
+  * @param offsetSaveInterval
+  *   how frequent to save the stream offset into the offset file
+  * @param print
+  *   the configuration for printing output to the client
+  * @param projects
+  *   the project to config mapping
   */
 final case class InfluxConfig(
     endpoint: Uri,

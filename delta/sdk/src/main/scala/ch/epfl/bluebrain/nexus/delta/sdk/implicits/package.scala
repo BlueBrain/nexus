@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.CancelableStrea
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax.{OffsetSyntax, ProjectionStreamSyntax}
 
 /**
-  * Aggregate instances and syntax from rdf plus the current sdk instances and syntax to avoid importing multiple instances and syntax
+  * Aggregate instances and syntax from rdf plus the current sdk instances and syntax to avoid importing multiple
+  * instances and syntax
   */
 package object implicits
     extends TripleInstances

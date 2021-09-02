@@ -419,7 +419,8 @@ object CompositeViewsRoutes {
   type RestartProjections = (Iri, ProjectRef, Set[CompositeViewProjectionId]) => UIO[Unit]
 
   /**
-    * @return the [[Route]] for composite views.
+    * @return
+    *   the [[Route]] for composite views.
     */
   def apply(
       identities: Identities,

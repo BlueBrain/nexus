@@ -20,7 +20,8 @@ sealed trait Identity extends Product with Serializable {
   /**
     * A [[Identity]] expressed as an Iri
     *
-    * @param base the platform [[BaseUri]]
+    * @param base
+    *   the platform [[BaseUri]]
     */
   def id(implicit base: BaseUri): Iri
 }
@@ -33,7 +34,8 @@ object Identity {
   sealed trait IdentityRealm extends Identity {
 
     /**
-      * @return the realm of the identity
+      * @return
+      *   the realm of the identity
       */
     def realm: Label
   }
@@ -46,7 +48,8 @@ object Identity {
     /**
       * A [[Subject]] expressed as an Iri
       *
-      * @param base the platform [[BaseUri]]
+      * @param base
+      *   the platform [[BaseUri]]
       */
     def id(implicit base: BaseUri): Iri
   }
@@ -56,8 +59,10 @@ object Identity {
     /**
       * Attempts to convert an ''iri'' into a [[Subject]].
       *
-      * @param iri  the iri
-      * @param base the base uri
+      * @param iri
+      *   the iri
+      * @param base
+      *   the base uri
       */
     final def unsafe(iri: Iri)(implicit base: BaseUri): Either[FormatError, Subject] =
       iri.stripPrefix(base.iriEndpoint) match {
@@ -86,8 +91,10 @@ object Identity {
   /**
     * A user identity. It represents a unique person or a service account.
     *
-    * @param subject the subject name (usually the preferred_username claim)
-    * @param realm   the associated realm that asserts this identity
+    * @param subject
+    *   the subject name (usually the preferred_username claim)
+    * @param realm
+    *   the associated realm that asserts this identity
     */
   final case class User(subject: String, realm: Label) extends Subject with IdentityRealm {
     override def id(implicit base: BaseUri): Iri = base.iriEndpoint / "realms" / realm.value / "users" / subject
@@ -96,8 +103,10 @@ object Identity {
   /**
     * A group identity. It asserts that the caller belongs to a certain group of callers.
     *
-    * @param group the group name (asserted by one entry in the groups claim)
-    * @param realm the associated realm that asserts this identity
+    * @param group
+    *   the group name (asserted by one entry in the groups claim)
+    * @param realm
+    *   the associated realm that asserts this identity
     */
   final case class Group(group: String, realm: Label) extends IdentityRealm {
 
@@ -109,7 +118,8 @@ object Identity {
   /**
     * An authenticated identity is an arbitrary caller that has provided a valid AuthToken issued by a specific realm.
     *
-    * @param realm the realm that asserts this identity
+    * @param realm
+    *   the realm that asserts this identity
     */
   final case class Authenticated(realm: Label) extends IdentityRealm {
     def id(implicit base: BaseUri): Iri =
@@ -119,8 +129,10 @@ object Identity {
   /**
     * Attempts to convert an ''iri'' into an [[Identity]].
     *
-    * @param iri  the iri
-    * @param base the base uri
+    * @param iri
+    *   the iri
+    * @param base
+    *   the base uri
     */
   final def unsafe(iri: Iri)(implicit base: BaseUri): Either[FormatError, Identity] =
     iri.stripPrefix(base.iriEndpoint) match {

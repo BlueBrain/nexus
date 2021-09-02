@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, events}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -262,7 +262,8 @@ object AclsRoutes {
   }
 
   /**
-    * @return the [[Route]] for ACLs
+    * @return
+    *   the [[Route]] for ACLs
     */
   def apply(identities: Identities, acls: Acls)(implicit
       baseUri: BaseUri,

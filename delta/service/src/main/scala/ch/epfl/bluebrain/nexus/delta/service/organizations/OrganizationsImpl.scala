@@ -192,9 +192,12 @@ object OrganizationsImpl {
   /**
     * Constructs a [[Organizations]] instance.
     *
-    * @param config               the organization configuration
-    * @param eventLog             the event log for [[OrganizationEvent]]
-    * @param scopeInitializations the collection of registered scope initializations
+    * @param config
+    *   the organization configuration
+    * @param eventLog
+    *   the event log for [[OrganizationEvent]]
+    * @param scopeInitializations
+    *   the collection of registered scope initializations
     */
   final def apply(
       config: OrganizationsConfig,

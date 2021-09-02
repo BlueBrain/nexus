@@ -22,8 +22,8 @@ object RdfExceptionHandler {
   private val logger: Logger = Logger[RdfExceptionHandler.type]
 
   /**
-    * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples)
-    * depending on content negotiation (Accept Header) and ''format'' query parameter
+    * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples) depending
+    * on content negotiation (Accept Header) and ''format'' query parameter
     */
   def apply(implicit
       s: Scheduler,

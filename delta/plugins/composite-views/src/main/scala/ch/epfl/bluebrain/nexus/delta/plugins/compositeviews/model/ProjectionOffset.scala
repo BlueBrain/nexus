@@ -9,9 +9,12 @@ import io.circe.generic.semiauto.deriveEncoder
 /**
   * An offset for a composite view projection
   *
-  * @param sourceId     the Iri of the composite view source
-  * @param projectionId the Iri of the composite view projection
-  * @param offset       the offset value
+  * @param sourceId
+  *   the Iri of the composite view source
+  * @param projectionId
+  *   the Iri of the composite view projection
+  * @param offset
+  *   the offset value
   */
 final case class ProjectionOffset(sourceId: Iri, projectionId: Iri, offset: Offset)
 

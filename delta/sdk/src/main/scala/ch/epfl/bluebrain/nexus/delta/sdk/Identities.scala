@@ -11,7 +11,8 @@ trait Identities {
   /**
     * Attempt to exchange a token for a specific validated Caller.
     *
-    * @param token a well formatted authentication token (usually a bearer token)
+    * @param token
+    *   a well formatted authentication token (usually a bearer token)
     */
   def exchange(token: AuthToken): IO[TokenRejection, Caller]
 

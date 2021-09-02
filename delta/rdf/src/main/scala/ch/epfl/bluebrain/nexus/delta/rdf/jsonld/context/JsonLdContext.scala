@@ -12,11 +12,16 @@ import monix.bio.IO
 /**
   * A Json-LD context with its relevant fields.
   *
-  * @param value          the value of the @context key
-  * @param base           the Iri value of the @base key if present
-  * @param vocab          the Iri value of the @vocab key if present
-  * @param aliases        the @context aliases used to compact or shorten keys/values
-  * @param prefixMappings the @context prefix mappings used to form CURIES
+  * @param value
+  *   the value of the @context key
+  * @param base
+  *   the Iri value of the @base key if present
+  * @param vocab
+  *   the Iri value of the @vocab key if present
+  * @param aliases
+  *   the @context aliases used to compact or shorten keys/values
+  * @param prefixMappings
+  *   the @context prefix mappings used to form CURIES
   */
 final case class JsonLdContext(
     value: ContextValue,
@@ -68,9 +73,8 @@ final case class JsonLdContext(
 
   /**
     * Compact the ''passed'' iri:
-    * 1. Attempt compacting using the aliases
-    * 2. Attempt compacting using the vocab or base
-    * 3. Attempt compacting using the prefix mappings to create a CURIE
+    *   1. Attempt compacting using the aliases 2. Attempt compacting using the vocab or base 3. Attempt compacting
+    *      using the prefix mappings to create a CURIE
     */
   def compact(iri: Iri, useVocab: Boolean): String = {
     lazy val compactedVocabOrBase = if (useVocab) compactVocab(iri) else compactBase(iri)
@@ -78,9 +82,9 @@ final case class JsonLdContext(
   }
 
   /**
-    * Expands the passed value if it is in the form of a CURIE existing on the current context.
-    * E.g.: schema:Person will expand to http://schema.org/Person if in the ''prefixMappings'' exists the key values
-    * (schema -> http://schema.org/)
+    * Expands the passed value if it is in the form of a CURIE existing on the current context. E.g.: schema:Person will
+    * expand to http://schema.org/Person if in the ''prefixMappings'' exists the key values (schema ->
+    * http://schema.org/)
     */
   def expandCurie(value: String): Option[Iri] =
     value.split(":").toList match {
@@ -95,10 +99,8 @@ final case class JsonLdContext(
 
   /**
     * Expand the ''passed'' string:
-    * 1. Attempt expanding using the aliases
-    * 2. Attempt expanding using the prefix mappings to create a CURIE
-    * 3. Attempt expanding to absolute Iri
-    * 4. Attempt expanding using the vocab or base
+    *   1. Attempt expanding using the aliases 2. Attempt expanding using the prefix mappings to create a CURIE 3.
+    *      Attempt expanding to absolute Iri 4. Attempt expanding using the vocab or base
     */
   def expand(value: String, useVocab: Boolean): Option[Iri] = {
     def expandedVocabOrBase =
@@ -108,7 +110,8 @@ final case class JsonLdContext(
   }
 
   /**
-    * @return true if the current context value is empty, false otherwise
+    * @return
+    *   true if the current context value is empty, false otherwise
     */
   def isEmpty: Boolean = value.isEmpty
 
@@ -120,18 +123,22 @@ final case class JsonLdContext(
   /**
     * Add a prefix mapping to the current context.
     *
-    * @param prefix the prefix that can be used to create curies
-    * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
+    * @param prefix
+    *   the prefix that can be used to create curies
+    * @param iri
+    *   the iri which replaces the ''prefix'' when expanding JSON-LD
     */
   def addPrefix(prefix: String, iri: Iri): JsonLdContext =
     copy(value = value.add(prefix, iri.asJson), prefixMappings = prefixMappings + (prefix -> iri))
 
   /**
-    * Combines the current [[JsonLdContext]] context with a passed [[JsonLdContext]] context.
-    * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
+    * Combines the current [[JsonLdContext]] context with a passed [[JsonLdContext]] context. If a keys are is repeated
+    * in both contexts, the one in ''that'' will override the current one.
     *
-    * @param that another context to be merged with the current
-    * @return the merged context
+    * @param that
+    *   another context to be merged with the current
+    * @return
+    *   the merged context
     */
   def merge(that: JsonLdContext): JsonLdContext          =
     JsonLdContext(
@@ -145,8 +152,10 @@ final case class JsonLdContext(
   /**
     * Add an alias to the current context.
     *
-    * @param prefix the prefix which replces the ''iri'' when compacting JSON-LD
-    * @param iri    the iri which replaces the ''prefix'' when expanding JSON-LD
+    * @param prefix
+    *   the prefix which replces the ''iri'' when compacting JSON-LD
+    * @param iri
+    *   the iri which replaces the ''prefix'' when expanding JSON-LD
     */
   def addAlias(prefix: String, iri: Iri): JsonLdContext =
     addAlias(prefix, iri, None)
@@ -154,9 +163,12 @@ final case class JsonLdContext(
   /**
     * Add an alias to the current context.
     *
-    * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
-    * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
-    * @param dataType the @type Iri value
+    * @param prefix
+    *   the prefix which replces the ''iri'' when compacting JSON-LD
+    * @param iri
+    *   the iri which replaces the ''prefix'' when expanding JSON-LD
+    * @param dataType
+    *   the @type Iri value
     */
   def addAlias(prefix: String, iri: Iri, dataType: Iri): JsonLdContext =
     addAlias(prefix, iri, Some(dataType.toString))
@@ -164,8 +176,10 @@ final case class JsonLdContext(
   /**
     * Add an alias to the current context with the @type = @id.
     *
-    * @param prefix  the prefix which replces the ''iri'' when compacting JSON-LD
-    * @param iri     the iri which replaces the ''prefix'' when expanding JSON-LD
+    * @param prefix
+    *   the prefix which replces the ''iri'' when compacting JSON-LD
+    * @param iri
+    *   the iri which replaces the ''prefix'' when expanding JSON-LD
     */
   def addAliasIdType(prefix: String, iri: Iri): JsonLdContext =
     addAlias(prefix, iri, Some(keywords.id))
@@ -210,7 +224,8 @@ object JsonLdContext {
     api.context(contextValue)
 
   /**
-    * @return the value of the top @context key when found, an empty Json otherwise
+    * @return
+    *   the value of the top @context key when found, an empty Json otherwise
     */
   def topContextValueOrEmpty(json: Json): ContextValue =
     ContextValue(
@@ -224,7 +239,8 @@ object JsonLdContext {
     )
 
   /**
-    * @return the all the values with key @context
+    * @return
+    *   the all the values with key @context
     */
   def contextValues(json: Json): Set[ContextValue] =
     json.extractValuesFrom(keywords.context).map { ctxValue =>
@@ -234,10 +250,13 @@ object JsonLdContext {
   /**
     * Merges the values of the key @context in both passed ''json'' and ''that'' Json documents.
     *
-    * @param json the primary context. E.g.: {"@context": {...}}
-    * @param that the context to append to this json. E.g.: {"@context": {...}}
-    * @return a new Json with the original json and the merged context of both passed jsons.
-    *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
+    * @param json
+    *   the primary context. E.g.: {"@context": {...}}
+    * @param that
+    *   the context to append to this json. E.g.: {"@context": {...}}
+    * @return
+    *   a new Json with the original json and the merged context of both passed jsons. If a key inside the @context is
+    *   repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(json: Json, that: Json): Json =
     json deepMerge topContextValueOrEmpty(json).merge(topContextValueOrEmpty(that)).contextObj.asJson

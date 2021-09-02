@@ -11,11 +11,15 @@ import java.time.Instant
 trait OnEventInstant {
 
   /**
-    * A [[Task]] to be executed in order to trigger the awake of an indexing stream when there is an incoming project ''ProjectScopedEvent''.
+    * A [[Task]] to be executed in order to trigger the awake of an indexing stream when there is an incoming project
+    * ''ProjectScopedEvent''.
     *
-    * @param project      the project of the event
-    * @param prevEvent    the previous event instant
-    * @param currentEvent the current event instant
+    * @param project
+    *   the project of the event
+    * @param prevEvent
+    *   the previous event instant
+    * @param currentEvent
+    *   the current event instant
     */
   def awakeIndexingStream(project: ProjectRef, prevEvent: Option[Instant], currentEvent: Instant): Task[Unit]
 }
@@ -23,7 +27,7 @@ trait OnEventInstant {
 object OnEventInstant {
 
   /**
-    * Combine multiple [[OnEventInstant]]s into a single one
+    * Combine multiple [[OnEventInstant]] s into a single one
     */
   def combine(set: Set[OnEventInstant]): OnEventInstant =
     new OnEventInstant {

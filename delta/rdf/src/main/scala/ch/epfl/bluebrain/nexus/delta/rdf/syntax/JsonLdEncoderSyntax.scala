@@ -15,7 +15,8 @@ trait JsonLdEncoderSyntax {
 final class JsonLdEncoderOpts[A](private val value: A)(implicit encoder: JsonLdEncoder[A]) {
 
   /**
-    * Converts a value of type ''A'' to [[CompactedJsonLd]] format using the ''defaultContext'' available on the encoder.
+    * Converts a value of type ''A'' to [[CompactedJsonLd]] format using the ''defaultContext'' available on the
+    * encoder.
     */
   def toCompactedJsonLd(implicit
       options: JsonLdOptions,

@@ -40,12 +40,18 @@ import scala.annotation.nowarn
 /**
   * The files routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param files         the files module
-  * @param index         the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param files
+  *   the files module
+  * @param index
+  *   the indexing action on write operations
   */
 final class FilesRoutes(
     identities: Identities,
@@ -230,7 +236,8 @@ object FilesRoutes {
   val metadataMediaRanges: Set[MediaRange] = mediaTypes.map(_.toContentType.mediaType: MediaRange).toSet
 
   /**
-    * @return the [[Route]] for files
+    * @return
+    *   the [[Route]] for files
     */
   def apply(
       config: StorageTypeConfig,

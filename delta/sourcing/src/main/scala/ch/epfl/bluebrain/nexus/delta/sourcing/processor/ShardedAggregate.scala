@@ -18,13 +18,16 @@ import retry.syntax.all._
 import scala.reflect.ClassTag
 
 /**
-  * Relies on cluster sharding to distribute the work for the given
-  * (State, Command, Event, Rejection)
+  * Relies on cluster sharding to distribute the work for the given (State, Command, Event, Rejection)
   *
-  * @param entityTypeKey the key of an entity type, unique
-  * @param clusterSharding the sharding for this aggregate
-  * @param retryStrategy   the retry strategy to adopt
-  * @param askTimeout      the ask timeout
+  * @param entityTypeKey
+  *   the key of an entity type, unique
+  * @param clusterSharding
+  *   the sharding for this aggregate
+  * @param retryStrategy
+  *   the retry strategy to adopt
+  * @param askTimeout
+  *   the ask timeout
   */
 private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     entityTypeKey: EntityTypeKey[ProcessorCommand],
@@ -46,8 +49,10 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   /**
     * Get the current state for the entity with the given __id__
     *
-    * @param id the entity identifier
-    * @return the state for the given id
+    * @param id
+    *   the entity identifier
+    * @return
+    *   the state for the given id
     */
   override def state(id: String): UIO[State] =
     send(id, { askTo: ActorRef[StateResponse[State]] => RequestState(id, askTo) })
@@ -77,10 +82,13 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
     *
-    * @param id      the entity identifier
-    * @param command the command to evaluate
-    * @return the newly generated state and appended event if the command was evaluated successfully, or the
-    *         rejection of the __command__ in a task otherwise
+    * @param id
+    *   the entity identifier
+    * @param command
+    *   the command to evaluate
+    * @return
+    *   the newly generated state and appended event if the command was evaluated successfully, or the rejection of the
+    *   __command__ in a task otherwise
     */
   override def evaluate(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(
@@ -100,10 +108,13 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
     * Tests the evaluation the argument __command__ in the context of entity identified by __id__, without applying any
     * changes to the state or event log of the entity regardless of the outcome of the command evaluation.
     *
-    * @param id      the entity identifier
-    * @param command the command to evaluate
-    * @return the state and event that would be generated the command was tested for evaluation
-    *         successfully, or the rejection of the __command__ otherwise
+    * @param id
+    *   the entity identifier
+    * @param command
+    *   the command to evaluate
+    * @return
+    *   the state and event that would be generated the command was tested for evaluation successfully, or the rejection
+    *   of the __command__ otherwise
     */
   override def dryRun(id: String, command: Command): EvaluationIO[Rejection, Event, State] =
     toEvaluationIO(id, send(id, { askTo: ActorRef[EvaluationResult] => DryRun(id, command, askTo) })).named(
@@ -119,7 +130,8 @@ private[processor] class ShardedAggregate[State, Command, Event, Rejection](
   /**
     * Stops the entity with the given __id__
     *
-    * @param id the entity identifier
+    * @param id
+    *   the entity identifier
     */
   override def stop(id: String): Task[Unit] =
     send(id, { askTo: ActorRef[StopResponse.type] => RequestStop(id, askTo) })
@@ -170,10 +182,11 @@ object ShardedAggregate {
   }
 
   /**
-    * When the actor is sharded, we have to properly gracefully stopped with passivation
-    * so as not to lose messages
-    * @param shard the shard responsible for the actor to be passivated
-    * @return the behavior to adopt when we passivate in a sharded context
+    * When the actor is sharded, we have to properly gracefully stopped with passivation so as not to lose messages
+    * @param shard
+    *   the shard responsible for the actor to be passivated
+    * @return
+    *   the behavior to adopt when we passivate in a sharded context
     */
   private def passivateAfterInactivity(
       shard: ActorRef[ClusterSharding.ShardCommand]
@@ -184,13 +197,17 @@ object ShardedAggregate {
     }
 
   /**
-    * Creates an [[ShardedAggregate]] that makes use of persistent actors to perform its functions. The actors
-    * are automatically spread across all nodes of the cluster.
+    * Creates an [[ShardedAggregate]] that makes use of persistent actors to perform its functions. The actors are
+    * automatically spread across all nodes of the cluster.
     *
-    * @param definition       the event definition
-    * @param config           the config
-    * @param shardingSettings the sharding settings
-    * @param as               the actor system
+    * @param definition
+    *   the event definition
+    * @param config
+    *   the config
+    * @param shardingSettings
+    *   the sharding settings
+    * @param as
+    *   the actor system
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentEventDefinition[State, Command, Event, Rejection],
@@ -216,13 +233,17 @@ object ShardedAggregate {
   }
 
   /**
-    * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors
-    * are automatically spread across all nodes of the cluster.
+    * Creates an [[ShardedAggregate]] that makes use of transient actors to perform its functions. The actors are
+    * automatically spread across all nodes of the cluster.
     *
-    * @param definition       the event definition
-    * @param config           the config
-    * @param shardingSettings the sharding settings
-    * @param as               the actor system
+    * @param definition
+    *   the event definition
+    * @param config
+    *   the config
+    * @param shardingSettings
+    *   the sharding settings
+    * @param as
+    *   the actor system
     */
   def transientSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: TransientEventDefinition[State, Command, Event, Rejection],

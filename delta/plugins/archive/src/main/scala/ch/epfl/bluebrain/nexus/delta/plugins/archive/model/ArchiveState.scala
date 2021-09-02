@@ -32,11 +32,16 @@ object ArchiveState {
   /**
     * State of an existing archive.
     *
-    * @param id        the archive identifier
-    * @param project   the archive parent project
-    * @param value     the archive value
-    * @param createdAt the instant when the archive was created
-    * @param createdBy the subject that created the archive
+    * @param id
+    *   the archive identifier
+    * @param project
+    *   the archive parent project
+    * @param value
+    *   the archive value
+    * @param createdAt
+    *   the instant when the archive was created
+    * @param createdBy
+    *   the subject that created the archive
     */
   final case class Current(
       id: Iri,

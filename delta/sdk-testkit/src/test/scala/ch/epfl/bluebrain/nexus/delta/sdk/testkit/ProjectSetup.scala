@@ -13,14 +13,18 @@ import monix.bio.UIO
 object ProjectSetup {
 
   /**
-    * Set up Organizations and Projects dummies, populate some data
-    * and then eventually apply some deprecation
+    * Set up Organizations and Projects dummies, populate some data and then eventually apply some deprecation
     *
-    * @param orgsToCreate             Organizations to create
-    * @param projectsToCreate         Projects to create
-    * @param projectsToDeprecate      Projects to deprecate
-    * @param organizationsToDeprecate Organizations to deprecate
-    * @param defaultApiMappings       the default api mappings
+    * @param orgsToCreate
+    *   Organizations to create
+    * @param projectsToCreate
+    *   Projects to create
+    * @param projectsToDeprecate
+    *   Projects to deprecate
+    * @param organizationsToDeprecate
+    *   Organizations to deprecate
+    * @param defaultApiMappings
+    *   the default api mappings
     */
   def init(
       orgsToCreate: List[Label],

@@ -18,9 +18,9 @@ final class ACursorOps(private val cursor: ACursor) extends AnyVal {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
-    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A If the key does not exist, the passed ''defaultValue'' will be
+    * returned.
     */
   def getIgnoreSingleArrayOr[A: Decoder](key: String)(defaultValue: => A): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArrayOr(cursor, key)(defaultValue)
@@ -28,11 +28,13 @@ final class ACursorOps(private val cursor: ACursor) extends AnyVal {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A
     *
-    * @param key the key of the target value
-    * @tparam A the target generic type
+    * @param key
+    *   the key of the target value
+    * @tparam A
+    *   the target generic type
     */
   def getIgnoreSingleArray[A: Decoder](key: String): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArray(cursor, key)
@@ -43,19 +45,24 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
 
   /**
     * Map value of all instances of a key.
-    * @param key  the key
-    * @param f    the function to apply
-    * @return     [[JsonObject]] with all values of a key mapped
+    * @param key
+    *   the key
+    * @param f
+    *   the function to apply
+    * @return
+    *   [[JsonObject]] with all values of a key mapped
     */
   def mapAllKeys(key: String, f: Json => Json): JsonObject = JsonUtils.mapAllKeys(obj.asJson, key, f).asObject.get
 
   /**
-    * @return the value of the top @context key when found, an empty Json otherwise
+    * @return
+    *   the value of the top @context key when found, an empty Json otherwise
     */
   def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(obj.asJson)
 
   /**
-    * @return the all the values with key @context
+    * @return
+    *   the all the values with key @context
     */
   def contextValues: Set[ContextValue] = JsonLdContext.contextValues(obj.asJson)
 
@@ -108,30 +115,35 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
   /**
     * Extract all the values found from the passed ''keys'' in the current json object.
     *
-    * @param keys the keys from where to extract the Json values
+    * @param keys
+    *   the keys from where to extract the Json values
     */
   def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(obj.asJson, keys: _*)
 
   /**
     * Sort all the keys in the current json object.
     *
-    * @param ordering the sorting strategy
+    * @param ordering
+    *   the sorting strategy
     */
   def sort(implicit ordering: JsonKeyOrdering): JsonObject = JsonUtils.sort(obj.asJson).asObject.get
 
   /**
     * Merges the values of the key @context in both existing ''obj'' and ''that'' Json object documents.
     *
-    * @param that the context to append to this json. E.g.: {"@context": {...}}
-    * @return a new Json object with the original json and the merged context of both passed jsons.
-    *         If a key inside the @context is repeated in both json objects, the one in ''that'' will override the one in ''obj''
+    * @param that
+    *   the context to append to this json. E.g.: {"@context": {...}}
+    * @return
+    *   a new Json object with the original json and the merged context of both passed jsons. If a key inside the
+    *   "@context" is repeated in both json objects, the one in ''that'' will override the one in ''obj''
     */
   def addContext(that: Json): JsonObject = JsonLdContext.addContext(obj.asJson, that).asObject.get
 
   /**
     * Merges the values of the key @context in both existing ''obj'' and ''that'' Json object documents.
     *
-    * @see [[addContext(json)]]
+    * @see
+    *   [[addContext(json)]]
     */
   def addContext(that: JsonObject): JsonObject = addContext(that.asJson)
 
@@ -166,45 +178,53 @@ final class JsonOps(private val json: Json) extends AnyVal {
 
   /**
     * Map value of all instances of a key.
-    * @param key  the key
-    * @param f    the function to apply
-    * @return     [[Json]] with all values of a key mapped
+    * @param key
+    *   the key
+    * @param f
+    *   the function to apply
+    * @return
+    *   [[Json]] with all values of a key mapped
     */
   def mapAllKeys(key: String, f: Json => Json): Json = JsonUtils.mapAllKeys(json, key, f)
 
   /**
-    * @return the value of the top @context key when found, an empty Json otherwise
+    * @return
+    *   the value of the top @context key when found, an empty Json otherwise
     */
   def topContextValueOrEmpty: ContextValue = JsonLdContext.topContextValueOrEmpty(json)
 
   /**
-    * @return the all the values with key @context
+    * @return
+    *   the all the values with key @context
     */
   def contextValues: Set[ContextValue] = JsonLdContext.contextValues(json)
 
   /**
-    * Replaces the current context of the ''json'' with the passed  ''ctx''
+    * Replaces the current context of the ''json'' with the passed ''ctx''
     */
   def replaceContext(ctx: Json) = removeKeys(keywords.context).addContext(ctx)
 
   /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json documents.
     *
-    * @param that the context to append to this json. E.g.: {"@context": {...}}
-    * @return a new Json with the original json and the merged context of both passed jsons.
-    *         If a key inside the @context is repeated in both jsons, the one in ''that'' will override the one in ''json''
+    * @param that
+    *   the context to append to this json. E.g.: {"@context": {...}}
+    * @return
+    *   a new Json with the original json and the merged context of both passed jsons. If a key inside the @context is
+    *   repeated in both jsons, the one in ''that'' will override the one in ''json''
     */
   def addContext(that: Json): Json = JsonLdContext.addContext(json, that)
 
   /**
-    * Replaces the current context of the ''json'' with the passed  ''ctx''
+    * Replaces the current context of the ''json'' with the passed ''ctx''
     */
   def replaceContext(ctx: JsonObject) = removeKeys(keywords.context).addContext(ctx)
 
   /**
     * Merges the values of the key @context in both existing ''json'' and ''that'' Json object documents.
     *
-    * @see [[addContext(json)]]
+    * @see
+    *   [[addContext(json)]]
     */
   def addContext(that: JsonObject): Json = addContext(that.asJson)
 
@@ -263,31 +283,33 @@ final class JsonOps(private val json: Json) extends AnyVal {
   /**
     * Extract all the values found from the passed ''keys'' in the current json.
     *
-    * @param keys the keys from where to extract the Json values
+    * @param keys
+    *   the keys from where to extract the Json values
     */
   def extractValuesFrom(keys: String*): Set[Json] = JsonUtils.extractValuesFrom(json, keys: _*)
 
   /**
     * Sort all the keys in the current json.
     *
-    * @param ordering the sorting strategy
+    * @param ordering
+    *   the sorting strategy
     */
   def sort(implicit ordering: JsonKeyOrdering): Json = JsonUtils.sort(json)
 
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A.
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A.
     */
   def getIgnoreSingleArray[A: Decoder](key: String): Decoder.Result[A] = JsonUtils.getIgnoreSingleArray(json, key)
 
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A.
-    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A. If the key does not exist, the passed ''defaultValue'' will be
+    * returned.
     */
   def getIgnoreSingleArrayOr[A: Decoder](key: String)(defaultValue: => A): Decoder.Result[A] =
     JsonUtils.getIgnoreSingleArrayOr(json, key)(defaultValue)

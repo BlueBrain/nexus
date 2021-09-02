@@ -23,18 +23,24 @@ object File {
   /**
     * Holds some of the metadata information related to a file.
     *
-    * @param filename  the original filename of the file
-    * @param mediaType the media type of the file
+    * @param filename
+    *   the original filename of the file
+    * @param mediaType
+    *   the media type of the file
     */
   final case class FileDescription(filename: String, mediaType: ContentType)
 
   /**
     * Holds all the metadata information related to the file.
     *
-    * @param location  the file location
-    * @param bytes     the size of the file file in bytes
-    * @param digest    the digest information of the file
-    * @param mediaType the media type of the file
+    * @param location
+    *   the file location
+    * @param bytes
+    *   the size of the file file in bytes
+    * @param digest
+    *   the digest information of the file
+    * @param mediaType
+    *   the media type of the file
     */
   final case class FileAttributes(location: Uri, bytes: Long, digest: Digest, mediaType: ContentType)
   object FileAttributes {
@@ -62,8 +68,10 @@ object File {
   /**
     * Digest related information of the file
     *
-    * @param algorithm the algorithm used in order to compute the digest
-    * @param value     the actual value of the digest of the file
+    * @param algorithm
+    *   the algorithm used in order to compute the digest
+    * @param value
+    *   the actual value of the digest of the file
     */
   final case class Digest(algorithm: String, value: String)
 

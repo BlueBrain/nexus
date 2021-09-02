@@ -13,14 +13,16 @@ import scala.util.Try
 final class Crypto private (derivedKey: SecretKey) {
 
   /**
-    * @return the key in its primary encoded format
+    * @return
+    *   the key in its primary encoded format
     */
   private[crypto] def encoded: Array[Byte] = derivedKey.getEncoded
 
   /**
     * Encrypts the given input with the provided AES secret key.
     *
-    * @return a right with the encrypted string in base64 encoding or a left with the error message
+    * @return
+    *   a right with the encrypted string in base64 encoding or a left with the error message
     */
   def encrypt(input: String): Try[String] =
     Try {
@@ -33,7 +35,8 @@ final class Crypto private (derivedKey: SecretKey) {
   /**
     * Decrypts the given base64 encoded input with the provided AES secret key.
     *
-    * @return a right with the decrypted string or a left with the error message
+    * @return
+    *   a right with the decrypted string or a left with the error message
     */
   def decrypt(input: String): Try[String] =
     Try {
@@ -62,8 +65,10 @@ object Crypto {
   /**
     * Creates a [[Crypto]] for AES-256
     *
-    * @param password the password to use for encryption
-    * @param salt     the salt to use for encryption
+    * @param password
+    *   the password to use for encryption
+    * @param salt
+    *   the salt to use for encryption
     */
   final def apply(password: String, salt: String): Crypto =
     new Crypto(deriveKey(password, salt))

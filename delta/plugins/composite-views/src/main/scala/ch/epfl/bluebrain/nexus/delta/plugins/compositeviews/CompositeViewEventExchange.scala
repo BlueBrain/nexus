@@ -11,7 +11,8 @@ import monix.bio.{IO, UIO}
 /**
   * CompositeView specific [[EventExchange]] implementation.
   *
-  * @param views the composite views module
+  * @param views
+  *   the composite views module
   */
 class CompositeViewEventExchange(views: CompositeViews)(implicit base: BaseUri) extends EventExchange {
 

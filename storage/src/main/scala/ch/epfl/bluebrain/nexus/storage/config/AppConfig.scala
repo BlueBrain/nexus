@@ -12,12 +12,18 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Application configuration
   *
-  * @param description service description
-  * @param http        http interface configuration
-  * @param storage     storages configuration
-  * @param subject     allowed subject to perform calls to this service
-  * @param delta       delta client configuration
-  * @param digest      the digest configuration
+  * @param description
+  *   service description
+  * @param http
+  *   http interface configuration
+  * @param storage
+  *   storages configuration
+  * @param subject
+  *   allowed subject to perform calls to this service
+  * @param delta
+  *   delta client configuration
+  * @param digest
+  *   the digest configuration
   */
 final case class AppConfig(
     description: Description,
@@ -33,17 +39,20 @@ object AppConfig {
   /**
     * Service description
     *
-    * @param name service name
+    * @param name
+    *   service name
     */
   final case class Description(name: String) {
 
     /**
-      * @return the version of the service
+      * @return
+      *   the version of the service
       */
     val version: String = BuildInfo.version
 
     /**
-      * @return the full name of the service (name + version)
+      * @return
+      *   the full name of the service (name + version)
       */
     val fullName: String = s"$name-${version.replaceAll("\\W", "-")}"
 
@@ -52,20 +61,28 @@ object AppConfig {
   /**
     * HTTP configuration
     *
-    * @param interface  interface to bind to
-    * @param port       port to bind to
-    * @param prefix     prefix to add to HTTP routes
-    * @param publicUri  public URI of the service
+    * @param interface
+    *   interface to bind to
+    * @param port
+    *   port to bind to
+    * @param prefix
+    *   prefix to add to HTTP routes
+    * @param publicUri
+    *   public URI of the service
     */
   final case class HttpConfig(interface: String, port: Int, prefix: String, publicUri: Uri)
 
   /**
     * Storages configuration
     *
-    * @param rootVolume         the base [[Path]] where the files are stored
-    * @param protectedDirectory the relative [[Path]] of the protected directory once the storage bucket is selected
-    * @param fixerEnabled       call the permissions fixer when linking files, before they are moved
-    * @param fixerCommand       the command and arguments to call the 'nexus-fixer' binary, e.g. List("sudo", "nexus-fixer")
+    * @param rootVolume
+    *   the base [[Path]] where the files are stored
+    * @param protectedDirectory
+    *   the relative [[Path]] of the protected directory once the storage bucket is selected
+    * @param fixerEnabled
+    *   call the permissions fixer when linking files, before they are moved
+    * @param fixerCommand
+    *   the command and arguments to call the 'nexus-fixer' binary, e.g. List("sudo", "nexus-fixer")
     */
   final case class StorageConfig(
       rootVolume: Path,
@@ -77,9 +94,12 @@ object AppConfig {
   /**
     * Allowed subject to perform calls to this service
     *
-    * @param anonymous flag to decide whether or not the allowed subject is Anonymous or a User
-    * @param realm     the user realm. It must be present when anonymous = false and it must be removed when anonymous = true
-    * @param name      the user name. It must be present when anonymous = false and it must be removed when anonymous = true
+    * @param anonymous
+    *   flag to decide whether or not the allowed subject is Anonymous or a User
+    * @param realm
+    *   the user realm. It must be present when anonymous = false and it must be removed when anonymous = true
+    * @param name
+    *   the user name. It must be present when anonymous = false and it must be removed when anonymous = true
     */
   final case class SubjectConfig(anonymous: Boolean, realm: Option[String], name: Option[String]) {
     // $COVERAGE-OFF$
@@ -101,11 +121,16 @@ object AppConfig {
   /**
     * The digest configuration.
     *
-    * @param algorithm              the digest algorithm
-    * @param maxInMemory            the maximum number of algorithms stored in memory
-    * @param concurrentComputations the maximum number of concurrent computations of digest
-    * @param maxInQueue             the maximum number of computations in queue to be computed
-    * @param retriggerAfter         the amout of time after a digest which is still in the queue to be computed can be retrigger
+    * @param algorithm
+    *   the digest algorithm
+    * @param maxInMemory
+    *   the maximum number of algorithms stored in memory
+    * @param concurrentComputations
+    *   the maximum number of concurrent computations of digest
+    * @param maxInQueue
+    *   the maximum number of computations in queue to be computed
+    * @param retriggerAfter
+    *   the amout of time after a digest which is still in the queue to be computed can be retrigger
     */
   final case class DigestConfig(
       algorithm: String,

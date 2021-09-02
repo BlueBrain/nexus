@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.{notDeprecatedOrDeleted}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.notDeprecatedOrDeleted
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceRef}
@@ -23,12 +23,17 @@ import monix.bio.IO
 trait ElasticSearchViewsQuery {
 
   /**
-    * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering configuration.
+    * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
+    * configuration.
     *
-    * @param project    the project where to search
-    * @param pagination the pagination configuration
-    * @param params     the filtering configuration
-    * @param sort       the sorting configuration
+    * @param project
+    *   the project where to search
+    * @param pagination
+    *   the pagination configuration
+    * @param params
+    *   the filtering configuration
+    * @param sort
+    *   the sorting configuration
     */
   def list(
       project: ProjectRef,
@@ -38,14 +43,19 @@ trait ElasticSearchViewsQuery {
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
-    * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering configuration.
-    * It will filter the resources with the passed ''schema''
+    * Retrieves a list of resources from the default elasticsearch view using specific pagination, filter and ordering
+    * configuration. It will filter the resources with the passed ''schema''
     *
-    * @param project    the project where to search
-    * @param schema     the schema where to search
-    * @param pagination the pagination configuration
-    * @param params     the filtering configuration
-    * @param sort       the sorting configuration
+    * @param project
+    *   the project where to search
+    * @param schema
+    *   the schema where to search
+    * @param pagination
+    *   the pagination configuration
+    * @param params
+    *   the filtering configuration
+    * @param sort
+    *   the sorting configuration
     */
   def list(
       project: ProjectRef,
@@ -56,13 +66,17 @@ trait ElasticSearchViewsQuery {
   )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]]
 
   /**
-    * Queries the elasticsearch index (or indices) managed by the view with the passed ''id''.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
+    * Queries the elasticsearch index (or indices) managed by the view with the passed ''id''. We check for the caller
+    * to have the necessary query permissions on the view before performing the query.
     *
-    * @param id         the id of the view either in Iri or aliased form
-    * @param project    the project where the view exists
-    * @param query      the elasticsearch query to run
-    * @param qp         the extra query parameters for the elasticsearch index
+    * @param id
+    *   the id of the view either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the elasticsearch query to run
+    * @param qp
+    *   the extra query parameters for the elasticsearch index
     */
   def query(
       id: IdSegment,

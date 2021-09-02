@@ -17,13 +17,20 @@ import org.apache.jena.graph.Node
 /**
   * ElasticSearch indexing data
   *
-  * @param id                    the resource id
-  * @param deprecated            whether the resource is deprecated
-  * @param schema                the resource schema
-  * @param types                 the resource types
-  * @param graph                 the graph with non-metadata predicates
-  * @param metadataGraph         the graph with the metadata value triples
-  * @param source                the original payload of the resource posted by the caller
+  * @param id
+  *   the resource id
+  * @param deprecated
+  *   whether the resource is deprecated
+  * @param schema
+  *   the resource schema
+  * @param types
+  *   the resource types
+  * @param graph
+  *   the graph with non-metadata predicates
+  * @param metadataGraph
+  *   the graph with the metadata value triples
+  * @param source
+  *   the original payload of the resource posted by the caller
   */
 final case class IndexingData(
     id: Iri,
@@ -41,12 +48,14 @@ final case class IndexingData(
 object IndexingData {
 
   /**
-    * Helper function to generate an IndexingData from the [[EventExchangeValue]].
-    * The resource data is divided in 2 graphs. One containing only metadata and the other containing only data
-    * from the predicates present in ''graphPredicates''.
+    * Helper function to generate an IndexingData from the [[EventExchangeValue]]. The resource data is divided in 2
+    * graphs. One containing only metadata and the other containing only data from the predicates present in
+    * ''graphPredicates''.
     *
-    * @tparam A the value type
-    * @tparam M the metadata type
+    * @tparam A
+    *   the value type
+    * @tparam M
+    *   the metadata type
     */
   def apply[A, M](
       exchangedValue: EventExchangeValue[A, M],
@@ -58,11 +67,13 @@ object IndexingData {
     }
 
   /**
-    * Helper function to generate an IndexingData from the [[EventExchangeValue]].
-    * The resource data is divided in 2 graphs. One containing only metadata and the other containing only data.
+    * Helper function to generate an IndexingData from the [[EventExchangeValue]]. The resource data is divided in 2
+    * graphs. One containing only metadata and the other containing only data.
     *
-    * @tparam A the value type
-    * @tparam M the metadata type
+    * @tparam A
+    *   the value type
+    * @tparam M
+    *   the metadata type
     */
   def apply[A, M](
       exchangedValue: EventExchangeValue[A, M]

@@ -22,10 +22,14 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Realms implementation that uses a synchronized in memory journal.
   *
-  * @param journal          the journal to store events
-  * @param cache            the cache to store resources
-  * @param semaphore        a semaphore for serializing write operations on the journal
-  * @param resolveWellKnown get the well known configuration for an OIDC provider resolver
+  * @param journal
+  *   the journal to store events
+  * @param cache
+  *   the cache to store resources
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
+  * @param resolveWellKnown
+  *   get the well known configuration for an OIDC provider resolver
   */
 final class RealmsDummy private (
     journal: RealmsJournal,
@@ -99,7 +103,8 @@ object RealmsDummy {
   /**
     * Creates a new dummy Realms implementation.
     *
-    * @param resolveWellKnown the well known configuration for an OIDC provider resolver
+    * @param resolveWellKnown
+    *   the well known configuration for an OIDC provider resolver
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]

@@ -40,7 +40,8 @@ class IdentitiesRoutes(identities: Identities, acls: Acls)(implicit
 object IdentitiesRoutes {
 
   /**
-    * @return the [[Route]] for identities
+    * @return
+    *   the [[Route]] for identities
     */
   def apply(
       identities: Identities,

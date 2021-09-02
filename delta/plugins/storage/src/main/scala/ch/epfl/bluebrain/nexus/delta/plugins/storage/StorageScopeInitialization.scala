@@ -15,8 +15,10 @@ import monix.bio.{IO, UIO}
 /**
   * The default creation of the default disk storage as part of the project initialization.
   *
-  * @param storages       the storages module
-  * @param serviceAccount the subject that will be recorded when performing the initialization
+  * @param storages
+  *   the storages module
+  * @param serviceAccount
+  *   the subject that will be recorded when performing the initialization
   */
 class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAccount) extends ScopeInitialization {
 

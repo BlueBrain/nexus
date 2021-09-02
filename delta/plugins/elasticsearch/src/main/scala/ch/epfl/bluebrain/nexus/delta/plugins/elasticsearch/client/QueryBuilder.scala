@@ -26,7 +26,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   /**
     * Adds pagination to the current payload
     *
-    * @param page the pagination information
+    * @param page
+    *   the pagination information
     */
   def withPage(page: Pagination): QueryBuilder    =
     page match {

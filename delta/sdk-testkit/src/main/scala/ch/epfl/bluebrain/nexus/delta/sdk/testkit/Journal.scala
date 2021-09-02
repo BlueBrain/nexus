@@ -14,9 +14,12 @@ import java.util.concurrent.atomic.AtomicLong
 
 /**
   * Cache implementation for dummies
-  * @param events     storage of events
-  * @param semaphore  a semaphore for serializing write operations on the journal
-  * @param entityType the entity type
+  * @param events
+  *   storage of events
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
+  * @param entityType
+  *   the entity type
   */
 private[testkit] class Journal[Id, E <: Event] private (
     events: IORef[Vector[Envelope[E]]],
@@ -93,8 +96,7 @@ private[testkit] class Journal[Id, E <: Event] private (
   }
 
   /**
-    * Try to compute the state at the given revision
-    * A revision not found is returned if the revision is out of bounds
+    * Try to compute the state at the given revision A revision not found is returned if the revision is out of bounds
     */
   def stateAt[State, Rejection](
       id: Id,
@@ -159,9 +161,12 @@ object Journal {
 
   /**
     * Construct a journal for the entity type with a number of available permits
-    * @param entityType type of entity
-    * @param permits    number of permits
-    * @param idLens     how to extract the id out of the event
+    * @param entityType
+    *   type of entity
+    * @param permits
+    *   number of permits
+    * @param idLens
+    *   how to extract the id out of the event
     */
   def apply[Id, E <: Event](entityType: String, permits: Long = 1L)(implicit
       idLens: Lens[E, Id]
@@ -170,10 +175,14 @@ object Journal {
 
   /**
     * Construct a journal for the entity type with a number of available permits
-    * @param entityType type of entity
-    * @param permits    number of permits
-    * @param tagger     function which provides tags for a given event
-    * @param idLens     how to extract the id out of the event
+    * @param entityType
+    *   type of entity
+    * @param permits
+    *   number of permits
+    * @param tagger
+    *   function which provides tags for a given event
+    * @param idLens
+    *   how to extract the id out of the event
     */
   def apply[Id, E <: Event](entityType: String, permits: Long, tagger: E => Set[String])(implicit
       idLens: Lens[E, Id]

@@ -29,16 +29,20 @@ object AppInfoRoutes {
   /**
     * A service description.
     *
-    * @param name    the name of the service
-    * @param version the current version of the service
+    * @param name
+    *   the name of the service
+    * @param version
+    *   the current version of the service
     */
   final case class ServiceDescription(name: String, version: String)
 
   /**
     * Default factory method for building [[AppInfoRoutes]] instances.
     *
-    * @param config the description service configuration
-    * @return a new [[AppInfoRoutes]] instance
+    * @param config
+    *   the description service configuration
+    * @return
+    *   a new [[AppInfoRoutes]] instance
     */
   def apply(config: Description): AppInfoRoutes =
     new AppInfoRoutes(ServiceDescription(config.name, config.version))

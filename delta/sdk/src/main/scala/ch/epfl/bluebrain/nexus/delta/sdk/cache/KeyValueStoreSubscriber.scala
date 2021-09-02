@@ -12,15 +12,15 @@ import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
-  * Used with a [[KeyValueStoreSubscriber]] actor to trigger an
-  * action when a change on a [[KeyValueStore]] occurs
+  * Used with a [[KeyValueStoreSubscriber]] actor to trigger an action when a change on a [[KeyValueStore]] occurs
   */
 trait OnKeyValueStoreChange[K, V] {
 
   /**
     * Method that gets triggered when a change to key value store occurs.
     *
-    * @param value the changes made
+    * @param value
+    *   the changes made
     */
   def apply(value: KeyValueStoreChanges[K, V]): UIO[Unit]
 }
@@ -30,8 +30,10 @@ object OnKeyValueStoreChange {
   /**
     * Nothing to compute when a change to the key value store ocurrs.
     *
-    * @tparam K the key type
-    * @tparam V the value type
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
     */
   def noEffect[K, V]: OnKeyValueStoreChange[K, V] =
     (_: KeyValueStoreChanges[K, V]) => IO.unit
@@ -67,24 +69,30 @@ object KeyValueStoreSubscriber {
     /**
       * Signals that an element has been added to the key value store.
       *
-      * @param key   the key
-      * @param value the value
+      * @param key
+      *   the key
+      * @param value
+      *   the value
       */
     final case class ValueAdded[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
 
     /**
       * Signals that an already existing element has been updated from the key value store.
       *
-      * @param key   the key
-      * @param value the value
+      * @param key
+      *   the key
+      * @param value
+      *   the value
       */
     final case class ValueModified[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
 
     /**
       * Signals that an already existing element has been removed from the key value store.
       *
-      * @param key   the key
-      * @param value the value
+      * @param key
+      *   the key
+      * @param value
+      *   the value
       */
     final case class ValueRemoved[K, V](key: K, value: V) extends KeyValueStoreChange[K, V]
   }
@@ -92,18 +100,23 @@ object KeyValueStoreSubscriber {
   /**
     * The set of changes that have occurred on the primary store
     *
-    * @param values the set of changes
+    * @param values
+    *   the set of changes
     */
   final case class KeyValueStoreChanges[K, V](values: Set[KeyValueStoreChange[K, V]])
 
   /**
-    * Constructs the [[KeyValueStoreSubscriber]] actor that receives messages
-    * from the key value store whenever a change occurs.
+    * Constructs the [[KeyValueStoreSubscriber]] actor that receives messages from the key value store whenever a change
+    * occurs.
     *
-    * @param cacheId  id of the cache to subscribe to
-    * @param onChange the method that gets triggered whenever a change to the key value store occurs
-    * @tparam K the key type
-    * @tparam V the value type
+    * @param cacheId
+    *   id of the cache to subscribe to
+    * @param onChange
+    *   the method that gets triggered whenever a change to the key value store occurs
+    * @tparam K
+    *   the key type
+    * @tparam V
+    *   the value type
     */
   final def apply[K, V](cacheId: String, onChange: OnKeyValueStoreChange[K, V])(implicit
       scheduler: Scheduler

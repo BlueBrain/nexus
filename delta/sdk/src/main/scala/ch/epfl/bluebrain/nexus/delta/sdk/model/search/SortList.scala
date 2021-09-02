@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 /**
   * Data type of a collection of [[Sort]]
   *
-  * @param values the values to be sorted in the provided order
+  * @param values
+  *   the values to be sorted in the provided order
   */
 final case class SortList(values: List[Sort]) {
   def isEmpty: Boolean = values.isEmpty

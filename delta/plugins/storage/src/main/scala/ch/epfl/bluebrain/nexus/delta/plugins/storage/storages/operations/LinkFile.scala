@@ -14,8 +14,10 @@ trait LinkFile {
   /**
     * Links a file from the passed ''sourcePath'' to the ''description''.
     *
-    * @param sourcePath      the file origin
-    * @param description the file description
+    * @param sourcePath
+    *   the file origin
+    * @param description
+    *   the file description
     */
   def apply(sourcePath: Uri.Path, description: FileDescription): IO[StorageFileRejection, FileAttributes]
 }

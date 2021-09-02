@@ -19,10 +19,14 @@ import monix.execution.Scheduler
 /**
   * The global events route.
   *
-  * @param identities   the identities operations bundle
-  * @param projects     the projects operations bundle
-  * @param acls         the acls operations bundle
-  * @param sseEventLog  the event log
+  * @param identities
+  *   the identities operations bundle
+  * @param projects
+  *   the projects operations bundle
+  * @param acls
+  *   the acls operations bundle
+  * @param sseEventLog
+  *   the event log
   */
 class EventsRoutes(identities: Identities, acls: Acls, projects: Projects, sseEventLog: SseEventLog)(implicit
     baseUri: BaseUri,
@@ -62,7 +66,8 @@ class EventsRoutes(identities: Identities, acls: Acls, projects: Projects, sseEv
 object EventsRoutes {
 
   /**
-    * @return [[Route]] for events.
+    * @return
+    *   [[Route]] for events.
     */
   def apply(identities: Identities, acls: Acls, projects: Projects, sseEventLog: SseEventLog)(implicit
       baseUri: BaseUri,

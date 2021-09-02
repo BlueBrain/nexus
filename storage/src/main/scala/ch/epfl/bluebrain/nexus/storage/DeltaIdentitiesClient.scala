@@ -55,8 +55,10 @@ object DeltaIdentitiesClient {
   /**
     * The client caller. It contains the subject and the list of identities (which contains the subject again)
     *
-    * @param subject    the identity that performed the call
-    * @param identities the set of other identities associated to the ''subject''. E.g.: groups, anonymous, authenticated
+    * @param subject
+    *   the identity that performed the call
+    * @param identities
+    *   the set of other identities associated to the ''subject''. E.g.: groups, anonymous, authenticated
     */
   final case class Caller(subject: Subject, identities: Set[Identity])
 
@@ -87,7 +89,8 @@ object DeltaIdentitiesClient {
   /**
     * A data structure which represents an access token
     *
-    * @param value the token value
+    * @param value
+    *   the token value
     */
   final case class AccessToken(value: String)
 
@@ -113,23 +116,28 @@ object DeltaIdentitiesClient {
     /**
       * The User subject
       *
-      * @param subject unique user name
-      * @param realm   user realm
+      * @param subject
+      *   unique user name
+      * @param realm
+      *   user realm
       */
     final case class User(subject: String, realm: String) extends Subject
 
     /**
       * The Group identity
       *
-      * @param group the group
-      * @param realm group realm
+      * @param group
+      *   the group
+      * @param realm
+      *   group realm
       */
     final case class Group(group: String, realm: String) extends Identity
 
     /**
       * The Authenticated identity
       *
-      * @param realm the realm
+      * @param realm
+      *   the realm
       */
     final case class Authenticated(realm: String) extends Identity
 

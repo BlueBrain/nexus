@@ -14,10 +14,14 @@ import scala.annotation.nowarn
 /**
   * An archive value with its ttl.
   *
-  * @param id               the archive id
-  * @param project          the archive parent project
-  * @param resources        the collection of resource references
-  * @param expiresInSeconds the archive ttl
+  * @param id
+  *   the archive id
+  * @param project
+  *   the archive parent project
+  * @param resources
+  *   the collection of resource references
+  * @param expiresInSeconds
+  *   the archive ttl
   */
 final case class Archive(
     id: Iri,
@@ -27,13 +31,15 @@ final case class Archive(
 ) {
 
   /**
-    * @return the corresponding archive value
+    * @return
+    *   the corresponding archive value
     */
   def value: ArchiveValue =
     ArchiveValue.unsafe(resources) // safe because an archive is only produced from a state
 
   /**
-    * @return the archive metadata
+    * @return
+    *   the archive metadata
     */
   def metadata: Metadata =
     Metadata(project, expiresInSeconds)
@@ -44,8 +50,10 @@ object Archive {
   /**
     * Additional archive metadata.
     *
-    * @param project          the parent archive project
-    * @param expiresInSeconds the period in seconds after which an archive is expired
+    * @param project
+    *   the parent archive project
+    * @param expiresInSeconds
+    *   the period in seconds after which an archive is expired
     */
   final case class Metadata(project: ProjectRef, expiresInSeconds: Long)
 

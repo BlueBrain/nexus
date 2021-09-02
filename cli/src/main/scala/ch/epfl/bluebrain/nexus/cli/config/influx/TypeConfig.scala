@@ -7,11 +7,16 @@ import pureconfig.generic.semiauto.deriveConvert
 /**
   * Type to query configuration mapping.
   *
-  * @param tpe         the type for which the query configuration is applied
-  * @param query       the sparql query to execute for collecting information
-  * @param measurement the influxDB line protocol measurement name
-  * @param values      the influxDB line protocol values names
-  * @param timestamp   the influxDB line protocol optional timestamp
+  * @param tpe
+  *   the type for which the query configuration is applied
+  * @param query
+  *   the sparql query to execute for collecting information
+  * @param measurement
+  *   the influxDB line protocol measurement name
+  * @param values
+  *   the influxDB line protocol values names
+  * @param timestamp
+  *   the influxDB line protocol optional timestamp
   */
 final case class TypeConfig(
     tpe: String,

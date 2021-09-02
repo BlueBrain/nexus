@@ -11,9 +11,11 @@ import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
 /**
-  * Project specific [[EventExchange]] implementation for handling indexing/sse of organizations alongside its resources.
+  * Project specific [[EventExchange]] implementation for handling indexing/sse of organizations alongside its
+  * resources.
   *
-  * @param orgs the organizations module
+  * @param orgs
+  *   the organizations module
   */
 class OrganizationEventExchange(orgs: Organizations)(implicit base: BaseUri) extends EventExchange {
 

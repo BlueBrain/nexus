@@ -19,7 +19,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of organization rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class OrganizationRejection(val reason: String) extends Product with Serializable
 
@@ -38,8 +39,10 @@ object OrganizationRejection {
   /**
     * Signals an attempt to retrieve an organization at a specific revision when the provided revision does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
@@ -61,8 +64,10 @@ object OrganizationRejection {
   /**
     * Signals that the provided revision does not match the latest revision
     *
-    * @param provided provided revision
-    * @param expected latest know revision
+    * @param provided
+    *   provided revision
+    * @param expected
+    *   latest know revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends OrganizationRejection(
@@ -72,14 +77,15 @@ object OrganizationRejection {
   /**
     * Signals and attempt to update/deprecate an organization that is already deprecated.
     *
-    * @param label the label of the organization
+    * @param label
+    *   the label of the organization
     */
   final case class OrganizationIsDeprecated(label: Label)
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
   /**
-    * Rejection returned when the state is the initial after a Organizations.evaluation plus a Organizations.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Rejection returned when the state is the initial after a Organizations.evaluation plus a Organizations.next Note:
+    * This should never happen since the evaluation method already guarantees that the next function returns a current
     */
   final case class UnexpectedInitialState(label: Label)
       extends OrganizationRejection(s"Unexpected initial state for organization '$label'.")
@@ -87,7 +93,8 @@ object OrganizationRejection {
   /**
     * Rejection returned when the organization initialization could not be performed.
     *
-    * @param failure the underlying failure
+    * @param failure
+    *   the underlying failure
     */
   final case class OrganizationInitializationFailed(failure: ScopeInitializationFailed)
       extends OrganizationRejection(

@@ -24,17 +24,20 @@ import scala.annotation.nowarn
 sealed trait OrganizationEvent extends OrganizationScopedEvent {
 
   /**
-    * @return the organization Label
+    * @return
+    *   the organization Label
     */
   def label: Label
 
   /**
-    * @return the organization UUID
+    * @return
+    *   the organization UUID
     */
   def uuid: UUID
 
   /**
-    * @return true if the event is [[OrganizationCreated]], false otherwise
+    * @return
+    *   true if the event is [[OrganizationCreated]], false otherwise
     */
   def isCreated: Boolean = this match {
     case _: OrganizationCreated => true
@@ -49,12 +52,18 @@ object OrganizationEvent {
   /**
     * Event representing organization creation.
     *
-    * @param label       the organization label
-    * @param uuid        the organization UUID
-    * @param rev         the organization revision
-    * @param description an optional description of the organization
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param label
+    *   the organization label
+    * @param uuid
+    *   the organization UUID
+    * @param rev
+    *   the organization revision
+    * @param description
+    *   an optional description of the organization
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class OrganizationCreated(
       label: Label,
@@ -68,12 +77,18 @@ object OrganizationEvent {
   /**
     * Event representing organization update.
     *
-    * @param label       the organization label
-    * @param uuid        the organization UUID
-    * @param rev         the update revision
-    * @param description an optional description of the organization
-    * @param instant     the instant when this event was created
-    * @param subject     the subject which created this event
+    * @param label
+    *   the organization label
+    * @param uuid
+    *   the organization UUID
+    * @param rev
+    *   the update revision
+    * @param description
+    *   an optional description of the organization
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class OrganizationUpdated(
       label: Label,
@@ -85,13 +100,18 @@ object OrganizationEvent {
   ) extends OrganizationEvent
 
   /**
-    *  Event representing organization deprecation.
+    * Event representing organization deprecation.
     *
-    * @param label   the organization label
-    * @param uuid    the organization UUID
-    * @param rev     the deprecation revision
-    * @param instant the instant when this event was created
-    * @param subject the subject which created this event
+    * @param label
+    *   the organization label
+    * @param uuid
+    *   the organization UUID
+    * @param rev
+    *   the deprecation revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class OrganizationDeprecated(
       label: Label,

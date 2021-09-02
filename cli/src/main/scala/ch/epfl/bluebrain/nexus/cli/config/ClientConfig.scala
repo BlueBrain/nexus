@@ -7,7 +7,8 @@ import pureconfig.generic.semiauto.deriveConvert
 /**
   * The HTTP Client configuration.
   *
-  * @param retry the retry strategy (policy and condition)
+  * @param retry
+  *   the retry strategy (policy and condition)
   */
 final case class ClientConfig(retry: RetryStrategyConfig[ClientRetryCondition])
 

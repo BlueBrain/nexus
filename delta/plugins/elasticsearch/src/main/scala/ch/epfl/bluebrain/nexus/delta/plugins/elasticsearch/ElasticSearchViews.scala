@@ -68,9 +68,12 @@ final class ElasticSearchViews private (
   /**
     * Creates a new ElasticSearchView with a generated id.
     *
-    * @param project the parent project of the view
-    * @param value   the view configuration
-    * @param subject the subject that initiated the action
+    * @param project
+    *   the parent project of the view
+    * @param value
+    *   the view configuration
+    * @param subject
+    *   the subject that initiated the action
     */
   def create(
       project: ProjectRef,
@@ -81,10 +84,14 @@ final class ElasticSearchViews private (
   /**
     * Creates a new ElasticSearchView with a provided id.
     *
-    * @param id      the id of the view either in Iri or aliased form
-    * @param project the parent project of the view
-    * @param value   the view configuration
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the id of the view either in Iri or aliased form
+    * @param project
+    *   the parent project of the view
+    * @param value
+    *   the view configuration
+    * @param subject
+    *   the subject that initiated the action
     */
   def create(
       id: IdSegment,
@@ -102,9 +109,12 @@ final class ElasticSearchViews private (
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
     * be used; otherwise a new identifier will be generated.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project
+    *   the parent project of the view
+    * @param source
+    *   the json representation of the view
+    * @param caller
+    *   the caller that initiated the action
     */
   def create(
       project: ProjectRef,
@@ -121,9 +131,12 @@ final class ElasticSearchViews private (
     * Creates a new ElasticSearchView from a json representation. If an identifier exists in the provided json it will
     * be used as long as it matches the provided id in Iri form or as an alias; otherwise the action will be rejected.
     *
-    * @param project the parent project of the view
-    * @param source  the json representation of the view
-    * @param caller  the caller that initiated the action
+    * @param project
+    *   the parent project of the view
+    * @param source
+    *   the json representation of the view
+    * @param caller
+    *   the caller that initiated the action
     */
   def create(
       id: IdSegment,
@@ -141,11 +154,16 @@ final class ElasticSearchViews private (
   /**
     * Updates an existing ElasticSearchView.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param value   the new view configuration
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param value
+    *   the new view configuration
+    * @param subject
+    *   the subject that initiated the action
     */
   def update(
       id: IdSegment,
@@ -163,11 +181,16 @@ final class ElasticSearchViews private (
   /**
     * Updates an existing ElasticSearchView.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param source  the new view configuration in json representation
-    * @param caller  the caller that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param source
+    *   the new view configuration in json representation
+    * @param caller
+    *   the caller that initiated the action
     */
   def update(
       id: IdSegment,
@@ -186,12 +209,18 @@ final class ElasticSearchViews private (
   /**
     * Applies a tag to an existing ElasticSearchView revision.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tag     the tag to apply
-    * @param tagRev  the target revision of the tag
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tag
+    *   the tag to apply
+    * @param tagRev
+    *   the target revision of the tag
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
     */
   def tag(
       id: IdSegment,
@@ -211,10 +240,14 @@ final class ElasticSearchViews private (
     * Deprecates an existing ElasticSearchView. View deprecation implies blocking any query capabilities and in case of
     * an IndexingElasticSearchView the corresponding index is deleted.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param rev     the current view revision
-    * @param subject the subject that initiated the action
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param rev
+    *   the current view revision
+    * @param subject
+    *   the subject that initiated the action
     */
   def deprecate(
       id: IdSegment,
@@ -225,7 +258,8 @@ final class ElasticSearchViews private (
 
   /**
     * Deprecate a view without any extra checks on the projects API.
-    * @see [[deprecate(id, project, rev)]]
+    * @see
+    *   [[deprecate(id, project, rev)]]
     */
   private[elasticsearch] def deprecateWithoutProjectChecks(
       id: IdSegment,
@@ -250,8 +284,10 @@ final class ElasticSearchViews private (
   /**
     * Retrieves a current ElasticSearchView resource.
     *
-    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
-    * @param project the view parent project
+    * @param id
+    *   the identifier that will be expanded to the Iri of the view with its optional rev/tag
+    * @param project
+    *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] =
     id.asTag
@@ -273,8 +309,10 @@ final class ElasticSearchViews private (
   /**
     * Retrieves a current IndexingElasticSearchView resource.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
     */
   def fetchIndexingView(
       id: IdSegmentRef,
@@ -301,9 +339,12 @@ final class ElasticSearchViews private (
   /**
     * Retrieves a list of ElasticSearchViews using specific pagination, filter and ordering configuration.
     *
-    * @param pagination the pagination configuration
-    * @param params     the filtering configuration
-    * @param ordering   the ordering configuration
+    * @param pagination
+    *   the pagination configuration
+    * @param params
+    *   the filtering configuration
+    * @param ordering
+    *   the ordering configuration
     */
   def list(
       pagination: FromPagination,
@@ -323,8 +364,10 @@ final class ElasticSearchViews private (
   /**
     * A terminating stream of events for views. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the elasticsearch view belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -333,11 +376,13 @@ final class ElasticSearchViews private (
     eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
+    * events are recorded.
     *
-    * @param projectRef the project reference where the elasticsearch view belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -346,11 +391,13 @@ final class ElasticSearchViews private (
     eventLog.projectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
+    * events are recorded.
     *
-    * @param organization the organization label reference where the elasticsearch view belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the elasticsearch view belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -363,7 +410,8 @@ final class ElasticSearchViews private (
     * event corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
     * retrieval of all events.
     *
-    * @param offset the starting offset for the event log
+    * @param offset
+    *   the starting offset for the event log
     */
   def events(offset: Offset): Stream[Task, Envelope[ElasticSearchViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)

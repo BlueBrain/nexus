@@ -10,7 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * Resource specific [[EventExchange]] implementation.
   *
-  * @param resources the resources module
+  * @param resources
+  *   the resources module
   */
 class ResourceEventExchange(resources: Resources)(implicit base: BaseUri) extends EventExchange {
 

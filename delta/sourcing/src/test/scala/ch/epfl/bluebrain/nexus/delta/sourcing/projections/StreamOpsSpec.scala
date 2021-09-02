@@ -29,8 +29,7 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
   val projection = new InMemoryProjection[String]("", Projection.stackTraceAsString, TrieMap.empty, TrieMap.empty)
 
   /**
-    * Generate a stream of messages with numberOfEvents persistenceId
-    * each with numberOfRevisions
+    * Generate a stream of messages with numberOfEvents persistenceId each with numberOfRevisions
     *
     * @return
     */

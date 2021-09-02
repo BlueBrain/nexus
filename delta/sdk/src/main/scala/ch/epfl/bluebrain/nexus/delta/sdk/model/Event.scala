@@ -11,17 +11,20 @@ import java.time.Instant
 sealed trait Event extends Product with Serializable {
 
   /**
-    * @return the revision this events generates
+    * @return
+    *   the revision this events generates
     */
   def rev: Long
 
   /**
-    * @return the instant when the event was emitted
+    * @return
+    *   the instant when the event was emitted
     */
   def instant: Instant
 
   /**
-    * @return the subject that performed the action that resulted in emitting this event
+    * @return
+    *   the subject that performed the action that resulted in emitting this event
     */
   def subject: Subject
 }
@@ -33,7 +36,8 @@ object Event {
   trait OrganizationScopedEvent extends Event {
 
     /**
-      * @return the organization where the event belongs
+      * @return
+      *   the organization where the event belongs
       */
     def organizationLabel: Label
   }
@@ -41,12 +45,14 @@ object Event {
   trait ProjectScopedEvent extends OrganizationScopedEvent {
 
     /**
-      * @return the project where the event belongs
+      * @return
+      *   the project where the event belongs
       */
     def project: ProjectRef
 
     /**
-      * @return the parent organization label
+      * @return
+      *   the parent organization label
       */
     def organizationLabel: Label = project.organization
 

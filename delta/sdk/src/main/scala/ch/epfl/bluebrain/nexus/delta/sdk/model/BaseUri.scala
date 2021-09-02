@@ -18,8 +18,10 @@ import scala.util.Try
 /**
   * The BaseUri holds information about the platform endpoint.
   *
-  * @param base   the base [[Uri]]
-  * @param prefix an optional path prefix to be appended to the ''base''
+  * @param base
+  *   the base [[Uri]]
+  * @param prefix
+  *   an optional path prefix to be appended to the ''base''
   */
 final case class BaseUri private (base: Uri, prefix: Option[Label]) {
 

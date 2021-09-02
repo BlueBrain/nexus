@@ -53,7 +53,8 @@ object BlazegraphIndexingCoordinator {
       }
 
   /**
-    * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the BlazegraphViews.
+    * Create a coordinator for indexing triples into Blazegraph namespaces triggered and customized by the
+    * BlazegraphViews.
     */
   def apply(
       views: BlazegraphViews,

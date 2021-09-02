@@ -23,9 +23,9 @@ import monix.execution.Scheduler
 object RdfRejectionHandler {
 
   /**
-    * Adapted from [[akka.http.scaladsl.server.RejectionHandler.default]]
-    * A [[RejectionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples)
-    * depending on content negotiation (Accept Header) and ''format'' query parameter
+    * Adapted from [[akka.http.scaladsl.server.RejectionHandler.default]] A [[RejectionHandler]] that returns RDF output
+    * (Json-LD compacted, Json-LD expanded, Dot or NTriples) depending on content negotiation (Accept Header) and
+    * ''format'' query parameter
     */
   def apply(implicit
       s: Scheduler,

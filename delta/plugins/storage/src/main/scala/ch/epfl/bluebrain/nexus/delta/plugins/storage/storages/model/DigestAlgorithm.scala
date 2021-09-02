@@ -13,7 +13,8 @@ import scala.util.Try
 final case class DigestAlgorithm private (value: String) {
 
   /**
-    * @return the [[MessageDigest]] from the current algorithm
+    * @return
+    *   the [[MessageDigest]] from the current algorithm
     */
   def digest: MessageDigest = MessageDigest.getInstance(value)
 

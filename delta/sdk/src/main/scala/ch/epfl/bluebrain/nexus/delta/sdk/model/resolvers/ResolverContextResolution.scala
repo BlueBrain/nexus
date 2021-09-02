@@ -19,11 +19,13 @@ import monix.bio.IO
 import scala.collection.concurrent
 
 /**
-  * Allows to resolve contexts first via a predefined context resolution and fallback
-  * on a second based on resource resolving in the given project
+  * Allows to resolve contexts first via a predefined context resolution and fallback on a second based on resource
+  * resolving in the given project
   *
-  * @param rcr the static resource resolution
-  * @param resolveResource a function to resolve resources
+  * @param rcr
+  *   the static resource resolution
+  * @param resolveResource
+  *   a function to resolve resources
   */
 final class ResolverContextResolution(
     rcr: RemoteContextResolution,
@@ -71,8 +73,10 @@ object ResolverContextResolution {
 
   /**
     * Constructs a [[ResolverContextResolution]]
-    * @param rcr                 a previously defined 'RemoteContextResolution'
-    * @param resourceResolution  a resource resolution base on resolvers
+    * @param rcr
+    *   a previously defined 'RemoteContextResolution'
+    * @param resourceResolution
+    *   a resource resolution base on resolvers
     */
   def apply(rcr: RemoteContextResolution, resourceResolution: ResourceResolution[Resource]): ResolverContextResolution =
     new ResolverContextResolution(
@@ -83,10 +87,14 @@ object ResolverContextResolution {
 
   /**
     * Constructs a [[ResolverContextResolution]]
-    * @param acls       an acl instance
-    * @param resolvers  a resolvers instance
-    * @param resources  a resource instance
-    * @param rcr        a previously defined 'RemoteContextResolution'
+    * @param acls
+    *   an acl instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param resources
+    *   a resource instance
+    * @param rcr
+    *   a previously defined 'RemoteContextResolution'
     */
   def apply(
       acls: Acls,

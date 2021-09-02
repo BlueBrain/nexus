@@ -14,8 +14,10 @@ object ResourceResolutionGen {
 
   /**
     * Create a resource resolution based on a single in-project resolver
-    * @param projectRef      the project
-    * @param fetchResource   how to fetch the resource
+    * @param projectRef
+    *   the project
+    * @param fetchResource
+    *   how to fetch the resource
     */
   def singleInProject[R](
       projectRef: ProjectRef,

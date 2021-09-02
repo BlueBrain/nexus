@@ -8,9 +8,12 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Statistics for a single composite view projection
   *
-  * @param sourceId     the Iri of the composite view source
-  * @param projectionId the Iri of the composite view projection
-  * @param value        the statistics value
+  * @param sourceId
+  *   the Iri of the composite view source
+  * @param projectionId
+  *   the Iri of the composite view projection
+  * @param value
+  *   the statistics value
   */
 final case class ProjectionStatistics(sourceId: Iri, projectionId: Iri, value: ProgressStatistics)
 

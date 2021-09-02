@@ -20,11 +20,16 @@ sealed trait FormDataExtractor {
   /**
     * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData
     *
-    * @param id        the file id
-    * @param entity    the Miltipart/FormData payload
-    * @param maxFileSize the file size limit to be uploaded, provided by the storage
-    * @param storageAvailableSpace the remaining available space on the storage
-    * @return the file description plus the stream of [[ByteString]] with the file content
+    * @param id
+    *   the file id
+    * @param entity
+    *   the Miltipart/FormData payload
+    * @param maxFileSize
+    *   the file size limit to be uploaded, provided by the storage
+    * @param storageAvailableSpace
+    *   the remaining available space on the storage
+    * @return
+    *   the file description plus the stream of [[ByteString]] with the file content
     */
   def apply(
       id: Iri,

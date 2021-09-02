@@ -22,8 +22,10 @@ trait SaveFile {
   /**
     * Saves a file with the passed ''description'' and ''source''.
     *
-    * @param description the file description
-    * @param source      the file stream
+    * @param description
+    *   the file description
+    * @param source
+    *   the file stream
     */
   def apply(description: FileDescription, source: AkkaSource): IO[SaveFileRejection, FileAttributes]
 }
@@ -43,7 +45,8 @@ object SaveFile {
   /**
     * A sink that computes the digest of the input ByteString
     *
-    * @param algorithm the digest algorithm. E.g.: SHA-256
+    * @param algorithm
+    *   the digest algorithm. E.g.: SHA-256
     */
   def digestSink(algorithm: DigestAlgorithm)(implicit ec: ExecutionContext): Sink[ByteString, Future[ComputedDigest]] =
     Sink
@@ -64,9 +67,7 @@ object SaveFile {
   /**
     * Builds a relative file path with intermediate folders taken from the passed ''uuid''
     *
-    * Example:
-    * uuid = 12345678-90ab-cdef-abcd-1234567890ab
-    * {org}/{proj}/1/2/3/4/5/6/7/8/{filename}
+    * Example: uuid = 12345678-90ab-cdef-abcd-1234567890ab {org}/{proj}/1/2/3/4/5/6/7/8/{filename}
     */
   def intermediateFolders(ref: ProjectRef, uuid: UUID, filename: String): Uri.Path =
     Uri.Path(s"$ref/${uuid.toString.toLowerCase.takeWhile(_ != '-').mkString("/")}/$filename")

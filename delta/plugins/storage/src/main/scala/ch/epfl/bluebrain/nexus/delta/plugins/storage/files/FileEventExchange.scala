@@ -11,7 +11,8 @@ import monix.bio.{IO, UIO}
 /**
   * File specific [[EventExchange]] implementation.
   *
-  * @param files the files module
+  * @param files
+  *   the files module
   */
 class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTypeConfig) extends EventExchange {
 

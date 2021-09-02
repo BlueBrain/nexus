@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import com.github.jsonldjava.core.JsonLdError.Error.RECURSIVE_CONTEXT_INCLUSION
-import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdProcessor, JsonLdOptions => JsonLdJavaOptions}
+import com.github.jsonldjava.core.{Context, DocumentLoader, JsonLdError, JsonLdOptions => JsonLdJavaOptions, JsonLdProcessor}
 import com.github.jsonldjava.utils.JsonUtils
 import io.circe.syntax._
 import io.circe.{parser, Json, JsonObject}

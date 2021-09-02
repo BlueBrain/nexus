@@ -13,9 +13,12 @@ trait SparqlClient[F[_]] {
   /**
     * Performs a SPARQL query on the default view of the passed organization and project.
     *
-    * @param org      the organization label
-    * @param proj     the project label
-    * @param queryStr the SPARQL query
+    * @param org
+    *   the organization label
+    * @param proj
+    *   the project label
+    * @param queryStr
+    *   the SPARQL query
     */
   def query(org: OrgLabel, proj: ProjectLabel, queryStr: String): F[ClientErrOr[SparqlResults]] =
     query(org, proj, None, queryStr)
@@ -23,10 +26,14 @@ trait SparqlClient[F[_]] {
   /**
     * Performs a SPARQL query on the passed view, organization and project.
     *
-    * @param org      the organization label
-    * @param proj     the project label
-    * @param view     the view @id value
-    * @param queryStr the SPARQL query
+    * @param org
+    *   the organization label
+    * @param proj
+    *   the project label
+    * @param view
+    *   the view @id value
+    * @param queryStr
+    *   the SPARQL query
     */
   def query(org: OrgLabel, proj: ProjectLabel, view: Uri, queryStr: String): F[ClientErrOr[SparqlResults]] =
     query(org, proj, Some(view), queryStr)
@@ -34,10 +41,14 @@ trait SparqlClient[F[_]] {
   /**
     * Performs a SPARQL query on the passed (or default) view, organization and project.
     *
-    * @param org      the organization label
-    * @param proj     the project label
-    * @param view     the view @id value
-    * @param queryStr the SPARQL query
+    * @param org
+    *   the organization label
+    * @param proj
+    *   the project label
+    * @param view
+    *   the view @id value
+    * @param queryStr
+    *   the SPARQL query
     */
   def query(org: OrgLabel, proj: ProjectLabel, view: Option[Uri], queryStr: String): F[ClientErrOr[SparqlResults]]
 }
@@ -47,9 +58,12 @@ object SparqlClient {
   /**
     * Construct a [[SparqlClient]] to perform sparql queries using the Nexus API.
     *
-    * @param client  the underlying HTTP client
-    * @param env     the CLI environment configuration
-    * @param console [[Console]] for logging.
+    * @param client
+    *   the underlying HTTP client
+    * @param env
+    *   the CLI environment configuration
+    * @param console
+    *   [[Console]] for logging.
     */
   final def apply[F[_]: Sync: Timer](client: Client[F], env: EnvConfig, console: Console[F]): SparqlClient[F] = {
     implicit val c: Console[F] = console

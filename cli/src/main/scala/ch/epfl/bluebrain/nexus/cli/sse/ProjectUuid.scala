@@ -6,7 +6,8 @@ import cats.Show
 
 /**
   * A safe project UUID.
-  * @param value the underlying uuid
+  * @param value
+  *   the underlying uuid
   */
 final case class ProjectUuid(value: UUID)
 

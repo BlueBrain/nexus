@@ -19,7 +19,8 @@ import java.time.Instant
 sealed trait StorageState extends Product with Serializable {
 
   /**
-    * @return the schema reference that storages conforms to
+    * @return
+    *   the schema reference that storages conforms to
     */
   final def schema: ResourceRef = Latest(schemas.storage)
 
@@ -29,12 +30,14 @@ sealed trait StorageState extends Product with Serializable {
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[StorageResource]
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the state deprecation status
+    * @return
+    *   the state deprecation status
     */
   def deprecated: Boolean
 
@@ -56,17 +59,28 @@ object StorageState {
   /**
     * State for an existing storage
     *
-    * @param id                the id of the storage
-    * @param project           the project it belongs to
-    * @param value             additional fields to configure the storage
-    * @param source            the representation of the storage as posted by the subject
-    * @param tags              the collection of tag aliases
-    * @param rev               the current state revision
-    * @param deprecated        the current state deprecation status
-    * @param createdAt         the instant when the resource was created
-    * @param createdBy         the subject that created the resource
-    * @param updatedAt         the instant when the resource was last updated
-    * @param updatedBy         the subject that last updated the resource
+    * @param id
+    *   the id of the storage
+    * @param project
+    *   the project it belongs to
+    * @param value
+    *   additional fields to configure the storage
+    * @param source
+    *   the representation of the storage as posted by the subject
+    * @param tags
+    *   the collection of tag aliases
+    * @param rev
+    *   the current state revision
+    * @param deprecated
+    *   the current state deprecation status
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the subject that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the subject that last updated the resource
     */
   final case class Current(
       id: Iri,

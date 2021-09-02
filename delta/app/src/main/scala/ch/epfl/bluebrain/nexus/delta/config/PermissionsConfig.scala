@@ -9,8 +9,10 @@ import pureconfig.generic.semiauto._
 
 /**
   * The permissions module config.
-  * @param minimum   the minimum collection of permissions
-  * @param aggregate the aggregate config
+  * @param minimum
+  *   the minimum collection of permissions
+  * @param aggregate
+  *   the aggregate config
   */
 final case class PermissionsConfig(
     minimum: Set[Permission],

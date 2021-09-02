@@ -69,8 +69,10 @@ final class BlazegraphViews(
   /**
     * Create a new Blazegraph view where the id is either present on the payload or self generated.
     *
-    * @param project  the project of to which the view belongs
-    * @param source   the payload to create the view
+    * @param project
+    *   the project of to which the view belongs
+    * @param source
+    *   the payload to create the view
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
@@ -84,9 +86,12 @@ final class BlazegraphViews(
   /**
     * Create a new view with the provided id.
     *
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param source   the payload to create the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the project to which the view belongs
+    * @param source
+    *   the payload to create the view
     */
   def create(
       id: IdSegment,
@@ -104,9 +109,12 @@ final class BlazegraphViews(
 
   /**
     * Create a new view with the provided id and the [[BlazegraphViewValue]] instead of [[Json]] payload.
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param view     the value of the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the project to which the view belongs
+    * @param view
+    *   the value of the view
     */
   def create(id: IdSegment, project: ProjectRef, view: BlazegraphViewValue)(implicit
       subject: Subject
@@ -122,10 +130,14 @@ final class BlazegraphViews(
 
   /**
     * Update an existing view with [[Json]] source.
-    * @param id       the view identifier
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
-    * @param source   the view source
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the project to which the view belongs
+    * @param rev
+    *   the current revision of the view
+    * @param source
+    *   the view source
     */
   def update(
       id: IdSegment,
@@ -145,10 +157,14 @@ final class BlazegraphViews(
   /**
     * Update an existing view.
     *
-    * @param id       the identifier of the view
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
-    * @param view     the view value
+    * @param id
+    *   the identifier of the view
+    * @param project
+    *   the project to which the view belongs
+    * @param rev
+    *   the current revision of the view
+    * @param view
+    *   the view value
     */
   def update(id: IdSegment, project: ProjectRef, rev: Long, view: BlazegraphViewValue)(implicit
       subject: Subject
@@ -165,11 +181,16 @@ final class BlazegraphViews(
   /**
     * Add a tag to an existing view.
     *
-    * @param id       the id of the view
-    * @param project  the project to which the view belongs
-    * @param tag      the tag label
-    * @param tagRev   the target revision of the tag
-    * @param rev      the current revision of the view
+    * @param id
+    *   the id of the view
+    * @param project
+    *   the project to which the view belongs
+    * @param tag
+    *   the tag label
+    * @param tagRev
+    *   the target revision of the tag
+    * @param rev
+    *   the current revision of the view
     */
   def tag(
       id: IdSegment,
@@ -189,9 +210,12 @@ final class BlazegraphViews(
   /**
     * Deprecate a view.
     *
-    * @param id       the view id
-    * @param project  the project to which the view belongs
-    * @param rev      the current revision of the view
+    * @param id
+    *   the view id
+    * @param project
+    *   the project to which the view belongs
+    * @param rev
+    *   the current revision of the view
     */
   def deprecate(
       id: IdSegment,
@@ -202,7 +226,8 @@ final class BlazegraphViews(
 
   /**
     * Deprecate a view without any extra checks on the projects API.
-    * @see [[deprecate(id, project, rev)]]
+    * @see
+    *   [[deprecate(id, project, rev)]]
     */
   private[blazegraph] def deprecateWithoutProjectChecks(
       id: IdSegment,
@@ -227,8 +252,10 @@ final class BlazegraphViews(
   /**
     * Fetch the latest revision of a view.
     *
-    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
-    * @param project the project to which the view belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the view with its optional rev/tag
+    * @param project
+    *   the project to which the view belongs
     */
   def fetch(
       id: IdSegmentRef,
@@ -248,8 +275,10 @@ final class BlazegraphViews(
   /**
     * Retrieves a current [[IndexingBlazegraphView]] resource.
     *
-    * @param id      the identifier that will be expanded to the Iri of the view with its optional rev/tag
-    * @param project the view parent project
+    * @param id
+    *   the identifier that will be expanded to the Iri of the view with its optional rev/tag
+    * @param project
+    *   the view parent project
     */
   def fetchIndexingView(
       id: IdSegmentRef,
@@ -275,9 +304,12 @@ final class BlazegraphViews(
   /**
     * List views.
     *
-    * @param pagination the pagination settings
-    * @param params     filtering parameters for the listing
-    * @param ordering   the response ordering
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filtering parameters for the listing
+    * @param ordering
+    *   the response ordering
     */
   def list(
       pagination: FromPagination,
@@ -296,8 +328,10 @@ final class BlazegraphViews(
   /**
     * A terminating stream of events for views. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project to filter the events
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project to filter the events
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -306,10 +340,13 @@ final class BlazegraphViews(
     eventLog.currentProjectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
+    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
+    * events.
     *
-    * @param organization the organization to filter the events
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization to filter the events
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -318,10 +355,13 @@ final class BlazegraphViews(
     eventLog.orgEvents(orgs, organization, offset)
 
   /**
-    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
+    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
+    * events.
     *
-    * @param projectRef the project to filter the events
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project to filter the events
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -330,9 +370,11 @@ final class BlazegraphViews(
     eventLog.projectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new events.
+    * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
+    * events.
     *
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)

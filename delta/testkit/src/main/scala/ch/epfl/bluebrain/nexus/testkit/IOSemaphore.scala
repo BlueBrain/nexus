@@ -12,30 +12,28 @@ trait IOSemaphore {
   /**
     * Returns the number of permits currently available. Always non-negative.
     *
-    * May be out of date the instant after it is retrieved.
-    * Use `[[tryAcquire]]` or `[[tryAcquireN]]` if you wish to attempt an
-    * acquire, returning immediately if the current count is not high enough
-    * to satisfy the request.
+    * May be out of date the instant after it is retrieved. Use `[[tryAcquire]]` or `[[tryAcquireN]]` if you wish to
+    * attempt an acquire, returning immediately if the current count is not high enough to satisfy the request.
     */
   def available: UIO[Long]
 
   /**
     * Obtains a snapshot of the current count. May be negative.
     *
-    * Like [[available]] when permits are available but returns the number of permits
-    * callers are waiting for when there are no permits available.
+    * Like [[available]] when permits are available but returns the number of permits callers are waiting for when there
+    * are no permits available.
     */
   def count: UIO[Long]
 
   /**
     * Acquires `n` permits.
     *
-    * The returned effect semantically blocks until all requested permits are
-    * available. Note that acquires are statisfied in strict FIFO order, so given
-    * `s: Semaphore[F]` with 2 permits available, an `acquireN(3)` will
-    * always be satisfied before a later call to `acquireN(1)`.
+    * The returned effect semantically blocks until all requested permits are available. Note that acquires are
+    * statisfied in strict FIFO order, so given `s: Semaphore[F]` with 2 permits available, an `acquireN(3)` will always
+    * be satisfied before a later call to `acquireN(1)`.
     *
-    * @param n number of permits to acquire - must be >= 0
+    * @param n
+    *   number of permits to acquire - must be >= 0
     */
   def acquireN(n: Long): UIO[Unit]
 
@@ -45,7 +43,8 @@ trait IOSemaphore {
   /**
     * Acquires `n` permits now and returns `true`, or returns `false` immediately. Error if `n < 0`.
     *
-    * @param n number of permits to acquire - must be >= 0
+    * @param n
+    *   number of permits to acquire - must be >= 0
     */
   def tryAcquireN(n: Long): UIO[Boolean]
 
@@ -55,7 +54,8 @@ trait IOSemaphore {
   /**
     * Releases `n` permits, potentially unblocking up to `n` outstanding acquires.
     *
-    * @param n number of permits to release - must be >= 0
+    * @param n
+    *   number of permits to release - must be >= 0
     */
   def releaseN(n: Long): UIO[Unit]
 
@@ -74,7 +74,8 @@ object IOSemaphore {
   /**
     * Creates a new `Semaphore`, initialized with `n` available permits.
     *
-    * @see [[Semaphore.apply]]
+    * @see
+    *   [[Semaphore.apply]]
     */
   final def apply(n: Long): UIO[IOSemaphore] =
     Semaphore[Task](n).hideErrors.map(fromTask)

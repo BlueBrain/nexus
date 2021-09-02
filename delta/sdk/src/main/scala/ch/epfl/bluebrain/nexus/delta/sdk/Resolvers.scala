@@ -39,8 +39,10 @@ trait Resolvers {
   /**
     * Create a new resolver where the id is either present on the payload or self generated
     *
-    * @param projectRef the project where the resolver will belong
-    * @param source    the payload to create the resolver
+    * @param projectRef
+    *   the project where the resolver will belong
+    * @param source
+    *   the payload to create the resolver
     */
   def create(projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
@@ -49,9 +51,12 @@ trait Resolvers {
   /**
     * Create a new resolver with the provided id
     *
-    * @param id         the resolver identifier to expand as the id of the resolver
-    * @param projectRef the project where the resolver will belong
-    * @param source    the payload to create the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver will belong
+    * @param source
+    *   the payload to create the resolver
     */
   def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
       caller: Caller
@@ -59,9 +64,12 @@ trait Resolvers {
 
   /**
     * Create a new resolver with the provided id
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef     the project where the resolver will belong
-    * @param resolverValue  the value of the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver will belong
+    * @param resolverValue
+    *   the value of the resolver
     */
   def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -69,10 +77,14 @@ trait Resolvers {
 
   /**
     * Update an existing resolver
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef        the project where the resolver will belong
-    * @param rev            the current revision of the resolver
-    * @param source the payload to update the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver will belong
+    * @param rev
+    *   the current revision of the resolver
+    * @param source
+    *   the payload to update the resolver
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
       caller: Caller
@@ -80,10 +92,14 @@ trait Resolvers {
 
   /**
     * Update an existing resolver
-    * @param id             the resolver identifier to expand as the id of the resolver
-    * @param projectRef     the project where the resolver will belong
-    * @param rev            the current revision of the resolver
-    * @param resolverValue  the value of the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver will belong
+    * @param rev
+    *   the current revision of the resolver
+    * @param resolverValue
+    *   the value of the resolver
     */
   def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
       caller: Caller
@@ -92,11 +108,16 @@ trait Resolvers {
   /**
     * Add a tag to an existing resolver
     *
-    * @param id        the resolver identifier to expand as the id of the resolver
-    * @param projectRef   the project where the resolver belongs
-    * @param tag       the tag name
-    * @param tagRev    the tag revision
-    * @param rev       the current revision of the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver belongs
+    * @param tag
+    *   the tag name
+    * @param tagRev
+    *   the tag revision
+    * @param rev
+    *   the current revision of the resolver
     */
   def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
       subject: Subject
@@ -104,9 +125,12 @@ trait Resolvers {
 
   /**
     * Deprecate an existing resolver
-    * @param id      the resolver identifier to expand as the id of the resolver
-    * @param projectRef the project where the resolver belongs
-    * @param rev     the current revision of the resolver
+    * @param id
+    *   the resolver identifier to expand as the id of the resolver
+    * @param projectRef
+    *   the project where the resolver belongs
+    * @param rev
+    *   the current revision of the resolver
     */
   def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
       subject: Subject
@@ -114,15 +138,19 @@ trait Resolvers {
 
   /**
     * Fetch the last version of a resolver
-    * @param id         the identifier that will be expanded to the Iri of the resolver with its optional rev/tag
-    * @param projectRef the project where the resolver belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resolver with its optional rev/tag
+    * @param projectRef
+    *   the project where the resolver belongs
     */
   def fetch(id: IdSegmentRef, projectRef: ProjectRef): IO[ResolverRejection, ResolverResource]
 
   /**
     * Fetches and validate the resolver, rejecting if the project does not exists or if it is deprecated
-    * @param id               the id of the resolver
-    * @param projectRef       the project reference
+    * @param id
+    *   the id of the resolver
+    * @param projectRef
+    *   the project reference
     */
   def fetchActiveResolver(id: Iri, projectRef: ProjectRef): IO[ResolverRejection, Resolver] =
     fetch(id, projectRef).flatMap(res => IO.raiseWhen(res.deprecated)(ResolverIsDeprecated(id)).as(res.value))
@@ -138,10 +166,14 @@ trait Resolvers {
   /**
     * Lists all resolvers.
     *
-    * @param pagination the pagination settings
-    * @param params     filter parameters for the listing
-    * @param ordering   the response ordering
-    * @return a paginated results list
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters for the listing
+    * @param ordering
+    *   the response ordering
+    * @return
+    *   a paginated results list
     */
   def list(
       pagination: FromPagination,
@@ -152,10 +184,14 @@ trait Resolvers {
   /**
     * List resolvers within a project
     *
-    * @param projectRef the project the resolvers belong to
-    * @param pagination the pagination settings
-    * @param params     filter parameters
-    * @param ordering   the response ordering
+    * @param projectRef
+    *   the project the resolvers belong to
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters
+    * @param ordering
+    *   the response ordering
     */
   def list(
       projectRef: ProjectRef,
@@ -168,8 +204,10 @@ trait Resolvers {
   /**
     * A terminating stream of events for resolvers. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the resolver belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the resolver belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(
       projectRef: ProjectRef,
@@ -177,11 +215,13 @@ trait Resolvers {
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]]
 
   /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param projectRef the project reference where the resolver belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the resolver belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -189,11 +229,13 @@ trait Resolvers {
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]]
 
   /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param organization the organization label reference where the resolver belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the resolver belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -201,10 +243,11 @@ trait Resolvers {
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]]
 
   /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]]
 
@@ -397,7 +440,7 @@ object Resolvers {
         IO.raiseError(ResolverIsDeprecated(s.id))
 
       // Update a resolver
-      case s: Current                   =>
+      case s: Current =>
         for {
           _   <- IO.when(s.value.tpe != c.value.tpe)(IO.raiseError(DifferentResolverType(c.id, c.value.tpe, s.value.tpe)))
           _   <- validateResolverValue(c.project, c.id, c.value, c.caller)

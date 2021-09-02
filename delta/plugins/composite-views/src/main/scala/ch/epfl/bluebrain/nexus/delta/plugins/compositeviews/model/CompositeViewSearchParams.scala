@@ -10,13 +10,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 /**
   * Search parameters for Composite views.
   *
-  * @param project    the optional parent project of the views
-  * @param deprecated the optional deprecation status of the views
-  * @param rev        the optional revision of the views
-  * @param createdBy  the optional subject who created the views
-  * @param updatedBy  the optional subject who last updated the views
-  * @param types      the collection of types to consider, where empty implies all views
-  * @param filter     an additional resource filter
+  * @param project
+  *   the optional parent project of the views
+  * @param deprecated
+  *   the optional deprecation status of the views
+  * @param rev
+  *   the optional revision of the views
+  * @param createdBy
+  *   the optional subject who created the views
+  * @param updatedBy
+  *   the optional subject who last updated the views
+  * @param types
+  *   the collection of types to consider, where empty implies all views
+  * @param filter
+  *   an additional resource filter
   */
 final case class CompositeViewSearchParams(
     project: Option[ProjectRef] = None,

@@ -8,8 +8,10 @@ import fs2.concurrent.Queue
 /**
   * An implementation of a console with two queues to keep track of the effect of printing to console.
   *
-  * @param stdQueue the queue where the messages to print to the standard output will be added
-  * @param errQueue the queue where the messages to print to the standard error will be added
+  * @param stdQueue
+  *   the queue where the messages to print to the standard output will be added
+  * @param errQueue
+  *   the queue where the messages to print to the standard error will be added
   */
 final class TestConsole[F[_]](
     val stdQueue: Queue[F, String],

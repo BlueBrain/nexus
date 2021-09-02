@@ -20,7 +20,8 @@ class CancelableStreamOps[A, S](private val stream: CancelableStream[A, S]) exte
   /**
     * Stop the stream after an inactivity timeout
     *
-    * @param duration the idle duration after which the stream will be stopped
+    * @param duration
+    *   the idle duration after which the stream will be stopped
     */
   def idleTimeout(
       duration: FiniteDuration,

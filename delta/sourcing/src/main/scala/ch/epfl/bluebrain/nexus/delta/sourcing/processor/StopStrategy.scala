@@ -8,8 +8,9 @@ import scala.concurrent.duration.FiniteDuration
 sealed trait StopStrategy extends Product with Serializable {
 
   /**
-    * @return Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
-    *         None to keep the actor alive
+    * @return
+    *   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval; None to
+    *   keep the actor alive
     */
   def lapsedSinceLastInteraction: Option[FiniteDuration]
 }
@@ -19,8 +20,9 @@ object StopStrategy {
   /**
     * Stop Strategy for a transient actor
     *
-    * @param lapsedSinceLastInteraction Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
-    *                                    None to keep the actor alive
+    * @param lapsedSinceLastInteraction
+    *   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval; None to
+    *   keep the actor alive
     */
   final case class TransientStopStrategy(lapsedSinceLastInteraction: Option[FiniteDuration]) extends StopStrategy
 
@@ -35,10 +37,11 @@ object StopStrategy {
   /**
     * A stop strategy for persistent actors
     *
-    * @param lapsedSinceLastInteraction   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
-    *                                     None to keep the actor alive
-    * @param lapsedSinceRecoveryCompleted Some(duration) if the actor should stop (and passivate);
-    *                                     None to keep the actor alive (and no passivation)
+    * @param lapsedSinceLastInteraction
+    *   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval; None to
+    *   keep the actor alive
+    * @param lapsedSinceRecoveryCompleted
+    *   Some(duration) if the actor should stop (and passivate); None to keep the actor alive (and no passivation)
     */
   final case class PersistentStopStrategy(
       lapsedSinceLastInteraction: Option[FiniteDuration],

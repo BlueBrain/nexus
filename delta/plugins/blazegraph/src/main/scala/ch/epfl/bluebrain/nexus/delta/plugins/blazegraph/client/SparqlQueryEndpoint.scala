@@ -8,7 +8,8 @@ trait SparqlQueryEndpoint {
   /**
     * Generates an endpoint where to execute a Sparql query
     *
-    * @param index the namespace of the Sparql query
+    * @param index
+    *   the namespace of the Sparql query
     */
   def apply(index: String): Uri
 }

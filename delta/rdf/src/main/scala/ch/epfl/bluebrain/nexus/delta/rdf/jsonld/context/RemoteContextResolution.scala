@@ -15,15 +15,17 @@ trait RemoteContextResolution { self =>
   /**
     * Resolve a passed ''iri''.
     *
-    * @return the expected Json payload response from the passed ''iri''
+    * @return
+    *   the expected Json payload response from the passed ''iri''
     */
   def resolve(iri: Iri): Result[ContextValue]
 
   /**
     * From a given ''json'', resolve all its remote context IRIs.
     *
-    * @return a Map where the keys are the IRIs resolved and the values the @context value
-    *         from the payload of the resolved wrapped in an IO
+    * @return
+    *   a Map where the keys are the IRIs resolved and the values the @context value from the payload of the resolved
+    *   wrapped in an IO
     */
   final def apply(json: Json): Result[Map[Iri, ContextValue]] = {
 
@@ -69,7 +71,8 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-    * @param f a pair of [[Iri]] and the resolved Result of [[ContextValue]]
+    * @param f
+    *   a pair of [[Iri]] and the resolved Result of [[ContextValue]]
     */
   final def fixedIO(f: (Iri, Result[ContextValue])*): RemoteContextResolution = new RemoteContextResolution {
     private val map = f.toMap
@@ -84,7 +87,8 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-    * @param f a pair of [[Iri]] and the resolved [[ContextValue]] or a [[ClasspathResourceError]]
+    * @param f
+    *   a pair of [[Iri]] and the resolved [[ContextValue]] or a [[ClasspathResourceError]]
     */
   final def fixedIOResource(f: (Iri, IO[ClasspathResourceError, ContextValue])*): RemoteContextResolution =
     fixedIO(f.map { case (iri, io) =>
@@ -97,7 +101,8 @@ object RemoteContextResolution {
   /**
     * Helper method to construct a [[RemoteContextResolution]] .
     *
-    * @param f a pair of [[Iri]] and the resolved [[ContextValue]]
+    * @param f
+    *   a pair of [[Iri]] and the resolved [[ContextValue]]
     */
   final def fixed(f: (Iri, ContextValue)*): RemoteContextResolution =
     fixedIO(f.map { case (iri, json) => iri -> IO.pure(json) }: _*)

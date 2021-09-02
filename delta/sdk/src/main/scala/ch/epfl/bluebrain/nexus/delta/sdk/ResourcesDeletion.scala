@@ -16,7 +16,8 @@ import scala.concurrent.duration._
 trait ResourcesDeletion {
 
   /**
-    * Deletes all the data associated with a projects' resources (for views, it deletes the indices, for files it deletes the binaries)
+    * Deletes all the data associated with a projects' resources (for views, it deletes the indices, for files it
+    * deletes the binaries)
     */
   def freeResources(projectRef: ProjectRef): Task[ResourcesDeletionProgress.ResourcesDataDeleted]
 
@@ -65,7 +66,8 @@ object ResourcesDeletion {
   /**
     * Combine the non empty list of [[ResourcesDeletion]] into one [[ResourcesDeletion]]
     *
-    * @param resourcesDeletion the non empty list of [[ResourcesDeletion]]
+    * @param resourcesDeletion
+    *   the non empty list of [[ResourcesDeletion]]
     */
   @SuppressWarnings(Array("UnsafeTraversableMethods"))
   def combine(resourcesDeletion: NonEmptyList[ResourcesDeletion]): ResourcesDeletion =

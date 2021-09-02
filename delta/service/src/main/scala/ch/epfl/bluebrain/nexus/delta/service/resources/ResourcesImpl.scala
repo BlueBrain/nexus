@@ -230,10 +230,14 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
-    * @param orgs              the organization operations bundle
-    * @param projects          the project operations bundle
-    * @param contextResolution the context resolver
-    * @param eventLog          the event log for [[ResourceEvent]]
+    * @param orgs
+    *   the organization operations bundle
+    * @param projects
+    *   the project operations bundle
+    * @param contextResolution
+    *   the context resolver
+    * @param eventLog
+    *   the event log for [[ResourceEvent]]
     */
   final def apply(
       orgs: Organizations,

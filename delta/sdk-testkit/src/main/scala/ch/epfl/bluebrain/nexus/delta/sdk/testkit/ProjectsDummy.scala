@@ -192,10 +192,14 @@ object ProjectsDummy {
   /**
     * Creates a project dummy instance
     *
-    * @param organizations        an Organizations instance
-    * @param quotas               a Quotas instance
-    * @param scopeInitializations the collection of registered scope initializations
-    * @param defaultApiMappings   the default api mappings
+    * @param organizations
+    *   an Organizations instance
+    * @param quotas
+    *   a Quotas instance
+    * @param scopeInitializations
+    *   the collection of registered scope initializations
+    * @param defaultApiMappings
+    *   the default api mappings
     */
   def apply(
       organizations: Organizations,
@@ -222,10 +226,14 @@ object ProjectsDummy {
   /**
     * Creates a project dummy instance where ownerPermissions don't matter
     *
-    * @param organizations      an Organizations instance
-    * @param quotas             a Quotas instance
-    * @param referenceFinder      a ProjectReferenceFinder instance
-    * @param defaultApiMappings the default api mappings
+    * @param organizations
+    *   an Organizations instance
+    * @param quotas
+    *   a Quotas instance
+    * @param referenceFinder
+    *   a ProjectReferenceFinder instance
+    * @param defaultApiMappings
+    *   the default api mappings
     */
   def apply(
       organizations: Organizations,

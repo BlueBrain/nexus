@@ -16,7 +16,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of Permissions rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class PermissionsRejection(val reason: String) extends Product with Serializable
 
@@ -73,8 +74,10 @@ object PermissionsRejection {
     * Rejection returned when a subject intends to perform an operation on the current collection of permissions, but
     * either provided an incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends PermissionsRejection(
@@ -85,8 +88,10 @@ object PermissionsRejection {
     * Rejection returned when a subject intends to retrieve the collection of permissions at a specific revision, but
     * the provided revision does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends PermissionsRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")

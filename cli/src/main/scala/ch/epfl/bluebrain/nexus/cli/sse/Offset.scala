@@ -18,9 +18,9 @@ final case class Offset(value: UUID) {
   lazy val asString: String = value.toString
 
   /**
-    * Writes the current offset value to the passed ''path''.
-    * If the passed path does not exists, it creates the path and its parent directories (if needed) and writes the current offset.
-    * If the passed path already exists, it overrides its contents with the current offset.
+    * Writes the current offset value to the passed ''path''. If the passed path does not exists, it creates the path
+    * and its parent directories (if needed) and writes the current offset. If the passed path already exists, it
+    * overrides its contents with the current offset.
     */
   def write[F[_]: ContextShift](path: Path)(implicit blocker: Blocker, console: Console[F], F: Sync[F]): F[Unit] = {
     val pipeF = io.file

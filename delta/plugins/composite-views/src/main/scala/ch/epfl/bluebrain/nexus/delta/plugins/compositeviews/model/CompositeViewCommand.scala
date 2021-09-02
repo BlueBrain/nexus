@@ -12,17 +12,20 @@ import io.circe.Json
 sealed trait CompositeViewCommand extends Product with Serializable {
 
   /**
-    * @return the view id
+    * @return
+    *   the view id
     */
   def id: Iri
 
   /**
-    * @return a reference to the parent project
+    * @return
+    *   a reference to the parent project
     */
   def project: ProjectRef
 
   /**
-    * @return the identity associated with this command
+    * @return
+    *   the identity associated with this command
     */
   def subject: Subject
 }
@@ -32,12 +35,18 @@ object CompositeViewCommand {
   /**
     * Command for the creation of a new composite view.
     *
-    * @param id           the view id
-    * @param project      a reference to the parent project
-    * @param value        the view configuration
-    * @param source       the original json value provided by the caller
-    * @param subject      the identity associated with this command
-    * @param projectBase  project base used to generate ids
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param value
+    *   the view configuration
+    * @param source
+    *   the original json value provided by the caller
+    * @param subject
+    *   the identity associated with this command
+    * @param projectBase
+    *   project base used to generate ids
     */
   final case class CreateCompositeView(
       id: Iri,
@@ -51,13 +60,20 @@ object CompositeViewCommand {
   /**
     * Command for the update of a composite view.
     *
-    * @param id           the view id
-    * @param project      a reference to the parent project
-    * @param rev          the last known revision of the view
-    * @param value        the view configuration
-    * @param source       the original json value provided by the caller
-    * @param subject      the identity associated with this command
-    * @param projectBase  project base used to generate ids
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param rev
+    *   the last known revision of the view
+    * @param value
+    *   the view configuration
+    * @param source
+    *   the original json value provided by the caller
+    * @param subject
+    *   the identity associated with this command
+    * @param projectBase
+    *   project base used to generate ids
     */
   final case class UpdateCompositeView(
       id: Iri,
@@ -72,10 +88,14 @@ object CompositeViewCommand {
   /**
     * Command for the deprecation of a composite view.
     *
-    * @param id      the view id
-    * @param project a reference to the parent project
-    * @param rev     the last known revision of the view
-    * @param subject the identity associated with this command
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param rev
+    *   the last known revision of the view
+    * @param subject
+    *   the identity associated with this command
     */
   final case class DeprecateCompositeView(id: Iri, project: ProjectRef, rev: Long, subject: Subject)
       extends CompositeViewCommand
@@ -83,12 +103,18 @@ object CompositeViewCommand {
   /**
     * Command for adding a tag to a composite view.
     *
-    * @param id        the view id
-    * @param project   a reference to the parent project
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag label
-    * @param rev       the last known revision of the view
-    * @param subject   the identity associated with this command
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag label
+    * @param rev
+    *   the last known revision of the view
+    * @param subject
+    *   the identity associated with this command
     */
   final case class TagCompositeView(
       id: Iri,

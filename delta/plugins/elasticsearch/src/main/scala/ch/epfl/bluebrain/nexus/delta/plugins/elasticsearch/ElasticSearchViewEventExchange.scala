@@ -10,7 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * ElasticSearchView specific [[EventExchange]] implementation.
   *
-  * @param views the elasticsearch module
+  * @param views
+  *   the elasticsearch module
   */
 class ElasticSearchViewEventExchange(views: ElasticSearchViews)(implicit base: BaseUri) extends EventExchange {
 

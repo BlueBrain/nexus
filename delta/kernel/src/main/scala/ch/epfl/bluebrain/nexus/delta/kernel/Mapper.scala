@@ -7,7 +7,8 @@ trait Mapper[-A, B] {
 
   /**
     * Transforms from A to B
-    * @param value the value to transform
+    * @param value
+    *   the value to transform
     */
   def to(value: A): B
 

@@ -27,9 +27,12 @@ trait Organizations {
   /**
     * Creates a new organization.
     *
-    * @param label       label of the organization to create
-    * @param description the description of the organization to be created
-    * @param caller      a reference to the subject that initiated the action
+    * @param label
+    *   label of the organization to create
+    * @param description
+    *   the description of the organization to be created
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def create(
       label: Label,
@@ -39,10 +42,14 @@ trait Organizations {
   /**
     * Updates an existing organization description.
     *
-    * @param label       label of the organization to update
-    * @param description the description of the organization to be updated
-    * @param rev         the latest known revision
-    * @param caller      a reference to the subject that initiated the action
+    * @param label
+    *   label of the organization to update
+    * @param description
+    *   the description of the organization to be updated
+    * @param rev
+    *   the latest known revision
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def update(
       label: Label,
@@ -53,9 +60,12 @@ trait Organizations {
   /**
     * Deprecate an organization.
     *
-    * @param label  label of the organization to deprecate
-    * @param rev    latest known revision
-    * @param caller a reference to the subject that initiated the action
+    * @param label
+    *   label of the organization to deprecate
+    * @param rev
+    *   latest known revision
+    * @param caller
+    *   a reference to the subject that initiated the action
     */
   def deprecate(
       label: Label,
@@ -65,34 +75,44 @@ trait Organizations {
   /**
     * Fetch an organization at the current revision by label.
     *
-    * @param label the organization label
-    * @return the organization in a Resource representation, None otherwise
+    * @param label
+    *   the organization label
+    * @return
+    *   the organization in a Resource representation, None otherwise
     */
   def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource]
 
   /**
     * Fetch an organization at the passed revision by label.
     *
-    * @param label the organization label
-    * @param rev   the organization revision
-    * @return the organization in a Resource representation, None otherwise
+    * @param label
+    *   the organization label
+    * @param rev
+    *   the organization revision
+    * @return
+    *   the organization in a Resource representation, None otherwise
     */
   def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource]
 
   /**
     * Fetch an organization at the current revision by uuid.
     *
-    * @param  uuid the organization uuid
-    * @return the organization in a Resource representation, None otherwise
+    * @param uuid
+    *   the organization uuid
+    * @return
+    *   the organization in a Resource representation, None otherwise
     */
   def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource]
 
   /**
     * Fetch an organization at the passed revision by uuid.
     *
-    * @param  uuid the organization uuid
-    * @param rev   the organization revision
-    * @return the organization in a Resource representation, None otherwise
+    * @param uuid
+    *   the organization uuid
+    * @param rev
+    *   the organization revision
+    * @return
+    *   the organization in a Resource representation, None otherwise
     */
   def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
     fetch(uuid).flatMap(resource => fetchAt(resource.value.label, rev))
@@ -122,10 +142,14 @@ trait Organizations {
   /**
     * Lists all organizations.
     *
-    * @param pagination the pagination settings
-    * @param params     filter parameters of the organization
-    * @param ordering   the response ordering
-    * @return a paginated results list
+    * @param pagination
+    *   the pagination settings
+    * @param params
+    *   filter parameters of the organization
+    * @param ordering
+    *   the response ordering
+    * @return
+    *   a paginated results list
     */
   def list(
       pagination: FromPagination,
@@ -137,14 +161,16 @@ trait Organizations {
     * A non terminating stream of events for organizations. After emitting all known events it sleeps until new events
     * are recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
 
   /**
     * The current organization events. The stream stops after emitting all known events.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
 
@@ -202,7 +228,7 @@ object Organizations {
         case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if s.deprecated   =>
           IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
-        case s: Current                   => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
+        case s: Current => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
       }
 
     def deprecate(c: DeprecateOrganization) =

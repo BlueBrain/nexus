@@ -36,12 +36,18 @@ import monix.execution.Scheduler
 /**
   * The storages routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param storages      the storages module
-  * @param index         the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param storages
+  *   the storages module
+  * @param index
+  *   the indexing action on write operations
   */
 final class StoragesRoutes(
     identities: Identities,
@@ -254,7 +260,8 @@ final class StoragesRoutes(
 object StoragesRoutes {
 
   /**
-    * @return the [[Route]] for storages
+    * @return
+    *   the [[Route]] for storages
     */
   def apply(
       config: StoragesConfig,

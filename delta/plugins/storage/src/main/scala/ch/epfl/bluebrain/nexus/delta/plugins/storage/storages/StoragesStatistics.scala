@@ -53,8 +53,8 @@ object StoragesStatistics {
   val projectionId: CacheProjectionId = CacheProjectionId(id)
 
   /**
-    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the stats for each storage.
+    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the stats for each storage.
     */
   def apply(
       files: Files,
@@ -79,8 +79,8 @@ object StoragesStatistics {
   }
 
   /**
-    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the stats for each storage.
+    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the stats for each storage.
     */
   private[storages] def apply(
       fetchFileStorage: (Iri, ProjectRef) => Task[Iri],

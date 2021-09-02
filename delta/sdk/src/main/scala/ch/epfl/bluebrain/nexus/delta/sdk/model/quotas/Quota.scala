@@ -12,8 +12,10 @@ import io.circe.syntax._
 /**
   * Quota representation
   *
-  * @param resources the maximum number of resources per project
-  * @param events the maximum number of events per project
+  * @param resources
+  *   the maximum number of resources per project
+  * @param events
+  *   the maximum number of events per project
   */
 final case class Quota(resources: Option[Int], events: Option[Int])
 

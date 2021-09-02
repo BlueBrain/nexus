@@ -31,12 +31,18 @@ import monix.execution.Scheduler
 /**
   * The schemas routes
   *
-  * @param identities    the identity module
-  * @param acls          the ACLs module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param schemas       the schemas module
-  * @param index         the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param schemas
+  *   the schemas module
+  * @param index
+  *   the indexing action on write operations
   */
 final class SchemasRoutes(
     identities: Identities,
@@ -194,7 +200,8 @@ final class SchemasRoutes(
 object SchemasRoutes {
 
   /**
-    * @return the [[Route]] for schemas
+    * @return
+    *   the [[Route]] for schemas
     */
   def apply(
       identities: Identities,
