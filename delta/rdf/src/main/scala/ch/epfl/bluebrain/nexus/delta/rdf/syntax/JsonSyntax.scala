@@ -135,7 +135,7 @@ final class JsonObjectOps(private val obj: JsonObject) extends AnyVal {
     *   the context to append to this json. E.g.: {"@context": {...}}
     * @return
     *   a new Json object with the original json and the merged context of both passed jsons. If a key inside the
-    *   @context is repeated in both json objects, the one in ''that'' will override the one in ''obj''
+    *   "@context" is repeated in both json objects, the one in ''that'' will override the one in ''obj''
     */
   def addContext(that: Json): JsonObject = JsonLdContext.addContext(obj.asJson, that).asObject.get
 
