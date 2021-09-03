@@ -2,10 +2,14 @@
 
 Nexus provides global search functionality across all projects through the @link:[search plugin](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src){ open=new }.
 
+@@@ warning
+The search plugin is experimental and its functionality and API can change without notice.
+@@@
+
 The plugin is disabled by default and requires following configuration:
 
 - `plugins.search.enabled=true` - enables the plugin. Enabling the plugin will trigger creating a `CompositeView` in each project.
-- `plugins.search.fields={pathToFile}` - specifies which fields are available for searching and/or aggregations. This also serves as configuration returned by the `/search/config` endpoint. Example can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/fields.json){ open=new }.
+- `plugins.search.fields={pathToFile}` - specifies which fields are available for searching and/or aggregations. This also serves as configuration returned by the `/search/config` endpoint. It is currently only used by Nexus Fusion and can be omitted if not used. Example can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/fields.json){ open=new }.
 - `plugins.search.indexing.context={pathToFile}` - the context which is used to transform the results of the SPARQL construct query into compacted JSON-LD which will be indexed in the ElasticSearch projection. Example can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/search-context.json){ open=new }.
 - `plugins.search.indexing.mapping={pathToFile}` - the Elasticsearch mappings that will be used in the ElasticSearch projection. Example can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/mapping.json){ open=new }.
 - `plugins.search.indexing.settings={pathToFile}`- additional Elasticsearch settings that will be used in the ElasticSearch projection. Example can be found @link:[here](https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/settings.json){ open=new }.
@@ -28,7 +32,7 @@ POST /v1/search/query
 ```
 ... where `{payload}` is an @link:[Elasticsearch query](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html){ open=new } and the response
 is forwarded from the underlying Elasticsearch indices.
-The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to.
+The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has `views/query` permission.
 
 
 ## Configuration
