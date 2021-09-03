@@ -192,10 +192,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         acls: Acls,
         projects: Projects,
         views: ElasticSearchViews,
+        cache: ElasticSearchViewCache,
         client: ElasticSearchClient,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(acls, projects, views, client)(cfg.indexing)
+      ElasticSearchViewsQuery(acls, projects, views, cache, client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("elasticsearch-statistics").from {

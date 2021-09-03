@@ -200,4 +200,6 @@ object SearchResults {
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
 
+  def empty[A]: SearchResults[A] = UnscoredSearchResults(0L, Seq.empty)
+
 }

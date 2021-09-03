@@ -228,6 +228,11 @@ trait Projects {
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[ProjectEvent]]
 
+  /**
+    * The default api mappings
+    */
+  def defaultApiMappings: ApiMappings
+
 }
 
 object Projects {

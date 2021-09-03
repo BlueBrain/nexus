@@ -34,11 +34,18 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     onSuccess(fetchProject(projectRef).attempt.runToFuture).flatMap {
       case Right(project) =>
         implicit val p: Project = project
-        (parameter("type".as[Type].*) & parameter("schema".as[IriBase].?) & parameter("id".as[IriBase].?)).tmap {
-          case (types, schema, id) => (types.toList.reverse, schema.map(iri => ResourceRef(iri.value)), id.map(_.value))
-        }
+        types & schema & id
       case _              => tprovide((List.empty, None, None))
     }
+
+  private def types(implicit um: FromStringUnmarshaller[Type]): Directive1[List[Type]] =
+    parameter("type".as[Type].*).map(_.toList.reverse)
+
+  private def schema(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[ResourceRef]] =
+    parameter("schema".as[IriBase].?).map(_.map(iri => ResourceRef(iri.value)))
+
+  private def id(implicit um: FromStringUnmarshaller[IriBase]): Directive1[Option[Iri]] =
+    parameter("id".as[IriBase].?).map(_.map(_.value))
 
   /**
     * Extract the ''sort'' query parameter(s) and provide a [[SortList]]
@@ -53,35 +60,50 @@ trait ElasticSearchViewsDirectives extends UriDirectives {
     * Extract the query parameters related to search: ''deprecated'', ''rev'', ''createdBy'', ''updatedBy'', ''type'',
     * ''schema'', ''id'', ''q'' and converts each of them to the appropriate type
     */
-  private[routes] def searchParameters(implicit
-      projectRef: ProjectRef,
+  private[routes] def searchParameters(projectRef: ProjectRef)(implicit
       baseUri: BaseUri,
       fetchProject: FetchProject,
       sc: Scheduler
-  ): Directive1[ResourcesSearchParams] =
+  ): Directive1[ResourcesSearchParams] = {
+    implicit val ref: ProjectRef = projectRef
     (searchParams & typesSchemaAndId & parameter("q".?)).tmap {
       case (deprecated, rev, createdBy, updatedBy, types, schema, id, q) =>
         val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
         ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
     }
+  }
+
+  private[routes] def searchParametersAndSortList(implicit
+      baseUri: BaseUri
+  ): Directive[(ResourcesSearchParams, SortList)] = {
+    implicit val typesUm: FromStringUnmarshaller[Type]      = Type.typeFromStringUnmarshallerNoExpansion
+    implicit val baseIriUm: FromStringUnmarshaller[IriBase] = iriBaseFromStringUnmarshallerNoExpansion
+    def searchParameters                                    = (searchParams & types & schema & id & parameter("q".?)).tmap {
+      case (deprecated, rev, createdBy, updatedBy, types, schema, id, q) =>
+        val qq = q.filter(_.trim.nonEmpty).map(_.toLowerCase)
+        ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, qq)
+    }
+
+    (searchParameters & sortList).tflatMap { case (params, sortList) =>
+      if (params.q.isDefined && !sortList.isEmpty) reject(simultaneousSortAndQRejection)
+      else if (params.q.isEmpty && sortList.isEmpty) tprovide((params, SortList.byCreationDateAndId))
+      else tprovide((params, sortList))
+    }
+  }
 
   /**
     * Extracts the query parameters for [[ResourcesSearchParams]] and [[SortList]]. Rejects if both the ''q'' and
     * ''sort'' query params are present, since they are incompatible.
     */
-  def searchParametersAndSortList(implicit
-      projectRef: ProjectRef,
+  def searchParametersAndSortList(projectRef: ProjectRef)(implicit
       baseUri: BaseUri,
       fetchProject: FetchProject,
       sc: Scheduler
   ): Directive[(ResourcesSearchParams, SortList)] =
-    (searchParameters & sortList).tflatMap { case (params, sortList) =>
-      if (params.q.isDefined && !sortList.isEmpty)
-        reject(simultaneousSortAndQRejection)
-      else if (params.q.isEmpty && sortList.isEmpty)
-        tprovide((params, SortList.byCreationDateAndId))
-      else
-        tprovide((params, sortList))
+    (searchParameters(projectRef) & sortList).tflatMap { case (params, sortList) =>
+      if (params.q.isDefined && !sortList.isEmpty) reject(simultaneousSortAndQRejection)
+      else if (params.q.isEmpty && sortList.isEmpty) tprovide((params, SortList.byCreationDateAndId))
+      else tprovide((params, sortList))
     }
 
   /**
