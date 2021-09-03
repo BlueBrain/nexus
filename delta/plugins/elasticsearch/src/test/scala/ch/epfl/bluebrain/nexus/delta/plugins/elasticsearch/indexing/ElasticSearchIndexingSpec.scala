@@ -199,7 +199,7 @@ class ElasticSearchIndexingSpec
   ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
 
   private def listAll(index: IndexLabel) =
-    esClient.search(QueryBuilder.empty.withPage(page), index.value, Query.Empty).accepted
+    esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
 
   private val page = FromPagination(0, 5000)
 

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriVocabFromStringUnmarshaller => iriUnmarshaller}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
@@ -78,6 +78,15 @@ object ResourcesSearchParams {
           case str if str.startsWith("-") => iriUnmarshaller.apply(str.drop(1)).map(iri => ExcludedType(iri.value))
           case str if str.startsWith("+") => iriUnmarshaller.apply(str.drop(1)).map(iri => IncludedType(iri.value))
           case str                        => iriUnmarshaller.apply(str).map(iri => IncludedType(iri.value))
+        }
+      )
+
+    def typeFromStringUnmarshallerNoExpansion: FromStringUnmarshaller[Type] =
+      Unmarshaller.withMaterializer[String, Type](implicit ec =>
+        implicit mt => {
+          case str if str.startsWith("-") => iriFromStringUnmarshaller.apply(str.drop(1)).map(ExcludedType)
+          case str if str.startsWith("+") => iriFromStringUnmarshaller.apply(str.drop(1)).map(IncludedType)
+          case str                        => iriFromStringUnmarshaller.apply(str).map(IncludedType)
         }
       )
   }

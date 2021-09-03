@@ -39,7 +39,7 @@ final class ProjectsImpl private (
     organizations: Organizations,
     quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
-    defaultApiMappings: ApiMappings
+    override val defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
     extends Projects {
 

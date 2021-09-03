@@ -32,7 +32,7 @@ final class ProjectsDummy private (
     organizations: Organizations,
     quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
-    defaultApiMappings: ApiMappings
+    override val defaultApiMappings: ApiMappings
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -175,7 +175,6 @@ final class ProjectsDummy private (
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
     journal.currentEvents(offset)
-
 }
 
 object ProjectsDummy {
