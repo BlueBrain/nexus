@@ -131,11 +131,15 @@ class ProjectEventMetricsStreamSpec
     }
 
     "index correctly events" in eventually {
-      val search = esClient
-        .search(QueryBuilder.empty.withSort(SortList(List(Sort("instant")))), "prefix_project_metrics", Query.Empty)
+      val results = esClient
+        .search(
+          QueryBuilder.empty.withSort(SortList(List(Sort("instant")))),
+          Set("prefix_project_metrics"),
+          Query.Empty
+        )
         .accepted
         .sources
-      search.size shouldEqual 5
+      results.size shouldEqual 5
     }
 
   }
