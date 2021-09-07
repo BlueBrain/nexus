@@ -371,6 +371,44 @@ object ProjectionStream {
       }
 
     /**
+      * Accumulate over the chunks and persist the progress and errors
+      *
+      * @param initial         where we started
+      * @param persistErrors   how we persist errors
+      * @param persistProgress how we persist progress
+      */
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit]
+    ): Stream[Task, ProjectionProgress[A]] = {
+      stream
+        .evalMapAccumulate(initial) { case (acc, chunk) =>
+          val (progress, errors) = chunk.foldLeft((acc, Vector.empty[Message[A]])) {
+            case ((acc, errors), msg: ErrorMessage) if msg.offset.gt(acc.offset)                               => (acc + msg, errors :+ msg)
+            case ((acc, errors), msg: SuccessMessage[A]) if msg.offset.gt(acc.offset) && msg.warnings.nonEmpty =>
+              (acc + msg, errors :+ msg)
+            case ((acc, errors), msg) if msg.offset.gt(acc.offset)                                             => (acc + msg, errors)
+            case ((acc, errors), _)                                                                            => (acc, errors)
+          }
+
+          persistErrors(errors) >> persistProgress(progress) >> Task.pure(progress -> chunk)
+        }
+        .map(_._1)
+    }
+
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        projectionId: ProjectionId,
+        projection: Projection[A]
+    ): Stream[Task, ProjectionProgress[A]] =
+      persistProgress(
+        initial,
+        projection.recordProgress(projectionId, _),
+        projection.recordErrors(projectionId, _)
+      )
+
+    /**
       * Apply the given function that either fails or succeed for every success message in a chunk
       *
       * @see

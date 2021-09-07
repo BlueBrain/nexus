@@ -7,11 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import io.circe.JsonObject
 import io.circe.literal._
 import io.circe.syntax._
 import monix.execution.Scheduler
@@ -79,6 +83,22 @@ class ProjectEventExchangeSpec
 
     "return None at a particular tag" in {
       exchange.toResource(deprecatedEvent, Some(tag)).accepted shouldEqual None
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        iri"http://localhost/v1/projects/myorg/myproject",
+        Set(nxv.Project),
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

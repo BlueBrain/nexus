@@ -1,7 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileDeprecated
+import akka.http.scaladsl.model.{ContentTypes, Uri}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
@@ -9,12 +14,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup}
+import io.circe.{Json, JsonObject}
+import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
 import java.time.Instant
+import java.util.UUID
 import scala.concurrent.ExecutionContext
 
 class FileEventExchangeSpec
@@ -49,6 +59,18 @@ class FileEventExchangeSpec
   private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg)
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted
+
+  private def fileAttributes(bytes: Long, withDigest: Boolean) =
+    FileAttributes(
+      UUID.randomUUID(),
+      s"file:///something",
+      Uri.Path("org/something"),
+      "something.txt",
+      Some(ContentTypes.`application/json`),
+      bytes,
+      if (withDigest) ComputedDigest(DigestAlgorithm.default, "value") else NotComputedDigest,
+      Storage
+    )
 
   "A FileEventExchange" should {
     val id     = iri"http://localhost/${genString()}"
@@ -89,6 +111,121 @@ class FileEventExchangeSpec
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual resRev1.value
+    }
+
+    "return the matching metric for a create event with a digest" in {
+      val event = FileCreated(
+        id,
+        project.ref,
+        ResourceRef.Revision(diskId, 1),
+        StorageType.DiskStorage,
+        fileAttributes(10L, withDigest = true),
+        1L,
+        Instant.EPOCH,
+        subject
+      )
+
+      exchange.toMetric(event).accepted.value shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Created,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxvFile),
+        JsonObject(
+          "storage"   -> diskId.asJson,
+          "bytes"     -> 10.asJson,
+          "mediaType" -> "application/json".asJson,
+          "origin"    -> "Storage".asJson
+        )
+      )
+    }
+
+    "return the matching metric for a create event without a digest" in {
+      val event = FileCreated(
+        id,
+        project.ref,
+        ResourceRef.Revision(diskId, 1),
+        StorageType.DiskStorage,
+        fileAttributes(10L, withDigest = false),
+        1L,
+        Instant.EPOCH,
+        subject
+      )
+
+      exchange.toMetric(event).accepted.value shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Created,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxvFile),
+        JsonObject("storage" -> diskId.asJson, "bytes" -> Json.Null, "mediaType" -> Json.Null, "origin" -> Json.Null)
+      )
+    }
+
+    "return the matching metric for an update event" in {
+      val event = FileUpdated(
+        id,
+        project.ref,
+        ResourceRef.Revision(diskId, 1),
+        StorageType.DiskStorage,
+        fileAttributes(10L, withDigest = true),
+        1L,
+        Instant.EPOCH,
+        subject
+      )
+
+      exchange.toMetric(event).accepted.value shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Updated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxvFile),
+        JsonObject(
+          "storage"   -> diskId.asJson,
+          "bytes"     -> 10.asJson,
+          "mediaType" -> "application/json".asJson,
+          "origin"    -> "Storage".asJson
+        )
+      )
+    }
+
+    "return the matching metric for an file attributes updated event" in {
+      val event = FileAttributesUpdated(
+        id,
+        project.ref,
+        Some(ContentTypes.`application/json`),
+        25L,
+        NotComputedDigest,
+        1L,
+        Instant.EPOCH,
+        subject
+      )
+
+      exchange.toMetric(event).accepted.value shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        FileEventExchange.AttributesUpdated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxvFile),
+        JsonObject(
+          "storage"   -> diskId.asJson,
+          "bytes"     -> 25.asJson,
+          "mediaType" -> "application/json".asJson,
+          "origin"    -> "Storage".asJson
+        )
+      )
     }
 
     "return the encoded event" in {

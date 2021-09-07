@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import io.circe.syntax._
@@ -26,6 +27,9 @@ class RealmEventExchange(realms: Realms)(implicit base: BaseUri) extends EventEx
       case ev: RealmEvent => Some(JsonValue(ev))
       case _              => None
     }
+
+  // TODO: Implement in further development
+  override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {

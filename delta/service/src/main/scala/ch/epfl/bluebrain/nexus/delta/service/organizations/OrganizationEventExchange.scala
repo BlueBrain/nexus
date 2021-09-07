@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization.Metadata
 import io.circe.syntax.EncoderOps
@@ -28,6 +29,9 @@ class OrganizationEventExchange(orgs: Organizations)(implicit base: BaseUri) ext
       case ev: OrganizationEvent => Some(JsonValue(ev))
       case _                     => None
     }
+
+  // TODO: Implement in further development
+  override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {

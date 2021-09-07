@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -239,6 +240,26 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   }
 
+  make[ProjectEventMetricsStream].fromEffect {
+    (
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
+        exchanges: Set[EventExchange],
+        client: ElasticSearchClient,
+        projection: Projection[Unit],
+        config: ElasticSearchViewsConfig,
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      ProjectEventMetricsStream(
+        eventLog.eventsByTag(Event.eventTag, _),
+        exchanges,
+        client,
+        projection,
+        config.indexing
+      )(uuidF, as, sc)
+  }
+
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
@@ -352,4 +373,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
+
 }
