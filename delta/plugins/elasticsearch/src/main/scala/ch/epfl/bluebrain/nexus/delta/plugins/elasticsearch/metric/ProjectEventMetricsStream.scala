@@ -41,7 +41,7 @@ object ProjectEventMetricsStream {
     .memoize
 
   /**
-    * Default elasticsearch settings for a view
+    * Default elasticsearch settings for metrics
     */
   private val metricsSettings: UIO[JsonObject] = ClasspathResourceUtils
     .ioJsonObjectContentOf("metrics/metrics-settings.json")
