@@ -75,7 +75,7 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
 object ProjectEventExchange {
 
   /**
-   * Specific action for projects
-   */
+    * Specific action for projects
+    */
   private val MarkedForDeletion = Label.unsafe("MarkedForDeletion")
 }

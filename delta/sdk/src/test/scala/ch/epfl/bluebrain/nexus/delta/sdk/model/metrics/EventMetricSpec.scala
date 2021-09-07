@@ -57,7 +57,10 @@ class EventMetricSpec extends AnyWordSpecLike with Matchers with CirceLiteral {
                                         "action" : "Created",
                                         "@id" : "https://bluebrain.github.io/nexus/vocabulary/id",
                                         "@type" : [
-                                          "https://bluebrain.github.io/nexus/vocabulary/Dummy"
+                                          {
+                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Dummy",
+                                            "short": "Dummy"
+                                          }
                                         ],
                                         "project" : "org/proj",
                                         "organization" : "org",

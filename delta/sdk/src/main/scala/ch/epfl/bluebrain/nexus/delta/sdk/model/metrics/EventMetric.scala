@@ -2,18 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import com.datastax.oss.driver.api.core.uuid.Uuids
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 
 import java.time.Instant
-import java.util.UUID
 import scala.annotation.nowarn
 
 /**
@@ -22,42 +21,49 @@ import scala.annotation.nowarn
 sealed trait EventMetric extends Product with Serializable {
 
   /**
-    * UUID of the event
+    * Identifier of the event
     */
-  def uuid: UUID
+  def eventId: String
 
   /**
-    * @return the instant when the event was emitted
+    * @return
+    *   the instant when the event was emitted
     */
   def instant: Instant
 
   /**
-    * @return the revision this events generates
+    * @return
+    *   the revision this events generates
     */
   def rev: Long
 
   /**
-    * @return the subject that performed the action that resulted in emitting this event
+    * @return
+    *   the subject that performed the action that resulted in emitting this event
     */
   def subject: Subject
 
   /**
-    * @return the subject that performed the action that resulted in emitting this event
+    * @return
+    *   the action performed
     */
   def action: Label
 
   /**
-    * @return the id of the underlying resource
+    * @return
+    *   the id of the underlying resource
     */
-  def id: Iri
+  def resourceId: Iri
 
   /**
-    * @return the types of the underlying resource
+    * @return
+    *   the types of the underlying resource
     */
   def types: Set[Iri]
 
   /**
-    * @return additional fields depending on the event
+    * @return
+    *   additional fields depending on the event
     */
   def additionalFields: JsonObject
 }
@@ -77,11 +83,11 @@ object EventMetric {
       subject: Subject,
       rev: Long,
       action: Label,
-      id: Iri,
+      resourceId: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def uuid: UUID = Uuids.nameBased(Uuids.startOf(instant.toEpochMilli), s"${types.mkString("-")}-$id-$rev")
+    def eventId: String = s"$resourceId-$rev"
   }
 
   /**
@@ -93,11 +99,11 @@ object EventMetric {
       rev: Long,
       action: Label,
       organization: Label,
-      id: Iri,
+      resourceId: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def uuid: UUID = Uuids.nameBased(Uuids.startOf(instant.toEpochMilli), s"$organization-$id-$rev")
+    def eventId: String = s"$organization-$resourceId-$rev"
   }
 
   /**
@@ -110,11 +116,11 @@ object EventMetric {
       action: Label,
       project: ProjectRef,
       organization: Label,
-      id: Iri,
+      resourceId: Iri,
       types: Set[Iri],
       additionalFields: JsonObject
   ) extends EventMetric {
-    def uuid: UUID = Uuids.nameBased(Uuids.startOf(instant.toEpochMilli), s"$project-$id-$rev")
+    def eventId: String = s"$project-$resourceId-$rev"
   }
 
   object ProjectScopedMetric {
@@ -147,8 +153,13 @@ object EventMetric {
         "instant" -> e.instant.asJson,
         "subject" -> e.subject.asJson,
         "action"  -> e.action.asJson,
-        "@id"     -> e.id.asJson,
-        "@type"   -> e.types.asJson
+        "@id"     -> e.resourceId.asJson,
+        "@type"   -> e.types.map { tpe =>
+          Json.obj(
+            "raw"   -> tpe.asJson,
+            "short" -> tpe.toUri.toOption.flatMap(_.path.lastSegment).asJson
+          )
+        }.asJson
       )
 
       val scoped = e match {

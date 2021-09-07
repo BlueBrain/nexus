@@ -164,7 +164,12 @@ class FileEventExchangeSpec
         project.organizationLabel,
         id,
         Set(nxvFile),
-        JsonObject("storage" -> diskId.asJson, "bytes" -> Json.Null, "mediaType" -> Json.Null, "origin" -> Json.Null)
+        JsonObject(
+          "storage"   -> diskId.asJson,
+          "bytes"     -> Json.Null,
+          "mediaType" -> Json.Null,
+          "origin"    -> "Storage".asJson
+        )
       )
     }
 
@@ -193,6 +198,36 @@ class FileEventExchangeSpec
           "storage"   -> diskId.asJson,
           "bytes"     -> 10.asJson,
           "mediaType" -> "application/json".asJson,
+          "origin"    -> "Storage".asJson
+        )
+      )
+    }
+
+    "return the matching metric for an update event without a digest" in {
+      val event = FileUpdated(
+        id,
+        project.ref,
+        ResourceRef.Revision(diskId, 1),
+        StorageType.DiskStorage,
+        fileAttributes(10L, withDigest = false),
+        1L,
+        Instant.EPOCH,
+        subject
+      )
+
+      exchange.toMetric(event).accepted.value shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Updated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxvFile),
+        JsonObject(
+          "storage"   -> diskId.asJson,
+          "bytes"     -> Json.Null,
+          "mediaType" -> Json.Null,
           "origin"    -> "Storage".asJson
         )
       )

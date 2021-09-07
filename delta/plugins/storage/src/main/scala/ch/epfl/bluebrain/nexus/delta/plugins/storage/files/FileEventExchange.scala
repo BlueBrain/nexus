@@ -58,13 +58,22 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
                 )
               )
             case c: FileCreated                                 =>
-              UIO.pure(EventMetric.Created -> FileExtraFields(c.storage.iri, None, None, None))
-            case u: FileUpdated                                 =>
+              UIO.pure(EventMetric.Created -> FileExtraFields(c.storage.iri, None, None, Some(c.attributes.origin)))
+            case u: FileUpdated if u.attributes.digest.computed =>
               UIO.pure(
                 EventMetric.Updated -> FileExtraFields(
                   u.storage.iri,
                   Some(u.attributes.bytes),
                   u.attributes.mediaType,
+                  Some(u.attributes.origin)
+                )
+              )
+            case u: FileUpdated                                 =>
+              UIO.pure(
+                EventMetric.Updated -> FileExtraFields(
+                  u.storage.iri,
+                  None,
+                  None,
                   Some(u.attributes.origin)
                 )
               )
@@ -114,11 +123,11 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
 object FileEventExchange {
 
   /**
-   * Specific action for files
-   */
+    * Specific action for files
+    */
   val AttributesUpdated: Label = Label.unsafe("AttributesUpdated")
 
-  private final case class FileExtraFields(
+  final private case class FileExtraFields(
       storage: Iri,
       bytes: Option[Long],
       mediaType: Option[ContentType],

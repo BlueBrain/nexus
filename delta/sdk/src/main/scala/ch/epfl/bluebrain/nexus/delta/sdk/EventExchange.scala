@@ -45,8 +45,10 @@ trait EventExchange {
 
   /**
     * Exchange an event to create the related metric
-    * @param event the event to transform
-    * @return the metric
+    * @param event
+    *   the event to transform
+    * @return
+    *   the metric
     */
   def toMetric(event: Event): UIO[Option[EventMetric]]
 

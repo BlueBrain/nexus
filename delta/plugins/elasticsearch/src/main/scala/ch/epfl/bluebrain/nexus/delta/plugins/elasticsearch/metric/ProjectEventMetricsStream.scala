@@ -86,10 +86,9 @@ object ProjectEventMetricsStream {
             client
               .bulk(
                 metrics.map { e =>
-                  ElasticSearchBulk.Index(index, e.uuid.toString, e.asJson)
+                  ElasticSearchBulk.Index(index, e.eventId, e.asJson)
                 }
               )
-              .tapError(e => UIO.pure(println(e)))
           }
           .map(_.map(_.void))
           .persistProgress(progress, projectionId, projection)

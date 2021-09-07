@@ -373,9 +373,12 @@ object ProjectionStream {
     /**
       * Accumulate over the chunks and persist the progress and errors
       *
-      * @param initial         where we started
-      * @param persistErrors   how we persist errors
-      * @param persistProgress how we persist progress
+      * @param initial
+      *   where we started
+      * @param persistErrors
+      *   how we persist errors
+      * @param persistProgress
+      *   how we persist progress
       */
     def persistProgress(
         initial: ProjectionProgress[A],
@@ -386,7 +389,7 @@ object ProjectionStream {
         .evalMapAccumulate(initial) { case (acc, chunk) =>
           val (progress, errors) = chunk.foldLeft((acc, Vector.empty[Message[A]])) {
             case ((acc, errors), msg: ErrorMessage) if msg.offset.gt(acc.offset)                               => (acc + msg, errors :+ msg)
-            case ((acc, errors), msg: SuccessMessage[A]) if msg.offset.gt(acc.offset) && msg.warnings.nonEmpty =>
+            case ((acc, errors), msg: SuccessMessage[_]) if msg.offset.gt(acc.offset) && msg.warnings.nonEmpty =>
               (acc + msg, errors :+ msg)
             case ((acc, errors), msg) if msg.offset.gt(acc.offset)                                             => (acc + msg, errors)
             case ((acc, errors), _)                                                                            => (acc, errors)
