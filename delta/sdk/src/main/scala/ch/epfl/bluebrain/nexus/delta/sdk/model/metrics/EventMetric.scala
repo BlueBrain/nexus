@@ -157,7 +157,7 @@ object EventMetric {
         "@type"   -> e.types.map { tpe =>
           Json.obj(
             "raw"   -> tpe.asJson,
-            "short" -> tpe.toUri.toOption.flatMap(_.path.lastSegment).asJson
+            "short" -> tpe.toUri.toOption.flatMap { uri => uri.fragment.orElse(uri.path.lastSegment) }.asJson
           )
         }.asJson
       )

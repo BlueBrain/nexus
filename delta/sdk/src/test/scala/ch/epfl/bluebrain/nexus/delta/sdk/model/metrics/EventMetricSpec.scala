@@ -26,7 +26,7 @@ class EventMetricSpec extends AnyWordSpecLike with Matchers with CirceLiteral {
       )
 
       val id          = nxv + "id"
-      val types       = Set(nxv + "Dummy")
+      val types       = Set(nxv + "Type1", nxv + "Type1#Type2")
       val extraFields = JsonObject("extra" -> "someString".asJson)
 
       val metric: EventMetric = ProjectScopedMetric.from[SimpleEvent](
@@ -58,8 +58,12 @@ class EventMetricSpec extends AnyWordSpecLike with Matchers with CirceLiteral {
                                         "@id" : "https://bluebrain.github.io/nexus/vocabulary/id",
                                         "@type" : [
                                           {
-                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Dummy",
-                                            "short": "Dummy"
+                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Type1",
+                                            "short": "Type1"
+                                          },
+                                          {
+                                            "raw": "https://bluebrain.github.io/nexus/vocabulary/Type1#Type2",
+                                            "short": "Type2"
                                           }
                                         ],
                                         "project" : "org/proj",
