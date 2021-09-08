@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.views.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -35,7 +35,8 @@ final class ElasticSearchIndexingStream(
       view: ViewIndex[IndexingElasticSearchView],
       strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
-    val index = idx(view)
+    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(view, view.value.tpe.tpe)
+    val index                                         = idx(view)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
@@ -64,7 +65,7 @@ final class ElasticSearchIndexingStream(
             config.indexing.projection,
             config.indexing.cache
           )
-          .viewMetrics(view, view.value.tpe.tpe)
+          .enableTracing
           .map(_.value)
       }
   }

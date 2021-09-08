@@ -15,7 +15,7 @@ object Tracing {
 
   private val logger: Logger = Logger[Tracing]
 
-  private def kamonEnabled: Boolean =
+  def kamonEnabled: Boolean =
     sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
 
   /**

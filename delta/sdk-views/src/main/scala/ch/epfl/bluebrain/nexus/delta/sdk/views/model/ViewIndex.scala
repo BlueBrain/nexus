@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 
 import java.time.Instant
 import java.util.UUID
@@ -50,4 +51,25 @@ object ViewIndex {
     override def map[A, B](viewIndex: ViewIndex[A])(f: A => B): ViewIndex[B] =
       viewIndex.copy(value = f(viewIndex.value))
   }
+
+  private val metricsPrefix: String = "delta_indexer"
+
+  /**
+    * Create a tracing config for the view
+    */
+  def tracingConfig(
+      view: ViewIndex[_],
+      viewType: Iri,
+      additionalTags: Map[String, Any] = Map.empty
+  ): ProgressTracingConfig =
+    ProgressTracingConfig(
+      metricsPrefix,
+      additionalTags ++ Map(
+        "project"      -> view.projectRef.toString,
+        "organization" -> view.projectRef.organization.toString,
+        "viewId"       -> view.id.toString,
+        "type"         -> viewType.toString
+      )
+    )
+
 }

@@ -2,13 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
+import kamon.Kamon
+import kamon.tag.TagSet
 import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
+import monix.execution.atomic.AtomicLong
 
 import scala.util.control.NonFatal
 
@@ -472,5 +477,47 @@ object ProjectionStream {
             }
         }
       }
+  }
+
+  class ProjectionProgressStreamOps[A](val stream: Stream[Task, ProjectionProgress[A]]) extends StreamOps[A] {
+
+    /**
+      * Push progress metrics in Kamon
+      */
+    def enableTracing(implicit config: ProgressTracingConfig): Stream[Task, ProjectionProgress[A]] = if (
+      Tracing.kamonEnabled
+    ) {
+      val tagSet                           = TagSet.from(config.tags)
+      val processedEventsGauge             = Kamon
+        .gauge(s"${config.prefix}_gauge_processed_events")
+        .withTags(tagSet)
+      val processedEventsCounter           = Kamon
+        .counter(s"${config.prefix}_counter_processed_events")
+        .withTags(tagSet)
+      val processedEventsCount: AtomicLong = AtomicLong(0)
+      val failedEventsGauge                = Kamon
+        .gauge(s"${config.prefix}_gauge_failed_events")
+        .withTags(tagSet)
+      val failedEventsCounter              = Kamon
+        .counter(s"${config.prefix}_counter_failed_events")
+        .withTags(tagSet)
+      val failedEventsCount: AtomicLong    = AtomicLong(0L)
+
+      stream.evalTap { p =>
+        Task.delay {
+          val previousProcessedCount = processedEventsCount.get()
+          processedEventsGauge.update(p.processed.toDouble)
+          processedEventsCounter.increment(p.processed - previousProcessedCount)
+          processedEventsCount.set(p.processed)
+
+          val previousFailedCount = failedEventsCount.get()
+          failedEventsGauge.update(p.failed.toDouble)
+          failedEventsCounter.increment(p.failed - previousFailedCount)
+          failedEventsCount.set(p.failed)
+        }
+      }
+    } else {
+      stream
+    }
   }
 }

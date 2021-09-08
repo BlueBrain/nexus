@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -50,7 +51,8 @@ object StoragesStatistics {
 
   private val id: String = "StorageStatistics"
   type StreamFromOffset = Offset => Stream[Task, Envelope[FileEvent]]
-  val projectionId: CacheProjectionId = CacheProjectionId(id)
+  val projectionId: CacheProjectionId               = CacheProjectionId(id)
+  implicit val tracingConfig: ProgressTracingConfig = ProgressTracingConfig(projectionId.value, Map.empty)
 
   /**
     * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function. The underlying stream
@@ -142,6 +144,7 @@ object StoragesStatistics {
             }
             .map(_._1)
             .persistProgress(progress, projectionId, projection, persistProgressConfig)
+            .enableTracing
             .void
         }
 

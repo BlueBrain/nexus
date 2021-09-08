@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.views.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -34,7 +34,8 @@ final class BlazegraphIndexingStream(
   override def apply(
       view: ViewIndex[IndexingBlazegraphView],
       strategy: IndexingStream.ProgressStrategy
-  ): Stream[Task, Unit] =
+  ): Stream[Task, Unit] = {
+    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(view, view.value.tpe.tpe)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
@@ -62,9 +63,10 @@ final class BlazegraphIndexingStream(
             config.indexing.projection,
             config.indexing.cache
           )
-          .viewMetrics(view, view.value.tpe.tpe)
+          .enableTracing
           .map(_.value)
       }
+  }
 
   private def handleProgress(
       strategy: ProgressStrategy,

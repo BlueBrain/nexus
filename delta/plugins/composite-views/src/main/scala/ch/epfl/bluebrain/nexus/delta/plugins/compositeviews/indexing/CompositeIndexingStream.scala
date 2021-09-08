@@ -32,11 +32,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.views.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Stream}
 import monix.bio.{IO, Task, UIO}
@@ -189,7 +189,16 @@ final class CompositeIndexingStream(
       projection: CompositeViewProjection,
       progress: ProjectionProgress[Unit]
   ): Pipe[Task, Chunk[Message[BlazegraphIndexingStreamEntry]], Unit] = {
-    val cfg = indexingConfig(projection)
+    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(
+      view,
+      compositeViewType,
+      Map(
+        "projectionId"   -> pId.projectionId.value,
+        "sourceId"       -> pId.sourceId,
+        "projectionType" -> projection.tpe.tpe.toString
+      )
+    )
+    val cfg                                           = indexingConfig(projection)
     _.evalMapFilterValue {
       // Filters out the resources that are not to be indexed by the projections and the ones that are to be deleted
       case res if res.containsSchema(projection.resourceSchemas) && res.containsTypes(projection.resourceTypes) =>
@@ -222,15 +231,7 @@ final class CompositeIndexingStream(
         cfg.projection,
         cfg.cache
       )
-      .viewMetrics(
-        view,
-        compositeViewType,
-        Map(
-          "projectionId"   -> pId.projectionId.value,
-          "sourceId"       -> pId.sourceId,
-          "projectionType" -> projection.tpe.tpe.toString
-        )
-      )
+      .enableTracing
       .map(_.value)
   }
 
