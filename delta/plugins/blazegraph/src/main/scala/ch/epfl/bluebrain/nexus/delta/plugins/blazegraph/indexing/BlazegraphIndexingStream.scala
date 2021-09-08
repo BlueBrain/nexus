@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, Indexin
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -35,7 +35,7 @@ final class BlazegraphIndexingStream(
       view: ViewIndex[IndexingBlazegraphView],
       strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
-    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(view, view.value.tpe.tpe)
+    implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, view.value.tpe.tpe)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
@@ -63,7 +63,7 @@ final class BlazegraphIndexingStream(
             config.indexing.projection,
             config.indexing.cache
           )
-          .enableTracing
+          .enableMetrics
           .map(_.value)
       }
   }

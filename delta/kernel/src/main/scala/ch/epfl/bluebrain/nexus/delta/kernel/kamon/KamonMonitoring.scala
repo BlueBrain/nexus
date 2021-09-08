@@ -11,11 +11,11 @@ import monix.bio.{Cause, IO, Task, UIO}
 
 import scala.concurrent.duration._
 
-object Tracing {
+object KamonMonitoring {
 
   private val logger: Logger = Logger[Tracing]
 
-  def kamonEnabled: Boolean =
+  def enabled: Boolean =
     sys.env.getOrElse("KAMON_ENABLED", "true").toBooleanOption.getOrElse(true)
 
   /**
@@ -23,14 +23,14 @@ object Tracing {
     * @param config
     *   the configuration
     */
-  def initializeKamon(config: Config): UIO[Unit] =
-    UIO.when(kamonEnabled)(UIO.delay(Kamon.init(config)))
+  def initialize(config: Config): UIO[Unit] =
+    UIO.when(enabled)(UIO.delay(Kamon.init(config)))
 
   /**
     * Terminate Kamon
     */
-  def terminateKamon: Task[Unit] =
-    Task.when(kamonEnabled) {
+  def terminate: Task[Unit] =
+    Task.when(enabled) {
       Task
         .deferFuture(Kamon.stopModules())
         .timeout(15.seconds)
@@ -63,7 +63,7 @@ object Tracing {
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
   )(io: IO[E, A]): IO[E, A] =
-    if (kamonEnabled)
+    if (enabled)
       buildSpan(name, component, tags).bracketCase(_ => io) {
         case (span, ExitCase.Completed)    => finishSpan(span, takeSamplingDecision)
         case (span, ExitCase.Error(cause)) => failSpan(span, cause, takeSamplingDecision)

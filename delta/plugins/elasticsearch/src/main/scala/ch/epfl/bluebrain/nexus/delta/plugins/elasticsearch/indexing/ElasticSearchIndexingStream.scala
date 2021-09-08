@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, Indexin
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
 import monix.bio.{IO, Task}
@@ -35,8 +35,8 @@ final class ElasticSearchIndexingStream(
       view: ViewIndex[IndexingElasticSearchView],
       strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
-    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(view, view.value.tpe.tpe)
-    val index                                         = idx(view)
+    implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, view.value.tpe.tpe)
+    val index                                      = idx(view)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
@@ -65,7 +65,7 @@ final class ElasticSearchIndexingStream(
             config.indexing.projection,
             config.indexing.cache
           )
-          .enableTracing
+          .enableMetrics
           .map(_.value)
       }
   }

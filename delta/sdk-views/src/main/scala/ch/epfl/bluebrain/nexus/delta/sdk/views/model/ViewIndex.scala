@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 
 import cats.Functor
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 
 import java.time.Instant
 import java.util.UUID
@@ -55,14 +55,14 @@ object ViewIndex {
   private val metricsPrefix: String = "delta_indexer"
 
   /**
-    * Create a tracing config for the view
+    * Create a metrics config for the view
     */
-  def tracingConfig(
+  def metricsConfig(
       view: ViewIndex[_],
       viewType: Iri,
       additionalTags: Map[String, Any] = Map.empty
-  ): ProgressTracingConfig =
-    ProgressTracingConfig(
+  ): KamonMetricsConfig =
+    KamonMetricsConfig(
       metricsPrefix,
       additionalTags ++ Map(
         "project"      -> view.projectRef.toString,

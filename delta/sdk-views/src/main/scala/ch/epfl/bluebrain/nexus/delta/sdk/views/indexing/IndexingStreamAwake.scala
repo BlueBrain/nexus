@@ -5,6 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -28,8 +28,8 @@ object IndexingStreamAwake {
 
   private val logger: Logger = Logger[IndexingStreamAwake.type]
   private type StreamFromOffset = Offset => Stream[Task, Envelope[ProjectScopedEvent]]
-  private[indexing] val projectionId: CacheProjectionId = CacheProjectionId("IndexingStreamAwake")
-  implicit val tracingConfig: ProgressTracingConfig     = ProgressTracingConfig(projectionId.value, Map.empty)
+  private[indexing] val projectionId: CacheProjectionId  = CacheProjectionId("IndexingStreamAwake")
+  implicit private val metricsConfig: KamonMetricsConfig = KamonMetricsConfig(projectionId.value, Map.empty)
 
   /**
     * Construct a [[IndexingStreamAwake]] from a passed ''projection'' and ''stream'' function. The underlying stream
@@ -74,7 +74,7 @@ object IndexingStreamAwake {
                 .as(msg.as(ProjectsEventsInstantCollection(acc.value.value + (evProject -> evInstant))))
             }
             .persistProgress(progress, projectionId, projection, persistProgressConfig)
-            .enableTracing
+            .enableMetrics
             .void
         }
 

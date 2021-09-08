@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -36,7 +37,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Pipe, Stream}
 import monix.bio.{IO, Task, UIO}
@@ -189,7 +189,7 @@ final class CompositeIndexingStream(
       projection: CompositeViewProjection,
       progress: ProjectionProgress[Unit]
   ): Pipe[Task, Chunk[Message[BlazegraphIndexingStreamEntry]], Unit] = {
-    implicit val tracingConfig: ProgressTracingConfig = ViewIndex.tracingConfig(
+    implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(
       view,
       compositeViewType,
       Map(
@@ -198,7 +198,7 @@ final class CompositeIndexingStream(
         "projectionType" -> projection.tpe.tpe.toString
       )
     )
-    val cfg                                           = indexingConfig(projection)
+    val cfg                                        = indexingConfig(projection)
     _.evalMapFilterValue {
       // Filters out the resources that are not to be indexed by the projections and the ones that are to be deleted
       case res if res.containsSchema(projection.resourceSchemas) && res.containsTypes(projection.resourceTypes) =>
@@ -231,7 +231,7 @@ final class CompositeIndexingStream(
         cfg.projection,
         cfg.cache
       )
-      .enableTracing
+      .enableMetrics
       .map(_.value)
   }
 

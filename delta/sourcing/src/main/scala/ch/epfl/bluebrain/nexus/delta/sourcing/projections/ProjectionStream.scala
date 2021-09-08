@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMetricsConfig, KamonMonitoring}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.tracing.ProgressTracingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
@@ -484,8 +483,8 @@ object ProjectionStream {
     /**
       * Push progress metrics in Kamon
       */
-    def enableTracing(implicit config: ProgressTracingConfig): Stream[Task, ProjectionProgress[A]] = if (
-      Tracing.kamonEnabled
+    def enableMetrics(implicit config: KamonMetricsConfig): Stream[Task, ProjectionProgress[A]] = if (
+      KamonMonitoring.enabled
     ) {
       val tagSet                           = TagSet.from(config.tags)
       val processedEventsGauge             = Kamon
