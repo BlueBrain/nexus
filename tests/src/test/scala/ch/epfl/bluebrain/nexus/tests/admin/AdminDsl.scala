@@ -52,19 +52,21 @@ class AdminDsl(cl: HttpClient, config: TestsConfig) extends TestHelpers with Cir
       `@type`: String = "Project",
       authenticated: Authenticated,
       schema: String,
-      deprecated: Boolean = false
+      deprecated: Boolean = false,
+      markedForDeletion: Boolean = false
   ): Json = {
     val resp = Seq(
-      "projectId"  -> id,
-      "path"       -> tpe,
-      "type"       -> `@type`,
-      "rev"        -> rev.toString,
-      "deltaUri"   -> config.deltaUri.toString(),
-      "realm"      -> authenticated.realm.name,
-      "user"       -> authenticated.name,
-      "orgId"      -> orgId,
-      "deprecated" -> deprecated.toString,
-      "schema"     -> schema
+      "projectId"         -> id,
+      "path"              -> tpe,
+      "type"              -> `@type`,
+      "rev"               -> rev.toString,
+      "deltaUri"          -> config.deltaUri.toString(),
+      "realm"             -> authenticated.realm.name,
+      "user"              -> authenticated.name,
+      "orgId"             -> orgId,
+      "deprecated"        -> deprecated.toString,
+      "markedForDeletion" -> markedForDeletion.toString,
+      "schema"            -> schema
     )
     jsonContentOf("/admin/project-response.json", resp: _*)
   }

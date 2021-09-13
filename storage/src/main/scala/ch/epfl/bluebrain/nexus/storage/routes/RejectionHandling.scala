@@ -33,7 +33,8 @@ object RejectionHandling {
   /**
     * Discards the request entity bytes and completes the request with the argument.
     *
-    * @param m a value to be marshalled into an HttpResponse
+    * @param m
+    *   a value to be marshalled into an HttpResponse
     */
   final def rejectRequestEntityAndComplete(m: => ToResponseMarshallable): Route = {
     extractRequest { request =>
@@ -45,7 +46,8 @@ object RejectionHandling {
   }
 
   /**
-    * @return a rejection handler for the NotFound rejection.
+    * @return
+    *   a rejection handler for the NotFound rejection.
     */
   def notFound(implicit J: ToEntityMarshaller[Json]): RejectionHandler = {
     implicit val errorMarshaller: ToEntityMarshaller[Error] = J.compose(_.asJson)
@@ -58,11 +60,13 @@ object RejectionHandling {
   }
 
   /**
-    * A rejection handler for rejections of type ''A'' that uses the provided function  ''f'' to complete the request.
+    * A rejection handler for rejections of type ''A'' that uses the provided function ''f'' to complete the request.
     * __Note__: the request entity bytes are automatically discarded.
     *
-    * @see [[RejectionHandling.rejectRequestEntityAndComplete()]]
-    * @param f the function to use for handling rejections of type A
+    * @see
+    *   [[RejectionHandling.rejectRequestEntityAndComplete()]]
+    * @param f
+    *   the function to use for handling rejections of type A
     */
   def handle[A <: Rejection](f: A => ToResponseMarshallable)(implicit A: ClassTag[A]): RejectionHandler =
     RejectionHandler
@@ -73,10 +77,11 @@ object RejectionHandling {
       .result()
 
   /**
-    * A rejection handler for all the defined Akka rejections.
-    * __Note__: the request entity bytes are automatically discarded.
+    * A rejection handler for all the defined Akka rejections. __Note__: the request entity bytes are automatically
+    * discarded.
     *
-    * @see [[RejectionHandling.rejectRequestEntityAndComplete()]]
+    * @see
+    *   [[RejectionHandling.rejectRequestEntityAndComplete()]]
     */
   def apply(implicit J: ToEntityMarshaller[Json]): RejectionHandler = {
     implicit val errorMarshaller: ToEntityMarshaller[Error] = J.compose(_.asJson)
@@ -208,12 +213,13 @@ object RejectionHandling {
   }
 
   /**
-    * A rejection handler for all predefined akka rejections and additionally for rejections of type ''A'' (using
-    * the provided function  ''f'' to complete the request).
-    * __Note__: the request entity bytes are automatically discarded.
+    * A rejection handler for all predefined akka rejections and additionally for rejections of type ''A'' (using the
+    * provided function ''f'' to complete the request). __Note__: the request entity bytes are automatically discarded.
     *
-    * @see [[RejectionHandling.rejectRequestEntityAndComplete()]]
-    * @param f the function to use for handling rejections of type A
+    * @see
+    *   [[RejectionHandling.rejectRequestEntityAndComplete()]]
+    * @param f
+    *   the function to use for handling rejections of type A
     */
   def apply[A <: Rejection: ClassTag](
       f: A => ToResponseMarshallable

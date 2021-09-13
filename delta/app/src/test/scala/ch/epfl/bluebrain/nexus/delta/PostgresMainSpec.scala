@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta
 
 import ch.epfl.bluebrain.nexus.testkit.{ElasticSearchDocker, IOValues}
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.PostgresSpec
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

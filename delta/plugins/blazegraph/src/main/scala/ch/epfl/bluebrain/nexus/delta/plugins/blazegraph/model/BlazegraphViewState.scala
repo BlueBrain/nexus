@@ -23,7 +23,8 @@ trait BlazegraphViewState extends Product with Serializable {
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[ViewResource]
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 }
@@ -41,18 +42,30 @@ object BlazegraphViewState {
   /**
     * State for an existing Blazegraph view.
     *
-    * @param id         the view id
-    * @param project    a reference to the parent project
-    * @param uuid       the unique view identifier
-    * @param value      the view configuration
-    * @param source     the last original json value provided by the caller
-    * @param tags       the collection of tags
-    * @param rev        the current revision of the view
-    * @param deprecated the deprecation status of the view
-    * @param createdAt  the instant when the view was created
-    * @param createdBy  the subject that created the view
-    * @param updatedAt  the instant when the view was last updated
-    * @param updatedBy  the subject that last updated the view
+    * @param id
+    *   the view id
+    * @param project
+    *   a reference to the parent project
+    * @param uuid
+    *   the unique view identifier
+    * @param value
+    *   the view configuration
+    * @param source
+    *   the last original json value provided by the caller
+    * @param tags
+    *   the collection of tags
+    * @param rev
+    *   the current revision of the view
+    * @param deprecated
+    *   the deprecation status of the view
+    * @param createdAt
+    *   the instant when the view was created
+    * @param createdBy
+    *   the subject that created the view
+    * @param updatedAt
+    *   the instant when the view was last updated
+    * @param updatedBy
+    *   the subject that last updated the view
     */
   final case class Current(
       id: Iri,

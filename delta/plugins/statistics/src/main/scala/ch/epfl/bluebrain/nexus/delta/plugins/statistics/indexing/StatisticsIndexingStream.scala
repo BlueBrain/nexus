@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing
 
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.RelationshipResolution
@@ -95,7 +96,10 @@ final class StatisticsIndexingStream(
               val idTypesMap = list.map { case (id, types, _) => id -> types }.toMap
               val bulkOps    = list.map { case (_, _, bulkOp) => bulkOp }
               // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
-              client.bulkWaitFor(bulkOps) >> client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
+              client.bulk(bulkOps, Refresh.WaitFor) >> client.updateByQuery(
+                relationshipsQuery(idTypesMap),
+                Set(index.value)
+              )
             }
           }
           .flatMap(Stream.chunk)

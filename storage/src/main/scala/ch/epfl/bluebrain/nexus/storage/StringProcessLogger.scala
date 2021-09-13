@@ -7,9 +7,12 @@ import scala.sys.process.ProcessLogger
 /**
   * Simple [[scala.sys.process.ProcessLogger]] implementation backed by a [[StringBuilder]].
   *
-  * @param cmd the command, used for logging purposes
-  * @param arg an optional command argument
-  * @note This expects a brief, single-line output.
+  * @param cmd
+  *   the command, used for logging purposes
+  * @param arg
+  *   an optional command argument
+  * @note
+  *   This expects a brief, single-line output.
   */
 class StringProcessLogger(cmd: Seq[String], arg: Option[String]) extends ProcessLogger {
 

@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, ResolversDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
@@ -119,7 +119,8 @@ class ResolversRoutesSpec
         case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers = ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
+  private val resolvers =
+    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
   private val resolverResolution = ResolverResolution(
     acls,
@@ -132,7 +133,8 @@ class ResolversRoutesSpec
 
   private val multiResolution = MultiResolution(projects, resolverResolution)
 
-  private val routes = Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution))
+  private val routes =
+    Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))

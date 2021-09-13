@@ -4,10 +4,10 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, Secret}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{schemas, StorageResource, Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -21,13 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -36,18 +36,27 @@ import monix.execution.Scheduler
 /**
   * The storages routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param storages      the storages module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param storages
+  *   the storages module
+  * @param index
+  *   the indexing action on write operations
   */
 final class StoragesRoutes(
     identities: Identities,
     acls: Acls,
     organizations: Organizations,
     projects: Projects,
-    storages: Storages
+    storages: Storages,
+    storagesStatistics: StoragesStatistics,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     crypto: Crypto,
@@ -62,6 +71,8 @@ final class StoragesRoutes(
   import baseUri.prefixSegment
 
   implicit private val fetchProjectUuids: FetchUuids = projects
+
+  implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -79,7 +90,6 @@ final class StoragesRoutes(
     }
   }
 
-  @SuppressWarnings(Array("OptionGet"))
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
       pathPrefix("storages") {
@@ -125,9 +135,12 @@ final class StoragesRoutes(
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/storages/{org}/{project}")) {
                   // Create a storage without id segment
-                  (post & noParameter("rev") & entity(as[Json])) { source =>
+                  (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                     authorizeFor(ref, Write).apply {
-                      emit(Created, storages.create(ref, Secret(source)).mapValue(_.metadata))
+                      emit(
+                        Created,
+                        storages.create(ref, Secret(source)).tapEval(index(ref, _, mode)).mapValue(_.metadata)
+                      )
                     }
                   }
                 },
@@ -145,7 +158,7 @@ final class StoragesRoutes(
                     }
                   }
                 },
-                idSegment { id =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/storages/{org}/{project}/{id}") {
@@ -156,17 +169,34 @@ final class StoragesRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a storage with id segment
-                                  emit(Created, storages.create(id, ref, Secret(source)).mapValue(_.metadata))
+                                  emit(
+                                    Created,
+                                    storages
+                                      .create(id, ref, Secret(source))
+                                      .tapEval(index(ref, _, mode))
+                                      .mapValue(_.metadata)
+                                  )
                                 case (Some(rev), source) =>
                                   // Update a storage
-                                  emit(storages.update(id, ref, rev, Secret(source)).mapValue(_.metadata))
+                                  emit(
+                                    storages
+                                      .update(id, ref, rev, Secret(source))
+                                      .tapEval(index(ref, _, mode))
+                                      .mapValue(_.metadata)
+                                  )
                               }
                             }
                           },
                           // Deprecate a storage
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(storages.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[StorageNotFound])
+                              emit(
+                                storages
+                                  .deprecate(id, ref, rev)
+                                  .tapEval(index(ref, _, mode))
+                                  .mapValue(_.metadata)
+                                  .rejectOn[StorageNotFound]
+                              )
                             }
                           },
                           // Fetch a storage
@@ -182,7 +212,7 @@ final class StoragesRoutes(
                         authorizeFor(ref, Read).apply {
                           val sourceIO = storages
                             .fetch(id, ref)
-                            .map(res => Storage.encryptSource(res.value.source, crypto).toOption.get)
+                            .map(res => Storage.encryptSourceUnsafe(res.value.source, crypto))
                           emit(sourceIO.leftWiden[StorageRejection].rejectOn[StorageNotFound])
                         }
                       }
@@ -199,11 +229,22 @@ final class StoragesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, storages.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata))
+                                emit(
+                                  Created,
+                                  storages
+                                    .tag(id, ref, tag, tagRev, rev)
+                                    .tapEval(index(ref, _, mode))
+                                    .mapValue(_.metadata)
+                                )
                               }
                             }
                           }
                         )
+                      }
+                    },
+                    (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                      authorizeFor(ref, Read).apply {
+                        emit(storagesStatistics.get(id, ref).leftWiden[StorageRejection])
                       }
                     }
                   )
@@ -219,7 +260,8 @@ final class StoragesRoutes(
 object StoragesRoutes {
 
   /**
-    * @return the [[Route]] for storages
+    * @return
+    *   the [[Route]] for storages
     */
   def apply(
       config: StoragesConfig,
@@ -227,7 +269,9 @@ object StoragesRoutes {
       acls: Acls,
       organizations: Organizations,
       projects: Projects,
-      storages: Storages
+      storages: Storages,
+      storagesStatistics: StoragesStatistics,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -236,7 +280,7 @@ object StoragesRoutes {
       crypto: Crypto
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    new StoragesRoutes(identities, acls, organizations, projects, storages).routes
+    new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, index).routes
   }
 
 }

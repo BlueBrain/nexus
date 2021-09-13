@@ -39,9 +39,10 @@ final class RealmsImpl private (
       label: Label,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
-    val command = CreateRealm(label, name, openIdConfig, logo, caller)
+    val command = CreateRealm(label, name, openIdConfig, logo, acceptedAudiences, caller)
     eval(command).named("createRealm", moduleType)
   }
 
@@ -50,9 +51,10 @@ final class RealmsImpl private (
       rev: Long,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] = {
-    val command = UpdateRealm(label, rev, name, openIdConfig, logo, caller)
+    val command = UpdateRealm(label, rev, name, openIdConfig, logo, acceptedAudiences, caller)
     eval(command).named("updateRealm", moduleType)
   }
 
@@ -163,9 +165,12 @@ object RealmsImpl {
   /**
     * Constructs a [[Realms]] instance
     *
-    * @param realmsConfig     the realm configuration
-    * @param resolveWellKnown how to resolve the [[WellKnown]]
-    * @param eventLog         the event log for [[RealmEvent]]
+    * @param realmsConfig
+    *   the realm configuration
+    * @param resolveWellKnown
+    *   how to resolve the [[WellKnown]]
+    * @param eventLog
+    *   the event log for [[RealmEvent]]
     */
   final def apply(
       realmsConfig: RealmsConfig,

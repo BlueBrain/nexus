@@ -6,6 +6,7 @@ import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
@@ -97,7 +98,9 @@ class ElasticSearchIndexingSpec
     cacheIndexing,
     externalIndexing,
     10,
-    1.minute
+    1.minute,
+    Refresh.False,
+    2000
   )
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
@@ -105,7 +108,7 @@ class ElasticSearchIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
+  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, config.maxIndexPathLength)
 
   private val idPrefix = Iri.unsafe("https://example.com")
 

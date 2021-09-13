@@ -90,8 +90,10 @@ object PermissionsImpl {
     * Constructs a permissions aggregate. It requires that the system has joined a cluster. The implementation is
     * effectful as it allocates a new cluster sharding entity across the cluster.
     *
-    * @param minimum         the minimum collection of permissions
-    * @param aggregateConfig the aggregate configuration
+    * @param minimum
+    *   the minimum collection of permissions
+    * @param aggregateConfig
+    *   the aggregate configuration
     */
   final def aggregate(
       minimum: Set[Permission],
@@ -116,10 +118,14 @@ object PermissionsImpl {
   /**
     * Constructs a new [[Permissions]] instance backed by a sharded aggregate.
     *
-    * @param minimum  the minimum collection of permissions
-    * @param agg      the permissions aggregate
-    * @param eventLog the permissions event log
-    * @param base     the base uri of the system API
+    * @param minimum
+    *   the minimum collection of permissions
+    * @param agg
+    *   the permissions aggregate
+    * @param eventLog
+    *   the permissions event log
+    * @param base
+    *   the base uri of the system API
     */
   final def apply(
       minimum: Set[Permission],
@@ -129,13 +135,17 @@ object PermissionsImpl {
     new PermissionsImpl(minimum, agg, eventLog)
 
   /**
-    * Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined
-    * a cluster. The implementation is effectful as it allocates a new cluster sharding entity across the cluster.
+    * Constructs a new [[Permissions]] instance backed by a sharded aggregate. It requires that the system has joined a
+    * cluster. The implementation is effectful as it allocates a new cluster sharding entity across the cluster.
     *
-    * @param minimum         the minimum collection of permissions
-    * @param aggregateConfig the aggregate configuration
-    * @param eventLog        an event log instance for events of type [[PermissionsEvent]]
-    * @param base            the base uri of the system API
+    * @param minimum
+    *   the minimum collection of permissions
+    * @param aggregateConfig
+    *   the aggregate configuration
+    * @param eventLog
+    *   an event log instance for events of type [[PermissionsEvent]]
+    * @param base
+    *   the base uri of the system API
     */
   final def apply(
       minimum: Set[Permission],

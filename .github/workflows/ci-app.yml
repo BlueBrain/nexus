@@ -1,8 +1,5 @@
 name: Delta App
 on:
-  push:
-    branches:
-      - master
   pull_request:
     paths:
       - 'delta/**'

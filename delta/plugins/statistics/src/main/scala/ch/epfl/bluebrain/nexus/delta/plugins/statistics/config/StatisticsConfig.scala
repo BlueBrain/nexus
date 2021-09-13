@@ -16,10 +16,14 @@ import scala.util.Try
 /**
   * Configuration for the ElasticSearchView plugin.
   *
-  * @param base          the base uri to the Elasticsearch HTTP endpoint
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param indexing      configuration of the external indexing process
-  * @param idleTimeout   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param base
+  *   the base uri to the Elasticsearch HTTP endpoint
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param indexing
+  *   configuration of the external indexing process
+  * @param idleTimeout
+  *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
   */
 final case class StatisticsConfig(
     base: Uri,

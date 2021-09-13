@@ -6,9 +6,8 @@ import scala.annotation.tailrec
 object PathUtils {
 
   /**
-    * Checks if the ''target'' path is a descendant of the ''parent'' path.
-    * E.g.: path = /some/my/path ; parent = /some will return true
-    * E.g.: path = /some/my/path ; parent = /other will return false
+    * Checks if the ''target'' path is a descendant of the ''parent'' path. E.g.: path = /some/my/path ; parent = /some
+    * will return true E.g.: path = /some/my/path ; parent = /other will return false
     */
   def descendantOf(target: Path, parent: Path): Boolean =
     inner(parent, target.getParent)

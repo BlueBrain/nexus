@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
@@ -17,21 +18,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 /**
   * Typeclass definition for ''A''s from which the HttpHeaders and StatusCode can be ontained.
   *
-  * @tparam A generic type parameter
+  * @tparam A
+  *   generic type parameter
   */
 trait HttpResponseFields[A] {
 
   /**
     * Computes a [[StatusCode]] from the argument value.
     *
-    * @param value the input value
+    * @param value
+    *   the input value
     */
   def statusFrom(value: A): StatusCode
 
   /**
     * Computes a sequence of [[HttpHeader]] from the argument value.
     *
-    * @param value the input value
+    * @param value
+    *   the input value
     */
   def headersFrom(value: A): Seq[HttpHeader]
 }
@@ -42,8 +46,10 @@ object HttpResponseFields {
   /**
     * Constructor helper to build a [[HttpResponseFields]].
     *
-    * @param f function from A to StatusCode
-    * @tparam A type parameter to map to HttpResponseFields
+    * @param f
+    *   function from A to StatusCode
+    * @tparam A
+    *   type parameter to map to HttpResponseFields
     */
   def apply[A](f: A => StatusCode): HttpResponseFields[A] =
     new HttpResponseFields[A] {
@@ -54,8 +60,10 @@ object HttpResponseFields {
   /**
     * Constructor helper to build a [[HttpResponseFields]].
     *
-    * @param f function from A to a tuple StatusCode and Seq[HttpHeader]
-    * @tparam A type parameter to map to HttpResponseFields
+    * @param f
+    *   function from A to a tuple StatusCode and Seq[HttpHeader]
+    * @tparam A
+    *   type parameter to map to HttpResponseFields
     */
   def fromStatusAndHeaders[A](f: A => (StatusCode, Seq[HttpHeader])): HttpResponseFields[A] =
     new HttpResponseFields[A] {
@@ -118,6 +126,7 @@ object HttpResponseFields {
     HttpResponseFields {
       case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
+      case ProjectRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
@@ -139,6 +148,7 @@ object HttpResponseFields {
       case ResolverRejection.IncorrectRev(_, _)                    => StatusCodes.Conflict
       case ResolverRejection.UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
       case ResolverRejection.ResolverEvaluationError(_)            => StatusCodes.InternalServerError
+      case ResolverRejection.WrappedIndexingActionRejection(_)     => StatusCodes.InternalServerError
       case _                                                       => StatusCodes.BadRequest
     }
 
@@ -154,6 +164,7 @@ object HttpResponseFields {
       case ResourceRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
       case ResourceRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case ResourceRejection.ResourceEvaluationError(_)        => StatusCodes.InternalServerError
+      case ResourceRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                   => StatusCodes.BadRequest
     }
 
@@ -168,13 +179,22 @@ object HttpResponseFields {
       case SchemaRejection.WrappedOrganizationRejection(rej) => rej.status
       case SchemaRejection.SchemaEvaluationError(_)          => StatusCodes.InternalServerError
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case SchemaRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
+    }
+
+  implicit val responseFieldsQuotas: HttpResponseFields[QuotaRejection] =
+    HttpResponseFields {
+      case _: QuotaRejection.QuotasDisabled            => StatusCodes.NotFound
+      case QuotaRejection.WrappedProjectRejection(rej) => (rej: ProjectRejection).status
+      case _: QuotaRejection.QuotaReached              => StatusCodes.Forbidden
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
     HttpResponseFields {
       case AuthorizationFailed          => StatusCodes.Forbidden
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
+      case IndexingFailed(_, _)         => StatusCodes.InternalServerError
     }
 
   implicit val responseFieldsUnit: HttpResponseFields[Unit] =

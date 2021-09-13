@@ -7,8 +7,10 @@ import io.circe.Encoder
 /**
   * Data type of a ''value'' to be sorted
   *
-  * @param order the order (ascending or descending) of the sorting value
-  * @param value the value to be sorted
+  * @param order
+  *   the order (ascending or descending) of the sorting value
+  * @param value
+  *   the value to be sorted
   */
 final case class Sort(order: OrderType, value: String) {
   override def toString: String = s"$order$value"
@@ -19,7 +21,8 @@ object Sort {
   /**
     * Attempt to construct a [[Sort]] from a string
     *
-    * @param value the string
+    * @param value
+    *   the string
     */
   final def apply(value: String): Sort = {
     val trimmed = value.trim

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -20,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
@@ -36,11 +37,18 @@ import monix.execution.Scheduler
 /**
   * The resolver routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param resolvers     the resolvers module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param resolvers
+  *   the resolvers module
+  * @param index
+  *   the indexing action on write operations
   */
 final class ResolversRoutes(
     identities: Identities,
@@ -48,7 +56,8 @@ final class ResolversRoutes(
     organizations: Organizations,
     projects: Projects,
     resolvers: Resolvers,
-    multiResolution: MultiResolution
+    multiResolution: MultiResolution,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -65,6 +74,8 @@ final class ResolversRoutes(
 
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
+
+  implicit private val eventExchangeMapper = Mapper(Resolvers.eventExchangeValue(_))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
@@ -130,9 +141,9 @@ final class ResolversRoutes(
                 },
                 (pathEndOrSingleSlash & operationName(s"$prefixSegment/resolvers/{org}/{project}")) {
                   // Create a resolver without an id segment
-                  (post & noParameter("rev") & entity(as[Json])) { payload =>
+                  (post & noParameter("rev") & entity(as[Json]) & indexingMode) { (payload, mode) =>
                     authorizeWrite {
-                      emit(Created, resolvers.create(ref, payload).map(_.void))
+                      emit(Created, resolvers.create(ref, payload).tapEval(index(ref, _, mode)).map(_.void))
                     }
                   }
                 },
@@ -150,7 +161,7 @@ final class ResolversRoutes(
                     }
                   }
                 },
-                idSegment { id =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/resolvers/{org}/{project}/{id}") {
@@ -162,20 +173,24 @@ final class ResolversRoutes(
                                   // Create a resolver with an id segment
                                   emit(
                                     Created,
-                                    resolvers.create(id, ref, payload).map(_.void)
+                                    resolvers.create(id, ref, payload).tapEval(index(ref, _, mode)).map(_.void)
                                   )
                                 case (Some(rev), payload) =>
                                   // Update a resolver
-                                  emit(
-                                    resolvers.update(id, ref, rev, payload).map(_.void)
-                                  )
+                                  emit(resolvers.update(id, ref, rev, payload).tapEval(index(ref, _, mode)).map(_.void))
                               }
                             }
                           },
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               // Deprecate a resolver
-                              emit(resolvers.deprecate(id, ref, rev).map(_.void).rejectOn[ResolverNotFound])
+                              emit(
+                                resolvers
+                                  .deprecate(id, ref, rev)
+                                  .tapEval(index(ref, _, mode))
+                                  .map(_.void)
+                                  .rejectOn[ResolverNotFound]
+                              )
                             }
                           },
                           // Fetches a resolver
@@ -203,7 +218,10 @@ final class ResolversRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeWrite {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, resolvers.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(
+                                  Created,
+                                  resolvers.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                )
                               }
                             }
                           }
@@ -247,7 +265,8 @@ final class ResolversRoutes(
 object ResolversRoutes {
 
   /**
-    * @return the [[Route]] for resolvers
+    * @return
+    *   the [[Route]] for resolvers
     */
   def apply(
       identities: Identities,
@@ -255,13 +274,14 @@ object ResolversRoutes {
       organizations: Organizations,
       projects: Projects,
       resolvers: Resolvers,
-      multiResolution: MultiResolution
+      multiResolution: MultiResolution,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution).routes
+  ): Route = new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, index).routes
 
 }

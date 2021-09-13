@@ -5,18 +5,21 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.moduleType
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, uuidFrom}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.allQuotas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{DeletionStatusCache, ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -32,9 +35,11 @@ final class ProjectsImpl private (
     agg: ProjectsAggregate,
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
+    deletionCache: DeletionStatusCache,
     organizations: Organizations,
+    quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
-    defaultApiMappings: ApiMappings
+    override val defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
     extends Projects {
 
@@ -77,6 +82,40 @@ final class ProjectsImpl private (
   override def deprecate(ref: ProjectRef, rev: Long)(implicit caller: Subject): IO[ProjectRejection, ProjectResource] =
     eval(DeprecateProject(ref, rev, caller)).named("deprecateProject", moduleType)
 
+  override def delete(ref: ProjectRef, rev: Long)(implicit
+      caller: Subject,
+      referenceFinder: ProjectReferenceFinder
+  ): IO[ProjectRejection, (UUID, ProjectResource)] = {
+    for {
+      references <- referenceFinder(ref)
+      _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
+      resource   <- eval(DeleteProject(ref, rev, caller))
+      uuid        = uuidFrom(ref, resource.updatedAt)
+      _          <- deletionCache.put(
+                      uuid,
+                      ResourcesDeletionStatus(
+                        progress = Deleting,
+                        project = ref,
+                        projectCreatedBy = resource.createdBy,
+                        projectCreatedAt = resource.createdAt,
+                        createdBy = caller,
+                        createdAt = resource.updatedAt,
+                        updatedAt = resource.updatedAt,
+                        uuid = uuid
+                      )
+                    )
+    } yield uuid -> resource
+  }.named("deleteProject", moduleType)
+
+  override def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]] =
+    deletionCache.values.map(vector => SearchResults(vector.size.toLong, vector))
+
+  override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
+    for {
+      status <- deletionCache.get(uuid)
+      status <- IO.fromOption(status.filter(_.project == ref), ProjectNotDeleted(ref))
+    } yield status
+
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     agg
       .state(ref.toString)
@@ -91,13 +130,26 @@ final class ProjectsImpl private (
       .flatMap(IO.fromOption(_, ProjectNotFound(ref)))
       .named("fetchProjectAt", moduleType)
 
-  override def fetchActiveProject[R](
-      ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    (organizations.fetchActiveOrganization(ref.organization) >>
+  override def fetchProject[R](
+      ref: ProjectRef,
+      options: Set[ProjectFetchOptions]
+  )(implicit subject: Subject, rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
+    (IO.when(options.contains(ProjectFetchOptions.NotDeprecated))(
+      organizations.fetchActiveOrganization(ref.organization).void
+    ) >>
       fetch(ref).flatMap {
-        case resource if resource.deprecated => IO.raiseError(ProjectIsDeprecated(ref))
-        case resource                        => IO.pure(resource.value)
+        case resource if options.contains(ProjectFetchOptions.NotDeleted) && resource.value.markedForDeletion =>
+          IO.raiseError(ProjectIsMarkedForDeletion(ref))
+        case resource if options.contains(ProjectFetchOptions.NotDeprecated) && resource.deprecated           =>
+          IO.raiseError(ProjectIsDeprecated(ref))
+        case resource if allQuotas.subsetOf(options)                                                          =>
+          (quotas.reachedForResources(ref, subject) >> quotas.reachedForEvents(ref, subject)).as(resource.value)
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaResources)                           =>
+          quotas.reachedForResources(ref, subject).as(resource.value)
+        case resource if options.contains(ProjectFetchOptions.VerifyQuotaEvents)                              =>
+          quotas.reachedForEvents(ref, subject).as(resource.value)
+        case resource                                                                                         =>
+          IO.pure(resource.value)
       }).mapError(rejectionMapper.to)
 
   override def fetchProject[R](
@@ -149,17 +201,21 @@ object ProjectsImpl {
   type ProjectsAggregate =
     Aggregate[String, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
-  type ProjectsCache = KeyValueStore[ProjectRef, ProjectResource]
+  type ProjectsCache       = KeyValueStore[ProjectRef, ProjectResource]
+  type DeletionStatusCache = KeyValueStore[UUID, ResourcesDeletionStatus]
 
   private val logger: Logger = Logger[ProjectsImpl]
 
-  /**
-    * Creates a new projects cache.
-    */
-  private def cache(config: ProjectsConfig)(implicit as: ActorSystem[Nothing]): ProjectsCache = {
+  def cache(config: ProjectsConfig)(implicit as: ActorSystem[Nothing]): ProjectsCache = {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, ProjectResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)
+  }
+
+  def deletionCache(config: ProjectsConfig)(implicit as: ActorSystem[Nothing]): DeletionStatusCache = {
+    implicit val cfg: KeyValueStoreConfig              = config.keyValueStore
+    val clock: (Long, ResourcesDeletionStatus) => Long = (_, status) => status.updatedAt.toEpochMilli
+    KeyValueStore.distributed(s"${moduleType}Deletions", clock)
   }
 
   private def startIndexing(
@@ -180,7 +236,7 @@ object ProjectsImpl {
               _ => IO.unit,
               { resource =>
                 index.put(resource.value.ref, resource) >>
-                  IO.when(!resource.deprecated && envelope.event.isCreated) {
+                  IO.when(!resource.deprecated && !resource.value.markedForDeletion && envelope.event.isCreated) {
                     IO.parTraverseUnordered(si)(_.onProjectCreation(resource.value, resource.createdBy)).attempt.void
                   }
               }
@@ -189,11 +245,11 @@ object ProjectsImpl {
       retryStrategy = RetryStrategy.retryOnNonFatal(config.cacheIndexing.retry, logger, "projects indexing")
     )
 
-  private def aggregate(config: ProjectsConfig, organizations: Organizations, defaultApiMappings: ApiMappings)(implicit
-      as: ActorSystem[Nothing],
-      clock: Clock[UIO],
-      uuidF: UUIDF
-  ): UIO[ProjectsAggregate] = {
+  def aggregate(
+      config: ProjectsConfig,
+      organizations: Organizations,
+      defaultApiMappings: ApiMappings
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO], uuidF: UUIDF): UIO[ProjectsAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -210,58 +266,38 @@ object ProjectsImpl {
     )
   }
 
-  private def apply(
-      agg: ProjectsAggregate,
-      eventLog: EventLog[Envelope[ProjectEvent]],
-      cache: ProjectsCache,
-      organizations: Organizations,
-      scopeInitializations: Set[ScopeInitialization],
-      defaultApiMappings: ApiMappings
-  )(implicit base: BaseUri): ProjectsImpl =
-    new ProjectsImpl(
-      agg,
-      eventLog,
-      cache,
-      organizations,
-      scopeInitializations,
-      defaultApiMappings
-    )
-
   /**
     * Constructs a [[Projects]] instance.
-    *
-    * @param config               the projects configuration
-    * @param eventLog             the event log for [[ProjectEvent]]
-    * @param organizations        an instance of the organizations module
-    * @param acls                 an instance of the acl module
-    * @param scopeInitializations the collection of registered scope initializations
-    * @param defaultApiMappings   the default api mappings
     */
   final def apply(
+      agg: ProjectsAggregate,
       config: ProjectsConfig,
       eventLog: EventLog[Envelope[ProjectEvent]],
       organizations: Organizations,
+      quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
-      defaultApiMappings: ApiMappings
+      defaultApiMappings: ApiMappings,
+      cache: ProjectsCache,
+      deletionCache: DeletionStatusCache
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
       as: ActorSystem[Nothing],
-      sc: Scheduler,
-      clock: Clock[UIO]
+      sc: Scheduler
   ): Task[Projects] =
-    for {
-      agg     <- aggregate(config, organizations, defaultApiMappings)
-      index   <- UIO.delay(cache(config))
-      projects = apply(
-                   agg,
-                   eventLog,
-                   index,
-                   organizations,
-                   scopeInitializations,
-                   defaultApiMappings
-                 )
-      _       <- startIndexing(config, eventLog, index, projects, scopeInitializations)
-    } yield projects
+    Task
+      .delay(
+        new ProjectsImpl(
+          agg,
+          eventLog,
+          cache,
+          deletionCache,
+          organizations,
+          quotas,
+          scopeInitializations,
+          defaultApiMappings
+        )
+      )
+      .tapEval(projects => startIndexing(config, eventLog, cache, projects, scopeInitializations))
 
 }

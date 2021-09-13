@@ -10,9 +10,12 @@ import scala.annotation.nowarn
 
 /**
   * Simplified representation of remote server sent event.
-  * @param resourceId the id of the resource
-  * @param rev        the revision of the resource
-  * @param instant    the instant when the event was created
+  * @param resourceId
+  *   the id of the resource
+  * @param rev
+  *   the revision of the resource
+  * @param instant
+  *   the instant when the event was created
   */
 final case class RemoteSse(resourceId: Iri, rev: Long, instant: Instant)
 

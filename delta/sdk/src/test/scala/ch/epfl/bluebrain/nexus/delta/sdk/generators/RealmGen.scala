@@ -18,6 +18,7 @@ object RealmGen extends OptionValues {
       rev: Long,
       deprecated: Boolean = false,
       logo: Option[Uri] = None,
+      acceptedAudiences: Option[NonEmptySet[String]] = None,
       subject: Subject = Anonymous
   ): Current =
     Current(
@@ -30,6 +31,7 @@ object RealmGen extends OptionValues {
       wk.keys,
       wk.grantTypes,
       logo,
+      acceptedAudiences,
       wk.authorizationEndpoint,
       wk.tokenEndpoint,
       wk.userInfoEndpoint,
@@ -41,7 +43,12 @@ object RealmGen extends OptionValues {
       subject
     )
 
-  def realm(openIdConfig: Uri, wk: WellKnown, logo: Option[Uri] = None): Realm =
+  def realm(
+      openIdConfig: Uri,
+      wk: WellKnown,
+      logo: Option[Uri] = None,
+      acceptedAudiences: Option[NonEmptySet[String]] = None
+  ): Realm =
     Realm(
       Label.unsafe(wk.issuer),
       Name.unsafe(s"${wk.issuer}-name"),
@@ -49,6 +56,7 @@ object RealmGen extends OptionValues {
       wk.issuer,
       wk.grantTypes,
       logo,
+      acceptedAudiences,
       wk.authorizationEndpoint,
       wk.tokenEndpoint,
       wk.userInfoEndpoint,
@@ -73,7 +81,7 @@ object RealmGen extends OptionValues {
       realm.revocationEndpoint,
       realm.endSessionEndpoint
     )
-    currentState(realm.openIdConfig, wk, rev, deprecated, realm.logo, subject)
+    currentState(realm.openIdConfig, wk, rev, deprecated, realm.logo, realm.acceptedAudiences, subject)
       .copy(label = realm.label, name = realm.name)
       .toResource
       .value

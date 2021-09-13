@@ -10,8 +10,10 @@ object XmlTransformer {
     * Constructs a new XML [[scala.xml.transform.RuleTransformer]] based on the argument ''blacklist'' module filter
     * that strips out ''dependency'' xml nodes that are matched by the ''blacklist''.
     *
-    * @param blacklist the filter to apply to dependencies
-    * @return a new XML [[scala.xml.transform.RuleTransformer]] that strips out ''blacklist''ed dependencies
+    * @param blacklist
+    *   the filter to apply to dependencies
+    * @return
+    *   a new XML [[scala.xml.transform.RuleTransformer]] that strips out ''blacklist''ed dependencies
     */
   def transformer(blacklist: ModuleFilter): RuleTransformer =
     new RuleTransformer(new RewriteRule {

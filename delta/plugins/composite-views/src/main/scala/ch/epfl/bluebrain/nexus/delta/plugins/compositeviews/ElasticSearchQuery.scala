@@ -19,14 +19,19 @@ import monix.bio.IO
 trait ElasticSearchQuery {
 
   /**
-    * Queries the Elasticsearch index of the passed composite views' projection.
-    * We check for the caller to have the necessary query permissions on the views' projections before performing the query.
+    * Queries the Elasticsearch index of the passed composite views' projection. We check for the caller to have the
+    * necessary query permissions on the views' projections before performing the query.
     *
-    * @param id           the id of the composite view either in Iri or aliased form
-    * @param projectionId the id of the composite views' target projection either in Iri or aliased form
-    * @param project      the project where the view exists
-    * @param query        the elasticsearch query to run
-    * @param qp           the extra query parameters for the elasticsearch index
+    * @param id
+    *   the id of the composite view either in Iri or aliased form
+    * @param projectionId
+    *   the id of the composite views' target projection either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the elasticsearch query to run
+    * @param qp
+    *   the extra query parameters for the elasticsearch index
     */
   def query(
       id: IdSegment,
@@ -37,13 +42,17 @@ trait ElasticSearchQuery {
   )(implicit caller: Caller): IO[CompositeViewRejection, Json]
 
   /**
-    * Queries all the Elasticsearch indices of the passed composite views' projection.
-    * We check for the caller to have the necessary query permissions on the views' projections before performing the query.
+    * Queries all the Elasticsearch indices of the passed composite views' projection. We check for the caller to have
+    * the necessary query permissions on the views' projections before performing the query.
     *
-    * @param id      the id of the composite view either in Iri or aliased form
-    * @param project the project where the view exists
-    * @param query   the elasticsearch query to run
-    * @param qp      the extra query parameters for the elasticsearch index
+    * @param id
+    *   the id of the composite view either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the elasticsearch query to run
+    * @param qp
+    *   the extra query parameters for the elasticsearch index
     */
   def queryProjections(
       id: IdSegment,

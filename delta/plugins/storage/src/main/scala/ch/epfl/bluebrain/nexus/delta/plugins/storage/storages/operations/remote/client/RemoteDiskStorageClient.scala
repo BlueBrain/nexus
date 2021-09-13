@@ -51,7 +51,8 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   /**
     * Checks that the provided storage bucket exists and it is readable/writable.
     *
-    * @param bucket the storage bucket name
+    * @param bucket
+    *   the storage bucket name
     */
   def exists(bucket: Label)(implicit cred: Option[AuthToken]): IO[HttpClientError, Unit] = {
     val endpoint = baseUri.endpoint / "buckets" / bucket.value
@@ -62,11 +63,14 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   }
 
   /**
-    * Creates a file with the provided metadata  and ''source'' on the provided ''relativePath''.
+    * Creates a file with the provided metadata and ''source'' on the provided ''relativePath''.
     *
-    * @param bucket       the storage bucket name
-    * @param relativePath the relative path location
-    * @param source       the file content
+    * @param bucket
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path location
+    * @param source
+    *   the file content
     */
   def createFile(bucket: Label, relativePath: Path, source: AkkaSource)(implicit
       cred: Option[AuthToken]
@@ -86,8 +90,10 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   /**
     * Retrieves the file as a Source.
     *
-    * @param bucket       the storage bucket name
-    * @param relativePath the relative path to the file location
+    * @param bucket
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path to the file location
     */
   def getFile(bucket: Label, relativePath: Path)(implicit
       cred: Option[AuthToken]
@@ -104,8 +110,10 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   /**
     * Retrieves the file attributes.
     *
-    * @param bucket       the storage bucket name
-    * @param relativePath the relative path to the file location
+    * @param bucket
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path to the file location
     */
   def getAttributes(
       bucket: Label,
@@ -123,9 +131,12 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
   /**
     * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
     *
-    * @param bucket             the storage bucket name
-    * @param sourceRelativePath the source relative path location
-    * @param destRelativePath   the destination relative path location inside the nexus folder
+    * @param bucket
+    *   the storage bucket name
+    * @param sourceRelativePath
+    *   the source relative path location
+    * @param destRelativePath
+    *   the destination relative path location inside the nexus folder
     */
   def moveFile(
       bucket: Label,

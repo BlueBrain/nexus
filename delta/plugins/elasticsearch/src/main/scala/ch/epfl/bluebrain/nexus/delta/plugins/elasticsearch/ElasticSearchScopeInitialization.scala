@@ -15,8 +15,10 @@ import monix.bio.{IO, UIO}
 /**
   * The default creation of the default ElasticSearchView as part of the project initialization.
   *
-  * @param views          the ElasticSearchViews module
-  * @param serviceAccount the subject that will be recorded when performing the initialization
+  * @param views
+  *   the ElasticSearchViews module
+  * @param serviceAccount
+  *   the subject that will be recorded when performing the initialization
   */
 class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {

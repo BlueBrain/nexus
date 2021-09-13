@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import java.io.{ByteArrayOutputStream, PrintStream}
-
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalactic.source
 import org.scalatest.matchers.should.Matchers.fail
 import org.scalatest.{Assertion, Assertions}
 
+import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
@@ -43,8 +43,10 @@ final class UIOValuesOps[A](private val uio: UIO[A]) {
 
 final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E]) {
 
-  def accepted(implicit pos: source.Position, s: Scheduler = Scheduler.global): A =
-    io.attempt.runSyncUnsafe() match {
+  def accepted(implicit pos: source.Position, s: Scheduler = Scheduler.global): A = acceptedWithTimeout(Duration.Inf)
+
+  def acceptedWithTimeout(timeout: Duration)(implicit pos: source.Position, s: Scheduler = Scheduler.global): A =
+    io.attempt.runSyncUnsafe(timeout) match {
       case Left(NonFatal(err)) =>
         val baos  = new ByteArrayOutputStream()
         err.printStackTrace(new PrintStream(baos))

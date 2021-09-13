@@ -15,7 +15,8 @@ trait FetchAttributes {
   /**
     * Fetches the file attributes with the passed parameters.
     *
-    * @param attributes   the file attributes
+    * @param attributes
+    *   the file attributes
     */
   def apply(attributes: FileAttributes): IO[StorageFileRejection.FetchAttributeRejection, ComputedFileAttributes] =
     apply(attributes.path).map { case RemoteDiskStorageFileAttributes(_, bytes, digest, mediaType) =>
@@ -25,7 +26,8 @@ trait FetchAttributes {
   /**
     * Fetches the file attributes with the passed parameters.
     *
-    * @param path   the file path
+    * @param path
+    *   the file path
     */
   def apply(path: Uri.Path): IO[FetchAttributeRejection, RemoteDiskStorageFileAttributes]
 }

@@ -80,6 +80,7 @@
   "_organizationLabel": "{{orgId}}",
   "_rev": 1,
   "_deprecated": false,
+  "_markedForDeletion": false,
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/projects.json",

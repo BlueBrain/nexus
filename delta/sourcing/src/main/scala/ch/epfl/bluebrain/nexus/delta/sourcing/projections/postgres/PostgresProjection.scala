@@ -3,17 +3,16 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.effect.Clock
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceUtils}
-import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{ProjectionFailure, ProjectionWarning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Severity.{Failure, Warning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection._
+import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
-import doobie.util.fragment.Fragment
 import doobie.util.transactor.Transactor
 import doobie.util.update.Update
 import io.circe.parser.decode
@@ -42,8 +41,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * Records progress against a projection identifier.
     *
-    * @param id       the projection identifier
-    * @param progress the offset to record
+    * @param id
+    *   the projection identifier
+    * @param progress
+    *   the offset to record
     */
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>
@@ -59,11 +60,13 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
     }
 
   /**
-    * Retrieves the progress for the specified projection projectionId. If there is no record of progress
-    * the [[ProjectionProgress.NoProgress]] is returned.
+    * Retrieves the progress for the specified projection projectionId. If there is no record of progress the
+    * [[ProjectionProgress.NoProgress]] is returned.
     *
-    * @param id an unique projectionId for a projection
-    * @return a future progress value for the specified projection projectionId
+    * @param id
+    *   an unique projectionId for a projection
+    * @return
+    *   a future progress value for the specified projection projectionId
     */
   override def progress(id: ProjectionId): Task[ProjectionProgress[A]] =
     sql"SELECT akka_offset, processed, discarded, warnings, failed, value, value_timestamp FROM projections_progress WHERE projection_id = ${id.value}"
@@ -139,8 +142,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * Record a specific event against a index failures log projectionId.
     *
-    * @param id             the project identifier
-    * @param messages       the error messages to persist
+    * @param id
+    *   the project identifier
+    * @param messages
+    *   the error messages to persist
     */
   override def recordErrors(
       id: ProjectionId,
@@ -164,8 +169,10 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
   /**
     * An event stream for all failures recorded for a projection.
     *
-    * @param id the projection identifier
-    * @return a source of the failed events
+    * @param id
+    *   the projection identifier
+    * @return
+    *   a source of the failed events
     */
   override def errors(id: ProjectionId): fs2.Stream[Task, ProjectionError[A]] =
     sql"""SELECT value, timestamp, value_timestamp, akka_offset, persistence_id, sequence_nr, severity, error_type, message from projections_errors WHERE projection_id = ${id.value} ORDER BY ordering"""
@@ -202,17 +209,6 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
         }
 
       }
-}
-
-private class PostgresProjectionInitialization(xa: Transactor[Task]) {
-  implicit private val classLoader: ClassLoader = getClass.getClassLoader
-
-  def initialize(): Task[Unit] =
-    for {
-      ddl   <- ClasspathResourceUtils.ioContentOf("/scripts/postgres.ddl")
-      update = Fragment.const(ddl).update
-      _     <- update.run.transact(xa)
-    } yield ()
 }
 
 object PostgresProjection {
@@ -269,7 +265,6 @@ object PostgresProjection {
       xa: Transactor[Task],
       empty: => A,
       throwableToString: Throwable => String
-  )(implicit clock: Clock[UIO]): Task[PostgresProjection[A]] = {
-    new PostgresProjectionInitialization(xa).initialize().as(new PostgresProjection(xa, empty, throwableToString))
-  }
+  )(implicit clock: Clock[UIO]): PostgresProjection[A] =
+    new PostgresProjection(xa, empty, throwableToString)
 }

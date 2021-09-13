@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
@@ -98,6 +99,10 @@ class UriDirectivesSpec
         (pathPrefix("noRev") & noParameter("rev") & pathEndOrSingleSlash) {
           complete("noRev")
         },
+        (pathPrefix("indexing") & indexingMode & pathEndOrSingleSlash) {
+          case IndexingMode.Async => complete("async")
+          case IndexingMode.Sync  => complete("sync")
+        },
         (pathPrefix("jsonld") & jsonLdFormatOrReject & pathEndOrSingleSlash) { format =>
           complete(format.toString)
         },
@@ -171,6 +176,30 @@ class UriDirectivesSpec
 
     "reject if rev query parameter is present" in {
       Get("/base/noRev?rev=1") ~> Accept(`*/*`) ~> route ~> check {
+        rejection shouldBe a[MalformedQueryParamRejection]
+      }
+    }
+
+    "return async when no query param is present" in {
+      Get("/base/indexing") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "async"
+      }
+    }
+
+    "return async when specified in query param" in {
+      Get("/base/indexing?indexing=async") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "async"
+      }
+    }
+
+    "return sync when specified in query param" in {
+      Get("/base/indexing?indexing=sync") ~> Accept(`*/*`) ~> route ~> check {
+        response.asString shouldEqual "sync"
+      }
+    }
+
+    "reject when other value is provided" in {
+      Get("/base/indexing?indexing=other") ~> Accept(`*/*`) ~> route ~> check {
         rejection shouldBe a[MalformedQueryParamRejection]
       }
     }

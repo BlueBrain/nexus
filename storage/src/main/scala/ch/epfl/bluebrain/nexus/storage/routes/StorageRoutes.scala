@@ -94,7 +94,8 @@ object StorageRoutes {
   /**
     * Link file request.
     *
-    * @param source    the relative location of the file/dir
+    * @param source
+    *   the relative location of the file/dir
     */
   final private[routes] case class LinkFile(source: Uri.Path)
 

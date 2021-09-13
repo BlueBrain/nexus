@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes.PayloadTooLarge
 import akka.http.scaladsl.model.{EntityStreamSizeException, ExceptionWithErrorInfo, HttpEntity, Multipart}
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
@@ -9,7 +8,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
 import akka.stream.scaladsl.{Keep, Sink}
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
@@ -21,12 +20,23 @@ sealed trait FormDataExtractor {
   /**
     * Extracts the part with fieldName ''file'' from the passed ''entity'' MultiPart/FormData
     *
-    * @param id        the file id
-    * @param entity    the Miltipart/FormData payload
-    * @param sizeLimit the file size limit to be uploaded, provided by the storage
-    * @return the file description plus the stream of [[ByteString]] with the file content
+    * @param id
+    *   the file id
+    * @param entity
+    *   the Miltipart/FormData payload
+    * @param maxFileSize
+    *   the file size limit to be uploaded, provided by the storage
+    * @param storageAvailableSpace
+    *   the remaining available space on the storage
+    * @return
+    *   the file description plus the stream of [[ByteString]] with the file content
     */
-  def apply(id: Iri, entity: HttpEntity, sizeLimit: Long): IO[FileRejection, (FileDescription, AkkaSource)]
+  def apply(
+      id: Iri,
+      entity: HttpEntity,
+      maxFileSize: Long,
+      storageAvailableSpace: Option[Long]
+  ): IO[FileRejection, (FileDescription, AkkaSource)]
 }
 object FormDataExtractor {
 
@@ -38,7 +48,13 @@ object FormDataExtractor {
       sc: Scheduler,
       um: FromEntityUnmarshaller[Multipart.FormData]
   ): FormDataExtractor = new FormDataExtractor {
-    override def apply(id: Iri, entity: HttpEntity, sizeLimit: Long): IO[FileRejection, (FileDescription, AkkaSource)] =
+    override def apply(
+        id: Iri,
+        entity: HttpEntity,
+        maxFileSize: Long,
+        storageAvailableSpace: Option[Long]
+    ): IO[FileRejection, (FileDescription, AkkaSource)] = {
+      val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
       IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
         .mapError {
           case RejectionError(r)                  =>
@@ -69,11 +85,12 @@ object FormDataExtractor {
               .toMat(Sink.headOption)(Keep.right)
               .run()
           ).mapError {
-            case ex: EntityStreamSizeException =>
-              WrappedAkkaRejection(MalformedRequestContentRejection(PayloadTooLarge.reason, ex))
-            case th                            =>
+            case _: EntityStreamSizeException =>
+              FileTooLarge(maxFileSize, storageAvailableSpace)
+            case th                           =>
               WrappedAkkaRejection(MalformedRequestContentRejection(th.getMessage, th))
           }.flatMap(IO.fromOption(_, InvalidMultipartFieldName(id)))
         }
+    }
   }
 }

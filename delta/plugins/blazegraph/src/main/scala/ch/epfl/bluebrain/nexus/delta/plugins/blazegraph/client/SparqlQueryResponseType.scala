@@ -11,7 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 sealed trait SparqlQueryResponseType extends Product with Serializable {
 
   /**
-    * @return the media types supported by this response type
+    * @return
+    *   the media types supported by this response type
     */
   def mediaTypes: NonEmptyList[MediaType.WithFixedCharset]
 

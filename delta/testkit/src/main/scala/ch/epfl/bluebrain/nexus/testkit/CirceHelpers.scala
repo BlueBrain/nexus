@@ -21,3 +21,5 @@ final class CirceLiterelOps(private val sc: StringContext) extends AnyVal {
     }
   }
 }
+
+object CirceLiteral extends CirceLiteral

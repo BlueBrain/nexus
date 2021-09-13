@@ -11,14 +11,22 @@ import org.http4s.Uri
 /**
   * The Nexus KG event type.
   *
-  * @param eventType     the event type
-  * @param resourceId    the @id Uri of the resource
-  * @param rev           the resource revision that this event generated
-  * @param organization  the organization label of the event
-  * @param project       the project label of the event
-  * @param resourceTypes the @type Set of Uris of the resource
-  * @param instant       the instant when the event was recorded
-  * @param raw           the raw json representation of the event
+  * @param eventType
+  *   the event type
+  * @param resourceId
+  *   the @id Uri of the resource
+  * @param rev
+  *   the resource revision that this event generated
+  * @param organization
+  *   the organization label of the event
+  * @param project
+  *   the project label of the event
+  * @param resourceTypes
+  *   the @type Set of Uris of the resource
+  * @param instant
+  *   the instant when the event was recorded
+  * @param raw
+  *   the raw json representation of the event
   */
 final case class Event(
     eventType: String,

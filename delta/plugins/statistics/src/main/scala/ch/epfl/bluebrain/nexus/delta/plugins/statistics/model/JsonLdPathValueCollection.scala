@@ -13,9 +13,12 @@ import io.circe.{Encoder, Json, JsonObject}
 /**
   * All the paths of a JSON-LD document
   *
-  * @param properties             the properties (nested entries in the current document)
-  * @param relationshipCandidates the relationship candidates (@id values pointing to external JSON-LD documents)
-  * @param relationships          the relationships (@id values pointing to external JSON-LD documents)
+  * @param properties
+  *   the properties (nested entries in the current document)
+  * @param relationshipCandidates
+  *   the relationship candidates (@id values pointing to external JSON-LD documents)
+  * @param relationships
+  *   the relationships (@id values pointing to external JSON-LD documents)
   */
 final case class JsonLdPathValueCollection private (
     properties: JsonLdProperties,

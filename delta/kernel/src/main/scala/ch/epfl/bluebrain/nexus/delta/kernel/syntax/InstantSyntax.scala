@@ -10,7 +10,8 @@ trait InstantSyntax {
 final class InstantOps(private val instant: Instant) extends AnyVal {
 
   /**
-    * @return the duration between two instants.
+    * @return
+    *   the duration between two instants.
     */
   def diff(other: Instant): FiniteDuration =
     Math.abs(instant.toEpochMilli - other.toEpochMilli).millis

@@ -16,14 +16,16 @@ import monix.bio.IO
 sealed trait ContextValue {
 
   /**
-    * @return the json representation of the context value
+    * @return
+    *   the json representation of the context value
     */
   def value: Json
 
   override def toString: String = value.noSpaces
 
   /**
-    * @return true if the current context value is empty, false otherwise
+    * @return
+    *   true if the current context value is empty, false otherwise
     */
   def isEmpty: Boolean
 
@@ -35,11 +37,13 @@ sealed trait ContextValue {
     else JsonObject(keywords.context -> value)
 
   /**
-    * Combines the current [[ContextValue]] context with a passed [[ContextValue]] context.
-    * If a keys are is repeated in both contexts, the one in ''that'' will override the current one.
+    * Combines the current [[ContextValue]] context with a passed [[ContextValue]] context. If a keys are is repeated in
+    * both contexts, the one in ''that'' will override the current one.
     *
-    * @param that another context to be merged with the current
-    * @return the merged context
+    * @param that
+    *   another context to be merged with the current
+    * @return
+    *   the merged context
     */
   def merge(that: ContextValue): ContextValue
 
@@ -58,8 +62,10 @@ sealed trait ContextValue {
   /**
     * Modifies the current context for each type of existing context.
     *
-    * @param iri   a function to transform the current [[ContextRemoteIri]] (if available)
-    * @param obj   a function to transform the current [[ContextObject]] (if available)
+    * @param iri
+    *   a function to transform the current [[ContextRemoteIri]] (if available)
+    * @param obj
+    *   a function to transform the current [[ContextObject]] (if available)
     * @return
     */
   def visit(
@@ -162,7 +168,7 @@ object ContextValue {
   val empty: ContextValue = ContextEmpty
 
   /**
-    * Construct a [[ContextValue]] from remote context [[Iri]]s.
+    * Construct a [[ContextValue]] from remote context [[Iri]] s.
     */
   final def apply(iri: Iri*): ContextValue =
     iri.toList match {

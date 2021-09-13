@@ -19,12 +19,15 @@ import java.util
 import scala.util.{Failure, Success, Try}
 
 /**
-  * Extend the [[ValidationEngine]] form TopQuadrant in order to add triples to the report
-  * with the number of targetedNodes
+  * Extend the [[ValidationEngine]] form TopQuadrant in order to add triples to the report with the number of
+  * targetedNodes
   *
-  * @param dataset        the Dataset to operate on
-  * @param shapesGraphURI the URI of the shapes graph (must be in the dataset)
-  * @param shapesGraph    the ShapesGraph with the shapes to validate against
+  * @param dataset
+  *   the Dataset to operate on
+  * @param shapesGraphURI
+  *   the URI of the shapes graph (must be in the dataset)
+  * @param shapesGraph
+  *   the ShapesGraph with the shapes to validate against
   */
 @SuppressWarnings(Array("NullParameter"))
 final class ShaclEngine private (dataset: Dataset, shapesGraphURI: URI, shapesGraph: ShapesGraph)
@@ -64,9 +67,12 @@ object ShaclEngine {
   /**
     * Validates a given graph against the SHACL shapes spec.
     *
-    * @param shapesGraph   the shapes Graph to test against the SHACL shapes spec
-    * @param reportDetails true to also include the sh:detail (more verbose) and false to omit them
-    * @return an option of [[ValidationReport]] with the validation results
+    * @param shapesGraph
+    *   the shapes Graph to test against the SHACL shapes spec
+    * @param reportDetails
+    *   true to also include the sh:detail (more verbose) and false to omit them
+    * @return
+    *   an option of [[ValidationReport]] with the validation results
     */
   def apply(
       shapesGraph: Graph,
@@ -81,10 +87,14 @@ object ShaclEngine {
   /**
     * Validates a given data Graph against all shapes from a given shapes Model.
     *
-    * @param dataGraph      the data Graph
-    * @param shapesGraph    the shapes Graph
-    * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
-    * @return an option of [[ValidationReport]] with the validation results
+    * @param dataGraph
+    *   the data Graph
+    * @param shapesGraph
+    *   the shapes Graph
+    * @param reportDetails
+    *   true to also include the sh:detail (more verbose) and false to omit them
+    * @return
+    *   an option of [[ValidationReport]] with the validation results
     */
   def apply(
       dataGraph: Graph,
@@ -96,11 +106,16 @@ object ShaclEngine {
   /**
     * Validates a given data Graph against all shapes from a given shapes graph.
     *
-    * @param graph          the data Graph
-    * @param shapesGraph    the shapes graph
-    * @param validateShapes true to also validate the shapes graph
-    * @param reportDetails  true to also include the sh:detail (more verbose) and false to omit them
-    * @return an option of [[ValidationReport]] with the validation results
+    * @param graph
+    *   the data Graph
+    * @param shapesGraph
+    *   the shapes graph
+    * @param validateShapes
+    *   true to also validate the shapes graph
+    * @param reportDetails
+    *   true to also include the sh:detail (more verbose) and false to omit them
+    * @return
+    *   an option of [[ValidationReport]] with the validation results
     */
   def apply(
       graph: Graph,

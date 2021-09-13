@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{permissions => _, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
@@ -79,12 +79,13 @@ class ElasticSearchViewsQuerySpec
   implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
   private val bob: Caller            = Caller(User("Bob", realm), Set(User("Bob", realm), Group("users", realm)))
+  private val charlie: Caller        = Caller(User("Charlie", realm), Set(User("Charlie", realm), Group("users", realm)))
   private val anon: Caller           = Caller(Anonymous, Set(Anonymous))
 
   private val project1        = ProjectGen.project("org", "proj")
@@ -93,9 +94,9 @@ class ElasticSearchViewsQuerySpec
 
   private val acls = AclSetup
     .init(
-      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
-      (bob.subject, AclAddress.Root, Set(queryPermission)),
-      (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
+      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission, permissions.read)),
+      (bob.subject, AclAddress.Root, Set(queryPermission, permissions.read)),
+      (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission, permissions.read))
     )
     .accepted
 
@@ -128,6 +129,7 @@ class ElasticSearchViewsQuerySpec
 
   private val mappings            = jsonObjectContentOf("mapping.json")
   private val defaultView         = indexingView(defaultViewId, project1.ref)
+  private val defaultView2        = indexingView(defaultViewId, project2.ref)
   private val view1Proj1          = indexingView(nxv + "view1Proj1", project1.ref)
   private val view2Proj1          = indexingView(nxv + "view2Proj1", project1.ref)
   private val view1Proj2          = indexingView(nxv + "view1Proj2", project2.ref)
@@ -158,7 +160,7 @@ class ElasticSearchViewsQuerySpec
     aggView1Proj2.id -> aggView1Proj2.value.project
   )
 
-  private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
+  private val indexingViews = List(defaultView, defaultView2, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
   private val views: Map[(Iri, ProjectRef), ViewResource] =
     List(
@@ -176,6 +178,7 @@ class ElasticSearchViewsQuerySpec
 
   private val fetchDefault: FetchDefaultView = {
     case p if p == project1.ref => UIO.pure(defaultView)
+    case p if p == project2.ref => UIO.pure(defaultView2)
     case p                      => IO.raiseError(ViewNotFound(nxv + "other", p))
   }
 
@@ -222,7 +225,15 @@ class ElasticSearchViewsQuerySpec
       }
     })
 
-    val views = new ElasticSearchViewsQueryImpl(fetchDefault, fetch, visitor, acls, projects, client)
+    val views = new ElasticSearchViewsQueryImpl(
+      () => UIO.pure(List(defaultView, defaultView2)),
+      fetchDefault,
+      fetch,
+      visitor,
+      acls,
+      projects,
+      client
+    )
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
@@ -237,6 +248,35 @@ class ElasticSearchViewsQuerySpec
     }
 
     "list all resources" in {
+      val params    = List(
+        ResourcesSearchParams(),
+        ResourcesSearchParams(
+          schema = Some(Latest(schemas.resources)),
+          types = List(IncludedType(tpe1)),
+          deprecated = Some(false),
+          createdBy = Some(Anonymous),
+          updatedBy = Some(Anonymous)
+        )
+      )
+      val expected1 = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
+      val expected2 = createDocuments(defaultView2).toSet[Json].map(_.asObject.value)
+      forAll(params) { filter =>
+        eventually {
+          val result = views.list(page, filter, SortList.empty)(bob, baseUri).accepted
+          result.sources.toSet shouldEqual expected1 ++ expected2
+        }
+        eventually {
+          val result = views.list(page, filter, SortList.empty)(alice, baseUri).accepted
+          result.sources.toSet shouldEqual expected1
+        }
+        eventually {
+          val result = views.list(page, filter, SortList.empty)(anon, baseUri).accepted
+          result.sources.toSet shouldEqual expected2
+        }
+      }
+    }
+
+    "list all resources on a project" in {
       val params   = List(
         ResourcesSearchParams(),
         ResourcesSearchParams(
@@ -256,7 +296,7 @@ class ElasticSearchViewsQuerySpec
       }
     }
 
-    "list resources and sort" in {
+    "list resources on a project and sort" in {
       val pagination = FromPagination(0, 1)
 
       implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
@@ -332,7 +372,7 @@ class ElasticSearchViewsQuerySpec
       val result =
         views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(bob).accepted
 
-      extractSources(result).toSet shouldEqual indexingViews.drop(1).flatMap(createDocuments).toSet
+      extractSources(result).toSet shouldEqual indexingViews.drop(2).flatMap(createDocuments).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
@@ -340,6 +380,13 @@ class ElasticSearchViewsQuerySpec
       val result =
         views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(alice).accepted
       extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
+    }
+
+    "get no results if user has access to no projects" in {
+      val proj   = aggView1Proj2.value.project
+      val result =
+        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(charlie).accepted
+      extractSources(result).toSet shouldEqual Set.empty
     }
   }
 

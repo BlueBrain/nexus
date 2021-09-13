@@ -8,7 +8,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, FilesSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, permissions => storagesPermissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -82,7 +82,7 @@ class FilesRoutesSpec
   private val realms            = RealmSetup.init(realm).accepted
   private val acls              = AclsDummy(perms, realms).accepted
   private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
-  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files))
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
@@ -103,7 +103,9 @@ class FilesRoutesSpec
         )
         .accepted
       storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
-      storages.create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults)).accepted
+      storages
+        .create(dId, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge json"""{"capacity":5000}"""))
+        .accepted
     }
 
     "fail to create a file without disk/write permission" in {
@@ -156,6 +158,13 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1", entity()) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual jsonContentOf("/file/errors/already-exists.json", "id" -> file1)
+      }
+    }
+
+    "reject the creation of a file that is too large" in {
+      Put("/v1/files/org/proj/file-too-large", randomEntity(filename = "large-file.txt", 1100)) ~> routes ~> check {
+        status shouldEqual StatusCodes.PayloadTooLarge
+        response.asJson shouldEqual jsonContentOf("/file/errors/file-too-large.json")
       }
     }
 

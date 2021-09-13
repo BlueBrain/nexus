@@ -16,8 +16,10 @@ object Digest {
   /**
     * A computed digest value with the algorithm used to compute it.
     *
-    * @param algorithm the algorithm used in order to compute the digest
-    * @param value     the actual value of the digest of the file
+    * @param algorithm
+    *   the algorithm used in order to compute the digest
+    * @param value
+    *   the actual value of the digest of the file
     */
   final case class ComputedDigest(algorithm: DigestAlgorithm, value: String) extends Digest {
     override val computed: Boolean = true

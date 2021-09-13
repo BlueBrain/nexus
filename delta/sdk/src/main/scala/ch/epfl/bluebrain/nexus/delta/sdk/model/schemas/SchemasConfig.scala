@@ -7,7 +7,8 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * Configuration for the Schemas module.
   *
-  * @param aggregate configuration of the underlying aggregate
+  * @param aggregate
+  *   configuration of the underlying aggregate
   */
 final case class SchemasConfig(aggregate: AggregateConfig, maxCacheSize: Long)
 

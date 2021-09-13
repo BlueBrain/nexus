@@ -14,14 +14,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
@@ -45,7 +46,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project                    <- projects.fetchActiveProject(projectRef)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -58,7 +59,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -73,7 +74,7 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -89,7 +90,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res).named("tagSchema", moduleType)
@@ -100,7 +101,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchActiveProject(projectRef)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
@@ -120,6 +121,12 @@ final class SchemasImpl private (
         } yield cached
       )(fetchBy(_, projectRef))
       .named("fetchSchema", moduleType)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   override def events(
       projectRef: ProjectRef,
@@ -163,6 +170,12 @@ object SchemasImpl {
 
   type SchemasCache = KeyValueStore[(ProjectRef, Iri, Long), SchemaResource]
 
+  def aggregate(
+      config: AggregateConfig,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] =
+    aggregate(config, (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)))
+
   private def aggregate(
       config: AggregateConfig,
       idAvailability: IdAvailability[ResourceAlreadyExists]
@@ -183,65 +196,36 @@ object SchemasImpl {
     )
   }
 
+  def cache(config: SchemasConfig): UIO[SchemasCache] =
+    KeyValueStore.localLRU(config.maxCacheSize)
+
   /**
     * Constructs a [[Schemas]] instance.
-    *
-    * @param orgs              the organizations operations bundle
-    * @param projects          the project operations bundle
-    * @param schemaImports     resolves the OWL imports from a Schema
-    * @param contextResolution the context resolver
-    * @param config            the aggregate configuration
-    * @param eventLog          the event log for [[SchemaEvent]]
-    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
-      config: SchemasConfig,
       eventLog: EventLog[Envelope[SchemaEvent]],
-      resourceIdCheck: ResourceIdCheck
-  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] =
-    apply(
-      orgs,
-      projects,
-      schemaImports,
-      contextResolution,
-      config,
-      eventLog,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    )
-
-  private[schemas] def apply(
-      orgs: Organizations,
-      projects: Projects,
-      schemaImports: SchemaImports,
-      contextResolution: ResolverContextResolution,
-      config: SchemasConfig,
-      eventLog: EventLog[Envelope[SchemaEvent]],
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit uuidF: UUIDF = UUIDF.random, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[Schemas] = {
+      agg: SchemasAggregate,
+      cache: SchemasCache
+  )(implicit uuidF: UUIDF = UUIDF.random): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),
         contextResolution,
         uuidF
       )
-    for {
-      agg                 <- aggregate(config.aggregate, idAvailability)
-      cache: SchemasCache <- KeyValueStore.localLRU(config.maxCacheSize)
-    } yield {
-      new SchemasImpl(
-        agg,
-        cache,
-        orgs,
-        projects,
-        schemaImports,
-        eventLog,
-        parser
-      )
-    }
+    new SchemasImpl(
+      agg,
+      cache,
+      orgs,
+      projects,
+      schemaImports,
+      eventLog,
+      parser
+    )
   }
 
 }

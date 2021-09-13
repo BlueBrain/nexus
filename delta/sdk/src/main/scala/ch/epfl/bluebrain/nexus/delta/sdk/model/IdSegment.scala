@@ -10,12 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBas
 sealed trait IdSegment extends Product with Serializable { self =>
 
   /**
-    * @return the string value of the segment
+    * @return
+    *   the string value of the segment
     */
   def asString: String
 
   /**
-    * @return Some(iri) when conversion was successful using the api mappings and project base if needed, None otherwise
+    * @return
+    *   Some(iri) when conversion was successful using the api mappings and project base if needed, None otherwise
     */
   def toIri(mappings: ApiMappings, base: ProjectBase): Option[Iri]
 

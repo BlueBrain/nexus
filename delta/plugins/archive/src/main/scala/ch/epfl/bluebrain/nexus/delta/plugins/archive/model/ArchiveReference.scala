@@ -22,22 +22,26 @@ import scala.annotation.nowarn
 sealed trait ArchiveReference extends Product with Serializable {
 
   /**
-    * @return the referenced resource id optionally qualified with a tag or a revision
+    * @return
+    *   the referenced resource id optionally qualified with a tag or a revision
     */
   def ref: ResourceRef
 
   /**
-    * @return the parent project of the referenced resource
+    * @return
+    *   the parent project of the referenced resource
     */
   def project: Option[ProjectRef]
 
   /**
-    * @return the target location in the archive
+    * @return
+    *   the target location in the archive
     */
   def path: Option[AbsolutePath]
 
   /**
-    * @return the archive reference type
+    * @return
+    *   the archive reference type
     */
   def tpe: ArchiveReferenceType
 }
@@ -47,10 +51,14 @@ object ArchiveReference {
   /**
     * An archive resource reference.
     *
-    * @param ref            the referenced resource id
-    * @param project        the parent project of the referenced resource
-    * @param path           the target location in the archive
-    * @param representation the format in which the resource should be represented
+    * @param ref
+    *   the referenced resource id
+    * @param project
+    *   the parent project of the referenced resource
+    * @param path
+    *   the target location in the archive
+    * @param representation
+    *   the format in which the resource should be represented
     */
   final case class ResourceReference(
       ref: ResourceRef,
@@ -68,9 +76,12 @@ object ArchiveReference {
   /**
     * An archive file reference.
     *
-    * @param ref     the referenced resource id
-    * @param project the parent project of the referenced resource
-    * @param path    the target location in the archive
+    * @param ref
+    *   the referenced resource id
+    * @param project
+    *   the parent project of the referenced resource
+    * @param path
+    *   the target location in the archive
     */
   final case class FileReference(
       ref: ResourceRef,

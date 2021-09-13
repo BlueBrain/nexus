@@ -9,12 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 sealed trait SparqlWriteQuery extends Product with Serializable {
 
   /**
-    * @return the underlying query value
+    * @return
+    *   the underlying query value
     */
   def value: String
 
   /**
-    * @return the targeted named graph
+    * @return
+    *   the targeted named graph
     */
   def graph: Uri
 }
@@ -44,18 +46,22 @@ object SparqlWriteQuery {
   /**
     * Builds a query that drops the graph identified by the argument ''uri'' from the store.
     *
-    * @param graph the graph to drop
+    * @param graph
+    *   the graph to drop
     */
   def drop(graph: Uri): SparqlDropQuery =
     SparqlDropQuery(s"DROP GRAPH <$graph>;", graph)
 
   /**
-    * Builds a query that patches the graph by selecting a collection of triples to remove or retain and inserting the triples in the data
-    * argument.
+    * Builds a query that patches the graph by selecting a collection of triples to remove or retain and inserting the
+    * triples in the data argument.
     *
-    * @param graph    the target graph
-    * @param data     the additional graph content in NTriples representation
-    * @param strategy the patch strategy
+    * @param graph
+    *   the target graph
+    * @param data
+    *   the additional graph content in NTriples representation
+    * @param strategy
+    *   the patch strategy
     */
   def patch(graph: Uri, data: NTriples, strategy: PatchStrategy): SparqlPatchQuery = {
     val filterExpr = strategy match {
@@ -86,11 +92,13 @@ object SparqlWriteQuery {
   }
 
   /**
-    * Builds a query that removes all triples from the graph identified by the argument URI and stores the triples in the data argument in
-    * the same graph.
+    * Builds a query that removes all triples from the graph identified by the argument URI and stores the triples in
+    * the data argument in the same graph.
     *
-    * @param graph the target graph
-    * @param data  the new graph in NTriples representation
+    * @param graph
+    *   the target graph
+    * @param data
+    *   the new graph in NTriples representation
     */
   def replace(graph: Uri, data: NTriples): SparqlReplaceQuery =
     SparqlReplaceQuery(

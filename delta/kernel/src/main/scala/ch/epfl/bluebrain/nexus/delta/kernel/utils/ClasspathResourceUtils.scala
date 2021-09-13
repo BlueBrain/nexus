@@ -17,9 +17,11 @@ trait ClasspathResourceUtils {
   /**
     * Loads the content of the argument classpath resource as an [[InputStream]].
     *
-    * @param resourcePath the path of a resource available on the classpath
-    * @return the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the
-    *         resource is not found
+    * @param resourcePath
+    *   the path of a resource available on the classpath
+    * @return
+    *   the content of the referenced resource as an [[InputStream]] or a [[ClasspathResourceError]] when the resource
+    *   is not found
     */
   def ioStreamOf(resourcePath: String)(implicit classLoader: ClassLoader): IO[ClasspathResourceError, InputStream] =
     IO.deferAction { _ =>
@@ -29,12 +31,14 @@ trait ClasspathResourceUtils {
     }
 
   /**
-    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
-    * the ''replacements'' with their values.
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
+    * ''replacements'' with their values.
     *
-    * @param resourcePath the path of a resource available on the classpath
-    * @return the content of the referenced resource as a string or a [[ClasspathResourceError]] when the
-    *         resource is not found
+    * @param resourcePath
+    *   the path of a resource available on the classpath
+    * @return
+    *   the content of the referenced resource as a string or a [[ClasspathResourceError]] when the resource is not
+    *   found
     */
   final def ioContentOf(
       resourcePath: String,
@@ -46,12 +50,14 @@ trait ClasspathResourceUtils {
     }
 
   /**
-    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map
-    * of key property and property value.
+    * Loads the content of the argument classpath resource as a java Properties and transforms it into a Map of key
+    * property and property value.
     *
-    * @param resourcePath the path of a resource available on the classpath
-    * @return the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the
-    *         resource is not found
+    * @param resourcePath
+    *   the path of a resource available on the classpath
+    * @return
+    *   the content of the referenced resource as a map of properties or a [[ClasspathResourceError]] when the resource
+    *   is not found
     */
   final def ioPropertiesOf(resourcePath: String)(implicit
       classLoader: ClassLoader
@@ -63,12 +69,14 @@ trait ClasspathResourceUtils {
     }
 
   /**
-    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
-    * the ''replacements'' with their values.  The resulting string is parsed into a json value.
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
+    * ''replacements'' with their values. The resulting string is parsed into a json value.
     *
-    * @param resourcePath the path of a resource available on the classpath
-    * @return the content of the referenced resource as a json value or an [[ClasspathResourceError]]
-    *         when the resource is not found or is not a Json
+    * @param resourcePath
+    *   the path of a resource available on the classpath
+    * @return
+    *   the content of the referenced resource as a json value or an [[ClasspathResourceError]] when the resource is not
+    *   found or is not a Json
     */
   final def ioJsonContentOf(
       resourcePath: String,
@@ -80,12 +88,14 @@ trait ClasspathResourceUtils {
     } yield json
 
   /**
-    * Loads the content of the argument classpath resource as a string and replaces all the key matches of
-    * the ''replacements'' with their values.  The resulting string is parsed into a json object.
+    * Loads the content of the argument classpath resource as a string and replaces all the key matches of the
+    * ''replacements'' with their values. The resulting string is parsed into a json object.
     *
-    * @param resourcePath the path of a resource available on the classpath
-    * @return the content of the referenced resource as a json value or an [[ClasspathResourceError]]
-    *         when the resource is not found or is not a Json
+    * @param resourcePath
+    *   the path of a resource available on the classpath
+    * @return
+    *   the content of the referenced resource as a json value or an [[ClasspathResourceError]] when the resource is not
+    *   found or is not a Json
     */
   final def ioJsonObjectContentOf(resourcePath: String, attributes: (String, Any)*)(implicit
       classLoader: ClassLoader

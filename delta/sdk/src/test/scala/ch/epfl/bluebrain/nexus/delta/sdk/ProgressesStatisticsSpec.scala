@@ -4,11 +4,10 @@ import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
-import monix.bio.UIO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -20,13 +19,9 @@ class ProgressesStatisticsSpec extends AnyWordSpecLike with Matchers with IOValu
     val project      = ProjectRef.unsafe("org", "project")
     val now          = Instant.now()
     val nowMinus5    = now.minusSeconds(5)
-    val projectStats = ProjectCount(10, now)
+    val projectStats = ProjectCount(10, 10, now)
 
-    val projectsCounts = new ProjectsCounts {
-      override def get(): UIO[ProjectCountsCollection]                 =
-        UIO(ProjectCountsCollection(Map(project -> projectStats)))
-      override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-    }
+    val projectsCounts = ProjectsCountsDummy(project -> projectStats)
 
     val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
     val stats           = new ProgressesStatistics(progressesCache, projectsCounts)

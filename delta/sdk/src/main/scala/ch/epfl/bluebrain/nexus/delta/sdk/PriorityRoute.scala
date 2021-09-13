@@ -5,8 +5,10 @@ import akka.http.scaladsl.server.Route
 /**
   * A [[Route]] that has a ''priority''.
   *
-  * @param priority the priority of this route
-  * @param route    the route
+  * @param priority
+  *   the priority of this route
+  * @param route
+  *   the route
   */
 final case class PriorityRoute(priority: Int, route: Route)
 

@@ -7,8 +7,10 @@ import pureconfig.generic.semiauto.deriveReader
 
 /**
   * The cluster configuration.
-  * @param seeds a comma separated list of seed nodes.
-  * @see [[ClusterConfig#seedList]]
+  * @param seeds
+  *   a comma separated list of seed nodes.
+  * @see
+  *   [[ClusterConfig#seedList]]
   */
 final case class ClusterConfig(
     seeds: Option[String]

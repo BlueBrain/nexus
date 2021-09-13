@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Organizations, Projects}
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -117,8 +117,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Extracts the organization segment and converts it to UUID.
-    * If the conversion is possible, it attempts to fetch the organization from the cache in order to retrieve the label. Otherwise it returns the fetched segment
+    * Extracts the organization segment and converts it to UUID. If the conversion is possible, it attempts to fetch the
+    * organization from the cache in order to retrieve the label. Otherwise it returns the fetched segment
     */
   def orgLabel(organizations: Organizations)(implicit s: Scheduler): Directive1[Label] =
     pathPrefix(Segment).flatMap { segment =>
@@ -141,8 +141,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes two path Segments parsing them as UUIDs and fetch the [[ProjectRef]] looking up on the ''projects'' bundle.
-    * It fails fast if the project with the passed UUIDs is not found.
+    * Consumes two path Segments parsing them as UUIDs and fetch the [[ProjectRef]] looking up on the ''projects''
+    * bundle. It fails fast if the project with the passed UUIDs is not found.
     */
   def projectRef(
       fetchByUuid: FetchProjectByUuid
@@ -168,7 +168,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   /**
     * This directive passes when the query parameter specified is not present
     *
-    * @param name the parameter name
+    * @param name
+    *   the parameter name
     */
   def noParameter(name: String): Directive0 =
     extractRequestContext flatMap { ctx =>
@@ -189,8 +190,8 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes a path Segment and parse it into an [[Iri]].
-    * It fetches the project in order to expand the segment into an Iri
+    * Consumes a path Segment and parse it into an [[Iri]]. It fetches the project in order to expand the segment into
+    * an Iri
     */
   def iriSegment(projectRef: ProjectRef, fetchProject: FetchProject)(implicit sc: Scheduler): Directive1[Iri] =
     idSegment.flatMap { idSegment =>
@@ -205,6 +206,21 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   val idSegmentRef: Directive1[IdSegmentRef] =
     idSegment.flatMap(idSegmentRef(_))
+
+  /**
+    * Creates [[IndexingMode]] from `indexing` query param. Defaults to [[IndexingMode.Async]].
+    */
+  val indexingMode: Directive1[IndexingMode] = parameter("indexing".as[String].?).flatMap {
+    case None | Some("async") => provide(IndexingMode.Async)
+    case Some("sync")         => provide(IndexingMode.Sync)
+    case Some(_)              =>
+      reject(
+        MalformedQueryParamRejection(
+          "indexing",
+          "Invalid value of indexing type, allowed values are 'async' or 'sync'."
+        )
+      )
+  }
 
   /**
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
@@ -301,11 +317,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       .or(pass)
 
   /**
-    * If the un-consumed request context starts by /resources/{org}/{proj}/_/{id} and it is a GET request
-    * the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/{id}
+    * If the un-consumed request context starts by /resources/{org}/{proj}/_/{id} and it is a GET request the
+    * un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/{id}
     *
-    * On the other hand if the un-consumed request context starts by /resources/{org}/{proj}/{schema}/ and {schema} resolves to the
-    * passed ''schemaRef'' the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/
+    * On the other hand if the un-consumed request context starts by /resources/{org}/{proj}/{schema}/ and {schema}
+    * resolves to the passed ''schemaRef'' the un-consumed path it is replaced by /{rootResourceType}/{org}/{proj}/
     *
     * Note: Use right after extracting the prefix
     */
@@ -325,10 +341,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     replaceUriOnUnderscore(rootResourceType) & replaceUriOn(rootResourceType, schemaId, fetchProject, fetchByUuid)
 
   /**
-    * Strips the trailing spaces of the provided path, for example: for /a// the result will be /a. If the provided
-    * path does not contain any trailing slashes it will be returned unmodified.
+    * Strips the trailing spaces of the provided path, for example: for /a// the result will be /a. If the provided path
+    * does not contain any trailing slashes it will be returned unmodified.
     *
-    * @param path the path with optional trailing spaces
+    * @param path
+    *   the path with optional trailing spaces
     */
   def stripTrailingSlashes(path: Path): Path = {
     @tailrec
@@ -342,10 +359,11 @@ trait UriDirectives extends QueryParamsUnmarshalling {
   }
 
   /**
-    * Creates a path matcher from the argument ''uri'' by stripping the slashes at the end of its path.  The matcher
-    * is applied directly to the prefix of the unmatched path.
+    * Creates a path matcher from the argument ''uri'' by stripping the slashes at the end of its path. The matcher is
+    * applied directly to the prefix of the unmatched path.
     *
-    * @param uri the uri to use as a prefix
+    * @param uri
+    *   the uri to use as a prefix
     */
   def uriPrefix(uri: Uri): Directive0 =
     rawPathPrefix(PathMatcher(stripTrailingSlashes(uri.path), ()))

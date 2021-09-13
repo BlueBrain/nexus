@@ -20,52 +20,62 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 sealed trait Storage extends Product with Serializable {
 
   /**
-    * @return the view id
+    * @return
+    *   the view id
     */
   def id: Iri
 
   /**
-    * @return a reference to the project that the storage belongs to
+    * @return
+    *   a reference to the project that the storage belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the tag -> rev mapping
+    * @return
+    *   the tag -> rev mapping
     */
   def tags: Map[TagLabel, Long]
 
   /**
-    * @return the original json document provided at creation or update
+    * @return
+    *   the original json document provided at creation or update
     */
   def source: Secret[Json]
 
   /**
-    * @return ''true'' if this store is the project's default, ''false'' otherwise
+    * @return
+    *   ''true'' if this store is the project's default, ''false'' otherwise
     */
   def default: Boolean
 
   /**
-    * @return the storage type
+    * @return
+    *   the storage type
     */
   def tpe: StorageType = storageValue.tpe
 
   def storageValue: StorageValue
 
   /**
-    * @return [[Storage]] metadata
+    * @return
+    *   [[Storage]] metadata
     */
   def metadata: Metadata = Metadata(storageValue.algorithm)
 }
 
 object Storage {
+
+  private val logger: Logger = Logger[Storage]
 
   /**
     * A storage that stores and fetches files from a local volume
@@ -146,33 +156,49 @@ object Storage {
   /**
     * Storage metadata.
     *
-    * @param algorithm  the digest algorithm, e.g. "SHA-256"
+    * @param algorithm
+    *   the digest algorithm, e.g. "SHA-256"
     */
   final case class Metadata(algorithm: DigestAlgorithm)
 
   private val secretFields = List("credentials", "accessKey", "secretKey")
 
-  private def getOptionalKeyValue(key: String, json: Json) =
+  private val secretFieldsDefaultEncrypted                          =
+    secretFields.foldLeft(Json.obj())((json, field) => json deepMerge Json.obj(field -> "SECRET".asJson))
+
+  private def getOptionalKeyValue(key: String, json: Json)          =
     json.hcursor.get[Option[String]](key).getOrElse(None).map(key -> _)
 
-  def encryptSource(json: Secret[Json], crypto: Crypto): Try[Json] = {
-    def getField(key: String) = getOptionalKeyValue(key, json.value)
+  /**
+    * Encrypts the secretFields of the passed ''json'' using the provided ''crypto''. If that fails, it encrypts the
+    * secretFields with the value 'SECRET' while logging the error
+    */
+  def encryptSourceUnsafe(json: Secret[Json], crypto: Crypto): Json =
+    encryptSource(json, crypto) match {
+      case Failure(exception) =>
+        logger.error(s"Could not encrypt the storage sensitive keys due to ", exception)
+        json.value deepMerge secretFieldsDefaultEncrypted
+      case Success(encrypted) => encrypted
+    }
 
-    secretFields.flatMap(getField).foldM(json.value) { case (acc, (key, value)) =>
+  /**
+    * Attempts to encrypt the secretFields of the passed ''json'' using the provided ''crypto''
+    */
+  def encryptSource(json: Secret[Json], crypto: Crypto): Try[Json] =
+    secretFields.flatMap(getOptionalKeyValue(_, json.value)).foldM(json.value) { case (acc, (key, value)) =>
       crypto.encrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
     }
-  }
 
-  def decryptSource(json: Json, crypto: Crypto): Try[Secret[Json]] = {
-    def getField(key: String) = getOptionalKeyValue(key, json)
-
+  /**
+    * Attempts to decrypt the secretFields of the passed ''json'' using the provided ''crypto''
+    */
+  def decryptSource(json: Json, crypto: Crypto): Try[Secret[Json]] =
     secretFields
-      .flatMap(getField)
+      .flatMap(getOptionalKeyValue(_, json))
       .foldM(json) { case (acc, (key, value)) =>
         crypto.decrypt(value).map(encrypted => acc deepMerge Json.obj(key -> encrypted.asJson))
       }
       .map(Secret.apply)
-  }
 
   implicit private[storages] val storageEncoder: Encoder.AsObject[Storage] =
     Encoder.encodeJsonObject.contramapObject { s =>

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
@@ -22,10 +22,14 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Realms implementation that uses a synchronized in memory journal.
   *
-  * @param journal          the journal to store events
-  * @param cache            the cache to store resources
-  * @param semaphore        a semaphore for serializing write operations on the journal
-  * @param resolveWellKnown get the well known configuration for an OIDC provider resolver
+  * @param journal
+  *   the journal to store events
+  * @param cache
+  *   the cache to store resources
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
+  * @param resolveWellKnown
+  *   get the well known configuration for an OIDC provider resolver
   */
 final class RealmsDummy private (
     journal: RealmsJournal,
@@ -38,18 +42,20 @@ final class RealmsDummy private (
       label: Label,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] =
-    eval(CreateRealm(label, name, openIdConfig, logo, caller))
+    eval(CreateRealm(label, name, openIdConfig, logo, acceptedAudiences, caller))
 
   override def update(
       label: Label,
       rev: Long,
       name: Name,
       openIdConfig: Uri,
-      logo: Option[Uri]
+      logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]]
   )(implicit caller: Subject): IO[RealmRejection, RealmResource] =
-    eval(UpdateRealm(label, rev, name, openIdConfig, logo, caller))
+    eval(UpdateRealm(label, rev, name, openIdConfig, logo, acceptedAudiences, caller))
 
   override def deprecate(label: Label, rev: Long)(implicit caller: Subject): IO[RealmRejection, RealmResource] =
     eval(DeprecateRealm(label, rev, caller))
@@ -97,7 +103,8 @@ object RealmsDummy {
   /**
     * Creates a new dummy Realms implementation.
     *
-    * @param resolveWellKnown the well known configuration for an OIDC provider resolver
+    * @param resolveWellKnown
+    *   the well known configuration for an OIDC provider resolver
     */
   final def apply(
       resolveWellKnown: Uri => IO[RealmRejection, WellKnown]

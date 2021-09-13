@@ -32,8 +32,10 @@ import scala.util.Try
 /**
   * A rooted Graph representation backed up by a Jena DatasetGraph.
   *
-  * @param rootNode   the root node of the graph
-  * @param value      the Jena dataset graph
+  * @param rootNode
+  *   the root node of the graph
+  * @param value
+  *   the Jena dataset graph
   */
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
@@ -103,8 +105,10 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   /**
     * Replace an [[IriOrBNode]] to another [[IriOrBNode]] on the subject or object positions of the graph.
     *
-    * @param current the current [[IriOrBNode]]
-    * @param replace the replacement when the ''current'' [[IriOrBNode]] is found
+    * @param current
+    *   the current [[IriOrBNode]]
+    * @param replace
+    *   the replacement when the ''current'' [[IriOrBNode]] is found
     */
 
   def replace(current: IriOrBNode, replace: IriOrBNode): Graph =
@@ -184,8 +188,8 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       .map(NQuads(_, rootNode))
 
   /**
-    * Attempts to convert the current Graph with the passed ''context'' value
-    * to the DOT format: https://graphviz.org/doc/info/lang.html
+    * Attempts to convert the current Graph with the passed ''context'' value to the DOT format:
+    * https://graphviz.org/doc/info/lang.html
     *
     * The context will be inspected to populate its fields and then the conversion will be performed.
     */
@@ -200,8 +204,8 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
     } yield Dot(string, rootNode)
 
   /**
-    * Attempts to convert the current Graph with the passed ''context'' value
-    * to the JSON-LD compacted format:  https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
+    * Attempts to convert the current Graph with the passed ''context'' value to the JSON-LD compacted format:
+    * https://www.w3.org/TR/json-ld11-api/#compaction-algorithms
     *
     * Note: This is done in two steps, first transforming the graph to JSON-LD expanded format and then compacting it.
     */
@@ -227,9 +231,11 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
   }
 
   /**
-    * Attempts to convert the current Graph to the JSON-LD expanded format: https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
+    * Attempts to convert the current Graph to the JSON-LD expanded format:
+    * https://www.w3.org/TR/json-ld11-api/#expansion-algorithms
     *
-    * Note: This is done in three steps, first transforming the graph to JSON-LD expanded format and then framing it (to have a single root) and then expanding it again.
+    * Note: This is done in three steps, first transforming the graph to JSON-LD expanded format and then framing it (to
+    * have a single root) and then expanding it again.
     */
   def toExpandedJsonLd(implicit
       api: JsonLdApi,
@@ -300,7 +306,8 @@ object Graph {
   /**
     * Creates a [[Graph]] from an expanded JSON-LD.
     *
-    * @param expanded the expanded JSON-LD input to transform into a Graph
+    * @param expanded
+    *   the expanded JSON-LD input to transform into a Graph
     */
   final def apply(
       expanded: ExpandedJsonLd

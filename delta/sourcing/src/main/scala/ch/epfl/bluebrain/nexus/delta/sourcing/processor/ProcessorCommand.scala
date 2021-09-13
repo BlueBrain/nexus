@@ -26,6 +26,7 @@ object ProcessorCommand {
   object AggregateRequest {
     final case class Evaluate[Command](id: String, command: Command, replyTo: ActorRef[AggregateResponse.EvaluationResult]) extends AggregateRequest
     final case class DryRun[Command](id: String, command: Command, replyTo: ActorRef[AggregateResponse.EvaluationResult]) extends AggregateRequest
+    final case class RequestStop(id: String, replyYo: ActorRef[AggregateResponse.StopResponse.type]) extends AggregateRequest
 
     sealed trait ReadOnlyRequest extends AggregateRequest
     final case class RequestState[State](id: String, replyTo: ActorRef[AggregateResponse.StateResponse[State]]) extends ReadOnlyRequest
@@ -81,6 +82,7 @@ sealed trait AggregateResponse extends Product with Serializable
 object AggregateResponse {
   final case class LastSeqNr(value: Long)             extends AggregateResponse
   final case class StateResponse[State](value: State) extends AggregateResponse
+  final case object StopResponse                      extends AggregateResponse
 
   sealed trait EvaluationResult                                                extends AggregateResponse
   final case class EvaluationSuccess[Event, State](event: Event, state: State) extends EvaluationResult

@@ -23,18 +23,30 @@ import java.time.Instant
 /**
   * A resource representation.
   *
-  * @param id         the resource id
-  * @param uris       the resource uris
-  * @param rev        the revision of the resource
-  * @param types      the collection of known types of this resource
-  * @param deprecated whether the resource is deprecated of not
-  * @param createdAt  the instant when this resource was created
-  * @param createdBy  the subject that created this resource
-  * @param updatedAt  the last instant when this resource was updated
-  * @param updatedBy  the last subject that updated this resource
-  * @param schema     the schema reference that this resource conforms to
-  * @param value      the resource value
-  * @tparam A the resource value type
+  * @param id
+  *   the resource id
+  * @param uris
+  *   the resource uris
+  * @param rev
+  *   the revision of the resource
+  * @param types
+  *   the collection of known types of this resource
+  * @param deprecated
+  *   whether the resource is deprecated of not
+  * @param createdAt
+  *   the instant when this resource was created
+  * @param createdBy
+  *   the subject that created this resource
+  * @param updatedAt
+  *   the last instant when this resource was updated
+  * @param updatedBy
+  *   the last subject that updated this resource
+  * @param schema
+  *   the schema reference that this resource conforms to
+  * @param value
+  *   the resource value
+  * @tparam A
+  *   the resource value type
   */
 final case class ResourceF[A](
     id: Iri,
@@ -53,14 +65,17 @@ final case class ResourceF[A](
   /**
     * Maps the value of the resource using the supplied function f.
     *
-    * @param f  the function to apply to transform the current resource value
-    * @return a new resource with a value of type B
+    * @param f
+    *   the function to apply to transform the current resource value
+    * @return
+    *   a new resource with a value of type B
     */
   def map[B](f: A => B): ResourceF[B] =
     copy(value = f(value))
 
   /**
-    * @return the [[Iri]] resulting from resolving the current ''id'' against the ''base''
+    * @return
+    *   the [[Iri]] resulting from resolving the current ''id'' against the ''base''
     */
   def resolvedId(implicit base: BaseUri): Iri =
     id.resolvedAgainst(base.endpoint.toIri)
@@ -183,16 +198,14 @@ object ResourceF {
     resourceFAJsonLdEncoder((_, _) => ctx merge ContextValue(contexts.metadata))
 
   /**
-    * It generates an encoder of [[ResourceF]] of ''A'' using the [[JsonLdEncoder]] of ''A'',
-    * the [[JsonLdEncoder]] of [[ResourceIdAndTypes]] and
-    * the [[JsonLdEncoder]] of [[ResourceMetadata]]
+    * It generates an encoder of [[ResourceF]] of ''A'' using the [[JsonLdEncoder]] of ''A'', the [[JsonLdEncoder]] of
+    * [[ResourceIdAndTypes]] and the [[JsonLdEncoder]] of [[ResourceMetadata]]
     *
     * The merging is done as follows:
-    * 1. compact/expand the [[ResourceIdAndTypes]] using the generated ''context''
-    * 2. compact/expand the ''A''
-    * 3. compact/expand the [[ResourceMetadata]]
-    * Merges the resulting Jsons in the provided order 1,2,3. The order here is important, since some fields might be
-    * overridden in certain cases (i.e. cases where ''A'' already provides ''@id'' and ''@types'')
+    *   1. compact/expand the [[ResourceIdAndTypes]] using the generated ''context'' 2. compact/expand the ''A'' 3.
+    *      compact/expand the [[ResourceMetadata]] Merges the resulting Jsons in the provided order 1,2,3. The order
+    *      here is important, since some fields might be overridden in certain cases (i.e. cases where ''A'' already
+    *      provides ''@id'' and ''@types'')
     */
   private def resourceFAJsonLdEncoder[A](
       overriddenContext: (JsonLdEncoder[A], ResourceF[A]) => ContextValue

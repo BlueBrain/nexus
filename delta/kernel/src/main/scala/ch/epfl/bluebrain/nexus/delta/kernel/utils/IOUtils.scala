@@ -29,7 +29,8 @@ trait StatefulUUIDF extends UUIDF {
 
   /**
     * Modifies the current UUIDF to yield a different specific value during its next invocation.
-    * @param uuid the new UUID to present
+    * @param uuid
+    *   the new UUID to present
     */
   def fixed(uuid: UUID): UIO[Unit]
 }
@@ -39,7 +40,8 @@ object UUIDF {
   /**
     * Creates a [[UUIDF]] that always return the passed ''uuid''.
     *
-    * @param uuid the fixed [[UUID]] to return
+    * @param uuid
+    *   the fixed [[UUID]] to return
     */
   final def fixed(uuid: UUID): UUIDF = () => UIO.pure(uuid)
 
@@ -51,7 +53,8 @@ object UUIDF {
   /**
     * Creates a [[UUIDF]] that returns a fixed [[UUID]] each time with the ability to modify the fixed value.
     *
-    * @param initial the initial fixed [[UUID]] to return
+    * @param initial
+    *   the initial fixed [[UUID]] to return
     */
   final def stateful(initial: UUID): UIO[StatefulUUIDF] =
     (for {

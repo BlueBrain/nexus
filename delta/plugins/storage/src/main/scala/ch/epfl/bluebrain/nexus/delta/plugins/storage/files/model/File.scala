@@ -14,12 +14,18 @@ import io.circe.{Encoder, Json}
 /**
   * A representation of a file information
   *
-  * @param id          the file identifier
-  * @param project     the project where the file belongs
-  * @param storage     the reference to the used storage
-  * @param storageType the type of storage
-  * @param attributes  the file attributes
-  * @param tags        the file tags
+  * @param id
+  *   the file identifier
+  * @param project
+  *   the project where the file belongs
+  * @param storage
+  *   the reference to the used storage
+  * @param storageType
+  *   the type of storage
+  * @param attributes
+  *   the file attributes
+  * @param tags
+  *   the file tags
   */
 final case class File(
     id: Iri,

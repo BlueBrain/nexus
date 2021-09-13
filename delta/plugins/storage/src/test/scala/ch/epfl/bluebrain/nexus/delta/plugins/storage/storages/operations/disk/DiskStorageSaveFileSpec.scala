@@ -46,7 +46,7 @@ class DiskStorageSaveFileSpec
   "A DiskStorage saving operations" should {
     val iri     = iri"http://localhost/disk"
     val project = ProjectRef.unsafe("org", "project")
-    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, 10)
+    val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
     val storage = DiskStorage(iri, project, value, Map.empty, Secret(Json.obj()))
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val content = "file content"

@@ -19,22 +19,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 sealed trait AclState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status (always false for acls)
+    * @return
+    *   the current deprecation status (always false for acls)
     */
   final def deprecated: Boolean = false
 
   /**
-    * @return the schema reference that acls conforms to
+    * @return
+    *   the schema reference that acls conforms to
     */
   final def schema: ResourceRef = Latest(schemas.acls)
 
   /**
-    * @return the collection of known types of acls resources
+    * @return
+    *   the collection of known types of acls resources
     */
   final def types: Set[Iri] = Set(nxv.AccessControlList)
 
@@ -80,12 +84,18 @@ object AclState {
   /**
     * An existing ACLs state.
     *
-    * @param acl       the Access Control List
-    * @param rev       the ACLs revision
-    * @param createdAt the instant when the resource was created
-    * @param createdBy the identity that created the resource
-    * @param updatedAt the instant when the resource was last updated
-    * @param updatedBy the identity that last updated the resource
+    * @param acl
+    *   the Access Control List
+    * @param rev
+    *   the ACLs revision
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the identity that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the identity that last updated the resource
     */
   final case class Current(
       acl: Acl,

@@ -46,7 +46,7 @@ class S3StorageAccessSpec
   override protected def afterAll(): Unit =
     deleteBucket(storage).hideErrors.accepted
 
-  "An S33Storage access operations" should {
+  "An S3Storage access operations" should {
     val iri = iri"http://localhost/s3"
 
     val access = new S3StorageAccess()

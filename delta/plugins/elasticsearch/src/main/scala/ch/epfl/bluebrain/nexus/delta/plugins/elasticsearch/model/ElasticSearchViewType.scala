@@ -10,12 +10,14 @@ import io.circe.{Decoder, Encoder, Json}
 sealed trait ElasticSearchViewType extends Product with Serializable {
 
   /**
-    * @return the type id
+    * @return
+    *   the type id
     */
   def tpe: Iri
 
   /**
-    * @return the full set of types
+    * @return
+    *   the full set of types
     */
   def types: Set[Iri] = Set(tpe, nxv + "View")
 }

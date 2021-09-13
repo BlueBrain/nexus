@@ -12,10 +12,13 @@ import scala.annotation.nowarn
 /**
   * Http Client configuration.
   *
-  * @param retry           the retry configuration
-  * @param isWorthRetrying the strategy to decide if it is worth retrying when an Http error occurs.
-  *                        Allowed strategies are 'always', 'never' or 'onServerError'.
-  * @param compression     Flag to decide whether or not to support compression
+  * @param retry
+  *   the retry configuration
+  * @param isWorthRetrying
+  *   the strategy to decide if it is worth retrying when an Http error occurs. Allowed strategies are 'always', 'never'
+  *   or 'onServerError'.
+  * @param compression
+  *   Flag to decide whether or not to support compression
   */
 final case class HttpClientConfig(
     retry: RetryStrategyConfig,
@@ -24,7 +27,8 @@ final case class HttpClientConfig(
 ) {
 
   /**
-    * @return the retry strategy from the current configuration
+    * @return
+    *   the retry strategy from the current configuration
     */
   def strategy: RetryStrategy[HttpClientError] =
     RetryStrategy(retry, isWorthRetrying, RetryStrategy.logError(logger, "http client"))

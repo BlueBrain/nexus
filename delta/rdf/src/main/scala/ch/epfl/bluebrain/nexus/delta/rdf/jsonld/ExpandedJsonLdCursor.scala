@@ -52,10 +52,11 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
     decoder(this)
 
   /**
-    * Attempt to decode the current cursor using the implicitly available [[JsonLdDecoder]] and
-    * if the focus did not succeed return the passed ''default''
+    * Attempt to decode the current cursor using the implicitly available [[JsonLdDecoder]] and if the focus did not
+    * succeed return the passed ''default''
     *
-    * @param default the value returned when the focus did not succed on the current cursor
+    * @param default
+    *   the value returned when the focus did not succed on the current cursor
     */
   def getOrElse[A](default: => A)(implicit decoder: JsonLdDecoder[A]): Either[JsonLdDecoderError, A] =
     if (succeeded) decoder(this) else Right(default)
@@ -70,7 +71,8 @@ final class ExpandedJsonLdCursor private (value: ACursor) {
       .leftMap(err => ParsingFailure("Set[Iri]", err.history))
 
   /**
-    * @return the current cursor history
+    * @return
+    *   the current cursor history
     */
   def history: List[CursorOp] =
     value.history

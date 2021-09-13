@@ -18,22 +18,26 @@ import io.circe.Json
 sealed trait RealmState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status
+    * @return
+    *   the current deprecation status
     */
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that realm conforms to
+    * @return
+    *   the schema reference that realm conforms to
     */
   final def schema: ResourceRef = Latest(schemas.realms)
 
   /**
-    * @return the collection of known types of realm resources
+    * @return
+    *   the collection of known types of realm resources
     */
   final def types: Set[Iri] = Set(nxv.Realm)
 
@@ -58,7 +62,8 @@ object RealmState {
     override val rev: Long = 0L
 
     /**
-      * @return the current deprecation status
+      * @return
+      *   the current deprecation status
       */
     override val deprecated: Boolean = false
 
@@ -71,23 +76,42 @@ object RealmState {
   /**
     * A realm active state; a realm in an active state can be used to authorize a subject through a token.
     *
-    * @param label                 the realm label
-    * @param rev                   the current state revision
-    * @param deprecated            the current state deprecation status
-    * @param openIdConfig          the openid configuration address
-    * @param issuer                the issuer identifier
-    * @param keys                  the collection of JWK keys in json format
-    * @param grantTypes            the supported oauth2 grant types
-    * @param logo                  an optional logo address
-    * @param authorizationEndpoint the authorization endpoint
-    * @param tokenEndpoint         the token endpoint
-    * @param userInfoEndpoint      the user info endpoint
-    * @param revocationEndpoint    an optional revocation endpoint
-    * @param endSessionEndpoint    an optional end session endpoint
-    * @param createdAt             the instant when the resource was created
-    * @param createdBy             the subject that created the resource
-    * @param updatedAt             the instant when the resource was last updated
-    * @param updatedBy             the subject that last updated the resource
+    * @param label
+    *   the realm label
+    * @param rev
+    *   the current state revision
+    * @param deprecated
+    *   the current state deprecation status
+    * @param openIdConfig
+    *   the openid configuration address
+    * @param issuer
+    *   the issuer identifier
+    * @param keys
+    *   the collection of JWK keys in json format
+    * @param grantTypes
+    *   the supported oauth2 grant types
+    * @param logo
+    *   an optional logo address
+    * @param acceptedAudiences
+    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param authorizationEndpoint
+    *   the authorization endpoint
+    * @param tokenEndpoint
+    *   the token endpoint
+    * @param userInfoEndpoint
+    *   the user info endpoint
+    * @param revocationEndpoint
+    *   an optional revocation endpoint
+    * @param endSessionEndpoint
+    *   an optional end session endpoint
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the subject that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the subject that last updated the resource
     */
   final case class Current(
       label: Label,
@@ -99,6 +123,7 @@ object RealmState {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
@@ -113,7 +138,8 @@ object RealmState {
     private val uris = ResourceUris.realm(label)
 
     /**
-      * @return the realm information
+      * @return
+      *   the realm information
       */
     def realm: Realm =
       Realm(
@@ -123,6 +149,7 @@ object RealmState {
         issuer = issuer,
         grantTypes = grantTypes,
         logo = logo,
+        acceptedAudiences = acceptedAudiences,
         authorizationEndpoint = authorizationEndpoint,
         tokenEndpoint = tokenEndpoint,
         userInfoEndpoint = userInfoEndpoint,
@@ -132,7 +159,8 @@ object RealmState {
       )
 
     /**
-      * @return a resource representation for the realm
+      * @return
+      *   a resource representation for the realm
       */
     override def toResource: Option[RealmResource] =
       Some(

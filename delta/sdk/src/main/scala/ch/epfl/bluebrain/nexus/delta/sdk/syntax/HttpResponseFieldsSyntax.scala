@@ -10,13 +10,15 @@ trait HttpResponseFieldsSyntax {
 final class HttpResponseFieldsOps[A](private val value: A) extends AnyVal {
 
   /**
-    * @return the HTTP status code extracted from the current value using the [[HttpResponseFields]]
+    * @return
+    *   the HTTP status code extracted from the current value using the [[HttpResponseFields]]
     */
   def status(implicit responseFields: HttpResponseFields[A]): StatusCode =
     responseFields.statusFrom(value)
 
   /**
-    * @return the HTTP headers extracted from the current value using the [[HttpResponseFields]]
+    * @return
+    *   the HTTP headers extracted from the current value using the [[HttpResponseFields]]
     */
   def headers(implicit responseFields: HttpResponseFields[A]): Seq[HttpHeader] =
     responseFields.headersFrom(value)

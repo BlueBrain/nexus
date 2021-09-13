@@ -14,9 +14,12 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Event source processor configuration.
   *
-  * @param askTimeout                 timeout for the message exchange with the aggregate actor
-  * @param evaluationMaxDuration      timeout for evaluating commands
-  * @param stashSize                  the maximum size allowed for stashing when evaluating
+  * @param askTimeout
+  *   timeout for the message exchange with the aggregate actor
+  * @param evaluationMaxDuration
+  *   timeout for evaluating commands
+  * @param stashSize
+  *   the maximum size allowed for stashing when evaluating
   */
 final case class EventSourceProcessorConfig(
     askTimeout: Timeout,

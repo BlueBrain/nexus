@@ -15,14 +15,16 @@ trait FetchFile {
   /**
     * Fetches the file with the passed parameters.
     *
-    * @param attributes the file attributes
+    * @param attributes
+    *   the file attributes
     */
   def apply(attributes: FileAttributes): IO[FetchFileRejection, AkkaSource]
 
   /**
     * Fetches the file with the passed parameters.
     *
-    * @param path   the file path
+    * @param path
+    *   the file path
     */
   def apply(path: Uri.Path): IO[FetchFileRejection, AkkaSource]
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{typed, ActorSystem}
 import akka.cluster.Cluster
-import akka.cluster.typed.{Join, Cluster => TCluster}
+import akka.cluster.typed.{Cluster => TCluster, Join}
 import akka.testkit.TestKit
 import cats.effect.concurrent.Deferred
 import cats.implicits._

@@ -13,8 +13,10 @@ import monix.bio.UIO
 /**
   * Retrieves the statistics for a specific projection progress compared to the baseline (the project counts).
   *
-  * @param progressCache  a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
-  * @param projectsCounts a cache containing the statistics (counts and latest consumed instant) for all the projects
+  * @param progressCache
+  *   a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
+  * @param projectsCounts
+  *   a cache containing the statistics (counts and latest consumed instant) for all the projects
   */
 class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: ProjectsCounts) {
 
@@ -24,8 +26,10 @@ class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: Proje
     * Retrieves the progress and project count for the provided ''project'' and ''projectionId'' and compute the
     * resulting statistics.
     *
-    * @param project      the project for which the counts are collected
-    * @param projectionId the projection id for which the statistics are computed
+    * @param project
+    *   the project for which the counts are collected
+    * @param projectionId
+    *   the projection id for which the statistics are computed
     */
   def statistics(project: ProjectRef, projectionId: ProjectionId): UIO[ProgressStatistics] =
     projectsCounts.get(project).flatMap {
@@ -38,26 +42,28 @@ class ProgressesStatistics(progressCache: ProgressesCache, projectsCounts: Proje
   /**
     * Retrieves the progress of the provided ''projectionId'' and uses the provided ''count'' to compute its statistics.
     *
-    * @param count        a project count
-    * @param projectionId the projection id for which the statistics are computed
+    * @param count
+    *   a project count
+    * @param projectionId
+    *   the projection id for which the statistics are computed
     */
   def statistics(count: ProjectCount, projectionId: ProjectionId): UIO[ProgressStatistics] =
     progressCache.get(projectionId).map {
-      case None           => ProgressStatistics(0, 0, 0, count.value, Some(count.lastProcessedEventDateTime), None)
+      case None           => ProgressStatistics(0, 0, 0, count.events, Some(count.lastProcessedEventDateTime), None)
       case Some(progress) =>
         ProgressStatistics(
           progress.processed,
           progress.discarded,
           progress.failed,
-          count.value,
+          count.events,
           Some(count.lastProcessedEventDateTime),
           Some(progress.timestamp)
         )
     }
 
   /**
-    * Retrieves the progress for the passed ''project'' and returns the offset of its latest consumed item.
-    * If the progress does not exist an empty Offset is returned
+    * Retrieves the progress for the passed ''project'' and returns the offset of its latest consumed item. If the
+    * progress does not exist an empty Offset is returned
     * @return
     */
   def offset(projection: ProjectionId): UIO[Offset] =

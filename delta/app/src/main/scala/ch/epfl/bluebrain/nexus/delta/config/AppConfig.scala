@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
@@ -20,21 +21,36 @@ import java.nio.charset.StandardCharsets.UTF_8
 /**
   * Main application configuration.
   *
-  * @param description    the service description
-  * @param http           the http config
-  * @param cluster        the cluster config
-  * @param database       the database config
-  * @param identities     the identities config
-  * @param permissions    the permissions config
-  * @param realms         the realms config
-  * @param organizations  the organizations config
-  * @param acls           the ACLs config
-  * @param projects       the projects config
-  * @param resolvers      the resolvers config
-  * @param resources      the resources config
-  * @param schemas        the schemas config
-  * @param serviceAccount the service account config
-  * @param encryption     the encryption config
+  * @param description
+  *   the service description
+  * @param http
+  *   the http config
+  * @param cluster
+  *   the cluster config
+  * @param database
+  *   the database config
+  * @param identities
+  *   the identities config
+  * @param permissions
+  *   the permissions config
+  * @param realms
+  *   the realms config
+  * @param organizations
+  *   the organizations config
+  * @param acls
+  *   the ACLs config
+  * @param projects
+  *   the projects config
+  * @param resolvers
+  *   the resolvers config
+  * @param resources
+  *   the resources config
+  * @param schemas
+  *   the schemas config
+  * @param serviceAccount
+  *   the service account config
+  * @param encryption
+  *   the encryption config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -61,8 +77,8 @@ object AppConfig {
 
   /**
     * Loads the application in two steps:<br/>
-    * 1. loads the default default.conf and identifies the database configuration<br/>
-    * 2. reloads the config using the selected database configuration and the plugin configurations
+    *   1. loads the default default.conf and identifies the database configuration<br/> 2. reloads the config using the
+    *      selected database configuration and the plugin configurations
     */
   def load(
       pluginsConfigs: List[String] = List.empty,

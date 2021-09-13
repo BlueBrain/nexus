@@ -82,7 +82,7 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
   implicit final private val regionDecoder: Decoder[Region]          = Decoder.decodeString.map(Region.of)
 
   implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
-    Encoder.encodeJson.contramap(Storage.encryptSource(_, crypto).get)
+    Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
 
   implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
     case Secret(value) => crypto.encrypt(value).get

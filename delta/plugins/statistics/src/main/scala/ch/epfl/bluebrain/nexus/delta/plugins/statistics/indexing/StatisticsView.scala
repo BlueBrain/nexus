@@ -8,7 +8,8 @@ import monix.bio.IO
 /**
   * A statistics view information
   *
-  * @param mapping the elasticsearch mapping to be used in order to create the statistics index
+  * @param mapping
+  *   the elasticsearch mapping to be used in order to create the statistics index
   */
 final case class StatisticsView(mapping: JsonObject)
 

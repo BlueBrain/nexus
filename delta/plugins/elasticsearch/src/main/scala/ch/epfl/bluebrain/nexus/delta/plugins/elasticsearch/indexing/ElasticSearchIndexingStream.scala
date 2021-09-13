@@ -48,20 +48,7 @@ final class ElasticSearchIndexingStream(
             // Creates a resource graph and metadata from the event exchange response
             ElasticSearchIndexingStreamEntry.fromEventExchange(eventExchangeValue)
           }
-          .evalMapFilterValue {
-            // Either delete or insert the document depending on filtering options
-            case res if res.containsSchema(view.value.resourceSchemas) && res.containsTypes(view.value.resourceTypes) =>
-              res.deleteOrIndex(
-                index,
-                view.value.includeMetadata,
-                view.value.includeDeprecated,
-                view.value.sourceAsText
-              )
-            case res if res.containsSchema(view.value.resourceSchemas)                                                =>
-              res.delete(index).map(Some.apply)
-            case _                                                                                                    =>
-              Task.none
-          }
+          .evalMapFilterValue(_.writeOrNone(index, view.value))
           .runAsyncUnit { bulk =>
             // Pushes INDEX/DELETE Elasticsearch bulk operations
             IO.when(bulk.nonEmpty)(client.bulk(bulk))

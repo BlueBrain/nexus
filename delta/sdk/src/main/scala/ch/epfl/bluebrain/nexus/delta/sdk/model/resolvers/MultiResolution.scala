@@ -12,8 +12,10 @@ import monix.bio.IO
 
 /**
   * Allow to attempt resolutions for the different resource types available
-  * @param fetchProject        how to fetch a project
-  * @param resourceResolution  the resource resolution
+  * @param fetchProject
+  *   how to fetch a project
+  * @param resourceResolution
+  *   the resource resolution
   */
 final class MultiResolution(
     fetchProject: ProjectRef => IO[ResolverRejection, Project],
@@ -25,8 +27,10 @@ final class MultiResolution(
   /**
     * Attempts to resolve the resourceId against all active resolvers of the given project
     *
-    * @param resourceSegment the resource id to resolve with its optional rev/tag
-    * @param projectRef      the project from which we try to resolve
+    * @param resourceSegment
+    *   the resource id to resolve with its optional rev/tag
+    * @param projectRef
+    *   the project from which we try to resolve
     */
   def apply(
       resourceSegment: IdSegmentRef,
@@ -45,9 +49,12 @@ final class MultiResolution(
 
   /**
     * Attempts to resolve the resourceId against the given resolver of the given project
-    * @param resourceSegment   the resource id to resolve with its optional rev/tag
-    * @param projectRef        the project from which we try to resolve
-    * @param resolverSegment  the resolver to use specifically
+    * @param resourceSegment
+    *   the resource id to resolve with its optional rev/tag
+    * @param projectRef
+    *   the project from which we try to resolve
+    * @param resolverSegment
+    *   the resolver to use specifically
     */
   def apply(
       resourceSegment: IdSegmentRef,
@@ -75,8 +82,10 @@ object MultiResolution {
 
   /**
     * Create a multi resolution instance
-    * @param projects           a project instance
-    * @param resourceResolution a resource resolution instance
+    * @param projects
+    *   a project instance
+    * @param resourceResolution
+    *   a resource resolution instance
     */
   def apply[A](
       projects: Projects,

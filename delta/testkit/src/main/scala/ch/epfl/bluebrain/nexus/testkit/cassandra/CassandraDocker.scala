@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.testkit.cassandra
 
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
-import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraHostConfig
+import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.DefaultCqlPort
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -11,15 +11,8 @@ import scala.concurrent.duration._
 trait CassandraDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 40.seconds
-  val DefaultCqlPort                                  = 9042
 
-  lazy val cassandraHostConfig: CassandraHostConfig =
-    CassandraHostConfig(
-      dockerExecutor.host,
-      DefaultCqlPort
-    )
-
-  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.6")
+  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.11")
     .withPorts(DefaultCqlPort -> Some(DefaultCqlPort))
     .withEnv(
       "JVM_OPTS=-Xms1g -Xmx1g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0",
@@ -36,6 +29,9 @@ trait CassandraDocker extends DockerKitWithFactory {
 }
 
 object CassandraDocker {
+
+  val DefaultCqlPort                           = 9042
+  val cassandraHostConfig: CassandraHostConfig = CassandraHostConfig("127.0.0.1", DefaultCqlPort)
 
   final case class CassandraHostConfig(host: String, port: Int)
 

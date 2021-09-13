@@ -12,10 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, Realms}
-import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmsImpl, WellKnownResolver}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.service.realms.{RealmEventExchange, RealmsImpl, WellKnownResolver}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -72,5 +72,7 @@ object RealmsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: RealmsRoutes) => PriorityRoute(pluginsMaxPriority + 4, route.routes) }
 
+  make[RealmEventExchange]
+  many[EventExchange].ref[RealmEventExchange]
 }
 // $COVERAGE-ON$

@@ -32,6 +32,11 @@ trait ProjectsCounts {
     * Retrieve the current counts (and latest instant) of events for the passed ''project''
     */
   def get(project: ProjectRef): UIO[Option[ProjectCount]]
+
+  /**
+    * Remove the counts for the given project
+    */
+  def remove(project: ProjectRef): UIO[Unit]
 }
 
 object ProjectsCounts {
@@ -40,8 +45,8 @@ object ProjectsCounts {
   private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
 
   /**
-    * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the counts (and latest instant) for each project.
+    * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function. The underlying stream will
+    * store its progress and compute the counts (and latest instant) for each project.
     */
   def apply(
       config: ProjectsConfig,
@@ -62,7 +67,7 @@ object ProjectsCounts {
   ): Task[ProjectsCounts] = {
 
     val cache =
-      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.value)
+      KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.events)
 
     def buildStream: Stream[Task, Unit] =
       Stream
@@ -74,10 +79,10 @@ object ProjectsCounts {
           val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
           stream(progress.offset)
             .map { env =>
-              env.toMessage.as(env.event.project)
+              env.toMessage.as(env.event)
             }
             .mapAccumulate(initial) { (acc, msg) =>
-              (msg.as(acc.value.increment(msg.value, msg.timestamp)), msg.value)
+              (msg.as(acc.value.increment(msg.value.project, msg.value.rev, msg.timestamp)), msg.value.project)
             }
             .evalMap { case (acc, projectRef) =>
               cache.put(projectRef, acc.value.value(projectRef)).as(acc)
@@ -97,6 +102,8 @@ object ProjectsCounts {
           override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
 
           override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
+
+          override def remove(project: ProjectRef): UIO[Unit] = cache.remove(project)
         }
       )
   }

@@ -10,7 +10,8 @@ import monix.bio.{IO, Task, UIO}
 /**
   * Partial dummy implementation, that only implements the fetch of all the permissions
   *
-  * @param expected the expected result of fetching all the permissions
+  * @param expected
+  *   the expected result of fetching all the permissions
   */
 class PermissionsMock(expected: PermissionsResource) extends Permissions {
   // format: off

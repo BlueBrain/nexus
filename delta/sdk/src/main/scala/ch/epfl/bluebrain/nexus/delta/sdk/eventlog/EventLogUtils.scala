@@ -25,7 +25,8 @@ object EventLogUtils {
 
   /**
     * Attempts to convert a generic event envelope to a type one.
-    * @param envelope the generic event envelope
+    * @param envelope
+    *   the generic event envelope
     */
   def toEnvelope[E <: Event](envelope: EventEnvelope)(implicit Event: ClassTag[E]): UIO[Option[Envelope[E]]] =
     envelope match {
@@ -75,8 +76,10 @@ object EventLogUtils {
   /**
     * Wires the [[EventLog]] for the database activated in the configuration for the passed [[Event]] type
     *
-    * @param flavour the database flavour
-    * @tparam A the event type
+    * @param flavour
+    *   the database flavour
+    * @tparam A
+    *   the event type
     */
   def databaseEventLog[A <: Event: ClassTag](
       flavour: DatabaseFlavour,
@@ -89,11 +92,16 @@ object EventLogUtils {
 
   /**
     * Fetch events related to the given project
-    * @param projects a [[Projects]] instance
-    * @param eventLog a [[EventLog]] instance
-    * @param projectRef the project ref where the events belongs
-    * @param offset the requested offset
-    * @param rejectionMapper to fit the project rejection to one handled by the caller
+    * @param projects
+    *   a [[Projects]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param projectRef
+    *   the project ref where the events belongs
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
     */
   def projectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(implicit
       rejectionMapper: Mapper[ProjectNotFound, R]
@@ -106,12 +114,40 @@ object EventLogUtils {
       )
 
   /**
+    * Fetch current events related to the given project
+    * @param projects
+    *   a [[Projects]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param projectRef
+    *   the project ref where the events belongs
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
+    */
+  def currentProjectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(
+      implicit rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    projects
+      .fetch(projectRef)
+      .bimap(
+        rejectionMapper.to,
+        p => currentEvents(eventLog, Projects.projectTag(projectRef), p.createdAt, offset)
+      )
+
+  /**
     * Fetch events related to the given project
-    * @param orgs a [[Organizations]] instance
-    * @param eventLog a [[EventLog]] instance
-    * @param label the project ref where the events belongs
-    * @param offset the requested offset
-    * @param rejectionMapper to fit the project rejection to one handled by the caller
+    * @param orgs
+    *   a [[Organizations]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param label
+    *   the project ref where the events belongs
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
     */
   def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
@@ -132,5 +168,16 @@ object EventLogUtils {
           OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
         )
         eventLog.eventsByTag(tag, maxOffset)
+    }
+
+  private def currentEvents[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
+    eventLog.flavour match {
+      case Postgres  => eventLog.currentEventsByTag(tag, offset)
+      case Cassandra =>
+        val maxOffset = OffsetUtils.offsetOrdering.max(
+          offset,
+          OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
+        )
+        eventLog.currentEventsByTag(tag, maxOffset)
     }
 }

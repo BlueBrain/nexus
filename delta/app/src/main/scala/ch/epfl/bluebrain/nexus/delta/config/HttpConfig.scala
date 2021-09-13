@@ -6,9 +6,12 @@ import pureconfig.generic.semiauto._
 
 /**
   * The http specific configuration.
-  * @param interface the interface to bind to
-  * @param port      the port to bind to
-  * @param baseUri   the base public uri of the service
+  * @param interface
+  *   the interface to bind to
+  * @param port
+  *   the port to bind to
+  * @param baseUri
+  *   the base public uri of the service
   */
 final case class HttpConfig(
     interface: String,

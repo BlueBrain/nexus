@@ -1,8 +1,6 @@
 name: Delta Execute Integration Tests
 on:
-  push:
-    branches:
-      - master
+  pull_request:
     paths:
       - 'delta/**'
       - 'storage/**'
@@ -12,28 +10,22 @@ on:
       - '.github/workflows/ci-execute-integration-tests.yml'
 jobs:
   tests:
-    runs-on: nise-cg029
+    runs-on: it
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Clean Build
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false clean
-      - name: Build Delta Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" Docker/publishLocal
-      - name: Build Storage Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" Docker/publishLocal
+      - name: Clean, build Delta & Storage images
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "clean; app/Docker/publishLocal; storage/Docker/publishLocal"
+      - name: Start services
+        run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 60
       - name: Test
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" \
-            'set composeFile := "tests/docker/docker-compose-ci.yml"' \
-            'set composeContainerPauseBeforeTestSeconds := 120' \
-            dockerComposeTest
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
       - name: Stop Docker
         if: ${{ always() }}
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" dockerComposeStop
+        run: docker-compose -f tests/docker/docker-compose-ci.yml down
       - name: Cleanup Docker Containers
         if: ${{ always() }}
         run: |

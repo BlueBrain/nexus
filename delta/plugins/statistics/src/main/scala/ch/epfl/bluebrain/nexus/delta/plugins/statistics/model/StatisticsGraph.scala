@@ -17,8 +17,10 @@ import scala.annotation.nowarn
 /**
   * Statistics graph with nodes and edges with their counts.
   *
-  * @param nodes the nodes
-  * @param edges the edges
+  * @param nodes
+  *   the nodes
+  * @param edges
+  *   the edges
   */
 final case class StatisticsGraph(nodes: Seq[Node], edges: Seq[Edge])
 
@@ -27,27 +29,36 @@ object StatisticsGraph {
   /**
     * The node information.
     *
-    * @param id    the node identifier
-    * @param name  the node name
-    * @param count the number of times this node occurs
+    * @param id
+    *   the node identifier
+    * @param name
+    *   the node name
+    * @param count
+    *   the number of times this node occurs
     */
   final case class Node(id: Iri, name: String, count: Long)
 
   /**
     * The edge information.
     *
-    * @param source the source node for this edge
-    * @param target the destination node for this edge
-    * @param count  the number of times this edge occurs
-    * @param path   the edge sequence of path
+    * @param source
+    *   the source node for this edge
+    * @param target
+    *   the destination node for this edge
+    * @param count
+    *   the number of times this edge occurs
+    * @param path
+    *   the edge sequence of path
     */
   final case class Edge(source: Iri, target: Iri, count: Long, path: Seq[EdgePath])
 
   /**
     * An edge path
     *
-    * @param id   the edge path identifier
-    * @param name the edge path name
+    * @param id
+    *   the edge path identifier
+    * @param name
+    *   the edge path name
     */
   final case class EdgePath(id: Iri, name: String)
 

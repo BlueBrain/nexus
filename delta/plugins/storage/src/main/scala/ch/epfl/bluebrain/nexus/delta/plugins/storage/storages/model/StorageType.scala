@@ -11,7 +11,8 @@ import io.circe.{Decoder, Encoder, Json}
 sealed trait StorageType extends Product with Serializable {
 
   /**
-    * @return the type id
+    * @return
+    *   the type id
     */
   def iri: Iri
 

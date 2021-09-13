@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -272,6 +273,14 @@ class CompositeViewsSpec
       "tag doesn't exist" in {
         val tag = TagLabel.unsafe("wrongtag")
         compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
+      }
+    }
+
+    "finding references" should {
+
+      "get a reference on otherproject from project" in {
+        CompositeViews.projectReferenceFinder(compositeViews)(otherProject).accepted shouldEqual
+          ProjectReferenceMap.single(projectRef, viewId)
       }
     }
   }

@@ -37,9 +37,12 @@ import scala.annotation.nowarn
 /**
   * The organization routes.
   *
-  * @param identities    the identities operations bundle
-  * @param organizations the organizations operations bundle
-  * @param acls          the acls operations bundle
+  * @param identities
+  *   the identities operations bundle
+  * @param organizations
+  *   the organizations operations bundle
+  * @param acls
+  *   the acls operations bundle
   */
 final class OrganizationsRoutes(identities: Identities, organizations: Organizations, acls: Acls)(implicit
     baseUri: BaseUri,
@@ -152,7 +155,8 @@ object OrganizationsRoutes {
   }
 
   /**
-    * @return the [[Route]] for organizations
+    * @return
+    *   the [[Route]] for organizations
     */
   def apply(identities: Identities, organizations: Organizations, acls: Acls)(implicit
       baseUri: BaseUri,

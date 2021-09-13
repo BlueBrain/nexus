@@ -52,8 +52,10 @@ object JsonLdPathValue {
   /**
     * A Paths' metadata
     *
-    * @param id    the path @id value
-    * @param types the path @type values
+    * @param id
+    *   the path @id value
+    * @param types
+    *   the path @type values
     */
   final case class Metadata(id: Option[Iri], types: Set[Iri])
 

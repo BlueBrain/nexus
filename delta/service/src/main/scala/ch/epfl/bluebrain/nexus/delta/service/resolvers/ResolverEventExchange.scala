@@ -2,16 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverEvent, ResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ResolverResource, Resolvers}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue, ResolverResource, Resolvers}
+import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
 /**
   * Resolver specific [[EventExchange]] implementation.
   *
-  * @param resolvers the resolvers module
+  * @param resolvers
+  *   the resolvers module
   */
 class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extends EventExchange {
 
@@ -25,18 +29,32 @@ class ResolverEventExchange(resolvers: Resolvers)(implicit base: BaseUri) extend
       case _                 => None
     }
 
+  def toMetric(event: Event): UIO[Option[EventMetric]] =
+    event match {
+      case r: ResolverEvent =>
+        UIO.some(
+          ProjectScopedMetric.from[ResolverEvent](
+            r,
+            r match {
+              case _: ResolverCreated    => EventMetric.Created
+              case _: ResolverUpdated    => EventMetric.Updated
+              case _: ResolverTagAdded   => EventMetric.Tagged
+              case _: ResolverDeprecated => EventMetric.Deprecated
+            },
+            r.id,
+            r.tpe.types,
+            JsonObject.empty
+          )
+        )
+      case _                => UIO.none
+    }
+
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: ResolverEvent => resourceToValue(resolvers.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _                 => UIO.none
     }
 
-  private def resourceToValue(
-      resourceIO: IO[ResolverRejection, ResolverResource]
-  )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
-    resourceIO
-      .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(())))
-      }
-      .onErrorHandle(_ => None)
+  private def resourceToValue(resourceIO: IO[ResolverRejection, ResolverResource])(implicit enc: JsonLdEncoder[A]) =
+    resourceIO.map(Resolvers.eventExchangeValue).redeem(_ => None, Some(_))
 }

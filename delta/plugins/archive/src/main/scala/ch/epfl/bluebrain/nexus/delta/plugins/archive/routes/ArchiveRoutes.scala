@@ -21,10 +21,14 @@ import monix.execution.Scheduler
 /**
   * The Archive routes.
   *
-  * @param archives   the archive module
-  * @param identities the identities module
-  * @param acls       the acls module
-  * @param projects   the projects module
+  * @param archives
+  *   the archive module
+  * @param identities
+  *   the identities module
+  * @param acls
+  *   the acls module
+  * @param projects
+  *   the projects module
   */
 class ArchiveRoutes(
     archives: Archives,

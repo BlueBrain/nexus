@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
@@ -28,7 +29,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of Storage rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class StorageRejection(val reason: String, val loggedDetails: Option[String] = None)
     extends Product
@@ -45,25 +47,30 @@ object StorageRejection {
     * Rejection returned when a subject intends to retrieve a storage at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends StorageFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Rejection returned when a subject intends to retrieve a storage at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a storage at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.
     *
-    * @param id      the storage identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the storage identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class StorageNotFound(id: Iri, project: ProjectRef)
       extends StorageFetchRejection(s"Storage '$id' not found in project '$project'.")
@@ -71,7 +78,8 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to interact with a storage providing an id that cannot be resolved to an Iri.
     *
-    * @param id  the storage identifier
+    * @param id
+    *   the storage identifier
     */
   final case class InvalidStorageId(id: String)
       extends StorageFetchRejection(s"Storage identifier '$id' cannot be expanded to an Iri.")
@@ -79,8 +87,10 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to create a storage but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Resource '$id' already exists in project '$project'.")
@@ -88,7 +98,8 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to fetch the default storage for a project but there is none.
     *
-    * @param project the project it belongs to
+    * @param project
+    *   the project it belongs to
     */
   final case class DefaultStorageNotFound(project: ProjectRef)
       extends StorageRejection(s"Default storage not found in project '$project'.")
@@ -96,7 +107,8 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to create/update a storage but it cannot be accessed.
     *
-    * @param id      the storage identifier
+    * @param id
+    *   the storage identifier
     */
   final case class StorageNotAccessible(id: Iri, details: String)
       extends StorageRejection(s"Storage '$id' not accessible.")
@@ -104,15 +116,18 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to create a storage where the passed id does not match the id on the payload.
     *
-    * @param id        the storage identifier
-    * @param payloadId the storage identifier on the payload
+    * @param id
+    *   the storage identifier
+    * @param payloadId
+    *   the storage identifier on the payload
     */
   final case class UnexpectedStorageId(id: Iri, payloadId: Iri)
       extends StorageRejection(s"Storage '$id' does not match storage id on payload '$payloadId'.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as a case class
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends StorageRejection(error.getMessage)
 
@@ -133,7 +148,8 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to create a storage with an id that already exists.
     *
-    * @param id the storage identifier
+    * @param id
+    *   the storage identifier
     */
   final case class DifferentStorageType(id: Iri, found: StorageType, expected: StorageType)
       extends StorageRejection(s"Storage '$id' is of type '$found' and can't be updated to be a '$expected' .")
@@ -150,8 +166,10 @@ object StorageRejection {
     * Rejection returned when a subject intends to perform an operation on the current storage, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends StorageRejection(
@@ -161,15 +179,17 @@ object StorageRejection {
   /**
     * Rejection returned when attempting to update/deprecate a storage that is already deprecated.
     *
-    * @param id the storage identifier
+    * @param id
+    *   the storage identifier
     */
   final case class StorageIsDeprecated(id: Iri) extends StorageRejection(s"Storage '$id' is deprecated.")
 
   /**
-    * Signals a rejection caused by an attempt to create or update a storage with permissions that are not
-    * defined in the permission set singleton.
+    * Signals a rejection caused by an attempt to create or update a storage with permissions that are not defined in
+    * the permission set singleton.
     *
-    * @param permissions the provided permissions
+    * @param permissions
+    *   the provided permissions
     */
   final case class PermissionsAreNotDefined(permissions: Set[Permission])
       extends StorageRejection(
@@ -190,21 +210,30 @@ object StorageRejection {
   /**
     * Rejection returned when the associated project is invalid
     *
-    * @param rejection the rejection which occurred with the project
+    * @param rejection
+    *   the rejection which occurred with the project
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends StorageFetchRejection(rejection.reason)
 
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends StorageFetchRejection(rejection.reason)
 
   /**
+    * Signals a rejection caused by a failure to perform indexing.
+    */
+  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
+      extends StorageRejection(rejection.reason)
+
+  /**
     * Rejection returned when the returned state is the initial state after a Storages.evaluation plus a Storages.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
+    * current
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends StorageRejection(s"Unexpected initial state for storage '$id' of project '$project'.")
@@ -229,6 +258,9 @@ object StorageRejection {
 
   implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
+
+  implicit val storageIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
+    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
   implicit private[plugins] def storageRejectionEncoder(implicit
       C: ClassTag[StorageCommand]
@@ -273,6 +305,7 @@ object StorageRejection {
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
       case StorageEvaluationError(_)         => StatusCodes.InternalServerError
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                 => StatusCodes.BadRequest
     }
 

@@ -35,7 +35,13 @@ class ElasticSearchViewReferenceExchangeSpec
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
   private val views: ElasticSearchViews =
-    ElasticSearchViewsSetup.init(org, project, permissions.write, permissions.query, permissions.read)
+    ElasticSearchViewsSetup.init(
+      org,
+      project,
+      permissions.write,
+      permissions.query,
+      permissions.read
+    )
 
   private val mapping = defaultElasticsearchMapping.accepted.asJson
 

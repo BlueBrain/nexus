@@ -20,19 +20,23 @@ trait ScopeInitialization {
     * opportunity to heal as part of the organization event log replay during the bootstrapping of the service. The
     * method is expected to perform necessary checks such that the initialization would not be executed twice.
     *
-    * @param organization the organization that was created
-    * @param subject      the identity that was recorded for the creation of the organization
+    * @param organization
+    *   the organization that was created
+    * @param subject
+    *   the identity that was recorded for the creation of the organization
     */
   def onOrganizationCreation(organization: Organization, subject: Subject): IO[ScopeInitializationFailed, Unit]
 
   /**
     * The method is invoked synchronously during the project creation for immediate configuration of the project.
     * Additionally, in order to correct failures that may have occurred, this method will also be invoked as an
-    * opportunity to heal as part of the project event log replay during the bootstrapping of the service. The method
-    * is expected to perform necessary checks such that the initialization would not be executed twice.
+    * opportunity to heal as part of the project event log replay during the bootstrapping of the service. The method is
+    * expected to perform necessary checks such that the initialization would not be executed twice.
     *
-    * @param project the project that was created
-    * @param subject the identity that was recorded for the creation of the project
+    * @param project
+    *   the project that was created
+    * @param subject
+    *   the identity that was recorded for the creation of the project
     */
   def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit]
 

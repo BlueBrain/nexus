@@ -33,7 +33,8 @@ object CassandraPersistenceIdCheck {
   /**
     * Creates a cassandra persistence id check with the given configuration
     *
-    * @param config the cassandra configuration
+    * @param config
+    *   the cassandra configuration
     */
   def apply(config: CassandraConfig)(implicit as: ActorSystem[Nothing]): Task[CassandraPersistenceIdCheck] =
     Task

@@ -33,7 +33,8 @@ class BlazegraphViewReferenceExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  private val views: BlazegraphViews =
+    BlazegraphViewsSetup.init(org, project, permissions.query)
 
   "A BlazegraphViewReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"

@@ -31,25 +31,32 @@ trait Storages[F[_], Source] {
   /**
     * Checks that the provided bucket name exists and it is readable/writable.
     *
-    * @param name the storage bucket name
+    * @param name
+    *   the storage bucket name
     */
   def exists(name: String): BucketExistence
 
   /**
     * Check whether the provided path already exists.
     *
-    * @param name         the storage bucket name
-    * @param relativePath the relative path location
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path location
     */
   def pathExists(name: String, relativePath: Uri.Path): PathExistence
 
   /**
     * Creates a file with the provided ''metadata'' and ''source'' on the provided ''filePath''.
     *
-    * @param name         the storage bucket name
-    * @param relativePath the relative path location
-    * @param source       the file content
-    * @return The file attributes containing the metadata (bytes and location) wrapped in an F effect type
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path location
+    * @param source
+    *   the file content
+    * @return
+    *   The file attributes containing the metadata (bytes and location) wrapped in an F effect type
     */
   def createFile(
       name: String,
@@ -60,11 +67,15 @@ trait Storages[F[_], Source] {
   /**
     * Moves a path from the provided ''sourceRelativePath'' to ''destRelativePath'' inside the nexus folder.
     *
-    * @param name               the storage bucket name
-    * @param sourceRelativePath the source relative path location
-    * @param destRelativePath   the destination relative path location inside the nexus folder
-    * @return Left(rejection) or Right(fileAttributes).
-    *         The file attributes contain the metadata (bytes and location) wrapped in an F effect type
+    * @param name
+    *   the storage bucket name
+    * @param sourceRelativePath
+    *   the source relative path location
+    * @param destRelativePath
+    *   the destination relative path location inside the nexus folder
+    * @return
+    *   Left(rejection) or Right(fileAttributes). The file attributes contain the metadata (bytes and location) wrapped
+    *   in an F effect type
     */
   def moveFile(
       name: String,
@@ -75,9 +86,13 @@ trait Storages[F[_], Source] {
   /**
     * Retrieves the file as a Source.
     *
-    * @param name         the storage bucket name
-    * @param relativePath the relative path to the file location
-    * @return Left(rejection),  Right(source, Some(filename)) when the path is a file and Right(source, None) when the path is a directory
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path to the file location
+    * @return
+    *   Left(rejection), Right(source, Some(filename)) when the path is a file and Right(source, None) when the path is
+    *   a directory
     */
   def getFile(
       name: String,
@@ -87,8 +102,10 @@ trait Storages[F[_], Source] {
   /**
     * Retrieves the attributes of the file.
     *
-    * @param name         the storage bucket name
-    * @param relativePath the relative path to the file location
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path to the file location
     */
   def getAttributes(
       name: String,

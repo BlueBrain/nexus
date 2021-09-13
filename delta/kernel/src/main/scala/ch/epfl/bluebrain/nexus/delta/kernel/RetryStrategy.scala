@@ -14,9 +14,12 @@ import scala.util.control.NonFatal
 
 /**
   * Strategy to apply when an action fails
-  * @param config the config which allows to define a cats-retry policy
-  * @param retryWhen to decide whether a given error is worth retrying
-  * @param onError an error handler
+  * @param config
+  *   the config which allows to define a cats-retry policy
+  * @param retryWhen
+  *   to decide whether a given error is worth retrying
+  * @param onError
+  *   an error handler
   */
 final case class RetryStrategy[E](
     config: RetryStrategyConfig,
@@ -49,17 +52,22 @@ object RetryStrategy {
 
   /**
     * Fail without retry
-    * @param onError   what action to perform on error
+    * @param onError
+    *   what action to perform on error
     */
   def alwaysGiveUp[E](onError: (E, RetryDetails) => IO[E, Unit]): RetryStrategy[E] =
     RetryStrategy(RetryStrategyConfig.AlwaysGiveUp, _ => false, onError)
 
   /**
     * Retry at a constant interval
-    * @param constant the interval before a retry will be attempted
-    * @param maxRetries the maximum number of retries
-    * @param retryWhen the errors we are willing to retry for
-    * @param onError   what action to perform on error
+    * @param constant
+    *   the interval before a retry will be attempted
+    * @param maxRetries
+    *   the maximum number of retries
+    * @param retryWhen
+    *   the errors we are willing to retry for
+    * @param onError
+    *   what action to perform on error
     */
   def constant[E](
       constant: FiniteDuration,
@@ -74,12 +82,14 @@ object RetryStrategy {
     )
 
   /**
-    * Retry strategy which retries on all non fatal errors and just outputs a log
-    * when an error occurs
+    * Retry strategy which retries on all non fatal errors and just outputs a log when an error occurs
     *
-    * @param config the retry configuration
-    * @param logger the logger to use
-    * @param action the action that was performed
+    * @param config
+    *   the retry configuration
+    * @param logger
+    *   the logger to use
+    * @param action
+    *   the action that was performed
     */
   def retryOnNonFatal(config: RetryStrategyConfig, logger: Logger, action: String): RetryStrategy[Throwable] =
     RetryStrategy(
@@ -109,8 +119,10 @@ object RetryStrategyConfig {
 
   /**
     * Retry at a constant interval
-    * @param delay the interval before a retry will be attempted
-    * @param maxRetries the maximum number of retries
+    * @param delay
+    *   the interval before a retry will be attempted
+    * @param maxRetries
+    *   the maximum number of retries
     */
   final case class ConstantStrategyConfig(delay: FiniteDuration, maxRetries: Int) extends RetryStrategyConfig {
     override def toPolicy[E]: RetryPolicy[IO[E, *]] =
@@ -119,7 +131,8 @@ object RetryStrategyConfig {
 
   /**
     * Retry exactly once
-    * @param delay the interval before the retry will be attempted
+    * @param delay
+    *   the interval before the retry will be attempted
     */
   final case class OnceStrategyConfig(delay: FiniteDuration) extends RetryStrategyConfig {
     override def toPolicy[E]: RetryPolicy[IO[E, *]] =
@@ -128,9 +141,12 @@ object RetryStrategyConfig {
 
   /**
     * Retry with an exponential delay after a failure
-    * @param initialDelay the initial delay after the first failure
-    * @param maxDelay     the maximum delay to not exceed
-    * @param maxRetries   the maximum number of retries
+    * @param initialDelay
+    *   the initial delay after the first failure
+    * @param maxDelay
+    *   the maximum delay to not exceed
+    * @param maxRetries
+    *   the maximum number of retries
     */
   final case class ExponentialStrategyConfig(initialDelay: FiniteDuration, maxDelay: FiniteDuration, maxRetries: Int)
       extends RetryStrategyConfig {

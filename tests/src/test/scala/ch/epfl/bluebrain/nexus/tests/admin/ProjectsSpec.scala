@@ -5,7 +5,6 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.ProjectsTag
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity}
 import io.circe.Json
 import monix.execution.Scheduler.Implicits.global
@@ -35,7 +34,7 @@ class ProjectsSpec extends BaseSpec {
     val projId = genId()
     val id     = s"$orgId/$projId"
 
-    "fail to create project if the permissions are missing" taggedAs ProjectsTag in {
+    "fail to create project if the permissions are missing" in {
       adminDsl.createProject(
         orgId,
         projId,
@@ -45,7 +44,7 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "add organizations/create permissions for user" taggedAs ProjectsTag in {
+    "add organizations/create permissions for user" in {
       aclDsl.addPermissions(
         "/",
         Bojack,
@@ -53,7 +52,7 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "create organization" taggedAs ProjectsTag in {
+    "create organization" in {
       adminDsl.createOrganization(
         orgId,
         "Description",
@@ -73,13 +72,13 @@ class ProjectsSpec extends BaseSpec {
       vocab = vocab
     )
 
-    "return not found when fetching a non existing project" taggedAs ProjectsTag in {
+    "return not found when fetching a non existing project" in {
       deltaClient.get[Json](s"/projects/$orgId/${genId()}", Bojack) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
       }
     }
 
-    "Clean permissions and add projects/create permissions" taggedAs ProjectsTag in {
+    "Clean permissions and add projects/create permissions" in {
       for {
         _ <- aclDsl.cleanAcls(Bojack)
         _ <- aclDsl.addPermissions(
@@ -90,14 +89,14 @@ class ProjectsSpec extends BaseSpec {
       } yield succeed
     }
 
-    "fail to create if the HTTP verb used is POST" taggedAs ProjectsTag in {
+    "fail to create if the HTTP verb used is POST" in {
       deltaClient.post[Json](s"/projects/$id", Json.obj(), Bojack) { (json, response) =>
         response.status shouldEqual MethodNotAllowed.statusCode
         json shouldEqual MethodNotAllowed.json
       }
     }
 
-    "create project" taggedAs ProjectsTag in {
+    "create project" in {
       adminDsl.createProject(
         orgId,
         projId,
@@ -106,7 +105,7 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "fail to create if project already exists" taggedAs ProjectsTag in {
+    "fail to create if project already exists" in {
       val conflict = ExpectedResponse(
         StatusCodes.Conflict,
         jsonContentOf(
@@ -126,11 +125,11 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "ensure that necessary permissions have been set" taggedAs ProjectsTag in {
+    "ensure that necessary permissions have been set" in {
       aclDsl.checkAdminAcls(s"/$id", Bojack)
     }
 
-    "fetch the project" taggedAs ProjectsTag in {
+    "fetch the project" in {
       deltaClient.get[Json](s"/projects/$id", Bojack) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         admin.validateProject(json, createJson)
@@ -138,7 +137,7 @@ class ProjectsSpec extends BaseSpec {
       }
     }
 
-    "fetch project by UUID" taggedAs ProjectsTag in {
+    "fetch project by UUID" in {
       deltaClient.get[Json](s"/orgs/$orgId", Identity.ServiceAccount) { (orgJson, _) =>
         runTask {
           val orgUuid = _uuid.getOption(orgJson).value
@@ -155,13 +154,13 @@ class ProjectsSpec extends BaseSpec {
       }
     }
 
-    "return not found when fetching a non existing revision of a project" taggedAs ProjectsTag in {
+    "return not found when fetching a non existing revision of a project" in {
       deltaClient.get[Json](s"/projects/$id?rev=3", Bojack) { (_, response) =>
         response.status shouldEqual StatusCodes.NotFound
       }
     }
 
-    "update project and fetch revisions" taggedAs ProjectsTag in {
+    "update project and fetch revisions" in {
       val descRev2       = s"$description update 1"
       val baseRev2       = s"${config.deltaUri.toString()}/${genString()}/"
       val vocabRev2      = s"${config.deltaUri.toString()}/${genString()}/"
@@ -224,14 +223,14 @@ class ProjectsSpec extends BaseSpec {
       } yield succeed
     }
 
-    "reject update  when wrong revision is provided" taggedAs ProjectsTag in {
+    "reject update  when wrong revision is provided" in {
       deltaClient.put[Json](s"/projects/$id?rev=4", createJson, Bojack) { (json, response) =>
         response.status shouldEqual ProjectConflict.statusCode
         json shouldEqual ProjectConflict.json
       }
     }
 
-    "deprecate project" taggedAs ProjectsTag in {
+    "deprecate project" in {
       for {
         _ <- deltaClient.delete[Json](s"/projects/$id?rev=3", Bojack) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
@@ -258,14 +257,14 @@ class ProjectsSpec extends BaseSpec {
 
   "listing projects" should {
 
-    "return empty list if no acl is set" taggedAs ProjectsTag in {
+    "return empty list if no acl is set" in {
       deltaClient.get[Json]("/projects", PrincessCarolyn) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json shouldEqual jsonContentOf("/admin/projects/empty-project-list.json")
       }
     }
 
-    "add projects/create permissions for user 2" taggedAs ProjectsTag in {
+    "add projects/create permissions for user 2" in {
       aclDsl.addPermission(
         s"/${genId()}",
         PrincessCarolyn,
@@ -273,14 +272,14 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "return an empty list if no project is accessible" taggedAs ProjectsTag in {
+    "return an empty list if no project is accessible" in {
       deltaClient.get[Json]("/projects", PrincessCarolyn) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         json shouldEqual jsonContentOf("/admin/projects/empty-project-list.json")
       }
     }
 
-    "add projects/create permissions for user" taggedAs ProjectsTag in {
+    "add projects/create permissions for user" in {
       aclDsl.addPermissions(
         "/",
         Bojack,
@@ -314,7 +313,7 @@ class ProjectsSpec extends BaseSpec {
       )
     }
 
-    "create projects" taggedAs ProjectsTag in {
+    "create projects" in {
       for {
         _ <- adminDsl.createOrganization(
                orgId,
@@ -338,7 +337,7 @@ class ProjectsSpec extends BaseSpec {
       } yield succeed
     }
 
-    "list projects" taggedAs ProjectsTag in {
+    "list projects" in {
       val expectedResults = Json.obj(
         "@context" -> Json.arr(
           Json.fromString("https://bluebrain.github.io/nexus/contexts/metadata.json"),
@@ -355,7 +354,7 @@ class ProjectsSpec extends BaseSpec {
       }
     }
 
-    "list projects which user has access to" taggedAs ProjectsTag in {
+    "list projects which user has access to" in {
       val projectsToList  = projectIds.slice(0, 2)
       val expectedResults = Json.obj(
         "@context" -> Json.arr(

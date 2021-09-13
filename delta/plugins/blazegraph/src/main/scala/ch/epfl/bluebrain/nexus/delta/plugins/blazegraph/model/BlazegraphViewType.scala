@@ -10,12 +10,14 @@ import io.circe.{Decoder, Encoder, Json}
 sealed trait BlazegraphViewType extends Product with Serializable {
 
   /**
-    * @return the type id
+    * @return
+    *   the type id
     */
   def tpe: Iri
 
   /**
-    * @return RDF types of the view
+    * @return
+    *   RDF types of the view
     */
   def types: Set[Iri] = Set(tpe, nxv + "View")
 

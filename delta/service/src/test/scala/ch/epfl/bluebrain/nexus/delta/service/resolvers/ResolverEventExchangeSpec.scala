@@ -8,11 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverType, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -60,7 +63,8 @@ class ResolverEventExchangeSpec
   private val resolverContextResolution: ResolverContextResolution =
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
-  private val resolvers: Resolvers = ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit).accepted
+  private val resolvers: Resolvers =
+    ResolversDummy(orgs, projs, resolverContextResolution, (_, _) => IO.unit).accepted
 
   "A ResolverEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
@@ -88,6 +92,22 @@ class ResolverEventExchangeSpec
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        deprecatedEvent.tpe.types,
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

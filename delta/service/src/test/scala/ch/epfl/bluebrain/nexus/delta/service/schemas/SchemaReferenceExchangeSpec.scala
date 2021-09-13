@@ -67,7 +67,13 @@ class SchemaReferenceExchangeSpec
     new ResolverContextResolution(res, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   private val schemas: Schemas =
-    SchemasDummy(orgs, projs, schemaImports, resolverContextResolution, (_, _) => IO.unit).accepted
+    SchemasDummy(
+      orgs,
+      projs,
+      schemaImports,
+      resolverContextResolution,
+      (_, _) => IO.unit
+    ).accepted
 
   "A SchemaReferenceExchange" should {
     val tag     = TagLabel.unsafe("tag")

@@ -11,8 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -37,7 +40,8 @@ class BlazegraphViewEventExchangeSpec
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  private val views: BlazegraphViews =
+    BlazegraphViewsSetup.init(org, project, permissions.query)
 
   "A BlazegraphViewEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
@@ -61,6 +65,22 @@ class BlazegraphViewEventExchangeSpec
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual Metadata(Some(uuid))
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        deprecatedEvent.tpe.types,
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

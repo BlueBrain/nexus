@@ -22,7 +22,8 @@ class ResourcesDummySpec
   override def create: UIO[Resources] =
     for {
       (orgs, projs) <- projectSetup
-      r             <- ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution)
+      r             <-
+        ResourcesDummy(orgs, projs, resourceResolution, (_, _) => IO.unit, resolverContextResolution)
     } yield r
 
 }

@@ -1,0 +1,99 @@
+prefix prov: <http://www.w3.org/ns/prov#>
+prefix nsg: <https://neuroshapes.org/>
+prefix skos: <http://www.w3.org/2004/02/skos/core#>
+prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+prefix schema: <http://schema.org/>
+prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+prefix field: <https://bluebrain.github.io/nexus/field/>
+
+
+CONSTRUCT {
+  {resource_id}     a                       ?type ;
+                    schema:name             ?name ;
+                    field:description       ?description ;
+                    field:brainRegion       ?brainRegionBN ;
+                    field:project           ?projectBN ;
+                    field:subjectSpecies    ?speciesBN ;
+                    field:contributors      ?personBN ;
+                    field:organizations     ?orgBN ;
+                    field:license           ?licenseBN ;
+                    field:createdBy         ?createdBy ;
+                    nxv:self                ?self .
+
+  ?projectBN        field:identifier        ?projectId ;
+                    rdfs:label              ?projectLabel .
+
+  ?licenseBN        field:identifier        ?licenseId ;
+                    rdfs:label              ?licenseLabel .
+
+  ?brainRegionBN    field:identifier        ?brainRegionId ;
+                    rdfs:label              ?brainRegionLabel .
+
+  ?speciesBN        field:identifier        ?speciesId ;
+                    rdfs:label              ?speciesLabel .
+
+  ?personBN         field:identifier        ?personId ;
+                    rdfs:label              ?personName .
+
+  ?orgBN            field:identifier        ?orgId ;
+                    rdfs:label              ?organizationName .
+
+  ?mTypeBN          field:identifier        ?mTypeId ;
+                    rdfs:label              ?mTypeLabel
+} WHERE {
+  {resource_id} nxv:createdAt               ?createdAt;
+                nxv:createdBy               ?createdBy;
+                nxv:self                    ?self;
+                a                           ?type ;
+                nxv:project                 ?projectId .
+  ?projectId    nxv:organizationLabel       ?orgLabel;
+                nxv:label                   ?projLabel.
+  BIND (CONCAT(STR(?orgLabel),STR("/"),STR(?projLabel)) as ?projectLabel) .
+  BIND(BNODE() AS ?projectBN) .
+
+  OPTIONAL {  {resource_id} schema:description   ?description } .
+  OPTIONAL {  {resource_id} schema:name          ?name } .
+  OPTIONAL {  {resource_id} rdfs:label           ?name } .
+  OPTIONAL {  {resource_id} skos:prefLabel       ?name } .
+  OPTIONAL {
+    {resource_id} schema:license        ?licenseId .
+    BIND(BNODE() AS ?licenseBN) .
+    OPTIONAL { ?licenseId rdfs:label    ?licenseLabel . }
+  } .
+
+  OPTIONAL {
+    {resource_id}  nsg:brainLocation / nsg:brainRegion ?brainRegionId .
+    BIND(BNODE() AS ?brainRegionBN) .
+    OPTIONAL { ?brainRegionId rdfs:label ?brainRegionLabel }
+  } .
+
+  OPTIONAL {
+    {resource_id}  nsg:subject / nsg:species ?speciesId .
+    BIND(BNODE() AS ?speciesBN) .
+    OPTIONAL { ?speciesId rdfs:label ?speciesLabel }
+  }  .
+
+  OPTIONAL {
+    {resource_id}   nsg:contribution / prov:agent     ?personId .
+    ?personId       a                                 schema:Person .
+    BIND(BNODE() AS ?personBN) .
+    OPTIONAL { ?personId schema:givenName   ?givenName } .
+    OPTIONAL { ?personId schema:familyName  ?familyName } .
+    BIND(IF(BOUND(?givenName) && BOUND(?familyName), CONCAT(STR(?givenName)," ", STR(?familyName)), IF(BOUND(?givenName), ?givenName, ?familyName)) AS ?personName)
+  } .
+
+  OPTIONAL {
+    {resource_id}   nsg:contribution / prov:agent     ?orgId .
+    ?orgId          a                                 schema:Organization .
+    BIND(BNODE() AS ?orgBN) .
+    OPTIONAL { ?orgId schema:name ?organizationName }
+  } .
+
+  OPTIONAL {
+    {resource_id}   nsg:annotation / nsg:hasBody     ?mTypeId .
+    ?mTypeId        a                                nsg:MType .
+    BIND(BNODE() AS ?mTypeBN) .
+    OPTIONAL { ?mTypeId rdfs:label ?mTypeLabel }
+  }
+}

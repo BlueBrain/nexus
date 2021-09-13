@@ -11,9 +11,11 @@ import io.circe.{Decoder, Encoder}
 import scala.util.matching.Regex
 
 /**
-  * A safe representation of a name or label that can be positioned as a segment in an Uri without the need to escape it.
+  * A safe representation of a name or label that can be positioned as a segment in an Uri without the need to escape
+  * it.
   *
-  * @param value the string representation of the label
+  * @param value
+  *   the string representation of the label
   */
 final case class Label private (value: String) {
   override def toString: String = value
@@ -28,7 +30,8 @@ object Label {
   /**
     * Attempts to construct a label from its string representation.
     *
-    * @param value the string representation of the Label
+    * @param value
+    *   the string representation of the Label
     */
   def apply(value: String): Either[FormatError, Label] =
     value match {
@@ -39,17 +42,18 @@ object Label {
   /**
     * Constructs a Label from its string representation without validation in terms of allowed characters or size.
     *
-    * @param value the string representation of the label
+    * @param value
+    *   the string representation of the label
     */
   def unsafe(value: String): Label =
     new Label(value)
 
   /**
-    * Attempts to construct a label from its string representation.
-    * It will remove all invalid characters and truncate to max length of 64 characters.
-    * It will return [[FormatError]] when `value` contains only invalid characters.
+    * Attempts to construct a label from its string representation. It will remove all invalid characters and truncate
+    * to max length of 64 characters. It will return [[FormatError]] when `value` contains only invalid characters.
     *
-    * @param value  the string representation of the Label
+    * @param value
+    *   the string representation of the Label
     */
   def sanitized(value: String): Either[FormatError, Label] =
     apply(value.replaceAll(s"[^$allowedChars]", "").take(64))

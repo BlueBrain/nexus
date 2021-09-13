@@ -12,8 +12,10 @@ trait RelationshipResolution {
   /**
     * Attempts to resolve a relationship by its resource ''id'' on the passed ''projectRef''.
     *
-    * @param projectRef the project where the project will be looked up
-    * @param id         the id of the resource
+    * @param projectRef
+    *   the project where the project will be looked up
+    * @param id
+    *   the id of the resource
     */
   def apply(projectRef: ProjectRef, id: Iri): UIO[Option[Relationship]]
 }

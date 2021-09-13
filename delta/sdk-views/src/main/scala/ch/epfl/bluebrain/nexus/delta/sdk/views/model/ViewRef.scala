@@ -10,8 +10,10 @@ import io.circe.generic.semiauto.deriveCodec
 /**
   * View reference.
   *
-  * @param project  the project to which the view belongs
-  * @param viewId   the view id
+  * @param project
+  *   the project to which the view belongs
+  * @param viewId
+  *   the view id
   */
 final case class ViewRef(project: ProjectRef, viewId: Iri)
 

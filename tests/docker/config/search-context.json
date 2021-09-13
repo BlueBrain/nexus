@@ -1,0 +1,27 @@
+{
+  "@vocab": "https://bluebrain.github.io/nexus/field/",
+  "identifier": {
+    "@type": "@id"
+  },
+  "label": "http://www.w3.org/2000/01/rdf-schema#label",
+  "name": "http://schema.org/name",
+  "createdAt": {
+    "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+  },
+  "contributors": {
+    "@container": "@set"
+  },
+  "organizations": {
+    "@container": "@set"
+  },
+  "project": {
+    "@type": "@id"
+  },
+  "createdBy": {
+    "@type": "@id"
+  },
+  "_self": {
+    "@type": "@id",
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/self"
+  }
+}

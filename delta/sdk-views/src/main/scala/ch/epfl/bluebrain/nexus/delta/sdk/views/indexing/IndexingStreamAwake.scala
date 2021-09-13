@@ -30,8 +30,8 @@ object IndexingStreamAwake {
   private[indexing] val projectionId: CacheProjectionId = CacheProjectionId("IndexingStreamAwake")
 
   /**
-    * Construct a [[IndexingStreamAwake]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the latest event instant for each project.
+    * Construct a [[IndexingStreamAwake]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the latest event instant for each project.
     */
   def apply(
       config: ProjectsConfig,

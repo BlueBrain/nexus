@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture.rcr
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -12,10 +14,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
@@ -31,7 +33,9 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
     cacheIndexing,
     externalIndexing,
     10,
-    1.minute
+    1.minute,
+    Refresh.False,
+    2000
   )
 
   def init(
@@ -58,9 +62,11 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews = {
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
+      deferred   <- Deferred[Task, ElasticSearchViews]
+      cache      <- ElasticSearchViews.cache(config)
+      agg        <- ElasticSearchViews.aggregate(config, perms, (_, _) => IO.unit, deferred, ResourceIdCheck.alwaysAvailable)
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <-
-        ElasticSearchViews(config, eventLog, resolverCtx, orgs, projects, perms, (_, _) => UIO.unit, (_, _) => UIO.unit)
+      views      <- ElasticSearchViews(deferred, config, eventLog, resolverCtx, cache, agg, orgs, projects)
     } yield views
   }.accepted
 }

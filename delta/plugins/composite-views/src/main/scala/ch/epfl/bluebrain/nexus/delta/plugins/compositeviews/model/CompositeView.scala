@@ -27,14 +27,22 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Representation of a composite view.
   *
-  * @param id               the id of the project
-  * @param project          the project to which this view belongs
-  * @param sources          the collection of sources for the view
-  * @param projections      the collection of projections for the view
-  * @param rebuildStrategy  the rebuild strategy of the view
-  * @param uuid             the uuid of the view
-  * @param tags             the tag -> rev mapping
-  * @param source           the original json document provided at creation or update
+  * @param id
+  *   the id of the project
+  * @param project
+  *   the project to which this view belongs
+  * @param sources
+  *   the collection of sources for the view
+  * @param projections
+  *   the collection of projections for the view
+  * @param rebuildStrategy
+  *   the rebuild strategy of the view
+  * @param uuid
+  *   the uuid of the view
+  * @param tags
+  *   the tag -> rev mapping
+  * @param source
+  *   the original json document provided at creation or update
   */
 final case class CompositeView(
     id: Iri,
@@ -48,7 +56,8 @@ final case class CompositeView(
 ) {
 
   /**
-    * @return [[CompositeView]] metadata
+    * @return
+    *   [[CompositeView]] metadata
     */
   def metadata: Metadata = Metadata(uuid)
 }

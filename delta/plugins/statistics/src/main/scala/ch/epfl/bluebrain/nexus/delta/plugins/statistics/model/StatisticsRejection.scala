@@ -17,7 +17,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of statistics rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class StatisticsRejection(val reason: String) extends Product with Serializable
 
@@ -33,7 +34,8 @@ object StatisticsRejection {
     * Rejection returned when attempting to interact with statistics while providing a property type that cannot be
     * resolved to an Iri.
     *
-    * @param id the property type
+    * @param id
+    *   the property type
     */
   final case class InvalidPropertyType(id: String)
       extends StatisticsRejection(s"Property type '$id' cannot be expanded to an Iri.")

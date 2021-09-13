@@ -24,13 +24,10 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
   import StreamOpsSpec._
   import monix.execution.Scheduler.Implicits.global
 
-  private val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
-
   val projection = new InMemoryProjection[String]("", Projection.stackTraceAsString, TrieMap.empty, TrieMap.empty)
 
   /**
-    * Generate a stream of messages with numberOfEvents persistenceId
-    * each with numberOfRevisions
+    * Generate a stream of messages with numberOfEvents persistenceId each with numberOfRevisions
     *
     * @return
     */
@@ -318,28 +315,64 @@ class StreamOpsSpec extends AnyWordSpecLike with IOFixedClock with IOValues with
   }
 
   "Persisting progress" should {
-    "reporting correctly progress and errors during the given projection" in {
+
+    val resultProgress = ProjectionProgress.NoProgress("")
+
+    val stream = Stream
+      .emits(
+        (1, 0, 0, "first").success ::
+          (2, 0, 1).discarded ::
+          (3, 1, 0, "second").success.addWarning(Warning("!!!!")) ::
+          (4, 0, 2, "failed").failed ::
+          (5, 1, 1, "second new").success ::
+          (6, 2, 0, "third").failed ::
+          Nil
+      )
+      .covary[Task]
+
+    "reporting correctly progress and errors during the given projection for a plain stream" in {
+      val projectionId: ViewProjectionId = ViewProjectionId("myProjection")
       // Results to be asserted later
-      val resultProgress = ProjectionProgress.NoProgress("")
-
-      val stream = Stream
-        .emits(
-          (1, 0, 0, "first").success ::
-            (2, 0, 1).discarded ::
-            (3, 1, 0, "second").success.addWarning(Warning("!!!!")) ::
-            (4, 0, 2, "failed").failed ::
-            (5, 1, 1, "second new").success ::
-            (6, 2, 0, "third").failed ::
-            Nil
-        )
-        .covary[Task]
-
       stream
         .persistProgress(
           resultProgress,
           projectionId,
           projection,
           SaveProgressConfig(3, 5.seconds)
+        )
+        .compile
+        .lastOrError
+        .runSyncUnsafe()
+        .value shouldEqual "second new"
+
+      val errors = projection
+        .errors(projectionId)
+        .compile
+        .toList
+        .runSyncUnsafe()
+
+      errors.count(_.severity == Severity.Failure) shouldBe 2
+      errors.count(_.severity == Severity.Warning) shouldBe 1
+      projection.progress(projectionId).accepted shouldBe ProjectionProgress(
+        offset = Sequence(6L),
+        timestamp = now.plusSeconds(6),
+        processed = 6L,
+        discarded = 1L,
+        warnings = 1L,
+        failed = 2L,
+        "second new"
+      )
+    }
+
+    "reporting correctly progress and errors during the given projection for a grouped stream" in {
+      val projectionId: ViewProjectionId = ViewProjectionId("groupedProjection")
+      // Results to be asserted later
+      stream
+        .groupWithin(3, 5.seconds)
+        .persistProgress(
+          resultProgress,
+          projectionId,
+          projection
         )
         .compile
         .lastOrError

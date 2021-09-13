@@ -8,7 +8,8 @@ import io.circe.Json
 sealed trait Pagination {
 
   /**
-    * @return size the maximum number of results per page
+    * @return
+    *   size the maximum number of results per page
     */
   def size: Int
 }
@@ -28,17 +29,21 @@ object Pagination {
   /**
     * Request pagination data type using `from`.
     *
-    * @param from the start offset
-    * @param size the maximum number of results per page
+    * @param from
+    *   the start offset
+    * @param size
+    *   the maximum number of results per page
     */
   final case class FromPagination(from: Int, size: Int) extends Pagination
 
   /**
     * Request pagination data type using `search_after`.
     *
-    * @param searchAfter  [[Json]] to use as ElasticSearch `search_after` field. Should be directly taken from `sort` field
-    *                     in the search results.
-    * @param size         the maximum number of results per page
+    * @param searchAfter
+    *   [[Json]] to use as ElasticSearch `search_after` field. Should be directly taken from `sort` field in the search
+    *   results.
+    * @param size
+    *   the maximum number of results per page
     */
   final case class SearchAfterPagination(searchAfter: Json, size: Int) extends Pagination
 

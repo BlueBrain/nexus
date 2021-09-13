@@ -10,8 +10,8 @@ import monix.bio.{IO, UIO}
 /**
   * Contract definition for registering and consuming the ability to retrieve resources in a common JSON-LD format.
   *
-  * Plugins can provide implementations for custom resource types such that those resources can be handled in an
-  * uniform way.
+  * Plugins can provide implementations for custom resource types such that those resources can be handled in an uniform
+  * way.
   *
   * Examples of use-cases would be: the ability to register resources defined by plugins (e.g. views)
   */
@@ -25,9 +25,12 @@ trait ReferenceExchange {
   /**
     * Exchange a reference for the resource in common formats.
     *
-    * @param project   the resource parent project
-    * @param reference the resource reference
-    * @return some value if the reference is defined for this instance, none otherwise
+    * @param project
+    *   the resource parent project
+    * @param reference
+    *   the resource reference
+    * @return
+    *   some value if the reference is defined for this instance, none otherwise
     */
   def fetch(project: ProjectRef, reference: ResourceRef): UIO[Option[ReferenceExchangeValue[A]]]
 }
@@ -35,14 +38,18 @@ trait ReferenceExchange {
 object ReferenceExchange {
 
   /**
-    * A successful result of a [[ReferenceExchange]] presenting means for retrieving the resource in one of the
-    * common formats. An instance of this value asserts the existence of the resource (toResource and toSource are
-    * strict values).
+    * A successful result of a [[ReferenceExchange]] presenting means for retrieving the resource in one of the common
+    * formats. An instance of this value asserts the existence of the resource (toResource and toSource are strict
+    * values).
     *
-    * @param resource returns the resource value with its metadata
-    * @param source   returns the recorded source value
-    * @param encoder    returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD format
-    * @tparam A the value type of resource
+    * @param resource
+    *   returns the resource value with its metadata
+    * @param source
+    *   returns the recorded source value
+    * @param encoder
+    *   returns the JsonLdEncoder for the type [[A]] for transforming the resource in a desired JSONLD format
+    * @tparam A
+    *   the value type of resource
     */
   final case class ReferenceExchangeValue[A](resource: ResourceF[A], source: Json, encoder: JsonLdEncoder[A]) {
     def jsonLdValue(implicit base: BaseUri): JsonLdValue = {

@@ -50,7 +50,8 @@ class ElasticSearchScopeInitializationSpec
   private val settings          = defaultElasticsearchSettings.accepted
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(org, project, queryPermissions)
+  private val views: ElasticSearchViews =
+    ElasticSearchViewsSetup.init(org, project, queryPermissions)
 
   "An ElasticSearchScopeInitialization" should {
     val init = new ElasticSearchScopeInitialization(views, sa)
