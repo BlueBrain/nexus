@@ -20,30 +20,36 @@ import java.time.Instant
 sealed trait SchemaState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status
+    * @return
+    *   the current deprecation status
     */
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that schemas conforms to
+    * @return
+    *   the schema reference that schemas conforms to
     */
   final def schema: ResourceRef = Latest(schemas.shacl)
 
   /**
-    * @return the collection of known types of schema resources
+    * @return
+    *   the collection of known types of schema resources
     */
   final def types: Set[Iri] = Set(nxv.Schema)
 
   /**
     * Converts the state into a schema representation.
     *
-    * @param mappings the Api mappings to be applied in order to shorten segment ids
-    * @param base     the project base to be applied in order to shorten segment ids
+    * @param mappings
+    *   the Api mappings to be applied in order to shorten segment ids
+    * @param base
+    *   the project base to be applied in order to shorten segment ids
     */
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[SchemaResource]
 }
@@ -70,20 +76,34 @@ object SchemaState {
   /**
     * A schema active state.
     *
-    * @param id         the schema identifier
-    * @param project    the project where the schema belongs
-    * @param source     the representation of the schema as posted by the subject
-    * @param compacted  the compacted JSON-LD representation of the schema
-    * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
-    * @param shapes     the shapes of the schema
-    * @param ontologies the RDF Graph representation of the schema ontologies
-    * @param rev        the organization revision
-    * @param deprecated the deprecation status of the organization
-    * @param tags       the collection of tag aliases
-    * @param createdAt  the instant when the organization was created
-    * @param createdBy  the identity that created the organization
-    * @param updatedAt  the instant when the organization was last updated
-    * @param updatedBy  the identity that last updated the organization
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param source
+    *   the representation of the schema as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the schema
+    * @param expanded
+    *   the expanded JSON-LD representation of the schema with the imports resolutions applied
+    * @param shapes
+    *   the shapes of the schema
+    * @param ontologies
+    *   the RDF Graph representation of the schema ontologies
+    * @param rev
+    *   the organization revision
+    * @param deprecated
+    *   the deprecation status of the organization
+    * @param tags
+    *   the collection of tag aliases
+    * @param createdAt
+    *   the instant when the organization was created
+    * @param createdBy
+    *   the identity that created the organization
+    * @param updatedAt
+    *   the instant when the organization was last updated
+    * @param updatedBy
+    *   the identity that last updated the organization
     */
   final case class Current(
       id: Iri,

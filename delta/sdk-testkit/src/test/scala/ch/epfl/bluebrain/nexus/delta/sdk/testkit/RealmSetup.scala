@@ -24,7 +24,7 @@ object RealmSetup {
                     realms
                       .fetch(label)
                       .onErrorFallbackTo {
-                        realms.create(label, Name.unsafe(label.value), s"http://localhost/$label/", None)
+                        realms.create(label, Name.unsafe(label.value), s"http://localhost/$label/", None, None)
                       }
                       .void
                   }

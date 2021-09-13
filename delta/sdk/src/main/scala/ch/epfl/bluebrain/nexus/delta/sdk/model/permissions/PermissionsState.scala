@@ -18,29 +18,34 @@ import java.time.Instant
 sealed trait PermissionsState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status (always false for permissions)
+    * @return
+    *   the current deprecation status (always false for permissions)
     */
   final def deprecated: Boolean = false
 
   /**
-    * @return the schema reference that permissions conforms to
+    * @return
+    *   the schema reference that permissions conforms to
     */
   final def schema: ResourceRef = Latest(schemas.permissions)
 
   /**
-    * @return the collection of known types of permissions resources
+    * @return
+    *   the collection of known types of permissions resources
     */
   final def types: Set[Iri] = Set(nxv.Permissions)
 
   /**
     * Converts the state into a resource representation.
     *
-    * @param minimum minimum set of permissions (static configuration)
+    * @param minimum
+    *   minimum set of permissions (static configuration)
     */
   def toResource(minimum: Set[Permission]): PermissionsResource
 }
@@ -78,12 +83,18 @@ object PermissionsState {
   /**
     * The "current" state for the permission set, available once at least one event was emitted.
     *
-    * @param rev         the current state revision
-    * @param permissions the permission set
-    * @param createdAt   the instant when the resource was created
-    * @param createdBy   the subject that created the resource
-    * @param updatedAt   the instant when the resource was last updated
-    * @param updatedBy   the subject that last updated the resource
+    * @param rev
+    *   the current state revision
+    * @param permissions
+    *   the permission set
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the subject that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the subject that last updated the resource
     */
   final case class Current(
       rev: Long,

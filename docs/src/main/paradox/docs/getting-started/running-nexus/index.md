@@ -619,7 +619,7 @@ The decision to go with single node deployments or clustered deployments can be 
 
 The Nexus distribution is made up of docker images which can be run on any host operating system and each of the "off
 the shelf" products also offer docker as a deployment option. We would generally recommend using a container
-orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new }, @link:[OpenShift](https://www.openshift.com/){ open=new } or
+orchestration solution like @link:[Kubernetes](https://kubernetes.io/){ open=new }, @link:[OpenShift](https://www.redhat.com/en/technologies/cloud-computing/openshift){ open=new } or
 @link:[Docker Swarm](https://docs.docker.com/engine/swarm/){ open=new } as they offer good management capabilities, discovery, load
 balancing and self-healing. They also accommodate changes in hardware allocations for the deployments, changes that can
 occur due to evolving usage patterns, software updates etc. Currently the biggest Nexus deployment is at EPFL within
@@ -632,7 +632,7 @@ take a look at the @ref:[benchmarks section](../../delta/benchmarks/v1.4.2.md) t
 of throughput with various hardware configurations. When the usage profiles are unknown a couple of rules of thumb
 should narrow the scope:
 
-1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/){ open=new },
+1.  Nexus uses a collection of data stores (@link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new },
     @link:[ElasticSearch](https://www.elastic.co/elasticsearch/){ open=new }, 
     @link:[BlazeGraph](https://blazegraph.com/){ open=new }) which depend performance wise to the underlying disk 
     access, so:
@@ -655,7 +655,7 @@ should narrow the scope:
 
 ### Cassandra
 
-Nexus uses @link:[Cassandra](https://cassandra.apache.org/){ open=new } as its _primary store_ as it scales well in terms of reads with the
+Nexus uses @link:[Cassandra](https://cassandra.apache.org/_/index.html){ open=new } as its _primary store_ as it scales well in terms of reads with the
 number of nodes in the cluster. It offers data replication out of the box, which allows the system to continue to be
 available in case of node failures or network partitions.
 

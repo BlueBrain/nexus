@@ -15,16 +15,18 @@ class ProjectCountsCollectionSpec extends AnyWordSpecLike with Matchers with Eit
   "ProjectCounts values" should {
     val ref1       = ProjectRef.unsafe("org1", "proj1")
     val ref2       = ProjectRef.unsafe("org2", "proj2")
-    val initialMap = Map(ref1 -> ProjectCount(3L, now))
+    val initialMap = Map(ref1 -> ProjectCount(3, 3, now))
     val initial    = ProjectCountsCollection(initialMap)
 
     "be incremented" in {
-      initial.increment(ref2, nowMinus3) shouldEqual
-        ProjectCountsCollection(initialMap + (ref2 -> ProjectCount(1L, nowMinus3)))
-      initial.increment(ref1, nowPlus3) shouldEqual
-        ProjectCountsCollection(Map(ref1 -> ProjectCount(4L, nowPlus3)))
-      initial.increment(ref1, nowMinus3) shouldEqual
-        ProjectCountsCollection(Map(ref1 -> ProjectCount(4L, now)))
+      initial.increment(ref2, 1, nowMinus3) shouldEqual
+        ProjectCountsCollection(initialMap + (ref2 -> ProjectCount(1, 1, nowMinus3)))
+
+      initial.increment(ref1, 2, nowPlus3) shouldEqual
+        ProjectCountsCollection(Map(ref1 -> ProjectCount(4, 3, nowPlus3)))
+
+      initial.increment(ref1, 1, nowMinus3) shouldEqual
+        ProjectCountsCollection(Map(ref1 -> ProjectCount(4, 4, now)))
     }
 
     "be converted to json and back" in {

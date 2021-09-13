@@ -26,12 +26,12 @@ import monix.bio.{IO, Task}
 trait Statistics {
 
   /**
-    * The statistics for the relationships between different types for the passed ''projectRef''
+    * The relationship statistics between different types for the passed ''projectRef''
     */
   def relationships(projectRef: ProjectRef): IO[StatisticsRejection, StatisticsGraph]
 
   /**
-    * The statistics for the properties of the passed ''project'' and type ''tpe''.
+    * The properties statistics of the passed ''project'' and type ''tpe''.
     */
   def properties(projectRef: ProjectRef, tpe: IdSegment): IO[StatisticsRejection, PropertiesStatistics]
 
@@ -68,7 +68,7 @@ object Statistics {
           _     <- projects.fetchProject[StatisticsRejection](projectRef)
           query <- relationshipsAggQuery
           stats <- client
-                     .searchAs[StatisticsGraph](QueryBuilder(query), Set(idx(projectRef).value), Query.Empty)
+                     .searchAs[StatisticsGraph](QueryBuilder(query), idx(projectRef).value, Query.Empty)
                      .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         } yield stats
 
@@ -77,7 +77,7 @@ object Statistics {
         def search(tpe: Iri, idx: IndexLabel, query: JsonObject) = {
           implicit val d: Decoder[PropertiesStatistics] = propertiesDecoderFromEsAggregations(tpe)
           client
-            .searchAs[PropertiesStatistics](QueryBuilder(query).withTotalHits(true), Set(idx.value), Query.Empty)
+            .searchAs[PropertiesStatistics](QueryBuilder(query).withTotalHits(true), idx.value, Query.Empty)
             .mapError(err => WrappedElasticSearchRejection(WrappedElasticSearchClientError(err)))
         }
 

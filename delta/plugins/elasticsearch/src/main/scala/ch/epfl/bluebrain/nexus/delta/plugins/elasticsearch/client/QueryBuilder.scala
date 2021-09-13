@@ -5,11 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearch
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, Sort, SortList}
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -26,7 +26,8 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
   /**
     * Adds pagination to the current payload
     *
-    * @param page the pagination information
+    * @param page
+    *   the pagination information
     */
   def withPage(page: Pagination): QueryBuilder    =
     page match {
@@ -75,6 +76,23 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
     )
   }
 
+  /**
+    * Add indices filter to the query body
+    */
+  def withIndices(indices: Iterable[String]): QueryBuilder = {
+    val filter   = Json
+      .obj(
+        "filter" -> terms("_index", indices).asJson
+      )
+    val newQuery = query("query") match {
+      case None               => query.add("query", Json.obj("bool" -> filter))
+      case Some(currentQuery) =>
+        val boolQuery = Json.obj("must" -> currentQuery) deepMerge filter
+        query.add("query", Json.obj("bool" -> boolQuery))
+    }
+    QueryBuilder(newQuery)
+  }
+
   private def queryPayload(
       mustTerms: List[JsonObject],
       mustNotTerms: List[JsonObject],
@@ -92,6 +110,9 @@ final case class QueryBuilder private[client] (private val query: JsonObject) {
 
   private def term[A: Encoder](k: String, value: A): JsonObject              =
     JsonObject("term" -> Json.obj(k -> value.asJson))
+
+  private def terms[A: Encoder](k: String, values: Iterable[A]): JsonObject  =
+    JsonObject("terms" -> Json.obj(k -> values.asJson))
 
   private def matchPhrasePrefix[A: Encoder](k: String, value: A): JsonObject =
     JsonObject("match_phrase_prefix" -> Json.obj(k -> Json.obj("query" -> value.asJson)))

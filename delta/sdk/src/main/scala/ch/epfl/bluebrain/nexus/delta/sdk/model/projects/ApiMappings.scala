@@ -15,8 +15,8 @@ final case class ApiMappings(value: Map[String, Iri]) {
   lazy val (prefixMappings, aliases) = value.partition { case (_, iri) => iri.isPrefixMapping }
 
   /**
-    * Append the passed ''that'' [[ApiMappings]] to the current [[ApiMappings]].
-    * If some prefixes are colliding, the ones in the ''that'' [[ApiMappings]] will override the current ones.
+    * Append the passed ''that'' [[ApiMappings]] to the current [[ApiMappings]]. If some prefixes are colliding, the
+    * ones in the ''that'' [[ApiMappings]] will override the current ones.
     */
   def +(that: ApiMappings): ApiMappings = ApiMappings(value ++ that.value)
 

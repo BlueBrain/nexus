@@ -7,11 +7,12 @@ import akka.http.scaladsl.model.{ContentType, MediaRange}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResource, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -19,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -39,18 +40,26 @@ import scala.annotation.nowarn
 /**
   * The files routes
   *
-  * @param identities    the identity module
-  * @param acls          the acls module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param files         the files module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param files
+  *   the files module
+  * @param index
+  *   the indexing action on write operations
   */
 final class FilesRoutes(
     identities: Identities,
     acls: Acls,
     organizations: Organizations,
     projects: Projects,
-    files: Files
+    files: Files,
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     storageConfig: StorageTypeConfig,
@@ -63,6 +72,8 @@ final class FilesRoutes(
   import baseUri.prefixSegment
 
   implicit private val fetchProjectUuids: FetchUuids = projects
+
+  implicit private val eventExchangeMapper = Mapper(Files.eventExchangeValue(_))
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
@@ -107,21 +118,26 @@ final class FilesRoutes(
                     }
                   }
                 },
-                (post & pathEndOrSingleSlash & noParameter("rev") & parameter("storage".as[IdSegment].?)) { storage =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & parameter(
+                  "storage".as[IdSegment].?
+                ) & indexingMode) { (storage, mode) =>
                   operationName(s"$prefixSegment/files/{org}/{project}") {
                     concat(
                       // Link a file without id segment
                       entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                        emit(Created, files.createLink(storage, ref, filename, mediaType, path))
+                        emit(
+                          Created,
+                          files.createLink(storage, ref, filename, mediaType, path).tapEval(index(ref, _, mode))
+                        )
                       },
                       // Create a file without id segment
                       extractRequestEntity { entity =>
-                        emit(Created, files.create(storage, ref, entity))
+                        emit(Created, files.create(storage, ref, entity).tapEval(index(ref, _, mode)))
                       }
                     )
                   }
                 },
-                idSegment { id =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
@@ -132,22 +148,31 @@ final class FilesRoutes(
                                 concat(
                                   // Link a file with id segment
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(Created, files.createLink(id, storage, ref, filename, mediaType, path))
+                                    emit(
+                                      Created,
+                                      files
+                                        .createLink(id, storage, ref, filename, mediaType, path)
+                                        .tapEval(index(ref, _, mode))
+                                    )
                                   },
                                   // Create a file with id segment
                                   extractRequestEntity { entity =>
-                                    emit(Created, files.create(id, storage, ref, entity))
+                                    emit(Created, files.create(id, storage, ref, entity).tapEval(index(ref, _, mode)))
                                   }
                                 )
                               case (Some(rev), storage) =>
                                 concat(
                                   // Update a Link
                                   entity(as[LinkFile]) { case LinkFile(filename, mediaType, path) =>
-                                    emit(files.updateLink(id, storage, ref, filename, mediaType, path, rev))
+                                    emit(
+                                      files
+                                        .updateLink(id, storage, ref, filename, mediaType, path, rev)
+                                        .tapEval(index(ref, _, mode))
+                                    )
                                   },
                                   // Update a file
                                   extractRequestEntity { entity =>
-                                    emit(files.update(id, storage, ref, rev, entity))
+                                    emit(files.update(id, storage, ref, rev, entity).tapEval(index(ref, _, mode)))
                                   }
                                 )
                             }
@@ -155,7 +180,7 @@ final class FilesRoutes(
                           // Deprecate a file
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(files.deprecate(id, ref, rev).rejectOn[FileNotFound])
+                              emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
                             }
                           },
                           // Fetch a file
@@ -176,7 +201,7 @@ final class FilesRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, files.tag(id, ref, tag, tagRev, rev))
+                                emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
                               }
                             }
                           }
@@ -211,7 +236,8 @@ object FilesRoutes {
   val metadataMediaRanges: Set[MediaRange] = mediaTypes.map(_.toContentType.mediaType: MediaRange).toSet
 
   /**
-    * @return the [[Route]] for files
+    * @return
+    *   the [[Route]] for files
     */
   def apply(
       config: StorageTypeConfig,
@@ -219,7 +245,8 @@ object FilesRoutes {
       acls: Acls,
       organizations: Organizations,
       projects: Projects,
-      files: Files
+      files: Files,
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -227,7 +254,7 @@ object FilesRoutes {
       ordering: JsonKeyOrdering
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, acls, organizations, projects, files).routes
+    new FilesRoutes(identities, acls, organizations, projects, files, index).routes
   }
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)

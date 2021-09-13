@@ -12,7 +12,8 @@ import distage.{LocatorRef, TagK}
 /**
   * Entrypoint to the application.
   *
-  * @param locatorOpt an optional locator instance to be cascaded to all commands
+  * @param locatorOpt
+  *   an optional locator instance to be cascaded to all commands
   */
 class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorRef])(implicit F: ConcurrentEffect[F]) {
 
@@ -31,8 +32,10 @@ class Cli[F[_]: TagK: Parallel: ContextShift: Timer](locatorOpt: Option[LocatorR
   /**
     * Execute the application by evaluating the intent and config from the command line arguments.
     *
-    * @param args the command line arguments to evaluate
-    * @param env  the application environment
+    * @param args
+    *   the command line arguments to evaluate
+    * @param env
+    *   the application environment
     */
   def command(args: List[String], env: Map[String, String] = Map.empty): F[ExitCode] =
     Command("nexus-cli", "Nexus CLI") {
@@ -49,8 +52,10 @@ object Cli {
   /**
     * Execute the application by evaluating the intent and config from the command line arguments.
     *
-    * @param args the command line arguments to evaluate
-    * @param env  the application environment
+    * @param args
+    *   the command line arguments to evaluate
+    * @param env
+    *   the application environment
     */
   // $COVERAGE-OFF$
   def apply[F[_]: Parallel: ContextShift: ConcurrentEffect: Timer: TagK](

@@ -4,24 +4,24 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.SchemaNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
@@ -31,18 +31,26 @@ import monix.execution.Scheduler
 /**
   * The schemas routes
   *
-  * @param identities    the identity module
-  * @param acls          the ACLs module
-  * @param organizations the organizations module
-  * @param projects      the projects module
-  * @param schemas       the schemas module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param organizations
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param schemas
+  *   the schemas module
+  * @param index
+  *   the indexing action on write operations
   */
 final class SchemasRoutes(
     identities: Identities,
     acls: Acls,
     organizations: Organizations,
     projects: Projects,
-    schemas: Schemas
+    schemas: Schemas,
+    index: IndexingAction
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
     extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
@@ -51,6 +59,8 @@ final class SchemasRoutes(
   import baseUri.prefixSegment
 
   implicit private val fetchProjectUuids: FetchUuids = projects
+
+  implicit private val eventExchangeMapper = Mapper(Schemas.eventExchangeValue(_))
 
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
@@ -99,14 +109,14 @@ final class SchemasRoutes(
                   }
                 },
                 // Create a schema without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json])) { source =>
+                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
                   operationName(s"$prefixSegment/schemas/{org}/{project}") {
                     authorizeFor(ref, Write).apply {
-                      emit(Created, schemas.create(ref, source).map(_.void))
+                      emit(Created, schemas.create(ref, source).tapEval(index(ref, _, mode)).map(_.void))
                     }
                   }
                 },
-                idSegment { id =>
+                (idSegment & indexingMode) { (id, mode) =>
                   concat(
                     pathEndOrSingleSlash {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}") {
@@ -117,17 +127,26 @@ final class SchemasRoutes(
                               (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
-                                  emit(Created, schemas.create(id, ref, source).map(_.void))
+                                  emit(
+                                    Created,
+                                    schemas.create(id, ref, source).tapEval(index(ref, _, mode)).map(_.void)
+                                  )
                                 case (Some(rev), source) =>
                                   // Update a schema
-                                  emit(schemas.update(id, ref, rev, source).map(_.void))
+                                  emit(schemas.update(id, ref, rev, source).tapEval(index(ref, _, mode)).map(_.void))
                               }
                             }
                           },
                           // Deprecate a schema
                           (delete & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
-                              emit(schemas.deprecate(id, ref, rev).map(_.void).rejectOn[SchemaNotFound])
+                              emit(
+                                schemas
+                                  .deprecate(id, ref, rev)
+                                  .tapEval(index(ref, _, mode))
+                                  .map(_.void)
+                                  .rejectOn[SchemaNotFound]
+                              )
                             }
                           },
                           // Fetch a schema
@@ -158,7 +177,10 @@ final class SchemasRoutes(
                           (post & parameter("rev".as[Long])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
-                                emit(Created, schemas.tag(id, ref, tag, tagRev, rev).map(_.void))
+                                emit(
+                                  Created,
+                                  schemas.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                )
                               }
                             }
                           }
@@ -178,13 +200,21 @@ final class SchemasRoutes(
 object SchemasRoutes {
 
   /**
-    * @return the [[Route]] for schemas
+    * @return
+    *   the [[Route]] for schemas
     */
-  def apply(identities: Identities, acls: Acls, orgs: Organizations, projects: Projects, schemas: Schemas)(implicit
+  def apply(
+      identities: Identities,
+      acls: Acls,
+      orgs: Organizations,
+      projects: Projects,
+      schemas: Schemas,
+      index: IndexingAction
+  )(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
-  ): Route = new SchemasRoutes(identities, acls, orgs, projects, schemas).routes
+  ): Route = new SchemasRoutes(identities, acls, orgs, projects, schemas, index).routes
 
 }

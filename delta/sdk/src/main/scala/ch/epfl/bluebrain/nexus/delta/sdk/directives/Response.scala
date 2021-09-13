@@ -47,7 +47,8 @@ object Response {
       DeltaDirectives.discardEntityAndForceEmit(value)
 
     /**
-      * @return the status code associated with this rejection
+      * @return
+      *   the status code associated with this rejection
       */
     def status: StatusCode = value.status
 

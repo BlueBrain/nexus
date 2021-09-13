@@ -20,13 +20,17 @@ import scala.collection.mutable
 import scala.concurrent.duration._
 
 /**
-  * Actor that stores a map with the attributes (value) for each path (key). The map also contains timestamps of the attributes being computed.
-  * The attributes computation is executed using a SourceQueue with parallelism defined by the ''concurrentComputations'' configuration flag.
-  * Once computed, a new message is sent back to the actor with the attributes to be stored in the map.
+  * Actor that stores a map with the attributes (value) for each path (key). The map also contains timestamps of the
+  * attributes being computed. The attributes computation is executed using a SourceQueue with parallelism defined by
+  * the ''concurrentComputations'' configuration flag. Once computed, a new message is sent back to the actor with the
+  * attributes to be stored in the map.
   *
-  * @param computation the storage computation
-  * @tparam F the effect type
-  * @tparam S the source of the storage computation
+  * @param computation
+  *   the storage computation
+  * @tparam F
+  *   the effect type
+  * @tparam S
+  *   the source of the storage computation
   */
 class AttributesCacheActor[F[_]: Effect, S](computation: AttributesComputation[F, S])(implicit
     config: DigestConfig,

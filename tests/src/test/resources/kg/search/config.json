@@ -1,0 +1,193 @@
+{
+  "fields": [
+    {
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": false
+        }
+      ],
+      "label": "Project",
+      "name": "project",
+      "optional": false
+    },
+    {
+      "array": true,
+      "format": [
+        "uri"
+      ],
+      "label": "Types",
+      "name": "@type",
+      "optional": false
+    },
+    {
+      "array": false,
+      "format": [
+        "keyword",
+        "text"
+      ],
+      "label": "Name",
+      "name": "name",
+      "optional": true
+    },
+    {
+      "array": false,
+      "format": [
+        "text"
+      ],
+      "label": "Description",
+      "name": "description",
+      "optional": true
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "Brain Region",
+      "name": "brainRegion",
+      "optional": true
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "Subject Species",
+      "name": "subjectSpecies",
+      "optional": true
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "format": [
+            "uri"
+          ],
+          "name": "identifier",
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "Contributors",
+      "name": "contributors",
+      "optional": true
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "Organisations",
+      "name": "organisations",
+      "optional": true
+    },
+    {
+      "array": false,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "License",
+      "name": "license",
+      "optional": true
+    },
+    {
+      "array": true,
+      "fields": [
+        {
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
+        },
+        {
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
+        }
+      ],
+      "label": "M-Type",
+      "name": "mType",
+      "optional": true
+    }
+  ]
+}

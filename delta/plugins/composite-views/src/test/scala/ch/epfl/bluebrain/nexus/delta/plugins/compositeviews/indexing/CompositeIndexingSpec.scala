@@ -123,7 +123,7 @@ class CompositeIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint)
+  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, 2000)
   private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
@@ -211,14 +211,15 @@ class CompositeIndexingSpec
   private val projectsCountsCache: MutableMap[ProjectRef, ProjectCount] = MutableMap.empty
   private val restartProjectionsCache                                   = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
 
-  private val initCount = ProjectCount(1, Instant.EPOCH)
+  private val initCount = ProjectCount(1, 1, Instant.EPOCH)
 
   private val projectsCounts = new ProjectsCounts {
     override def get(): UIO[ProjectCountsCollection] =
       UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
 
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] =
-      UIO.delay(projectsCountsCache.get(project))
+    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+
+    override def remove(project: ProjectRef): UIO[Unit] = UIO.pure(projectsCountsCache.remove(project)).void
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
@@ -406,7 +407,7 @@ class CompositeIndexingSpec
         NonEmptySet.of(elasticSearchProjection, blazegraphProjection),
         Some(CompositeView.Interval(2500.millis))
       )
-      val modifiedCount = initCount.copy(value = initCount.value + 1)
+      val modifiedCount = initCount.copy(events = initCount.events + 1)
       val result        = views.update(viewId, project1.ref, 2, view).accepted
 
       Thread.sleep(1 * 3000)

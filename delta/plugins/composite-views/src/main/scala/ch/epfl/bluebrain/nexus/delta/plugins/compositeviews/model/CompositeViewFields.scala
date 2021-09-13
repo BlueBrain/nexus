@@ -17,9 +17,12 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Necessary values to create/update a composite view.
   *
-  * @param sources          list of sources
-  * @param projections      list of projections
-  * @param rebuildStrategy  retry strategy
+  * @param sources
+  *   list of sources
+  * @param projections
+  *   list of projections
+  * @param rebuildStrategy
+  *   retry strategy
   */
 final case class CompositeViewFields(
     sources: NonEmptySet[CompositeViewSourceFields],

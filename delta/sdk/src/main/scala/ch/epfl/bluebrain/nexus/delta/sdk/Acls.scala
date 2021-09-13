@@ -27,14 +27,16 @@ trait Acls {
   /**
     * Fetches the ACL resource for an ''address'' on the current revision.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   def fetch(address: AclAddress): IO[AclNotFound, AclResource]
 
   /**
     * Fetches the ACL resource for an ''address'' and its ancestors on the current revision.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   def fetchWithAncestors(address: AclAddress): UIO[AclCollection] = {
 
@@ -53,16 +55,20 @@ trait Acls {
   /**
     * Fetches the ACL resource with the passed address ''address'' on the passed revision.
     *
-    * @param address the ACL address
-    * @param rev    the revision to fetch
+    * @param address
+    *   the ACL address
+    * @param rev
+    *   the revision to fetch
     */
   def fetchAt(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclResource]
 
   /**
     * Fetches the ACL resource with the passed address ''address'' and its ancestors on the passed revision.
     *
-    * @param address the ACL address
-    * @param rev    the revision to fetch
+    * @param address
+    *   the ACL address
+    * @param rev
+    *   the revision to fetch
     */
   def fetchAtWithAncestors(address: AclAddress, rev: Long): IO[AclRejection.NotFound, AclCollection] = {
 
@@ -80,29 +86,33 @@ trait Acls {
   }
 
   /**
-    * Fetches the ACL resource with the passed ''address'' on the current revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL resource with the passed ''address'' on the current revision. The response only contains ACL with
+    * identities present in the provided ''caller''.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   final def fetchSelf(address: AclAddress)(implicit caller: Caller): IO[AclNotFound, AclResource] =
     fetch(address).map(filterSelf)
 
   /**
-    * Fetches the ACL resource with the passed ''address'' and its ancestors on the current revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL resource with the passed ''address'' and its ancestors on the current revision. The response only
+    * contains ACL with identities present in the provided ''caller''.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   def fetchSelfWithAncestors(address: AclAddress)(implicit caller: Caller): UIO[AclCollection] =
     fetchWithAncestors(address).map(_.filter(caller.identities))
 
   /**
-    * Fetches the ACL resource with the passed ''address'' on the passed revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL resource with the passed ''address'' on the passed revision. The response only contains ACL with
+    * identities present in the provided ''caller''.
     *
-    * @param address the ACL address
-    * @param rev    the revision to fetch
+    * @param address
+    *   the ACL address
+    * @param rev
+    *   the revision to fetch
     */
   final def fetchSelfAt(address: AclAddress, rev: Long)(implicit
       caller: Caller
@@ -110,11 +120,13 @@ trait Acls {
     fetchAt(address, rev).map(filterSelf)
 
   /**
-    * Fetches the ACL resource with the passed ''address'' and ancestors on the passed revision.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL resource with the passed ''address'' and ancestors on the passed revision. The response only
+    * contains ACL with identities present in the provided ''caller''.
     *
-    * @param address the ACL address
-    * @param rev    the revision to fetch
+    * @param address
+    *   the ACL address
+    * @param rev
+    *   the revision to fetch
     */
   def fetchSelfAtWithAncestors(address: AclAddress, rev: Long)(implicit
       caller: Caller
@@ -122,10 +134,11 @@ trait Acls {
     fetchAtWithAncestors(address, rev).map(_.filter(caller.identities))
 
   /**
-    * Fetches the ACL with the passed ''address''.
-    * If the [[Acl]] does not exist, return an Acl with empty identity and permissions.
+    * Fetches the ACL with the passed ''address''. If the [[Acl]] does not exist, return an Acl with empty identity and
+    * permissions.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   final def fetchAcl(address: AclAddress): UIO[Acl] =
     fetch(address).attempt.map {
@@ -134,11 +147,11 @@ trait Acls {
     }
 
   /**
-    * Fetches the ACL with the passed ''address''.
-    * If the [[Acl]] does not exist, return an Acl with empty identity and permissions.
-    * The response only contains ACL with identities present in the provided ''caller''.
+    * Fetches the ACL with the passed ''address''. If the [[Acl]] does not exist, return an Acl with empty identity and
+    * permissions. The response only contains ACL with identities present in the provided ''caller''.
     *
-    * @param address the ACL address
+    * @param address
+    *   the ACL address
     */
   final def fetchSelfAcl(address: AclAddress)(implicit caller: Caller): UIO[Acl] =
     fetchSelf(address).attempt.map {
@@ -149,68 +162,81 @@ trait Acls {
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address.
     *
-    * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
+    * @param filter
+    *   the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
     */
   def list(filter: AclAddressFilter): UIO[AclCollection]
 
   /**
     * Fetches the [[AclCollection]] of the provided ''filter'' address with identities present in the ''caller''.
     *
-    * @param filter    the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
-    * @param caller    the caller that contains the provided identities
+    * @param filter
+    *   the ACL filter address. All [[AclAddress]] matching the provided filter will be returned
+    * @param caller
+    *   the caller that contains the provided identities
     */
   def listSelf(filter: AclAddressFilter)(implicit caller: Caller): UIO[AclCollection]
 
   /**
-    * A non terminating stream of events for ACLs. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for ACLs. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[AclEvent]]
 
   /**
     * The current ACLs events. The stream stops after emitting all known events.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[AclEvent]]
 
   /**
     * Overrides ''acl''.
     *
-    * @param acl    the acl to replace
-    * @param rev    the last known revision of the resource
+    * @param acl
+    *   the acl to replace
+    * @param rev
+    *   the last known revision of the resource
     */
   def replace(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Appends ''acl''.
     *
-    * @param acl    the acl to append
-    * @param rev    the last known revision of the resource
+    * @param acl
+    *   the acl to append
+    * @param rev
+    *   the last known revision of the resource
     */
   def append(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Subtracts ''acl''.
     *
-    * @param acl    the acl to subtract
-    * @param rev    the last known revision of the resource
+    * @param acl
+    *   the acl to subtract
+    * @param rev
+    *   the last known revision of the resource
     */
   def subtract(acl: Acl, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
     * Delete all ''acl'' on the passed ''address''.
     *
-    * @param address the ACL address
-    * @param rev    the last known revision of the resource
+    * @param address
+    *   the ACL address
+    * @param rev
+    *   the last known revision of the resource
     */
   def delete(address: AclAddress, rev: Long)(implicit caller: Subject): IO[AclRejection, AclResource]
 
   /**
-    * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path'',
-    * raising the error ''onError'' when it doesn't
+    * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path'', raising the error
+    * ''onError'' when it doesn't
     */
   def authorizeForOr[E](path: AclAddress, permission: Permission)(onError: => E)(implicit caller: Caller): IO[E, Unit] =
     fetchWithAncestors(path).flatMap { acls =>
@@ -224,8 +250,8 @@ trait Acls {
     authorizeForOr(path, permission)(false).redeem(identity, _ => true)
 
   /**
-    * Checks whether a given [[Caller]] has all the passed ''permissions'' on the passed ''path'',
-    * raising the error ''onError'' when it doesn't
+    * Checks whether a given [[Caller]] has all the passed ''permissions'' on the passed ''path'', raising the error
+    * ''onError'' when it doesn't
     */
   def authorizeForEveryOr[E](path: AclAddress, permissions: Set[Permission])(
       onError: => E

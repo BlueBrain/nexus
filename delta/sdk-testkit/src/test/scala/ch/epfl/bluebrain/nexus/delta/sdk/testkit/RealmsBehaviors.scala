@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -52,7 +52,7 @@ trait RealmsBehaviors {
   "Realms implementation" should {
 
     "create a realm" in {
-      realms.create(github, githubName, githubOpenId, None).accepted shouldEqual
+      realms.create(github, githubName, githubOpenId, None, None).accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
@@ -65,12 +65,15 @@ trait RealmsBehaviors {
     }
 
     "update a realm" in {
-      realms.update(github, 1L, githubName, githubOpenId, Some(githubLogo)).accepted shouldEqual
+      realms
+        .update(github, 1L, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
+        .accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
             githubWk,
-            Some(githubLogo)
+            Some(githubLogo),
+            Some(NonEmptySet.of("aud"))
           ),
           2L,
           subject
@@ -83,7 +86,8 @@ trait RealmsBehaviors {
           realm(
             githubOpenId,
             githubWk,
-            Some(githubLogo)
+            Some(githubLogo),
+            Some(NonEmptySet.of("aud"))
           ),
           3L,
           subject,
@@ -97,7 +101,8 @@ trait RealmsBehaviors {
           realm(
             githubOpenId,
             githubWk,
-            Some(githubLogo)
+            Some(githubLogo),
+            Some(NonEmptySet.of("aud"))
           ),
           3L,
           subject,
@@ -127,12 +132,13 @@ trait RealmsBehaviors {
     }
 
     "list realms" in {
-      realms.create(gitlab, gitlabName, gitlabOpenId, None).accepted
+      realms.create(gitlab, gitlabName, gitlabOpenId, None, None).accepted
       val ghRes = resourceFor(
         realm(
           githubOpenId,
           githubWk,
-          Some(githubLogo)
+          Some(githubLogo),
+          Some(NonEmptySet.of("aud"))
         ),
         3L,
         subject,
@@ -163,22 +169,24 @@ trait RealmsBehaviors {
     }
 
     "fail to create a realm already created" in {
-      realms.create(github, githubName, githubOpenId, None).rejectedWith[RealmAlreadyExists]
+      realms.create(github, githubName, githubOpenId, None, None).rejectedWith[RealmAlreadyExists]
     }
 
     "fail to create with an existing openIdCongig" in {
       val label = Label.unsafe("duplicate")
-      realms.create(label, githubName, githubOpenId, None).rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
+      realms
+        .create(label, githubName, githubOpenId, None, None)
+        .rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
         RealmOpenIdConfigAlreadyExists(label, githubOpenId)
     }
 
     "fail to update a realm with incorrect rev" in {
-      realms.update(gitlab, 3L, gitlabName, gitlabOpenId, None).rejected shouldEqual IncorrectRev(3L, 1L)
+      realms.update(gitlab, 3L, gitlabName, gitlabOpenId, None, None).rejected shouldEqual IncorrectRev(3L, 1L)
     }
 
     "fail to update a realm a already used openId config" in {
       realms
-        .update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo))
+        .update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
         .rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
         RealmOpenIdConfigAlreadyExists(gitlab, githubOpenId)
     }
@@ -188,7 +196,7 @@ trait RealmsBehaviors {
     }
 
     "fail to update a non existing realm" in {
-      realms.update(Label.unsafe("other"), 1L, gitlabName, gitlabOpenId, None).rejectedWith[RealmNotFound]
+      realms.update(Label.unsafe("other"), 1L, gitlabName, gitlabOpenId, None, None).rejectedWith[RealmNotFound]
     }
 
     "fail to deprecate a non existing realm" in {

@@ -92,8 +92,9 @@ object Permission {
     val Create: Permission = Permission(name, "create")
     val Read: Permission   = Permission(name, "read")
     val Write: Permission  = Permission(name, "write")
+    val Delete: Permission = Permission(name, "delete")
 
-    val list: List[Permission] = Create :: Read :: Write :: Nil
+    val list: List[Permission] = Create :: Read :: Write :: Delete :: Nil
   }
 
   object Realms {
@@ -148,6 +149,13 @@ object Permission {
     val list: List[Permission] = Write :: Nil
   }
 
+  object Quotas {
+    val name             = "quotas"
+    val Read: Permission = Permission(name, "read")
+
+    val list: List[Permission] = Read :: Nil
+  }
+
   val minimalPermissions: Set[Permission] =
     (Version.list ++
       Acls.list ++
@@ -162,10 +170,12 @@ object Permission {
       Schemas.list ++
       Views.list ++
       Storages.list ++
-      Archives.list).toSet
+      Archives.list ++
+      Quotas.list).toSet
 
   val adminPermissions: Set[Permission] =
-    (Acls.list ++
+    (Version.list ++
+      Acls.list ++
       Files.list ++
       Organizations.list ++
       Projects.list ++
@@ -174,6 +184,7 @@ object Permission {
       Schemas.list ++
       Views.list ++
       Storages.list ++
-      Archives.list).toSet
+      Archives.list ++
+      Quotas.list).toSet
 
 }

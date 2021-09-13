@@ -15,10 +15,14 @@ object ResourceResolution {
 
   /**
     * Resolution for a given type of a resource based on resolvers
-    * @param checkAcls            how to check acls
-    * @param listResolvers       how to list resolvers
-    * @param fetchResolver       how to fetch a resolver
-    * @param fetch   how to fetch the resource
+    * @param checkAcls
+    *   how to check acls
+    * @param listResolvers
+    *   how to list resolvers
+    * @param fetchResolver
+    *   how to fetch a resolver
+    * @param fetch
+    *   how to fetch the resource
     */
   def apply[R](
       checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean],
@@ -30,10 +34,14 @@ object ResourceResolution {
 
   /**
     * Resolution for a given type of a resource based on resolvers
-    * @param acls            an acls instance
-    * @param resolvers       a resolvers instance
-    * @param fetchResource   how to fetch the resource
-    * @param readPermission  the mandatory permission
+    * @param acls
+    *   an acls instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param fetchResource
+    *   how to fetch the resource
+    * @param readPermission
+    *   the mandatory permission
     */
   def apply[R](
       acls: Acls,
@@ -44,9 +52,12 @@ object ResourceResolution {
 
   /**
     * Resolution for a data resource based on resolvers
-    * @param acls        an acls instance
-    * @param resolvers   a resolvers instance
-    * @param resources   a resources instance
+    * @param acls
+    *   an acls instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param resources
+    *   a resources instance
     */
   def dataResource(acls: Acls, resolvers: Resolvers, resources: Resources): ResourceResolution[Resource] =
     apply(
@@ -58,9 +69,12 @@ object ResourceResolution {
 
   /**
     * Resolution for a schema resource based on resolvers
-    * @param acls       an acls instance
-    * @param resolvers  a resolvers instance
-    * @param schemas    a schemas instance
+    * @param acls
+    *   an acls instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param schemas
+    *   a schemas instance
     */
   def schemaResource(acls: Acls, resolvers: Resolvers, schemas: Schemas): ResourceResolution[Schema] =
     apply(

@@ -68,15 +68,15 @@ trait DeltaDirectives extends UriDirectives {
     response(redirection)
 
   /**
-    * Completes the current Route discarding the entity and completing with the provided conversion to Json-LD.
-    * If the Json-LD cannot be be completed for any reason, it returns the plain Json representation
+    * Completes the current Route discarding the entity and completing with the provided conversion to Json-LD. If the
+    * Json-LD cannot be be completed for any reason, it returns the plain Json representation
     */
   def discardEntityAndForceEmit(response: ResponseToJsonLdDiscardingEntity): Route =
     response(None)
 
   /**
-    * Completes the current Route discarding the entity and completing with the provided status code and conversion to Json-LD.
-    * If the Json-LD cannot be be completed for any reason, it returns the plain Json representation
+    * Completes the current Route discarding the entity and completing with the provided status code and conversion to
+    * Json-LD. If the Json-LD cannot be be completed for any reason, it returns the plain Json representation
     */
   def discardEntityAndForceEmit(status: StatusCode, response: ResponseToJsonLdDiscardingEntity): Route =
     response(Some(status))
@@ -102,8 +102,8 @@ trait DeltaDirectives extends UriDirectives {
   }
 
   /**
-    * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter'' is true.
-    * If the [[PartialFunction]] does not apply, the error channel is left untouched.
+    * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter''
+    * is true. If the [[PartialFunction]] does not apply, the error channel is left untouched.
     */
   def rejectOn[E: JsonLdEncoder: HttpResponseFields: Encoder, A](
       io: IO[E, A]
@@ -126,9 +126,12 @@ trait DeltaDirectives extends UriDirectives {
 
   /**
     * Fetches any resource using different functions depending on the ''rev'' or ''tag'' query parameters
-    * @param onRev the function to call when the resource is fetched by its revision
-    * @param onTag the function to call when the resource is fetched by its tag
-    * @param onDefault the function to call when no rev/tag query parameters are present
+    * @param onRev
+    *   the function to call when the resource is fetched by its revision
+    * @param onTag
+    *   the function to call when the resource is fetched by its tag
+    * @param onDefault
+    *   the function to call when no rev/tag query parameters are present
     */
   def fetchResource(
       onRev: Long => Route,

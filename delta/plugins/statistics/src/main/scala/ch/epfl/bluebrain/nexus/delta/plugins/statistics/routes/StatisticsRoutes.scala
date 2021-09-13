@@ -18,11 +18,16 @@ import monix.execution.Scheduler
 /**
   * The statistics routes.
   *
-  * @param identities the identity module
-  * @param acls       the acls module
-  * @param projects   the projects module
-  * @param statistics the statistics module
-  * @param progresses the progresses for statistics
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param projects
+  *   the projects module
+  * @param statistics
+  *   the statistics module
+  * @param progresses
+  *   the progresses for statistics
   */
 class StatisticsRoutes(
     identities: Identities,
@@ -62,7 +67,6 @@ class StatisticsRoutes(
               // TODO: Other endpoints have this as statistics, but in this case that word would be dup. See what to do
               (pathPrefix("progress") & get & pathEndOrSingleSlash) {
                 operationName(s"$prefixSegment/statistics/{org}/{project}/{id}/progress") {
-
                   authorizeFor(projectRef, Read).apply {
                     emit(progresses.statistics(projectRef, Statistics.projectionId(projectRef)))
                   }

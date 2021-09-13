@@ -11,7 +11,8 @@ final case class IndexLabel(value: String) {
 object IndexLabel {
 
   /**
-    * Regex created from the ElasticSearch restrictions: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params
+    * Regex created from the ElasticSearch restrictions:
+    * https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#indices-create-api-path-params
     */
   private val regex = """^([^-_+\.])([^<> :\*\/"?|#`\\,]{0,200}+)?$""".r
 
@@ -34,9 +35,12 @@ object IndexLabel {
   /**
     * Constructs an [[IndexLabel]] safely from view parameters
     *
-    * @param prefix the index prefix retrieved from configuration
-    * @param uuid   the view unique identifier
-    * @param rev    the view revision
+    * @param prefix
+    *   the index prefix retrieved from configuration
+    * @param uuid
+    *   the view unique identifier
+    * @param rev
+    *   the view revision
     */
   final def fromView(prefix: String, uuid: UUID, rev: Long): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
 

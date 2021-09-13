@@ -1,0 +1,86 @@
+[
+  {
+    "@id": "http://localhost/v1/projects/copies/sscx",
+    "@type": [
+      "https://bluebrain.github.io/nexus/vocabulary/Project"
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/apiMappings": [],
+    "https://bluebrain.github.io/nexus/vocabulary/base": [
+      {
+        "@id": "http://localhost/v1/resources/copies/sscx/_/"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/constrainedBy": [
+      {
+        "@id": "https://bluebrain.github.io/nexus/schemas/projects.json"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/createdAt": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "@value": "2021-07-14T04:44:51.128Z"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/createdBy": [
+      {
+        "@id": "http://localhost/v1/realms/bbp/users/broman"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/deprecated": [
+      {
+        "@value": false
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/description": [
+      {
+        "@value": ""
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/label": [
+      {
+        "@value": "sscx"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/organizationLabel": [
+      {
+        "@value": "copies"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/organizationUuid": [
+      {
+        "@value": "b11742dc-ddc5-450c-9532-405d47bff7b6"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/rev": [
+      {
+        "@value": 1
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/self": [
+      {
+        "@id": "http://localhost/v1/projects/copies/sscx"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/updatedAt": [
+      {
+        "@type": "http://www.w3.org/2001/XMLSchema#dateTime",
+        "@value": "2021-07-14T04:44:51.128Z"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/updatedBy": [
+      {
+        "@id": "http://localhost/v1/realms/bbp/users/broman"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/uuid": [
+      {
+        "@value": "534af0b6-4351-4f47-b100-1822bb66ee1f"
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/vocab": [
+      {
+        "@id": "http://localhost/v1/vocabs/copies/sscx/"
+      }
+    ]
+  }
+]

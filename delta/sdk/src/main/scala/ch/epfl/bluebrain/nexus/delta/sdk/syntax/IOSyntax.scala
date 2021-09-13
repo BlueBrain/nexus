@@ -24,8 +24,10 @@ final class IOFunctorOps[E, A, F[_]: Functor](private val io: IO[E, F[A]]) {
   /**
     * Map value of [[F]] wrapped in an [[IO]].
     *
-    * @param f  the mapping function
-    * @return   a new [[F]] with value being the result of applying [[f]] to the value of old [[F]]
+    * @param f
+    *   the mapping function
+    * @return
+    *   a new [[F]] with value being the result of applying [[f]] to the value of old [[F]]
     */
   def mapValue[B](f: A => B): IO[E, F[B]] = io.map(_.map(f))
 }
@@ -33,8 +35,8 @@ final class IOFunctorOps[E, A, F[_]: Functor](private val io: IO[E, F[A]]) {
 final class RejectionOrErrorOps[E: JsonLdEncoder: HttpResponseFields: Encoder, A](private val io: IO[E, A]) {
 
   /**
-    * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter'' is true.
-    * If the [[PartialFunction]] does not apply, the error channel is left untouched.
+    * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter''
+    * is true. If the [[PartialFunction]] does not apply, the error channel is left untouched.
     */
   def rejectWhen(filter: PartialFunction[E, Boolean]): IO[Response[E], A] =
     DeltaDirectives.rejectOn(io)(filter)

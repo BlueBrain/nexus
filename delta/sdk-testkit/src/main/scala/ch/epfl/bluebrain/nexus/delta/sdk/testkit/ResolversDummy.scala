@@ -10,8 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -20,7 +22,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, IdSegmentRef, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResolversDummy.{ResolverCache, ResolverJournal}
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
@@ -32,11 +33,16 @@ import scala.annotation.nowarn
 /**
   * A dummy Resolvers implementation
   *
-  * @param journal   the journal to store events
-  * @param cache     the cache to store resolvers
-  * @param orgs      the organizations operations bundle
-  * @param projects  the projects operations bundle
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param journal
+  *   the journal to store events
+  * @param cache
+  *   the cache to store resolvers
+  * @param orgs
+  *   the organizations operations bundle
+  * @param projects
+  *   the projects operations bundle
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 class ResolversDummy private (
     journal: ResolverJournal,
@@ -49,30 +55,35 @@ class ResolversDummy private (
 )(implicit clock: Clock[UIO])
     extends Resolvers {
 
-  override def create(projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  override def create(
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
-  override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
 
-  override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] =
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      resolverValue: ResolverValue
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -82,27 +93,39 @@ class ResolversDummy private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
+
     } yield res
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
+  override def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      resolverValue: ResolverValue
+  )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
 
-  override def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
+  override def tag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      tagRev: Long,
+      rev: Long
+  )(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -111,7 +134,7 @@ class ResolversDummy private (
       subject: Subject
   ): IO[ResolverRejection, ResolverResource] =
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -132,6 +155,14 @@ class ResolversDummy private (
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     cache.list(pagination, params, ordering)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEvents(offset).filter(e => e.event.project == projectRef))
 
   override def events(
       projectRef: ProjectRef,
@@ -188,10 +219,14 @@ object ResolversDummy {
   /**
     * Creates a resolvers dummy instance
     *
-    * @param orgs              the organizations operations bundle
-    * @param projects          the projects operations bundle
-    * @param contextResolution the context resolver
-    * @param idAvailability    checks if an id is available upon creation
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param contextResolution
+    *   the context resolver
+    * @param idAvailability
+    *   checks if an id is available upon creation
     */
   def apply(
       orgs: Organizations,

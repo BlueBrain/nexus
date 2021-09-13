@@ -11,9 +11,12 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Archive plugin configuration.
   *
-  * @param priority  the plugin priority
-  * @param ttl       the duration after which an archive is removed from the system
-  * @param aggregate the aggregate configuration
+  * @param priority
+  *   the plugin priority
+  * @param ttl
+  *   the duration after which an archive is removed from the system
+  * @param aggregate
+  *   the aggregate configuration
   */
 final case class ArchivePluginConfig(
     priority: Int,

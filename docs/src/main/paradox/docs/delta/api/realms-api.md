@@ -15,6 +15,24 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
+## Payload
+
+```
+{
+  "name": "{name}",
+  "openIdConfig": "{openIdConfig}",
+  "logo": "{logo}",
+  "acceptedAudiences": {acceptedAudiences}
+}
+```
+
+where...
+
+- `{name}`: String - the realm name.
+- `{openIdConfig}`: IRI - the provider @link:[OpenID configuration](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderConfigurationRequest){ open=new }.
+- `{logo}`: IRI - the logo Url for the realm. This field is optional.
+- `{acceptedAudiences}`: Array[String] - ar array of accepted @link:[audiences](https://datatracker.ietf.org/doc/html/rfc7519#section-4.1.3) { open=new } as string values. If provided, the token should have the `aud` with some of its values matching some of the `acceptedAudience` values on the realm. This field is optional.
+
 ## Create
  This operation creates a realm.
 
@@ -35,9 +53,6 @@ Payload
 
 Response
 :   @@snip [realm-added-ref.json](assets/realms/realm-added-ref.json)
-
-The `logo` parameter is optional.
-
 
 
 ## Update

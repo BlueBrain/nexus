@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -44,7 +45,7 @@ class ElasticSearchClientSpec
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
 
   private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint)
+  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private val page     = FromPagination(0, 100)
 
   private def searchAllIn(index: IndexLabel): Seq[JsonObject] =
@@ -53,7 +54,7 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.12.0")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.13.4")
     }
 
     "verify that an index does not exist" in {
@@ -130,15 +131,13 @@ class ElasticSearchClientSpec
         ElasticSearchBulk.Create(index, "3", json"""{ "field1" : 3 }"""),
         ElasticSearchBulk.Update(index, "1", json"""{ "doc" : {"field2" : "value2"} }""")
       )
-      client.bulk(operations).accepted
+      client.bulk(operations, Refresh.WaitFor).accepted
       val query      = QueryBuilder(jobj"""{"query": {"bool": {"must": {"exists": {"field": "field1"} } } } }""")
         .withPage(page)
         .withSort(SortList(List(Sort("-field1"))))
-      eventually {
-        client.search(query, Set(index.value), Query.Empty).accepted shouldEqual
-          SearchResults(2, Vector(jobj"""{ "field1" : 3 }""", jobj"""{ "field1" : 1, "field2" : "value2"}"""))
-            .copy(token = Some("[1]"))
-      }
+      client.search(query, Set(index.value), Query.Empty).accepted shouldEqual
+        SearchResults(2, Vector(jobj"""{ "field1" : 3 }""", jobj"""{ "field1" : 1, "field2" : "value2"}"""))
+          .copy(token = Some("[1]"))
 
       val query2 = QueryBuilder(jobj"""{"query": {"bool": {"must": {"term": {"field1": 3} } } } }""").withPage(page)
       client.search(query2, Set(index.value), Query.Empty).accepted shouldEqual

@@ -1,0 +1,19 @@
+{
+  "query" : {
+    "bool" : {
+      "filter" : {
+        "terms" : {
+          "_index" : [
+            "index1",
+            "index2"
+          ]
+        }
+      }
+    }
+  },
+  "sort" : [
+    {
+      "@id" : "asc"
+    }
+  ]
+}

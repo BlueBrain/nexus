@@ -5,8 +5,8 @@ import io.circe.{Decoder, Encoder, Json}
 import pureconfig.ConfigReader
 
 /**
-  * A Secret that holds a value which can be encrypted or decrypted.
-  * We make sure that Circe encoding, decoding and toString operations do not expose the secret
+  * A Secret that holds a value which can be encrypted or decrypted. We make sure that Circe encoding, decoding and
+  * toString operations do not expose the secret
   */
 final case class Secret[A](value: A) {
 

@@ -13,25 +13,25 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
-import io.circe.{Decoder, Encoder}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -40,16 +40,20 @@ import org.slf4j.{Logger, LoggerFactory}
 /**
   * Complete service wiring definitions.
   *
-  * @param appCfg      the application configuration
-  * @param config      the raw merged and resolved configuration
+  * @param appCfg
+  *   the application configuration
+  * @param config
+  *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
 
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseConfig].from { appCfg.database }
+  make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
+    definition.initialize.as(appCfg.database)
+  }
   make[ProjectsConfig].from { appCfg.projects }
-  make[DatabaseFlavour].from { appCfg.database.flavour }
+  make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
@@ -58,6 +62,9 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
 
+  make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
+    AggregateIndexingAction(internal.toSeq)
+  }
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
       errorCtx    <- ContextValue.fromFile("contexts/error.json")
@@ -98,8 +105,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       RdfRejectionHandler(s, cr, ordering)
   }
   make[ExceptionHandler].from {
-    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering) =>
-      RdfExceptionHandler(s, cr, ordering)
+    (s: Scheduler, cr: RemoteContextResolution @Id("aggregate"), ordering: JsonKeyOrdering, base: BaseUri) =>
+      RdfExceptionHandler(s, cr, ordering, base)
   }
   make[CorsSettings].from(
     CorsSettings.defaultSettings
@@ -107,15 +114,24 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
+  make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
+    DatabaseDefinitions(config.database)(system)
+  )
+
+  make[DatabaseCleanup].from { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
+    DatabaseCleanup(config)(system)
+  }
+
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
   make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
-  make[Projection[ProjectCountsCollection]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    projection(ProjectCountsCollection.empty, system, clock)
+  make[Projection[ProjectCountsCollection]].fromEffect {
+    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      Projection(database, ProjectCountsCollection.empty, system, clock)
   }
 
-  make[Projection[Unit]].fromEffect { (system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    projection((), system, clock)
+  make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    Projection(database, (), system, clock)
   }
 
   make[ProjectsCounts].fromEffect {
@@ -147,7 +163,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[EntityType]) =>
-    new ResourceIdCheck(idCheck, moduleTypes)
+    ResourceIdCheck(idCheck, moduleTypes)
   }
 
   include(PermissionsModule)
@@ -160,19 +176,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(ResourcesModule)
   include(IdentitiesModule)
   include(VersionModule)
-
-  private def projection[A: Decoder: Encoder](
-      empty: => A,
-      system: ActorSystem[Nothing],
-      clock: Clock[UIO]
-  ): Task[Projection[A]] = {
-    implicit val as: ActorSystem[Nothing] = system
-    implicit val c: Clock[UIO]            = clock
-    appCfg.database.flavour match {
-      case Postgres  => Projection.postgres(appCfg.database.postgres, empty)
-      case Cassandra => Projection.cassandra(appCfg.database.cassandra, empty)
-    }
-  }
+  include(QuotasModule)
+  include(EventsModule)
 }
 
 object DeltaModule {
@@ -180,9 +185,12 @@ object DeltaModule {
   /**
     * Complete service wiring definitions.
     *
-    * @param appCfg      the application configuration
-    * @param config      the raw merged and resolved configuration
-    * @param classLoader the aggregated class loader
+    * @param appCfg
+    *   the application configuration
+    * @param config
+    *   the raw merged and resolved configuration
+    * @param classLoader
+    *   the aggregated class loader
     */
   final def apply(
       appCfg: AppConfig,

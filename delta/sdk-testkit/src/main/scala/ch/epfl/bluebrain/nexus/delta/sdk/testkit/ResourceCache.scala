@@ -11,7 +11,8 @@ import monix.bio.{IO, UIO}
 
 /**
   * Cache implementation for dummies
-  * @param cache the underlying cache
+  * @param cache
+  *   the underlying cache
   */
 private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])(implicit discriminator: Lens[R, Id]) {
 

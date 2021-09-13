@@ -14,6 +14,14 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 @@@
 
+## Indexing
+
+All the API calls modifying a file(creation, update, tagging, deprecation) can specify whether the file should be indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+- `async` - (default value) the file will be indexed asynchronously
+- `sync` - the file will be indexed synchronously and the API call won't return until the indexing is finished
+
 ## Create using POST
 
 ```

@@ -1,7 +1,9 @@
+import scala.io.Source
+
 /*
 scalafmt: {
   maxColumn = 150
-  align.tokens.add = [
+  align.tokens."+" = [
     { code = ":=", owner = "Term.ApplyInfix" }
     { code = "+=", owner = "Term.ApplyInfix" }
     { code = "++=", owner = "Term.ApplyInfix" }
@@ -158,14 +160,12 @@ lazy val docs = project
     name                             := "docs",
     moduleName                       := "docs",
     // paradox settings
-    paradoxValidationIgnorePaths    ++= List(
-      "http://www.w3.org/2001/XMLSchema.*".r,
-      "https://movies.com/movieId/1".r,
-      "https://sandbox.bluebrainnexus.io.*".r,
-      "https://link.springer.com/.*".r,
-      "https://shacl.org/.*".r,
-      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r
-    ),
+    paradoxValidationIgnorePaths    ++= {
+      val source      = Source.fromFile(file("docs/ignore-paths.txt"))
+      val ignorePaths = source.getLines().map(_.r).toList
+      source.close()
+      ignorePaths
+    },
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
@@ -204,6 +204,7 @@ lazy val docs = project
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
         (statisticsPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
+        (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
         (storagePlugin / Compile / resourceDirectory).value / "contexts"
       )
@@ -248,7 +249,6 @@ lazy val testkit = project
       distageDocker,
       distageTestkit,
       monixBio,
-      scalate,
       scalaTest
     ),
     addCompilerPlugin(kindProjector)
@@ -475,6 +475,7 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       val pluginsTarget      = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
@@ -484,7 +485,8 @@ lazy val app = project
           statisticsFile     -> (pluginsTarget / statisticsFile.getName),
           storageFile        -> (pluginsTarget / storageFile.getName),
           archiveFile        -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName)
+          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile         -> (pluginsTarget / searchFile.getName)
         )
       )
     },
@@ -508,13 +510,15 @@ lazy val app = project
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
         (statisticsFile, "plugins/" + statisticsFile.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
-        (compositeViewsFile, "plugins/" + compositeViewsFile.getName)
+        (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
+        (searchFile, "plugins/" + searchFile.getName)
       )
     }
   )
@@ -634,6 +638,41 @@ lazy val compositeViewsPlugin = project
     Test / fork                := true
   )
 
+lazy val searchPlugin = project
+  .in(file("delta/plugins/search"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk                  % "provided;test->test",
+    sdkViews             % Provided,
+    sdkTestkit           % "test->compile;test->test",
+    blazegraphPlugin     % "provided;test->compile;test->test",
+    elasticsearchPlugin  % "provided;test->compile;test->test",
+    compositeViewsPlugin % "provided;test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-search-plugin",
+    moduleName                 := "delta-search-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp     % Provided,
+      akkaSlf4j         % Test,
+      dockerTestKit     % Test,
+      dockerTestKitImpl % Test,
+      h2                % Test,
+      logback           % Test,
+      scalaTest         % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
+    addCompilerPlugin(betterMonadicFor),
+    coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
+    assembly / assemblyJarName := "search.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
+    Test / fork                := true
+  )
+
 lazy val storagePlugin = project
   .enablePlugins(BuildInfoPlugin)
   .in(file("delta/plugins/storage"))
@@ -738,12 +777,12 @@ lazy val statisticsPlugin = project
 
 lazy val plugins = project
   .in(file("delta/plugins"))
-  .settings(shared, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, storagePlugin, archivePlugin, testPlugin, statisticsPlugin)
+  .settings(shared, compilation, noPublish)
+  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin, statisticsPlugin)
 
 lazy val delta = project
   .in(file("delta"))
-  .settings(shared, noPublish)
+  .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
@@ -803,21 +842,16 @@ lazy val storage = project
     }
   )
 
-lazy val dockerCompose = Seq(
-  composeFile := "tests/docker/docker-compose-cassandra.yml"
-)
-
 lazy val tests = project
   .in(file("tests"))
   .dependsOn(testkit)
-  .enablePlugins(DockerComposePlugin)
-  .settings(noPublish ++ dockerCompose)
+  .settings(noPublish)
   .settings(shared, compilation, coverage, release)
   .settings(
-    name                     := "tests",
-    moduleName               := "tests",
-    coverageFailOnMinimum    := false,
-    libraryDependencies     ++= Seq(
+    name                               := "tests",
+    moduleName                         := "tests",
+    coverageFailOnMinimum              := false,
+    libraryDependencies               ++= Seq(
       akkaHttp,
       akkaStream,
       circeOptics,
@@ -833,14 +867,17 @@ lazy val tests = project
       alpakkaSse      % Test,
       uuidGenerator   % Test
     ),
-    Test / parallelExecution := false,
-    Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports")
+    Test / parallelExecution           := false,
+    Test / testOptions                 += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    // Scalate gets errors with layering with this project so we disable it
+    Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+    Test / fork                        := true
   )
 
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
-  .settings(shared, noPublish)
+  .settings(compilation, shared, noPublish)
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(
@@ -930,24 +967,26 @@ lazy val compilation = {
   import sbt._
 
   Seq(
-    scalaVersion                    := scalaCompilerVersion,
-    scalacOptions                   ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-    javaSpecificationVersion        := "11",
-    javacOptions                   ++= Seq(
+    scalaVersion                           := scalaCompilerVersion,
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion               := "11",
+    javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
     ),
-    Compile / doc / scalacOptions  ++= Seq("-no-link-warnings"),
-    Compile / doc / javacOptions    := Seq("-source", javaSpecificationVersion.value),
-    autoAPIMappings                 := true,
-    apiMappings                     += {
+    Compile / packageSrc / publishArtifact := !isSnapshot.value,
+    Compile / packageDoc / publishArtifact := !isSnapshot.value,
+    Compile / doc / scalacOptions         ++= Seq("-no-link-warnings"),
+    Compile / doc / javacOptions           := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                        := true,
+    apiMappings                            += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
       ApiMappings.apiMappingFor((Compile / fullClasspath).value)("scala-library", scalaDocUrl)
     },
-    Scapegoat / dependencyClasspath := (Compile / dependencyClasspath).value
+    Scapegoat / dependencyClasspath        := (Compile / dependencyClasspath).value
   )
 }
 
@@ -1026,7 +1065,6 @@ ThisBuild / sonatypeCredentialHost       := "s01.oss.sonatype.org"
 ThisBuild / sonatypeRepository           := "https://s01.oss.sonatype.org/service/local"
 
 Global / excludeLintKeys        += packageDoc / publishArtifact
-Global / excludeLintKeys        += tests / composeFile
 Global / excludeLintKeys        += docs / paradoxRoots
 Global / excludeLintKeys        += docs / Paradox / paradoxNavigationDepth
 Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)

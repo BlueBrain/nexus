@@ -8,8 +8,8 @@ import doobie.implicits._
 import monix.bio.UIO
 
 /**
-  * Describes the postgres [[ServiceDependency]] providing a way to
-  * extract the [[ServiceDescription]] from a ''select version();'' SQL command
+  * Describes the postgres [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a ''select
+  * version();'' SQL command
   */
 class PostgresServiceDependency(config: PostgresConfig) extends ServiceDependency {
 

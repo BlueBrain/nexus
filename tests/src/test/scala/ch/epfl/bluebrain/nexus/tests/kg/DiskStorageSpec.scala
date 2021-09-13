@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.tests.kg
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.tests.Identity.storages.Coyote
 import ch.epfl.bluebrain.nexus.tests.Optics.filterMetadataKeys
-import ch.epfl.bluebrain.nexus.tests.Tags.StorageTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import io.circe.Json
 import monix.bio.Task
@@ -68,7 +67,7 @@ class DiskStorageSpec extends StorageSpec {
   }
 
   "creating a disk storage" should {
-    "fail creating a DiskStorage on a wrong volume" taggedAs StorageTag in {
+    "fail creating a DiskStorage on a wrong volume" in {
       val volume  = "/" + genString()
       val payload = jsonContentOf("/kg/storages/disk.json") deepMerge
         Json.obj(
@@ -84,7 +83,7 @@ class DiskStorageSpec extends StorageSpec {
   }
 
   s"Linking against the default storage" should {
-    "reject linking operations" taggedAs StorageTag in {
+    "reject linking operations" in {
       val payload = Json.obj(
         "filename"  -> Json.fromString("logo.png"),
         "path"      -> Json.fromString("does/not/matter"),

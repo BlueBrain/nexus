@@ -53,7 +53,8 @@ object ElasticSearchIndexingCoordinator {
       }
 
   /**
-    * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the ElasticSearchViews.
+    * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the
+    * ElasticSearchViews.
     */
   def apply(
       views: ElasticSearchViews,

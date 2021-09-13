@@ -32,7 +32,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of composite view rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class CompositeViewRejection(val reason: String) extends Product with Serializable
 
@@ -41,7 +42,8 @@ object CompositeViewRejection {
   /**
     * Rejection returned when attempting to create a view with an id that already exists.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewAlreadyExists(id: Iri, project: ProjectRef)
       extends CompositeViewRejection(s"Composite view '$id' already exists in project '$project'.")
@@ -49,8 +51,10 @@ object CompositeViewRejection {
   /**
     * Rejection returned when attempting to create a composite view but the id already exists for another resource type.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends CompositeViewRejection(s"Resource '$id' already exists in project '$project'.")
@@ -58,7 +62,8 @@ object CompositeViewRejection {
   /**
     * Rejection returned when a view doesn't exist.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
       extends CompositeViewRejection(s"Composite view '$id' not found in project '$project'.")
@@ -88,7 +93,8 @@ object CompositeViewRejection {
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewIsDeprecated(id: Iri) extends CompositeViewRejection(s"Composite view '$id' is deprecated.")
 
@@ -96,8 +102,10 @@ object CompositeViewRejection {
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends CompositeViewRejection(
@@ -108,8 +116,10 @@ object CompositeViewRejection {
     * Rejection returned when a subject intends to retrieve a view at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends CompositeViewRejection(
@@ -119,8 +129,10 @@ object CompositeViewRejection {
   /**
     * Rejection returned when too many sources are specified.
     *
-    * @param provided the number of sources specified
-    * @param max      the maximum number of sources
+    * @param provided
+    *   the number of sources specified
+    * @param max
+    *   the maximum number of sources
     */
   final case class TooManySources(provided: Int, max: Int)
       extends CompositeViewRejection(
@@ -130,8 +142,10 @@ object CompositeViewRejection {
   /**
     * Rejection returned when too many projections are specified.
     *
-    * @param provided the number of projections specified
-    * @param max      the maximum number of projections
+    * @param provided
+    *   the number of projections specified
+    * @param max
+    *   the maximum number of projections
     */
   final case class TooManyProjections(provided: Int, max: Int)
       extends CompositeViewRejection(
@@ -141,7 +155,8 @@ object CompositeViewRejection {
   /**
     * Rejection returned when there are duplicate ids in sources or projections.
     *
-    * @param ids the ids provided
+    * @param ids
+    *   the ids provided
     */
   final case class DuplicateIds(ids: Seq[Iri])
       extends CompositeViewRejection(
@@ -204,7 +219,8 @@ object CompositeViewRejection {
     * Signals a rejection caused by an attempt to create or update an composite view with a permission that is not
     * defined in the permission set singleton.
     *
-    * @param permission the provided permission
+    * @param permission
+    *   the provided permission
     */
   final case class PermissionIsNotDefined(permission: Permission)
       extends CompositeViewProjectionRejection(
@@ -218,10 +234,11 @@ object CompositeViewRejection {
       extends CompositeViewRejection("Unexpected evaluation error")
 
   /**
-    * Rejection returned when attempting to interact with a composite while providing an id that cannot be
-    * resolved to an Iri.
+    * Rejection returned when attempting to interact with a composite while providing an id that cannot be resolved to
+    * an Iri.
     *
-    * @param id the view identifier
+    * @param id
+    *   the view identifier
     */
   final case class InvalidCompositeViewId(id: String)
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
@@ -234,23 +251,25 @@ object CompositeViewRejection {
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends CompositeViewRejection(rejection.reason)
 
   /**
-    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends CompositeViewRejection(s"Tag requested '$tag' not found.")
 
   /**
-    * Rejection returned when the returned state is the initial state after a successful command evaluation.
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
-    * non initial state.
+    * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This
+    * should never happen since the evaluation method already guarantees that the next function returns a non initial
+    * state.
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends CompositeViewRejection(s"Unexpected initial state for composite view '$id' of project '$project'.")
@@ -259,8 +278,10 @@ object CompositeViewRejection {
     * Rejection returned when attempting to create a composite view where the passed id does not match the id on the
     * source json document.
     *
-    * @param id       the view identifier
-    * @param sourceId the view identifier in the source json document
+    * @param id
+    *   the view identifier
+    * @param sourceId
+    *   the view identifier in the source json document
     */
   final case class UnexpectedCompositeViewId(id: Iri, sourceId: Iri)
       extends CompositeViewRejection(
@@ -278,12 +299,14 @@ object CompositeViewRejection {
   /**
     * Rejection when attempting to decode an expanded JsonLD as a [[CompositeViewValue]].
     *
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends CompositeViewRejection(error.getMessage)
 
   /**
-    * Rejection returned when attempting to query a Blazegraph index and the caller does not have the right permissions defined in the view.
+    * Rejection returned when attempting to query a Blazegraph index and the caller does not have the right permissions
+    * defined in the view.
     */
   final case object AuthorizationFailed extends CompositeViewRejection(ServiceError.AuthorizationFailed.reason)
   type AuthorizationFailed = AuthorizationFailed.type

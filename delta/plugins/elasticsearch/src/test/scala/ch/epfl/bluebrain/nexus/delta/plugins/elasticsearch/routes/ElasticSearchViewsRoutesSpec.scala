@@ -9,7 +9,8 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -26,22 +27,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCounts, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 
 import java.time.Instant
 import java.util.UUID
@@ -121,13 +124,9 @@ class ElasticSearchViewsRoutesSpec
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, now)
+  private val projectStats = ProjectCount(10, 10, now)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(ProjectCountsCollection(Map(projectRef -> projectStats)))
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-  }
+  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
 
   private val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
@@ -181,7 +180,8 @@ class ElasticSearchViewsRoutesSpec
         statisticsProgress,
         restart,
         resourceToSchemaMapping,
-        sseEventLog
+        sseEventLog,
+        IndexingActionDummy()
       )
     )
 
@@ -489,10 +489,10 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "list" in {
+    "list on project scope" in {
       acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 12L).accepted
 
-      val endpoints = List(
+      val endpoints: Seq[(String, IdSegment)] = List(
         "/v1/views/myorg/myproject"                    -> elasticSearchSchema,
         "/v1/resources/myorg/myproject/schema"         -> "schema",
         s"/v1/resources/myorg/myproject/$myId2Encoded" -> myId2
@@ -500,8 +500,62 @@ class ElasticSearchViewsRoutesSpec
       forAll(endpoints) { case (endpoint, schema) =>
         Get(s"$endpoint?from=0&size=5&q=something") ~> routes ~> check {
           response.status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual jsonContentOf("/routes/elasticsearch-view-list-response.json", "schema" -> schema)
+          response.asJson shouldEqual
+            JsonObject("_total" -> 1.asJson)
+              .add("_results", Json.arr(listResponse(projectRef, schema).asJson))
+              .addContext(contexts.metadata)
+              .addContext(search)
+              .addContext(searchMetadata)
+              .asJson
         }
+      }
+    }
+
+    "list on org scope" in {
+      Get(s"/v1/views/myorg?from=0&size=5&q=something") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          JsonObject("_total" -> 1.asJson)
+            .add("_results", Json.arr(listResponse(Label.unsafe("myorg"), elasticSearchSchema).asJson))
+            .addContext(contexts.metadata)
+            .addContext(search)
+            .addContext(searchMetadata)
+            .asJson
+      }
+
+      Get(s"/v1/resources/myorg?from=0&size=5&q=something") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          JsonObject("_total" -> 1.asJson)
+            .add("_results", Json.arr(listResponse(Label.unsafe("myorg")).asJson))
+            .addContext(contexts.metadata)
+            .addContext(search)
+            .addContext(searchMetadata)
+            .asJson
+      }
+    }
+
+    "list" in {
+      Get(s"/v1/views?from=0&size=5&q=something") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          JsonObject("_total" -> 1.asJson)
+            .add("_results", Json.arr(listResponse(elasticSearchSchema).asJson))
+            .addContext(contexts.metadata)
+            .addContext(search)
+            .addContext(searchMetadata)
+            .asJson
+      }
+
+      Get(s"/v1/resources?from=0&size=5&q=something") ~> routes ~> check {
+        response.status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual
+          JsonObject("_total" -> 1.asJson)
+            .add("_results", Json.arr(listResponse.asJson))
+            .addContext(contexts.metadata)
+            .addContext(search)
+            .addContext(searchMetadata)
+            .asJson
       }
     }
 

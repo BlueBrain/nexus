@@ -15,9 +15,12 @@ import monix.bio.{IO, UIO}
 /**
   * The default creation of ACLs for newly created organizations and projects.
   *
-  * @param acls             the acls module
-  * @param ownerPermissions the collection of permissions to be granted to the owner (creator)
-  * @param serviceAccount   the subject that will be recorded when performing the initialization
+  * @param acls
+  *   the acls module
+  * @param ownerPermissions
+  *   the collection of permissions to be granted to the owner (creator)
+  * @param serviceAccount
+  *   the subject that will be recorded when performing the initialization
   */
 class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Permission], serviceAccount: ServiceAccount)
     extends ScopeInitialization {

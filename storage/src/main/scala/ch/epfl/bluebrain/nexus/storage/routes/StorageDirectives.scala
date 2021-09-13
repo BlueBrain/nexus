@@ -18,7 +18,8 @@ object StorageDirectives {
   /**
     * Extracts the relative path from the unmatched segments
     *
-    * @param name the storage bucket name
+    * @param name
+    *   the storage bucket name
     */
   def extractRelativePath(name: String): Directive1[Path] =
     extractUnmatchedPath.flatMap(p => validatePath(name, p).tmap(_ => relativize(p)))
@@ -26,8 +27,10 @@ object StorageDirectives {
   /**
     * Validates if the path is correct or malformed
     *
-    * @param name the storage bucket name
-    * @param path the path to validate
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the path to validate
     */
   def validatePath(name: String, path: Path): Directive0 =
     if (path.toString.contains("//") || containsRelativeChar(path))
@@ -46,9 +49,12 @@ object StorageDirectives {
   /**
     * Returns the evidence that a storage bucket exists
     *
-    * @param name     the storage bucket name
-    * @param storages the storages bundle api
-    * @return BucketExists when the storage bucket exists, rejection otherwise
+    * @param name
+    *   the storage bucket name
+    * @param storages
+    *   the storages bundle api
+    * @return
+    *   BucketExists when the storage bucket exists, rejection otherwise
     */
   def bucketExists[F[_]](name: String)(implicit storages: Storages[F, _]): Directive1[BucketExists] =
     storages.exists(name) match {
@@ -59,10 +65,14 @@ object StorageDirectives {
   /**
     * Returns the evidence that a path exists
     *
-    * @param name     the storage bucket name
-    * @param relativePath the relative path location
-    * @param storages the storages bundle api
-    * @return PathExists when the path exists inside the bucket, rejection otherwise
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path location
+    * @param storages
+    *   the storages bundle api
+    * @return
+    *   PathExists when the path exists inside the bucket, rejection otherwise
     */
   def pathExists[F[_]](name: String, relativePath: Uri.Path)(implicit
       storages: Storages[F, _]
@@ -75,10 +85,14 @@ object StorageDirectives {
   /**
     * Returns the evidence that a path does not exist
     *
-    * @param name     the storage bucket name
-    * @param relativePath the relative path location
-    * @param storages the storages bundle api
-    * @return PathDoesNotExist when the path does not exist inside the bucket, rejection otherwise
+    * @param name
+    *   the storage bucket name
+    * @param relativePath
+    *   the relative path location
+    * @param storages
+    *   the storages bundle api
+    * @return
+    *   PathDoesNotExist when the path does not exist inside the bucket, rejection otherwise
     */
   def pathNotExists[F[_]](name: String, relativePath: Uri.Path)(implicit
       storages: Storages[F, _]

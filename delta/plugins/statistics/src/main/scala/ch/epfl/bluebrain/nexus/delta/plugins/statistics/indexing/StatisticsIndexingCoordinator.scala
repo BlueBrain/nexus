@@ -54,7 +54,8 @@ object StatisticsIndexingCoordinator {
       }.onErrorHandle(_ => None)
 
   /**
-    * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the ElasticSearchViews.
+    * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the
+    * ElasticSearchViews.
     */
   def apply(
       projects: Projects,

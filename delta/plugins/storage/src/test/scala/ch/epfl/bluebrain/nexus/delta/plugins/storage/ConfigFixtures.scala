@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyC
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
@@ -38,6 +38,8 @@ trait ConfigFixtures extends OptionValues {
     )
 
   def indexing: CacheIndexingConfig = CacheIndexingConfig(1, RetryStrategyConfig.ConstantStrategyConfig(1.second, 10))
+
+  def persist: SaveProgressConfig = SaveProgressConfig(2, 20.millis)
 
   def pagination: PaginationConfig =
     PaginationConfig(

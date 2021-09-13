@@ -20,12 +20,14 @@ import scala.annotation.nowarn
 sealed trait CompositeViewProjection extends Product with Serializable {
 
   /**
-    * @return the id of the projection
+    * @return
+    *   the id of the projection
     */
   def id: Iri
 
   /**
-    * @return the uuid of the projection
+    * @return
+    *   the uuid of the projection
     */
   def uuid: UUID
 
@@ -35,47 +37,56 @@ sealed trait CompositeViewProjection extends Product with Serializable {
   def query: SparqlConstructQuery
 
   /**
-    * @return the schemas to filter by, empty means all
+    * @return
+    *   the schemas to filter by, empty means all
     */
   def resourceSchemas: Set[Iri]
 
   /**
-    * @return the resource types to filter by, empty means all
+    * @return
+    *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
 
   /**
-    * @return the optional tag to filter by
+    * @return
+    *   the optional tag to filter by
     */
   def resourceTag: Option[TagLabel]
 
   /**
-    * @return whether to include deprecated resources
+    * @return
+    *   whether to include deprecated resources
     */
   def includeMetadata: Boolean
 
   /**
-    * @return whether to include resource metadata
+    * @return
+    *   whether to include resource metadata
     */
   def includeDeprecated: Boolean
 
   /**
-    * @return permission required to query the projection
+    * @return
+    *   permission required to query the projection
     */
   def permission: Permission
 
   /**
-    * @return the type of the projection
+    * @return
+    *   the type of the projection
     */
   def tpe: ProjectionType
 
   /**
-    * @return Some(projection) if the current projection is an [[SparqlProjection]], None otherwise
+    * @return
+    *   Some(projection) if the current projection is an [[SparqlProjection]], None otherwise
     */
   def asSparql: Option[SparqlProjection]
 
   /**
-    * @return Some(projection) if the current projection is an [[ElasticSearchProjection]], None otherwise
+    * @return
+    *   Some(projection) if the current projection is an [[ElasticSearchProjection]], None otherwise
     */
   def asElasticSearch: Option[ElasticSearchProjection]
 }

@@ -11,11 +11,16 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * Configuration for the Realms module.
   *
-  * @param aggregate     configuration of the underlying aggregate
-  * @param keyValueStore configuration of the underlying key/value store
-  * @param pagination    configuration for how pagination should behave in listing operations
-  * @param cacheIndexing configuration of the cache indexing process
-  * @param client        the client to interact with the Open-ID Connect endpoints
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
+  * @param client
+  *   the client to interact with the Open-ID Connect endpoints
   */
 final case class RealmsConfig(
     aggregate: AggregateConfig,

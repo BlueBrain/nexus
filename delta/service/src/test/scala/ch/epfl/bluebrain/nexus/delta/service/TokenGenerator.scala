@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.service
 
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+
 import java.time.Instant
 import java.util.Date
-
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import com.nimbusds.jose.crypto.RSASSASigner
@@ -10,6 +11,7 @@ import com.nimbusds.jose.jwk.RSAKey
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
+import scala.jdk.CollectionConverters._
 
 object TokenGenerator extends TestHelpers {
 
@@ -30,6 +32,7 @@ object TokenGenerator extends TestHelpers {
       rsaKey: RSAKey,
       expires: Instant = Instant.now().plusSeconds(3600),
       notBefore: Instant = Instant.now().minusSeconds(3600),
+      aud: Option[NonEmptySet[String]] = None,
       groups: Option[Set[String]] = None,
       useCommas: Boolean = false,
       preferredUsername: Option[String] = None
@@ -41,12 +44,14 @@ object TokenGenerator extends TestHelpers {
       .expirationTime(Date.from(expires))
       .notBeforeTime(Date.from(notBefore))
 
-    groups.map { set =>
+    groups.foreach { set =>
       if (useCommas) csb.claim("groups", set.mkString(","))
       else csb.claim("groups", set.toArray)
     }
 
-    preferredUsername.map { pu => csb.claim("preferred_username", pu) }
+    aud.foreach(audiences => csb.audience(audiences.value.toList.asJava))
+
+    preferredUsername.foreach(pu => csb.claim("preferred_username", pu))
 
     val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID).build(), csb.build())
     jwt.sign(signer)

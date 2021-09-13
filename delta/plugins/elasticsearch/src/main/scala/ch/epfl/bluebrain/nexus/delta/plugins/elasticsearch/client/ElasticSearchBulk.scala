@@ -9,17 +9,20 @@ import io.circe.syntax._
 sealed trait ElasticSearchBulk extends Product with Serializable {
 
   /**
-    * @return the index to use for the current bulk operation
+    * @return
+    *   the index to use for the current bulk operation
     */
   def index: IndexLabel
 
   /**
-    * @return the id of the document for the current bulk operation
+    * @return
+    *   the id of the document for the current bulk operation
     */
   def id: String
 
   /**
-    * @return the payload for the current bulk operation
+    * @return
+    *   the payload for the current bulk operation
     */
   def payload: String
 

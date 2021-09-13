@@ -15,17 +15,20 @@ import scala.util.Try
 sealed trait SparqlLink {
 
   /**
-    * @return the @id value of the resource
+    * @return
+    *   the @id value of the resource
     */
   def id: Iri
 
   /**
-    * @return the collection of types of this resource
+    * @return
+    *   the collection of types of this resource
     */
   def types: Set[Iri]
 
   /**
-    * @return the paths from where the link has been found
+    * @return
+    *   the paths from where the link has been found
     */
   def paths: List[Iri]
 }
@@ -63,7 +66,8 @@ object SparqlLink {
     /**
       * Attempts to create a [[SparqlResourceLink]] from the given bindings
       *
-      * @param bindings      the sparql result bindings
+      * @param bindings
+      *   the sparql result bindings
       */
     def apply(
         bindings: Map[String, Binding],
@@ -112,9 +116,12 @@ object SparqlLink {
   /**
     * A link that represents an external resource out of the platform.
     *
-    * @param id    the @id value of the resource
-    * @param paths the predicate from where the link has been found
-    * @param types the collection of types of this resource
+    * @param id
+    *   the @id value of the resource
+    * @param paths
+    *   the predicate from where the link has been found
+    * @param types
+    *   the collection of types of this resource
     */
   final case class SparqlExternalLink(id: Iri, paths: List[Iri], types: Set[Iri] = Set.empty) extends SparqlLink
 
@@ -123,7 +130,8 @@ object SparqlLink {
     /**
       * Attempts to create a [[SparqlExternalLink]] from the given bindings
       *
-      * @param bindings the sparql result bindings
+      * @param bindings
+      *   the sparql result bindings
       */
     def apply(bindings: Map[String, Binding]): Option[SparqlExternalLink] = {
       val types = bindings.get("types").map(binding => toIris(binding.value).toSet).getOrElse(Set.empty)

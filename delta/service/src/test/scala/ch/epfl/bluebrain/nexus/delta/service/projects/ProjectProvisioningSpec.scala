@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -68,6 +69,7 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
 
   val projects = ProjectsDummy(
     organizations,
+    QuotasDummy.neverReached,
     Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)),
     ApiMappings.empty
   ).accepted
@@ -89,7 +91,8 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         provisioningConfig.fields.description,
         provisioningConfig.fields.apiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
-        provisioningConfig.fields.vocab.value.value
+        provisioningConfig.fields.vocab.value.value,
+        markedForDeletion = false
       )
       acls.fetch(projectRef).accepted.value shouldEqual acl
     }
@@ -108,7 +111,8 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         provisioningConfig.fields.description,
         provisioningConfig.fields.apiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
-        provisioningConfig.fields.vocab.value.value
+        provisioningConfig.fields.vocab.value.value,
+        markedForDeletion = false
       )
     }
 

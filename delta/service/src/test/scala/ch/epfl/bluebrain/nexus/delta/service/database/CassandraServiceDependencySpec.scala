@@ -19,7 +19,7 @@ class CassandraServiceDependencySpec
 
     "fetch its service name and version" in {
       new CassandraServiceDependency().serviceDescription.accepted shouldEqual
-        ServiceDescription(Name.unsafe("cassandra"), "3.11.6")
+        ServiceDescription(Name.unsafe("cassandra"), "3.11.11")
     }
   }
 

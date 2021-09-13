@@ -162,10 +162,14 @@ object AclsImpl {
   /**
     * Constructs an [[AclsImpl]] instance.
     *
-    * @param config      ACLs configurate
-    * @param permissions [[Permissions]] instance
-    * @param realms      [[Realms]] instance
-    * @param eventLog    the event log
+    * @param config
+    *   ACLs configurate
+    * @param permissions
+    *   [[Permissions]] instance
+    * @param realms
+    *   [[Realms]] instance
+    * @param eventLog
+    *   the event log
     */
   final def apply(
       config: AclsConfig,

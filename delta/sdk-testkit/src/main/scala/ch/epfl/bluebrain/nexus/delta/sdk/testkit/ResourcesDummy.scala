@@ -5,14 +5,15 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
@@ -29,11 +30,16 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Resources implementation
   *
-  * @param journal   the journal to store events
-  * @param orgs      the organizations operations bundle
-  * @param projects  the projects operations bundle
-  * @param resourceResolution   to resolve schemas using resolvers
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param journal
+  *   the journal to store events
+  * @param orgs
+  *   the organizations operations bundle
+  * @param projects
+  *   the projects operations bundle
+  * @param resourceResolution
+  *   to resolve schemas using resolvers
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
     journal: ResourcesJournal,
@@ -54,7 +60,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project                    <- projects.fetchActiveProject(projectRef)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       schemeRef                  <- expandResourceRef(schema, project)
       (iri, compacted, expanded) <- sourceParser(project, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
@@ -67,7 +73,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       schemeRef             <- expandResourceRef(schema, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -82,7 +88,7 @@ final class ResourcesDummy private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] =
     for {
-      project               <- projects.fetchActiveProject(projectRef)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       schemeRefOpt          <- expandResourceRef(schemaOpt, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
@@ -99,7 +105,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchActiveProject(projectRef)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
@@ -112,7 +118,7 @@ final class ResourcesDummy private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {
-      project      <- projects.fetchActiveProject(projectRef)
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri          <- expandIri(id, project)
       schemeRefOpt <- expandResourceRef(schemaOpt, project)
       res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
@@ -142,6 +148,14 @@ final class ResourcesDummy private (
     projects
       .fetchProject(projectRef)
       .as(journal.eventsByTag(Projects.projectTag(projectRef), offset))
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEventsByTag(Projects.projectTag(projectRef), offset))
 
   override def events(
       organization: Label,
@@ -205,10 +219,14 @@ object ResourcesDummy {
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs     the organizations operations bundle
-    * @param projects the projects operations bundle
-    * @param resourceResolution   to resolve schemas using resolvers
-    * @param contextResolution the context resolver
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param resourceResolution
+    *   to resolve schemas using resolvers
+    * @param contextResolution
+    *   the context resolver
     */
   def apply(
       orgs: Organizations,
@@ -221,17 +239,31 @@ object ResourcesDummy {
       journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
       sem     <- IOSemaphore(1L)
       parser   = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
+    } yield new ResourcesDummy(
+      journal,
+      orgs,
+      projects,
+      resourceResolution,
+      idAvailability,
+      sem,
+      parser
+    )
 
   /**
     * Creates a resources dummy instance
     *
-    * @param orgs               the organizations operations bundle
-    * @param projects           the projects operations bundle
-    * @param resourceResolution to resolve schemas using resolvers
-    * @param idAvailability to resolve schemas using resolvers
-    * @param contextResolution  the context resolver
-    * @param journal            underlying [[Journal]]
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param resourceResolution
+    *   to resolve schemas using resolvers
+    * @param idAvailability
+    *   to resolve schemas using resolvers
+    * @param contextResolution
+    *   the context resolver
+    * @param journal
+    *   underlying [[Journal]]
     */
   def apply(
       orgs: Organizations,
@@ -244,6 +276,14 @@ object ResourcesDummy {
     for {
       sem   <- IOSemaphore(1L)
       parser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
-    } yield new ResourcesDummy(journal, orgs, projects, resourceResolution, idAvailability, sem, parser)
+    } yield new ResourcesDummy(
+      journal,
+      orgs,
+      projects,
+      resourceResolution,
+      idAvailability,
+      sem,
+      parser
+    )
 
 }

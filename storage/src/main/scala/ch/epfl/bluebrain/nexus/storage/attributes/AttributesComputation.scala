@@ -24,9 +24,12 @@ trait AttributesComputation[F[_], Source] {
   /**
     * Given a path and an algorithm, generates its FileAttributes
     *
-    * @param path      the path to the file
-    * @param algorithm the digest algorithm
-    * @return a computed file attributes, wrapped on the effect type F
+    * @param path
+    *   the path to the file
+    * @param algorithm
+    *   the digest algorithm
+    * @return
+    *   a computed file attributes, wrapped on the effect type F
     */
   def apply(path: Path, algorithm: String): F[FileAttributes]
 }
@@ -34,11 +37,13 @@ trait AttributesComputation[F[_], Source] {
 object AttributesComputation {
 
   /**
-    * Detects the media type of the provided path, based on the file system detector available for a certain path or on the path extension.
-    * If the path is a directory, a application/x-tar content-type is returned
+    * Detects the media type of the provided path, based on the file system detector available for a certain path or on
+    * the path extension. If the path is a directory, a application/x-tar content-type is returned
     *
-    * @param path  the path
-    * @param isDir flag to decide whether or not the path is a directory
+    * @param path
+    *   the path
+    * @param isDir
+    *   flag to decide whether or not the path is a directory
     */
   def detectMediaType(path: Path, isDir: Boolean = false): ContentType =
     if (isDir) {
@@ -65,8 +70,10 @@ object AttributesComputation {
   /**
     * A computation of attributes for a source of type AkkaSource
     *
-    * @tparam F the effect type
-    * @return a AttributesComputation implemented for a source of type AkkaSource
+    * @tparam F
+    *   the effect type
+    * @return
+    *   a AttributesComputation implemented for a source of type AkkaSource
     */
   implicit def akkaAttributes[F[_]](implicit
       ec: ExecutionContext,

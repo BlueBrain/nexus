@@ -76,9 +76,12 @@ class BlazegraphClient(
   /**
     * Attempts to create a namespace (if it doesn't exist) recovering gracefully when the namespace already exists.
     *
-    * @param namespace the namespace
-    * @param properties the properties to use for namespace creation
-    * @return ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
+    * @param namespace
+    *   the namespace
+    * @param properties
+    *   the properties to use for namespace creation
+    * @return
+    *   ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
     */
   def createNamespace(namespace: String, properties: Map[String, String]): IO[SparqlClientError, Boolean] =
     existsNamespace(namespace).flatMap {
@@ -94,11 +97,13 @@ class BlazegraphClient(
     }
 
   /**
-    * Attempts to create a namespace (if it doesn't exist) with default properties
-    * recovering gracefully when the namespace already exists.
+    * Attempts to create a namespace (if it doesn't exist) with default properties recovering gracefully when the
+    * namespace already exists.
     *
-    * @param namespace the namespace
-    * @return ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
+    * @param namespace
+    *   the namespace
+    * @return
+    *   ''true'' wrapped on an IO when namespace has been created and ''false'' wrapped on an IO when it already existed
     */
   def createNamespace(namespace: String): IO[SparqlClientError, Boolean] =
     defaultProperties.flatMap(createNamespace(namespace, _))
@@ -106,7 +111,8 @@ class BlazegraphClient(
   /**
     * Attempts to delete a namespace recovering gracefully when the namespace does not exists.
     *
-    * @return ''true'' wrapped in ''F'' when namespace has been deleted and ''false'' wrapped in ''F'' when it does not existe
+    * @return
+    *   ''true'' wrapped in ''F'' when namespace has been deleted and ''false'' wrapped in ''F'' when it does not existe
     */
   def deleteNamespace(namespace: String): IO[SparqlClientError, Boolean] =
     client(Delete(endpoint / "namespace" / namespace)) {

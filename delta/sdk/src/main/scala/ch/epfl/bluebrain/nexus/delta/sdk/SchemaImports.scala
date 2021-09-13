@@ -21,10 +21,14 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
   /**
     * Resolve the ''imports'' from the passed ''expanded'' document and recursively from the resolved documents.
     *
-    * @param id         the schema id
-    * @param projectRef the project where the schema belongs to
-    * @param expanded   the schema expanded form
-    * @return a "fat-schema" with all the imports resolved
+    * @param id
+    *   the schema id
+    * @param projectRef
+    *   the project where the schema belongs to
+    * @param expanded
+    *   the schema expanded form
+    * @return
+    *   a "fat-schema" with all the imports resolved
     */
   def resolve(id: Iri, projectRef: ProjectRef, expanded: ExpandedJsonLd)(implicit
       caller: Caller

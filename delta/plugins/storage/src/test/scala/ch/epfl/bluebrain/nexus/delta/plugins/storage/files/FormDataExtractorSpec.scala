@@ -2,12 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.{EntityStreamSizeException, HttpEntity, Multipart}
-import akka.http.scaladsl.server.MalformedRequestContentRejection
+import akka.http.scaladsl.model.{HttpEntity, Multipart}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileDescription
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{InvalidMultipartFieldName, WrappedAkkaRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -44,7 +43,7 @@ class FormDataExtractorSpec
           .toEntity()
 
       val expectedDescription   = FileDescription(uuid, "file.txt", Some(`text/plain(UTF-8)`))
-      val (description, source) = extractor(iri, entity, 179).accepted
+      val (description, source) = extractor(iri, entity, 179, None).accepted
       description shouldEqual expectedDescription
       consume(source) shouldEqual content
     }
@@ -55,7 +54,7 @@ class FormDataExtractorSpec
           .FormData(Multipart.FormData.BodyPart("other", HttpEntity(`text/plain(UTF-8)`, content), Map.empty))
           .toEntity()
 
-      extractor(iri, entity, 179).rejectedWith[InvalidMultipartFieldName]
+      extractor(iri, entity, 179, None).rejectedWith[InvalidMultipartFieldName]
     }
 
     "fail to be extracted if payload size is too large" in {
@@ -64,11 +63,7 @@ class FormDataExtractorSpec
           .FormData(Multipart.FormData.BodyPart("other", HttpEntity(`text/plain(UTF-8)`, content), Map.empty))
           .toEntity()
 
-      val rej = extractor(iri, entity, 10)
-        .rejectedWith[WrappedAkkaRejection]
-        .rejection
-        .asInstanceOf[MalformedRequestContentRejection]
-      rej.cause shouldBe a[EntityStreamSizeException]
+      extractor(iri, entity, 10, None).rejected shouldEqual FileTooLarge(10L, None)
     }
   }
 }

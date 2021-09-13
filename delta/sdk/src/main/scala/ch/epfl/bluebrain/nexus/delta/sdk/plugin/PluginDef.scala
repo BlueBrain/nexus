@@ -22,19 +22,20 @@ trait PluginDef {
   def info: PluginDescription
 
   /**
-    * @return the plugin configuration filename
+    * @return
+    *   the plugin configuration filename
     */
   def configFileName: String = s"${info.name}.conf"
 
   /**
-    * @return true if the plugin is enabled, false otherwise
+    * @return
+    *   true if the plugin is enabled, false otherwise
     */
   def enabled: Boolean = pluginConfigObject.getBoolean("enabled")
 
   /**
-    * The priority of this plugin.
-    * This value will decide the order in which this plugin is executed compared to the rest of the plugins.
-    * It affects Routes ordering and classpath ordering.
+    * The priority of this plugin. This value will decide the order in which this plugin is executed compared to the
+    * rest of the plugins. It affects Routes ordering and classpath ordering.
     *
     * The value is retrieved from the plugin configuration inside the priority field
     */
@@ -43,9 +44,11 @@ trait PluginDef {
   /**
     * Initialize the plugin.
     *
-    * @param locator  distage dependencies [[Locator]]
+    * @param locator
+    *   distage dependencies [[Locator]]
     *
-    * @return [[Plugin]] instance.
+    * @return
+    *   [[Plugin]] instance.
     */
   def initialize(locator: Locator): Task[Plugin]
 

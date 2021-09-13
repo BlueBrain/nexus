@@ -24,32 +24,38 @@ import scala.annotation.nowarn
 sealed trait ProjectEvent extends ProjectScopedEvent {
 
   /**
-    * @return the project ref
+    * @return
+    *   the project ref
     */
   def project: ProjectRef = ProjectRef(organizationLabel, label)
 
   /**
-    * @return the project label
+    * @return
+    *   the project label
     */
   def label: Label
 
   /**
-    * @return the project uuid
+    * @return
+    *   the project uuid
     */
   def uuid: UUID
 
   /**
-    * @return the parent organization label
+    * @return
+    *   the parent organization label
     */
   def organizationLabel: Label
 
   /**
-    * @return the parent organization unique identifier
+    * @return
+    *   the parent organization unique identifier
     */
   def organizationUuid: UUID
 
   /**
-    * @return true if the event is [[ProjectCreated]], false otherwise
+    * @return
+    *   true if the event is [[ProjectCreated]], false otherwise
     */
   def isCreated: Boolean = this match {
     case _: ProjectCreated => true
@@ -63,17 +69,28 @@ object ProjectEvent {
   /**
     * Evidence that a project has been created.
     *
-    * @param label             the project label
-    * @param uuid              the project uuid
-    * @param organizationLabel the parent organization label
-    * @param organizationUuid  the parent organization uuid
-    * @param rev               the project revision
-    * @param description       an optional project description
-    * @param apiMappings       the project API mappings
-    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
-    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
-    * @param instant           the timestamp associated to this event
-    * @param subject           the identity associated to this event
+    * @param label
+    *   the project label
+    * @param uuid
+    *   the project uuid
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param rev
+    *   the project revision
+    * @param description
+    *   an optional project description
+    * @param apiMappings
+    *   the project API mappings
+    * @param base
+    *   the base Iri for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab
+    *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param instant
+    *   the timestamp associated to this event
+    * @param subject
+    *   the identity associated to this event
     */
   final case class ProjectCreated(
       label: Label,
@@ -92,17 +109,28 @@ object ProjectEvent {
   /**
     * Evidence that a project has been updated.
     *
-    * @param label             the project label
-    * @param uuid              the project uuid
-    * @param organizationLabel the parent organization label
-    * @param organizationUuid  the parent organization uuid
-    * @param description       an optional project description
-    * @param apiMappings       the project API mappings
-    * @param base              the base Iri for generated resource IDs ending with ''/'' or ''#''
-    * @param vocab             an optional vocabulary for resources with no context ending with ''/'' or ''#''
-    * @param rev               the revision number that this event generates
-    * @param instant           the timestamp associated to this event
-    * @param subject           the identity associated to this event
+    * @param label
+    *   the project label
+    * @param uuid
+    *   the project uuid
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param description
+    *   an optional project description
+    * @param apiMappings
+    *   the project API mappings
+    * @param base
+    *   the base Iri for generated resource IDs ending with ''/'' or ''#''
+    * @param vocab
+    *   an optional vocabulary for resources with no context ending with ''/'' or ''#''
+    * @param rev
+    *   the revision number that this event generates
+    * @param instant
+    *   the timestamp associated to this event
+    * @param subject
+    *   the identity associated to this event
     */
   final case class ProjectUpdated(
       label: Label,
@@ -121,15 +149,50 @@ object ProjectEvent {
   /**
     * Evidence that a project has been deprecated.
     *
-    * @param label             the label (segment) of the project
-    * @param uuid              the permanent identifier for the project
-    * @param organizationLabel the parent organization label
-    * @param organizationUuid  the parent organization uuid
-    * @param rev               the revision number that this event generates
-    * @param instant           the timestamp associated to this event
-    * @param subject           the identity associated to this event
+    * @param label
+    *   the label (segment) of the project
+    * @param uuid
+    *   the permanent identifier for the project
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param rev
+    *   the revision number that this event generates
+    * @param instant
+    *   the timestamp associated to this event
+    * @param subject
+    *   the identity associated to this event
     */
   final case class ProjectDeprecated(
+      label: Label,
+      uuid: UUID,
+      override val organizationLabel: Label,
+      organizationUuid: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent
+
+  /**
+    * Evidence that a project has been marked for deletion.
+    *
+    * @param label
+    *   the label (segment) of the project
+    * @param uuid
+    *   the permanent identifier for the project
+    * @param organizationLabel
+    *   the parent organization label
+    * @param organizationUuid
+    *   the parent organization uuid
+    * @param rev
+    *   the revision number that this event generates
+    * @param instant
+    *   the timestamp associated to this event
+    * @param subject
+    *   the identity associated to this event
+    */
+  final case class ProjectMarkedForDeletion(
       label: Label,
       uuid: UUID,
       override val organizationLabel: Label,

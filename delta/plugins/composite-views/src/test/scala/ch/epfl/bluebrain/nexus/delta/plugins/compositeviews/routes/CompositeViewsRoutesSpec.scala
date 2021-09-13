@@ -30,11 +30,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, A
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCounts}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -65,19 +65,20 @@ class CompositeViewsRoutesSpec
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
 
-  implicit val ordering: JsonKeyOrdering          =
+  implicit val ordering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
+
+  implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
-  val realm                     = Label.unsafe("myrealm")
-  val bob                       = User("Bob", realm)
-  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val identities        = IdentitiesDummy(Map(AuthToken("bob") -> caller))
-  private val asBob             = addCredentials(OAuth2BearerToken("bob"))
+  val realm                   = Label.unsafe("myrealm")
+  val bob                     = User("Bob", realm)
+  implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  private val identities      = IdentitiesDummy(Map(AuthToken("bob") -> caller))
+  private val asBob           = addCredentials(OAuth2BearerToken("bob"))
 
   val undefinedPermission = Permission.unsafe("not/defined")
   val allowedPerms        = Set(
@@ -103,22 +104,11 @@ class CompositeViewsRoutesSpec
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats       = ProjectCount(10, nowPlus5)
-  private val otherProjectStats  = ProjectCount(100, nowPlus5)
-  private val remoteProjectStats = ProjectCount(1000, nowPlus5)
+  private val projectStats       = ProjectCount(10, 10, nowPlus5)
+  private val otherProjectStats  = ProjectCount(100, 100, nowPlus5)
+  private val remoteProjectStats = ProjectCount(1000, 1000, nowPlus5)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection]                 =
-      UIO(
-        ProjectCountsCollection(
-          Map(
-            projectRef      -> projectStats,
-            otherProjectRef -> otherProjectStats
-          )
-        )
-      )
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-  }
+  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats, otherProjectRef -> otherProjectStats)
 
   private val deltaClient = new DeltaClient {
     override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectCount] =

@@ -21,7 +21,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
 
   private val logger = Logger[this.type]
 
-  private val keycloakUrl    = Uri(s"http://${System.getProperty("keycloak:8080")}/auth")
+  private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}/auth")
   private val keycloakClient = HttpClient(keycloakUrl)
   // Defined in docker-compose file
   private val adminRealm     = Realm("master")
@@ -138,7 +138,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
         .getOption(response)
         .getOrElse(
           throw new IllegalArgumentException(
-            s"Couldn't get a token for client ${client.id}, we got response: $response"
+            s"Couldn't get a token for client ${client.id} for realm ${client.realm.name}, we got response: $response"
           )
         )
     }

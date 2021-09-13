@@ -29,7 +29,8 @@
     "_effectiveApiMappings": {
       "@id": "https://bluebrain.github.io/nexus/vocabulary/effectiveApiMappings",
       "@container": "@set"
-    }
+    },
+    "_markedForDeletion": "https://bluebrain.github.io/nexus/vocabulary/markedForDeletion"
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/projects.json"
 }

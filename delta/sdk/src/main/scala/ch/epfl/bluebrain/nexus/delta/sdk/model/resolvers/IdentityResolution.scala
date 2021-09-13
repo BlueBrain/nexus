@@ -18,7 +18,8 @@ object IdentityResolution {
 
   /**
     * The resolution will rely on the provided entities
-    * @param value the identities
+    * @param value
+    *   the identities
     */
   final case class ProvidedIdentities(value: Set[Identity]) extends IdentityResolution
 

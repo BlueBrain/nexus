@@ -1,19 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectEvent, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonLdValue, JsonValue, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectEventExchange.MarkedForDeletion
+import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
 /**
   * Project specific [[EventExchange]] implementation for handling indexing of projects alongside its resources.
   *
-  * @param projects the projects module
+  * @param projects
+  *   the projects module
   */
 class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultApiMappings: ApiMappings)
     extends EventExchange {
@@ -26,6 +34,26 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
     event match {
       case ev: ProjectEvent => Some(JsonValue(ev))
       case _                => None
+    }
+
+  override def toMetric(event: Event): UIO[Option[EventMetric]] =
+    event match {
+      case p: ProjectEvent =>
+        UIO.some(
+          ProjectScopedMetric.from[ProjectEvent](
+            p,
+            p match {
+              case _: ProjectCreated           => EventMetric.Created
+              case _: ProjectUpdated           => EventMetric.Updated
+              case _: ProjectDeprecated        => EventMetric.Deprecated
+              case _: ProjectMarkedForDeletion => MarkedForDeletion
+            },
+            ResourceUris.project(p.project).accessUri.toIri,
+            Set(nxv.Project),
+            JsonObject.empty
+          )
+        )
+      case _               => UIO.none
     }
 
   override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
@@ -42,4 +70,12 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
         Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata)))
       }
       .onErrorHandle(_ => None)
+}
+
+object ProjectEventExchange {
+
+  /**
+    * Specific action for projects
+    */
+  private val MarkedForDeletion = Label.unsafe("MarkedForDeletion")
 }

@@ -28,6 +28,14 @@ That means that when those get updated, the resources importing them must be als
 
 @@@
 
+## Indexing
+
+All the API calls modifying a resource(creation, update, tagging, deprecation) can specify whether the resource should be indexed 
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+  - `async` - (default value) the resource will be indexed asynchronously 
+  - `sync` - the resource will be indexed synchronously and the API call won't return until the indexing is finished
+
 ## Create using POST
 
 ```

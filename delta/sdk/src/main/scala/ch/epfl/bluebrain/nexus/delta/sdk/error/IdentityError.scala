@@ -11,7 +11,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Top level error type that represents issues related to authentication and identities
   *
-  * @param reason a human readable message for why the error occurred
+  * @param reason
+  *   a human readable message for why the error occurred
   */
 sealed abstract class IdentityError(reason: String) extends SDKError {
 
@@ -28,7 +29,8 @@ object IdentityError {
   /**
     * Signals an attempt to consume the service without a valid oauth2 bearer token.
     *
-    * @param rejection the specific reason why the token is invalid
+    * @param rejection
+    *   the specific reason why the token is invalid
     */
   final case class InvalidToken(rejection: TokenRejection) extends IdentityError(rejection.reason)
 

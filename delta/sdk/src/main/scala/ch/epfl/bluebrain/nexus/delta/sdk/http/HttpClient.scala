@@ -29,8 +29,8 @@ import scala.reflect.ClassTag
 trait HttpClient {
 
   /**
-    * Execute the request and evaluate the response using the passed ''pf''. If the response does not match the
-    * ''pf'', consume the response and return the appropriate error
+    * Execute the request and evaluate the response using the passed ''pf''. If the response does not match the ''pf'',
+    * consume the response and return the appropriate error
     */
   def apply[A](req: HttpRequest)(handleResponse: PartialFunction[HttpResponse, HttpResult[A]]): HttpResult[A]
 
@@ -57,8 +57,8 @@ trait HttpClient {
   def toDataBytes(req: HttpRequest): HttpResult[AkkaSource]
 
   /**
-    * Execute the argument request, consume the response and ignore, returning the passed ''returnValue''
-    * when the response is successful.
+    * Execute the argument request, consume the response and ignore, returning the passed ''returnValue'' when the
+    * response is successful.
     */
   def discardBytes[A](req: HttpRequest, returnValue: => A): HttpResult[A]
 

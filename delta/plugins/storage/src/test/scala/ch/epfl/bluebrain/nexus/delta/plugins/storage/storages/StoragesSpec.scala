@@ -284,7 +284,7 @@ class StoragesSpec
       val diskVolume                = AbsolutePath(Files.createTempDirectory("disk")).rightValue
       // format: off
       val config: StorageTypeConfig = StorageTypeConfig(
-        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, 50),
+        disk        = DiskStorageConfig(diskVolume, Set(diskVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(1000), 150),
         amazon      = None,
         remoteDisk  = None
       )
@@ -427,7 +427,7 @@ class StoragesSpec
     "updating a storage" should {
 
       "succeed" in {
-        val payload = diskFieldsJson.map(_ deepMerge json"""{"default": false, "maxFileSize": 40}""")
+        val payload = diskFieldsJson.map(_ deepMerge json"""{"default": false, "capacity": 2000, "maxFileSize": 40}""")
         storages.update(dId, projectRef, 2, payload).accepted shouldEqual
           resourceFor(dId, projectRef, diskValUpdate, payload, rev = 3, createdBy = bob, updatedBy = bob)
       }

@@ -6,7 +6,8 @@ import io.circe.Decoder
 /**
   * A safe organization label.
   *
-  * @param value the string representation
+  * @param value
+  *   the string representation
   */
 final case class OrgLabel(value: String)
 

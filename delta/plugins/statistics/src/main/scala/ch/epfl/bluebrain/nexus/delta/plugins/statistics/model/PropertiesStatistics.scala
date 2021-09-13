@@ -19,8 +19,10 @@ import scala.annotation.{nowarn, tailrec}
 /**
   * Each property with its counts.
   *
-  * @param metadata   the property information (names and counts)
-  * @param properties the nested properties of the current property
+  * @param metadata
+  *   the property information (names and counts)
+  * @param properties
+  *   the nested properties of the current property
   */
 final case class PropertiesStatistics(metadata: Metadata, properties: Seq[PropertiesStatistics])
 
@@ -29,9 +31,12 @@ object PropertiesStatistics {
   /**
     * The property information.
     *
-    * @param id    the property @id
-    * @param name  the property name
-    * @param count the number of times this property appears
+    * @param id
+    *   the property @id
+    * @param name
+    *   the property name
+    * @param count
+    *   the number of times this property appears
     */
   final case class Metadata(id: Iri, name: String, count: Long)
 

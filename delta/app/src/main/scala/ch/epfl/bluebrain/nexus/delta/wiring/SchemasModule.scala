@@ -11,12 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, MetadataContextValue, ResourceToSchemaMappings}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
+import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasDeletion, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -29,28 +30,30 @@ object SchemasModule extends ModuleDef {
 
   make[EventLog[Envelope[SchemaEvent]]].fromEffect { databaseEventLog[SchemaEvent](_, _) }
 
-  make[Schemas].fromEffect {
+  make[SchemasCache].fromEffect { (config: AppConfig) => SchemasImpl.cache(config.schemas) }
+
+  make[SchemasAggregate].fromEffect {
+    (config: AppConfig, resourceIdCheck: ResourceIdCheck, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      SchemasImpl.aggregate(config.schemas.aggregate, resourceIdCheck)(as, clock)
+  }
+
+  make[Schemas].from {
     (
-        config: AppConfig,
         eventLog: EventLog[Envelope[SchemaEvent]],
         organizations: Organizations,
         projects: Projects,
         schemaImports: SchemaImports,
         resolverContextResolution: ResolverContextResolution,
-        resourceIdCheck: ResourceIdCheck,
-        clock: Clock[UIO],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing]
+        agg: SchemasAggregate,
+        cache: SchemasCache,
+        uuidF: UUIDF
     ) =>
-      SchemasImpl(
-        organizations,
-        projects,
-        schemaImports,
-        resolverContextResolution,
-        config.schemas,
-        eventLog,
-        resourceIdCheck
-      )(uuidF, as, clock)
+      SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(uuidF)
+  }
+
+  many[ResourcesDeletion].add {
+    (cache: SchemasCache, agg: SchemasAggregate, schemas: Schemas, dbCleanup: DatabaseCleanup) =>
+      SchemasDeletion(cache, agg, schemas, dbCleanup)
   }
 
   make[SchemaImports].from {
@@ -70,12 +73,13 @@ object SchemasModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         schemas: Schemas,
+        indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new SchemasRoutes(identities, acls, organizations, projects, schemas)(baseUri, s, cr, ordering)
+      new SchemasRoutes(identities, acls, organizations, projects, schemas, indexingAction)(baseUri, s, cr, ordering)
   }
 
   many[ApiMappings].add(Schemas.mappings)
@@ -102,6 +106,7 @@ object SchemasModule extends ModuleDef {
 
   make[SchemaEventExchange]
   many[EventExchange].ref[SchemaEventExchange]
+  many[EventExchange].named("resources").ref[SchemaEventExchange]
 
   many[EntityType].add(EntityType(Schemas.moduleType))
 }

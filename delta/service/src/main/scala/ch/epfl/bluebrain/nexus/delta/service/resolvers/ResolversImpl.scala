@@ -9,9 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
@@ -21,20 +24,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, IdSegment, IdSegmentRef, Label, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
 import com.typesafe.scalalogging.Logger
+import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import fs2.Stream
 
 final class ResolversImpl private (
     agg: ResolversAggregate,
@@ -45,75 +46,96 @@ final class ResolversImpl private (
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
 
-  override def create(projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def create(
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p                    <- projects.fetchActiveProject(projectRef)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def create(id: IdSegment, projectRef: ProjectRef, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def create(id: IdSegment, projectRef: ProjectRef, resolverValue: ResolverValue)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def create(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      resolverValue: ResolverValue
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
   }.named("createResolver", moduleType)
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, source: Json)(implicit
-      caller: Caller
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      source: Json
+  )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchActiveProject(projectRef)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
 
-  override def update(id: IdSegment, projectRef: ProjectRef, rev: Long, resolverValue: ResolverValue)(implicit
+  override def update(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long,
+      resolverValue: ResolverValue
+  )(implicit
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchActiveProject(projectRef)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
     } yield res
   }.named("updateResolver", moduleType)
 
-  override def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
+  override def tag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      tagRev: Long,
+      rev: Long
+  )(implicit
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
   }.named("tagResolver", moduleType)
 
-  override def deprecate(id: IdSegment, projectRef: ProjectRef, rev: Long)(implicit
-      subject: Identity.Subject
-  ): IO[ResolverRejection, ResolverResource] = {
+  override def deprecate(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      rev: Long
+  )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchActiveProject(projectRef)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -137,7 +159,7 @@ final class ResolversImpl private (
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     params.project
-      .fold(index.values)(index.get)
+      .fold(index.values)(index.values)
       .map { resources =>
         val results = resources.filter(params.matches).sorted(ordering)
         UnscoredSearchResults(
@@ -146,6 +168,12 @@ final class ResolversImpl private (
         )
       }
       .named("listResolvers", moduleType)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   override def events(
       projectRef: ProjectRef,
@@ -192,7 +220,7 @@ object ResolversImpl {
   /**
     * Creates a new resolvers cache.
     */
-  private def cache(config: ResolversConfig)(implicit as: ActorSystem[Nothing]): ResolversCache = {
+  def cache(config: ResolversConfig)(implicit as: ActorSystem[Nothing]): ResolversCache = {
     implicit val cfg: KeyValueStoreConfig       = config.keyValueStore
     val clock: (Long, ResolverResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
@@ -219,11 +247,22 @@ object ResolversImpl {
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
     index.find(project, params.matches).map(_.map(_.id))
 
+  def aggregate(
+      config: AggregateConfig,
+      cache: ResolversCache,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResolversAggregate] =
+    aggregate(
+      config,
+      findResolver(cache),
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    )
+
   private def aggregate(
       config: AggregateConfig,
       findResolver: FindResolver,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResolversAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -242,13 +281,6 @@ object ResolversImpl {
 
   /**
     * Constructs a Resolver instance
-    *
-    * @param config            the resolvers configuration
-    * @param eventLog          the event log for ResolverEvent
-    * @param orgs              an Organizations instance
-    * @param projects          a Projects instance
-    * @param contextResolution the context resolver
-    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       config: ResolversConfig,
@@ -256,43 +288,23 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck
+      cache: ResolversCache,
+      agg: ResolversAggregate
   )(implicit
       uuidF: UUIDF,
-      clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Resolvers] =
-    apply(
-      config,
-      eventLog,
-      orgs,
-      projects,
-      contextResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    )
-
-  private[resolvers] def apply(
-      config: ResolversConfig,
-      eventLog: EventLog[Envelope[ResolverEvent]],
-      orgs: Organizations,
-      projects: Projects,
-      contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[Resolvers] = {
-    for {
-      index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
-      sourceDecoder =
-        new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)
-      _            <- startIndexing(config, eventLog, index, resolvers)
-    } yield resolvers
-  }
+    Task
+      .delay {
+        val sourceDecoder =
+          new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](
+            contexts.resolvers,
+            contextResolution,
+            uuidF
+          )
+        new ResolversImpl(agg, eventLog, cache, orgs, projects, sourceDecoder)
+      }
+      .tapEval(resolvers => startIndexing(config, eventLog, cache, resolvers))
 
 }

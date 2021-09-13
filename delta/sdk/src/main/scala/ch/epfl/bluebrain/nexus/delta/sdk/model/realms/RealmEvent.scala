@@ -22,7 +22,8 @@ import scala.annotation.nowarn
 sealed trait RealmEvent extends UnScopedEvent {
 
   /**
-    * @return the label of the realm for which this event was emitted
+    * @return
+    *   the label of the realm for which this event was emitted
     */
   def label: Label
 
@@ -33,21 +34,38 @@ object RealmEvent {
   /**
     * A witness to a realm creation.
     *
-    * @param label                 the label of the realm
-    * @param rev                   the revision this event generated
-    * @param name                  the name of the realm
-    * @param openIdConfig          the address of the openid configuration
-    * @param issuer                the issuer identifier
-    * @param keys                  the collection of keys
-    * @param grantTypes            the types of OAuth2 grants supported
-    * @param logo                  an optional address for a logo
-    * @param authorizationEndpoint the authorization endpoint
-    * @param tokenEndpoint         the token endpoint
-    * @param userInfoEndpoint      the user info endpoint
-    * @param revocationEndpoint    an optional revocation endpoint
-    * @param endSessionEndpoint    an optional end session endpoint
-    * @param instant               the instant when the event was emitted
-    * @param subject               the subject that performed the action that resulted in emitting this event
+    * @param label
+    *   the label of the realm
+    * @param rev
+    *   the revision this event generated
+    * @param name
+    *   the name of the realm
+    * @param openIdConfig
+    *   the address of the openid configuration
+    * @param issuer
+    *   the issuer identifier
+    * @param keys
+    *   the collection of keys
+    * @param grantTypes
+    *   the types of OAuth2 grants supported
+    * @param logo
+    *   an optional address for a logo
+    * @param acceptedAudiences
+    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param authorizationEndpoint
+    *   the authorization endpoint
+    * @param tokenEndpoint
+    *   the token endpoint
+    * @param userInfoEndpoint
+    *   the user info endpoint
+    * @param revocationEndpoint
+    *   an optional revocation endpoint
+    * @param endSessionEndpoint
+    *   an optional end session endpoint
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that performed the action that resulted in emitting this event
     */
   final case class RealmCreated(
       label: Label,
@@ -58,6 +76,7 @@ object RealmEvent {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
@@ -70,21 +89,38 @@ object RealmEvent {
   /**
     * A witness to a realm update.
     *
-    * @param label                 the label of the realm
-    * @param rev                   the revision this event generated
-    * @param name                  the name of the realm
-    * @param openIdConfig          the address of the openid configuration
-    * @param issuer                the issuer identifier
-    * @param keys                  the collection of keys
-    * @param grantTypes            the types of OAuth2 grants supported
-    * @param logo                  an optional address for a logo
-    * @param authorizationEndpoint the authorization endpoint
-    * @param tokenEndpoint         the token endpoint
-    * @param userInfoEndpoint      the user info endpoint
-    * @param revocationEndpoint    an optional revocation endpoint
-    * @param endSessionEndpoint    an optional end session endpoint
-    * @param instant               the instant when the event was emitted
-    * @param subject               the subject that performed the action that resulted in emitting this event
+    * @param label
+    *   the label of the realm
+    * @param rev
+    *   the revision this event generated
+    * @param name
+    *   the name of the realm
+    * @param openIdConfig
+    *   the address of the openid configuration
+    * @param issuer
+    *   the issuer identifier
+    * @param keys
+    *   the collection of keys
+    * @param grantTypes
+    *   the types of OAuth2 grants supported
+    * @param logo
+    *   an optional address for a logo
+    * @param acceptedAudiences
+    *   the optional set of audiences of this realm. JWT with `aud` which do not match this field will be rejected
+    * @param authorizationEndpoint
+    *   the authorization endpoint
+    * @param tokenEndpoint
+    *   the token endpoint
+    * @param userInfoEndpoint
+    *   the user info endpoint
+    * @param revocationEndpoint
+    *   an optional revocation endpoint
+    * @param endSessionEndpoint
+    *   an optional end session endpoint
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that performed the action that resulted in emitting this event
     */
   final case class RealmUpdated(
       label: Label,
@@ -95,6 +131,7 @@ object RealmEvent {
       keys: Set[Json],
       grantTypes: Set[GrantType],
       logo: Option[Uri],
+      acceptedAudiences: Option[NonEmptySet[String]],
       authorizationEndpoint: Uri,
       tokenEndpoint: Uri,
       userInfoEndpoint: Uri,
@@ -107,10 +144,14 @@ object RealmEvent {
   /**
     * A witness to a realm deprecation.
     *
-    * @param label   the label of the realm
-    * @param rev     the revision this event generated
-    * @param instant the instant when the event was emitted
-    * @param subject the subject that performed the action that resulted in emitting this event
+    * @param label
+    *   the label of the realm
+    * @param rev
+    *   the revision this event generated
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that performed the action that resulted in emitting this event
     */
   final case class RealmDeprecated(
       label: Label,

@@ -89,6 +89,15 @@ where...
 - `{identity}`: Json object - the identity against which to enforce ACLs during resolution process. Can't be defined if `useCurrentCaller` is set to `true`
 - `{useCurrentCaller}`: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can't be `true` when `_identity_` is defined.
 
+## Indexing
+
+All the API calls modifying a resolver(creation, update, tagging, deprecation) can specify whether the resolver should be indexed
+synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
+
+- `async` - (default value) the resolver will be indexed asynchronously
+- `sync` - the resolver will be indexed synchronously and the API call won't return until the indexing is finished
+
+
 ## Create using POST
 
 ```

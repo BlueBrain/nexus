@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import monix.bio.UIO
 
 /**
-  * Describes the remote storage [[ServiceDependency]] providing a way to
-  * extract the [[ServiceDescription]] from a remote storage calling its ''/version'' endpoint
+  * Describes the remote storage [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a
+  * remote storage calling its ''/version'' endpoint
   */
 class RemoteStorageServiceDependency(remoteClient: RemoteDiskStorageClient) extends ServiceDependency {
 

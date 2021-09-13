@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -21,13 +22,14 @@ object RdfExceptionHandler {
   private val logger: Logger = Logger[RdfExceptionHandler.type]
 
   /**
-    * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples)
-    * depending on content negotiation (Accept Header) and ''format'' query parameter
+    * An [[ExceptionHandler]] that returns RDF output (Json-LD compacted, Json-LD expanded, Dot or NTriples) depending
+    * on content negotiation (Accept Header) and ''format'' query parameter
     */
   def apply(implicit
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      base: BaseUri
   ): ExceptionHandler =
     ExceptionHandler {
       case err: IdentityError  => discardEntityAndForceEmit(err)

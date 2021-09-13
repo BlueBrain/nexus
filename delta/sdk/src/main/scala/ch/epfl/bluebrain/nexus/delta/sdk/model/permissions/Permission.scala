@@ -8,10 +8,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionForm
 import io.circe.{Decoder, Encoder}
 
 /**
-  * Wraps a permission string that must begin with a letter, followed by at most 31
-  * alphanumeric characters or symbols among '-', '_', ':', '\' and '/'.
+  * Wraps a permission string that must begin with a letter, followed by at most 31 alphanumeric characters or symbols
+  * among '-', '_', ':', '\' and '/'.
   *
-  * @param value a valid permission string
+  * @param value
+  *   a valid permission string
   */
 final case class Permission private (value: String) extends AnyVal {
   override def toString: String = value
@@ -24,7 +25,8 @@ object Permission {
   /**
     * Attempts to construct a [[Permission]] that passes the ''regex''
     *
-    * @param value the permission value
+    * @param value
+    *   the permission value
     */
   final def apply(value: String): Either[IllegalPermissionFormatError, Permission] =
     value match {
@@ -35,7 +37,8 @@ object Permission {
   /**
     * Constructs a [[Permission]] without validating it against the ''regex''
     *
-    * @param value the permission value
+    * @param value
+    *   the permission value
     */
   final def unsafe(value: String): Permission =
     new Permission(value)

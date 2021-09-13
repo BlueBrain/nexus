@@ -12,7 +12,8 @@ import monix.bio.{IO, UIO}
 
 /**
   * Provides a way to visit recursively a collection of [[ViewRef]] while preventing circular dependencies.
-  * @tparam E the error type
+  * @tparam E
+  *   the error type
   */
 class ViewRefVisitor[E](fetchView: (Iri, ProjectRef) => IO[E, VisitedView]) {
 
@@ -39,7 +40,8 @@ object ViewRefVisitor {
   sealed trait VisitedView extends Product with Serializable {
 
     /**
-      * @return the reference to the current visited view
+      * @return
+      *   the reference to the current visited view
       */
     def ref: ViewRef
 

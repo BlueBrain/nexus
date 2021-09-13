@@ -12,12 +12,14 @@ import scala.util.Try
 sealed trait SparqlQuery {
 
   /**
-    * @return string representation of the query
+    * @return
+    *   string representation of the query
     */
   def value: String
 
   /**
-    * @return the construct query, if available
+    * @return
+    *   the construct query, if available
     */
   def asConstruct: Option[SparqlConstructQuery]
 }
@@ -34,7 +36,8 @@ object SparqlQuery {
   /**
     * Sparql construct query representation.
     *
-    * @param value  string representation of the query
+    * @param value
+    *   string representation of the query
     */
   final case class SparqlConstructQuery private (value: String) extends SparqlQuery {
     override val asConstruct: Option[SparqlConstructQuery] = Some(this)

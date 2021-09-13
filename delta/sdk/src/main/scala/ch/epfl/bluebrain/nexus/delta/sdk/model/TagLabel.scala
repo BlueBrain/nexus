@@ -13,7 +13,8 @@ import scala.util.matching.Regex
 /**
   * A safe representation of a tag label
   *
-  * @param value the string representation of the tag label
+  * @param value
+  *   the string representation of the tag label
   */
 final case class TagLabel private (value: String) extends AnyVal {
   override def toString: String = value
@@ -26,7 +27,8 @@ object TagLabel {
   /**
     * Attempts to construct a [[TagLabel]] from its string representation.
     *
-    * @param value the string representation of the tag label
+    * @param value
+    *   the string representation of the tag label
     */
   def apply(value: String): Either[FormatError, TagLabel] =
     value match {
@@ -37,7 +39,8 @@ object TagLabel {
   /**
     * Constructs a [[TagLabel]] from its string representation without validation in terms of size.
     *
-    * @param value the string representation of the tag label
+    * @param value
+    *   the string representation of the tag label
     */
   def unsafe(value: String): TagLabel =
     new TagLabel(value)

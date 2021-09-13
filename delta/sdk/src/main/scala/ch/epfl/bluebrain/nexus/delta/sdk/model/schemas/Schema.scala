@@ -19,12 +19,18 @@ import monix.bio.IO
 /**
   * A schema representation
   *
-  * @param id         the schema identifier
-  * @param project    the project where the schema belongs
-  * @param tags       the schema tags
-  * @param source     the representation of the schema as posted by the subject
-  * @param compacted  the compacted JSON-LD representation of the schema
-  * @param expanded   the expanded JSON-LD representation of the schema with the imports resolutions applied
+  * @param id
+  *   the schema identifier
+  * @param project
+  *   the project where the schema belongs
+  * @param tags
+  *   the schema tags
+  * @param source
+  *   the representation of the schema as posted by the subject
+  * @param compacted
+  *   the compacted JSON-LD representation of the schema
+  * @param expanded
+  *   the expanded JSON-LD representation of the schema with the imports resolutions applied
   */
 @SuppressWarnings(Array("OptionGet"))
 final case class Schema(

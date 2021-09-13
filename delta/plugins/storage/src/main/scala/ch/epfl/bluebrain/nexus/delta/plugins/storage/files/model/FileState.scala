@@ -17,12 +17,14 @@ import java.time.Instant
 sealed trait FileState extends Product with Serializable {
 
   /**
-    * @return the schema reference that storages conforms to
+    * @return
+    *   the schema reference that storages conforms to
     */
   final def schema: ResourceRef = Latest(schemas.files)
 
   /**
-    * @return the collection of known types of file resources
+    * @return
+    *   the collection of known types of file resources
     */
   final def types: Set[Iri] = Set(nxvFile)
 
@@ -32,12 +34,14 @@ sealed trait FileState extends Product with Serializable {
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[FileResource]
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the state deprecation status
+    * @return
+    *   the state deprecation status
     */
   def deprecated: Boolean
 
@@ -59,18 +63,30 @@ object FileState {
   /**
     * State for an existing file
     *
-    * @param id          the id of the file
-    * @param project     the project it belongs to
-    * @param storage     the reference to the used storage
-    * @param storageType the type of storage
-    * @param attributes  the file attributes
-    * @param tags        the collection of tag aliases
-    * @param rev         the current state revision
-    * @param deprecated  the current state deprecation status
-    * @param createdAt   the instant when the resource was created
-    * @param createdBy   the subject that created the resource
-    * @param updatedAt   the instant when the resource was last updated
-    * @param updatedBy   the subject that last updated the resource
+    * @param id
+    *   the id of the file
+    * @param project
+    *   the project it belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
+    * @param attributes
+    *   the file attributes
+    * @param tags
+    *   the collection of tag aliases
+    * @param rev
+    *   the current state revision
+    * @param deprecated
+    *   the current state deprecation status
+    * @param createdAt
+    *   the instant when the resource was created
+    * @param createdBy
+    *   the subject that created the resource
+    * @param updatedAt
+    *   the instant when the resource was last updated
+    * @param updatedBy
+    *   the subject that last updated the resource
     */
   final case class Current(
       id: Iri,

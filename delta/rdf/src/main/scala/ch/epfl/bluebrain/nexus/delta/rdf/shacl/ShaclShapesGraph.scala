@@ -20,7 +20,8 @@ final case class ShaclShapesGraph(uri: URI, value: ShapesGraph) {
 object ShaclShapesGraph {
 
   /**
-    * Creates a [[ShaclShapesGraph]] initializing  and registering the required validation components from the passed model.
+    * Creates a [[ShaclShapesGraph]] initializing and registering the required validation components from the passed
+    * model.
     */
   def apply(graph: Graph): ShaclShapesGraph = {
     val model            = DatasetFactory.wrap(graph.value).getDefaultModel

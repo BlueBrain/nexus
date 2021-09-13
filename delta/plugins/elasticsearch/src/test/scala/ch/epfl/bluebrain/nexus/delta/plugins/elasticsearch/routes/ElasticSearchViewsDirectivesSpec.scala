@@ -48,8 +48,8 @@ class ElasticSearchViewsDirectivesSpec
         (pathPrefix("sort") & sortList & pathEndOrSingleSlash) { list =>
           complete(list.values.map(_.toString).mkString(","))
         },
-        (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { implicit ref =>
-          searchParameters.apply {
+        (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { ref =>
+          searchParameters(ref).apply {
             case ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, q) =>
               complete(
                 s"'${id.mkString}','${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}','${types

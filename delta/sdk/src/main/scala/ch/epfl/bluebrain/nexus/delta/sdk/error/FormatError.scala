@@ -8,8 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, TagLabel}
 /**
   * Top level error type that represents illegal formatting of various tokens.
   *
-  * @param reason  a general reason for the error
-  * @param details possible additional details that may be interesting to provide to the caller
+  * @param reason
+  *   a general reason for the error
+  * @param details
+  *   possible additional details that may be interesting to provide to the caller
   */
 abstract class FormatError(reason: String, details: Option[String] = None) extends SDKError {
   final override def getMessage: String = details.fold(reason)(d => s"$reason\nDetails: $d")
@@ -20,7 +22,8 @@ object FormatError {
   /**
     * Label formatting error, returned in cases where a Label could not be constructed from a String.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalLabelFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"'$value' did not match the expected label format '${Label.regex.regex}'.", details)
@@ -28,7 +31,8 @@ object FormatError {
   /**
     * Name formatting error, returned in cases where a Name could not be constructed from a String.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalNameFormatError(details: Option[String] = None)
       extends FormatError(
@@ -39,7 +43,8 @@ object FormatError {
   /**
     * Tag label formatting error, returned in cases where a [[TagLabel]] could not be constructed from a String.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalTagFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"'$value' did not match the expected tag label format ${TagLabel.regex}.", details)
@@ -47,7 +52,8 @@ object FormatError {
   /**
     * Permission formatting error, returned in cases where a Permission could not be constructed from a String.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalPermissionFormatError(details: Option[String] = None)
       extends FormatError(
@@ -58,7 +64,8 @@ object FormatError {
   /**
     * AclAddress formatting error, returned in cases where an AclAddress could not be constructed from a String.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalAclAddressFormatError(details: Option[String] = None)
       extends FormatError(
@@ -69,7 +76,8 @@ object FormatError {
   /**
     * Prefix Mapping Iri formatting error, returned in cases where a PrefixIri could not be constructed from an Iri.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalPrefixIRIFormatError(iri: Iri, details: Option[String] = None)
       extends FormatError(s"The provided iri '$iri' does not end with '/' or '#'", details)
@@ -77,7 +85,8 @@ object FormatError {
   /**
     * Identity iri formatting error, returned in cases where an Identity could not be constructed from an Iri.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalIdentityIriFormatError(iri: Iri, details: Option[String] = None)
       extends FormatError(s"The provided iri '$iri' does not represent an identity", details)
@@ -85,7 +94,8 @@ object FormatError {
   /**
     * Subject iri formatting error, returned in cases where an Subject could not be constructed from an Iri.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalSubjectIriFormatError(iri: Iri, details: Option[String] = None)
       extends FormatError(s"The provided iri '$iri' does not represent a subject", details)
@@ -93,7 +103,8 @@ object FormatError {
   /**
     * Iri formatting error, returned in cases where a Iri could not be constructed from an string.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class IllegalIRIFormatError(value: String, details: Option[String] = None)
       extends FormatError(s"The provided '$value' is not an Iri", details)
@@ -107,7 +118,8 @@ object FormatError {
   /**
     * Resolver priority interval error, returned in cases where the provided value is out of bounds.
     *
-    * @param details possible additional details that may be interesting to provide to the caller
+    * @param details
+    *   possible additional details that may be interesting to provide to the caller
     */
   final case class ResolverPriorityIntervalError(value: Int, min: Int, max: Int, details: Option[String] = None)
       extends FormatError(s"The provided priority '$value' is not between '$min' and '$max' included", details)

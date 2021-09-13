@@ -22,10 +22,14 @@ import scala.collection.immutable.VectorMap
 
 /**
   * Resolution for a given type of resource
-  * @param checkAcls    how to fetch all acls
-  * @param fetchResolver   how to fetch a resolver by id and project
-  * @param listResolvers   list all non-deprecated resolvers for a project
-  * @param fetch   how we can get a resource from a [[ResourceRef]]
+  * @param checkAcls
+  *   how to fetch all acls
+  * @param fetchResolver
+  *   how to fetch a resolver by id and project
+  * @param listResolvers
+  *   list all non-deprecated resolvers for a project
+  * @param fetch
+  *   how we can get a resource from a [[ResourceRef]]
   */
 final class ResolverResolution[R](
     checkAcls: (ProjectRef, Set[Identity]) => UIO[Boolean],
@@ -36,11 +40,13 @@ final class ResolverResolution[R](
 ) {
 
   /**
-    * Attempts to resolve the resource against all resolvers of the given project by priority order,
-    * discards the report when it succeeds, raises it as an error if resolution fails
+    * Attempts to resolve the resource against all resolvers of the given project by priority order, discards the report
+    * when it succeeds, raises it as an error if resolution fails
     *
-    * @param ref        the resource reference
-    * @param projectRef the project reference
+    * @param ref
+    *   the resource reference
+    * @param projectRef
+    *   the project reference
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef)(implicit caller: Caller): IO[ResourceResolutionReport, R] =
     resolveReport(ref, projectRef).flatMap { case (report, resource) =>
@@ -48,11 +54,13 @@ final class ResolverResolution[R](
     }
 
   /**
-    * Attempts to resolve the resource against the given resolver and
-    * return the resource if found and a report of how the resolution went
+    * Attempts to resolve the resource against the given resolver and return the resource if found and a report of how
+    * the resolution went
     *
-    * @param ref        the resource reference
-    * @param projectRef the project reference
+    * @param ref
+    *   the resource reference
+    * @param projectRef
+    *   the project reference
     */
   def resolveReport(ref: ResourceRef, projectRef: ProjectRef)(implicit
       caller: Caller
@@ -79,11 +87,13 @@ final class ResolverResolution[R](
   }
 
   /**
-    * Attempts to resolve the resource against the specified resolver,
-    * discards the report when it succeeds, raises it as an error if resolution fails
+    * Attempts to resolve the resource against the specified resolver, discards the report when it succeeds, raises it
+    * as an error if resolution fails
     *
-    * @param ref        the resource reference
-    * @param projectRef the project reference
+    * @param ref
+    *   the resource reference
+    * @param projectRef
+    *   the project reference
     */
   def resolve(ref: ResourceRef, projectRef: ProjectRef, resolverId: Iri)(implicit
       caller: Caller
@@ -94,10 +104,14 @@ final class ResolverResolution[R](
       }
 
   /**
-    * Attempts to resolve the resource against the given resolver and return the resource if found and a report of how the resolution went
-    * @param ref         the resource reference
-    * @param projectRef  the project  reference
-    * @param resolverId  the resolver identifier
+    * Attempts to resolve the resource against the given resolver and return the resource if found and a report of how
+    * the resolution went
+    * @param ref
+    *   the resource reference
+    * @param projectRef
+    *   the project reference
+    * @param resolverId
+    *   the resolver identifier
     */
   def resolveReport(ref: ResourceRef, projectRef: ProjectRef, resolverId: Iri)(implicit
       caller: Caller
@@ -192,11 +206,16 @@ object ResolverResolution {
 
   /**
     * Resolution for a given type based on resolvers
-    * @param acls            an acls instance
-    * @param resolvers       a resolvers instance
-    * @param fetch   how to fetch the resource
-    * @param extractTypes how to extract resource types from an R
-    * @param readPermission  the mandatory permission
+    * @param acls
+    *   an acls instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param fetch
+    *   how to fetch the resource
+    * @param extractTypes
+    *   how to extract resource types from an R
+    * @param readPermission
+    *   the mandatory permission
     */
   def apply[R](
       acls: Acls,
@@ -218,9 +237,12 @@ object ResolverResolution {
 
   /**
     * Resolution based on resolvers and reference exchanges
-    * @param acls            an acls instance
-    * @param resolvers       a resolvers instance
-    * @param exchanges   how to fetch the resource
+    * @param acls
+    *   an acls instance
+    * @param resolvers
+    *   a resolvers instance
+    * @param exchanges
+    *   how to fetch the resource
     */
   def apply(
       acls: Acls,

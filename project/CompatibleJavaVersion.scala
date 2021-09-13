@@ -1,7 +1,7 @@
 import sbt.{VersionNumber, VersionNumberCompatibility}
 
 /**
-  * Custom java compatibility check.  Any higher version than current is considered compatible.
+  * Custom java compatibility check. Any higher version than current is considered compatible.
   */
 object CompatibleJavaVersion extends VersionNumberCompatibility {
   override val name = "Java specification compatibility"

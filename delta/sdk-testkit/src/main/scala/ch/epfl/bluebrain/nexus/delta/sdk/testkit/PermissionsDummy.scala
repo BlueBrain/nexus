@@ -18,9 +18,12 @@ import monix.bio.{IO, Task, UIO}
 /**
   * A dummy Permissions implementation that uses a synchronized in memory journal.
   *
-  * @param minimum   the minimum set of permissions
-  * @param journal   a ref to the journal
-  * @param semaphore a semaphore for serializing write operations on the journal
+  * @param minimum
+  *   the minimum set of permissions
+  * @param journal
+  *   a ref to the journal
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 final class PermissionsDummy private (
     override val minimum: Set[Permission],
@@ -110,8 +113,10 @@ object PermissionsDummy {
   /**
     * Creates a new dummy Permissions implementation.
     *
-    * @param minimum       the minimum set of permissions
-    * @param maxStreamSize truncate event stream after this size
+    * @param minimum
+    *   the minimum set of permissions
+    * @param maxStreamSize
+    *   truncate event stream after this size
     */
   final def apply(
       minimum: Set[Permission],

@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, acls => aclsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, events}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
@@ -221,16 +221,17 @@ class AclsRoutes(identities: Identities, acls: Acls)(implicit
 
 object AclsRoutes {
 
-  @nowarn("cat=unused")
-  implicit private val config: Configuration =
-    Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
-
   final private case class IdentityPermissions(identity: Identity, permissions: Set[Permission])
 
   final private[routes] case class AclValues(value: Seq[(Identity, Set[Permission])])
+
   private[routes] object AclValues {
-    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] =
+
+    @nowarn("cat=unused")
+    implicit private val identityPermsDecoder: Decoder[IdentityPermissions] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
       deriveConfiguredDecoder[IdentityPermissions]
+    }
 
     implicit val aclValuesDecoder: Decoder[AclValues] =
       Decoder
@@ -240,7 +241,12 @@ object AclsRoutes {
 
   final private[routes] case class ReplaceAcl(acl: AclValues)
   private[routes] object ReplaceAcl {
-    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = deriveConfiguredDecoder[ReplaceAcl]
+
+    @nowarn("cat=unused")
+    implicit val aclReplaceDecoder: Decoder[ReplaceAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding
+      deriveConfiguredDecoder[ReplaceAcl]
+    }
   }
 
   sealed private[routes] trait PatchAcl extends Product with Serializable
@@ -248,11 +254,16 @@ object AclsRoutes {
     final case class Subtract(acl: AclValues) extends PatchAcl
     final case class Append(acl: AclValues)   extends PatchAcl
 
-    implicit val aclPatchDecoder: Decoder[PatchAcl] = deriveConfiguredDecoder[PatchAcl]
+    @nowarn("cat=unused")
+    implicit val aclPatchDecoder: Decoder[PatchAcl] = {
+      implicit val config: Configuration = Configuration.default.withStrictDecoding.withDiscriminator(keywords.tpe)
+      deriveConfiguredDecoder[PatchAcl]
+    }
   }
 
   /**
-    * @return the [[Route]] for ACLs
+    * @return
+    *   the [[Route]] for ACLs
     */
   def apply(identities: Identities, acls: Acls)(implicit
       baseUri: BaseUri,

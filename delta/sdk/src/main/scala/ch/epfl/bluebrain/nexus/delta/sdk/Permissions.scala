@@ -20,28 +20,34 @@ import monix.bio.{IO, Task, UIO}
 trait Permissions {
 
   /**
-    * @return the permissions singleton persistence id
+    * @return
+    *   the permissions singleton persistence id
     */
   def persistenceId: String = Permissions.persistenceId
 
   /**
-    * @return the minimum set of permissions
+    * @return
+    *   the minimum set of permissions
     */
   def minimum: Set[Permission]
 
   /**
-    * @return the current permissions as a resource
+    * @return
+    *   the current permissions as a resource
     */
   def fetch: UIO[PermissionsResource]
 
   /**
-    * @param rev the permissions revision
-    * @return the permissions as a resource at the specified revision
+    * @param rev
+    *   the permissions revision
+    * @return
+    *   the permissions as a resource at the specified revision
     */
   def fetchAt(rev: Long): IO[RevisionNotFound, PermissionsResource]
 
   /**
-    * @return the current permissions collection without checking permissions
+    * @return
+    *   the current permissions collection without checking permissions
     */
   def fetchPermissionSet: UIO[Set[Permission]] =
     fetch.map(_.value.permissions)
@@ -49,10 +55,14 @@ trait Permissions {
   /**
     * Replaces the current collection of permissions with the provided collection.
     *
-    * @param permissions the permissions to set
-    * @param rev         the last known revision of the resource
-    * @param caller      a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
+    * @param permissions
+    *   the permissions to set
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   a reference to the subject that initiated the action
+    * @return
+    *   the new resource or a description of why the change was rejected
     */
   def replace(
       permissions: Set[Permission],
@@ -62,10 +72,14 @@ trait Permissions {
   /**
     * Appends the provided permissions to the current collection of permissions.
     *
-    * @param permissions the permissions to append
-    * @param rev         the last known revision of the resource
-    * @param caller      a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
+    * @param permissions
+    *   the permissions to append
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   a reference to the subject that initiated the action
+    * @return
+    *   the new resource or a description of why the change was rejected
     */
   def append(
       permissions: Set[Permission],
@@ -75,10 +89,14 @@ trait Permissions {
   /**
     * Subtracts the provided permissions to the current collection of permissions.
     *
-    * @param permissions the permissions to subtract
-    * @param rev         the last known revision of the resource
-    * @param caller      a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
+    * @param permissions
+    *   the permissions to subtract
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   a reference to the subject that initiated the action
+    * @return
+    *   the new resource or a description of why the change was rejected
     */
   def subtract(
       permissions: Set[Permission],
@@ -88,24 +106,29 @@ trait Permissions {
   /**
     * Removes all but the minimum permissions from the collection of permissions.
     *
-    * @param rev    the last known revision of the resource
-    * @param caller a reference to the subject that initiated the action
-    * @return the new resource or a description of why the change was rejected
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   a reference to the subject that initiated the action
+    * @return
+    *   the new resource or a description of why the change was rejected
     */
   def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
 
   /**
-    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
 
   /**
     * The current permissions events. The stream stops after emitting all known events.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
 }
@@ -163,6 +186,7 @@ object Permissions {
   object projects {
     final val read: Permission   = Permission.unsafe("projects/read")
     final val write: Permission  = Permission.unsafe("projects/write")
+    final val delete: Permission = Permission.unsafe("projects/delete")
     final val create: Permission = Permission.unsafe("projects/create")
   }
 
@@ -202,6 +226,13 @@ object Permissions {
   object resolvers {
     final val read: Permission  = resources.read
     final val write: Permission = Permission.unsafe("resolvers/write")
+  }
+
+  /**
+    * Quotas permissions.
+    */
+  object quotas {
+    final val read: Permission = Permission.unsafe("quotas/read")
   }
 
   private[delta] def next(

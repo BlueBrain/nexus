@@ -16,8 +16,8 @@ import monix.execution.Scheduler
 import scala.concurrent.duration.Duration
 
 /**
-  * Relies on cluster sharding to distribute the indexing work between nodes
-  * and relies on remember entities for restarts after a rebalance or a crash.
+  * Relies on cluster sharding to distribute the indexing work between nodes and relies on remember entities for
+  * restarts after a rebalance or a crash.
   */
 final class IndexingStreamCoordinator[V] private (controller: IndexingStreamController[V]) {
 
@@ -41,14 +41,22 @@ object IndexingStreamCoordinator {
   /**
     * Creates a coordinator.
     *
-    * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
-    * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
-    * @param controller      how to send messages to the [[IndexingStreamCoordinator]] sharded actor
-    * @param fetchView       how to fetch view metadata for indexing
-    * @param idleTimeout     the idle duration after which an indexing stream will be stopped
-    * @param buildStream     how to build the indexing stream
-    * @param indexingCleanup how to cleanup the indexing stream after deprecation or new view indexing
-    * @param retryStrategy   the retry strategy to apply
+    * @see
+    *   https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
+    * @see
+    *   https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
+    * @param controller
+    *   how to send messages to the [[IndexingStreamCoordinator]] sharded actor
+    * @param fetchView
+    *   how to fetch view metadata for indexing
+    * @param idleTimeout
+    *   the idle duration after which an indexing stream will be stopped
+    * @param buildStream
+    *   how to build the indexing stream
+    * @param indexingCleanup
+    *   how to cleanup the indexing stream after deprecation or new view indexing
+    * @param retryStrategy
+    *   the retry strategy to apply
     */
   def apply[V](
       controller: IndexingStreamController[V],

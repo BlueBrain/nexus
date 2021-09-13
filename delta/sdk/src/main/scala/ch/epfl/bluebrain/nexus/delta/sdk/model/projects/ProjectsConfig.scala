@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
 import pureconfig.ConfigReader
@@ -19,12 +20,22 @@ import scala.annotation.nowarn
 /**
   * Configuration for the Projects module.
   *
-  * @param aggregate             configuration of the underlying aggregate
-  * @param keyValueStore         configuration of the underlying key/value store
-  * @param pagination            configuration for how pagination should behave in listing operations
-  * @param cacheIndexing         configuration of the cache indexing process
-  * @param persistProgressConfig configuration for the persistence of progress of projections
-  * @param automaticProvisioning configuration for automatic provisioning of projects
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
+  * @param persistProgressConfig
+  *   configuration for the persistence of progress of projections
+  * @param automaticProvisioning
+  *   configuration for automatic provisioning of projects
+  * @param quotas
+  *   quotas for projects
+  * @param allowResourcesDeletion
+  *   flag to decide whether to allow resources deletion
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
@@ -32,7 +43,9 @@ final case class ProjectsConfig(
     pagination: PaginationConfig,
     cacheIndexing: CacheIndexingConfig,
     persistProgressConfig: SaveProgressConfig,
-    automaticProvisioning: AutomaticProvisioningConfig
+    automaticProvisioning: AutomaticProvisioningConfig,
+    quotas: QuotasConfig,
+    allowResourcesDeletion: Boolean
 )
 
 object ProjectsConfig {
@@ -40,10 +53,15 @@ object ProjectsConfig {
   /**
     * Configuration of automatic provisioning of projects.
     *
-    * @param enabled        flag signalling whether automatic provisioning is enabled
-    * @param permissions    the permissions applied to the newly provisioned project
-    * @param enabledRealms  the realms for which the provisioning is enabled(map of realm label to organization in which the projects for the realm should be created)
-    * @param fields         the project configuration
+    * @param enabled
+    *   flag signalling whether automatic provisioning is enabled
+    * @param permissions
+    *   the permissions applied to the newly provisioned project
+    * @param enabledRealms
+    *   the realms for which the provisioning is enabled(map of realm label to organization in which the projects for
+    *   the realm should be created)
+    * @param fields
+    *   the project configuration
     */
   final case class AutomaticProvisioningConfig(
       enabled: Boolean,
@@ -54,7 +72,7 @@ object ProjectsConfig {
 
   object AutomaticProvisioningConfig {
 
-    val disabled = AutomaticProvisioningConfig(
+    val disabled: AutomaticProvisioningConfig = AutomaticProvisioningConfig(
       enabled = false,
       permissions = Set.empty,
       enabledRealms = Map.empty,
@@ -115,6 +133,7 @@ object ProjectsConfig {
       ProjectFields(Some(description), apiMappings, base, vocab)
     )
   }
-  implicit final val projectConfigReader: ConfigReader[ProjectsConfig]             =
+
+  implicit final val projectConfigReader: ConfigReader[ProjectsConfig] =
     deriveReader[ProjectsConfig]
 }

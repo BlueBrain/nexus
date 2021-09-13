@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.archives.Tweety
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
 import ch.epfl.bluebrain.nexus.tests.Optics._
-import ch.epfl.bluebrain.nexus.tests.Tags.ArchivesTag
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Projects, Resources}
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
@@ -92,7 +91,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
 
   "Setup" should {
 
-    "create projects, resources and add necessary acls" taggedAs ArchivesTag in {
+    "create projects, resources and add necessary acls" in {
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Identity.ServiceAccount)
         _ <- aclDsl.addPermission(s"/$orgId", Tweety, Projects.Create)
@@ -101,7 +100,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       } yield succeed
     }
 
-    "create test schemas" taggedAs ArchivesTag in {
+    "create test schemas" in {
       for {
         _ <- deltaClient.put[Json](s"/schemas/$fullId/test-schema", schemaPayload, Tweety) { (_, response) =>
                response.status shouldEqual StatusCodes.Created
@@ -112,7 +111,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       } yield succeed
     }
 
-    "create resources" taggedAs ArchivesTag in {
+    "create resources" in {
       for {
         _ <- deltaClient.putAttachmentFromPath[Json](
                s"/files/$fullId/test-resource:logo",
@@ -136,7 +135,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
   }
 
   "creating archives" should {
-    "succeed" taggedAs ArchivesTag in {
+    "succeed" in {
       val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
 
       deltaClient.put[Json](s"/archives/$fullId/test-resource:archive", payload, Tweety) { (_, response) =>
@@ -144,7 +143,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "succeed and redirect" taggedAs ArchivesTag in {
+    "succeed and redirect" in {
       val payload = jsonContentOf("/kg/archives/archive.json", "project2" -> fullId2)
 
       deltaClient.put[String](
@@ -163,7 +162,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       })(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
     }
 
-    "fail if payload is wrong" taggedAs ArchivesTag in {
+    "fail if payload is wrong" in {
       val payload = jsonContentOf("/kg/archives/archive-wrong.json")
 
       deltaClient.put[Json](s"/archives/$fullId/archive2", payload, Tweety) { (json, response) =>
@@ -172,7 +171,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "fail on wrong path" taggedAs ArchivesTag in {
+    "fail on wrong path" in {
       val wrong1    = jsonContentOf(s"/kg/archives/archive-wrong-path1.json")
       val expected1 = jsonContentOf("/kg/archives/archive-path-invalid1.json")
 
@@ -190,7 +189,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "fail on path collisions" taggedAs ArchivesTag in {
+    "fail on path collisions" in {
       val wrong    = jsonContentOf(s"/kg/archives/archive-path-collision.json")
       val expected = jsonContentOf(s"/kg/archives/archive-path-dup.json")
 
@@ -202,7 +201,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
   }
 
   "fetching archive" should {
-    "succeed returning metadata" taggedAs ArchivesTag in {
+    "succeed returning metadata" in {
       deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
@@ -219,7 +218,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "succeed returning binary" taggedAs ArchivesTag in {
+    "succeed returning binary" in {
       val prefix = "https%3A%2F%2Fdev.nexus.test.com%2Fsimplified-resource%2F"
       deltaClient.get[ByteString](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) {
         (byteString, response) =>
@@ -241,7 +240,7 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
       }
     }
 
-    "delete resources/read permissions for user on project 2" taggedAs ArchivesTag in
+    "delete resources/read permissions for user on project 2" in
       aclDsl.deletePermission(
         s"/$fullId2",
         Tweety,
@@ -249,14 +248,14 @@ class ArchiveSpec extends BaseSpec with CirceEq with EitherValuable {
         Resources.Read
       )
 
-    "fail when a resource in the archive cannot be fetched due to missing permissions" taggedAs ArchivesTag in {
+    "fail when a resource in the archive cannot be fetched due to missing permissions" in {
       deltaClient.get[Json](s"/archives/$fullId/test-resource:archive", Tweety, acceptAll) { (json, response) =>
         json shouldEqual jsonContentOf("/kg/archives/authorization-failed.json", "project" -> fullId2)
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
-    "succeed using query param ignoreNotFound" taggedAs ArchivesTag in {
+    "succeed using query param ignoreNotFound" in {
       val payload = jsonContentOf("/kg/archives/archive-not-found.json")
 
       for {

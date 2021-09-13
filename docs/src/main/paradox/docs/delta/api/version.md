@@ -1,4 +1,4 @@
-# Version endpoint
+# Version
 
 ```http request
 GET /v1/version

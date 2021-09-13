@@ -1,0 +1,10 @@
+{
+  "@context": [
+    "https://neuroshapes.org",
+    {
+      "@base": "https://bbp.epfl.ch/neurosciencegraph/data/",
+      "@vocab": "https://bbp.epfl.ch/nexus/v1/resources/bbp/neocortex/_/"
+    }
+  ],
+  "@id": "https://bbp.neuroshapes.org"
+}

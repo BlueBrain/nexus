@@ -52,14 +52,15 @@ object TarFlow {
   }
 
   /**
-    * Creates a Flow which deals with [[Path]]s
-    * 1. Creates the ByteString value for the [[Path]] Tar Header and wraps it in a Source
-    * 2. Creates a Source with the ByteString content of the [[Path]]
-    * 3. Creates a ByteString with padding (0s) to fill the previous Source, when needed
-    * The sources are concatenated: 1 --> 2 --> 3
+    * Creates a Flow which deals with [[Path]] s
+    *   1. Creates the ByteString value for the [[Path]] Tar Header and wraps it in a Source 2. Creates a Source with
+    *      the ByteString content of the [[Path]] 3. Creates a ByteString with padding (0s) to fill the previous Source,
+    *      when needed The sources are concatenated: 1 --> 2 --> 3
     *
-    * @param basePath the base directory from where to create the tarball
-    * @return a Flow where the input is a [[Path]] and the output is a [[ByteString]]
+    * @param basePath
+    *   the base directory from where to create the tarball
+    * @return
+    *   a Flow where the input is a [[Path]] and the output is a [[ByteString]]
     */
   def writer(basePath: Path): Flow[Path, ByteString, NotUsed] =
     Flow[Path]

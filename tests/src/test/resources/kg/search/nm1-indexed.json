@@ -1,0 +1,40 @@
+{
+  "@id" : "https://localhost/{{project}}/nm1",
+  "@type" : [
+    "https://neuroshapes.org/NeuronMorphology",
+    "http://www.w3.org/ns/prov#Entity",
+    "http://schema.org/Dataset",
+    "https://neuroshapes.org/ReconstructedCell"
+  ],
+  "brainRegion" : {
+    "identifier" : "http://purl.obolibrary.org/obo/UBERON_0008933",
+    "label" : "primary somatosensory cortex"
+  },
+  "contributors" : [
+    {
+      "identifier" : "http://localhost/users/john-doe",
+      "label" : "John Doe"
+    }
+  ],
+  "createdBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "description" : "This dataset is about an in vitro-filled neuron morphology from layer 1 with m-type L1_DAC. The distribution contains the neuron morphology in ASC and in SWC file format.",
+  "license" : {
+    "identifier" : "https://bbp.epfl.ch/license1"
+  },
+  "name" : "NM1",
+  "organizations" : [
+    {
+      "identifier" : "http://localhost/orgs/epfl",
+      "label" : "EPFL"
+    }
+  ],
+  "project" : {
+    "identifier" : "{{deltaUri}}/projects/{{project}}",
+    "label" : "{{project}}"
+  },
+  "subjectSpecies" : {
+    "identifier" : "http://purl.obolibrary.org/obo/NCBITaxon_10116",
+    "label" : "Rattus norvegicus"
+  },
+  "_self" : "{{deltaUri}}/resources/{{project}}/_/https:%2F%2Flocalhost%2F{{projectUrlEncoded}}%2Fnm1"
+}

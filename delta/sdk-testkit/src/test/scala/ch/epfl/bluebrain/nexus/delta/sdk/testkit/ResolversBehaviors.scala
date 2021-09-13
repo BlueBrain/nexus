@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
@@ -17,10 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{Pro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, Resolver, ResolverContextResolution, ResolverValue, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, NonEmptyList, ResourceF, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, Task}
@@ -91,6 +91,10 @@ trait ResolversBehaviors {
 
   lazy val resolvers: Resolvers = create.accepted
 
+  lazy val finder = Resolvers.projectReferenceFinder(resolvers)
+
+  val referencedProject = ProjectRef.unsafe("org", "proj2")
+
   "The Resolvers module" when {
 
     val inProjectValue = InProjectValue(inProjectPrio)
@@ -100,9 +104,7 @@ trait ResolversBehaviors {
     val crossProjectValue = CrossProjectValue(
       crossProjectPrio,
       Set.empty,
-      NonEmptyList.of(
-        ProjectRef.unsafe("org", "proj")
-      ),
+      NonEmptyList.of(referencedProject),
       ProvidedIdentities(bob.identities)
     )
 
@@ -865,6 +867,20 @@ trait ResolversBehaviors {
       "reject if organization does not exist" in {
         val org = Label.unsafe("other")
         resolvers.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
+      }
+    }
+
+    "finding references" should {
+      "get all non-deprecated results for the given project" in {
+        val result = finder(referencedProject).accepted.value
+
+        result.size shouldEqual 1
+        result(projectRef) should contain theSameElementsAs List(
+          nxv.base / uuid.toString,
+          nxv + "cross-project-both",
+          nxv + "cross-project-payload",
+          nxv + "cross-project-from-value"
+        )
       }
     }
 
