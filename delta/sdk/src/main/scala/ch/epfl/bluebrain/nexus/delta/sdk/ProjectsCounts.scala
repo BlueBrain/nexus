@@ -5,6 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
@@ -42,7 +43,8 @@ trait ProjectsCounts {
 object ProjectsCounts {
   private val logger: Logger = Logger[ProjectsCounts]
   private type StreamFromOffset = Offset => Stream[Task, Envelope[ProjectScopedEvent]]
-  private[sdk] val projectionId: CacheProjectionId = CacheProjectionId("ProjectsCounts")
+  private[sdk] val projectionId: CacheProjectionId       = CacheProjectionId("ProjectsCounts")
+  implicit private val metricsConfig: KamonMetricsConfig = KamonMetricsConfig(projectionId.value, Map.empty)
 
   /**
     * Construct a [[ProjectsCounts]] from a passed ''projection'' and ''stream'' function. The underlying stream will
@@ -88,6 +90,7 @@ object ProjectsCounts {
               cache.put(projectRef, acc.value.value(projectRef)).as(acc)
             }
             .persistProgress(progress, projectionId, projection, persistProgressConfig)
+            .enableMetrics
             .void
         }
 

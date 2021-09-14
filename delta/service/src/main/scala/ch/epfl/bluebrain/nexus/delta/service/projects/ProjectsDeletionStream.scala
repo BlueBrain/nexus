@@ -5,6 +5,7 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
@@ -39,8 +40,9 @@ class ProjectsDeletionStream(
     keyValueStoreConfig: KeyValueStoreConfig
 ) {
 
-  private val projectionId: CacheProjectionId = CacheProjectionId("ProjectsDeletionProgress")
-  private val logger: Logger                  = Logger[ProjectsDeletionStream]
+  private val projectionId: CacheProjectionId            = CacheProjectionId("ProjectsDeletionProgress")
+  implicit private val metricsConfig: KamonMetricsConfig = KamonMetricsConfig(projectionId.value, Map.empty)
+  private val logger: Logger                             = Logger[ProjectsDeletionStream]
 
   final def run(): Task[Unit] = {
     val retryStrategy =
@@ -105,6 +107,7 @@ class ProjectsDeletionStream(
               .map(statuses => msg.as(initialProgress.value + (uuid -> statuses.last)))
           }
           .persistProgress(initialProgress, projectionId, projection, persistProgressConfig)
+          .enableMetrics
           .void
       }
 
