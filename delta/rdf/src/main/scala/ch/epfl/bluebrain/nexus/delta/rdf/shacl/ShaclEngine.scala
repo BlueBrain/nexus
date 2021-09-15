@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioStrea
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxsh
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import monix.bio.IO
 import org.apache.jena.graph.Factory.createDefaultGraph
 import org.apache.jena.query.{Dataset, DatasetFactory}
@@ -77,7 +78,7 @@ object ShaclEngine {
   def apply(
       shapesGraph: Graph,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     for {
       shaclGraph <- shaclGraphIO
       shapes      = ShaclShapesGraph(shaclGraph)
@@ -100,7 +101,7 @@ object ShaclEngine {
       dataGraph: Graph,
       shapesGraph: Graph,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     apply(dataGraph, ShaclShapesGraph(shapesGraph), validateShapes = false, reportDetails)
 
   /**
@@ -122,7 +123,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] =
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] =
     apply(DatasetFactory.wrap(graph.value), shapesGraph, validateShapes, reportDetails)
 
   private def apply(
@@ -130,7 +131,7 @@ object ShaclEngine {
       shapesGraph: ShaclShapesGraph,
       validateShapes: Boolean,
       reportDetails: Boolean
-  ): IO[String, ValidationReport] = {
+  )(implicit api: JsonLdApi): IO[String, ValidationReport] = {
     // Create Dataset that contains both the data model and the shapes model
     // (here, using a temporary URI for the shapes graph)
     dataset.addNamedModel(shapesGraph.uri.toString, shapesGraph.model)

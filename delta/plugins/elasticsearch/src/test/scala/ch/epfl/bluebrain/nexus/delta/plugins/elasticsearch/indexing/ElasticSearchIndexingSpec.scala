@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, IndexingViewResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsSetup, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -61,7 +61,7 @@ class ElasticSearchIndexingSpec
     with CancelAfterFailure
     with ConfigFixtures
     with Eventually
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   implicit private val uuidF: UUIDF     = UUIDF.random
   implicit private val sc: Scheduler    = Scheduler.global

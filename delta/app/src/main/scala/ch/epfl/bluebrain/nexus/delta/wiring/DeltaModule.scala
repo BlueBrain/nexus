@@ -11,6 +11,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -65,6 +66,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
     AggregateIndexingAction(internal.toSeq)
   }
+
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
       errorCtx    <- ContextValue.fromFile("contexts/error.json")
@@ -82,6 +84,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }
+
+  make[JsonLdApi].fromValue(new JsonLdJavaApi(appCfg.jsonLdApi))
 
   make[Clock[UIO]].from(Clock[UIO])
   make[UUIDF].from(UUIDF.random)

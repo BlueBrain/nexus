@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, owl}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -56,8 +56,9 @@ final case class Schema(
   lazy val ontologies: Graph = graph(types => types.contains(owl.Ontology) && !types.contains(nxv.Schema))
 
   private def graph(filteredTypes: Set[Iri] => Boolean): Graph = {
-    val filtered = expanded.value.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
-    val triples  = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
+    implicit val api: JsonLdApi = JsonLdJavaApi.lenient
+    val filtered                = expanded.value.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
+    val triples                 = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
     Graph.empty(id).add(triples)
   }
 

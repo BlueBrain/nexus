@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
@@ -212,7 +213,13 @@ object Archives {
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       resourceIdCheck: ResourceIdCheck
-  )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
+  )(implicit
+      api: JsonLdApi,
+      as: ActorSystem[Nothing],
+      uuidF: UUIDF,
+      rcr: RemoteContextResolution,
+      clock: Clock[UIO]
+  ): UIO[Archives] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     apply(projects, archiveDownload, cfg, idAvailability)
@@ -223,7 +230,13 @@ object Archives {
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, rcr: RemoteContextResolution, clock: Clock[UIO]): UIO[Archives] = {
+  )(implicit
+      api: JsonLdApi,
+      as: ActorSystem[Nothing],
+      uuidF: UUIDF,
+      rcr: RemoteContextResolution,
+      clock: Clock[UIO]
+  ): UIO[Archives] = {
     val aggregate = ShardedAggregate.transientSharded(
       definition = TransientEventDefinition(
         entityType = moduleType,
@@ -239,7 +252,10 @@ object Archives {
     }
   }
 
-  private[archive] def sourceDecoder(implicit uuidF: UUIDF): JsonLdSourceDecoder[ArchiveRejection, ArchiveValue] =
+  private[archive] def sourceDecoder(implicit
+      api: JsonLdApi,
+      uuidF: UUIDF
+  ): JsonLdSourceDecoder[ArchiveRejection, ArchiveValue] =
     new JsonLdSourceDecoder[ArchiveRejection, ArchiveValue](contexts.archives, uuidF)
 
   private[archive] def next(@unused state: ArchiveState, event: ArchiveCreated): ArchiveState =

@@ -12,6 +12,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -55,6 +56,8 @@ class DeltaDirectivesSpec
 
   private val id       = nxv + "myresource"
   private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit private val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(

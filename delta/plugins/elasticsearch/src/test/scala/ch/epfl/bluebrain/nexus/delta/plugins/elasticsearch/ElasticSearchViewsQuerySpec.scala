@@ -66,7 +66,7 @@ class ElasticSearchViewsQuerySpec
     with ConfigFixtures
     with IOValues
     with Eventually
-    with RemoteContextResolutionFixture {
+    with Fixtures {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private val sc: Scheduler                = Scheduler.global
