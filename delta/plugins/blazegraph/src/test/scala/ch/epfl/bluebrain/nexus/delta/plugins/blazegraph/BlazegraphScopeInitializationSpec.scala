@@ -26,7 +26,7 @@ class BlazegraphScopeInitializationSpec
     with IOValues
     with TestHelpers
     with ConfigFixtures
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.utils
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -20,6 +21,8 @@ import java.util.UUID
 
 trait RouteFixtures extends TestHelpers with IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(

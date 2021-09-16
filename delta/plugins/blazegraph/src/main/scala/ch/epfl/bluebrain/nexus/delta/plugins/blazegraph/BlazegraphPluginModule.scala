@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphInde
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
@@ -155,6 +156,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           agg: BlazegraphViewsAggregate,
           orgs: Organizations,
           projects: Projects,
+          api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
@@ -170,6 +172,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           projects,
           client
         )(
+          api,
           uuidF,
           scheduler,
           as

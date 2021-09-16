@@ -4,6 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, RemoteContextCircularDependency, RemoteContextError, UnexpectedJsonLd, UnexpectedJsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi.{ioTryOrRdfError, tryOrRdfError}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig.ErrorHandling
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import com.github.jsonldjava.core.JsonLdError.Error.RECURSIVE_CONTEXT_INCLUSION
@@ -14,7 +16,8 @@ import io.circe.{parser, Json, JsonObject}
 import monix.bio.IO
 import org.apache.jena.query.DatasetFactory
 import org.apache.jena.riot.RDFFormat.{JSONLD_EXPAND_FLAT => EXPAND}
-import org.apache.jena.riot.{JsonLDReadContext, JsonLDWriteContext, Lang, RDFParser, RDFWriter}
+import org.apache.jena.riot.system.ErrorHandlerFactory
+import org.apache.jena.riot._
 import org.apache.jena.sparql.core.DatasetGraph
 
 import scala.jdk.CollectionConverters._
@@ -23,7 +26,7 @@ import scala.util.Try
 /**
   * Json-LD high level API implementation by Json-LD Java library
   */
-object JsonLdJavaApi extends JsonLdApi {
+final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
 
   System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
@@ -65,7 +68,19 @@ object JsonLdJavaApi extends JsonLdApi {
     val c           = new JsonLDReadContext()
     c.setOptions(toOpts())
     val ds          = DatasetFactory.create
-    val initBuilder = RDFParser.create.fromString(input.noSpaces).lang(Lang.JSONLD).context(c)
+    val initBuilder = RDFParser.create
+      .fromString(input.noSpaces)
+      .lang(Lang.JSONLD)
+      .context(c)
+      .strict(config.strict)
+      .checking(config.extraChecks)
+      .errorHandler {
+        config.errorHandling match {
+          case ErrorHandling.Default   => ErrorHandlerFactory.getDefaultErrorHandler
+          case ErrorHandling.Strict    => ErrorHandlerFactory.errorHandlerStrictNoLogging
+          case ErrorHandling.NoWarning => ErrorHandlerFactory.errorHandlerNoWarnings
+        }
+      }
     val builder     = opts.base.fold(initBuilder)(base => initBuilder.base(base.toString))
     tryOrRdfError(builder.parse(ds.asDatasetGraph()), "toRdf").as(ds.asDatasetGraph())
   }
@@ -137,6 +152,23 @@ object JsonLdJavaApi extends JsonLdApi {
                   .flatMap(_.foldM(Vector.empty[JsonObject])((seq, json) => json.asObject.map(seq :+ _)))
                   .toRight(UnexpectedJsonLd("Expected a sequence of Json Object"))
     } yield objSeq
+}
+
+object JsonLdJavaApi {
+
+  /**
+    * Creates an API with a config with strict values
+    */
+  val strict: JsonLdApi = new JsonLdJavaApi(
+    JsonLdApiConfig(strict = true, extraChecks = true, errorHandling = ErrorHandling.Strict)
+  )
+
+  /**
+    * Creates an API with a config with lenient values
+    */
+  val lenient: JsonLdApi = new JsonLdJavaApi(
+    JsonLdApiConfig(strict = false, extraChecks = false, errorHandling = ErrorHandling.NoWarning)
+  )
 
   private[rdf] def ioTryOrRdfError[A](value: => A, stage: String): IO[RdfError, A] =
     IO.fromEither(tryOrRdfError(value, stage))

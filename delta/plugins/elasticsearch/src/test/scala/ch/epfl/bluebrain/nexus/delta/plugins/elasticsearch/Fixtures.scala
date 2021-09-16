@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 
-trait RemoteContextResolutionFixture extends IOValues {
+trait Fixtures extends IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   private val listingsMetadataCtx =
@@ -25,6 +26,8 @@ trait RemoteContextResolutionFixture extends IOValues {
   private val indexingMetadataCtx = listingsMetadataCtx.visit(obj = { case ContextObject(obj) =>
     ContextObject(obj.filterKeys(_.startsWith("_")))
   })
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json").accepted,
@@ -44,4 +47,4 @@ trait RemoteContextResolutionFixture extends IOValues {
   )
 }
 
-object RemoteContextResolutionFixture extends RemoteContextResolutionFixture
+object Fixtures extends Fixtures

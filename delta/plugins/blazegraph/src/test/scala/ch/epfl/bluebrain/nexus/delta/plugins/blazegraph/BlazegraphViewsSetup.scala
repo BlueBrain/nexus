@@ -19,7 +19,7 @@ import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
-trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedClock with RemoteContextResolutionFixture {
+trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedClock with Fixtures {
 
   def config(implicit baseUri: BaseUri) = BlazegraphViewsConfig(
     baseUri.toString,

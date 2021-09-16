@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.execution.schedulers.CanBlock
@@ -16,6 +17,8 @@ trait Fixtures
     with IOValues
     with EitherValuable
     with TestMatchers {
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   val iri = iri"http://nexus.example.com/john-doé"
 

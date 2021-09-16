@@ -179,6 +179,22 @@ class ResourcesSpec
         }
       }
 
+      "reject with InvalidJsonLdFormat" in {
+        val current       = ResourceGen.currentState(myId, projectRef, source, Latest(schema1.id), types)
+        val wrongSource   = source deepMerge json"""{"other": {"@id": " http://nexus.example.com/myid"}}"""
+        val wrongResource = ResourceGen.resource(myId, projectRef, wrongSource)
+        val compacted     = wrongResource.compacted
+        val expanded      = wrongResource.expanded
+        val schema        = Latest(schema1.id)
+        val list          = List(
+          Initial -> CreateResource(myId, projectRef, schema, wrongSource, compacted, expanded, caller),
+          current -> UpdateResource(myId, projectRef, None, wrongSource, compacted, expanded, 1L, caller)
+        )
+        forAll(list) { case (state, cmd) =>
+          eval(state, cmd).rejectedWith[InvalidJsonLdFormat]
+        }
+      }
+
       "reject with SchemaIsDeprecated" in {
         val schema    = Latest(schema2.id)
         val current   = ResourceGen.currentState(myId, projectRef, source, schema, types)

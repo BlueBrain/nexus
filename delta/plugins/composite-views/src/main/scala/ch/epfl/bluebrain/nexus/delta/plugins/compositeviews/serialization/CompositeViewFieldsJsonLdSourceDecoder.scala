@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields, CompositeViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -47,6 +48,7 @@ final class CompositeViewFieldsJsonLdSourceDecoder private (
 object CompositeViewFieldsJsonLdSourceDecoder {
 
   def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
+      api: JsonLdApi,
       cfg: CompositeViewsConfig
   ): CompositeViewFieldsJsonLdSourceDecoder =
     new CompositeViewFieldsJsonLdSourceDecoder(

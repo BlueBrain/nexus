@@ -45,7 +45,7 @@ class BlazegraphQuerySpec
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
-    with RemoteContextResolutionFixture
+    with Fixtures
     with IOValues
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
