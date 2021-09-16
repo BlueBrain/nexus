@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
@@ -49,7 +50,7 @@ final class ResourcesDummy private (
     idAvailability: IdAvailability[ResourceAlreadyExists],
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
-)(implicit clock: Clock[UIO])
+)(implicit api: JsonLdApi, clock: Clock[UIO])
     extends Resources {
 
   private val eval = Resources.evaluate(resourceResolution, idAvailability)(_, _)
@@ -234,7 +235,7 @@ object ResourcesDummy {
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forResourceEvents(moduleType))
       sem     <- IOSemaphore(1L)
@@ -272,7 +273,7 @@ object ResourcesDummy {
       idAvailability: IdAvailability[ResourceAlreadyExists],
       contextResolution: ResolverContextResolution,
       journal: ResourcesJournal
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[ResourcesDummy] =
     for {
       sem   <- IOSemaphore(1L)
       parser = JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)

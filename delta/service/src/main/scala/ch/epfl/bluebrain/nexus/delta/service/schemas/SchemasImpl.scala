@@ -6,6 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -173,13 +174,13 @@ object SchemasImpl {
   def aggregate(
       config: AggregateConfig,
       resourceIdCheck: ResourceIdCheck
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] =
+  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] =
     aggregate(config, (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project)))
 
   private def aggregate(
       config: AggregateConfig,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] = {
+  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[SchemasAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -210,7 +211,7 @@ object SchemasImpl {
       eventLog: EventLog[Envelope[SchemaEvent]],
       agg: SchemasAggregate,
       cache: SchemasCache
-  )(implicit uuidF: UUIDF = UUIDF.random): Schemas = {
+  )(implicit api: JsonLdApi, uuidF: UUIDF = UUIDF.random): Schemas = {
     val parser =
       new JsonLdSourceResolvingParser[SchemaRejection](
         List(contexts.shacl, contexts.schemasMetadata),

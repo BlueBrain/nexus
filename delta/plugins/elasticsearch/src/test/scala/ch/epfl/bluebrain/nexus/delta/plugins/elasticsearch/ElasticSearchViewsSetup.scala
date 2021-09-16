@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.typed.ActorSystem
 import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture.rcr
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures.rcr
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -42,7 +43,14 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
       org: Label,
       project: Project,
       perms: Permission*
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, s: Subject, sc: Scheduler): ElasticSearchViews = {
+  )(implicit
+      api: JsonLdApi,
+      base: BaseUri,
+      as: ActorSystem[Nothing],
+      uuid: UUIDF,
+      s: Subject,
+      sc: Scheduler
+  ): ElasticSearchViews = {
     for {
       (orgs, projs) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
     } yield init(orgs, projs, perms: _*)
@@ -52,14 +60,20 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
       orgs: Organizations,
       projects: Projects,
       perms: Permission*
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews =
+  )(implicit api: JsonLdApi, base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews =
     init(orgs, projects, PermissionsDummy(perms.toSet).accepted)
 
   def init(
       orgs: Organizations,
       projects: Projects,
       perms: Permissions
-  )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews = {
+  )(implicit
+      api: JsonLdApi,
+      base: BaseUri,
+      as: ActorSystem[Nothing],
+      uuid: UUIDF,
+      sc: Scheduler
+  ): ElasticSearchViews = {
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
       deferred   <- Deferred[Task, ElasticSearchViews]

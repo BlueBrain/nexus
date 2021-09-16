@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -21,7 +21,7 @@ import monix.bio.{IO, UIO}
 /**
   * Allows to define different JsonLd processorces
   */
-sealed abstract class JsonLdSourceProcessor {
+sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
 
   def uuidF: UUIDF
 
@@ -62,6 +62,7 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
   final class JsonLdSourceParser[R](contextIri: Seq[Iri], override val uuidF: UUIDF)(implicit
+      api: JsonLdApi,
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
@@ -122,9 +123,8 @@ object JsonLdSourceProcessor {
       contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit
-      rejectionMapper: Mapper[InvalidJsonLdRejection, R]
-  ) extends JsonLdSourceProcessor {
+  )(implicit api: JsonLdApi, rejectionMapper: Mapper[InvalidJsonLdRejection, R])
+      extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceParser[R](contextIri, uuidF)
 
@@ -170,6 +170,7 @@ object JsonLdSourceProcessor {
 
   object JsonLdSourceResolvingParser {
     def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
+        api: JsonLdApi,
         rejectionMapper: Mapper[InvalidJsonLdRejection, R]
     ): JsonLdSourceResolvingParser[R] =
       new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
@@ -179,6 +180,7 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source and decode it into an ''A'' using static contexts
     */
   final class JsonLdSourceDecoder[R, A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)(implicit
+      api: JsonLdApi,
       rejectionMapper: Mapper[JsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
@@ -232,9 +234,8 @@ object JsonLdSourceProcessor {
       contextIri: Iri,
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit
-      rejectionMapper: Mapper[JsonLdRejection, R]
-  ) extends JsonLdSourceProcessor {
+  )(implicit api: JsonLdApi, rejectionMapper: Mapper[JsonLdRejection, R])
+      extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceDecoder[R, A](contextIri, uuidF)
 

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.e
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchDocker, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchDocker, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -54,7 +54,7 @@ class SearchSpec
     with ConfigFixtures
     with IOValues
     with Eventually
-    with RemoteContextResolutionFixture
+    with Fixtures
     with ElasticSearchDocker
     with DockerTestKit {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)

@@ -4,6 +4,7 @@ import akka.http.scaladsl.marshalling.ToEntityMarshaller
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives.{complete, onSuccess, reject}
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -18,6 +19,10 @@ trait ResponseToMarshaller {
 }
 
 object ResponseToMarshaller extends RdfMarshalling {
+
+  // Some resources may not have been created in the system with a strict configuration
+  // (and if they are, there is no need to check them again)
+  implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
   private[directives] def apply[E: JsonLdEncoder, A: ToEntityMarshaller](
       uio: UIO[Either[Response[E], Complete[A]]]

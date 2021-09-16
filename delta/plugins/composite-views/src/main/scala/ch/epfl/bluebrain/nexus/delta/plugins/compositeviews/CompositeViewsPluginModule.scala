@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, Com
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
@@ -83,6 +84,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         cache: CompositeViewsCache,
         agg: CompositeViewsAggregate,
         contextResolution: ResolverContextResolution,
+        api: JsonLdApi,
         uuidF: UUIDF,
         as: ActorSystem[Nothing],
         sc: Scheduler
@@ -96,6 +98,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         agg,
         contextResolution
       )(
+        api,
         uuidF,
         as,
         sc
@@ -152,10 +155,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[MetadataPredicates].fromEffect {
     (
         listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      implicit val res = cr
-      JsonLdContext(listingsMetadataCtx.value)
+      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
   }

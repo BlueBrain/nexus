@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
@@ -35,6 +36,7 @@ object ResourcesModule extends ModuleDef {
         resolvers: Resolvers,
         schemas: Schemas,
         resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
         as: ActorSystem[Nothing],
         clock: Clock[UIO]
     ) =>
@@ -42,7 +44,7 @@ object ResourcesModule extends ModuleDef {
         config.resources.aggregate,
         ResourceResolution.schemaResource(acls, resolvers, schemas),
         resourceIdCheck
-      )(as, clock)
+      )(api, as, clock)
   }
 
   many[ResourcesDeletion].add { (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
@@ -55,10 +57,11 @@ object ResourcesModule extends ModuleDef {
         agg: ResourcesAggregate,
         organizations: Organizations,
         projects: Projects,
+        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
         uuidF: UUIDF
     ) =>
-      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(uuidF)
+      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(api, uuidF)
   }
 
   make[ResolverContextResolution].from {

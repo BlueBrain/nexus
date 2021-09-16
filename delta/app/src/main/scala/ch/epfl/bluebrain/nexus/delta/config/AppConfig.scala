@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
@@ -29,6 +30,8 @@ import java.nio.charset.StandardCharsets.UTF_8
   *   the cluster config
   * @param database
   *   the database config
+  * @param jsonLdApi
+  *   the json-ld api config
   * @param identities
   *   the identities config
   * @param permissions
@@ -57,6 +60,7 @@ final case class AppConfig(
     http: HttpConfig,
     cluster: ClusterConfig,
     database: DatabaseConfig,
+    jsonLdApi: JsonLdApiConfig,
     identities: IdentitiesConfig,
     permissions: PermissionsConfig,
     realms: RealmsConfig,
