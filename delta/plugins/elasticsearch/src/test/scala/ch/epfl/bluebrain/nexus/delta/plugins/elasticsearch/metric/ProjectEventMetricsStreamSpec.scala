@@ -2,16 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric
 
 import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.{NoOffset, Offset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.QueryBuilder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStreamSpec.{SimpleEvent, SimpleEventExchange}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue.Aux
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
@@ -25,7 +23,6 @@ import ch.epfl.bluebrain.nexus.testkit.IOValues
 import fs2.Stream
 import io.circe.JsonObject
 import monix.bio.{Task, UIO}
-import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -39,17 +36,14 @@ class ProjectEventMetricsStreamSpec
     extends AbstractDBSpec
     with AnyWordSpecLike
     with Matchers
+    with ElasticSearchClientSetup
     with ConfigFixtures
     with Eventually
     with IOValues {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private val uuidF: UUIDF                 = UUIDF.random
-  implicit private val sc: Scheduler                = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
-  private val esClient                              = new ElasticSearchClient(HttpClient(), elasticsearchHost.endpoint, 5000)
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   private val project          = ProjectRef.unsafe("org", "proj")
   private val instant          = Instant.now()

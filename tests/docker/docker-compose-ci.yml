@@ -22,6 +22,8 @@ services:
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                 "-Dplugins.elasticsearch.credentials.username=elastic",
+                 "-Dplugins.elasticsearch.credentials.password=password",
                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
@@ -64,6 +66,8 @@ services:
 #                 "-Dakka.cluster.min-nr-of-members=3",
 #                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                 "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+#                 "-Dplugins.elasticsearch.credentials.username=elastic",
+#                 "-Dplugins.elasticsearch.credentials.password=password",
 #                 "-Dplugins.elasticsearch.indexing.max-batch-size=50",
 #                 "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
 #                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
@@ -106,14 +110,16 @@ services:
 #                 "-Dakka.cluster.min-nr-of-members=3",
 #                 "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
 #                 "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
-#                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
-#                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
-#                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-#                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
-#                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
-#                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-#                  "-Dplugins.composite-views.sources.max-batch-size=50",
-#                  "-Dplugins.composite-views.sources.max-time-window=50ms",
+#                 "-Dplugins.elasticsearch.credentials.username=elastic",
+#                 "-Dplugins.elasticsearch.credentials.password=password",
+#                 "-Dplugins.elasticsearch.indexing.max-batch-size=50",
+#                 "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
+#                 "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
+#                 "-Dplugins.blazegraph.indexing.max-batch-size=50",
+#                 "-Dplugins.blazegraph.indexing.max-time-window=50ms",
+#                 "-Dplugins.composite-views.min-interval-rebuild=5seconds",
+#                 "-Dplugins.composite-views.sources.max-batch-size=50",
+#                 "-Dplugins.composite-views.sources.max-time-window=50ms",
 #                 "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                 "-Dplugins.storage.storages.amazon.enabled=true",
@@ -148,6 +154,7 @@ services:
       ES_JAVA_OPTS: "-Xmx4G"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
+      ELASTIC_PASSWORD: "password"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
       interval: 30s
