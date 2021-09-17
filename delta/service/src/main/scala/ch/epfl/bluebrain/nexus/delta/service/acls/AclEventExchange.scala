@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclEvent, AclRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
@@ -27,6 +28,9 @@ class AclEventExchange(acls: Acls)(implicit base: BaseUri) extends EventExchange
       case ev: AclEvent => Some(JsonValue(ev))
       case _            => None
     }
+
+  // TODO: Implement in further development
+  override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
   override def toResource(
       event: Event,

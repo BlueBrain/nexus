@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.Compos
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
@@ -706,9 +707,9 @@ object CompositeViews {
       cache: CompositeViewsCache,
       agg: CompositeViewsAggregate,
       contextResolution: ResolverContextResolution
-  )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[CompositeViews] =
+  )(implicit api: JsonLdApi, uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[CompositeViews] =
     for {
-      sourceDecoder <- Task.delay(CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(config))
+      sourceDecoder <- Task.delay(CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(api, config))
       views          = new CompositeViews(agg, eventLog, cache, orgs, projects, sourceDecoder)
       _             <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views

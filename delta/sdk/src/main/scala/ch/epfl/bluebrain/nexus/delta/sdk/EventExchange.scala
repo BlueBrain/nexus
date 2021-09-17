@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
 import monix.bio.UIO
 
@@ -41,6 +42,15 @@ trait EventExchange {
     *   some value if the event is defined for this instance, none otherwise
     */
   def toJsonEvent(event: Event): Option[JsonValue.Aux[E]]
+
+  /**
+    * Exchange an event to create the related metric
+    * @param event
+    *   the event to transform
+    * @return
+    *   the metric
+    */
+  def toMetric(event: Event): UIO[Option[EventMetric]]
 
   /**
     * Exchange an event for the latest resource in common formats.

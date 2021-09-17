@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
@@ -53,6 +54,7 @@ object ResolversModule extends ModuleDef {
         projects: Projects,
         cache: ResolversCache,
         agg: ResolversAggregate,
+        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
         as: ActorSystem[Nothing],
         uuidF: UUIDF,
@@ -66,7 +68,7 @@ object ResolversModule extends ModuleDef {
         resolverContextResolution,
         cache,
         agg
-      )(uuidF, scheduler, as)
+      )(api, uuidF, scheduler, as)
   }
 
   many[ResourcesDeletion].add {

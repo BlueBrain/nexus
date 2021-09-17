@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDown
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -43,12 +44,13 @@ object ArchivePluginModule extends ModuleDef {
         archiveDownload: ArchiveDownload,
         cfg: ArchivePluginConfig,
         resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
         as: ActorSystem[Nothing],
         uuidF: UUIDF,
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[UIO]
     ) =>
-      Archives(projects, archiveDownload, cfg, resourceIdCheck)(as, uuidF, rcr, clock)
+      Archives(projects, archiveDownload, cfg, resourceIdCheck)(api, as, uuidF, rcr, clock)
   }
 
   make[ArchiveRoutes].from {

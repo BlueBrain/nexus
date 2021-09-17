@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import monix.bio.IO
 
 trait KamonSyntax {
@@ -30,6 +30,6 @@ final class KamonOps[E, A](private val io: IO[E, A]) extends AnyVal {
       tags: Map[String, Any] = Map.empty,
       takeSamplingDecision: Boolean = true
   ): IO[E, A] =
-    Tracing.operationName(name, component, tags, takeSamplingDecision)(io)
+    KamonMonitoring.operationName(name, component, tags, takeSamplingDecision)(io)
 
 }

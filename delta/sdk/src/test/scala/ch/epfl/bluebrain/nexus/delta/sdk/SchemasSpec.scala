@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
@@ -31,6 +32,8 @@ class SchemasSpec
     with CirceLiteral
     with OptionValues
     with Fixtures {
+
+  implicit override val api: JsonLdApi = JsonLdJavaApi.lenient
 
   "The Schemas state machine" when {
     implicit val sc: Scheduler = Scheduler.global

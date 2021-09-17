@@ -2,13 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMetricsConfig, KamonMonitoring}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
+import kamon.Kamon
+import kamon.tag.TagSet
 import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
+import monix.execution.atomic.AtomicLong
 
 import scala.util.control.NonFatal
 
@@ -371,6 +375,47 @@ object ProjectionStream {
       }
 
     /**
+      * Accumulate over the chunks and persist the progress and errors
+      *
+      * @param initial
+      *   where we started
+      * @param persistErrors
+      *   how we persist errors
+      * @param persistProgress
+      *   how we persist progress
+      */
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit]
+    ): Stream[Task, ProjectionProgress[A]] = {
+      stream
+        .evalMapAccumulate(initial) { case (acc, chunk) =>
+          val (progress, errors) = chunk.foldLeft((acc, Vector.empty[Message[A]])) {
+            case ((acc, errors), msg: ErrorMessage) if msg.offset.gt(acc.offset)                               => (acc + msg, errors :+ msg)
+            case ((acc, errors), msg: SuccessMessage[_]) if msg.offset.gt(acc.offset) && msg.warnings.nonEmpty =>
+              (acc + msg, errors :+ msg)
+            case ((acc, errors), msg) if msg.offset.gt(acc.offset)                                             => (acc + msg, errors)
+            case ((acc, errors), _)                                                                            => (acc, errors)
+          }
+
+          persistErrors(errors) >> persistProgress(progress) >> Task.pure(progress -> chunk)
+        }
+        .map(_._1)
+    }
+
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        projectionId: ProjectionId,
+        projection: Projection[A]
+    ): Stream[Task, ProjectionProgress[A]] =
+      persistProgress(
+        initial,
+        projection.recordProgress(projectionId, _),
+        projection.recordErrors(projectionId, _)
+      )
+
+    /**
       * Apply the given function that either fails or succeed for every success message in a chunk
       *
       * @see
@@ -431,5 +476,47 @@ object ProjectionStream {
             }
         }
       }
+  }
+
+  class ProjectionProgressStreamOps[A](val stream: Stream[Task, ProjectionProgress[A]]) extends StreamOps[A] {
+
+    /**
+      * Push progress metrics in Kamon
+      */
+    def enableMetrics(implicit config: KamonMetricsConfig): Stream[Task, ProjectionProgress[A]] = if (
+      KamonMonitoring.enabled
+    ) {
+      val tagSet                           = TagSet.from(config.tags)
+      val processedEventsGauge             = Kamon
+        .gauge(s"${config.prefix}_gauge_processed_events")
+        .withTags(tagSet)
+      val processedEventsCounter           = Kamon
+        .counter(s"${config.prefix}_counter_processed_events")
+        .withTags(tagSet)
+      val processedEventsCount: AtomicLong = AtomicLong(0)
+      val failedEventsGauge                = Kamon
+        .gauge(s"${config.prefix}_gauge_failed_events")
+        .withTags(tagSet)
+      val failedEventsCounter              = Kamon
+        .counter(s"${config.prefix}_counter_failed_events")
+        .withTags(tagSet)
+      val failedEventsCount: AtomicLong    = AtomicLong(0L)
+
+      stream.evalTap { p =>
+        Task.delay {
+          val previousProcessedCount = processedEventsCount.get()
+          processedEventsGauge.update(p.processed.toDouble)
+          processedEventsCounter.increment(p.processed - previousProcessedCount)
+          processedEventsCount.set(p.processed)
+
+          val previousFailedCount = failedEventsCount.get()
+          failedEventsGauge.update(p.failed.toDouble)
+          failedEventsCounter.increment(p.failed - previousFailedCount)
+          failedEventsCount.set(p.failed)
+        }
+      }
+    } else {
+      stream
+    }
   }
 }

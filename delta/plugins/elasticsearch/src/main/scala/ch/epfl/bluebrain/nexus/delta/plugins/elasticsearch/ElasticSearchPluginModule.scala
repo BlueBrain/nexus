@@ -9,10 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -53,7 +55,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchClient].from {
     (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(as.classicSystem)
+      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
   make[IndexingSource].named("elasticsearch-source").from {
@@ -153,6 +155,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           deferred: Deferred[Task, ElasticSearchViews],
           orgs: Organizations,
           projects: Projects,
+          api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
@@ -167,6 +170,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           orgs,
           projects
         )(
+          api,
           uuidF,
           scheduler,
           as
@@ -237,6 +241,26 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         OnEventInstant.combine(onEventInstantsSet)
       )(uuidF, as, sc)
 
+  }
+
+  make[ProjectEventMetricsStream].fromEffect {
+    (
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
+        exchanges: Set[EventExchange],
+        client: ElasticSearchClient,
+        projection: Projection[Unit],
+        config: ElasticSearchViewsConfig,
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      ProjectEventMetricsStream(
+        eventLog.eventsByTag(Event.eventTag, _),
+        exchanges,
+        client,
+        projection,
+        config.indexing
+      )(uuidF, as, sc)
   }
 
   make[ElasticSearchViewsRoutes].from {
@@ -352,4 +376,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
+
 }

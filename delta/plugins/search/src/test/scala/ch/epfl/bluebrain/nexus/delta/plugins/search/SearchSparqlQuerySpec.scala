@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -49,6 +50,7 @@ class SearchSparqlQuerySpec
 
   implicit private val sc: Scheduler                = Scheduler.global
   implicit private val httpCfg: HttpClientConfig    = httpClientConfig
+  implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     searchDocument -> jsonContentOf("contexts/search-document.json").topContextValueOrEmpty
   )

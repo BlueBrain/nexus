@@ -3,15 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.CompositeViewDeprecated
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{compositeViewType, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.execution.Scheduler
 import org.scalatest.{Inspectors, OptionValues}
@@ -57,6 +60,22 @@ class CompositeViewEventExchangeSpec extends AbstractDBSpec with Inspectors with
       result.value.source shouldEqual viewSource.removeAllKeys("token")
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual Metadata(uuid)
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxv.View, compositeViewType),
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

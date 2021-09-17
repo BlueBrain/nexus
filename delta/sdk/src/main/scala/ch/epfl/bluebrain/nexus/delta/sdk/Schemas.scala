@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -285,7 +286,7 @@ object Schemas {
   private[delta] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
       state: SchemaState,
       cmd: SchemaCommand
-  )(implicit clock: Clock[UIO] = IO.clock): IO[SchemaRejection, SchemaEvent] = {
+  )(implicit api: JsonLdApi, clock: Clock[UIO] = IO.clock): IO[SchemaRejection, SchemaEvent] = {
 
     def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
       val eitherGraph = expanded.value.foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ _))

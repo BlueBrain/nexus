@@ -1,0 +1,27 @@
+[
+  {
+    "@id": "http://nexus.example.com/john-doé",
+    "@type": [
+      "http://schema.org/Person"
+    ],
+    "http://example.com/address": [
+      {
+        "http://example.com/customid": [
+          {
+            "@id": " http://nexus.example.com/myid"
+          }
+        ],
+        "http://example.com/number": [
+          {
+            "@value": 2
+          }
+        ],
+        "http://example.com/street": [
+          {
+            "@value": "my street"
+          }
+        ]
+      }
+    ]
+  }
+]

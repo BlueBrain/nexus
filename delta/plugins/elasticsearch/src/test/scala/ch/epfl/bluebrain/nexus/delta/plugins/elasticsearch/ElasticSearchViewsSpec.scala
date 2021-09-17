@@ -40,7 +40,7 @@ class ElasticSearchViewsSpec
     with OptionValues
     with TestHelpers
     with ConfigFixtures
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))

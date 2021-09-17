@@ -24,7 +24,7 @@ import io.circe.Decoder
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
-trait CompositeViewsSetup extends RemoteContextResolutionFixture with IOFixedClock {
+trait CompositeViewsSetup extends Fixtures with IOFixedClock {
 
   private val deltaClient = new DeltaClient {
     override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectCount] =

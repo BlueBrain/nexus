@@ -28,7 +28,7 @@ class ElasticSearchViewDecodingSpec
     with IOValues
     with TestHelpers
     with OptionValues
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val project = Project(
     label = Label.unsafe("proj"),

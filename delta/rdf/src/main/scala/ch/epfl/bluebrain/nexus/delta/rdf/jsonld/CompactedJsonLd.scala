@@ -13,7 +13,7 @@ import monix.bio.IO
 
 /**
   * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root
-  * @id.
+  * \@id.
   */
 final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue, obj: JsonObject) extends JsonLd {
   self =>

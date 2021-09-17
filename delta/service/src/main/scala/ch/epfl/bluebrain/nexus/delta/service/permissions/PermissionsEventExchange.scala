@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{PermissionSet, PermissionsEvent, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import io.circe.syntax.EncoderOps
@@ -32,6 +33,9 @@ class PermissionsEventExchange(permissions: Permissions)(implicit base: BaseUri)
       case (_: PermissionsEvent, None) => resourceToValue(permissions.fetch)
       case _                           => UIO.none
     }
+
+  // TODO: Implement in further development
+  override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
   private def resourceToValue(
       resourceIO: IO[PermissionsRejection, PermissionsResource]
