@@ -27,6 +27,7 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
 
   private def config(implicit baseUri: BaseUri) = ElasticSearchViewsConfig(
     baseUri.toString,
+    None,
     httpClientConfig,
     aggregate,
     keyValueStore,

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.DefaultPort
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
@@ -13,9 +14,13 @@ trait ElasticSearchDocker extends DockerKitWithFactory {
 
   val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.13.4")
     .withPorts(DefaultPort -> Some(DefaultPort))
-    .withEnv("discovery.type=single-node")
+    .withEnv(
+      "discovery.type=single-node",
+      "xpack.security.enabled=true",
+      "ELASTIC_PASSWORD=password"
+    )
     .withReadyChecker(
-      DockerReadyChecker.HttpResponseCode(DefaultPort).looped(30, 2.second)
+      DockerReadyChecker.LogLineContains("Active license is now [BASIC]; Security is enabled")
     )
 
   override def dockerContainers: List[DockerContainer] =
@@ -28,6 +33,7 @@ object ElasticSearchDocker {
     def endpoint: Uri = s"http://$host:$port"
   }
 
-  val DefaultPort: Int                          = 9200
-  lazy val elasticsearchHost: ElasticSearchHost = ElasticSearchHost("127.0.0.1", DefaultPort)
+  val DefaultPort: Int                                        = 9200
+  lazy val elasticsearchHost: ElasticSearchHost               = ElasticSearchHost("127.0.0.1", DefaultPort)
+  implicit lazy val credentials: Option[BasicHttpCredentials] = Some(BasicHttpCredentials("elastic", "password"))
 }

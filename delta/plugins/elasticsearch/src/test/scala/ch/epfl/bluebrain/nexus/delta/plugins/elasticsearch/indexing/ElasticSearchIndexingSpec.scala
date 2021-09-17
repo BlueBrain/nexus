@@ -3,17 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 import akka.http.scaladsl.model.Uri.Query
 import akka.persistence.query.Sequence
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, IndexingViewResource}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, ElasticSearchViews, ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -23,7 +21,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -41,7 +38,6 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, Te
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, EitherValues, Inspectors}
@@ -59,12 +55,12 @@ class ElasticSearchIndexingSpec
     with IOValues
     with TestHelpers
     with CancelAfterFailure
+    with ElasticSearchClientSetup
     with ConfigFixtures
     with Eventually
     with Fixtures {
 
   implicit private val uuidF: UUIDF     = UUIDF.random
-  implicit private val sc: Scheduler    = Scheduler.global
   private val realm                     = Label.unsafe("myrealm")
   private val bob                       = User("Bob", realm)
   implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
@@ -91,6 +87,7 @@ class ElasticSearchIndexingSpec
 
   private val config = ElasticSearchViewsConfig(
     "http://localhost",
+    None,
     httpClientConfig,
     aggregate,
     keyValueStore,
@@ -105,10 +102,6 @@ class ElasticSearchIndexingSpec
 
   implicit private val kvCfg: KeyValueStoreConfig          = config.keyValueStore
   implicit private val externalCfg: ExternalIndexingConfig = config.indexing
-
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, config.maxIndexPathLength)
 
   private val idPrefix = Iri.unsafe("https://example.com")
 
