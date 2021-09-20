@@ -19,6 +19,35 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 
 The latest stable release is **v1.5.1** released on **04.06.2021**.
 
+## v1.6.0-M4 (16.09.2021)
+
+ - Record and present deployment usage stats [#2528](https://github.com/BlueBrain/nexus/issues/2528)
+ - Ability to clear all search results customisations [#2616](https://github.com/BlueBrain/nexus/issues/2616)
+ - Allow re-ordering of columns for presentation purposes [#2643](https://github.com/BlueBrain/nexus/issues/2643)
+ - Allow listings on resources outside the project scope [#2737](https://github.com/BlueBrain/nexus/issues/2737)
+ - Add information about supported operations on the config field [#2740](https://github.com/BlueBrain/nexus/issues/2740)
+ - Allow streams other than those related to views to leverage Kamon [#2771](https://github.com/BlueBrain/nexus/issues/2771)
+ - Allow rdf parser to be configurable [#2792](https://github.com/BlueBrain/nexus/issues/2792)
+ - BUGFIX: Invalid IRIs should be properly rejected [#2760](https://github.com/BlueBrain/nexus/issues/2760)
+
+## v1.6.0-M3 (02.09.2021)
+
+This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
+
+ - Restrict volume of data through quotas (static configuration) [#2525](https://github.com/BlueBrain/nexus/issues/2525)
+ - Delete projects implementation [#2720](https://github.com/BlueBrain/nexus/issues/2720)
+ - Delete Projects: Check if project is being used anywhere before allowing deletion [#2723](https://github.com/BlueBrain/nexus/issues/2723)
+ - Added endpoint to list projects deletions [#2744](https://github.com/BlueBrain/nexus/issues/2744)
+ - Document projects deletions [#2746](https://github.com/BlueBrain/nexus/issues/2746)
+ - /v1/events endpoint is missing [#2397](https://github.com/BlueBrain/nexus/issues/2397)
+ - Ability to customise visible/hidden fields in search results [#2613](https://github.com/BlueBrain/nexus/issues/2613)
+ - Ability to filter search results based on known values [#2614](https://github.com/BlueBrain/nexus/issues/2614)
+ - Ability to sort search results on multiple columns [#2615](https://github.com/BlueBrain/nexus/issues/2615)
+ - Show only Home and Studios in the sidebar for anonymous users [#2637](https://github.com/BlueBrain/nexus/issues/2637)
+ - BUGFIX: Login is broken in Safari when you login after opening a link [#2493](https://github.com/BlueBrain/nexus/issues/2493)
+ - BUGFIX: Opening File resources results in JSON payload error [#2569](https://github.com/BlueBrain/nexus/issues/2569)
+ - BUGFIX: Delete Projects: Delete ProjectsCounts from deleted project [#2722](https://github.com/BlueBrain/nexus/issues/2722)
+ 
 ## v1.6.0-M2 (17.08.2021)
 
 This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
@@ -28,10 +57,13 @@ This is a milestone release for v1.6.0, containing a series of bugfixes and impr
  - Repurpose the search bar to enable jump to project [#2609](https://github.com/BlueBrain/nexus/issues/2609)
  - Ability to paginate search results based on user view port or preference [#2623](https://github.com/BlueBrain/nexus/issues/2623)
  - Mooc tutorial update [#2652](https://github.com/BlueBrain/nexus/pull/2652)
+ - YouTube Video Viewer Plugin [#1697](https://github.com/BlueBrain/nexus/pull/1697)
  - BUGFIX: Fix database initialization failures [#2689](https://github.com/BlueBrain/nexus/issues/2689)
  - BUGFIX: Fix SVG import in Fusion [#1553](https://github.com/BlueBrain/nexus/issues/1553)
  - BUGFIX: Create Blazegraph namespace on view updates [#2668](https://github.com/BlueBrain/nexus/issues/2668)
  - BUGFIX: Cannot edit the JSON payload of a View [#1407](https://github.com/BlueBrain/nexus/issues/1407)
+ - BUGFIX: Search Result Table doesn't always show values even though it should from (Facet Config) [#2160](https://github.com/BlueBrain/nexus/issues/2160)
+ - BUGFIX: Indexing storages via synchronous indexing does not properly encrypt the source [#2658](https://github.com/BlueBrain/nexus/issues/2658)
 
 
 ## v1.6.0-M1 (02.08.2021)
