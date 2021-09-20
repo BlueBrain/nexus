@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -34,7 +35,7 @@ final class SchemasDummy private (
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
     idAvailability: IdAvailability[ResourceAlreadyExists]
-)(implicit clock: Clock[UIO])
+)(implicit api: JsonLdApi, clock: Clock[UIO])
     extends Schemas {
 
   override def create(
@@ -183,7 +184,7 @@ object SchemasDummy {
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
       sem     <- IOSemaphore(1L)

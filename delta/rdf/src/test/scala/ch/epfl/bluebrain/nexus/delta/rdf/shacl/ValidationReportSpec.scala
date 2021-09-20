@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
@@ -21,6 +22,8 @@ class ValidationReportSpec
     with EitherValuable
     with OptionValues
     with IOValues {
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   private val shaclResolvedCtx = jsonContentOf("contexts/shacl.json").topContextValueOrEmpty
 

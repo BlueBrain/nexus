@@ -46,7 +46,7 @@ class ElasticSearchQuerySpec
     with CancelAfterFailure
     with Inspectors
     with ConfigFixtures
-    with RemoteContextResolutionFixture
+    with Fixtures
     with IOValues
     with Eventually
     with TestMatchers {

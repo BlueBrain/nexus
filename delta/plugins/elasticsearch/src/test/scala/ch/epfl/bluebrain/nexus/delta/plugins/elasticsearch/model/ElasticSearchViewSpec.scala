@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
@@ -21,7 +21,7 @@ class ElasticSearchViewSpec
     with TestHelpers
     with IOValues
     with CirceEq
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val id      = nxv + "myview"
   private val project = ProjectRef.unsafe("org", "project")

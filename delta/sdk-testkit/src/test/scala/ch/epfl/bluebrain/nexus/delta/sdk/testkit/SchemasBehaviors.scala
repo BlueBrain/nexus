@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
@@ -48,6 +49,8 @@ trait SchemasBehaviors {
   val uuid                             = UUID.randomUUID()
   implicit val uuidF: UUIDF            = UUIDF.fixed(uuid)
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(

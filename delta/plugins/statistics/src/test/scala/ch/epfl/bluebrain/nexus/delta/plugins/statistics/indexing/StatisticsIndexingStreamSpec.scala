@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.statistics.RelationshipResolution.R
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing.StatisticsIndexingStreamSpec.Value
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -30,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -65,6 +66,7 @@ class StatisticsIndexingStreamSpec
     implicit val sc: Scheduler         = Scheduler.global
     implicit val cfg: HttpClientConfig =
       HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
+    implicit val jsonLdApi: JsonLdApi  = JsonLdJavaApi.lenient
 
     val endpoint = elasticsearchHost.endpoint
     val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)

@@ -4,6 +4,7 @@ import akka.persistence.query.{NoOffset, Sequence}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -51,6 +52,8 @@ trait ResolversBehaviors {
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   def res: RemoteContextResolution =
     RemoteContextResolution.fixed(

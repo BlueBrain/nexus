@@ -5,6 +5,7 @@ import akka.persistence.query.Offset
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
@@ -199,7 +200,7 @@ object ResourcesImpl {
       config: AggregateConfig,
       resourceResolution: ResourceResolution[Schema],
       resourceIdCheck: ResourceIdCheck
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] =
+  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] =
     aggregate(
       config,
       resourceResolution,
@@ -210,7 +211,7 @@ object ResourcesImpl {
       config: AggregateConfig,
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] = {
+  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -245,7 +246,7 @@ object ResourcesImpl {
       agg: ResourcesAggregate,
       contextResolution: ResolverContextResolution,
       eventLog: EventLog[Envelope[ResourceEvent]]
-  )(implicit uuidF: UUIDF = UUIDF.random): Resources =
+  )(implicit api: JsonLdApi, uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       agg,
       orgs,

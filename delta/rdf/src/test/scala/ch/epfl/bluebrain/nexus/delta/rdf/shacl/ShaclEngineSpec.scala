@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.rdf.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -18,6 +19,8 @@ class ShaclEngineSpec
     with IOValues
     with EitherValuable
     with Inspectors {
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.lenient
 
   "A ShaclEngine" should {
 

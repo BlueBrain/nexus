@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
@@ -19,6 +20,9 @@ import org.scalatest.OptionValues
 import java.time.Instant
 
 object ResourceGen extends OptionValues with IOValues {
+
+  // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   def currentState(
       id: Iri,

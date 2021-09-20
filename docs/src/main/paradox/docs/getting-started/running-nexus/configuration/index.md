@@ -69,7 +69,9 @@ Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins h
 
 The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
 
-The most important flag is `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
+The most important flag are:
+* `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
+* `plugins.elasticsearch.credentials.username` and `plugins.elasticsearch.credentials.password` to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.
 
 ### Blazegraph views plugin configuration
 

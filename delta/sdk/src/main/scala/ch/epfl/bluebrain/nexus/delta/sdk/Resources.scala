@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -296,6 +297,7 @@ object Resources {
       resourceResolution: ResourceResolution[Schema],
       idAvailability: IdAvailability[ResourceAlreadyExists]
   )(state: ResourceState, cmd: ResourceCommand)(implicit
+      api: JsonLdApi,
       clock: Clock[UIO]
   ): IO[ResourceRejection, ResourceEvent] = {
 
@@ -311,6 +313,7 @@ object Resources {
     ): IO[ResourceRejection, (ResourceRef.Revision, ProjectRef)] =
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id)) >>
+          toGraph(id, expanded) >>
           IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
       else
         for {

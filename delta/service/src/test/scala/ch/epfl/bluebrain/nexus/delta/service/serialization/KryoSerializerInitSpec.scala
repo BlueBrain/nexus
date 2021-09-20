@@ -5,6 +5,7 @@ import akka.serialization.SerializationExtension
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
@@ -32,6 +33,7 @@ class KryoSerializerInitSpec
     with EitherValuable {
 
   private val serialization                         = SerializationExtension(system)
+  implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()
 
   private val expanded = ExpandedJsonLd(jsonContentOf("/kryo/expanded.json")).accepted

@@ -1,11 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.utils
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 
 trait Fixtures extends IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit val rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(

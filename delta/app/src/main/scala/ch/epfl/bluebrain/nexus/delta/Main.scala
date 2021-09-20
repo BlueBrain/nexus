@@ -9,7 +9,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.Tracing
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -47,7 +47,7 @@ object Main extends BIOApp {
     for {
       _                             <- UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'."))
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
-      _                             <- Tracing.initializeKamon(config)
+      _                             <- KamonMonitoring.initialize(config)
       modules                       <- UIO.delay(DeltaModule(cfg, config, cl))
       (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
       _                             <- preStart(locator).handleError
@@ -161,7 +161,9 @@ object Main extends BIOApp {
               s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
               th
             )
-          ) >> Task.traverse(plugins)(_.stop()).timeout(30.seconds) >> Tracing.terminateKamon >> terminateActorSystem()
+          ) >> Task
+            .traverse(plugins)(_.stop())
+            .timeout(30.seconds) >> KamonMonitoring.terminate >> terminateActorSystem()
         }
 
       cluster.registerOnMemberUp {

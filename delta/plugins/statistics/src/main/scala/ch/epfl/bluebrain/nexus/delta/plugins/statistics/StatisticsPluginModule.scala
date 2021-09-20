@@ -7,13 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.statistics.config.StatisticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing.StatisticsIndexingCoordinator.{StatisticsIndexingController, StatisticsIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.routes.StatisticsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -46,9 +46,11 @@ class StatisticsPluginModule(priority: Int) extends ModuleDef {
         config: StatisticsConfig,
         relationshipResolution: RelationshipResolution,
         scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        api: JsonLdApi
     ) =>
       new StatisticsIndexingStream(client, indexingSource, cache, config.indexing, projection, relationshipResolution)(
+        api,
         cr,
         scheduler
       )
@@ -126,8 +128,6 @@ class StatisticsPluginModule(priority: Int) extends ModuleDef {
       contexts.properties    -> propertiesCtx
     )
   }
-
-  many[ApiMappings].add(Statistics.mappings)
 
   many[PriorityRoute].add { (route: StatisticsRoutes) => PriorityRoute(priority, route.routes) }
 

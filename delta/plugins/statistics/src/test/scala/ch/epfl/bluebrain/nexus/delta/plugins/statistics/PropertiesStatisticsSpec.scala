@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.statistics
 
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.PropertiesStatistics
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
@@ -16,6 +17,8 @@ class PropertiesStatisticsSpec
     with ContextFixtures {
 
   "PropertiesStatistics" should {
+
+    implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
 
     val responseJson = jsonContentOf("paths-properties-aggregations-response.json")
     val expected     = jsonContentOf("properties-tree.json")

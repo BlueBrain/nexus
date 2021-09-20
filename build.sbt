@@ -242,6 +242,8 @@ lazy val testkit = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      akkaActorTyped, // Needed to create Uri
+      akkaHttpCore,
       catsRetry,
       dockerTestKit,
       dockerTestKitImpl,

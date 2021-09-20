@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
@@ -622,6 +623,7 @@ object BlazegraphViews {
       projects: Projects,
       client: BlazegraphClient
   )(implicit
+      api: JsonLdApi,
       uuidF: UUIDF,
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
@@ -649,6 +651,7 @@ object BlazegraphViews {
       projects: Projects,
       createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
   )(implicit
+      api: JsonLdApi,
       uuidF: UUIDF,
       scheduler: Scheduler,
       as: ActorSystem[Nothing]

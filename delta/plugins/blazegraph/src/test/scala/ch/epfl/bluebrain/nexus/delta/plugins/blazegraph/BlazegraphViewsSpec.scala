@@ -36,7 +36,7 @@ class BlazegraphViewsSpec
     with IOValues
     with TestHelpers
     with ConfigFixtures
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   "BlazegraphViews" when {
     val uuid                      = UUID.randomUUID()

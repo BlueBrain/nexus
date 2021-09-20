@@ -23,11 +23,7 @@ import org.scalatest.Inspectors
 import java.time.Instant
 import java.util.UUID
 
-class BlazegraphViewEventExchangeSpec
-    extends AbstractDBSpec
-    with Inspectors
-    with ConfigFixtures
-    with RemoteContextResolutionFixture {
+class BlazegraphViewEventExchangeSpec extends AbstractDBSpec with Inspectors with ConfigFixtures with Fixtures {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 

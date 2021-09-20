@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.graph
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.UnexpectedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
@@ -214,6 +215,21 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val context   = jsonContentOf("context.json").topContextValueOrEmpty
       val compacted = jsonContentOf("graph/compacted.json").removeAll("id" -> "john-doé")
       graphNoId.toCompactedJsonLd(context).accepted.json shouldEqual compacted
+    }
+
+    "raise an error with a strict parser when an iri is invalid" in {
+      val expandedJson = jsonContentOf("expanded-invalid-iri.json")
+      val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
+      Graph(expanded).leftValue shouldEqual ConversionError(
+        "Bad IRI: < http://nexus.example.com/myid> Spaces are not legal in URIs/IRIs.",
+        "toRdf"
+      )
+    }
+
+    "not raise an error with a lenient parser when an iri is invalid" in {
+      val expandedJson = jsonContentOf("expanded-invalid-iri.json")
+      val expanded     = ExpandedJsonLd.expanded(expandedJson).rightValue
+      Graph(expanded)(JsonLdJavaApi.lenient, JsonLdOptions.defaults).rightValue
     }
   }
 }

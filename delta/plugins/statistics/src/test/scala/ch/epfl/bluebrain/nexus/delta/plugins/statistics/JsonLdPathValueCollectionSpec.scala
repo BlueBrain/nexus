@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.statistics
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValueCollection
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationships}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.syntax._
@@ -18,8 +19,9 @@ class JsonLdPathValueCollectionSpec
     with OptionValues
     with ContextFixtures {
   "A collection of JsonLdPathValue" should {
-    val input    = jsonContentOf("reconstructed-cell.json")
-    val expanded = ExpandedJsonLd(input).accepted
+    implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
+    val input                         = jsonContentOf("reconstructed-cell.json")
+    val expanded                      = ExpandedJsonLd(input).accepted
 
     "be generated from expanded Json resource" in {
       val id            = iri"http://api.brain-map.org/api/v2/data/Structure/733"
