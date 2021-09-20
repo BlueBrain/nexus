@@ -63,10 +63,10 @@ class StatisticsRoutes(
                   }
                 }
               },
-              // Fetch an elasticsearch view statistics
+              // Fetch the indexing progress
               // TODO: Other endpoints have this as statistics, but in this case that word would be dup. See what to do
               (pathPrefix("progress") & get & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/statistics/{org}/{project}/{id}/progress") {
+                operationName(s"$prefixSegment/statistics/{org}/{project}/progress") {
                   authorizeFor(projectRef, Read).apply {
                     emit(progresses.statistics(projectRef, Statistics.projectionId(projectRef)))
                   }
