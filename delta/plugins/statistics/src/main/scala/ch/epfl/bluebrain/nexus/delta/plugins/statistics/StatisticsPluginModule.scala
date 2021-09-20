@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.statistics.config.StatisticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing.StatisticsIndexingCoordinator.{StatisticsIndexingController, StatisticsIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.routes.StatisticsRoutes
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
@@ -46,9 +47,11 @@ class StatisticsPluginModule(priority: Int) extends ModuleDef {
         config: StatisticsConfig,
         relationshipResolution: RelationshipResolution,
         scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate")
+        cr: RemoteContextResolution @Id("aggregate"),
+        api: JsonLdApi
     ) =>
       new StatisticsIndexingStream(client, indexingSource, cache, config.indexing, projection, relationshipResolution)(
+        api,
         cr,
         scheduler
       )

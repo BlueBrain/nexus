@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsSetup, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
@@ -61,7 +61,7 @@ class BlazegraphIndexingSpec
     with TestMatchers
     with ConfigFixtures
     with Eventually
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   implicit private val uuidF: UUIDF     = UUIDF.random
   implicit private val sc: Scheduler    = Scheduler.global

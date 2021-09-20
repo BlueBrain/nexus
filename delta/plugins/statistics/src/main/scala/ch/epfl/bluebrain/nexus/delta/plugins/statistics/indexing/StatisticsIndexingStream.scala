@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.statistics.indexing
 
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -21,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{IndexingData, ViewIndex}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
@@ -43,7 +44,7 @@ final class StatisticsIndexingStream(
     config: ExternalIndexingConfig,
     projection: Projection[Unit],
     relationshipResolution: RelationshipResolution
-)(implicit cr: RemoteContextResolution, sc: Scheduler)
+)(implicit api: JsonLdApi, cr: RemoteContextResolution, sc: Scheduler)
     extends IndexingStream[StatisticsView] {
 
   @SuppressWarnings(Array("OptionGet"))
@@ -74,7 +75,8 @@ final class StatisticsIndexingStream(
       view: ViewIndex[StatisticsView],
       strategy: IndexingStream.ProgressStrategy
   ): Stream[Task, Unit] = {
-    val index = idx(view)
+    implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, nxv + "Statistics")
+    val index                                      = idx(view)
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
@@ -111,7 +113,7 @@ final class StatisticsIndexingStream(
             config.projection,
             config.cache
           )
-          .viewMetrics(view, nxv + "Statistics")
+          .enableMetrics
           .map(_.value)
       }
   }

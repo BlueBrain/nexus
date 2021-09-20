@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context
 import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{rdf, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -12,7 +11,6 @@ class JsonLdContextSpec extends AnyWordSpecLike with Matchers with Fixtures with
 
   "A Json-LD context" should {
     val context = jsonContentOf("context.json").topContextValueOrEmpty
-    val api     = implicitly[JsonLdApi]
 
     "be constructed successfully" in {
       api.context(context).accepted shouldBe a[JsonLdContext]

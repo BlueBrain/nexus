@@ -4,23 +4,20 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.ProjectSource
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchBulk
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.RemoteContextResolutionFixture
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
@@ -32,7 +29,6 @@ import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, ElasticSea
 import com.whisk.docker.scalatest.DockerTestKit
 import io.circe.{Json, JsonObject}
 import monix.bio.UIO
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -51,23 +47,17 @@ class SearchSpec
     with TestHelpers
     with CancelAfterFailure
     with Inspectors
+    with ElasticSearchClientSetup
     with ConfigFixtures
     with IOValues
     with Eventually
-    with RemoteContextResolutionFixture
+    with Fixtures
     with ElasticSearchDocker
     with DockerTestKit {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private val sc: Scheduler                = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig =
-    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
   implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
-
-  private val endpoint = elasticsearchHost.endpoint
-  private val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -147,18 +137,18 @@ class SearchSpec
   }
 
   "Search" should {
-    val search = Search(listViews, acls, client, externalConfig)
+    val search = Search(listViews, acls, esClient, externalConfig)
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
         val index   = CompositeViews.index(p.projection, p.view, p.rev, externalConfig.prefix)
-        client.createIndex(index, Some(mappings), None).accepted
+        esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)
         }
         bulk ++ newBulk
       }
-      client.bulk(bulkSeq, Refresh.WaitFor).accepted
+      esClient.bulk(bulkSeq, Refresh.WaitFor).accepted
     }
 
     "search all indices" in {

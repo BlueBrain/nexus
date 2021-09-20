@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, RemoteContextResolutionFixture}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -63,7 +63,7 @@ class ElasticSearchViewsRoutesSpec
     with ConfigFixtures
     with TestHelpers
     with CirceMarshalling
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped

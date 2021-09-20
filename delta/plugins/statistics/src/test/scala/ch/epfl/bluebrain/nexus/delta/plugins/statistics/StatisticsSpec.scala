@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.elasticsearchHost
+import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover

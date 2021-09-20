@@ -35,7 +35,3 @@ trait JsonLdApi {
   )(implicit opts: JsonLdOptions, rcr: RemoteContextResolution): IO[RdfError, JsonLdContext]
 
 }
-
-object JsonLdApi {
-  implicit val jsonLdJavaAPI: JsonLdApi = JsonLdJavaApi
-}

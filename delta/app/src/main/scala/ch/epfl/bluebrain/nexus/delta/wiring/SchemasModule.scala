@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
@@ -33,8 +34,14 @@ object SchemasModule extends ModuleDef {
   make[SchemasCache].fromEffect { (config: AppConfig) => SchemasImpl.cache(config.schemas) }
 
   make[SchemasAggregate].fromEffect {
-    (config: AppConfig, resourceIdCheck: ResourceIdCheck, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      SchemasImpl.aggregate(config.schemas.aggregate, resourceIdCheck)(as, clock)
+    (
+        config: AppConfig,
+        resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
+        as: ActorSystem[Nothing],
+        clock: Clock[UIO]
+    ) =>
+      SchemasImpl.aggregate(config.schemas.aggregate, resourceIdCheck)(api, as, clock)
   }
 
   make[Schemas].from {
@@ -43,12 +50,13 @@ object SchemasModule extends ModuleDef {
         organizations: Organizations,
         projects: Projects,
         schemaImports: SchemaImports,
+        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
         agg: SchemasAggregate,
         cache: SchemasCache,
         uuidF: UUIDF
     ) =>
-      SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(uuidF)
+      SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(api, uuidF)
   }
 
   many[ResourcesDeletion].add {

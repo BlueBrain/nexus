@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
@@ -22,6 +24,8 @@ import scala.util.Try
   *
   * @param base
   *   the base uri to the Elasticsearch HTTP endpoint
+  * @param credentials
+  *   the credentials to authenticate to the Elasticsearch endpoint
   * @param client
   *   configuration of the Elasticsearch client
   * @param aggregate
@@ -45,6 +49,7 @@ import scala.util.Try
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
+    credentials: Option[BasicHttpCredentials],
     client: HttpClientConfig,
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,

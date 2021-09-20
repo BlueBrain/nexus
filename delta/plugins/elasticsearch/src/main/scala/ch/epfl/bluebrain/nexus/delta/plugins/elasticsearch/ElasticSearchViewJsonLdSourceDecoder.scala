@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJson
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewRejection, ElasticSearchViewType, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
@@ -111,11 +112,12 @@ object ElasticSearchViewJsonLdSourceDecoder {
       AggregateElasticSearchViewValue(a.views)
   }
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution) = new ElasticSearchViewJsonLdSourceDecoder(
-    new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
-      contexts.elasticsearch,
-      contextResolution,
-      uuidF
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit api: JsonLdApi) =
+    new ElasticSearchViewJsonLdSourceDecoder(
+      new JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields](
+        contexts.elasticsearch,
+        contextResolution,
+        uuidF
+      )
     )
-  )
 }

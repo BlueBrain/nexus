@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -54,7 +55,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchClient].from {
     (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(as.classicSystem)
+      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
   make[IndexingSource].named("elasticsearch-source").from {
@@ -154,6 +155,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           deferred: Deferred[Task, ElasticSearchViews],
           orgs: Organizations,
           projects: Projects,
+          api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
@@ -168,6 +170,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           orgs,
           projects
         )(
+          api,
           uuidF,
           scheduler,
           as

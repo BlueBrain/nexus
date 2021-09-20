@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
+import ch.epfl.bluebrain.nexus.delta.rdf.Fixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -29,6 +30,7 @@ class JsonLdDecoderSpec
     with CirceLiteral
     with EitherValuable
     with IOValues
+    with Fixtures
     with TestHelpers {
 
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.fixed()

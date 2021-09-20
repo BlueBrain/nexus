@@ -17,11 +17,7 @@ import org.scalatest.Inspectors
 
 import java.util.UUID
 
-class ElasticSearchViewReferenceExchangeSpec
-    extends AbstractDBSpec
-    with Inspectors
-    with ConfigFixtures
-    with RemoteContextResolutionFixture {
+class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors with ConfigFixtures with Fixtures {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 

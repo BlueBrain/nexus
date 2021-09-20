@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storageSchema}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -509,6 +510,7 @@ object Storages {
       agg: StoragesAggregate,
       serviceAccount: ServiceAccount
   )(implicit
+      api: JsonLdApi,
       uuidF: UUIDF,
       scheduler: Scheduler,
       as: ActorSystem[Nothing]

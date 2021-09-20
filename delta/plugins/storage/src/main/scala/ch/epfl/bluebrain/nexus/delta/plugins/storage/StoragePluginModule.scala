@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesDeletion, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -83,6 +84,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           cache: StoragesCache,
           agg: StoragesAggregate,
+          api: JsonLdApi,
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
           as: ActorSystem[Nothing],
@@ -99,6 +101,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           agg,
           serviceAccount
         )(
+          api,
           uuidF,
           scheduler,
           as

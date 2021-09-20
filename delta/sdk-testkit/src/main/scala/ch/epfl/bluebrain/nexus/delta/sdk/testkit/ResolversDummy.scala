@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -213,7 +214,7 @@ object ResolversDummy {
   implicit private val eventLens: Lens[ResolverEvent, ResolverIdentifier] =
     (event: ResolverEvent) => (event.project, event.id)
 
-  implicit private val lens: Lens[Resolver, ResolverIdentifier]    =
+  implicit private val lens: Lens[Resolver, ResolverIdentifier]                    =
     (resolver: Resolver) => resolver.project -> resolver.id
 
   /**
@@ -233,7 +234,7 @@ object ResolversDummy {
       projects: Projects,
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[ResolversDummy] =
     for {
       journal      <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ResolverEvent](moduleType))
       cache        <- ResourceCache[ResolverIdentifier, Resolver]
