@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -129,8 +128,6 @@ class StatisticsPluginModule(priority: Int) extends ModuleDef {
       contexts.properties    -> propertiesCtx
     )
   }
-
-  many[ApiMappings].add(Statistics.mappings)
 
   many[PriorityRoute].add { (route: StatisticsRoutes) => PriorityRoute(priority, route.routes) }
 

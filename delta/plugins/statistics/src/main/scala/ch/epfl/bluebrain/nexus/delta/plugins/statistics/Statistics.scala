@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -103,11 +103,6 @@ object Statistics {
     * The id for the type statistics elasticsearch view
     */
   final val typeStats = nxv + "typeStatisticsIndex"
-
-  /**
-    * The default Statistics API mappings
-    */
-  final val mappings: ApiMappings = ApiMappings("typeStats" -> typeStats)
 
   final val updateRelationshipsScriptId = "updateRelationships"
 
