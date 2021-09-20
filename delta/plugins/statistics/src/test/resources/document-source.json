@@ -1,0 +1,51 @@
+{
+  "@type" : "http://schema.org/Person",
+  "@id" : "{{id}}",
+  "properties" : [
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/phone",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/phone",
+      "isInArray" : true
+    },
+    {
+      "path" : "http://schema.org/address",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/address / http://schema.org/street",
+      "isInArray" : false
+    },
+    {
+      "@id" : "{{brother}}",
+      "path" : "http://schema.org/brother",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/givenName",
+      "isInArray" : false
+    }
+  ],
+  "relationshipCandidates" : [
+    {
+      "found" : true,
+      "@id" : "{{brother}}",
+      "path" : "http://schema.org/brother",
+      "isInArray" : false
+    }
+  ],
+  "relationships" : [
+    {
+      "@id" : "{{brother}}",
+      "@type" : "http://schema.org/Person",
+      "path" : "http://schema.org/brother",
+      "isInArray" : false
+    }
+  ]
+}

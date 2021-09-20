@@ -1,0 +1,10 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/statistics.json",
+  "discardedEvents" : 0,
+  "evaluatedEvents" : 0,
+  "failedEvents" : 0,
+  "lastEventDateTime" : "1970-01-01T00:00:00Z",
+  "processedEvents" : 0,
+  "remainingEvents" : 10,
+  "totalEvents" : 10
+}

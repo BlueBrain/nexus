@@ -1,0 +1,406 @@
+{
+  "properties" : [
+    {
+      "@type" : "http://schema.org/DataDownload",
+      "path" : "http://schema.org/distribution",
+      "isInArray" : true
+    },
+    {
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/unitCode",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "numeric",
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/value",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/f49e1a8b-e668-416f-963a-cae526fd0527",
+      "path" : "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/encodingFormat",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/name",
+      "isInArray" : true
+    },
+    {
+      "@type" : "http://www.w3.org/ns/prov#Location",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation / https://neuroshapes.org/location",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/8dd2500e-09eb-4378-acf7-467de53a6b95",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation / https://neuroshapes.org/store",
+      "isInArray" : true
+    },
+    {
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest / http://schema.org/algorithm",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest / http://schema.org/value",
+      "isInArray" : true
+    },
+    {
+      "@type" : "http://schema.org/DataDownload",
+      "path" : "http://schema.org/distribution",
+      "isInArray" : true
+    },
+    {
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/unitCode",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "numeric",
+      "path" : "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/value",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/22a032c7-a2a1-40bf-a02a-61367dbc1500",
+      "path" : "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/encodingFormat",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://schema.org/name",
+      "isInArray" : true
+    },
+    {
+      "@type" : "http://www.w3.org/ns/prov#Location",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation / https://neuroshapes.org/location",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/8dd2500e-09eb-4378-acf7-467de53a6b95",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation / https://neuroshapes.org/store",
+      "isInArray" : true
+    },
+    {
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest / http://schema.org/algorithm",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/distribution / https://neuroshapes.org/digest / http://schema.org/value",
+      "isInArray" : true
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/identifier",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "http://schema.org/name",
+      "isInArray" : false
+    },
+    {
+      "@type" : [
+        "https://neuroshapes.org/MTypeAnnotation",
+        "https://neuroshapes.org/Annotation"
+      ],
+      "path" : "https://neuroshapes.org/annotation",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/annotation / http://schema.org/name",
+      "isInArray" : false
+    },
+    {
+      "@id" : "http://uri.interlex.org/base/ilx_0738238",
+      "@type" : [
+        "https://neuroshapes.org/MType",
+        "https://neuroshapes.org/AnnotationBody"
+      ],
+      "path" : "https://neuroshapes.org/annotation / https://neuroshapes.org/hasBody",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/annotation / https://neuroshapes.org/hasBody / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/annotation / https://neuroshapes.org/hasBody / http://www.w3.org/2004/02/skos/core#prefLabel",
+      "isInArray" : false
+    },
+    {
+      "@type" : "https://neuroshapes.org/BrainLocation",
+      "path" : "https://neuroshapes.org/brainLocation",
+      "isInArray" : false
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+      "@type" : "https://neuroshapes.org/AtlasSpatialReferenceSystem",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/atlasSpatialReferenceSystem",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/atlasSpatialReferenceSystem / http://schema.org/name",
+      "isInArray" : false
+    },
+    {
+      "@id" : "http://api.brain-map.org/api/v2/data/Structure/733",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    },
+    {
+      "@type" : "https://neuroshapes.org/Contribution",
+      "path" : "https://neuroshapes.org/contribution",
+      "isInArray" : false
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/jyi",
+      "@type" : [
+        "http://schema.org/Person",
+        "http://www.w3.org/ns/prov#Agent"
+      ],
+      "path" : "https://neuroshapes.org/contribution / http://www.w3.org/ns/prov#agent",
+      "isInArray" : false
+    },
+    {
+      "@id" : "http://purl.org/credit/ontology#CREDIT_00000010",
+      "path" : "https://neuroshapes.org/contribution / http://www.w3.org/ns/prov#hadRole",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/contribution / http://www.w3.org/ns/prov#hadRole / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    },
+    {
+      "@type" : "http://www.w3.org/ns/prov#Derivation",
+      "path" : "https://neuroshapes.org/derivation",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/688ab5e1-798a-4817-a259-447a9c7b745f",
+      "path" : "https://neuroshapes.org/derivation / http://www.w3.org/ns/prov#entity",
+      "isInArray" : true
+    },
+    {
+      "@type" : "http://www.w3.org/ns/prov#Derivation",
+      "path" : "https://neuroshapes.org/derivation",
+      "isInArray" : true
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/50155a8d-2659-4d1c-9fe9-b9d55183db64",
+      "@type" : [
+        "http://www.w3.org/ns/prov#Entity",
+        "https://neuroshapes.org/ImageStack"
+      ],
+      "path" : "https://neuroshapes.org/derivation / http://www.w3.org/ns/prov#entity",
+      "isInArray" : true
+    },
+    {
+      "@type" : "http://www.w3.org/ns/prov#Generation",
+      "path" : "https://neuroshapes.org/generation",
+      "isInArray" : false
+    },
+    {
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/ff522f42-7fc0-4c33-9da4-16a33e297006",
+      "@type" : [
+        "http://www.w3.org/ns/prov#Activity",
+        "https://neuroshapes.org/ReconstructionFromImage"
+      ],
+      "path" : "https://neuroshapes.org/generation / http://www.w3.org/ns/prov#activity",
+      "isInArray" : false
+    },
+    {
+      "@id" : "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+      "@type" : "https://neuroshapes.org/ObjectOfStudy",
+      "path" : "https://neuroshapes.org/objectOfStudy",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/objectOfStudy / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    },
+    {
+      "@id" : "https://neuroshapes.org/SinglePoint",
+      "path" : "https://neuroshapes.org/somaReconstructionType",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/somaReconstructionType / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    },
+    {
+      "path" : "https://neuroshapes.org/subject",
+      "isInArray" : false
+    },
+    {
+      "@id" : "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "path" : "https://neuroshapes.org/subject / https://neuroshapes.org/species",
+      "isInArray" : false
+    },
+    {
+      "dataType" : "string",
+      "path" : "https://neuroshapes.org/subject / https://neuroshapes.org/species / http://www.w3.org/2000/01/rdf-schema#label",
+      "isInArray" : false
+    }
+  ],
+  "relationshipCandidates" : [
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/8dd2500e-09eb-4378-acf7-467de53a6b95",
+      "path" : "http://schema.org/distribution / http://www.w3.org/ns/prov#atLocation / https://neuroshapes.org/store",
+      "isInArray" : true
+    },
+    {
+      "found" : false,
+      "@id" : "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+      "path" : "https://neuroshapes.org/subject / https://neuroshapes.org/species",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/22a032c7-a2a1-40bf-a02a-61367dbc1500",
+      "path" : "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray" : true
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/f49e1a8b-e668-416f-963a-cae526fd0527",
+      "path" : "http://schema.org/distribution / http://schema.org/contentUrl",
+      "isInArray" : true
+    },
+    {
+      "found" : false,
+      "@id" : "http://uri.interlex.org/base/ilx_0738238",
+      "@type" : [
+        "https://neuroshapes.org/MType",
+        "https://neuroshapes.org/AnnotationBody"
+      ],
+      "path" : "https://neuroshapes.org/annotation / https://neuroshapes.org/hasBody",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/50155a8d-2659-4d1c-9fe9-b9d55183db64",
+      "@type" : [
+        "http://www.w3.org/ns/prov#Entity",
+        "https://neuroshapes.org/ImageStack"
+      ],
+      "path" : "https://neuroshapes.org/derivation / http://www.w3.org/ns/prov#entity",
+      "isInArray" : true
+    },
+    {
+      "found" : false,
+      "@id" : "https://neuroshapes.org/SinglePoint",
+      "path" : "https://neuroshapes.org/somaReconstructionType",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/jyi",
+      "@type" : [
+        "http://schema.org/Person",
+        "http://www.w3.org/ns/prov#Agent"
+      ],
+      "path" : "https://neuroshapes.org/contribution / http://www.w3.org/ns/prov#agent",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/688ab5e1-798a-4817-a259-447a9c7b745f",
+      "path" : "https://neuroshapes.org/derivation / http://www.w3.org/ns/prov#entity",
+      "isInArray" : true
+    },
+    {
+      "found" : false,
+      "@id" : "http://purl.org/credit/ontology#CREDIT_00000010",
+      "path" : "https://neuroshapes.org/contribution / http://www.w3.org/ns/prov#hadRole",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/ff522f42-7fc0-4c33-9da4-16a33e297006",
+      "@type" : [
+        "http://www.w3.org/ns/prov#Activity",
+        "https://neuroshapes.org/ReconstructionFromImage"
+      ],
+      "path" : "https://neuroshapes.org/generation / http://www.w3.org/ns/prov#activity",
+      "isInArray" : false
+    },
+    {
+      "found" : true,
+      "@id" : "http://api.brain-map.org/api/v2/data/Structure/733",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+      "@type" : "https://neuroshapes.org/ObjectOfStudy",
+      "path" : "https://neuroshapes.org/objectOfStudy",
+      "isInArray" : false
+    },
+    {
+      "found" : false,
+      "@id" : "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+      "@type" : "https://neuroshapes.org/AtlasSpatialReferenceSystem",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/atlasSpatialReferenceSystem",
+      "isInArray" : false
+    }
+  ],
+  "relationships" : [
+    {
+      "@id" : "http://api.brain-map.org/api/v2/data/Structure/733",
+      "path" : "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+      "isInArray" : false
+    }
+  ]
+}

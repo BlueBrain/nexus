@@ -1,0 +1,45 @@
+{
+  "size": 0,
+  "aggs": {
+    "resourceTypes": {
+      "terms": {
+        "field": "@type",
+        "size": 200
+      },
+      "aggs": {
+        "relationships": {
+          "nested": {
+            "path": "relationships"
+          },
+          "aggs": {
+            "filtered": {
+              "filter": {
+                "term": {
+                  "relationships.isInArray": false
+                }
+              },
+              "aggs": {
+                "paths": {
+                  "terms": {
+                    "field": "relationships.path",
+                    "shard_size": 300,
+                    "size": 100
+                  },
+                  "aggs": {
+                    "pathTypes": {
+                      "terms": {
+                        "field": "relationships.@type",
+                        "shard_size": 300,
+                        "size": 100
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

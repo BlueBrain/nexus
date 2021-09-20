@@ -1,0 +1,319 @@
+{
+  "@id": "https://bbp.epfl.ch/neurosciencegraph/data/dc65e97c-d5f8-4ccf-a919-8fad040a127b",
+  "@type": [
+    "https://neuroshapes.org/NeuronMorphology",
+    "https://neuroshapes.org/ReconstructedCell",
+    "http://schema.org/Dataset",
+    "http://www.w3.org/ns/prov#Entity",
+    "https://neuroshapes.org/ReconstructedWholeBrainCell"
+  ],
+  "http://schema.org/distribution": [
+    {
+      "@type": [
+        "http://schema.org/DataDownload"
+      ],
+      "http://schema.org/contentSize": [
+        {
+          "http://schema.org/unitCode": [
+            {
+              "@value": "bytes"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": 518101
+            }
+          ]
+        }
+      ],
+      "http://schema.org/contentUrl": [
+        {
+          "@id": "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/f49e1a8b-e668-416f-963a-cae526fd0527"
+        }
+      ],
+      "http://schema.org/encodingFormat": [
+        {
+          "@value": "application/asc"
+        }
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "AA0314.asc"
+        }
+      ],
+      "http://www.w3.org/ns/prov#atLocation": [
+        {
+          "@type": [
+            "http://www.w3.org/ns/prov#Location"
+          ],
+          "https://neuroshapes.org/location": [
+            {
+              "@value": "file:///gpfs/bbp.cscs.ch/data/project/proj125/nexus/28599960-827e-4622-add0-f7718e6806fb/5/9/4/8/e/0/1/a/AA0314.asc"
+            }
+          ],
+          "https://neuroshapes.org/store": [
+            {
+              "@id": "https://bbp.epfl.ch/neurosciencegraph/data/8dd2500e-09eb-4378-acf7-467de53a6b95"
+            }
+          ]
+        }
+      ],
+      "https://neuroshapes.org/digest": [
+        {
+          "http://schema.org/algorithm": [
+            {
+              "@value": "SHA-256"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": "cb434976ca026605d8ec2de37d32738a879a4c82a4cb1fe0e620ec53c56ae4f3"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@type": [
+        "http://schema.org/DataDownload"
+      ],
+      "http://schema.org/contentSize": [
+        {
+          "http://schema.org/unitCode": [
+            {
+              "@value": "bytes"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": 217343
+            }
+          ]
+        }
+      ],
+      "http://schema.org/contentUrl": [
+        {
+          "@id": "https://bbp.epfl.ch/nexus/v1/files/public/thalamus/22a032c7-a2a1-40bf-a02a-61367dbc1500"
+        }
+      ],
+      "http://schema.org/encodingFormat": [
+        {
+          "@value": "application/swc"
+        }
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "AA0314.swc"
+        }
+      ],
+      "http://www.w3.org/ns/prov#atLocation": [
+        {
+          "@type": [
+            "http://www.w3.org/ns/prov#Location"
+          ],
+          "https://neuroshapes.org/location": [
+            {
+              "@value": "file:///gpfs/bbp.cscs.ch/data/project/proj125/nexus/28599960-827e-4622-add0-f7718e6806fb/c/4/f/2/0/f/1/4/AA0314.swc"
+            }
+          ],
+          "https://neuroshapes.org/store": [
+            {
+              "@id": "https://bbp.epfl.ch/neurosciencegraph/data/8dd2500e-09eb-4378-acf7-467de53a6b95"
+            }
+          ]
+        }
+      ],
+      "https://neuroshapes.org/digest": [
+        {
+          "http://schema.org/algorithm": [
+            {
+              "@value": "SHA-256"
+            }
+          ],
+          "http://schema.org/value": [
+            {
+              "@value": "5268516d46a15198ad5bc72bc8817d52e87eef98e876cb49dd47df7d01e8e3cc"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "http://schema.org/identifier": [
+    {
+      "@value": "AA0314"
+    }
+  ],
+  "http://schema.org/name": [
+    {
+      "@value": "AA0314"
+    }
+  ],
+  "https://neuroshapes.org/annotation": [
+    {
+      "@type": [
+        "https://neuroshapes.org/MTypeAnnotation",
+        "https://neuroshapes.org/Annotation"
+      ],
+      "http://schema.org/name": [
+        {
+          "@value": "M-type Annotation"
+        }
+      ],
+      "https://neuroshapes.org/hasBody": [
+        {
+          "@id": "http://uri.interlex.org/base/ilx_0738238",
+          "@type": [
+            "https://neuroshapes.org/MType",
+            "https://neuroshapes.org/AnnotationBody"
+          ],
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "VPM_TC"
+            }
+          ],
+          "http://www.w3.org/2004/02/skos/core#prefLabel": [
+            {
+              "@value": "VPM_TC"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/brainLocation": [
+    {
+      "@type": [
+        "https://neuroshapes.org/BrainLocation"
+      ],
+      "https://neuroshapes.org/atlasSpatialReferenceSystem": [
+        {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/allen_ccfv3_spatial_reference_system",
+          "@type": [
+            "https://neuroshapes.org/AtlasSpatialReferenceSystem"
+          ],
+          "http://schema.org/name": [
+            {
+              "@value": "Allen mouse CCFv3 atlas spatial reference system"
+            }
+          ]
+        }
+      ],
+      "https://neuroshapes.org/brainRegion": [
+        {
+          "@id": "http://api.brain-map.org/api/v2/data/Structure/733",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "Ventral posteromedial nucleus of the thalamus"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/contribution": [
+    {
+      "@type": [
+        "https://neuroshapes.org/Contribution"
+      ],
+      "http://www.w3.org/ns/prov#agent": [
+        {
+          "@id": "https://bbp.epfl.ch/nexus/v1/realms/bbp/users/jyi",
+          "@type": [
+            "http://schema.org/Person",
+            "http://www.w3.org/ns/prov#Agent"
+          ]
+        }
+      ],
+      "http://www.w3.org/ns/prov#hadRole": [
+        {
+          "@id": "http://purl.org/credit/ontology#CREDIT_00000010",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "supervision role"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/derivation": [
+    {
+      "@type": [
+        "http://www.w3.org/ns/prov#Derivation"
+      ],
+      "http://www.w3.org/ns/prov#entity": [
+        {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/688ab5e1-798a-4817-a259-447a9c7b745f"
+        }
+      ]
+    },
+    {
+      "@type": [
+        "http://www.w3.org/ns/prov#Derivation"
+      ],
+      "http://www.w3.org/ns/prov#entity": [
+        {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/50155a8d-2659-4d1c-9fe9-b9d55183db64",
+          "@type": [
+            "http://www.w3.org/ns/prov#Entity",
+            "https://neuroshapes.org/ImageStack"
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/generation": [
+    {
+      "@type": [
+        "http://www.w3.org/ns/prov#Generation"
+      ],
+      "http://www.w3.org/ns/prov#activity": [
+        {
+          "@id": "https://bbp.epfl.ch/neurosciencegraph/data/ff522f42-7fc0-4c33-9da4-16a33e297006",
+          "@type": [
+            "http://www.w3.org/ns/prov#Activity",
+            "https://neuroshapes.org/ReconstructionFromImage"
+          ]
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/objectOfStudy": [
+    {
+      "@id": "http://bbp.epfl.ch/neurosciencegraph/taxonomies/objectsofstudy/singlecells",
+      "@type": [
+        "https://neuroshapes.org/ObjectOfStudy"
+      ],
+      "http://www.w3.org/2000/01/rdf-schema#label": [
+        {
+          "@value": "Single Cell"
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/somaReconstructionType": [
+    {
+      "@id": "https://neuroshapes.org/SinglePoint",
+      "http://www.w3.org/2000/01/rdf-schema#label": [
+        {
+          "@value": "SinglePoint"
+        }
+      ]
+    }
+  ],
+  "https://neuroshapes.org/subject": [
+    {
+      "https://neuroshapes.org/species": [
+        {
+          "@id": "http://purl.obolibrary.org/obo/NCBITaxon_10090",
+          "http://www.w3.org/2000/01/rdf-schema#label": [
+            {
+              "@value": "Mus musculus"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
