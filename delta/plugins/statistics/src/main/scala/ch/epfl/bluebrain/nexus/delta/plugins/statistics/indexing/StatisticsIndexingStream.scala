@@ -96,10 +96,8 @@ final class StatisticsIndexingStream(
               val idTypesMap = list.map { case (id, types, _) => id -> types }.toMap
               val bulkOps    = list.map { case (_, _, bulkOp) => bulkOp }
               // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
-              client.bulk(bulkOps, Refresh.WaitFor) >> client.updateByQuery(
-                relationshipsQuery(idTypesMap),
-                Set(index.value)
-              )
+              client.bulk(bulkOps, Refresh.WaitFor) >>
+                client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
             }
           }
           .flatMap(Stream.chunk)
