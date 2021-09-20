@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -345,7 +346,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Each plugin configuration is rooted under <code>plugins.{plugin_name}</code>. All plugins have a <code>plugins.{plugin_name}.priority</code> configuration flag used to determine the order in which the routes are handled in case of collisions. </p>
 <h3><a href="#elasticsearch-views-plugin-configuration" name="elasticsearch-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views plugin configuration</h3>
 <p>The elasticsearch plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
-<p>The most important flag is <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running.</p>
+<p>The most important flag are: * <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running. * <code>plugins.elasticsearch.credentials.username</code> and <code>plugins.elasticsearch.credentials.password</code> to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.</p>
 <h3><a href="#blazegraph-views-plugin-configuration" name="blazegraph-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Blazegraph views plugin configuration</h3>
 <p>The blazegraph plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/blazegraph/src/main/resources/blazegraph.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
 <p>The most important flag is <code>plugins.blazegraph.base</code> which defines the endpoint where the Blazegraph service is running.</p>

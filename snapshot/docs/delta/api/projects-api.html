@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -233,9 +234,11 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/projects-api.html#create" class="header">Create</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#delete" class="header">Delete</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-current-version-" class="header">Fetch (current version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-specific-version-" class="header">Fetch (specific version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#list-deletions" class="header">List deletions</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#server-sent-events" class="header">Server Sent Events</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
@@ -268,9 +271,11 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/projects-api.html#create" class="header">Create</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#deprecate" class="header">Deprecate</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#delete" class="header">Delete</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-current-version-" class="header">Fetch (current version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-specific-version-" class="header">Fetch (specific version)</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/projects-api.html#list-deletions" class="header">List deletions</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#server-sent-events" class="header">Server Sent Events</a></li>
     <li><a href="../../../docs/delta/api/projects-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
@@ -300,6 +305,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>When creating projects, the caller must have <code>projects/create</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>When updating projects, the caller must have <code>projects/write</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>When reading projects, the caller must have <code>projects/read</code> permissions on the current path of the project or the ancestor paths.</p>
+<p>When deleting projects, the caller must have <code>projects/delete</code> permissions on the current path of the project or the ancestor paths.</p>
 <p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div>
 <h2><a href="#payload" name="payload" class="anchor"><span class="anchor-link"></span></a>Payload</h2>
 <pre><code>{
@@ -407,6 +413,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
+  &quot;_markedForDeletion&quot;: false,
   &quot;_effectiveApiMappings&quot;: [
     {
       &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -516,6 +523,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
+  &quot;_markedForDeletion&quot;: false,
   &quot;_effectiveApiMappings&quot;: [
     {
       &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -581,7 +589,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }</code></pre></dd>
 </dl>
 <h2><a href="#deprecate" name="deprecate" class="anchor"><span class="anchor-link"></span></a>Deprecate</h2>
-<p>Locks the project, so no further operations can be performed on it or on the children resources.</p>
+<p>Locks the project, so no further operations (except for deletion) can be performed on it or on the children resources.</p>
 <p>Deprecating a project is considered to be an update as well. </p>
 <pre><code>DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}
 </code></pre>
@@ -609,6 +617,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: true,
+  &quot;_markedForDeletion&quot;: false,
   &quot;_effectiveApiMappings&quot;: [
     {
       &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -673,6 +682,46 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_uuid&quot;: &quot;813cfa79-75fc-48eb-b931-abb21edb082b&quot;
 }</code></pre></dd>
 </dl>
+<h2><a href="#delete" name="delete" class="anchor"><span class="anchor-link"></span></a>Delete</h2>
+<p>Deletes the target project and all its resources. </p>
+<p>Once the request is processed, an asynchronous task gets trigger which deletes the data generated from each resource type (e.g.: the indices generated by the views resources, the binaries generated by the files resources). During this time, no write operation can be performed at the project level nor at the resources level for the target project. When the task is finished, the target project can be recreated if desired.</p>
+<p><img src="assets/projects/projects-delete-diagram.png" alt="deletion diagram" /></p>
+<p>Deletion only works when the configuration flag <code>app.projects.allow-resources-deletion</code> is set to <code>true</code> and the current project is not referenced somewhere else (e.g.: a <code>CrossProjectResolver</code>, an <code>AggregatedView</code>, etc.).</p>
+<pre><code>DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}&amp;prune=true
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{previous_rev}</code>: Number - the last known revision for the organization.</li>
+  <li><code>{label}</code>: String - the user friendly name that identifies this project.</li>
+</ul>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/delete.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -L -X DELETE \
+   &quot;http://localhost:8080/v1/projects/myorg/myproject?rev=2&amp;prune=true&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/deleted.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/deletion-status.json&quot;,
+  &quot;progress&quot;: &quot;Deleting&quot;,
+  &quot;_createdAt&quot;: &quot;2021-08-31T12:50:48.305Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_finished&quot;: false,
+  &quot;_project&quot;: &quot;myorg/myproject&quot;,
+  &quot;_projectCreatedAt&quot;: &quot;2021-08-31T12:49:19.404Z&quot;,
+  &quot;_projectCreatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject/deletions/5d4e830b-39ad-4c8f-8c28-f63a94fbad63&quot;,
+  &quot;_updatedAt&quot;: &quot;2021-08-31T12:50:48.305Z&quot;,
+  &quot;_uuid&quot;: &quot;5d4e830b-39ad-4c8f-8c28-f63a94fbad63&quot;
+}</code></pre></dd>
+</dl>
+<p>The response contains the progress of the deletion process:</p>
+<ul>
+  <li><strong>Deleting</strong>: The deletion has just started.</li>
+  <li><strong>ResourcesDataDeleted</strong>: The data associated to resources has been deleted (e.g.: indices or binaries).</li>
+  <li><strong>CachesDeleted</strong>: The caches holding information about the deleted resources has been cleared.</li>
+  <li><strong>ResourcesDeleted</strong>: The project and all its resources has successfully been deleted from the primary store.</li>
+</ul>
 <h2><a href="#fetch-current-version-" name="fetch-current-version-" class="anchor"><span class="anchor-link"></span></a>Fetch (current version)</h2>
 <pre><code>GET /v1/projects/{org_label}/{label}
 </code></pre>
@@ -698,7 +747,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/projects.json&quot;,
   &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
-  &quot;_deprecated&quot;: true,
+  &quot;_markedForDeletion&quot;: false,
   &quot;_effectiveApiMappings&quot;: [
     {
       &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -798,6 +847,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
   &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
   &quot;_deprecated&quot;: false,
+  &quot;_markedForDeletion&quot;: false,
   &quot;_effectiveApiMappings&quot;: [
     {
       &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -923,6 +973,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_createdAt&quot;: &quot;2021-05-10T15:43:36.567Z&quot;,
       &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
       &quot;_deprecated&quot;: true,
+      &quot;_markedForDeletion&quot;: false,
       &quot;_effectiveApiMappings&quot;: [
         {
           &quot;_namespace&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/&quot;,
@@ -985,6 +1036,39 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;_updatedAt&quot;: &quot;2021-05-10T15:47:40.659Z&quot;,
       &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
       &quot;_uuid&quot;: &quot;813cfa79-75fc-48eb-b931-abb21edb082b&quot;
+    }
+  ]
+}</code></pre></dd>
+</dl>
+<h2><a href="#list-deletions" name="list-deletions" class="anchor"><span class="anchor-link"></span></a>List deletions</h2>
+<p>Lists all the projects that were deleted or are in the process to be deleted.</p>
+<pre><code>GET /v1/projects/deletions
+</code></pre>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/list-delete.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl  &quot;http://localhost:8080/v1/projects/deletions&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/projects/list-deleted.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: [
+    &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/search.json&quot;,
+    &quot;https://bluebrain.github.io/nexus/contexts/deletion-status.json&quot;
+  ],
+  &quot;_total&quot;: 1,
+  &quot;_results&quot;: [
+    {
+      &quot;progress&quot;: &quot;ResourcesDeleted&quot;,
+      &quot;_createdAt&quot;: &quot;2021-08-31T12:50:48.305Z&quot;,
+      &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+      &quot;_finished&quot;: true,
+      &quot;_project&quot;: &quot;myorg/myproject&quot;,
+      &quot;_projectCreatedAt&quot;: &quot;2021-08-31T12:49:19.404Z&quot;,
+      &quot;_projectCreatedBy&quot;: &quot;http://localhost:8080/v1/anonymous&quot;,
+      &quot;_self&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproject/deletions/5d4e830b-39ad-4c8f-8c28-f63a94fbad63&quot;,
+      &quot;_updatedAt&quot;: &quot;2021-08-31T12:50:55.305Z&quot;,
+      &quot;_uuid&quot;: &quot;5d4e830b-39ad-4c8f-8c28-f63a94fbad63&quot;
     }
   ]
 }</code></pre></dd>

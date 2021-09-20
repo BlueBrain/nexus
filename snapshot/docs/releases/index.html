@@ -206,6 +206,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -226,6 +227,9 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m4-16-09-2021-" class="header">v1.6.0-M4 (16.09.2021)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m3-02-09-2021-" class="header">v1.6.0-M3 (02.09.2021)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m2-17-08-2021-" class="header">v1.6.0-M2 (17.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m1-02-08-2021-" class="header">v1.6.0-M1 (02.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
@@ -262,6 +266,9 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m4-16-09-2021-" class="header">v1.6.0-M4 (16.09.2021)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m3-02-09-2021-" class="header">v1.6.0-M3 (02.09.2021)</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m2-17-08-2021-" class="header">v1.6.0-M2 (17.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m1-02-08-2021-" class="header">v1.6.0-M1 (02.08.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-1-04-06-2021-" class="header">v1.5.1 (04.06.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-5-0-19-05-2021-" class="header">v1.5.0 (19.05.2021)</a></li>
@@ -295,6 +302,50 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
 <p>The latest stable release is <strong>v1.5.1</strong> released on <strong>04.06.2021</strong>.</p>
+<h2><a href="#v1-6-0-m4-16-09-2021-" name="v1-6-0-m4-16-09-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M4 (16.09.2021)</h2>
+<ul>
+  <li>Record and present deployment usage stats <a href="https://github.com/BlueBrain/nexus/issues/2528">#2528</a></li>
+  <li>Ability to clear all search results customisations <a href="https://github.com/BlueBrain/nexus/issues/2616">#2616</a></li>
+  <li>Allow re-ordering of columns for presentation purposes <a href="https://github.com/BlueBrain/nexus/issues/2643">#2643</a></li>
+  <li>Allow listings on resources outside the project scope <a href="https://github.com/BlueBrain/nexus/issues/2737">#2737</a></li>
+  <li>Add information about supported operations on the config field <a href="https://github.com/BlueBrain/nexus/issues/2740">#2740</a></li>
+  <li>Allow streams other than those related to views to leverage Kamon <a href="https://github.com/BlueBrain/nexus/issues/2771">#2771</a></li>
+  <li>Allow rdf parser to be configurable <a href="https://github.com/BlueBrain/nexus/issues/2792">#2792</a></li>
+  <li>BUGFIX: Invalid IRIs should be properly rejected <a href="https://github.com/BlueBrain/nexus/issues/2760">#2760</a></li>
+</ul>
+<h2><a href="#v1-6-0-m3-02-09-2021-" name="v1-6-0-m3-02-09-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M3 (02.09.2021)</h2>
+<p>This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:</p>
+<ul>
+  <li>Restrict volume of data through quotas (static configuration) <a href="https://github.com/BlueBrain/nexus/issues/2525">#2525</a></li>
+  <li>Delete projects implementation <a href="https://github.com/BlueBrain/nexus/issues/2720">#2720</a></li>
+  <li>Delete Projects: Check if project is being used anywhere before allowing deletion <a href="https://github.com/BlueBrain/nexus/issues/2723">#2723</a></li>
+  <li>Added endpoint to list projects deletions <a href="https://github.com/BlueBrain/nexus/issues/2744">#2744</a></li>
+  <li>Document projects deletions <a href="https://github.com/BlueBrain/nexus/issues/2746">#2746</a></li>
+  <li>/v1/events endpoint is missing <a href="https://github.com/BlueBrain/nexus/issues/2397">#2397</a></li>
+  <li>Ability to customise visible/hidden fields in search results <a href="https://github.com/BlueBrain/nexus/issues/2613">#2613</a></li>
+  <li>Ability to filter search results based on known values <a href="https://github.com/BlueBrain/nexus/issues/2614">#2614</a></li>
+  <li>Ability to sort search results on multiple columns <a href="https://github.com/BlueBrain/nexus/issues/2615">#2615</a></li>
+  <li>Show only Home and Studios in the sidebar for anonymous users <a href="https://github.com/BlueBrain/nexus/issues/2637">#2637</a></li>
+  <li>BUGFIX: Login is broken in Safari when you login after opening a link <a href="https://github.com/BlueBrain/nexus/issues/2493">#2493</a></li>
+  <li>BUGFIX: Opening File resources results in JSON payload error <a href="https://github.com/BlueBrain/nexus/issues/2569">#2569</a></li>
+  <li>BUGFIX: Delete Projects: Delete ProjectsCounts from deleted project <a href="https://github.com/BlueBrain/nexus/issues/2722">#2722</a></li>
+</ul>
+<h2><a href="#v1-6-0-m2-17-08-2021-" name="v1-6-0-m2-17-08-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M2 (17.08.2021)</h2>
+<p>This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:</p>
+<ul>
+  <li>Initial full text search on all projects (based on access) <a href="https://github.com/BlueBrain/nexus/issues/2610">#2610</a></li>
+  <li>Restrict volume of data through quotas (static configuration) <a href="https://github.com/BlueBrain/nexus/issues/2525">#2525</a></li>
+  <li>Repurpose the search bar to enable jump to project <a href="https://github.com/BlueBrain/nexus/issues/2609">#2609</a></li>
+  <li>Ability to paginate search results based on user view port or preference <a href="https://github.com/BlueBrain/nexus/issues/2623">#2623</a></li>
+  <li>Mooc tutorial update <a href="https://github.com/BlueBrain/nexus/pull/2652">#2652</a></li>
+  <li>YouTube Video Viewer Plugin <a href="https://github.com/BlueBrain/nexus/pull/1697">#1697</a></li>
+  <li>BUGFIX: Fix database initialization failures <a href="https://github.com/BlueBrain/nexus/issues/2689">#2689</a></li>
+  <li>BUGFIX: Fix SVG import in Fusion <a href="https://github.com/BlueBrain/nexus/issues/1553">#1553</a></li>
+  <li>BUGFIX: Create Blazegraph namespace on view updates <a href="https://github.com/BlueBrain/nexus/issues/2668">#2668</a></li>
+  <li>BUGFIX: Cannot edit the JSON payload of a View <a href="https://github.com/BlueBrain/nexus/issues/1407">#1407</a></li>
+  <li>BUGFIX: Search Result Table doesn&rsquo;t always show values even though it should from (Facet Config) <a href="https://github.com/BlueBrain/nexus/issues/2160">#2160</a></li>
+  <li>BUGFIX: Indexing storages via synchronous indexing does not properly encrypt the source <a href="https://github.com/BlueBrain/nexus/issues/2658">#2658</a></li>
+</ul>
 <h2><a href="#v1-6-0-m1-02-08-2021-" name="v1-6-0-m1-02-08-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M1 (02.08.2021)</h2>
 <p>This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:</p>
 <ul>
