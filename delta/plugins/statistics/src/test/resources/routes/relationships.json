@@ -1,0 +1,28 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/relationships.json",
+  "_edges" : [
+    {
+      "_count" : 5,
+      "_path" : [
+        {
+          "@id" : "http://schema.org/address",
+          "_name" : "address"
+        }
+      ],
+      "_source" : "http://schema.org/Person",
+      "_target" : "http://schema.org/Address"
+    }
+  ],
+  "_nodes" : [
+    {
+      "@id" : "http://schema.org/Person",
+      "_count" : 10,
+      "_name" : "Person"
+    },
+    {
+      "@id" : "http://schema.org/Address",
+      "_count" : 5,
+      "_name" : "Address"
+    }
+  ]
+}

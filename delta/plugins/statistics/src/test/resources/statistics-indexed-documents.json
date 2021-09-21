@@ -1,0 +1,147 @@
+{
+  "timed_out" : false,
+  "hits" : {
+    "total" : {
+      "value" : 3,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "idx",
+        "_type" : "_doc",
+        "_id" : "http://example.com/Robert",
+        "_score" : 1.0,
+        "_source" : {
+          "@type" : "http://schema.org/Person",
+          "@id" : "http://example.com/Robert",
+          "properties" : [
+            {
+              "path" : "http://schema.org/address",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/address / http://schema.org/street",
+              "isInArray" : false
+            },
+            {
+              "@id" : "http://example.com/Sam",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/givenName",
+              "isInArray" : false
+            }
+          ],
+          "relationshipCandidates" : [
+            {
+              "found" : true,
+              "@id" : "http://example.com/Sam",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            }
+          ],
+          "relationships" : [
+            {
+              "@id" : "http://example.com/Sam",
+              "@type" : "http://schema.org/Person",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            }
+          ]
+        }
+      },
+      {
+        "_index" : "idx",
+        "_type" : "_doc",
+        "_id" : "http://example.com/Anna",
+        "_score" : 1.0,
+        "_source" : {
+          "@type" : "http://schema.org/Person",
+          "@id" : "http://example.com/Anna",
+          "properties" : [
+            {
+              "path" : "http://schema.org/address",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/address / http://schema.org/street",
+              "isInArray" : false
+            },
+            {
+              "@id" : "http://example.com/Robert",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/givenName",
+              "isInArray" : false
+            }
+          ],
+          "relationshipCandidates" : [
+            {
+              "found" : true,
+              "@id" : "http://example.com/Robert",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            }
+          ],
+          "relationships" : [
+            {
+              "@id" : "http://example.com/Robert",
+              "@type" : "http://schema.org/Person",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            }
+          ]
+        }
+      },
+      {
+        "_index" : "idx",
+        "_type" : "_doc",
+        "_id" : "http://example.com/Sam",
+        "_score" : 1.0,
+        "_source" : {
+          "@type" : "http://schema.org/Person",
+          "@id" : "http://example.com/Sam",
+          "properties" : [
+            {
+              "path" : "http://schema.org/address",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/address / http://schema.org/street",
+              "isInArray" : false
+            },
+            {
+              "@id" : "http://example.com/Pedro",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            },
+            {
+              "dataType" : "string",
+              "path" : "http://schema.org/givenName",
+              "isInArray" : false
+            }
+          ],
+          "relationshipCandidates" : [
+            {
+              "found" : false,
+              "@id" : "http://example.com/Pedro",
+              "path" : "http://schema.org/brother",
+              "isInArray" : false
+            }
+          ],
+          "relationships" : [
+          ]
+        }
+      }
+    ]
+  }
+}
