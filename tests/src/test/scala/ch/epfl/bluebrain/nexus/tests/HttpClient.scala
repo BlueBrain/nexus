@@ -207,7 +207,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
         uri = s"$baseUrl$url",
         headers = identity match {
           case Anonymous => extraHeaders
-          case _         => tokensMap.get(identity) +: extraHeaders
+          case _         =>
+            extraHeaders :+ Option(tokensMap.get(identity)).getOrElse(
+              throw new IllegalArgumentException(
+                "The provided user has not been properly initialized, please add it to Identity.allUsers."
+              )
+            )
         },
         entity = body.fold(HttpEntity.Empty)(toEntity)
       )
