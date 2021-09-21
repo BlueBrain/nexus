@@ -5,6 +5,7 @@ import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
@@ -27,11 +28,12 @@ object IndexingStreamAwake {
 
   private val logger: Logger = Logger[IndexingStreamAwake.type]
   private type StreamFromOffset = Offset => Stream[Task, Envelope[ProjectScopedEvent]]
-  private[indexing] val projectionId: CacheProjectionId = CacheProjectionId("IndexingStreamAwake")
+  private[indexing] val projectionId: CacheProjectionId  = CacheProjectionId("IndexingStreamAwake")
+  implicit private val metricsConfig: KamonMetricsConfig = KamonMetricsConfig(projectionId.value, Map.empty)
 
   /**
-    * Construct a [[IndexingStreamAwake]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the latest event instant for each project.
+    * Construct a [[IndexingStreamAwake]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the latest event instant for each project.
     */
   def apply(
       config: ProjectsConfig,
@@ -72,6 +74,7 @@ object IndexingStreamAwake {
                 .as(msg.as(ProjectsEventsInstantCollection(acc.value.value + (evProject -> evInstant))))
             }
             .persistProgress(progress, projectionId, projection, persistProgressConfig)
+            .enableMetrics
             .void
         }
 

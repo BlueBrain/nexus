@@ -14,8 +14,8 @@ object TemplateSparqlConstructQuery {
   private val fakeIri = iri"http://localhost/id"
 
   /**
-    * Constructs a [[SparqlConstructQuery]] verifying that the passed ''value'' contains the id templating and
-    * that it is a valid CONSTRUCT query
+    * Constructs a [[SparqlConstructQuery]] verifying that the passed ''value'' contains the id templating and that it
+    * is a valid CONSTRUCT query
     */
   final def apply(value: String): Either[String, SparqlConstructQuery] =
     if (!value.contains(idTemplating))

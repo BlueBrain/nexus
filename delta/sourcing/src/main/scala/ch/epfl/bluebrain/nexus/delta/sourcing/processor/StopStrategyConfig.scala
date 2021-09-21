@@ -9,10 +9,11 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * The configuration for a [[StopStrategy]]
   *
-  * @param lapsedSinceLastInteraction   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval;
-  *                                     None to keep the actor alive
-  * @param lapsedSinceRecoveryCompleted Some(duration) if the actor should stop (and passivate);
-  *                                     None to keep the actor alive (and no passivation)
+  * @param lapsedSinceLastInteraction
+  *   Some(duration) if the actor should stop after no new messages are received in the ''duration'' interval; None to
+  *   keep the actor alive
+  * @param lapsedSinceRecoveryCompleted
+  *   Some(duration) if the actor should stop (and passivate); None to keep the actor alive (and no passivation)
   */
 // $COVERAGE-OFF$
 final case class StopStrategyConfig(

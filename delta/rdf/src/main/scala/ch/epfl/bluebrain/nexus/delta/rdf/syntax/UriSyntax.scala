@@ -59,7 +59,8 @@ final class UriOps(private val uri: Uri) extends AnyVal {
 final class PathOps(private val path: Uri.Path) extends AnyVal {
 
   /**
-    * @return a path last segment
+    * @return
+    *   a path last segment
     */
   def lastSegment: Option[String] =
     path.reverse match {

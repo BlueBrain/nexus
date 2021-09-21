@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdOptions
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -21,7 +21,7 @@ import monix.bio.{IO, UIO}
 /**
   * Allows to define different JsonLd processorces
   */
-sealed abstract class JsonLdSourceProcessor {
+sealed abstract class JsonLdSourceProcessor(implicit api: JsonLdApi) {
 
   def uuidF: UUIDF
 
@@ -62,17 +62,20 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source to JsonLD compacted and expanded using static contexts
     */
   final class JsonLdSourceParser[R](contextIri: Seq[Iri], override val uuidF: UUIDF)(implicit
+      api: JsonLdApi,
       rejectionMapper: Mapper[InvalidJsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
     /**
-      * Converts the passed ''source'' to JsonLD compacted and expanded.
-      * The @id value is extracted from the payload.
+      * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
       * When no @id is present, one is generated using the base on the project suffixed with a randomly generated UUID.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
       */
     def apply(
         project: Project,
@@ -87,13 +90,15 @@ object JsonLdSourceProcessor {
     }.mapError(rejectionMapper.to)
 
     /**
-      * Converts the passed ''source'' to JsonLD compacted and expanded.
-      * The @id value is extracted from the payload if exists and compared to the passed ''iri''.
-      * If they aren't equal an [[UnexpectedId]] rejection is issued.
+      * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload if
+      * exists and compared to the passed ''iri''. If they aren't equal an [[UnexpectedId]] rejection is issued.
       *
-      * @param project the project used to generate the @context when no @context is provided on the source
-      * @param source the Json payload
-      * @return a tuple with the compacted Json-LD and the expanded Json-LD
+      * @param project
+      *   the project used to generate the @context when no @context is provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the compacted Json-LD and the expanded Json-LD
       */
     def apply(
         project: Project,
@@ -118,20 +123,21 @@ object JsonLdSourceProcessor {
       contextIri: Seq[Iri],
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit
-      rejectionMapper: Mapper[InvalidJsonLdRejection, R]
-  ) extends JsonLdSourceProcessor {
+  )(implicit api: JsonLdApi, rejectionMapper: Mapper[InvalidJsonLdRejection, R])
+      extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceParser[R](contextIri, uuidF)
 
     /**
-      * Converts the passed ''source'' to JsonLD compacted and expanded.
-      * The @id value is extracted from the payload.
+      * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload.
       * When no @id is present, one is generated using the base on the project suffixed with a randomly generated UUID.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri, the compacted Json-LD and the expanded Json-LD
       */
     def apply(project: Project, source: Json)(implicit
         caller: Caller
@@ -141,13 +147,15 @@ object JsonLdSourceProcessor {
     }
 
     /**
-      * Converts the passed ''source'' to JsonLD compacted and expanded.
-      * The @id value is extracted from the payload if exists and compared to the passed ''iri''.
-      * If they aren't equal an [[UnexpectedId]] rejection is issued.
+      * Converts the passed ''source'' to JsonLD compacted and expanded. The @id value is extracted from the payload if
+      * exists and compared to the passed ''iri''. If they aren't equal an [[UnexpectedId]] rejection is issued.
       *
-      * @param project the project used to generate the @context when no @context is provided on the source
-      * @param source the Json payload
-      * @return a tuple with the compacted Json-LD and the expanded Json-LD
+      * @param project
+      *   the project used to generate the @context when no @context is provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the compacted Json-LD and the expanded Json-LD
       */
     def apply(
         project: Project,
@@ -162,6 +170,7 @@ object JsonLdSourceProcessor {
 
   object JsonLdSourceResolvingParser {
     def apply[R](contextResolution: ResolverContextResolution, uuidF: UUIDF)(implicit
+        api: JsonLdApi,
         rejectionMapper: Mapper[InvalidJsonLdRejection, R]
     ): JsonLdSourceResolvingParser[R] =
       new JsonLdSourceResolvingParser(Seq.empty, contextResolution, uuidF)
@@ -171,17 +180,21 @@ object JsonLdSourceProcessor {
     * Allows to parse the given json source and decode it into an ''A'' using static contexts
     */
   final class JsonLdSourceDecoder[R, A: JsonLdDecoder](contextIri: Iri, override val uuidF: UUIDF)(implicit
+      api: JsonLdApi,
       rejectionMapper: Mapper[JsonLdRejection, R]
   ) extends JsonLdSourceProcessor {
 
     /**
-      * Expands the passed ''source'' and attempt to decode it into an ''A''
-      * The @id value is extracted from the payload.
-      * When no @id is present, one is generated using the base on the project suffixed with a randomly generated UUID.
+      * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the
+      * payload. When no @id is present, one is generated using the base on the project suffixed with a randomly
+      * generated UUID.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri and the decoded value
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri and the decoded value
       */
     def apply(project: Project, source: Json)(implicit rcr: RemoteContextResolution): IO[R, (Iri, A)] = {
       for {
@@ -192,13 +205,15 @@ object JsonLdSourceProcessor {
     }.mapError(rejectionMapper.to)
 
     /**
-      * Expands the passed ''source'' and attempt to decode it into an ''A''
-      * The @id value is extracted from the payload if exists and compared to the passed ''iri''.
-      * If they aren't equal an [[UnexpectedId]] rejection is issued.
+      * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the payload
+      * if exists and compared to the passed ''iri''. If they aren't equal an [[UnexpectedId]] rejection is issued.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri and the decoded value
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri and the decoded value
       */
     def apply(project: Project, iri: Iri, source: Json)(implicit
         rcr: RemoteContextResolution
@@ -219,20 +234,22 @@ object JsonLdSourceProcessor {
       contextIri: Iri,
       contextResolution: ResolverContextResolution,
       override val uuidF: UUIDF
-  )(implicit
-      rejectionMapper: Mapper[JsonLdRejection, R]
-  ) extends JsonLdSourceProcessor {
+  )(implicit api: JsonLdApi, rejectionMapper: Mapper[JsonLdRejection, R])
+      extends JsonLdSourceProcessor {
 
     private val underlying = new JsonLdSourceDecoder[R, A](contextIri, uuidF)
 
     /**
-      * Expands the passed ''source'' and attempt to decode it into an ''A''
-      * The @id value is extracted from the payload.
-      * When no @id is present, one is generated using the base on the project suffixed with a randomly generated UUID.
+      * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the
+      * payload. When no @id is present, one is generated using the base on the project suffixed with a randomly
+      * generated UUID.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri and the decoded value
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri and the decoded value
       */
     def apply(project: Project, source: Json)(implicit caller: Caller): IO[R, (Iri, A)] = {
       implicit val rcr: RemoteContextResolution = contextResolution(project.ref)
@@ -240,13 +257,15 @@ object JsonLdSourceProcessor {
     }
 
     /**
-      * Expands the passed ''source'' and attempt to decode it into an ''A''
-      * The @id value is extracted from the payload if exists and compared to the passed ''iri''.
-      * If they aren't equal an [[UnexpectedId]] rejection is issued.
+      * Expands the passed ''source'' and attempt to decode it into an ''A'' The @id value is extracted from the payload
+      * if exists and compared to the passed ''iri''. If they aren't equal an [[UnexpectedId]] rejection is issued.
       *
-      * @param project the project with the base used to generate @id when needed and the @context when not provided on the source
-      * @param source  the Json payload
-      * @return a tuple with the resulting @id iri and the decoded value
+      * @param project
+      *   the project with the base used to generate @id when needed and the @context when not provided on the source
+      * @param source
+      *   the Json payload
+      * @return
+      *   a tuple with the resulting @id iri and the decoded value
       */
     def apply(project: Project, iri: Iri, source: Json)(implicit caller: Caller): IO[R, A] = {
       implicit val rcr: RemoteContextResolution = contextResolution(project.ref)

@@ -15,16 +15,26 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * PostgreSQL connectivity information along with the projection configuration.
   *
-  * @param host               the postgres host
-  * @param port               the postgres port
-  * @param database           the database to be used
-  * @param username           the auth username
-  * @param password           the auth password
-  * @param offsetFile         the location where the postgres projection offset should be read / stored
-  * @param offsetSaveInterval how frequent to save the stream offset into the offset file
-  * @param retry              the retry strategy (policy and condition)
-  * @param print              the configuration for printing output to the client
-  * @param projects           the project to config mapping
+  * @param host
+  *   the postgres host
+  * @param port
+  *   the postgres port
+  * @param database
+  *   the database to be used
+  * @param username
+  *   the auth username
+  * @param password
+  *   the auth password
+  * @param offsetFile
+  *   the location where the postgres projection offset should be read / stored
+  * @param offsetSaveInterval
+  *   how frequent to save the stream offset into the offset file
+  * @param retry
+  *   the retry strategy (policy and condition)
+  * @param print
+  *   the configuration for printing output to the client
+  * @param projects
+  *   the project to config mapping
   */
 final case class PostgresConfig(
     host: String,

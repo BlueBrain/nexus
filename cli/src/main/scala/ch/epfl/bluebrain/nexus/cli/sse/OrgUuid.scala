@@ -6,7 +6,8 @@ import cats.Show
 
 /**
   * A safe organization UUID.
-  * @param value the underlying uuid
+  * @param value
+  *   the underlying uuid
   */
 final case class OrgUuid(value: UUID)
 

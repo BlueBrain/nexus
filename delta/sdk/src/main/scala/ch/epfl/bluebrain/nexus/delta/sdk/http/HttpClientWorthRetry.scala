@@ -28,8 +28,8 @@ object HttpClientWorthRetry {
   }
 
   /**
-    * Constructs a [[HttpClientWorthRetry]] by the name of the strategy.
-    * Allowed strategies are 'always', 'never' or 'onServerError'
+    * Constructs a [[HttpClientWorthRetry]] by the name of the strategy. Allowed strategies are 'always', 'never' or
+    * 'onServerError'
     */
   final def byName(string: String): Option[HttpClientWorthRetry] =
     string match {

@@ -2,17 +2,21 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverType, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -39,6 +43,7 @@ class ResolverEventExchangeSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit private val api: JsonLdApi   = JsonLdJavaApi.strict
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -89,6 +94,22 @@ class ResolverEventExchangeSpec
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        deprecatedEvent.tpe.types,
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

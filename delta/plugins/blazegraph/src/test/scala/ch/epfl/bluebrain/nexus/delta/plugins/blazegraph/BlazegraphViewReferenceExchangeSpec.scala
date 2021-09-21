@@ -16,11 +16,7 @@ import org.scalatest.Inspectors
 
 import java.util.UUID
 
-class BlazegraphViewReferenceExchangeSpec
-    extends AbstractDBSpec
-    with Inspectors
-    with ConfigFixtures
-    with RemoteContextResolutionFixture {
+class BlazegraphViewReferenceExchangeSpec extends AbstractDBSpec with Inspectors with ConfigFixtures with Fixtures {
 
   implicit private val scheduler: Scheduler = Scheduler.global
 

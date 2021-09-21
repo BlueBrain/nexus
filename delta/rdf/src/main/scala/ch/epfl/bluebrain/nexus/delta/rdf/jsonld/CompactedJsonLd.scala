@@ -12,7 +12,8 @@ import io.circe.{Json, JsonObject}
 import monix.bio.IO
 
 /**
-  * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root @id.
+  * Json-LD Compacted Document. CompactedJsonLd specific implementation is entity centric, having always only one root
+  * \@id.
   */
 final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue, obj: JsonObject) extends JsonLd {
   self =>
@@ -59,7 +60,8 @@ final case class CompactedJsonLd private (rootId: IriOrBNode, ctx: ContextValue,
   /**
     * Replaces the root id value and returns a new [[CompactedJsonLd]]
     *
-    * @param id the new root id value
+    * @param id
+    *   the new root id value
     */
   def replaceId(id: IriOrBNode): CompactedJsonLd =
     id match {
@@ -81,9 +83,12 @@ object CompactedJsonLd {
   /**
     * Creates a [[CompactedJsonLd]] document.
     *
-    * @param rootId        the root id
-    * @param contextValue  the context to apply in order to compact the ''input''
-    * @param input         the input Json document
+    * @param rootId
+    *   the root id
+    * @param contextValue
+    *   the context to apply in order to compact the ''input''
+    * @param input
+    *   the input Json document
     */
   final def apply(
       rootId: IriOrBNode,
@@ -97,9 +102,12 @@ object CompactedJsonLd {
   /**
     * Creates a [[CompactedJsonLd]] document framed on the passed ''rootId''.
     *
-    * @param rootId        the root id
-    * @param contextValue  the context to apply in order to compact the ''input''
-    * @param input         the input Json document
+    * @param rootId
+    *   the root id
+    * @param contextValue
+    *   the context to apply in order to compact the ''input''
+    * @param input
+    *   the input Json document
     */
   final def frame(
       rootId: IriOrBNode,
@@ -117,9 +125,12 @@ object CompactedJsonLd {
   /**
     * Unsafely constructs a [[CompactedJsonLd]].
     *
-    * @param rootId       the root id
-    * @param contextValue the context used in order to build the ''compacted'' document
-    * @param compacted    the already compacted document
+    * @param rootId
+    *   the root id
+    * @param contextValue
+    *   the context used in order to build the ''compacted'' document
+    * @param compacted
+    *   the already compacted document
     */
   final def unsafe(rootId: IriOrBNode, contextValue: ContextValue, compacted: JsonObject): CompactedJsonLd =
     CompactedJsonLd(rootId, contextValue, compacted)

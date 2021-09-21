@@ -99,8 +99,10 @@ object IdentitiesImpl {
 
   /**
     * Unique command for the group aggregate to fetch groups from the OIDC provider
-    * @param token the raw token
-    * @param realm the realm containing the user endpoint to fetch stuff from
+    * @param token
+    *   the raw token
+    * @param realm
+    *   the realm containing the user endpoint to fetch stuff from
     */
   final case class FetchGroups(token: String, realm: Realm)
 
@@ -145,10 +147,14 @@ object IdentitiesImpl {
 
   /**
     * Constructs a [[IdentitiesImpl]] instance
-    * @param findActiveRealm function to find the active realm matching the given issuer
-    * @param getUserInfo     function to retrieve user info from the OIDC provider
-    * @param groupsConfig    the groups aggregate configuration
-    * @param as              the actor system
+    * @param findActiveRealm
+    *   function to find the active realm matching the given issuer
+    * @param getUserInfo
+    *   function to retrieve user info from the OIDC provider
+    * @param groupsConfig
+    *   the groups aggregate configuration
+    * @param as
+    *   the actor system
     */
   def apply(
       findActiveRealm: String => UIO[Option[Realm]],

@@ -45,15 +45,18 @@ trait DeltaClient {
   /**
     * Checks whether the events endpoint and token provided by the source are correct
     *
-    * @param source the source
+    * @param source
+    *   the source
     */
   def checkEvents(source: RemoteProjectSource): HttpResult[Unit]
 
   /**
     * Produces a stream of events with their offset for the provided ''source''.
     *
-    * @param source the remote source that is used to collect the server sent events
-    * @param offset the initial offset
+    * @param source
+    *   the remote source that is used to collect the server sent events
+    * @param offset
+    *   the initial offset
     */
   def events[A: Decoder](source: RemoteProjectSource, offset: Offset): Stream[Task, (Offset, A)]
 

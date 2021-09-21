@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.resources
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
@@ -10,12 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.ResourceDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -42,6 +46,7 @@ class ResourceEventExchangeSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit private val api: JsonLdApi   = JsonLdJavaApi.strict
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -92,7 +97,7 @@ class ResourceEventExchangeSpec
     val tag             = TagLabel.unsafe("tag")
     val resRev1         = resources.create(id, project.ref, schemas.resources, source).accepted
     val resRev2         = resources.tag(id, project.ref, None, tag, 1L, 1L).accepted
-    val deprecatedEvent = ResourceDeprecated(id, project.ref, Set.empty, 1, Instant.EPOCH, subject)
+    val deprecatedEvent = ResourceDeprecated(id, project.ref, Set(nxv + "Custom"), 1, Instant.EPOCH, subject)
 
     val exchange = new ResourceEventExchange(resources)
 
@@ -110,6 +115,22 @@ class ResourceEventExchangeSpec
       result.metadata.value shouldEqual ()
     }
 
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        id,
+        Set(nxv + "Custom"),
+        JsonObject.empty
+      )
+    }
+
     "return the encoded event" in {
       val result = exchange.toJsonEvent(deprecatedEvent).value
       result.value shouldEqual deprecatedEvent
@@ -119,7 +140,7 @@ class ResourceEventExchangeSpec
           "@type" : "ResourceDeprecated",
           "_resourceId" : $id,
           "_project" : "http://localhost/v1/projects/myorg/myproject",
-          "_types" : [],
+          "_types" : ["https://bluebrain.github.io/nexus/vocabulary/Custom"],
           "_rev" : 1,
           "_instant" : "1970-01-01T00:00:00Z",
           "_subject" : "http://localhost/v1/realms/realm/users/user"

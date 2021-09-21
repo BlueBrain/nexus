@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import cats.Eq
 import cats.implicits.toBifunctorOps
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -11,7 +12,8 @@ import scala.util.{Failure, Success, Try}
 /**
   * A path that is guaranteed to be absolute.
   *
-  * @param value the path value
+  * @param value
+  *   the path value
   */
 final case class AbsolutePath private (value: Path) extends AnyVal {
   override def toString: String = value.toString
@@ -19,10 +21,13 @@ final case class AbsolutePath private (value: Path) extends AnyVal {
 
 object AbsolutePath {
 
+  implicit val absolutePathEq: Eq[AbsolutePath] = Eq.fromUniversalEquals[AbsolutePath]
+
   /**
     * Safely constructs an absolute path.
     *
-    * @param string the string representation of the path
+    * @param string
+    *   the string representation of the path
     */
   final def apply(string: String): Either[String, AbsolutePath] =
     Try(Paths.get(string)) match {
@@ -33,7 +38,8 @@ object AbsolutePath {
   /**
     * Safely constructs an absolute path.
     *
-    * @param path the unsafe path value
+    * @param path
+    *   the unsafe path value
     */
   final def apply(path: Path): Either[String, AbsolutePath] =
     if (path.isAbsolute) Right(new AbsolutePath(path))

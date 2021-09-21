@@ -28,7 +28,7 @@ class ElasticSearchViewDecodingSpec
     with IOValues
     with TestHelpers
     with OptionValues
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val project = Project(
     label = Label.unsafe("proj"),
@@ -38,7 +38,8 @@ class ElasticSearchViewDecodingSpec
     description = None,
     apiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
     base = ProjectBase.unsafe(iri"http://localhost/v1/resources/org/proj/_/"),
-    vocab = iri"http://schema.org/"
+    vocab = iri"http://schema.org/",
+    markedForDeletion = false
   )
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())

@@ -5,18 +5,21 @@ import akka.http.scaladsl.server.Directives._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesAggregate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files, FilesDeletion}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{StoragesAggregate, StoragesCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesDeletion, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -28,9 +31,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -58,42 +61,70 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     )
   }
 
+  make[StoragesCache].from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing]) => Storages.cache(cfg.storages)(as) }
+
+  make[StoragesAggregate].fromEffect {
+    (
+        config: StoragePluginConfig,
+        resourceIdCheck: ResourceIdCheck,
+        permissions: Permissions,
+        crypto: Crypto,
+        client: HttpClient @Id("storage"),
+        as: ActorSystem[Nothing],
+        clock: Clock[UIO]
+    ) => Storages.aggregate(config.storages, resourceIdCheck, permissions, crypto)(client, as, clock)
+  }
+
   make[Storages]
     .fromEffect {
       (
           cfg: StoragePluginConfig,
           log: EventLog[Envelope[StorageEvent]],
-          client: HttpClient @Id("storage"),
-          permissions: Permissions,
           orgs: Organizations,
           projects: Projects,
-          clock: Clock[UIO],
+          cache: StoragesCache,
+          agg: StoragesAggregate,
+          api: JsonLdApi,
           uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
-          resourceIdCheck: ResourceIdCheck,
           as: ActorSystem[Nothing],
           scheduler: Scheduler,
-          crypto: Crypto,
           serviceAccount: ServiceAccount
       ) =>
         Storages(
           cfg.storages,
           log,
           contextResolution,
-          permissions,
           orgs,
           projects,
-          resourceIdCheck,
-          crypto,
+          cache,
+          agg,
           serviceAccount
         )(
-          client,
+          api,
           uuidF,
-          clock,
           scheduler,
           as
         )
     }
+
+  many[ResourcesDeletion].add {
+    (
+        cache: StoragesCache,
+        agg: StoragesAggregate,
+        storages: Storages,
+        dbCleanup: DatabaseCleanup
+    ) => StoragesDeletion(cache, agg, storages, dbCleanup)
+  }
+
+  many[ResourcesDeletion].add {
+    (
+        agg: FilesAggregate,
+        storages: Storages,
+        files: Files,
+        dbCleanup: DatabaseCleanup
+    ) => FilesDeletion(agg, storages, files, dbCleanup)
+  }
 
   make[StoragesRoutes].from {
     (
@@ -149,6 +180,11 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  make[FilesAggregate].fromEffect {
+    (cfg: StoragePluginConfig, resourceIdCheck: ResourceIdCheck, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      Files.aggregate(cfg.files.aggregate, resourceIdCheck)(as, clock)
+  }
+
   make[Files]
     .fromEffect {
       (
@@ -161,16 +197,14 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           projects: Projects,
           storages: Storages,
           storagesStatistics: StoragesStatistics,
-          resourceIdCheck: ResourceIdCheck,
-          clock: Clock[UIO],
+          agg: FilesAggregate,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, storagesStatistics, resourceIdCheck)(
+        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, storagesStatistics, agg)(
           client,
           uuidF,
-          clock,
           scheduler,
           as
         )
@@ -250,5 +284,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[StorageEventExchange]
   make[FileEventExchange]
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
+  many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
   many[EntityType].addSet(Set(EntityType(Storages.moduleType), EntityType(Files.moduleType)))
 }

@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
@@ -50,11 +51,12 @@ object StoragesStatistics {
 
   private val id: String = "StorageStatistics"
   type StreamFromOffset = Offset => Stream[Task, Envelope[FileEvent]]
-  val projectionId: CacheProjectionId = CacheProjectionId(id)
+  val projectionId: CacheProjectionId                    = CacheProjectionId(id)
+  implicit private val metricsConfig: KamonMetricsConfig = KamonMetricsConfig(projectionId.value, Map.empty)
 
   /**
-    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the stats for each storage.
+    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the stats for each storage.
     */
   def apply(
       files: Files,
@@ -79,8 +81,8 @@ object StoragesStatistics {
   }
 
   /**
-    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function.
-    * The underlying stream will store its progress and compute the stats for each storage.
+    * Construct a [[StoragesStatistics]] from a passed ''projection'' and ''stream'' function. The underlying stream
+    * will store its progress and compute the stats for each storage.
     */
   private[storages] def apply(
       fetchFileStorage: (Iri, ProjectRef) => Task[Iri],
@@ -142,6 +144,7 @@ object StoragesStatistics {
             }
             .map(_._1)
             .persistProgress(progress, projectionId, projection, persistProgressConfig)
+            .enableMetrics
             .void
         }
 

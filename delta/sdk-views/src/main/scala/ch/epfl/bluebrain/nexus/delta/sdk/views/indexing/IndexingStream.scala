@@ -12,8 +12,10 @@ trait IndexingStream[V] {
   /**
     * Builds a stream from the passed parameters.
     *
-    * @param view     the [[ViewIndex]]
-    * @param strategy the progress strategy used to build a stream
+    * @param view
+    *   the [[ViewIndex]]
+    * @param strategy
+    *   the progress strategy used to build a stream
     */
   def apply(view: ViewIndex[V], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit]
 

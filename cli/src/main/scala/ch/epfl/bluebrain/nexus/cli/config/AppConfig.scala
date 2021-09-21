@@ -17,9 +17,12 @@ import pureconfig.{ConfigConvert, ConfigObjectSource, ConfigSource}
 /**
   * Complete application configuration.
   *
-  * @param env      the environment configuration
-  * @param postgres the postgres configuration
-  * @param influx   the influxDB configuration
+  * @param env
+  *   the environment configuration
+  * @param postgres
+  *   the postgres configuration
+  * @param influx
+  *   the influxDB configuration
   */
 final case class AppConfig(
     env: EnvConfig,
@@ -32,11 +35,14 @@ object AppConfig {
   /**
     * Loads the application configuration using possible file config location overrides.
     *
-    * @param envConfigFile      an optional env config file location
-    * @param postgresConfigFile an optional postgres config file location
-    * @param influxConfigFile   an optional influx config file location
-    * @param token              an optional token configuration None - unset, Some(None) - wipe token, Some(Some) -
-    *                           overridden token
+    * @param envConfigFile
+    *   an optional env config file location
+    * @param postgresConfigFile
+    *   an optional postgres config file location
+    * @param influxConfigFile
+    *   an optional influx config file location
+    * @param token
+    *   an optional token configuration None - unset, Some(None) - wipe token, Some(Some) - overridden token
     */
   def load[F[_]](
       envConfigFile: Option[Path] = None,
@@ -52,11 +58,14 @@ object AppConfig {
   /**
     * Assembles the configuration using possible file config location overrides.
     *
-    * @param envConfigFile      an optional env config file location
-    * @param postgresConfigFile an optional postgres config file location
-    * @param influxConfigFile   an optional influx config file location
-    * @param token              an optional token configuration None - unset, Some(None) - wipe token, Some(Some) -
-    *                           overridden token
+    * @param envConfigFile
+    *   an optional env config file location
+    * @param postgresConfigFile
+    *   an optional postgres config file location
+    * @param influxConfigFile
+    *   an optional influx config file location
+    * @param token
+    *   an optional token configuration None - unset, Some(None) - wipe token, Some(Some) - overridden token
     */
   def assembleConfig[F[_]](
       envConfigFile: Option[Path] = None,

@@ -17,14 +17,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Clean Build
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false clean
-      - name: Build Delta Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project app" Docker/publishLocal
-      - name: Build Storage Image
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" Docker/publishLocal
+      - name: Clean, build Delta & Storage images
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "clean; app/Docker/publishLocal; storage/Docker/publishLocal"
       - name: Start services
-        run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 120
+        run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 60
       - name: Test
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
       - name: Stop Docker

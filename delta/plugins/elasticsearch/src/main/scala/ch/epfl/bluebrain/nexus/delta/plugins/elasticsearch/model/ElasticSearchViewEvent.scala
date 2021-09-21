@@ -26,22 +26,26 @@ import scala.annotation.nowarn
 sealed trait ElasticSearchViewEvent extends ProjectScopedEvent {
 
   /**
-    * @return the view identifier
+    * @return
+    *   the view identifier
     */
   def id: Iri
 
   /**
-    * @return the project where the view belongs to
+    * @return
+    *   the project where the view belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the view unique identifier
+    * @return
+    *   the view unique identifier
     */
   def uuid: UUID
 
   /**
-    * @return the view type
+    * @return
+    *   the view type
     */
   def tpe: ElasticSearchViewType
 
@@ -52,14 +56,22 @@ object ElasticSearchViewEvent {
   /**
     * Evidence of a view creation.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param uuid    the view unique identifier
-    * @param value   the view value
-    * @param source  the original json value provided by the caller
-    * @param rev     the revision that the event generates
-    * @param instant the instant when the event was emitted
-    * @param subject the subject that created the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param uuid
+    *   the view unique identifier
+    * @param value
+    *   the view value
+    * @param source
+    *   the original json value provided by the caller
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that created the view
     */
   final case class ElasticSearchViewCreated(
       id: Iri,
@@ -77,13 +89,20 @@ object ElasticSearchViewEvent {
   /**
     * Evidence of a view update.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param value   the view value
-    * @param source  the original json value provided by the caller
-    * @param rev     the revision that the event generates
-    * @param instant the instant when the event was emitted
-    * @param subject the subject that updated the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param value
+    *   the view value
+    * @param source
+    *   the original json value provided by the caller
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that updated the view
     */
   final case class ElasticSearchViewUpdated(
       id: Iri,
@@ -101,15 +120,24 @@ object ElasticSearchViewEvent {
   /**
     * Evidence of tagging a view.
     *
-    * @param id        the view identifier
-    * @param project   the view parent project
-    * @param tpe       the view type
-    * @param uuid      the view unique identifier
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag value
-    * @param rev       the revision that the event generates
-    * @param instant   the instant when the event was emitted
-    * @param subject   the subject that tagged the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tpe
+    *   the view type
+    * @param uuid
+    *   the view unique identifier
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag value
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that tagged the view
     */
   final case class ElasticSearchViewTagAdded(
       id: Iri,
@@ -126,13 +154,20 @@ object ElasticSearchViewEvent {
   /**
     * Evidence of a view deprecation.
     *
-    * @param id      the view identifier
-    * @param project the view parent project
-    * @param tpe     the view type
-    * @param uuid    the view unique identifier
-    * @param rev     the revision that the event generates
-    * @param instant the instant when the event was emitted
-    * @param subject the subject that deprecated the view
+    * @param id
+    *   the view identifier
+    * @param project
+    *   the view parent project
+    * @param tpe
+    *   the view type
+    * @param uuid
+    *   the view unique identifier
+    * @param rev
+    *   the revision that the event generates
+    * @param instant
+    *   the instant when the event was emitted
+    * @param subject
+    *   the subject that deprecated the view
     */
   final case class ElasticSearchViewDeprecated(
       id: Iri,

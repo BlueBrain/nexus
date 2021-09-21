@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,10 +30,9 @@ class CompositeViewDecodingSpec
     extends AnyWordSpecLike
     with Matchers
     with Inspectors
-    with IOValues
     with TestHelpers
     with CirceLiteral
-    with RemoteContextResolutionFixture
+    with Fixtures
     with EitherValuable
     with OptionValues {
 

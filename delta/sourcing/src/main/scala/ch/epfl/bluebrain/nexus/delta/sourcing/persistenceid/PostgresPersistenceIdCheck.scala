@@ -33,7 +33,8 @@ object PostgresPersistenceIdCheck {
   /**
     * Creates a postgres persistence id check with the given configuration
     *
-    * @param config the postgres configuration
+    * @param config
+    *   the postgres configuration
     */
   def apply(config: PostgresConfig): Task[PostgresPersistenceIdCheck] =
     Task.delay(new PostgresPersistenceIdCheck(config.transactor))

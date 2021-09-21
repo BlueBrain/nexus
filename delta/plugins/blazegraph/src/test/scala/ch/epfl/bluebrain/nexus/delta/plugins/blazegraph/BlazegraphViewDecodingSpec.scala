@@ -25,7 +25,7 @@ class BlazegraphViewDecodingSpec
     with Inspectors
     with IOValues
     with TestHelpers
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val project = ProjectGen.project("org", "project")
 

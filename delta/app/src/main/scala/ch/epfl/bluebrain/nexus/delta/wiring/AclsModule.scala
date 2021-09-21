@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl
+import ch.epfl.bluebrain.nexus.delta.service.acls.{AclEventExchange, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -65,5 +65,7 @@ object AclsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: AclsRoutes) => PriorityRoute(pluginsMaxPriority + 5, route.routes) }
 
+  make[AclEventExchange]
+  many[EventExchange].ref[AclEventExchange]
 }
 // $COVERAGE-ON$

@@ -31,7 +31,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of ElasticSearch view rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class ElasticSearchViewRejection(val reason: String) extends Product with Serializable
 
@@ -41,8 +42,10 @@ object ElasticSearchViewRejection {
     * Rejection returned when a subject intends to retrieve a view at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends ElasticSearchViewRejection(
@@ -50,18 +53,21 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends ElasticSearchViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create an elastic search view but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends ElasticSearchViewRejection(s"Resource '$id' already exists in project '$project'.")
@@ -69,7 +75,8 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when a view that doesn't exist.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
       extends ElasticSearchViewRejection(s"ElasticSearch view '$id' not found in project '$project'.")
@@ -77,7 +84,8 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewIsDeprecated(id: Iri)
       extends ElasticSearchViewRejection(s"ElasticSearch view '$id' is deprecated.")
@@ -86,8 +94,10 @@ object ElasticSearchViewRejection {
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends ElasticSearchViewRejection(
@@ -103,7 +113,8 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends ElasticSearchViewRejection(rejection.reason)
@@ -118,7 +129,8 @@ object ElasticSearchViewRejection {
     * Signals a rejection caused by an attempt to create or update an ElasticSearch view with a permission that is not
     * defined in the permission set singleton.
     *
-    * @param permission the provided permission
+    * @param permission
+    *   the provided permission
     */
   final case class PermissionIsNotDefined(permission: Permission)
       extends ElasticSearchViewRejection(
@@ -126,10 +138,11 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when view of type ''expected'' was desired but a view ''provided'' was provided instead.
-    * This can happen during update of a view when attempting to change the type or during fetch of a particular type of view
+    * Rejection returned when view of type ''expected'' was desired but a view ''provided'' was provided instead. This
+    * can happen during update of a view when attempting to change the type or during fetch of a particular type of view
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class DifferentElasticSearchViewType(
       id: Iri,
@@ -146,10 +159,11 @@ object ElasticSearchViewRejection {
       extends ElasticSearchViewRejection("The provided ElasticSearch mapping value is invalid.")
 
   /**
-    * Rejection returned when one of the provided view references for an AggregateElasticSearchView does not exist or
-    * is deprecated.
+    * Rejection returned when one of the provided view references for an AggregateElasticSearchView does not exist or is
+    * deprecated.
     *
-    * @param view the offending view reference
+    * @param view
+    *   the offending view reference
     */
   final case class InvalidViewReference(view: ViewRef)
       extends ElasticSearchViewRejection(
@@ -157,9 +171,9 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when the returned state is the initial state after a successful command evaluation.
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
-    * non initial state.
+    * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This
+    * should never happen since the evaluation method already guarantees that the next function returns a non initial
+    * state.
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends ElasticSearchViewRejection(s"Unexpected initial state for ElasticSearchView '$id' of project '$project'.")
@@ -168,8 +182,10 @@ object ElasticSearchViewRejection {
     * Rejection returned when attempting to create an ElasticSearchView where the passed id does not match the id on the
     * source json document.
     *
-    * @param id       the view identifier
-    * @param sourceId the view identifier in the source json document
+    * @param id
+    *   the view identifier
+    * @param sourceId
+    *   the view identifier in the source json document
     */
   final case class UnexpectedElasticSearchViewId(id: Iri, sourceId: Iri)
       extends ElasticSearchViewRejection(
@@ -180,7 +196,8 @@ object ElasticSearchViewRejection {
     * Rejection returned when attempting to interact with an ElasticSearchView while providing an id that cannot be
     * resolved to an Iri.
     *
-    * @param id the view identifier
+    * @param id
+    *   the view identifier
     */
   final case class InvalidElasticSearchViewId(id: String)
       extends ElasticSearchViewRejection(s"ElasticSearch view identifier '$id' cannot be expanded to an Iri.")
@@ -188,7 +205,8 @@ object ElasticSearchViewRejection {
   /**
     * Rejection when attempting to decode an expanded JsonLD as an ElasticSearchViewValue.
     *
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends ElasticSearchViewRejection(error.getMessage)
 
@@ -201,8 +219,8 @@ object ElasticSearchViewRejection {
       )
 
   /**
-    * Rejection returned when attempting to query an elasticsearchview
-    * and the caller does not have the right permissions defined in the view.
+    * Rejection returned when attempting to query an elasticsearchview and the caller does not have the right
+    * permissions defined in the view.
     */
   final case object AuthorizationFailed extends ElasticSearchViewRejection(ServiceError.AuthorizationFailed.reason)
 
@@ -217,7 +235,8 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when attempting to interact with a resource providing an id that cannot be resolved to an Iri.
     *
-    * @param id        the resource identifier
+    * @param id
+    *   the resource identifier
     */
   final case class InvalidResourceId(id: String)
       extends ElasticSearchViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
@@ -231,8 +250,10 @@ object ElasticSearchViewRejection {
   /**
     * Rejection returned when too many view references are specified on an aggregated view.
     *
-    * @param provided the number of view references specified
-    * @param max      the maximum number of aggregated views allowed
+    * @param provided
+    *   the number of view references specified
+    * @param max
+    *   the maximum number of aggregated views allowed
     */
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends ElasticSearchViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")

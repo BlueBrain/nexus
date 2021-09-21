@@ -8,8 +8,10 @@ import scala.concurrent.duration.FiniteDuration
 
 /**
   * Configuration for groups
-  * @param aggregate      the aggregate configuration
-  * @param passivateAfter duration after passivation must occur
+  * @param aggregate
+  *   the aggregate configuration
+  * @param passivateAfter
+  *   duration after passivation must occur
   */
 final case class GroupsConfig(
     aggregate: AggregateConfig,

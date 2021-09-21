@@ -21,10 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchDocker.elasticsearchHost
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.Metadata
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, ElasticSearchDocker}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
@@ -64,7 +63,6 @@ import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
 import org.scalatest.{BeforeAndAfterEach, Inspectors}
@@ -89,6 +87,7 @@ class CompositeIndexingSpec
     with CirceLiteral
     with CirceEq
     with CompositeViewsSetup
+    with ElasticSearchClientSetup
     with ConfigFixtures
     with BeforeAndAfterEach {
 
@@ -96,7 +95,6 @@ class CompositeIndexingSpec
     PatienceConfig(30.seconds, Span(1000, Millis))
 
   implicit private val uuidF: UUIDF     = UUIDF.random
-  implicit private val sc: Scheduler    = Scheduler.global
   private val realm                     = Label.unsafe("myrealm")
   private val bob                       = User("Bob", realm)
   implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
@@ -123,7 +121,6 @@ class CompositeIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val esClient            = new ElasticSearchClient(httpClient, elasticsearchHost.endpoint, 2000)
   private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
@@ -218,6 +215,8 @@ class CompositeIndexingSpec
       UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
 
     override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
+
+    override def remove(project: ProjectRef): UIO[Unit] = UIO.pure(projectsCountsCache.remove(project)).void
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
@@ -441,7 +440,7 @@ class CompositeIndexingSpec
       val results = esClient
         .search(
           QueryBuilder.empty.withSort(SortList(List(Sort("@id")))).withPage(page),
-          idx(view).value,
+          Set(idx(view).value),
           Query.Empty
         )
         .accepted

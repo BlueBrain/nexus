@@ -2,12 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 
-trait RemoteContextResolutionFixture extends IOValues {
+trait Fixtures extends IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
     iri"http://music.com/context"   -> ContextValue.fromFile("indexing/music-context.json").accepted,

@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMinPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
@@ -14,8 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
+import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -27,40 +29,55 @@ object ResourcesModule extends ModuleDef {
 
   make[EventLog[Envelope[ResourceEvent]]].fromEffect { databaseEventLog[ResourceEvent](_, _) }
 
-  make[Resources].fromEffect {
+  make[ResourcesAggregate].fromEffect {
     (
         config: AppConfig,
-        eventLog: EventLog[Envelope[ResourceEvent]],
         acls: Acls,
-        organizations: Organizations,
-        projects: Projects,
         resolvers: Resolvers,
         schemas: Schemas,
-        resolverContextResolution: ResolverContextResolution,
         resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
         as: ActorSystem[Nothing],
-        clock: Clock[UIO],
+        clock: Clock[UIO]
+    ) =>
+      ResourcesImpl.aggregate(
+        config.resources.aggregate,
+        ResourceResolution.schemaResource(acls, resolvers, schemas),
+        resourceIdCheck
+      )(api, as, clock)
+  }
+
+  many[ResourcesDeletion].add { (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
+    DataDeletion(agg, resources, dbCleanup)
+  }
+
+  make[Resources].from {
+    (
+        eventLog: EventLog[Envelope[ResourceEvent]],
+        agg: ResourcesAggregate,
+        organizations: Organizations,
+        projects: Projects,
+        api: JsonLdApi,
+        resolverContextResolution: ResolverContextResolution,
         uuidF: UUIDF
     ) =>
-      ResourcesImpl(
-        organizations,
-        projects,
-        ResourceResolution.schemaResource(acls, resolvers, schemas),
-        resourceIdCheck,
-        resolverContextResolution,
-        config.resources.aggregate,
-        eventLog
-      )(uuidF, as, clock)
+      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(api, uuidF)
   }
 
   make[ResolverContextResolution].from {
     (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
       ResolverContextResolution(acls, resolvers, resources, rcr)
   }
-  make[SseEventLog].from(
-    (eventLog: EventLog[Envelope[Event]], orgs: Organizations, projects: Projects, exchanges: Set[EventExchange]) =>
-      SseEventLog(eventLog, orgs, projects, exchanges)
-  )
+  make[SseEventLog]
+    .named("resources")
+    .from(
+      (
+          eventLog: EventLog[Envelope[Event]],
+          orgs: Organizations,
+          projects: Projects,
+          exchanges: Set[EventExchange] @Id("resources")
+      ) => SseEventLog(eventLog, orgs, projects, exchanges)
+    )
 
   make[ResourcesRoutes].from {
     (
@@ -70,7 +87,7 @@ object ResourcesModule extends ModuleDef {
         projects: Projects,
         resources: Resources,
         indexingAction: IndexingAction @Id("aggregate"),
-        sseEventLog: SseEventLog,
+        sseEventLog: SseEventLog @Id("resources"),
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -94,6 +111,7 @@ object ResourcesModule extends ModuleDef {
 
   make[ResourceEventExchange]
   many[EventExchange].ref[ResourceEventExchange]
+  many[EventExchange].named("resources").ref[ResourceEventExchange]
   many[EntityType].add(EntityType(Resources.moduleType))
 
 }

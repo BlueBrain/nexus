@@ -52,19 +52,9 @@ trait StoragesSetup extends IOValues with RemoteContextResolutionFixture with Co
       eventLog   <- EventLog.postgresEventLog[Envelope[StorageEvent]](EventLogUtils.toEnvelope).hideErrors
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       config      = StoragesConfig(aggregate, keyValueStore, pagination, indexing, persist, storageTypeConfig)
-      storages   <-
-        Storages(
-          config,
-          eventLog,
-          resolverCtx,
-          perms,
-          orgs,
-          projects,
-          (_, _) => IO.unit,
-          (_, _) => IO.unit,
-          crypto,
-          serviceAccount
-        )
+      agg        <- Storages.aggregate(config, (_, _) => IO.unit, (_, _) => IO.unit, perms, crypto)
+      cache       = Storages.cache(config)
+      storages   <- Storages(config, eventLog, resolverCtx, orgs, projects, cache, agg, serviceAccount)
     } yield storages
   }.accepted
 }

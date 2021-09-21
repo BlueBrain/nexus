@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
@@ -16,8 +17,10 @@ object SchemaSetup {
   /**
     * Set up Schemas, populate some data and then eventually apply some deprecation.
     *
-    * @param schemasToCreate    Schemas to create
-    * @param schemasToDeprecate Schemas to deprecate
+    * @param schemasToCreate
+    *   Schemas to create
+    * @param schemasToDeprecate
+    *   Schemas to deprecate
     */
   def init(
       orgs: Organizations,
@@ -27,6 +30,7 @@ object SchemaSetup {
       resolveSchema: Resolve[Schema] = (_, _, _) => IO.raiseError(ResourceResolutionReport()),
       resolveResource: Resolve[Resource] = (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )(implicit
+      api: JsonLdApi,
       clock: Clock[UIO],
       uuidf: UUIDF,
       rcr: RemoteContextResolution,

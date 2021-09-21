@@ -14,10 +14,14 @@ trait JsonUtils {
 
   /**
     * Map value of all instances of a key.
-    * @param json the json to apply to
-    * @param key  the key
-    * @param f    the function to apply
-    * @return     [[Json]] with all values of a key mapped
+    * @param json
+    *   the json to apply to
+    * @param key
+    *   the key
+    * @param f
+    *   the function to apply
+    * @return
+    *   [[Json]] with all values of a key mapped
     */
   def mapAllKeys(json: Json, key: String, f: Json => Json): Json = {
     def inner(obj: JsonObject): JsonObject = obj(key) match {
@@ -47,8 +51,10 @@ trait JsonUtils {
   /**
     * Extract all the values found from the passed ''keys''
     *
-    * @param json the target json
-    * @param keys the keys from where to extract the Json values
+    * @param json
+    *   the target json
+    * @param keys
+    *   the keys from where to extract the Json values
     */
   def extractValuesFrom(json: Json, keys: String*): Set[Json] = {
 
@@ -146,8 +152,10 @@ trait JsonUtils {
   /**
     * Sort all the keys in the passed ''json''.
     *
-    * @param json     the json to sort
-    * @param ordering the sorting strategy
+    * @param json
+    *   the json to sort
+    * @param ordering
+    *   the sorting strategy
     */
   def sort(json: Json)(implicit ordering: JsonKeyOrdering): Json = {
 
@@ -160,8 +168,8 @@ trait JsonUtils {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A
     */
   def getIgnoreSingleArray[A: Decoder](json: Json, key: String): Decoder.Result[A] =
     getIgnoreSingleArray(json.hcursor, key)
@@ -169,9 +177,9 @@ trait JsonUtils {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
-    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A If the key does not exist, the passed ''defaultValue'' will be
+    * returned.
     */
   def getIgnoreSingleArrayOr[A: Decoder](json: Json, key: String)(defaultValue: => A): Decoder.Result[A] =
     getIgnoreSingleArrayOr(json.hcursor, key)(defaultValue)
@@ -179,9 +187,9 @@ trait JsonUtils {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
-    * If the key does not exist, the passed ''defaultValue'' will be returned.
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A If the key does not exist, the passed ''defaultValue'' will be
+    * returned.
     */
   def getIgnoreSingleArrayOr[A: Decoder](cursor: ACursor, key: String)(defaultValue: => A): Decoder.Result[A] =
     cursor.getOrElse[A](key)(defaultValue) orElse
@@ -192,8 +200,8 @@ trait JsonUtils {
   /**
     * Extracts the value of the passed key and attempts to convert it to ''A''.
     *
-    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json Array
-    * that contains a single entry to an A
+    * The conversion will first attempt to convert the Json to an A and secondarily it will attempt to convert a Json
+    * Array that contains a single entry to an A
     */
   def getIgnoreSingleArray[A: Decoder](cursor: ACursor, key: String): Decoder.Result[A] =
     cursor.get[A](key) orElse

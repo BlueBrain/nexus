@@ -19,19 +19,23 @@ import scala.util.control.NonFatal
 trait AttributesCache[F[_]] {
 
   /**
-    * Fetches the file attributes for the provided absFilePath.
-    * If the digest is being computed or is going to be computed, a Digest.empty is returned
+    * Fetches the file attributes for the provided absFilePath. If the digest is being computed or is going to be
+    * computed, a Digest.empty is returned
     *
-    * @param filePath the absolute file path
-    * @return the file attributes wrapped in the effect type F
+    * @param filePath
+    *   the absolute file path
+    * @return
+    *   the file attributes wrapped in the effect type F
     */
   def get(filePath: Path): F[FileAttributes]
 
   /**
     * Computes the file attributes and stores them asynchronously on the cache
     *
-    * @param filePath  the absolute file path
-    * @param algorithm the digest algorithm
+    * @param filePath
+    *   the absolute file path
+    * @param algorithm
+    *   the digest algorithm
     */
   def asyncComputePut(filePath: Path, algorithm: String): Unit
 }

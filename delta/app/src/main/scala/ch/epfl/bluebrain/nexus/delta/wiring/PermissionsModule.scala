@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions, PriorityRoute}
-import ch.epfl.bluebrain.nexus.delta.service.permissions.PermissionsImpl
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.service.permissions.{PermissionsEventExchange, PermissionsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -62,5 +62,7 @@ object PermissionsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: PermissionsRoutes) => PriorityRoute(pluginsMaxPriority + 3, route.routes) }
 
+  make[PermissionsEventExchange]
+  many[EventExchange].ref[PermissionsEventExchange]
 }
 // $COVERAGE-ON$

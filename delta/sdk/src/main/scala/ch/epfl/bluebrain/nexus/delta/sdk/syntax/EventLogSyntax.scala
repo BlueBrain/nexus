@@ -20,7 +20,8 @@ trait EventLogSyntax {
 /**
   * Provide extension methods for an EventLog of Envelope[Event]
   *
-  * @param eventLog the eventLog
+  * @param eventLog
+  *   the eventLog
   */
 final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envelope[E]]) extends AnyVal {
 
@@ -39,6 +40,14 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
       rejectionMapper: Mapper[ProjectNotFound, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
     EventLogUtils.projectEvents(projects, eventLog, projectRef, offset)
+
+  /**
+    * Fetch project events
+    */
+  def currentProjectEvents[R](projects: Projects, projectRef: ProjectRef, offset: Offset)(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, Stream[Task, Envelope[E]]] =
+    EventLogUtils.currentProjectEvents(projects, eventLog, projectRef, offset)
 
   /**
     * Fetch organization events

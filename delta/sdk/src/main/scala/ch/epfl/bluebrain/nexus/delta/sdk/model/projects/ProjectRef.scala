@@ -11,8 +11,10 @@ import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 /**
   * A project label along with its parent organization label.
   *
-  * @param organization the parent organization label
-  * @param project      the project label
+  * @param organization
+  *   the parent organization label
+  * @param project
+  *   the project label
   */
 final case class ProjectRef(organization: Label, project: Label) {
   override def toString: String = s"$organization/$project"

@@ -13,8 +13,10 @@ object JsonLdRejection {
   /**
     * Rejection returned when the passed id does not match the id on the payload
     *
-    * @param id        the passed identifier
-    * @param payloadId the identifier on the payload
+    * @param id
+    *   the passed identifier
+    * @param payloadId
+    *   the identifier on the payload
     */
   final case class UnexpectedId(id: Iri, payloadId: Iri)
       extends InvalidJsonLdRejection(s"Id '$id' does not match the id on payload '$payloadId'.")
@@ -22,8 +24,10 @@ object JsonLdRejection {
   /**
     * Rejection when converting the source Json to JsonLD fails
     *
-    * @param id           the passed identifier
-    * @param rdfError     the rdf error
+    * @param id
+    *   the passed identifier
+    * @param rdfError
+    *   the rdf error
     */
   final case class InvalidJsonLdFormat(id: Option[Iri], rdfError: RdfError)
       extends InvalidJsonLdRejection(
@@ -32,7 +36,8 @@ object JsonLdRejection {
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as a case class
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends JsonLdRejection(error.getMessage)
 }

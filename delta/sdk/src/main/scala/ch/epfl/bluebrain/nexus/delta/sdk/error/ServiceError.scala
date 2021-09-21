@@ -30,7 +30,8 @@ object ServiceError {
   /**
     * Signals that an organization or project initialization has failed.
     *
-    * @param reason the underlying cause for the failure
+    * @param reason
+    *   the underlying cause for the failure
     */
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
 

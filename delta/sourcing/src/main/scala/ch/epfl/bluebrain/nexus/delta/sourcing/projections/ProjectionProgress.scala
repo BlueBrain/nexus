@@ -11,12 +11,18 @@ import scala.math.Ordering.Implicits._
 /**
   * Progression progress for a given view
   *
-  * @param offset    the offset which has been reached
-  * @param timestamp the time when the value A was created
-  * @param processed the number of processed messages
-  * @param discarded the number of discarded messages
-  * @param warnings  the number of warning messages
-  * @param failed    the number of failed messages
+  * @param offset
+  *   the offset which has been reached
+  * @param timestamp
+  *   the time when the value A was created
+  * @param processed
+  *   the number of processed messages
+  * @param discarded
+  *   the number of discarded messages
+  * @param warnings
+  *   the number of warning messages
+  * @param failed
+  *   the number of failed messages
   */
 final case class ProjectionProgress[A](
     offset: Offset,
@@ -61,9 +67,12 @@ final case class ProjectionProgress[A](
 
 /**
   * Projection for a composite view
-  * @param id id
-  * @param sourceProgress progress for the different sources
-  * @param viewProgress progress for the different views
+  * @param id
+  *   id
+  * @param sourceProgress
+  *   progress for the different sources
+  * @param viewProgress
+  *   progress for the different views
   */
 final case class CompositeProjectionProgress[A](
     id: ViewProjectionId,

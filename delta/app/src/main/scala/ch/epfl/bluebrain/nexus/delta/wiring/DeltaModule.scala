@@ -11,6 +11,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
@@ -29,7 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra,
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseDefinitions, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -40,8 +41,10 @@ import org.slf4j.{Logger, LoggerFactory}
 /**
   * Complete service wiring definitions.
   *
-  * @param appCfg      the application configuration
-  * @param config      the raw merged and resolved configuration
+  * @param appCfg
+  *   the application configuration
+  * @param config
+  *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
 
@@ -63,6 +66,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
     AggregateIndexingAction(internal.toSeq)
   }
+
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
       errorCtx    <- ContextValue.fromFile("contexts/error.json")
@@ -80,6 +84,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       )
       .merge(otherCtxResolutions.toSeq: _*)
   }
+
+  make[JsonLdApi].fromValue(new JsonLdJavaApi(appCfg.jsonLdApi))
 
   make[Clock[UIO]].from(Clock[UIO])
   make[UUIDF].from(UUIDF.random)
@@ -115,6 +121,10 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
     DatabaseDefinitions(config.database)(system)
   )
+
+  make[DatabaseCleanup].from { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
+    DatabaseCleanup(config)(system)
+  }
 
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
   make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
@@ -157,7 +167,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   }
 
   make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[EntityType]) =>
-    new ResourceIdCheck(idCheck, moduleTypes)
+    ResourceIdCheck(idCheck, moduleTypes)
   }
 
   include(PermissionsModule)
@@ -171,6 +181,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(IdentitiesModule)
   include(VersionModule)
   include(QuotasModule)
+  include(EventsModule)
 }
 
 object DeltaModule {
@@ -178,9 +189,12 @@ object DeltaModule {
   /**
     * Complete service wiring definitions.
     *
-    * @param appCfg      the application configuration
-    * @param config      the raw merged and resolved configuration
-    * @param classLoader the aggregated class loader
+    * @param appCfg
+    *   the application configuration
+    * @param config
+    *   the raw merged and resolved configuration
+    * @param classLoader
+    *   the aggregated class loader
     */
   final def apply(
       appCfg: AppConfig,

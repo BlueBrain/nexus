@@ -4,124 +4,190 @@
       "array": false,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": false
         }
       ],
       "label": "Project",
-      "name": "project"
+      "name": "project",
+      "optional": false
     },
     {
       "array": true,
-      "format": "uri",
+      "format": [
+        "uri"
+      ],
       "label": "Types",
-      "name": "@type"
+      "name": "@type",
+      "optional": false
     },
     {
       "array": false,
-      "format": "text",
+      "format": [
+        "keyword",
+        "text"
+      ],
       "label": "Name",
-      "name": "name"
+      "name": "name",
+      "optional": true
     },
     {
       "array": false,
-      "format": "text",
+      "format": [
+        "text"
+      ],
       "label": "Description",
-      "name": "description"
+      "name": "description",
+      "optional": true
     },
     {
       "array": false,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "Brain Region",
-      "name": "brainRegion"
+      "name": "brainRegion",
+      "optional": true
     },
     {
       "array": false,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "Subject Species",
-      "name": "subjectSpecies"
+      "name": "subjectSpecies",
+      "optional": true
     },
     {
       "array": true,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "format": [
+            "uri"
+          ],
+          "name": "identifier",
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "Contributors",
-      "name": "contributors"
+      "name": "contributors",
+      "optional": true
     },
     {
       "array": true,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "Organisations",
-      "name": "organisations"
+      "name": "organisations",
+      "optional": true
     },
     {
       "array": false,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "License",
-      "name": "license"
+      "name": "license",
+      "optional": true
     },
     {
       "array": true,
       "fields": [
         {
-          "format": "uri",
-          "name": "identifier"
+          "name": "identifier",
+          "format": [
+            "uri"
+          ],
+          "optional": false
         },
         {
-          "format": "text",
-          "name": "label"
+          "name": "label",
+          "format": [
+            "keyword",
+            "text"
+          ],
+          "optional": true
         }
       ],
       "label": "M-Type",
-      "name": "mType"
+      "name": "mType",
+      "optional": true
     }
   ]
 }

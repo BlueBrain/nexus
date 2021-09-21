@@ -11,10 +11,14 @@ import pureconfig.generic.semiauto.deriveConvert
 /**
   * Environment configuration.
   *
-  * @param endpoint          the Nexus service endpoint, including the prefix (if necessary)
-  * @param token             the optional Bearer Token used to connect to the Nexus service
-  * @param httpClient        the HTTP Client configuration
-  * @param defaultSparqlView the default project sparql view
+  * @param endpoint
+  *   the Nexus service endpoint, including the prefix (if necessary)
+  * @param token
+  *   the optional Bearer Token used to connect to the Nexus service
+  * @param httpClient
+  *   the HTTP Client configuration
+  * @param defaultSparqlView
+  *   the default project sparql view
   */
 final case class EnvConfig(
     endpoint: Uri,
@@ -34,8 +38,10 @@ final case class EnvConfig(
   /**
     * Computes the project endpoint from the arguments.
     *
-    * @param org  the organization uuid
-    * @param proj the project uuid
+    * @param org
+    *   the organization uuid
+    * @param proj
+    *   the project uuid
     */
   def project(org: OrgUuid, proj: ProjectUuid): Uri =
     endpoint / "projects" / org.show / proj.show
@@ -43,9 +49,12 @@ final case class EnvConfig(
   /**
     * Computes the sparql endpoint from the arguments.
     *
-    * @param org  the organization label
-    * @param proj the project label
-    * @param view the view to query
+    * @param org
+    *   the organization label
+    * @param proj
+    *   the project label
+    * @param view
+    *   the view to query
     */
   def sparql(org: OrgLabel, proj: ProjectLabel, view: Uri): Uri =
     endpoint / "views" / org.show / proj.show / view.renderString / "sparql"
@@ -59,7 +68,8 @@ final case class EnvConfig(
   /**
     * Computes the events endpoint from the arguments.
     *
-    * @param org the organization label
+    * @param org
+    *   the organization label
     */
   def eventsUri(org: OrgLabel): Uri =
     endpoint / "resources" / org.show / "events"
@@ -67,8 +77,10 @@ final case class EnvConfig(
   /**
     * Computes the events endpoint from the arguments.
     *
-    * @param org  the organization label
-    * @param proj the project label
+    * @param org
+    *   the organization label
+    * @param proj
+    *   the project label
     */
   def eventsUri(org: OrgLabel, proj: ProjectLabel): Uri =
     endpoint / "resources" / org.show / proj.show / "events"

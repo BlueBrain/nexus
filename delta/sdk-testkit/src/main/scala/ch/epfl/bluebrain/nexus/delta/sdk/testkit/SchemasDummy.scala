@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas._
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -34,7 +35,7 @@ final class SchemasDummy private (
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
     idAvailability: IdAvailability[ResourceAlreadyExists]
-)(implicit clock: Clock[UIO])
+)(implicit api: JsonLdApi, clock: Clock[UIO])
     extends Schemas {
 
   override def create(
@@ -42,7 +43,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
@@ -54,7 +55,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -68,7 +69,7 @@ final class SchemasDummy private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] =
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
@@ -83,7 +84,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res
@@ -94,7 +95,7 @@ final class SchemasDummy private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res
@@ -108,6 +109,14 @@ final class SchemasDummy private (
         res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), SchemaNotFound(iri, projectRef))
       } yield res
     )(fetchBy(_, projectRef))
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
+    projects
+      .fetchProject(projectRef)
+      .as(journal.currentEvents(offset).filter(e => e.event.project == projectRef))
 
   override def events(
       projectRef: ProjectRef,
@@ -158,11 +167,16 @@ object SchemasDummy {
   /**
     * Creates a schema dummy instance
     *
-    * @param orgs              the organizations operations bundle
-    * @param projects          the projects operations bundle
-    * @param schemaImports     resolves the OWL imports from a Schema
-    * @param contextResolution the context resolver
-    * @param idAvailability    checks if an id is available upon creation
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param schemaImports
+    *   resolves the OWL imports from a Schema
+    * @param contextResolution
+    *   the context resolver
+    * @param idAvailability
+    *   checks if an id is available upon creation
     */
   def apply(
       orgs: Organizations,
@@ -170,7 +184,7 @@ object SchemasDummy {
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
     for {
       journal <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[SchemaEvent](Schemas.moduleType))
       sem     <- IOSemaphore(1L)

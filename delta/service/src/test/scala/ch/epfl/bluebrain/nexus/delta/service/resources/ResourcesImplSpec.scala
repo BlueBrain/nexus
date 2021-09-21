@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.service.resources
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ResourcesBehaviors}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ResourceIdCheck, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 import monix.bio.UIO
@@ -21,14 +21,7 @@ class ResourcesImplSpec
     for {
       eventLog      <- EventLog.postgresEventLog[Envelope[ResourceEvent]](EventLogUtils.toEnvelope).hideErrors
       (orgs, projs) <- projectSetup
-      resources     <- ResourcesImpl(
-                         orgs,
-                         projs,
-                         resourceResolution,
-                         (_, _) => UIO.unit,
-                         resolverContextResolution,
-                         aggregate,
-                         eventLog
-                       )
+      agg           <- ResourcesImpl.aggregate(aggregate, resourceResolution, ResourceIdCheck.alwaysAvailable)
+      resources      = ResourcesImpl(orgs, projs, agg, resolverContextResolution, eventLog)
     } yield resources
 }

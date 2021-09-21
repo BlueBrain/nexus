@@ -33,9 +33,12 @@ trait BlazegraphViewsQuery {
   /**
     * List incoming links for a given resource.
     *
-    * @param id         the resource identifier
-    * @param projectRef the project of the resource
-    * @param pagination the pagination config
+    * @param id
+    *   the resource identifier
+    * @param projectRef
+    *   the project of the resource
+    * @param pagination
+    *   the pagination config
     */
   def incoming(
       id: IdSegment,
@@ -46,10 +49,14 @@ trait BlazegraphViewsQuery {
   /**
     * List outgoing links for a given resource.
     *
-    * @param id                   the resource identifier
-    * @param projectRef           the project of the resource
-    * @param pagination           the pagination config
-    * @param includeExternalLinks whether to include links to resources not managed by Delta
+    * @param id
+    *   the resource identifier
+    * @param projectRef
+    *   the project of the resource
+    * @param pagination
+    *   the pagination config
+    * @param includeExternalLinks
+    *   whether to include links to resources not managed by Delta
     */
   def outgoing(
       id: IdSegment,
@@ -59,13 +66,17 @@ trait BlazegraphViewsQuery {
   )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]]
 
   /**
-    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''.
-    * We check for the caller to have the necessary query permissions on the view before performing the query.
+    * Queries the blazegraph namespace (or namespaces) managed by the view with the passed ''id''. We check for the
+    * caller to have the necessary query permissions on the view before performing the query.
     *
-    * @param id           the id of the view either in Iri or aliased form
-    * @param project      the project where the view exists
-    * @param query        the sparql query to run
-    * @param responseType the desired response type
+    * @param id
+    *   the id of the view either in Iri or aliased form
+    * @param project
+    *   the project where the view exists
+    * @param query
+    *   the sparql query to run
+    * @param responseType
+    *   the desired response type
     */
   def query[R <: SparqlQueryResponse](
       id: IdSegment,

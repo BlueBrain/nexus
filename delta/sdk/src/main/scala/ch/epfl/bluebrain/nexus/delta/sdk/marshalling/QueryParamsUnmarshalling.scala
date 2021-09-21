@@ -18,7 +18,7 @@ trait QueryParamsUnmarshalling {
   /**
     * Unmarsaller to transform a String to Iri
     */
-  implicit def iriFromStringUnmarshaller: FromStringUnmarshaller[Iri] =
+  implicit val iriFromStringUnmarshaller: FromStringUnmarshaller[Iri] =
     Unmarshaller.strict[String, Iri] { string =>
       Iri(string) match {
         case Right(iri) => iri
@@ -77,6 +77,12 @@ trait QueryParamsUnmarshalling {
   implicit def iriBaseFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[IriBase] =
     iriFromStringUnmarshaller(useVocab = false).map(IriBase)
 
+  /**
+    * Unmarsaller to transform a String to an IriBase
+    */
+  def iriBaseFromStringUnmarshallerNoExpansion: FromStringUnmarshaller[IriBase] =
+    iriFromStringUnmarshaller.map(IriBase)
+
   private def iriFromStringUnmarshaller(useVocab: Boolean)(implicit project: Project): FromStringUnmarshaller[Iri] =
     Unmarshaller.strict[String, Iri] { str =>
       val ctx = context(project.vocab, project.base.iri, project.apiMappings)
@@ -117,5 +123,5 @@ object QueryParamsUnmarshalling extends QueryParamsUnmarshalling {
   /**
     * An Iri generated using the base when there is no alias or curie suited for it
     */
-  final case class IriBase private[sdk] (value: Iri) extends AnyVal
+  final case class IriBase(value: Iri) extends AnyVal
 }

@@ -8,10 +8,11 @@ import fs2.Pipe
 object ProjectionPipes {
 
   /**
-    * Print the progress of the consumed events through the passed ''console''.
-    * It prints every 100 consumed events, distinguishing skip, errors and success events.
+    * Print the progress of the consumed events through the passed ''console''. It prints every 100 consumed events,
+    * distinguishing skip, errors and success events.
     *
-    * @return it returns the successful events, ignoring the failures and the skipped
+    * @return
+    *   it returns the successful events, ignoring the failures and the skipped
     */
   def printEventProgress[F[_], A, E <: CliError](
       console: Console[F]
@@ -34,10 +35,11 @@ object ProjectionPipes {
     }.collect { case Right(Some(v)) => v }
 
   /**
-    * Print the progress of the evaluated projection through the passed ''console''.
-    * It prints every 100 consumed events, distinguishing errors and success.
+    * Print the progress of the evaluated projection through the passed ''console''. It prints every 100 consumed
+    * events, distinguishing errors and success.
     *
-    * @return it returns the successfully evaluated projections, ignoring the failures
+    * @return
+    *   it returns the successfully evaluated projections, ignoring the failures
     */
   def printProjectionProgress[F[_], A, E <: CliError](
       console: Console[F]

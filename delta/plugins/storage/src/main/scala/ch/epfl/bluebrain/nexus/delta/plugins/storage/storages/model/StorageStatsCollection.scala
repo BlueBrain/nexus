@@ -27,9 +27,12 @@ object StorageStatsCollection {
   /**
     * The stats for a single storage
     *
-    * @param files  the number of physical files for this storage
-    * @param spaceUsed   the space used by the files for this storage
-    * @param lastProcessedEventDateTime the time when the last entry was created
+    * @param files
+    *   the number of physical files for this storage
+    * @param spaceUsed
+    *   the space used by the files for this storage
+    * @param lastProcessedEventDateTime
+    *   the time when the last entry was created
     */
   final case class StorageStatEntry(files: Long, spaceUsed: Long, lastProcessedEventDateTime: Option[Instant])
 

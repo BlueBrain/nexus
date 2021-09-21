@@ -3,18 +3,22 @@ package ch.epfl.bluebrain.nexus.delta.service.schemas
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => schemaorg}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
+import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.SchemaDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import io.circe.JsonObject
 import io.circe.literal._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -42,6 +46,7 @@ class SchemaEventExchangeSpec
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()
   implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit private val api: JsonLdApi   = JsonLdJavaApi.strict
 
   implicit private def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -98,6 +103,22 @@ class SchemaEventExchangeSpec
       result.value.source shouldEqual schema.source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
+    }
+
+    "return the metric" in {
+      val metric = exchange.toMetric(deprecatedEvent).accepted.value
+
+      metric shouldEqual ProjectScopedMetric(
+        Instant.EPOCH,
+        subject,
+        1L,
+        EventMetric.Deprecated,
+        project.ref,
+        project.organizationLabel,
+        schema.id,
+        Set(nxv.Schema),
+        JsonObject.empty
+      )
     }
 
     "return the encoded event" in {

@@ -91,7 +91,8 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         provisioningConfig.fields.description,
         provisioningConfig.fields.apiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
-        provisioningConfig.fields.vocab.value.value
+        provisioningConfig.fields.vocab.value.value,
+        markedForDeletion = false
       )
       acls.fetch(projectRef).accepted.value shouldEqual acl
     }
@@ -110,7 +111,8 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
         provisioningConfig.fields.description,
         provisioningConfig.fields.apiMappings,
         ProjectBase(provisioningConfig.fields.base.value.value),
-        provisioningConfig.fields.vocab.value.value
+        provisioningConfig.fields.vocab.value.value,
+        markedForDeletion = false
       )
     }
 

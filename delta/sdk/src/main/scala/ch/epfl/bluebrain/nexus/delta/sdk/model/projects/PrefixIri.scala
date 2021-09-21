@@ -19,7 +19,8 @@ object PrefixIri {
   /**
     * Attempts to construct a [[PrefixIri]] from its Iri representation.
     *
-    * @param value the iri
+    * @param value
+    *   the iri
     */
   final def apply(value: Iri): Either[FormatError, PrefixIri] =
     Option.when(value.isPrefixMapping)(new PrefixIri(value)).toRight(IllegalPrefixIRIFormatError(value))
@@ -27,7 +28,8 @@ object PrefixIri {
   /**
     * Attempts to construct a [[PrefixIri]] from its string representation.
     *
-    * @param value the string representation of an iri
+    * @param value
+    *   the string representation of an iri
     */
   final def apply(value: String): Either[FormatError, PrefixIri] =
     value.toIri.leftMap(_ => IllegalIRIFormatError(value)).flatMap(apply)
@@ -35,7 +37,8 @@ object PrefixIri {
   /**
     * Construct [[PrefixIri]] without performing any checks.
     *
-    * @param value the iri
+    * @param value
+    *   the iri
     */
   final def unsafe(value: Iri): PrefixIri =
     new PrefixIri(value)

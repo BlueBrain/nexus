@@ -9,9 +9,12 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * Configuration for the ACLs module
   *
-  * @param aggregate      configuration of the underlying aggregate
-  * @param keyValueStore  configuration of the underlying key/value store
-  * @param cacheIndexing  configuration of the cache indexing process
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
   */
 final case class AclsConfig(
     aggregate: AggregateConfig,

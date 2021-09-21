@@ -9,8 +9,10 @@ import io.circe.syntax._
 /**
   * The configuration used in order to build derivation for [[JsonLdDecoder]] using magnolia.
   *
-  * @param context   the context used to compact keys
-  * @param idPredicateName the key name for the @id
+  * @param context
+  *   the context used to compact keys
+  * @param idPredicateName
+  *   the key name for the @id
   */
 final case class Configuration(context: JsonLdContext, idPredicateName: String)
 

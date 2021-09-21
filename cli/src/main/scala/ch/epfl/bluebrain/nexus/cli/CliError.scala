@@ -39,7 +39,8 @@ object CliError {
     /**
       * Attempt to construct a [[ClientError]] from the passed HTTP status code and message
       *
-      * @return Some(clientError) if the code is not Successful, false otherwise
+      * @return
+      *   Some(clientError) if the code is not Successful, false otherwise
       */
     def apply(code: Status, message: String): Option[ClientError] =
       Try(unsafe(code, message)).toOption
@@ -47,7 +48,8 @@ object CliError {
     /**
       * Construct a [[ClientError]] from the passed HTTP status code and message
       *
-      * @throws IllegalArgumentException if the code is a Successful HTTP Status code is 2xx
+      * @throws IllegalArgumentException
+      *   if the code is a Successful HTTP Status code is 2xx
       */
     def unsafe(code: Status, message: String): ClientError =
       code.responseClass match {
@@ -63,9 +65,12 @@ object CliError {
     /**
       * A serialization error when attempting to cast response.
       *
-      * @param message  the error message
-      * @param tpe      the type into which the serialization was attempted
-      * @param original the optionally available original payload
+      * @param message
+      *   the error message
+      * @param tpe
+      *   the type into which the serialization was attempted
+      * @param original
+      *   the optionally available original payload
       */
     final case class SerializationError(message: String, tpe: String, original: Option[String] = None)
         extends ClientError {
@@ -77,8 +82,10 @@ object CliError {
     /**
       * A Client status error (HTTP status codes 4xx).
       *
-      * @param code    the HTTP status code
-      * @param message the error message
+      * @param code
+      *   the HTTP status code
+      * @param message
+      *   the error message
       */
     final case class ClientStatusError(code: Status, message: String) extends ClientError {
       val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
@@ -88,8 +95,10 @@ object CliError {
     /**
       * A server status error (HTTP status codes 5xx).
       *
-      * @param code    the HTTP status code
-      * @param message the error message
+      * @param code
+      *   the HTTP status code
+      * @param message
+      *   the error message
       */
     final case class ServerStatusError(code: Status, message: String) extends ClientError {
       val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
@@ -99,8 +108,10 @@ object CliError {
     /**
       * Some other response error which is not 4xx nor 5xx
       *
-      * @param code    the HTTP status code
-      * @param message the error message
+      * @param code
+      *   the HTTP status code
+      * @param message
+      *   the error message
       */
     final case class UnexpectedStatusError(code: Status, message: String) extends ClientError {
       val reason: String      = s"an HTTP response that should have been successful, returned the HTTP status code '$code'"
@@ -110,7 +121,8 @@ object CliError {
     /**
       * An unexpected error thrown by the client
       *
-      * @param message the error message
+      * @param message
+      *   the error message
       */
     final case class Unexpected(message: String) extends ClientError {
       val reason: String      = s"an HTTP response that should have been successful, failed unexpectedly"

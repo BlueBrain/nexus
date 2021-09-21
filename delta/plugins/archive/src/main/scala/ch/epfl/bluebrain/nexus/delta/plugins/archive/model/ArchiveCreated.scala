@@ -10,11 +10,16 @@ import java.time.Instant
 /**
   * The event that asserts the creation of an archive.
   *
-  * @param id      the identifier of the archive
-  * @param project the parent project
-  * @param value   the archive value
-  * @param instant the instant when this event was emitted
-  * @param subject the subject that performed the action that resulted in emitting this event
+  * @param id
+  *   the identifier of the archive
+  * @param project
+  *   the parent project
+  * @param value
+  *   the archive value
+  * @param instant
+  *   the instant when this event was emitted
+  * @param subject
+  *   the subject that performed the action that resulted in emitting this event
   */
 final case class ArchiveCreated(
     id: Iri,

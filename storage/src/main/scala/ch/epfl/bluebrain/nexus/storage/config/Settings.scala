@@ -14,10 +14,11 @@ import pureconfig.ConvertHelpers._
 import pureconfig._
 
 /**
-  * Akka settings extension to expose application configuration.  It typically uses the configuration instance of the
+  * Akka settings extension to expose application configuration. It typically uses the configuration instance of the
   * actor system as the configuration root.
   *
-  * @param config the configuration instance to read
+  * @param config
+  *   the configuration instance to read
   */
 @SuppressWarnings(Array("LooksLikeInterpolatedString", "OptionGet"))
 class Settings(config: Config) extends Extension {

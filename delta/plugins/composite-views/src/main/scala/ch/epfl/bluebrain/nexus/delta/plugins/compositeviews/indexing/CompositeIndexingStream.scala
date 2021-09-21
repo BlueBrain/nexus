@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -32,7 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.views.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
@@ -68,17 +68,36 @@ final class CompositeIndexingStream(
   /**
     * Builds a stream from a composite view and a strategy. There are several stages involved:
     *
-    * 1) The necessary indices are created, cleanup is performed (from previous indices, when necessary) and the progress for each projection is computed (the computed progress depends on the passed ''strategy.progress'').
-    * 2) A stream is built for every source from the ''indexingSource'' from the progress taken in step 1).
-    * For each of those sources, the resources are converted to a Graph and indexed into the common Blazegraph namespace, unless ''strategy.progress'' is PartialRestart. In that case, the indexing to Blazegraph will be skipped for already indexed resources.
-    * 3) Each of the source streams is broadcast to as many projections as the composite view has using ''broadcastThrough''
-    * 4) For each projection pipe, the common Blazegraph namespace is queried, the results are adapted and then indexed into the appropiate projection.
-    * 5) All the source streams are merged.
-    * 6) If the composite view has a rebuild strategy, a new stream is. For every interval duration fetches the projects counts and compares them to the previous projects counts. When counts are different, it restarts the stream
-    * 7) The stream on 6) is merged with the stream on 5)
+    * <ol>
     *
-    * @param view     the [[ViewIndex]]
-    * @param strategy the strategy to build a stream
+    * <li>The necessary indices are created, cleanup is performed (from previous indices, when necessary) and the
+    * progress for each projection is computed (the computed progress depends on the passed ''strategy.progress'').</li>
+    *
+    * <li>A stream is built for every source from the ''indexingSource'' from the progress taken in step 1). For each of
+    * those sources, the resources are converted to a Graph and indexed into the common Blazegraph namespace, unless
+    * ''strategy.progress'' is PartialRestart. In that case, the indexing to Blazegraph will be skipped for already
+    * indexed resources.</li>
+    *
+    * <li>Each of the source streams is broadcast to as many projections as the composite view has using
+    * ''broadcastThrough''.</li>
+    *
+    * <li>For each projection pipe, the common Blazegraph namespace is queried, the results are adapted and then indexed
+    * into the appropriate projection.</li>
+    *
+    * <li>All the source streams are merged.</li>
+    *
+    * <li>If the composite view has a rebuild strategy, a new stream is created. For every interval duration fetches the
+    * projects counts and compares them to the previous projects counts. When counts are different, it restarts the
+    * stream.</li>
+    *
+    * <li>The stream on 6) is merged with the stream on 5).</li>
+    *
+    * </ol>
+    *
+    * @param view
+    *   the [[ViewIndex]]
+    * @param strategy
+    *   the strategy to build a stream
     */
   override def apply(
       view: ViewIndex[CompositeView],
@@ -142,7 +161,7 @@ final class CompositeIndexingStream(
             .evalScan((Map.empty[CompositeViewSource, ProjectCount], Set.empty[CompositeViewSource])) {
               case ((prev, _), cur) if prev.isEmpty =>
                 UIO.pure((cur, Set.empty)) // Skip first
-              case ((prev, _), cur)                 =>
+              case ((prev, _), cur) =>
                 clock
                   .realTime(MILLISECONDS)
                   .map {
@@ -170,7 +189,16 @@ final class CompositeIndexingStream(
       projection: CompositeViewProjection,
       progress: ProjectionProgress[Unit]
   ): Pipe[Task, Chunk[Message[BlazegraphIndexingStreamEntry]], Unit] = {
-    val cfg = indexingConfig(projection)
+    implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(
+      view,
+      compositeViewType,
+      Map(
+        "projectionId"   -> pId.projectionId.value,
+        "sourceId"       -> pId.sourceId,
+        "projectionType" -> projection.tpe.tpe.toString
+      )
+    )
+    val cfg                                        = indexingConfig(projection)
     _.evalMapFilterValue {
       // Filters out the resources that are not to be indexed by the projections and the ones that are to be deleted
       case res if res.containsSchema(projection.resourceSchemas) && res.containsTypes(projection.resourceTypes) =>
@@ -203,15 +231,7 @@ final class CompositeIndexingStream(
         cfg.projection,
         cfg.cache
       )
-      .viewMetrics(
-        view,
-        compositeViewType,
-        Map(
-          "projectionId"   -> pId.projectionId.value,
-          "sourceId"       -> pId.sourceId,
-          "projectionType" -> projection.tpe.tpe.toString
-        )
-      )
+      .enableMetrics
       .map(_.value)
   }
 
@@ -406,16 +426,17 @@ object CompositeIndexingStream {
   }
 
   /**
-    * Restarts from the offset [[akka.persistence.query.NoOffset]] for the passed ''projectionIds''.
-    * This restarts the sources involved into those projections from [[akka.persistence.query.NoOffset]] as well,
-    * while avoiding re-indexing triples into the common Blazegraph namespaces until the current source offset is reached
+    * Restarts from the offset [[akka.persistence.query.NoOffset]] for the passed ''projectionIds''. This restarts the
+    * sources involved into those projections from [[akka.persistence.query.NoOffset]] as well, while avoiding
+    * re-indexing triples into the common Blazegraph namespaces until the current source offset is reached
     */
   final case class PartialRestart(projectionIds: Set[CompositeViewProjectionId]) extends ProgressStrategy
 
   /**
     * Skips from indexing into the common Blazegraph namespace until the passed ''offset'' is reached
     *
-    * @see [[PartialRestart(projectionIds)]]
+    * @see
+    *   [[PartialRestart(projectionIds)]]
     */
   final case class SkipIndexingUntil(offset: Offset)
   val noSkipIndexing: SkipIndexingUntil = SkipIndexingUntil(NoOffset)

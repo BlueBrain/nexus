@@ -11,9 +11,12 @@ import scala.jdk.CollectionConverters._
 
 /**
   * Cache based on composite keys which distributes the entries on the two levels
-  * @param baseName the unique base name for the cache
-  * @param clock    a clock function that determines the next timestamp for a provided value
-  * @param firstLevelCache the first level cache which distributes the first level of keys
+  * @param baseName
+  *   the unique base name for the cache
+  * @param clock
+  *   a clock function that determines the next timestamp for a provided value
+  * @param firstLevelCache
+  *   the first level cache which distributes the first level of keys
   */
 final class CompositeKeyValueStore[K1, K2, V] private (
     baseName: String,
@@ -25,6 +28,15 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     * Fetches values for the provided first-level key.
     */
   def get(key1: K1): UIO[Map[K2, V]] = getOrCreate(key1).entries
+
+  /**
+    * Removes the ''key1'' from the cache
+    */
+  def remove(key1: K1): UIO[Unit] = {
+    val inner = getOrCreate(key1)
+    inner.entries.flatMap(entries => UIO.traverse(entries.keys)(inner.remove)) >>
+      UIO.delay(firstLevelCache.remove(key1)).void
+  }
 
   /**
     * Fetches values for the composite key
@@ -40,14 +52,14 @@ final class CompositeKeyValueStore[K1, K2, V] private (
   /**
     * Adds the passed map to the store, replacing the current key and values values if they already exists.
     */
-  def putAll(values: Map[K1, Map[K2, V]]): UIO[Unit] = IO
-    .traverse(values) { case (key1, kv) =>
+  def putAll(values: Map[K1, Map[K2, V]]): UIO[Unit] =
+    IO.traverse(values) { case (key1, kv) =>
       getOrCreate(key1).putAll(kv)
-    }
-    .void
+    }.void
 
   /**
-    * @return all the entries in the store
+    * @return
+    *   all the entries in the store
     */
   def entries: UIO[Map[K1, Map[K2, V]]] = firstLevelCache.foldLeft(IO.pure(Map.empty[K1, Map[K2, V]])) {
     case (acc, (key1, kv)) =>
@@ -71,8 +83,10 @@ final class CompositeKeyValueStore[K1, K2, V] private (
   /**
     * Find a value on the second level entry
     *
-    * @param key1 select a specific entry on the first level cache
-    * @param f    function to filter the element on the second level cache to be selected
+    * @param key1
+    *   select a specific entry on the first level cache
+    * @param f
+    *   function to filter the element on the second level cache to be selected
     */
   def find(key1: K1, f: V => Boolean): UIO[Option[V]] =
     values(key1).flatMap {

@@ -20,7 +20,8 @@ trait JsonLdDecoder[A] { self =>
   /**
     * Converts a [[ExpandedJsonLdCursor]] to ''A''.
     *
-    * @param cursor the cursor from the [[ExpandedJsonLd]] document
+    * @param cursor
+    *   the cursor from the [[ExpandedJsonLd]] document
     */
   def apply(cursor: ExpandedJsonLdCursor): Either[JsonLdDecoderError, A]
 
@@ -56,7 +57,8 @@ trait JsonLdDecoder[A] { self =>
     * Chains a new decoder that uses this cursor and the decoded value to attempt to produce a new value. The cursor
     * retains its history for providing better error messages.
     *
-    * @param f the function that continues the decoding
+    * @param f
+    *   the function that continues the decoding
     */
   final def andThen[B](f: (ExpandedJsonLdCursor, A) => Either[JsonLdDecoderError, B]): JsonLdDecoder[B] =
     new JsonLdDecoder[B] {

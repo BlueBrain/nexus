@@ -18,11 +18,14 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
   /**
     * Loads the class with the specified class name.
     *
-    * It first tries to find the class in the Jar specified as `url` and if it cannot be found, uses parent class loader.
-    * It loads Java classes using the system classloader and delegates loading of all `scala.` classes to the parent classloader.
+    * It first tries to find the class in the Jar specified as `url` and if it cannot be found, uses parent class
+    * loader. It loads Java classes using the system classloader and delegates loading of all `scala.` classes to the
+    * parent classloader.
     *
-    * @param className The binary name of the class
-    * @return The resulting [[Class]] object
+    * @param className
+    *   The binary name of the class
+    * @return
+    *   The resulting [[Class]] object
     */
   override def loadClass(className: String): Class[_] =
     loadClassFromPlugin(className).getOrElse(parent.loadClass(className))
@@ -30,8 +33,10 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
   /**
     * Loads the class with the specified class name from the Jar file.
     *
-    * @param className The binary name of the class
-    * @return Some(class) when the class is found on the Jar file, None otherwise
+    * @param className
+    *   The binary name of the class
+    * @return
+    *   Some(class) when the class is found on the Jar file, None otherwise
     */
   def loadClassFromPlugin(className: String): Option[Class[_]] =
     getClassLoadingLock(className).synchronized {
@@ -52,19 +57,23 @@ class PluginClassLoader(url: URL, parent: ClassLoader) extends URLClassLoader(Se
     }
 
   /**
-    * Finds the resource with the given name. Returns the resource from the plugin's classpath, if exists
-    * Otherwise, uses parent classloader to load the resource
+    * Finds the resource with the given name. Returns the resource from the plugin's classpath, if exists Otherwise,
+    * uses parent classloader to load the resource
     *
-    * @param name the name of the resource.
-    * @return the URL to the resource, null if the resource was not found.
+    * @param name
+    *   the name of the resource.
+    * @return
+    *   the URL to the resource, null if the resource was not found.
     */
   override def getResource(name: String): URL =
     getResourceFromPlugin(name).getOrElse(parent.getResource(name))
 
   /**
     * Finds the resource with the given name in the Jar file
-    * @param name the name of the resource.
-    * @return the URL to the resource wrapped in a Some if found, None otherwise.
+    * @param name
+    *   the name of the resource.
+    * @return
+    *   the URL to the resource wrapped in a Some if found, None otherwise.
     */
   def getResourceFromPlugin(name: String): Option[URL] =
     Option(findResource(name))

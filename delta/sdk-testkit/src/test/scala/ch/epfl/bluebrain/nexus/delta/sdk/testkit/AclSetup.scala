@@ -30,7 +30,8 @@ object AclSetup extends IOFixedClock {
 
   /**
     * Set up Acls and PermissionsDummy and init some acls for the given users
-    * @param input the acls to create
+    * @param input
+    *   the acls to create
     */
   def initValuesWithPerms(input: (Subject, AclAddress, Set[Permission])*): UIO[(Acls, Permissions)] = {
     val allPermissions = input.foldLeft(Set.empty[Permission])(_ ++ _._3)
@@ -50,7 +51,8 @@ object AclSetup extends IOFixedClock {
 
   /**
     * Set up Acls and PermissionsDummy and init some acls for the given users
-    * @param input the acls to create
+    * @param input
+    *   the acls to create
     */
   def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] =
     initValuesWithPerms(input: _*).map(_._1)

@@ -19,22 +19,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 sealed trait OrganizationState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status of the organization
+    * @return
+    *   the current deprecation status of the organization
     */
   def deprecated: Boolean
 
   /**
-    * @return the schema reference that organizations conforms to
+    * @return
+    *   the schema reference that organizations conforms to
     */
   final def schema: ResourceRef = Latest(schemas.organizations)
 
   /**
-    * @return the collection of known types of organizations resources
+    * @return
+    *   the collection of known types of organizations resources
     */
   final def types: Set[Iri] = Set(nxv.Organization)
 
@@ -65,15 +69,24 @@ object OrganizationState {
   /**
     * Initial organization state.
     *
-    * @param label        the organization label
-    * @param uuid         the organization UUID
-    * @param rev          the organization revision
-    * @param deprecated   the deprecation status of the organization
-    * @param description  an optional description of the organization
-    * @param createdAt    the instant when the organization was created
-    * @param createdBy    the identity that created the organization
-    * @param updatedAt    the instant when the organization was last updated
-    * @param updatedBy    the identity that last updated the organization
+    * @param label
+    *   the organization label
+    * @param uuid
+    *   the organization UUID
+    * @param rev
+    *   the organization revision
+    * @param deprecated
+    *   the deprecation status of the organization
+    * @param description
+    *   an optional description of the organization
+    * @param createdAt
+    *   the instant when the organization was created
+    * @param createdBy
+    *   the identity that created the organization
+    * @param updatedAt
+    *   the instant when the organization was last updated
+    * @param updatedBy
+    *   the identity that last updated the organization
     */
   final case class Current(
       label: Label,

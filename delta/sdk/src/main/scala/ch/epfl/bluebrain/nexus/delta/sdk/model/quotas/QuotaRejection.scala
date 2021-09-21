@@ -13,7 +13,8 @@ import io.circe.{Encoder, JsonObject}
 /**
   * Enumeration of Quota rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class QuotaRejection(val reason: String) extends Product with Serializable
 

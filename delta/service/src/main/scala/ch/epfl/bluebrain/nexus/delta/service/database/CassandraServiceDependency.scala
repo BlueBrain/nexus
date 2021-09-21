@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import monix.bio.{Task, UIO}
 
 /**
-  * Describes the cassandra [[ServiceDependency]] providing a way to
-  * extract the [[ServiceDescription]] from a cassandra session
+  * Describes the cassandra [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a cassandra
+  * session
   */
 class CassandraServiceDependency(implicit as: ActorSystem[Nothing]) extends ServiceDependency {
 

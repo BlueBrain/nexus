@@ -16,8 +16,10 @@ trait ProjectClient[F[_]] {
   /**
     * Exchanges the provided organization and project uuids with their labels.
     *
-    * @param org  the organization UUID
-    * @param proj the project UUID
+    * @param org
+    *   the organization UUID
+    * @param proj
+    *   the project UUID
     */
   def labels(org: OrgUuid, proj: ProjectUuid): F[ClientErrOr[(OrgLabel, ProjectLabel)]]
 
@@ -29,10 +31,14 @@ object ProjectClient {
     * Construct a [[ProjectClient]] to read project information from the Nexus API. The information is cached to avoid
     * unnecessary subsequent requests.
     *
-    * @param client  the underlying HTTP client
-    * @param env     the CLI environment configuration
-    * @param cache   an initial cache
-    * @param console [[Console]] for logging.
+    * @param client
+    *   the underlying HTTP client
+    * @param env
+    *   the CLI environment configuration
+    * @param cache
+    *   an initial cache
+    * @param console
+    *   [[Console]] for logging.
     */
   final def apply[F[_]: Sync: Timer](
       client: Client[F],

@@ -4,6 +4,7 @@ import akka.persistence.query.{NoOffset, Sequence}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -52,6 +53,8 @@ trait ResolversBehaviors {
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
+
   def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.resolvers         -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty,
@@ -91,6 +94,10 @@ trait ResolversBehaviors {
 
   lazy val resolvers: Resolvers = create.accepted
 
+  lazy val finder = Resolvers.projectReferenceFinder(resolvers)
+
+  val referencedProject = ProjectRef.unsafe("org", "proj2")
+
   "The Resolvers module" when {
 
     val inProjectValue = InProjectValue(inProjectPrio)
@@ -100,9 +107,7 @@ trait ResolversBehaviors {
     val crossProjectValue = CrossProjectValue(
       crossProjectPrio,
       Set.empty,
-      NonEmptyList.of(
-        ProjectRef.unsafe("org", "proj")
-      ),
+      NonEmptyList.of(referencedProject),
       ProvidedIdentities(bob.identities)
     )
 
@@ -865,6 +870,20 @@ trait ResolversBehaviors {
       "reject if organization does not exist" in {
         val org = Label.unsafe("other")
         resolvers.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
+      }
+    }
+
+    "finding references" should {
+      "get all non-deprecated results for the given project" in {
+        val result = finder(referencedProject).accepted.value
+
+        result.size shouldEqual 1
+        result(projectRef) should contain theSameElementsAs List(
+          nxv.base / uuid.toString,
+          nxv + "cross-project-both",
+          nxv + "cross-project-payload",
+          nxv + "cross-project-from-value"
+        )
       }
     }
 

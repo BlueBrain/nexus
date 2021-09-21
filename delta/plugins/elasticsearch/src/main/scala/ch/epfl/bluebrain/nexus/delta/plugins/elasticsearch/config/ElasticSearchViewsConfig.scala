@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
@@ -20,20 +22,34 @@ import scala.util.Try
 /**
   * Configuration for the ElasticSearchView plugin.
   *
-  * @param base                 the base uri to the Elasticsearch HTTP endpoint
-  * @param client               configuration of the Elasticsearch client
-  * @param aggregate            configuration of the underlying aggregate
-  * @param keyValueStore        configuration of the underlying key/value store
-  * @param pagination           configuration for how pagination should behave in listing operations
-  * @param cacheIndexing        configuration of the cache indexing process
-  * @param indexing             configuration of the external indexing process
-  * @param maxViewRefs          configuration of the maximum number of view references allowed on an aggregated view
-  * @param idleTimeout          the maximum idle duration in between events on the indexing stream after which the stream will be stopped
-  * @param syncIndexingRefresh  the value for `refresh` Elasticsearch parameter for synchronous indexing
-  * @param maxIndexPathLength   the maximum length of the URL path for elasticsearch queries
+  * @param base
+  *   the base uri to the Elasticsearch HTTP endpoint
+  * @param credentials
+  *   the credentials to authenticate to the Elasticsearch endpoint
+  * @param client
+  *   configuration of the Elasticsearch client
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param keyValueStore
+  *   configuration of the underlying key/value store
+  * @param pagination
+  *   configuration for how pagination should behave in listing operations
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
+  * @param indexing
+  *   configuration of the external indexing process
+  * @param maxViewRefs
+  *   configuration of the maximum number of view references allowed on an aggregated view
+  * @param idleTimeout
+  *   the maximum idle duration in between events on the indexing stream after which the stream will be stopped
+  * @param syncIndexingRefresh
+  *   the value for `refresh` Elasticsearch parameter for synchronous indexing
+  * @param maxIndexPathLength
+  *   the maximum length of the URL path for elasticsearch queries
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
+    credentials: Option[BasicHttpCredentials],
     client: HttpClientConfig,
     aggregate: AggregateConfig,
     keyValueStore: KeyValueStoreConfig,

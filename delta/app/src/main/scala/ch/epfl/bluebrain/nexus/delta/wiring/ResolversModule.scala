@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
@@ -14,9 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversDeletion, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -29,16 +31,32 @@ object ResolversModule extends ModuleDef {
 
   make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
 
+  make[ResolversCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
+    ResolversImpl.cache(config.resolvers)(as)
+  }
+
+  make[ResolversAggregate].fromEffect {
+    (
+        config: AppConfig,
+        cache: ResolversCache,
+        resourceIdCheck: ResourceIdCheck,
+        as: ActorSystem[Nothing],
+        clock: Clock[UIO]
+    ) =>
+      ResolversImpl.aggregate(config.resources.aggregate, cache, resourceIdCheck)(as, clock)
+  }
+
   make[Resolvers].fromEffect {
     (
         config: AppConfig,
         eventLog: EventLog[Envelope[ResolverEvent]],
         orgs: Organizations,
         projects: Projects,
+        cache: ResolversCache,
+        agg: ResolversAggregate,
+        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
-        resourceIdCheck: ResourceIdCheck,
         as: ActorSystem[Nothing],
-        clock: Clock[UIO],
         uuidF: UUIDF,
         scheduler: Scheduler
     ) =>
@@ -48,8 +66,18 @@ object ResolversModule extends ModuleDef {
         orgs,
         projects,
         resolverContextResolution,
-        resourceIdCheck
-      )(uuidF, clock, scheduler, as)
+        cache,
+        agg
+      )(api, uuidF, scheduler, as)
+  }
+
+  many[ResourcesDeletion].add {
+    (cache: ResolversCache, agg: ResolversAggregate, resolvers: Resolvers, dbCleanup: DatabaseCleanup) =>
+      ResolversDeletion(cache, agg, resolvers, dbCleanup)
+  }
+
+  many[ProjectReferenceFinder].add { (resolvers: Resolvers) =>
+    Resolvers.projectReferenceFinder(resolvers)
   }
 
   make[MultiResolution].from {
@@ -110,6 +138,7 @@ object ResolversModule extends ModuleDef {
 
   make[ResolverEventExchange]
   many[EventExchange].ref[ResolverEventExchange]
+  many[EventExchange].named("resources").ref[ResolverEventExchange]
   many[EntityType].add(EntityType(Resolvers.moduleType))
 
 }

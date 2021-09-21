@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
@@ -15,8 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
+import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasDeletion, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -29,28 +31,37 @@ object SchemasModule extends ModuleDef {
 
   make[EventLog[Envelope[SchemaEvent]]].fromEffect { databaseEventLog[SchemaEvent](_, _) }
 
-  make[Schemas].fromEffect {
+  make[SchemasCache].fromEffect { (config: AppConfig) => SchemasImpl.cache(config.schemas) }
+
+  make[SchemasAggregate].fromEffect {
     (
         config: AppConfig,
+        resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
+        as: ActorSystem[Nothing],
+        clock: Clock[UIO]
+    ) =>
+      SchemasImpl.aggregate(config.schemas.aggregate, resourceIdCheck)(api, as, clock)
+  }
+
+  make[Schemas].from {
+    (
         eventLog: EventLog[Envelope[SchemaEvent]],
         organizations: Organizations,
         projects: Projects,
         schemaImports: SchemaImports,
+        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
-        resourceIdCheck: ResourceIdCheck,
-        clock: Clock[UIO],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing]
+        agg: SchemasAggregate,
+        cache: SchemasCache,
+        uuidF: UUIDF
     ) =>
-      SchemasImpl(
-        organizations,
-        projects,
-        schemaImports,
-        resolverContextResolution,
-        config.schemas,
-        eventLog,
-        resourceIdCheck
-      )(uuidF, as, clock)
+      SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(api, uuidF)
+  }
+
+  many[ResourcesDeletion].add {
+    (cache: SchemasCache, agg: SchemasAggregate, schemas: Schemas, dbCleanup: DatabaseCleanup) =>
+      SchemasDeletion(cache, agg, schemas, dbCleanup)
   }
 
   make[SchemaImports].from {
@@ -103,6 +114,7 @@ object SchemasModule extends ModuleDef {
 
   make[SchemaEventExchange]
   many[EventExchange].ref[SchemaEventExchange]
+  many[EventExchange].named("resources").ref[SchemaEventExchange]
 
   many[EntityType].add(EntityType(Schemas.moduleType))
 }

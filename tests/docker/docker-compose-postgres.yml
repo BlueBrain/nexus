@@ -21,6 +21,8 @@ services:
                   "-Dapp.database.postgres.host=postgres",
                   "-Dapp.database.postgres.tables-autocreate=true",
                   "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+                  "-Dplugins.elasticsearch.credentials.username=elastic",
+                  "-Dplugins.elasticsearch.credentials.password=password",
                   "-Dplugins.elasticsearch.indexing.max-batch-size=50",
                   "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
                   "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
@@ -69,6 +71,8 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.credentials.username=elastic",
+  #                  "-Dplugins.elasticsearch.credentials.password=password",
   #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
   #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
@@ -113,6 +117,8 @@ services:
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
+  #                  "-Dplugins.elasticsearch.credentials.username=elastic",
+  #                  "-Dplugins.elasticsearch.credentials.password=password",
   #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
   #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
   #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
@@ -162,6 +168,7 @@ services:
       ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
+      ELASTIC_PASSWORD: "password"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
       interval: 30s

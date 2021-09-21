@@ -17,7 +17,8 @@ sealed trait AclAddress extends Product with Serializable {
   def string: String
 
   /**
-    * @return the parent [[AclAddress]] for the current address, or None when there is no parent
+    * @return
+    *   the parent [[AclAddress]] for the current address, or None when there is no parent
     */
   def parent: Option[AclAddress]
 
@@ -33,11 +34,12 @@ object AclAddress {
   implicit final def fromOrg(label: Label): Organization       = Organization(label)
 
   /**
-    * Attempts to construct an AclAddress from the provided string. The accepted formats are the ones generated from
-    * the [[AclAddress.string]] functions. The validation make use of the [[Label.regex]] to ensure compatibility with
-    * a valid [[Label]].
+    * Attempts to construct an AclAddress from the provided string. The accepted formats are the ones generated from the
+    * [[AclAddress.string]] functions. The validation make use of the [[Label.regex]] to ensure compatibility with a
+    * valid [[Label]].
     *
-    * @param string the string representation of the AclAddress
+    * @param string
+    *   the string representation of the AclAddress
     */
   final def fromString(string: String): Either[FormatError, AclAddress] = string match {
     case Root.string                 => Right(Root)

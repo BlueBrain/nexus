@@ -25,9 +25,12 @@ class CancelableStream[A, S](switch: StreamSwitch[S], value: Stream[Task, A]) { 
   /**
     * Run the current stream with the given retry strategy and making it stoppable with the returned switch
     *
-    * @param strategy   the retry strategy to apply
-    * @param onCancel   action to apply when the stream gets cancelled
-    * @param onFinalize action to apply when the stream completes successfully or with an error
+    * @param strategy
+    *   the retry strategy to apply
+    * @param onCancel
+    *   action to apply when the stream gets cancelled
+    * @param onFinalize
+    *   action to apply when the stream completes successfully or with an error
     */
   def run(
       strategy: RetryStrategy[Throwable],

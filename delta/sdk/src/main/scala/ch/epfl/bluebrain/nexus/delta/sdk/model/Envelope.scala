@@ -10,12 +10,18 @@ import java.time.Instant
 /**
   * A typed event envelope.
   *
-  * @param event         the event
-  * @param instant       the instant when the event was issued
-  * @param eventType     the event qualifier
-  * @param offset        the event offset
-  * @param persistenceId the event persistence id
-  * @param sequenceNr    the event sequence number
+  * @param event
+  *   the event
+  * @param instant
+  *   the instant when the event was issued
+  * @param eventType
+  *   the event qualifier
+  * @param offset
+  *   the event offset
+  * @param persistenceId
+  *   the event persistence id
+  * @param sequenceNr
+  *   the event sequence number
   */
 final case class Envelope[E](
     event: E,

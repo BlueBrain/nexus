@@ -13,11 +13,13 @@ import monix.execution.Scheduler
 import scala.collection.concurrent
 
 /**
-  * Relies on cluster sharding to distribute the stream-related work between nodes
-  * and relies on remember entities for restarts after a rebalance or a crash.
+  * Relies on cluster sharding to distribute the stream-related work between nodes and relies on remember entities for
+  * restarts after a rebalance or a crash.
   *
-  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
-  * @see https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
+  * @see
+  *   https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html
+  * @see
+  *   https://doc.akka.io/docs/akka/current/typed/cluster-sharding.html#remembering-entities
   */
 object DaemonStreamCoordinator {
 
@@ -26,9 +28,12 @@ object DaemonStreamCoordinator {
   /**
     * Run the provided stream under the given name
     *
-    * @param name          the name of the stream/entity
-    * @param stream        the stream to run
-    * @param retryStrategy the retry strategy to apply
+    * @param name
+    *   the name of the stream/entity
+    * @param stream
+    *   the stream to run
+    * @param retryStrategy
+    *   the retry strategy to apply
     */
   def run(name: String, stream: Stream[Task, Unit], retryStrategy: RetryStrategy[Throwable])(implicit
       uuidF: UUIDF,

@@ -9,7 +9,8 @@ import monix.bio.UIO
 trait ServiceDependency {
 
   /**
-    * @return the service description of the current dependency
+    * @return
+    *   the service description of the current dependency
     */
   def serviceDescription: UIO[ServiceDescription]
 }

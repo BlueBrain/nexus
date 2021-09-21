@@ -14,17 +14,20 @@ import io.circe.Json
 sealed trait ResourceCommand extends Product with Serializable {
 
   /**
-    * @return the project where the resource belongs to
+    * @return
+    *   the project where the resource belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the resource identifier
+    * @return
+    *   the resource identifier
     */
   def id: Iri
 
   /**
-    * @return the identity associated to this command
+    * @return
+    *   the identity associated to this command
     */
   def subject: Subject
 
@@ -35,13 +38,20 @@ object ResourceCommand {
   /**
     * Command that signals the intent to create a new resource.
     *
-    * @param id          the resource identifier
-    * @param project     the project where the resource belongs
-    * @param schema      the schema used to constrain the resource
-    * @param source      the representation of the resource as posted by the subject
-    * @param compacted   the compacted JSON-LD representation of the resource
-    * @param expanded    the expanded JSON-LD representation of the resource
-    * @param caller      the subject which created this event
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schema
+    *   the schema used to constrain the resource
+    * @param source
+    *   the representation of the resource as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the resource
+    * @param expanded
+    *   the expanded JSON-LD representation of the resource
+    * @param caller
+    *   the subject which created this event
     */
   final case class CreateResource(
       id: Iri,
@@ -59,14 +69,22 @@ object ResourceCommand {
   /**
     * Command that signals the intent to update an existing resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this command
-    * @param source    the representation of the resource as posted by the subject
-    * @param compacted the compacted JSON-LD representation of the resource
-    * @param expanded  the expanded JSON-LD representation of the resource
-    * @param rev       the last known revision of the resource
-    * @param caller    the subject which created this event
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this command
+    * @param source
+    *   the representation of the resource as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the resource
+    * @param expanded
+    *   the expanded JSON-LD representation of the resource
+    * @param rev
+    *   the last known revision of the resource
+    * @param caller
+    *   the subject which created this event
     */
   final case class UpdateResource(
       id: Iri,
@@ -84,13 +102,20 @@ object ResourceCommand {
   /**
     * Command that signals the intent to add a tag to an existing resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the resource
-    * @param subject   the subject which created this event
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this operation
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the resource
+    * @param subject
+    *   the subject which created this event
     */
   final case class TagResource(
       id: Iri,
@@ -105,11 +130,16 @@ object ResourceCommand {
   /**
     * Command that signals the intent to deprecate a resource.
     *
-    * @param id        the resource identifier
-    * @param project   the project where the resource belongs
-    * @param schemaOpt the optional schema of the resource. A None value ignores the schema from this operation
-    * @param rev       the last known revision of the resource
-    * @param subject   the subject which created this event
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this operation
+    * @param rev
+    *   the last known revision of the resource
+    * @param subject
+    *   the subject which created this event
     */
   final case class DeprecateResource(
       id: Iri,

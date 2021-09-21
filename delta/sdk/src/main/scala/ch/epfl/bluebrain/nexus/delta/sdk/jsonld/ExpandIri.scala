@@ -9,18 +9,22 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
 
   /**
     * Expand the given segment to an Iri using the provided project if necessary
-    * @param segment the to translate to an Iri
-    * @param project the project
+    * @param segment
+    *   the to translate to an Iri
+    * @param project
+    *   the project
     */
   def apply(segment: IdSegment, project: Project): IO[R, Iri] =
     apply(IdSegmentRef(segment), project).map(_.iri)
 
   /**
-    * Expand the given segment to a ResourceRef using the provided project if necessary and applying the revision
-    * to get a resource reference
+    * Expand the given segment to a ResourceRef using the provided project if necessary and applying the revision to get
+    * a resource reference
     *
-    * @param segment the segment to translate to an Iri with its optional rev/tag
-    * @param project the project
+    * @param segment
+    *   the segment to translate to an Iri with its optional rev/tag
+    * @param project
+    *   the project
     */
   def apply(segment: IdSegmentRef, project: Project): IO[R, ResourceRef] =
     IO.fromOption(

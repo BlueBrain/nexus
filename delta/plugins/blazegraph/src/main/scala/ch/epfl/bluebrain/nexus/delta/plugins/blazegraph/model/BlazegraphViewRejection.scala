@@ -37,8 +37,10 @@ object BlazegraphViewRejection {
     * Rejection returned when a subject intends to retrieve a view at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends BlazegraphViewRejection(
@@ -46,18 +48,21 @@ object BlazegraphViewRejection {
       )
 
   /**
-    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends BlazegraphViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a blazegraph view but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends BlazegraphViewRejection(s"Resource '$id' already exists in project '$project'.")
@@ -65,8 +70,10 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when attempting to update a view that doesn't exist.
     *
-    * @param id the view id
-    * @param project the project it belongs to
+    * @param id
+    *   the view id
+    * @param project
+    *   the project it belongs to
     */
   final case class ViewNotFound(id: Iri, project: ProjectRef)
       extends BlazegraphViewRejection(s"Blazegraph view '$id' not found in project '$project'.")
@@ -74,7 +81,8 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when attempting to update/deprecate a view that is already deprecated.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class ViewIsDeprecated(id: Iri) extends BlazegraphViewRejection(s"Blazegraph view '$id' is deprecated.")
 
@@ -82,8 +90,10 @@ object BlazegraphViewRejection {
     * Rejection returned when a subject intends to perform an operation on the current view, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends BlazegraphViewRejection(
@@ -99,7 +109,8 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends BlazegraphViewRejection(rejection.reason)
@@ -107,7 +118,8 @@ object BlazegraphViewRejection {
   /**
     * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
     *
-    * @param error the decoder error
+    * @param error
+    *   the decoder error
     */
   final case class DecodingFailed(error: JsonLdDecoderError) extends BlazegraphViewRejection(error.getMessage)
 
@@ -123,8 +135,10 @@ object BlazegraphViewRejection {
     * Rejection returned when attempting to create an BlazegraphView where the passed id does not match the id on the
     * source json document.
     *
-    * @param id       the view identifier
-    * @param sourceId the view identifier in the source json document
+    * @param id
+    *   the view identifier
+    * @param sourceId
+    *   the view identifier in the source json document
     */
   final case class UnexpectedBlazegraphViewId(id: Iri, sourceId: Iri)
       extends BlazegraphViewRejection(
@@ -135,7 +149,8 @@ object BlazegraphViewRejection {
     * Signals a rejection caused by an attempt to create or update a Blazegraph view with a permission that is not
     * defined in the permission set singleton.
     *
-    * @param permission the provided permission
+    * @param permission
+    *   the provided permission
     */
   final case class PermissionIsNotDefined(permission: Permission)
       extends BlazegraphViewRejection(
@@ -145,7 +160,8 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when attempting to update a Blazegraph view with a different value type.
     *
-    * @param id the view id
+    * @param id
+    *   the view id
     */
   final case class DifferentBlazegraphViewType(
       id: Iri,
@@ -156,10 +172,11 @@ object BlazegraphViewRejection {
       )
 
   /**
-    * Rejection returned when one of the provided view references for an AggregateBlazegraphView does not exist or
-    * is deprecated.
+    * Rejection returned when one of the provided view references for an AggregateBlazegraphView does not exist or is
+    * deprecated.
     *
-    * @param view the offending view reference
+    * @param view
+    *   the offending view reference
     */
   final case class InvalidViewReference(view: ViewRef)
       extends BlazegraphViewRejection(
@@ -167,16 +184,19 @@ object BlazegraphViewRejection {
       )
 
   /**
-    * Rejection returned when the returned state is the initial state after a BlazegraphViews.evaluation plus a BlazegraphViews.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Rejection returned when the returned state is the initial state after a BlazegraphViews.evaluation plus a
+    * BlazegraphViews.next Note: This should never happen since the evaluation method already guarantees that the next
+    * function returns a current
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends BlazegraphViewRejection(s"Unexpected initial state for Blazegraph view '$id' of project '$project'.")
 
   /**
-    * Rejection returned when attempting to interact with a blazegraph view providing an id that cannot be resolved to an Iri.
+    * Rejection returned when attempting to interact with a blazegraph view providing an id that cannot be resolved to
+    * an Iri.
     *
-    * @param id the view identifier
+    * @param id
+    *   the view identifier
     */
   final case class InvalidBlazegraphViewId(id: String)
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
@@ -184,14 +204,15 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when a resource [[IdSegment]] cannot be expanded to [[Iri]].
     *
-    * @param id the resource identifier
+    * @param id
+    *   the resource identifier
     */
   final case class InvalidResourceId(id: String)
       extends BlazegraphViewRejection(s"Resource identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when attempting to query a BlazegraphView
-    * and the caller does not have the right permissions defined in the view.
+    * Rejection returned when attempting to query a BlazegraphView and the caller does not have the right permissions
+    * defined in the view.
     */
   final case object AuthorizationFailed extends BlazegraphViewRejection(ServiceError.AuthorizationFailed.reason)
   type AuthorizationFailed = AuthorizationFailed.type
@@ -222,8 +243,10 @@ object BlazegraphViewRejection {
   /**
     * Rejection returned when too many view references are specified on an aggregated view.
     *
-    * @param provided the number of view references specified
-    * @param max      the maximum number of aggregated views allowed
+    * @param provided
+    *   the number of view references specified
+    * @param max
+    *   the maximum number of aggregated views allowed
     */
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")

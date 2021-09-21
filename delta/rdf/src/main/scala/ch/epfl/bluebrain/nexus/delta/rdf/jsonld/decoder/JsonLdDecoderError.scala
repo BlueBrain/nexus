@@ -17,7 +17,8 @@ object JsonLdDecoderError {
   /**
     * A failure decoding a field
     *
-    * @param message the error message
+    * @param message
+    *   the error message
     */
   final case class ParsingFailure(message: String) extends DecodingFailure(message)
 
@@ -42,7 +43,8 @@ object JsonLdDecoderError {
       }
 
     /**
-      * Construct a [[DecodingFailure]] when the passed ''value'' could not be converted to ''tpe'' on the ''path'' due to ''reason''
+      * Construct a [[DecodingFailure]] when the passed ''value'' could not be converted to ''tpe'' on the ''path'' due
+      * to ''reason''
       */
     final def apply(tpe: String, value: String, path: List[CursorOp], reason: String): DecodingFailure =
       toString(path) match {
@@ -64,7 +66,8 @@ object JsonLdDecoderError {
 
   /**
     * A failure decoding a field when using derivation
-    * @param message the error message
+    * @param message
+    *   the error message
     */
   final case class DecodingDerivationFailure(message: String) extends JsonLdDecoderError(message, None)
 }

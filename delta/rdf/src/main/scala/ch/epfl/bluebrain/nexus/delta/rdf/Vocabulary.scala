@@ -145,6 +145,7 @@ object Vocabulary {
     val issuer                = Metadata("issuer")
     val label                 = Metadata("label")
     val maxScore              = Metadata("maxScore")
+    val markedForDeletion     = Metadata("markedForDeletion")
     val next                  = Metadata("next")
     val organizationLabel     = Metadata("organizationLabel")
     val organizationUuid      = Metadata("organizationUuid")
@@ -214,6 +215,7 @@ object Vocabulary {
 
     val acls                  = contexts + "acls.json"
     val aclsMetadata          = contexts + "acls-metadata.json"
+    val deletionStatus        = contexts + "deletion-status.json"
     val error                 = contexts + "error.json"
     val identities            = contexts + "identities.json"
     val metadata              = contexts + "metadata.json"
@@ -241,9 +243,12 @@ object Vocabulary {
   /**
     * Metadata vocabulary.
     *
-    * @param prefix the prefix associated to this term, used in the Json-LD context
-    * @param iri    the fully expanded [[Iri]] to what the ''prefix'' resolves
-    * @param name   the name of the metadata
+    * @param prefix
+    *   the prefix associated to this term, used in the Json-LD context
+    * @param iri
+    *   the fully expanded [[Iri]] to what the ''prefix'' resolves
+    * @param name
+    *   the name of the metadata
     */
   final case class Metadata(prefix: String, iri: Iri, name: String)
 
@@ -252,8 +257,8 @@ object Vocabulary {
     /**
       * Constructs a [[Metadata]] vocabulary term from the given ''base'' and the provided ''lastSegment''.
       *
-      * @param lastSegment the last segment to append to the ''base'' to build the metadata
-      *                    vocabulary term
+      * @param lastSegment
+      *   the last segment to append to the ''base'' to build the metadata vocabulary term
       */
     def apply(lastSegment: String)(implicit base: Iri): Metadata =
       Metadata("_" + lastSegment, iri"$base$lastSegment", lastSegment)

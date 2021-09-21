@@ -11,17 +11,20 @@ import scala.annotation.nowarn
 /**
   * The service description.
   *
-  * @param name the name of the service
+  * @param name
+  *   the name of the service
   */
 final case class DescriptionConfig(name: Name) {
 
   /**
-    * @return the version of the service
+    * @return
+    *   the version of the service
     */
   val version: String = BuildInfo.version
 
   /**
-    * @return the full name of the service (name + version)
+    * @return
+    *   the full name of the service (name + version)
     */
   val fullName: String = s"$name-${version.replaceAll("\\W", "-")}"
 }

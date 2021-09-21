@@ -75,11 +75,14 @@ final class Files(
   // format: on
 
   /**
-    * Create a new file where the id is  self generated
+    * Create a new file where the id is self generated
     *
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param entity     the http FormData entity
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param entity
+    *   the http FormData entity
     */
   def create(
       storageId: Option[IdSegment],
@@ -87,7 +90,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- generateId(project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -99,10 +102,14 @@ final class Files(
   /**
     * Create a new file with the provided id
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param entity     the http FormData entity
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param entity
+    *   the http FormData entity
     */
   def create(
       id: IdSegment,
@@ -111,7 +118,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -123,11 +130,16 @@ final class Files(
   /**
     * Create a new file linking where the id is self generated
     *
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def createLink(
       storageId: Option[IdSegment],
@@ -137,7 +149,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri     <- generateId(project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -146,12 +158,18 @@ final class Files(
   /**
     * Create a new file linking it from an existing file in a storage
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def createLink(
       id: IdSegment,
@@ -162,7 +180,7 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri     <- expandIri(id, project)
       res     <- createLink(iri, project, storageId, filename, mediaType, path)
     } yield res
@@ -171,11 +189,16 @@ final class Files(
   /**
     * Update an existing file
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param rev        the current revision of the file
-    * @param entity     the http FormData entity
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param rev
+    *   the current revision of the file
+    * @param entity
+    *   the http FormData entity
     */
   def update(
       id: IdSegment,
@@ -185,7 +208,7 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -197,13 +220,20 @@ final class Files(
   /**
     * Update a new file linking it from an existing file in a storage
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param storageId  the optional storage identifier to expand as the id of the storage. When None, the default storage is used
-    * @param projectRef the project where the file will belong
-    * @param rev        the current revision of the file
-    * @param filename   the optional filename to use
-    * @param mediaType  the optional media type to use
-    * @param path       the path where the file is located inside the storage
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param storageId
+    *   the optional storage identifier to expand as the id of the storage. When None, the default storage is used
+    * @param projectRef
+    *   the project where the file will belong
+    * @param rev
+    *   the current revision of the file
+    * @param filename
+    *   the optional filename to use
+    * @param mediaType
+    *   the optional media type to use
+    * @param path
+    *   the path where the file is located inside the storage
     */
   def updateLink(
       id: IdSegment,
@@ -215,7 +245,7 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
       (storageRef, storage) <- fetchActiveStorage(storageId, project)
@@ -229,12 +259,18 @@ final class Files(
   /**
     * Update an existing file attributes
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param projectRef the project where the file will belong
-    * @param mediaType  the optional media type of the file
-    * @param bytes      the size of the file file in bytes
-    * @param digest     the digest information of the file
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file will belong
+    * @param mediaType
+    *   the optional media type of the file
+    * @param bytes
+    *   the size of the file file in bytes
+    * @param digest
+    *   the digest information of the file
+    * @param rev
+    *   the current revision of the file
     */
   def updateAttributes(
       id: IdSegment,
@@ -245,7 +281,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
     } yield res
@@ -254,8 +290,10 @@ final class Files(
   /**
     * Update an existing file attributes
     *
-    * @param iri         the file iri identifier
-    * @param projectRef the project where the file will belong
+    * @param iri
+    *   the file iri identifier
+    * @param projectRef
+    *   the project where the file will belong
     */
   private[files] def updateAttributes(
       iri: Iri,
@@ -275,11 +313,16 @@ final class Files(
   /**
     * Add a tag to an existing file
     *
-    * @param id         the file identifier to expand as the iri of the storage
-    * @param projectRef the project where the file belongs
-    * @param tag        the tag name
-    * @param tagRev     the tag revision
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the storage
+    * @param projectRef
+    *   the project where the file belongs
+    * @param tag
+    *   the tag name
+    * @param tagRev
+    *   the tag revision
+    * @param rev
+    *   the current revision of the file
     */
   def tag(
       id: IdSegment,
@@ -289,7 +332,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
     } yield res
@@ -298,9 +341,12 @@ final class Files(
   /**
     * Deprecate an existing file
     *
-    * @param id         the file identifier to expand as the iri of the file
-    * @param projectRef the project where the file belongs
-    * @param rev        the current revision of the file
+    * @param id
+    *   the file identifier to expand as the iri of the file
+    * @param projectRef
+    *   the project where the file belongs
+    * @param rev
+    *   the current revision of the file
     */
   def deprecate(
       id: IdSegment,
@@ -308,7 +354,7 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
     } yield res
@@ -317,8 +363,10 @@ final class Files(
   /**
     * Fetch the last version of a file content
     *
-    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project the project where the storage belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
     */
   def fetchContent(id: IdSegmentRef, project: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResponse] =
     id.asTag
@@ -340,8 +388,10 @@ final class Files(
   /**
     * Fetch the last version of a file
     *
-    * @param id      the identifier that will be expanded to the Iri of the file with its optional rev/tag
-    * @param project the project where the storage belongs
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file with its optional rev/tag
+    * @param project
+    *   the project where the storage belongs
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] =
     id.asTag
@@ -362,11 +412,27 @@ final class Files(
     }
 
   /**
-    * A non terminating stream of events for files. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A terminating stream of events for files. It finishes the stream after emitting all known events.
     *
-    * @param projectRef the project reference where the files belongs
-    * @param offset     the last seen event offset; it will not be emitted by the stream
+    * @param projectRef
+    *   the project reference where the files belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
+    */
+  def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
+
+  /**
+    * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
+    * recorded.
+    *
+    * @param projectRef
+    *   the project reference where the files belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       projectRef: ProjectRef,
@@ -375,11 +441,13 @@ final class Files(
     eventLog.projectEvents(projects, projectRef, offset)
 
   /**
-    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param organization the organization label reference where the file belongs
-    * @param offset       the last seen event offset; it will not be emitted by the stream
+    * @param organization
+    *   the organization label reference where the file belongs
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(
       organization: Label,
@@ -388,10 +456,11 @@ final class Files(
     eventLog.orgEvents(orgs, organization, offset)
 
   /**
-    * A non terminating stream of events for files. After emitting all known events it sleeps until new events
-    * are recorded.
+    * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
+    * recorded.
     *
-    * @param offset the last seen event offset; it will not be emitted by the stream
+    * @param offset
+    *   the last seen event offset; it will not be emitted by the stream
     */
   def events(offset: Offset): Stream[Task, Envelope[FileEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -494,8 +563,7 @@ object Files {
     */
   val mappings: ApiMappings = ApiMappings("file" -> fileSchema)
 
-  private[files] type FilesAggregate =
-    Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
+  type FilesAggregate = Aggregate[String, FileState, FileCommand, FileEvent, FileRejection]
 
   private val logger: Logger = Logger[Files]
 
@@ -514,13 +582,6 @@ object Files {
 
   /**
     * Constructs a Files instance
-    *
-    * @param config   the files configuration
-    * @param eventLog the event log for FileEvent
-    * @param acls     the acls operations bundle
-    * @param orgs     the organizations operations bundle
-    * @param projects the projects operations bundle
-    * @param storages the storages operations bundle
     */
   final def apply(
       config: FilesConfig,
@@ -531,43 +592,30 @@ object Files {
       projects: Projects,
       storages: Storages,
       storagesStatistics: StoragesStatistics,
-      resourceIdCheck: ResourceIdCheck
+      agg: FilesAggregate
   )(implicit
       client: HttpClient,
       uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[Files] = {
-    val idAvailability: IdAvailability[ResourceAlreadyExists] =
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(config, storageTypeConfig, eventLog, acls, orgs, projects, storages, storagesStatistics, idAvailability)
-  }
-
-  private[files] def apply(
-      config: FilesConfig,
-      storageTypeConfig: StorageTypeConfig,
-      eventLog: EventLog[Envelope[FileEvent]],
-      acls: Acls,
-      orgs: Organizations,
-      projects: Projects,
-      storages: Storages,
-      storagesStatistics: StoragesStatistics,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      client: HttpClient,
-      uuidF: UUIDF,
-      clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Files] = {
     implicit val classicAs: ClassicActorSystem  = as.classicSystem
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
-      agg  <- aggregate(config.aggregate, idAvailability)
-      files = new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
-      _    <- startDigestComputation(config.cacheIndexing, eventLog, files)
+      files <- Task.delay(
+                 new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
+               )
+      _     <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
+  }
+
+  def aggregate(
+      config: AggregateConfig,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[FilesAggregate] = {
+    val idAvailability: IdAvailability[ResourceAlreadyExists] =
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    aggregate(config, idAvailability)
   }
 
   private def aggregate(

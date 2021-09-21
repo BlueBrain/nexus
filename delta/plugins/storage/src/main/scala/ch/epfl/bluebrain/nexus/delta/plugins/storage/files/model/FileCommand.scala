@@ -13,17 +13,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 sealed trait FileCommand extends Product with Serializable {
 
   /**
-    * @return the project where the file belongs to
+    * @return
+    *   the project where the file belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the file identifier
+    * @return
+    *   the file identifier
     */
   def id: Iri
 
   /**
-    * @return the identity associated to this command
+    * @return
+    *   the identity associated to this command
     */
   def subject: Subject
 }
@@ -33,12 +36,18 @@ object FileCommand {
   /**
     * Command to create a new file
     *
-    * @param id          the file identifier
-    * @param project     the project the file belongs to
-    * @param storage     the reference to the used storage
-    * @param storageType the type of storage
-    * @param attributes  the file attributes
-    * @param subject     the identity associated to this command
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
+    * @param attributes
+    *   the file attributes
+    * @param subject
+    *   the identity associated to this command
     */
   final case class CreateFile(
       id: Iri,
@@ -52,12 +61,18 @@ object FileCommand {
   /**
     * Command to update an existing file
     *
-    * @param id          the file identifier
-    * @param project     the project the file belongs to
-    * @param storage     the reference to the used storage
-    * @param storageType the type of storage
-    * @param attributes  the file attributes
-    * @param subject     the identity associated to this command
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param storage
+    *   the reference to the used storage
+    * @param storageType
+    *   the type of storage
+    * @param attributes
+    *   the file attributes
+    * @param subject
+    *   the identity associated to this command
     */
   final case class UpdateFile(
       id: Iri,
@@ -70,16 +85,22 @@ object FileCommand {
   ) extends FileCommand
 
   /**
-    * Command to update an asynchronously computed file attributes.
-    * This command gets issued when linking a file using a ''RemoteDiskStorage''.
-    * Since the attributes cannot be computed synchronously, ''NotComputedDigest'' and wrong size are returned
+    * Command to update an asynchronously computed file attributes. This command gets issued when linking a file using a
+    * ''RemoteDiskStorage''. Since the attributes cannot be computed synchronously, ''NotComputedDigest'' and wrong size
+    * are returned
     *
-    * @param id         the file identifier
-    * @param project    the project the file belongs to
-    * @param mediaType  the optional media type of the file
-    * @param bytes      the size of the file file in bytes
-    * @param digest     the digest information of the file
-    * @param subject    the identity associated to this command
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param mediaType
+    *   the optional media type of the file
+    * @param bytes
+    *   the size of the file file in bytes
+    * @param digest
+    *   the digest information of the file
+    * @param subject
+    *   the identity associated to this command
     */
   final case class UpdateFileAttributes(
       id: Iri,
@@ -94,12 +115,18 @@ object FileCommand {
   /**
     * Command to tag a file
     *
-    * @param id        the file identifier
-    * @param project   the project the file belongs to
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the file
-    * @param subject   the identity associated to this command
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
     */
   final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: TagLabel, rev: Long, subject: Subject)
       extends FileCommand
@@ -107,10 +134,14 @@ object FileCommand {
   /**
     * Command to deprecate a file
     *
-    * @param id      the file identifier
-    * @param project the project the file belongs to
-    * @param rev     the last known revision of the file
-    * @param subject the identity associated to this command
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
     */
   final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends FileCommand
 }

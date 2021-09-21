@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -38,10 +39,14 @@ trait ArchiveDownload {
   /**
     * Generates an akka [[Source]] of bytes representing the tar.
     *
-    * @param value          the archive value
-    * @param project        the archive parent project
-    * @param ignoreNotFound do not fail when resource references are not found
-    * @param caller         the caller to be used for checking for access
+    * @param value
+    *   the archive value
+    * @param project
+    *   the archive parent project
+    * @param ignoreNotFound
+    *   do not fail when resource references are not found
+    * @param caller
+    *   the caller to be used for checking for access
     */
   def apply(
       value: ArchiveValue,
@@ -56,10 +61,14 @@ object ArchiveDownload {
   /**
     * The default [[ArchiveDownload]] implementation.
     *
-    * @param exchanges the collection of [[ReferenceExchange]] implementations
-    * @param acls      the acls module
-    * @param files     the files module
-    * @param sort      the configuration for sorting json keys
+    * @param exchanges
+    *   the collection of [[ReferenceExchange]] implementations
+    * @param acls
+    *   the acls module
+    * @param files
+    *   the files module
+    * @param sort
+    *   the configuration for sorting json keys
     */
   class ArchiveDownloadImpl(exchanges: List[ReferenceExchange], acls: Acls, files: Files)(implicit
       sort: JsonKeyOrdering,
@@ -68,6 +77,7 @@ object ArchiveDownload {
   ) extends ArchiveDownload {
 
     implicit private val logger: Logger = Logger[ArchiveDownload]
+    implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
     override def apply(
         value: ArchiveValue,

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.testkit
 import com.github.dockerjava.core.DefaultDockerClientConfig
 import com.github.dockerjava.netty.NettyDockerCmdExecFactory
 import com.whisk.docker.DockerFactory
-import com.whisk.docker.impl.dockerjava.{DockerJavaExecutorFactory, DockerKitDockerJava, Docker => JDocker}
+import com.whisk.docker.impl.dockerjava.{Docker => JDocker, DockerJavaExecutorFactory, DockerKitDockerJava}
 import izumi.distage.docker.Docker
 import izumi.distage.docker.Docker.DockerReusePolicy
 

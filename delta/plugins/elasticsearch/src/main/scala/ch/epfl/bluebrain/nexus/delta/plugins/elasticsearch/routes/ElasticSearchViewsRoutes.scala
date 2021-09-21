@@ -42,17 +42,28 @@ import monix.execution.Scheduler
 /**
   * The elasticsearch views routes
   *
-  * @param identities         the identity module
-  * @param acls               the ACLs module
-  * @param orgs               the organizations module
-  * @param projects           the projects module
-  * @param views              the elasticsearch views operations bundle
-  * @param viewsQuery         the elasticsearch views query operations bundle
-  * @param progresses         the statistics of the progresses for the elasticsearch views
-  * @param restartView        the action to restart a view indexing process triggered by a client
-  * @param resourcesToSchemas a collection of root resource segment with their corresponding schema
-  * @param sseEventLog        the global eventLog of all view events
-  * @param index              the indexing action on write operations
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param orgs
+  *   the organizations module
+  * @param projects
+  *   the projects module
+  * @param views
+  *   the elasticsearch views operations bundle
+  * @param viewsQuery
+  *   the elasticsearch views query operations bundle
+  * @param progresses
+  *   the statistics of the progresses for the elasticsearch views
+  * @param restartView
+  *   the action to restart a view indexing process triggered by a client
+  * @param resourcesToSchemas
+  *   a collection of root resource segment with their corresponding schema
+  * @param sseEventLog
+  *   the global eventLog of all view events
+  * @param index
+  *   the indexing action on write operations
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
@@ -298,20 +309,30 @@ final class ElasticSearchViewsRoutes(
   private val genericResourcesRoutes: Route =
     pathPrefix("resources") {
       extractCaller { implicit caller =>
-        projectRef(projects).apply { ref =>
-          concat(
-            // List all resources
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
-              list(ref)
-            },
-            idSegment { schema =>
-              // List all resources filtering by its schema type
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
-                list(ref, underscoreToOption(schema))
+        concat(
+          // List all resource
+          (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
+            list()
+          },
+          // List all resource inside an organization
+          (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
+            list(org)
+          },
+          projectRef(projects).apply { ref =>
+            concat(
+              // List all resources inside a project
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
+                list(ref)
+              },
+              idSegment { schema =>
+                // List all resources inside a project filtering by its schema type
+                (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}/{schema}")) {
+                  list(ref, underscoreToOption(schema))
+                }
               }
-            }
-          )
-        }
+            )
+          }
+        )
       }
     }
 
@@ -319,15 +340,37 @@ final class ElasticSearchViewsRoutes(
     concat(resourcesToSchemas.value.map { case (Label(resourceSegment), resourceSchema) =>
       pathPrefix(resourceSegment) {
         extractCaller { implicit caller =>
-          projectRef(projects).apply { ref =>
+          concat(
             // List all resource of type resourceSegment
-            (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
-              list(ref, resourceSchema)
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment")) {
+              list(resourceSchema)
+            },
+            // List all resource of type resourceSegment inside an organization
+            (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
+              list(org, resourceSchema)
+            },
+            projectRef(projects).apply { ref =>
+              // List all resource of type resourceSegment inside a project
+              (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
+                list(ref, resourceSchema)
+              }
             }
-          }
+          )
         }
       }
     }.toSeq: _*)
+
+  private def list(segment: IdSegment)(implicit caller: Caller): Route =
+    list(Some(segment))
+
+  private def list()(implicit caller: Caller): Route =
+    list(None)
+
+  private def list(org: Label, segment: IdSegment)(implicit caller: Caller): Route =
+    list(org, Some(segment))
+
+  private def list(org: Label)(implicit caller: Caller): Route =
+    list(org, None)
 
   private def list(ref: ProjectRef, segment: IdSegment)(implicit caller: Caller): Route =
     list(ref, Some(segment))
@@ -335,9 +378,8 @@ final class ElasticSearchViewsRoutes(
   private def list(ref: ProjectRef)(implicit caller: Caller): Route =
     list(ref, None)
 
-  private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route = {
-    implicit val r: ProjectRef = ref
-    (get & searchParametersAndSortList & paginated & extractUri) { (params, sort, page, uri) =>
+  private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route =
+    (get & searchParametersAndSortList(ref) & paginated & extractUri) { (params, sort, page, uri) =>
       authorizeFor(ref, Read).apply {
         implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
           searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
@@ -348,7 +390,26 @@ final class ElasticSearchViewsRoutes(
         }
       }
     }
-  }
+
+  private def list(schemaSegment: Option[IdSegment])(implicit caller: Caller): Route =
+    (get & searchParametersAndSortList(baseUri) & paginated & extractUri) { (params, sort, page, uri) =>
+      implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+        searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
+      schemaSegment match {
+        case Some(segment) => emit(viewsQuery.list(segment, page, params, sort))
+        case None          => emit(viewsQuery.list(page, params, sort))
+      }
+    }
+
+  private def list(org: Label, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route =
+    (get & searchParametersAndSortList(baseUri) & paginated & extractUri) { (params, sort, page, uri) =>
+      implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+        searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
+      schemaSegment match {
+        case Some(segment) => emit(viewsQuery.list(org, segment, page, params, sort))
+        case None          => emit(viewsQuery.list(org, page, params, sort))
+      }
+    }
 
   private val decodingFailedOrViewNotFound: PartialFunction[ElasticSearchViewRejection, Boolean] = {
     case _: DecodingFailed | _: ViewNotFound | _: InvalidJsonLdFormat => true
@@ -360,7 +421,8 @@ object ElasticSearchViewsRoutes {
   type RestartView = (Iri, ProjectRef) => UIO[Unit]
 
   /**
-    * @return the [[Route]] for elasticsearch views
+    * @return
+    *   the [[Route]] for elasticsearch views
     */
   def apply(
       identities: Identities,

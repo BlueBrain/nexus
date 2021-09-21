@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{CompositeViewsAggregate, CompositeViewsCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient, RemoteSse}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
@@ -13,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, Com
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
@@ -21,12 +23,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event, MetadataContextValue, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -45,44 +48,75 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
+  make[CompositeViewsCache].from { (config: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
+    CompositeViews.cache(config)(as)
+  }
+
+  make[CompositeViewsAggregate].fromEffect {
+    (
+        config: CompositeViewsConfig,
+        projects: Projects,
+        acls: Acls,
+        permissions: Permissions,
+        resourceIdCheck: ResourceIdCheck,
+        client: ElasticSearchClient,
+        deltaClient: DeltaClient,
+        crypto: Crypto,
+        as: ActorSystem[Nothing],
+        baseUri: BaseUri,
+        uuidF: UUIDF,
+        clock: Clock[UIO]
+    ) =>
+      CompositeViews.aggregate(config, projects, acls, permissions, resourceIdCheck, client, deltaClient, crypto)(
+        as,
+        baseUri,
+        uuidF,
+        clock
+      )
+  }
+
   make[CompositeViews].fromEffect {
     (
         config: CompositeViewsConfig,
         eventLog: EventLog[Envelope[CompositeViewEvent]],
-        permissions: Permissions,
         orgs: Organizations,
         projects: Projects,
-        acls: Acls,
-        client: ElasticSearchClient,
-        deltaClient: DeltaClient,
+        cache: CompositeViewsCache,
+        agg: CompositeViewsAggregate,
         contextResolution: ResolverContextResolution,
-        resourceIdCheck: ResourceIdCheck,
+        api: JsonLdApi,
         uuidF: UUIDF,
-        clock: Clock[UIO],
         as: ActorSystem[Nothing],
-        sc: Scheduler,
-        baseUri: BaseUri,
-        crypto: Crypto
+        sc: Scheduler
     ) =>
       CompositeViews(
         config,
         eventLog,
-        permissions,
         orgs,
         projects,
-        acls,
-        client,
-        deltaClient,
-        contextResolution,
-        resourceIdCheck,
-        crypto
+        cache,
+        agg,
+        contextResolution
       )(
+        api,
         uuidF,
-        clock,
         as,
-        sc,
-        baseUri
+        sc
       )
+  }
+
+  many[ResourcesDeletion].add {
+    (
+        cache: CompositeViewsCache,
+        agg: CompositeViewsAggregate,
+        views: CompositeViews,
+        dbCleanup: DatabaseCleanup,
+        sa: ServiceAccount
+    ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, sa)
+  }
+
+  many[ProjectReferenceFinder].add { (views: CompositeViews) =>
+    CompositeViews.projectReferenceFinder(views)
   }
 
   make[IndexingSource].named("composite-source").from {
@@ -121,10 +155,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   make[MetadataPredicates].fromEffect {
     (
         listingsMetadataCtx: MetadataContextValue @Id("search-metadata"),
+        api: JsonLdApi,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      implicit val res = cr
-      JsonLdContext(listingsMetadataCtx.value)
+      JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
   }
@@ -269,6 +303,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViewEventExchange]
   many[EventExchange].named("view").ref[CompositeViewEventExchange]
+  many[EventExchange].named("resources").ref[CompositeViewEventExchange]
   many[EventExchange].ref[CompositeViewEventExchange]
   many[EntityType].add(EntityType(CompositeViews.moduleType))
 

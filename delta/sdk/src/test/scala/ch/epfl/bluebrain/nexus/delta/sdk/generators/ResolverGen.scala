@@ -21,8 +21,10 @@ object ResolverGen extends OptionValues with IOValues with CirceLiteral {
 
   /**
     * Generate an in-project resolver
-    * @param id       the id of the resolver
-    * @param project  the project of the resolver
+    * @param id
+    *   the id of the resolver
+    * @param project
+    *   the project of the resolver
     */
   def inProject(id: Iri, project: ProjectRef, priority: Int = 20): InProjectResolver =
     InProjectResolver(

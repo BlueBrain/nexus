@@ -12,7 +12,8 @@ import scala.annotation.unused
 object EventTags {
 
   /**
-    * @return the tags for [[ResourceEvent]]s
+    * @return
+    *   the tags for [[ResourceEvent]] s
     */
   def forResourceEvents(moduleType: String)(ev: ResourceEvent): Set[String] =
     Set(
@@ -23,7 +24,8 @@ object EventTags {
     )
 
   /**
-    * @return the tags for [[ProjectScopedEvent]]s
+    * @return
+    *   the tags for [[ProjectScopedEvent]] s
     */
   def forProjectScopedEvent[E <: ProjectScopedEvent](moduleTypes: String*)(ev: E): Set[String] =
     forOrganizationScopedEvent(moduleTypes: _*)(ev) ++
@@ -31,7 +33,8 @@ object EventTags {
       Projects.projectTag(ev.project)
 
   /**
-    * @return the tags for [[OrganizationScopedEvent]]s
+    * @return
+    *   the tags for [[OrganizationScopedEvent]] s
     */
   def forOrganizationScopedEvent[E <: OrganizationScopedEvent](moduleTypes: String*)(ev: E): Set[String] =
     moduleTypes.toSet ++
@@ -39,7 +42,8 @@ object EventTags {
       moduleTypes.map(moduleType => Organizations.orgTag(moduleType, ev.organizationLabel)).toSet
 
   /**
-    * @return the tags for [[UnScopedEvent]]s
+    * @return
+    *   the tags for [[UnScopedEvent]] s
     */
   def forUnScopedEvent[E <: UnScopedEvent](moduleType: String)(@unused ev: E): Set[String] =
     Set(Event.eventTag, moduleType)

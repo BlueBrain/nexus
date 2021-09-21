@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -51,7 +52,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p                    <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, resolverValue) <- sourceDecoder(p, source)
       res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
     } yield res
@@ -63,7 +64,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -76,7 +77,7 @@ final class ResolversImpl private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
@@ -90,7 +91,7 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri           <- expandIri(id, p)
       resolverValue <- sourceDecoder(p, iri, source)
       res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -106,7 +107,7 @@ final class ResolversImpl private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri   <- expandIri(id, p)
       source = ResolverValue.generateSource(iri, resolverValue)
       res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
@@ -123,7 +124,7 @@ final class ResolversImpl private (
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
     } yield res
@@ -135,7 +136,7 @@ final class ResolversImpl private (
       rev: Long
   )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedWithEventQuotas)
+      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
     } yield res
@@ -168,6 +169,12 @@ final class ResolversImpl private (
         )
       }
       .named("listResolvers", moduleType)
+
+  override def currentEvents(
+      projectRef: ProjectRef,
+      offset: Offset
+  ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
+    eventLog.currentProjectEvents(projects, projectRef, offset)
 
   override def events(
       projectRef: ProjectRef,
@@ -214,7 +221,7 @@ object ResolversImpl {
   /**
     * Creates a new resolvers cache.
     */
-  private def cache(config: ResolversConfig)(implicit as: ActorSystem[Nothing]): ResolversCache = {
+  def cache(config: ResolversConfig)(implicit as: ActorSystem[Nothing]): ResolversCache = {
     implicit val cfg: KeyValueStoreConfig       = config.keyValueStore
     val clock: (Long, ResolverResource) => Long = (_, resource) => resource.rev
     CompositeKeyValueStore(moduleType, clock)
@@ -241,11 +248,22 @@ object ResolversImpl {
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
     index.find(project, params.matches).map(_.map(_.id))
 
+  def aggregate(
+      config: AggregateConfig,
+      cache: ResolversCache,
+      resourceIdCheck: ResourceIdCheck
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResolversAggregate] =
+    aggregate(
+      config,
+      findResolver(cache),
+      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
+    )
+
   private def aggregate(
       config: AggregateConfig,
       findResolver: FindResolver,
       idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]) = {
+  )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResolversAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,
       initialState = Initial,
@@ -264,13 +282,6 @@ object ResolversImpl {
 
   /**
     * Constructs a Resolver instance
-    *
-    * @param config            the resolvers configuration
-    * @param eventLog          the event log for ResolverEvent
-    * @param orgs              an Organizations instance
-    * @param projects          a Projects instance
-    * @param contextResolution the context resolver
-    * @param resourceIdCheck   to check whether an id already exists on another module upon creation
     */
   final def apply(
       config: ResolversConfig,
@@ -278,43 +289,24 @@ object ResolversImpl {
       orgs: Organizations,
       projects: Projects,
       contextResolution: ResolverContextResolution,
-      resourceIdCheck: ResourceIdCheck
+      cache: ResolversCache,
+      agg: ResolversAggregate
   )(implicit
+      api: JsonLdApi,
       uuidF: UUIDF,
-      clock: Clock[UIO],
       scheduler: Scheduler,
       as: ActorSystem[Nothing]
   ): Task[Resolvers] =
-    apply(
-      config,
-      eventLog,
-      orgs,
-      projects,
-      contextResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    )
-
-  private[resolvers] def apply(
-      config: ResolversConfig,
-      eventLog: EventLog[Envelope[ResolverEvent]],
-      orgs: Organizations,
-      projects: Projects,
-      contextResolution: ResolverContextResolution,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      uuidF: UUIDF,
-      clock: Clock[UIO],
-      scheduler: Scheduler,
-      as: ActorSystem[Nothing]
-  ): Task[Resolvers] = {
-    for {
-      index        <- UIO.delay(cache(config))
-      agg          <- aggregate(config.aggregate, findResolver(index), idAvailability)
-      sourceDecoder =
-        new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](contexts.resolvers, contextResolution, uuidF)
-      resolvers     = new ResolversImpl(agg, eventLog, index, orgs, projects, sourceDecoder)
-      _            <- startIndexing(config, eventLog, index, resolvers)
-    } yield resolvers
-  }
+    Task
+      .delay {
+        val sourceDecoder =
+          new JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue](
+            contexts.resolvers,
+            contextResolution,
+            uuidF
+          )
+        new ResolversImpl(agg, eventLog, cache, orgs, projects, sourceDecoder)
+      }
+      .tapEval(resolvers => startIndexing(config, eventLog, cache, resolvers))
 
 }

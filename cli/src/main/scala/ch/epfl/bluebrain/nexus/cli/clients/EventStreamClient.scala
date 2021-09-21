@@ -21,23 +21,28 @@ trait EventStreamClient[F[_]] {
   /**
     * Fetch the event stream for all Nexus resources.
     *
-    * @param lastEventId the optional starting event offset
+    * @param lastEventId
+    *   the optional starting event offset
     */
   def apply(lastEventId: Option[Offset]): F[EventStream[F]]
 
   /**
     * Fetch the event stream for all Nexus resources in the passed ''organization''.
     *
-    * @param organization the organization label
-    * @param lastEventId the optional starting event offset
+    * @param organization
+    *   the organization label
+    * @param lastEventId
+    *   the optional starting event offset
     */
   def apply(organization: OrgLabel, lastEventId: Option[Offset]): F[EventStream[F]]
 
   /**
     * Fetch the event stream for all Nexus resources in the passed ''organization'' and ''project''.
     *
-    * @param organization the organization label
-    * @param lastEventId the optional starting event offset
+    * @param organization
+    *   the organization label
+    * @param lastEventId
+    *   the optional starting event offset
     */
   def apply(organization: OrgLabel, project: ProjectLabel, lastEventId: Option[Offset]): F[EventStream[F]]
 }

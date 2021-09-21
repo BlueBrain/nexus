@@ -218,7 +218,8 @@ object CassandraProjection {
 
   /**
     * Creates a cassandra projection with the given configuration
-    * @param config the cassandra configuration
+    * @param config
+    *   the cassandra configuration
     */
   def apply[A: Encoder: Decoder](
       config: CassandraConfig,

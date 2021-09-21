@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{qu
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -39,7 +40,7 @@ class ElasticSearchViewsSpec
     with OptionValues
     with TestHelpers
     with ConfigFixtures
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -60,6 +61,7 @@ class ElasticSearchViewsSpec
     val apiMappings              = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
     val base                     = nxv.base
     val project                  = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
+    val project2                 = ProjectGen.project("org", "proj2", base = base, mappings = apiMappings)
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val listProject              = ProjectGen.project("org", "list", base = base, mappings = apiMappings)
@@ -72,7 +74,7 @@ class ElasticSearchViewsSpec
     val (orgs, projects) = ProjectSetup
       .init(
         orgsToCreate = org :: orgDeprecated :: Nil,
-        projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: listProject :: Nil,
+        projectsToCreate = project :: project2 :: deprecatedProject :: projectWithDeprecatedOrg :: listProject :: Nil,
         projectsToDeprecate = deprecatedProject.ref :: Nil,
         organizationsToDeprecate = orgDeprecated :: Nil
       )
@@ -177,7 +179,8 @@ class ElasticSearchViewsSpec
         .toResource(project.apiMappings, project.base, defaultEsMapping, defaultEsSettings)
         .value
 
-    val viewId = iri"http://localhost/indexing"
+    val viewId  = iri"http://localhost/indexing"
+    val viewId2 = iri"http://localhost/${genString()}"
     "create a view" when {
       "using the minimum fields for an IndexingElasticSearchViewValue" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
@@ -204,7 +207,6 @@ class ElasticSearchViewsSpec
         views.create(projectRef, source).accepted shouldEqual expected
       }
       "using an IndexingElasticSearchViewValue" in {
-        val id    = iri"http://localhost/${genString()}"
         val value = IndexingElasticSearchViewValue(
           resourceSchemas = Set(iri"http://localhost/schema"),
           resourceTypes = Set(iri"http://localhost/type"),
@@ -216,7 +218,7 @@ class ElasticSearchViewsSpec
           settings = None,
           permission = queryPermissions
         )
-        views.create(id, projectRef, value).accepted
+        views.create(viewId2, projectRef, value).accepted
       }
       "using a fixed id specified in the AggregateElasticSearchViewValue json" in {
         val id     = iri"http://localhost/${genString()}"
@@ -589,6 +591,19 @@ class ElasticSearchViewsSpec
         id shouldEqual viewId
         tpe shouldEqual "ElasticSearchViewCreated"
       }
+    }
+
+    "find references" when {
+
+      "an aggregate view point to a view in 'proj'" in {
+        val id    = iri"http://localhost/${genString()}"
+        val value = AggregateElasticSearchViewValue(NonEmptySet.of(ViewRef(projectRef, viewId2)))
+        views.create(id, project2.ref, value).accepted
+
+        ElasticSearchViews.projectReferenceFinder(views)(projectRef).accepted shouldEqual
+          ProjectReferenceMap.single(project2.ref, id)
+      }
+
     }
 
   }

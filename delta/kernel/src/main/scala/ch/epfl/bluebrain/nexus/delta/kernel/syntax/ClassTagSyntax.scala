@@ -9,7 +9,8 @@ trait ClassTagSyntax {
 final class ClassTagOps[A](private val classTag: ClassTag[A]) extends AnyVal {
 
   /**
-    * @return the simple name of the class from the implicitly available [[ClassTag]] instance.
+    * @return
+    *   the simple name of the class from the implicitly available [[ClassTag]] instance.
     */
   def simpleName: String = classTag.runtimeClass.getSimpleName
 

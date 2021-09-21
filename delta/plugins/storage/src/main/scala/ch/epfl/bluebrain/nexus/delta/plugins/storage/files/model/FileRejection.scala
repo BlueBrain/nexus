@@ -34,7 +34,8 @@ import scala.reflect.ClassTag
 /**
   * Enumeration of File rejection types.
   *
-  * @param reason a descriptive message as to why the rejection occurred
+  * @param reason
+  *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None)
     extends Product
@@ -48,25 +49,30 @@ object FileRejection {
     * Rejection returned when a subject intends to retrieve a file at a specific revision, but the provided revision
     * does not exist.
     *
-    * @param provided the provided revision
-    * @param current  the last known revision
+    * @param provided
+    *   the provided revision
+    * @param current
+    *   the last known revision
     */
   final case class RevisionNotFound(provided: Long, current: Long)
       extends FileRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
-    * Rejection returned when a subject intends to retrieve a file at a specific tag, but the provided tag
-    * does not exist.
+    * Rejection returned when a subject intends to retrieve a file at a specific tag, but the provided tag does not
+    * exist.
     *
-    * @param tag the provided tag
+    * @param tag
+    *   the provided tag
     */
   final case class TagNotFound(tag: TagLabel) extends FileRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to create a file but the id already exists.
     *
-    * @param id      the resource identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class ResourceAlreadyExists(id: Iri, project: ProjectRef)
       extends FileRejection(s"Resource '$id' already exists in project '$project'.")
@@ -74,8 +80,10 @@ object FileRejection {
   /**
     * Rejection returned when attempting to update a file with an id that doesn't exist.
     *
-    * @param id      the file identifier
-    * @param project the project it belongs to
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project it belongs to
     */
   final case class FileNotFound(id: Iri, project: ProjectRef)
       extends FileRejection(s"File '$id' not found in project '$project'.")
@@ -83,7 +91,8 @@ object FileRejection {
   /**
     * Rejection returned when attempting to interact with a file providing an id that cannot be resolved to an Iri.
     *
-    * @param id  the file identifier
+    * @param id
+    *   the file identifier
     */
   final case class InvalidFileId(id: String)
       extends FileRejection(s"File identifier '$id' cannot be expanded to an Iri.")
@@ -91,7 +100,8 @@ object FileRejection {
   /**
     * Signals the impossibility to update a file when the digest is not computed
     *
-    * @param id the file identifier
+    * @param id
+    *   the file identifier
     */
   final case class DigestNotComputed(id: Iri)
       extends FileRejection(
@@ -101,7 +111,8 @@ object FileRejection {
   /**
     * Signals that the digest of the file has already been computed
     *
-    * @param id the file identifier
+    * @param id
+    *   the file identifier
     */
   final case class DigestAlreadyComputed(id: Iri)
       extends FileRejection(s"The digest computation for the current file '$id' has already been completed")
@@ -110,8 +121,10 @@ object FileRejection {
     * Rejection returned when a subject intends to perform an operation on the current file, but either provided an
     * incorrect revision or a concurrent update won over this attempt.
     *
-    * @param provided the provided revision
-    * @param expected the expected revision
+    * @param provided
+    *   the provided revision
+    * @param expected
+    *   the expected revision
     */
   final case class IncorrectRev(provided: Long, expected: Long)
       extends FileRejection(
@@ -121,14 +134,17 @@ object FileRejection {
   /**
     * Rejection returned when attempting to update/deprecate a file that is already deprecated.
     *
-    * @param id the file identifier
+    * @param id
+    *   the file identifier
     */
   final case class FileIsDeprecated(id: Iri) extends FileRejection(s"File '$id' is deprecated.")
 
   /**
-    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a filename.
+    * Rejection returned when attempting to link a file without providing a filename or a path that ends with a
+    * filename.
     *
-    * @param id the file identifier
+    * @param id
+    *   the file identifier
     */
   final case class InvalidFileLink(id: Iri)
       extends FileRejection(
@@ -136,15 +152,15 @@ object FileRejection {
       )
 
   /**
-    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not contain
-    * a ''file'' fieldName
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
+    * contain a ''file'' fieldName
     */
   final case class InvalidMultipartFieldName(id: Iri)
       extends FileRejection(s"File '$id' payload a Multipart/Form-Data without a 'file' part.")
 
   /**
-    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not contain
-    * a ''file'' fieldName
+    * Rejection returned when attempting to create/update a file with a Multipart/Form-Data payload that does not
+    * contain a ''file'' fieldName
     */
   final case class FileTooLarge(maxFileSize: Long, storageAvailableSpace: Option[Long])
       extends FileRejection(
@@ -156,8 +172,10 @@ object FileRejection {
     * Rejection returned when attempting to interact with a file and the caller does not have the right permissions
     * defined in the storage.
     *
-    * @param address    the address on which the permission was checked
-    * @param permission the permission that was required
+    * @param address
+    *   the address on which the permission was checked
+    * @param permission
+    *   the permission that was required
     */
   final case class AuthorizationFailed(address: AclAddress, permission: Permission)
       extends FileRejection(ServiceError.AuthorizationFailed.reason)
@@ -170,16 +188,20 @@ object FileRejection {
   /**
     * Rejection returned when interacting with the storage operations bundle to fetch a storage
     *
-    * @param rejection the rejection which occurred with the storage
+    * @param rejection
+    *   the rejection which occurred with the storage
     */
   final case class WrappedStorageRejection(rejection: StorageRejection) extends FileRejection(rejection.reason)
 
   /**
     * Rejection returned when interacting with the storage operations bundle to fetch a file from a storage
     *
-    * @param id        the file id
-    * @param storageId the storage id
-    * @param rejection the rejection which occurred with the storage
+    * @param id
+    *   the file id
+    * @param storageId
+    *   the storage id
+    * @param rejection
+    *   the rejection which occurred with the storage
     */
   final case class FetchRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.FetchFileRejection)
       extends FileRejection(
@@ -190,9 +212,12 @@ object FileRejection {
   /**
     * Rejection returned when interacting with the storage operations bundle to fetch a file attributes from a storage
     *
-    * @param id        the file id
-    * @param storageId the storage id
-    * @param rejection the rejection which occurred with the storage
+    * @param id
+    *   the file id
+    * @param storageId
+    *   the storage id
+    * @param rejection
+    *   the rejection which occurred with the storage
     */
   final case class FetchAttributesRejection(
       id: Iri,
@@ -203,9 +228,12 @@ object FileRejection {
   /**
     * Rejection returned when interacting with the storage operations bundle to save a file in a storage
     *
-    * @param id        the file id
-    * @param storageId the storage id
-    * @param rejection the rejection which occurred with the storage
+    * @param id
+    *   the file id
+    * @param storageId
+    *   the storage id
+    * @param rejection
+    *   the rejection which occurred with the storage
     */
   final case class SaveRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection.SaveFileRejection)
       extends FileRejection(s"File '$id' could not be saved using storage '$storageId'", Some(rejection.loggedDetails))
@@ -213,9 +241,12 @@ object FileRejection {
   /**
     * Rejection returned when interacting with the storage operations bundle to move a file in a storage
     *
-    * @param id        the file id
-    * @param storageId the storage id
-    * @param rejection the rejection which occurred with the storage
+    * @param id
+    *   the file id
+    * @param storageId
+    *   the storage id
+    * @param rejection
+    *   the rejection which occurred with the storage
     */
   final case class LinkRejection(id: Iri, storageId: Iri, rejection: StorageFileRejection)
       extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
@@ -223,14 +254,16 @@ object FileRejection {
   /**
     * Rejection returned when the associated project is invalid
     *
-    * @param rejection the rejection which occurred with the project
+    * @param rejection
+    *   the rejection which occurred with the project
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends FileRejection(rejection.reason)
 
   /**
     * Rejection returned when the associated organization is invalid
     *
-    * @param rejection the rejection which occurred with the organization
+    * @param rejection
+    *   the rejection which occurred with the organization
     */
   final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
       extends FileRejection(rejection.reason)
@@ -242,8 +275,8 @@ object FileRejection {
       extends FileRejection(rejection.reason)
 
   /**
-    * Rejection returned when the returned state is the initial state after a Files.evaluation plus a Files.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a current
+    * Rejection returned when the returned state is the initial state after a Files.evaluation plus a Files.next Note:
+    * This should never happen since the evaluation method already guarantees that the next function returns a current
     */
   final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
       extends FileRejection(s"Unexpected initial state for file '$id' of project '$project'.")

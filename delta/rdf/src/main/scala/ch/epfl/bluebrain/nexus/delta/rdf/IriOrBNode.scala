@@ -17,22 +17,26 @@ import java.util.UUID
 sealed trait IriOrBNode extends Product with Serializable {
 
   /**
-    * @return true if the current value is an [[Iri]], false otherwise
+    * @return
+    *   true if the current value is an [[Iri]], false otherwise
     */
   def isIri: Boolean
 
   /**
-    * @return true if the current value is an [[BNode]], false otherwise
+    * @return
+    *   true if the current value is an [[BNode]], false otherwise
     */
   def isBNode: Boolean
 
   /**
-    * @return Some(iri) if the current value is an [[Iri]], None otherwise
+    * @return
+    *   Some(iri) if the current value is an [[Iri]], None otherwise
     */
   def asIri: Option[Iri]
 
   /**
-    * @return Some(bnode) if the current value is a [[BNode]], None otherwise
+    * @return
+    *   Some(bnode) if the current value is a [[BNode]], None otherwise
     */
   def asBNode: Option[BNode]
 
@@ -47,7 +51,8 @@ object IriOrBNode {
   /**
     * A simple [[Iri]] representation backed up by Jena [[IRI]].
     *
-    * @param value the underlying Jena [[IRI]]
+    * @param value
+    *   the underlying Jena [[IRI]]
     */
   final case class Iri private (private val value: IRI) extends IriOrBNode {
 
@@ -65,7 +70,8 @@ object IriOrBNode {
     /**
       * Removes each encounter of the passed query parameter keys from the current Iri query parameters
       *
-      * @param keys the keys to remove
+      * @param keys
+      *   the keys to remove
       */
     def removeQueryParams(keys: String*): Iri =
       if (rawQuery().isEmpty) this
@@ -97,7 +103,8 @@ object IriOrBNode {
     /**
       * Is valid according tot he IRI rfc
       *
-      * @param includeWarnings If true then warnings are reported as well as errors.
+      * @param includeWarnings
+      *   If true then warnings are reported as well as errors.
       */
     def isValid(includeWarnings: Boolean): Boolean =
       value.hasViolation(includeWarnings)
@@ -105,7 +112,8 @@ object IriOrBNode {
     /**
       * Does this Iri specify a scheme.
       *
-      * @return true if this IRI has a scheme specified, false otherwise
+      * @return
+      *   true if this IRI has a scheme specified, false otherwise
       */
     def isAbsolute: Boolean =
       value.isAbsolute
@@ -113,25 +121,29 @@ object IriOrBNode {
     /**
       * Is this Iri a relative reference without a scheme specified.
       *
-      * @return true if the Iri is a relative reference, false otherwise
+      * @return
+      *   true if the Iri is a relative reference, false otherwise
       */
     def isRelative: Boolean =
       value.isRelative
 
     /**
-      * @return true if the current ''iri'' starts with the passed ''other'' iri, false otherwise
+      * @return
+      *   true if the current ''iri'' starts with the passed ''other'' iri, false otherwise
       */
     def startsWith(other: Iri): Boolean =
       toString.startsWith(other.toString)
 
     /**
-      * @return the resulting string from stripping the passed ''iri'' to the current iri.
+      * @return
+      *   the resulting string from stripping the passed ''iri'' to the current iri.
       */
     def stripPrefix(iri: Iri): String =
       stripPrefix(iri.toString)
 
     /**
-      * @return the resulting string from stripping the passed ''prefix'' to the current iri.
+      * @return
+      *   the resulting string from stripping the passed ''prefix'' to the current iri.
       */
     def stripPrefix(prefix: String): String =
       toString.stripPrefix(prefix)
@@ -143,13 +155,15 @@ object IriOrBNode {
       toString.endsWith("/") || toString.endsWith("#")
 
     /**
-      * @return true if the Iri is empty, false otherwise
+      * @return
+      *   true if the Iri is empty, false otherwise
       */
     def isEmpty: Boolean =
       toString.isEmpty
 
     /**
-      * @return true if the Iri is not empty, false otherwise
+      * @return
+      *   true if the Iri is not empty, false otherwise
       */
     def nonEmpty: Boolean =
       toString.nonEmpty
@@ -173,7 +187,8 @@ object IriOrBNode {
     def toUri: Either[String, Uri] = UriUtils.uri(toString)
 
     /**
-      * @return the IRI scheme
+      * @return
+      *   the IRI scheme
       */
     def scheme: Option[String] = Option(value.getScheme)
 
@@ -190,9 +205,9 @@ object IriOrBNode {
     override val asBNode: Option[BNode] = None
 
     /**
-      * Returns a new absolute Iri resolving the current relative [[Iri]] with the passed absolute [[Iri]].
-      * If the current [[Iri]] is absolute, there is nothing to resolve against and the current [[Iri]] is returned.
-      * If the passed [[Iri]] is not absolute, there is nothing to resolve against and the current [[Iri]] is returned.
+      * Returns a new absolute Iri resolving the current relative [[Iri]] with the passed absolute [[Iri]]. If the
+      * current [[Iri]] is absolute, there is nothing to resolve against and the current [[Iri]] is returned. If the
+      * passed [[Iri]] is not absolute, there is nothing to resolve against and the current [[Iri]] is returned.
       */
     def resolvedAgainst(iri: Iri): Iri =
       if (isAbsolute) this
@@ -211,7 +226,8 @@ object IriOrBNode {
     /**
       * Construct an [[Iri]] safely.
       *
-      * @param string the string from which to construct an [[Iri]]
+      * @param string
+      *   the string from which to construct an [[Iri]]
       */
     def apply(string: String): Either[String, Iri] = {
       val iri = unsafe(string)
@@ -221,13 +237,20 @@ object IriOrBNode {
     /**
       * Construct an [[Iri]] from its raw components.
       *
-      * @param scheme   the optional scheme segment
-      * @param userInfo the optional user info segment
-      * @param host     the optional host segment
-      * @param port     the optional port
-      * @param path     the optional path segment
-      * @param query    the optional query segment
-      * @param fragment the optional fragment segment
+      * @param scheme
+      *   the optional scheme segment
+      * @param userInfo
+      *   the optional user info segment
+      * @param host
+      *   the optional host segment
+      * @param port
+      *   the optional port
+      * @param path
+      *   the optional path segment
+      * @param query
+      *   the optional query segment
+      * @param fragment
+      *   the optional fragment segment
       */
     def unsafe(
         scheme: Option[String],
@@ -253,10 +276,14 @@ object IriOrBNode {
     /**
       * Construct an [[Iri]] from its raw components
       *
-      * @param scheme   the optional scheme segment
-      * @param path     the optional path segment
-      * @param query    the optional query segment
-      * @param fragment the optional fragment segment
+      * @param scheme
+      *   the optional scheme segment
+      * @param path
+      *   the optional path segment
+      * @param query
+      *   the optional query segment
+      * @param fragment
+      *   the optional fragment segment
       */
     def unsafe(
         scheme: Option[String],
@@ -275,7 +302,8 @@ object IriOrBNode {
     /**
       * Construct an absolute [[Iri]] safely.
       *
-      * @param string the string from which to construct an [[Iri]]
+      * @param string
+      *   the string from which to construct an [[Iri]]
       */
     def absolute(string: String): Either[String, Iri] =
       apply(string).flatMap(iri => Option.when(iri.isAbsolute)(iri).toRight(s"'$string' is not an absolute IRI"))
@@ -324,7 +352,8 @@ object IriOrBNode {
     /**
       * Unsafely creates a [[BNode]]
       *
-      * @param anonId the string value of the bnode
+      * @param anonId
+      *   the string value of the bnode
       */
     def unsafe(anonId: String): BNode =
       BNode(anonId)

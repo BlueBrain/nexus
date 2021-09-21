@@ -16,10 +16,14 @@ import monix.execution.Scheduler
 /**
   * The quotas routes
   *
-  * @param identities the identity module
-  * @param acls       the acls module
-  * @param projects   the projects module
-  * @param quotas     the quotas module
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the acls module
+  * @param projects
+  *   the projects module
+  * @param quotas
+  *   the quotas module
   */
 final class QuotasRoutes(
     identities: Identities,

@@ -24,17 +24,20 @@ import scala.annotation.nowarn
 sealed trait ResolverEvent extends ProjectScopedEvent {
 
   /**
-    * @return the resolver identifier
+    * @return
+    *   the resolver identifier
     */
   def id: Iri
 
   /**
-    * @return the project where the resolver belongs to
+    * @return
+    *   the project where the resolver belongs to
     */
   def project: ProjectRef
 
   /**
-    * @return the resolver type
+    * @return
+    *   the resolver type
     */
   def tpe: ResolverType
 
@@ -45,11 +48,16 @@ object ResolverEvent {
   /**
     * Event for the creation of a resolver
     *
-    * @param id      the resolver identifier
-    * @param project the project the resolver belongs to
-    * @param value   additional fields to configure the resolver
-    * @param instant the instant this event was created
-    * @param subject the subject which created this event
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param value
+    *   additional fields to configure the resolver
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class ResolverCreated(
       id: Iri,
@@ -66,12 +74,18 @@ object ResolverEvent {
   /**
     * Event for the modification of an existing resolver
     *
-    * @param id        the resolver identifier
-    * @param project   the project the resolver belongs to
-    * @param value     additional fields to configure the resolver
-    * @param rev       the last known revision of the resolver
-    * @param instant   the instant this event was created
-    * @param subject   the subject which created this event
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param value
+    *   additional fields to configure the resolver
+    * @param rev
+    *   the last known revision of the resolver
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject which created this event
     */
   final case class ResolverUpdated(
       id: Iri,
@@ -88,14 +102,22 @@ object ResolverEvent {
   /**
     * Event for to tag a resolver
     *
-    * @param id        the resolver identifier
-    * @param project   the project the resolver belongs to
-    * @param tpe       the resolver type
-    * @param targetRev the revision that is being aliased with the provided ''tag''
-    * @param tag       the tag of the alias for the provided ''tagRev''
-    * @param rev       the last known revision of the resolver
-    * @param instant   the instant this event was created
-    * @param subject   the subject creating this event
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param tpe
+    *   the resolver type
+    * @param targetRev
+    *   the revision that is being aliased with the provided ''tag''
+    * @param tag
+    *   the tag of the alias for the provided ''tagRev''
+    * @param rev
+    *   the last known revision of the resolver
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class ResolverTagAdded(
       id: Iri,
@@ -111,12 +133,18 @@ object ResolverEvent {
   /**
     * Event for the deprecation of a resolver
     *
-    * @param id      the resolver identifier
-    * @param project the project the resolver belongs to
-    * @param tpe     the resolver type
-    * @param rev     the last known revision of the resolver
-    * @param instant the instant this event was created
-    * @param subject the subject creating this event
+    * @param id
+    *   the resolver identifier
+    * @param project
+    *   the project the resolver belongs to
+    * @param tpe
+    *   the resolver type
+    * @param rev
+    *   the last known revision of the resolver
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
     */
   final case class ResolverDeprecated(
       id: Iri,

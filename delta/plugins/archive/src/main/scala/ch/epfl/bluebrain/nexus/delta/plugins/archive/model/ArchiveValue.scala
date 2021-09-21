@@ -14,17 +14,20 @@ import scala.annotation.nowarn
 /**
   * An archive value.
   *
-  * @param resources the collection of referenced resources
+  * @param resources
+  *   the collection of referenced resources
   */
 final case class ArchiveValue private (resources: NonEmptySet[ArchiveReference])
 
 object ArchiveValue {
 
   /**
-    * A safe constructor for ArchiveValue that checks for path duplication and validate that paths respect tar implementation in alpakka
+    * A safe constructor for ArchiveValue that checks for path duplication and validate that paths respect tar
+    * implementation in alpakka
     * https://github.com/akka/alpakka/blob/f2971ca8a4a71b541cddbd5bf35af3a2a56efe71/file/src/main/scala/akka/stream/alpakka/file/model.scala#L115
     *
-    * @param resources the collection of referenced resources
+    * @param resources
+    *   the collection of referenced resources
     */
   final def apply(resources: NonEmptySet[ArchiveReference]): Either[InvalidResourceCollection, ArchiveValue] = {
 
@@ -56,7 +59,8 @@ object ArchiveValue {
   /**
     * An unsafe constructor for ArchiveValue that doesn't check for path duplication.
     *
-    * @param resources the collection of referenced resources
+    * @param resources
+    *   the collection of referenced resources
     */
   final def unsafe(resources: NonEmptySet[ArchiveReference]): ArchiveValue =
     new ArchiveValue(resources)

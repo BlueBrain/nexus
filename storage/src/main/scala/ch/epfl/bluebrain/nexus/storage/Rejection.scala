@@ -12,7 +12,8 @@ import io.circe.{Encoder, Json}
 /**
   * Enumeration of resource rejection types.
   *
-  * @param msg a descriptive message of the rejection
+  * @param msg
+  *   a descriptive message of the rejection
   */
 sealed abstract class Rejection(val msg: String) extends AkkaRejection with Product with Serializable
 
@@ -21,15 +22,18 @@ object Rejection {
   /**
     * Signals an attempt to interact with a bucket that doesn't exist.
     *
-    * @param name the storage bucket name
+    * @param name
+    *   the storage bucket name
     */
   final case class BucketNotFound(name: String) extends Rejection(s"The provided bucket '$name' does not exist.")
 
   /**
     * Signals an attempt to override a path that already exists.
     *
-    * @param name the storage bucket name
-    * @param path the relative path to the file
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the relative path to the file
     */
   final case class PathAlreadyExists(name: String, path: Path)
       extends Rejection(
@@ -39,8 +43,10 @@ object Rejection {
   /**
     * Signals an attempt to interact with a path that doesn't exist.
     *
-    * @param name the storage bucket name
-    * @param path the relative path to the file
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the relative path to the file
     */
   final case class PathNotFound(name: String, path: Path)
       extends Rejection(
@@ -50,8 +56,10 @@ object Rejection {
   /**
     * Signals that the location contains symbolic or hard links.
     *
-    * @param name the storage bucket name
-    * @param path the relative path to the file
+    * @param name
+    *   the storage bucket name
+    * @param path
+    *   the relative path to the file
     */
   final case class PathContainsLinks(name: String, path: Path)
       extends Rejection(
@@ -60,7 +68,8 @@ object Rejection {
 
   /**
     * Signals a missing.
-    * @param name the storage bucket name
+    * @param name
+    *   the storage bucket name
     */
   final case class EmptyFilename(name: String)
 

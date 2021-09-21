@@ -1,0 +1,13 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/deletion-status.json",
+  "progress": "Deleting",
+  "_createdAt": "2021-08-31T12:50:48.305Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_finished": false,
+  "_project": "myorg/myproject",
+  "_projectCreatedAt": "2021-08-31T12:49:19.404Z",
+  "_projectCreatedBy": "http://localhost:8080/v1/anonymous",
+  "_self": "http://localhost:8080/v1/projects/myorg/myproject/deletions/5d4e830b-39ad-4c8f-8c28-f63a94fbad63",
+  "_updatedAt": "2021-08-31T12:50:48.305Z",
+  "_uuid": "5d4e830b-39ad-4c8f-8c28-f63a94fbad63"
+}

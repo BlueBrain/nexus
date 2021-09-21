@@ -15,10 +15,10 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
 /**
-  * Defines the signature for a collection of search results with their metadata
-  * including pagination
+  * Defines the signature for a collection of search results with their metadata including pagination
   *
-  * @tparam A the type of the result
+  * @tparam A
+  *   the type of the result
   */
 sealed trait SearchResults[A] extends Product with Serializable {
   def total: Long
@@ -29,8 +29,10 @@ sealed trait SearchResults[A] extends Product with Serializable {
   /**
     * Constructs a new [[SearchResults]] with the provided ''results''
     *
-    * @param res the provided collection of results
-    * @tparam B the generic type of the newly created [[SearchResults]]
+    * @param res
+    *   the provided collection of results
+    * @tparam B
+    *   the generic type of the newly created [[SearchResults]]
     */
   def copyWith[B](res: Seq[ResultEntry[B]]): SearchResults[B]
 }
@@ -42,10 +44,14 @@ object SearchResults {
   /**
     * A collection of search results with score including pagination.
     *
-    * @param total    the total number of results
-    * @param maxScore the maximum score of the individual query results
-    * @param results  the collection of results
-    * @param token    the optional token used to generate the next link
+    * @param total
+    *   the total number of results
+    * @param maxScore
+    *   the maximum score of the individual query results
+    * @param results
+    *   the collection of results
+    * @param token
+    *   the optional token used to generate the next link
     */
   final case class ScoredSearchResults[A](
       total: Long,
@@ -61,9 +67,12 @@ object SearchResults {
   /**
     * A collection of query results including pagination.
     *
-    * @param total   the total number of results
-    * @param results the collection of results
-    * @param token   the optional token used to generate the next link
+    * @param total
+    *   the total number of results
+    * @param results
+    *   the collection of results
+    * @param token
+    *   the optional token used to generate the next link
     */
   final case class UnscoredSearchResults[A](total: Long, results: Seq[ResultEntry[A]], token: Option[String] = None)
       extends SearchResults[A] {
@@ -98,9 +107,12 @@ object SearchResults {
   /**
     * Constructs an [[ScoredSearchResults]]
     *
-    * @param total      the total number of results
-    * @param maxScore   the maximum score of the individual query results
-    * @param results    the collection of results
+    * @param total
+    *   the total number of results
+    * @param maxScore
+    *   the maximum score of the individual query results
+    * @param results
+    *   the collection of results
     */
   final def apply[A](total: Long, maxScore: Float, results: Seq[ResultEntry[A]]): SearchResults[A] =
     ScoredSearchResults[A](total, maxScore, results)
@@ -108,15 +120,17 @@ object SearchResults {
   /**
     * Constructs an [[UnscoredSearchResults]]
     *
-    * @param total      the total number of results
-    * @param results    the collection of results
+    * @param total
+    *   the total number of results
+    * @param results
+    *   the collection of results
     */
   final def apply[A](total: Long, results: Seq[A]): UnscoredSearchResults[A] =
     UnscoredSearchResults[A](total, results.map(UnscoredResultEntry(_)))
 
   /**
-    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where the next link is computed
-    * using the passed ''pagination'' and ''searchUri''
+    * Builds an [[JsonLdEncoder]] of [[SearchResults]] of ''A'' where the next link is computed using the passed
+    * ''pagination'' and ''searchUri''
     */
   def searchResultsJsonLdEncoder[A: Encoder.AsObject](
       additionalContext: ContextValue,
@@ -185,5 +199,7 @@ object SearchResults {
 
   private def toPublic(uri: Uri)(implicit baseUri: BaseUri): Uri =
     uri.copy(scheme = baseUri.scheme, authority = baseUri.authority)
+
+  def empty[A]: SearchResults[A] = UnscoredSearchResults(0L, Seq.empty)
 
 }

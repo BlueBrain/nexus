@@ -21,8 +21,10 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
     * It first tries to find the class in the parent [[ClassLoader]] and then it attempts to find it in the plugins.
     * scala classes are always loaded by the parent [[ClassLoader]].
     *
-    * @param className The binary name of the class
-    * @return The resulting [[Class]] object
+    * @param className
+    *   The binary name of the class
+    * @return
+    *   The resulting [[Class]] object
     */
   override def loadClass(className: String): Class[_] =
     loadClassFromParent(className)
@@ -32,11 +34,13 @@ class PluginsClassLoader(pluginsClassLoader: List[PluginClassLoader], parent: Cl
   /**
     * Finds the resource with the given name.
     *
-    * Returns the resource from the parent classpath if exists
-    * Otherwise, it attempts to find it in the plugin's classpath
+    * Returns the resource from the parent classpath if exists Otherwise, it attempts to find it in the plugin's
+    * classpath
     *
-    * @param name the name of the resource.
-    * @return the URL to the resource, null if the resource was not found.
+    * @param name
+    *   the name of the resource.
+    * @return
+    *   the URL to the resource, null if the resource was not found.
     */
   override def getResource(name: String): URL =
     getResourceFromParent(name).orElse(getResourceFromPlugins(name, cls.toList)).orNull

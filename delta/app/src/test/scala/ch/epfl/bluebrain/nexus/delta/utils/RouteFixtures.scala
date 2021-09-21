@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.utils
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -20,6 +21,8 @@ import java.util.UUID
 
 trait RouteFixtures extends TestHelpers with IOValues {
   implicit private val cl: ClassLoader = getClass.getClassLoader
+
+  implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
   implicit def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
@@ -44,7 +47,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       contexts.statistics            -> ContextValue.fromFile("contexts/statistics.json").accepted,
       contexts.tags                  -> ContextValue.fromFile("contexts/tags.json").accepted,
       contexts.version               -> ContextValue.fromFile("/contexts/version.json").accepted,
-      contexts.quotas                -> ContextValue.fromFile("/contexts/quotas.json").accepted
+      contexts.quotas                -> ContextValue.fromFile("/contexts/quotas.json").accepted,
+      contexts.deletionStatus        -> ContextValue.fromFile("/contexts/deletion-status.json").accepted
     )
 
   implicit val ordering: JsonKeyOrdering =
@@ -113,20 +117,22 @@ trait RouteFixtures extends TestHelpers with IOValues {
       organizationUuid: UUID,
       rev: Long = 1L,
       deprecated: Boolean = false,
+      markedForDeletion: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Json =
     jsonContentOf(
       "projects/project-route-metadata-response.json",
-      "project"          -> ref,
-      "rev"              -> rev,
-      "deprecated"       -> deprecated,
-      "createdBy"        -> createdBy.id,
-      "updatedBy"        -> updatedBy.id,
-      "label"            -> label,
-      "uuid"             -> uuid,
-      "organization"     -> organizationLabel,
-      "organizationUuid" -> organizationUuid
+      "project"           -> ref,
+      "rev"               -> rev,
+      "deprecated"        -> deprecated,
+      "markedForDeletion" -> markedForDeletion,
+      "createdBy"         -> createdBy.id,
+      "updatedBy"         -> updatedBy.id,
+      "label"             -> label,
+      "uuid"              -> uuid,
+      "organization"      -> organizationLabel,
+      "organizationUuid"  -> organizationUuid
     )
 
   def orgMetadata(

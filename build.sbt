@@ -1,7 +1,9 @@
+import scala.io.Source
+
 /*
 scalafmt: {
   maxColumn = 150
-  align.tokens.add = [
+  align.tokens."+" = [
     { code = ":=", owner = "Term.ApplyInfix" }
     { code = "+=", owner = "Term.ApplyInfix" }
     { code = "++=", owner = "Term.ApplyInfix" }
@@ -158,23 +160,12 @@ lazy val docs = project
     name                             := "docs",
     moduleName                       := "docs",
     // paradox settings
-    paradoxValidationIgnorePaths    ++= List(
-      "https://bluebrain.github.io/nexus/contexts/metadata.json".r,
-      "https://dl.acm.org/.*".r,
-      "http://example.com/.*".r,
-      "https://github.com/BlueBrain/nexus-web/blob/main/README.md.*".r,
-      "https://www.janelia.org".r,
-      "http://mouselight.janelia.org/".r,
-      "http://ml-neuronbrowser.janelia.org".r,
-      "https://movies.com/movieId/1".r,
-      "https://link.springer.com/.*".r,
-      "https://sandbox.bluebrainnexus.io.*".r,
-      "https://www.sciencedirect.com/.*".r,
-      "https://shacl.org/.*".r,
-      "http://www.w3.org/2001/XMLSchema.*".r,
-      "https://www.youtube.com/.*".r,
-      "https://web.stanford.edu/.*".r
-    ),
+    paradoxValidationIgnorePaths    ++= {
+      val source      = Source.fromFile(file("docs/ignore-paths.txt"))
+      val ignorePaths = source.getLines().map(_.r).toList
+      source.close()
+      ignorePaths
+    },
     Compile / paradoxMaterialTheme   := {
       ParadoxMaterialTheme()
         .withColor("light-blue", "cyan")
@@ -749,12 +740,12 @@ lazy val archivePlugin = project
 
 lazy val plugins = project
   .in(file("delta/plugins"))
-  .settings(shared, noPublish)
+  .settings(shared, compilation, noPublish)
   .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin)
 
 lazy val delta = project
   .in(file("delta"))
-  .settings(shared, noPublish)
+  .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
@@ -849,7 +840,7 @@ lazy val tests = project
 lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
-  .settings(shared, noPublish)
+  .settings(compilation, shared, noPublish)
   .aggregate(docs, cli, delta, storage, tests)
 
 lazy val noPublish = Seq(
@@ -939,24 +930,26 @@ lazy val compilation = {
   import sbt._
 
   Seq(
-    scalaVersion                    := scalaCompilerVersion,
-    scalacOptions                   ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
-    javaSpecificationVersion        := "11",
-    javacOptions                   ++= Seq(
+    scalaVersion                           := scalaCompilerVersion,
+    scalacOptions                          ~= { options: Seq[String] => options.filterNot(Set("-Wself-implicit")) },
+    javaSpecificationVersion               := "11",
+    javacOptions                          ++= Seq(
       "-source",
       javaSpecificationVersion.value,
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
     ),
-    Compile / doc / scalacOptions  ++= Seq("-no-link-warnings"),
-    Compile / doc / javacOptions    := Seq("-source", javaSpecificationVersion.value),
-    autoAPIMappings                 := true,
-    apiMappings                     += {
+    Compile / packageSrc / publishArtifact := !isSnapshot.value,
+    Compile / packageDoc / publishArtifact := !isSnapshot.value,
+    Compile / doc / scalacOptions         ++= Seq("-no-link-warnings"),
+    Compile / doc / javacOptions           := Seq("-source", javaSpecificationVersion.value),
+    autoAPIMappings                        := true,
+    apiMappings                            += {
       val scalaDocUrl = s"http://scala-lang.org/api/${scalaVersion.value}/"
       ApiMappings.apiMappingFor((Compile / fullClasspath).value)("scala-library", scalaDocUrl)
     },
-    Scapegoat / dependencyClasspath := (Compile / dependencyClasspath).value
+    Scapegoat / dependencyClasspath        := (Compile / dependencyClasspath).value
   )
 }
 

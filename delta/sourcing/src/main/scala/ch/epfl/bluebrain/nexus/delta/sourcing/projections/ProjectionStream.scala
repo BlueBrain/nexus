@@ -2,13 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
 import akka.persistence.query.Offset
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMetricsConfig, KamonMonitoring}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax._
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
+import kamon.Kamon
+import kamon.tag.TagSet
 import monix.bio.Task
 import monix.catnap.SchedulerEffect
 import monix.execution.Scheduler
+import monix.execution.atomic.AtomicLong
 
 import scala.util.control.NonFatal
 
@@ -41,7 +45,8 @@ object ProjectionStream {
 
   /**
     * Provides extensions methods for fs2.Stream[Message] to implement projections
-    * @param stream the stream to run
+    * @param stream
+    *   the stream to run
     */
   class SimpleStreamOps[A](val stream: Stream[Task, Message[A]])(implicit scheduler: Scheduler) extends StreamOps[A] {
 
@@ -50,10 +55,9 @@ object ProjectionStream {
     implicit val timer: Timer[Task] = SchedulerEffect.timer[Task](scheduler)
 
     /**
-      * Transforms the value inside the message using the passed async function.
-      * If the result is a None on the regular channel, the message is a discarded message.
-      * If the result is on the failure channel, the message is an error message.
-      * If the result is a Some(r) on the regular channel, the message is a success message.
+      * Transforms the value inside the message using the passed async function. If the result is a None on the regular
+      * channel, the message is a discarded message. If the result is on the failure channel, the message is an error
+      * message. If the result is a Some(r) on the regular channel, the message is a success message.
       */
     def evalMapFilterValue[R](f: A => Task[Option[R]]): Stream[Task, Message[R]] =
       stream.evalMap(transform(f))
@@ -65,9 +69,8 @@ object ProjectionStream {
       stream.map(_.map(f))
 
     /**
-      * Maps on the value inside the message using the passed function.
-      * If the result is a None, the message is a discarded message.
-      * If the result is a Some(r), the message is a success message.
+      * Maps on the value inside the message using the passed function. If the result is a None, the message is a
+      * discarded message. If the result is a Some(r), the message is a success message.
       */
     def collectSomeValue[R](f: A => Option[R]): Stream[Task, Message[R]] =
       stream.map(_.map(f)).map {
@@ -77,9 +80,8 @@ object ProjectionStream {
       }
 
     /**
-      * Filters the value inside the message using the passed function.
-      * If the result is a false, the message is a discarded message.
-      * If the result is true, the message is a success message.
+      * Filters the value inside the message using the passed function. If the result is a false, the message is a
+      * discarded message. If the result is true, the message is a success message.
       */
     def filterValue(f: A => Boolean): Stream[Task, Message[A]] =
       stream.map(_.filter(f))
@@ -91,10 +93,10 @@ object ProjectionStream {
       stream.map(_.flatMap(f))
 
     /**
-      * On replay, skip all messages with a offset lower than the
-      * starting offset
+      * On replay, skip all messages with a offset lower than the starting offset
       *
-      * @param offset the offset to discard from
+      * @param offset
+      *   the offset to discard from
       */
     def discardOnReplay(offset: Offset): Stream[Task, Message[A]] =
       stream.map {
@@ -105,7 +107,8 @@ object ProjectionStream {
     /**
       * Apply the given function that either fails or succeed for every success message
       *
-      * @see [[runAsync]]
+      * @see
+      *   [[runAsync]]
       */
     def runAsyncUnit(f: A => Task[Unit], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
       runAsync(f.andThenF { _ => Task.pure(RunResult.Success) }, predicate)
@@ -113,12 +116,12 @@ object ProjectionStream {
     /**
       * Apply the given function for every success message
       *
-      * If the function gives an error, the message will be marked as failed,
-      * It will remain unmodified otherwise
+      * If the function gives an error, the message will be marked as failed, It will remain unmodified otherwise
       *
-      * @param f the function to apply to each success message
-      * @param predicate to apply f only to the messages matching this predicate
-      *                  (for example, based on the offset during a replay)
+      * @param f
+      *   the function to apply to each success message
+      * @param predicate
+      *   to apply f only to the messages matching this predicate (for example, based on the offset during a replay)
       */
     def runAsync(f: A => Task[RunResult], predicate: Message[A] => Boolean = Message.always): Stream[Task, Message[A]] =
       stream.evalMap {
@@ -136,7 +139,8 @@ object ProjectionStream {
       * It accumulates the [[ProjectionProgress]], adding accordingly to processed, discarded or failed depending on
       * each passing Message
       *
-      * @param initial the initial progress
+      * @param initial
+      *   the initial progress
       */
     def accumulateProgress(initial: ProjectionProgress[A]): Stream[Task, (ProjectionProgress[A], Message[A])] = {
       stream
@@ -186,10 +190,14 @@ object ProjectionStream {
     /**
       * Map over the stream of messages and persist the progress and errors
       *
-      * @param initial         where we started
-      * @param persistErrors   how we persist errors
-      * @param persistProgress how we persist progress
-      * @param config          the config
+      * @param initial
+      *   where we started
+      * @param persistErrors
+      *   how we persist errors
+      * @param persistProgress
+      *   how we persist progress
+      * @param config
+      *   the config
       */
     def persistProgress(
         initial: ProjectionProgress[A],
@@ -205,10 +213,14 @@ object ProjectionStream {
     /**
       * Map over the stream of messages and persist the progress and errors using the given projection
       *
-      * @param initial      where we started
-      * @param projectionId the projection identifier
-      * @param projection   the projection to rely on
-      * @param config       the config
+      * @param initial
+      *   where we started
+      * @param projectionId
+      *   the projection identifier
+      * @param projection
+      *   the projection to rely on
+      * @param config
+      *   the config
       */
     def persistProgress(
         initial: ProjectionProgress[A],
@@ -224,14 +236,21 @@ object ProjectionStream {
       )
 
     /**
-      * Map over the stream of messages and persist the progress and errors using the given projection with caching the progress.
+      * Map over the stream of messages and persist the progress and errors using the given projection with caching the
+      * progress.
       *
-      * @param initial          where we started
-      * @param projectionId     the projection identifier
-      * @param projection       the projection to rely on
-      * @param cacheProgress    how we cache progress
-      * @param projectionConfig the config
-      * @param cacheConfig      the cache update config
+      * @param initial
+      *   where we started
+      * @param projectionId
+      *   the projection identifier
+      * @param projection
+      *   the projection to rely on
+      * @param cacheProgress
+      *   how we cache progress
+      * @param projectionConfig
+      *   the config
+      * @param cacheConfig
+      *   the cache update config
       */
     def persistProgressWithCache(
         initial: ProjectionProgress[A],
@@ -254,7 +273,8 @@ object ProjectionStream {
   /**
     * Provides extensions methods for fs2.Stream[Chunk] of messages to implement projections
     *
-    * @param stream the stream to run
+    * @param stream
+    *   the stream to run
     */
   class ChunkStreamOps[A](private val stream: Stream[Task, Chunk[Message[A]]]) extends StreamOps[A] {
 
@@ -282,8 +302,7 @@ object ProjectionStream {
     }
 
     /**
-      * Detects duplicates with same persistenceId and discard them
-      * Keeps the last occurence for a given persistenceId
+      * Detects duplicates with same persistenceId and discard them Keeps the last occurence for a given persistenceId
       */
     def discardDuplicates(): Stream[Task, Chunk[Message[A]]] =
       stream.map { c =>
@@ -291,8 +310,8 @@ object ProjectionStream {
       }
 
     /**
-      * Detects duplicates with same persistenceId, discard them and flatten chunks
-      * Keeps the last occurence for a given persistenceId
+      * Detects duplicates with same persistenceId, discard them and flatten chunks Keeps the last occurence for a given
+      * persistenceId
       */
     def discardDuplicatesAndFlatten(): Stream[Task, Message[A]] =
       stream.flatMap { c =>
@@ -300,10 +319,9 @@ object ProjectionStream {
       }
 
     /**
-      * Transforms the value inside each message on the chunk using the passed async function.
-      * If the result is a None on the regular channel, the message is a discarded message.
-      * If the result is on the failure channel, the message is an error message.
-      * If the result is a Some(r) on the regular channel, the message is a success message.
+      * Transforms the value inside each message on the chunk using the passed async function. If the result is a None
+      * on the regular channel, the message is a discarded message. If the result is on the failure channel, the message
+      * is an error message. If the result is a Some(r) on the regular channel, the message is a success message.
       */
     def evalMapFilterValue[R](f: A => Task[Option[R]]): Stream[Task, Chunk[Message[R]]] =
       stream.evalMap { chunk =>
@@ -311,9 +329,9 @@ object ProjectionStream {
       }
 
     /**
-      * Transforms the value inside each message on the chunk using the passed async function.
-      * If the result is on the failure channel, the message is an error message.
-      * If the result is an ''r'' on the regular channel, the message is a success message.
+      * Transforms the value inside each message on the chunk using the passed async function. If the result is on the
+      * failure channel, the message is an error message. If the result is an ''r'' on the regular channel, the message
+      * is a success message.
       */
     def evalMapValue[R](f: A => Task[R]): Stream[Task, Chunk[Message[R]]] =
       evalMapFilterValue(f.map(_.map(Some.apply)))
@@ -327,9 +345,8 @@ object ProjectionStream {
       }
 
     /**
-      * Maps on the values inside the messages' chunks using the passed function.
-      * If the result is a None, the message is a discarded message.
-      * If the result is a Some(r), the message is a success message.
+      * Maps on the values inside the messages' chunks using the passed function. If the result is a None, the message
+      * is a discarded message. If the result is a Some(r), the message is a success message.
       */
     def collectSomeValue[R](f: A => Option[R]): Stream[Task, Chunk[Message[R]]] =
       stream.map { chunk =>
@@ -341,9 +358,8 @@ object ProjectionStream {
       }
 
     /**
-      * Filters the values inside the messages chunks using the passed function.
-      * If the result is a false, the message is a discarded message.
-      * If the result is true, the message is a success message.
+      * Filters the values inside the messages chunks using the passed function. If the result is a false, the message
+      * is a discarded message. If the result is true, the message is a success message.
       */
     def filterValue(f: A => Boolean): Stream[Task, Chunk[Message[A]]] =
       stream.map { chunk =>
@@ -359,9 +375,51 @@ object ProjectionStream {
       }
 
     /**
+      * Accumulate over the chunks and persist the progress and errors
+      *
+      * @param initial
+      *   where we started
+      * @param persistErrors
+      *   how we persist errors
+      * @param persistProgress
+      *   how we persist progress
+      */
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        persistProgress: ProjectionProgress[A] => Task[Unit],
+        persistErrors: Vector[Message[A]] => Task[Unit]
+    ): Stream[Task, ProjectionProgress[A]] = {
+      stream
+        .evalMapAccumulate(initial) { case (acc, chunk) =>
+          val (progress, errors) = chunk.foldLeft((acc, Vector.empty[Message[A]])) {
+            case ((acc, errors), msg: ErrorMessage) if msg.offset.gt(acc.offset)                               => (acc + msg, errors :+ msg)
+            case ((acc, errors), msg: SuccessMessage[_]) if msg.offset.gt(acc.offset) && msg.warnings.nonEmpty =>
+              (acc + msg, errors :+ msg)
+            case ((acc, errors), msg) if msg.offset.gt(acc.offset)                                             => (acc + msg, errors)
+            case ((acc, errors), _)                                                                            => (acc, errors)
+          }
+
+          persistErrors(errors) >> persistProgress(progress) >> Task.pure(progress -> chunk)
+        }
+        .map(_._1)
+    }
+
+    def persistProgress(
+        initial: ProjectionProgress[A],
+        projectionId: ProjectionId,
+        projection: Projection[A]
+    ): Stream[Task, ProjectionProgress[A]] =
+      persistProgress(
+        initial,
+        projection.recordProgress(projectionId, _),
+        projection.recordErrors(projectionId, _)
+      )
+
+    /**
       * Apply the given function that either fails or succeed for every success message in a chunk
       *
-      * @see [[runAsync]]
+      * @see
+      *   [[runAsync]]
       */
     def runAsyncUnit(
         f: List[A] => Task[Unit],
@@ -372,11 +430,13 @@ object ProjectionStream {
     /**
       * Applies the function as a batch for every success message in a chunk
       *
-      * If an error occurs for any of this messages, every success message in the
-      * chunk will be marked as failed for the same reason
+      * If an error occurs for any of this messages, every success message in the chunk will be marked as failed for the
+      * same reason
       *
-      * @param f the function to apply to each success message of the chunk
-      * @param predicate to apply f only to the messages matching this predicate  (for example, based on the offset during a replay)
+      * @param f
+      *   the function to apply to each success message of the chunk
+      * @param predicate
+      *   to apply f only to the messages matching this predicate (for example, based on the offset during a replay)
       */
     def runAsync(
         f: List[A] => Task[RunResult],
@@ -416,5 +476,47 @@ object ProjectionStream {
             }
         }
       }
+  }
+
+  class ProjectionProgressStreamOps[A](val stream: Stream[Task, ProjectionProgress[A]]) extends StreamOps[A] {
+
+    /**
+      * Push progress metrics in Kamon
+      */
+    def enableMetrics(implicit config: KamonMetricsConfig): Stream[Task, ProjectionProgress[A]] = if (
+      KamonMonitoring.enabled
+    ) {
+      val tagSet                           = TagSet.from(config.tags)
+      val processedEventsGauge             = Kamon
+        .gauge(s"${config.prefix}_gauge_processed_events")
+        .withTags(tagSet)
+      val processedEventsCounter           = Kamon
+        .counter(s"${config.prefix}_counter_processed_events")
+        .withTags(tagSet)
+      val processedEventsCount: AtomicLong = AtomicLong(0)
+      val failedEventsGauge                = Kamon
+        .gauge(s"${config.prefix}_gauge_failed_events")
+        .withTags(tagSet)
+      val failedEventsCounter              = Kamon
+        .counter(s"${config.prefix}_counter_failed_events")
+        .withTags(tagSet)
+      val failedEventsCount: AtomicLong    = AtomicLong(0L)
+
+      stream.evalTap { p =>
+        Task.delay {
+          val previousProcessedCount = processedEventsCount.get()
+          processedEventsGauge.update(p.processed.toDouble)
+          processedEventsCounter.increment(p.processed - previousProcessedCount)
+          processedEventsCount.set(p.processed)
+
+          val previousFailedCount = failedEventsCount.get()
+          failedEventsGauge.update(p.failed.toDouble)
+          failedEventsCounter.increment(p.failed - previousFailedCount)
+          failedEventsCount.set(p.failed)
+        }
+      }
+    } else {
+      stream
+    }
   }
 }

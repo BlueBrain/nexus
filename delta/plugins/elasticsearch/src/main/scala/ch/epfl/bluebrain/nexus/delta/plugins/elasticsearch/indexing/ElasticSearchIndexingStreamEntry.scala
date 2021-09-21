@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -17,6 +18,7 @@ import io.circe.Json
 import io.circe.syntax._
 import monix.bio.Task
 import org.apache.jena.graph.Node
+import ElasticSearchIndexingStreamEntry._
 
 final case class ElasticSearchIndexingStreamEntry(
     resource: IndexingData
@@ -125,12 +127,14 @@ final case class ElasticSearchIndexingStreamEntry(
 
 object ElasticSearchIndexingStreamEntry {
 
+  implicit private[indexing] val api: JsonLdApi = JsonLdJavaApi.lenient
+
   private val graphPredicates: Set[Node] =
     Set(skos.prefLabel, rdf.tpe, rdfs.label, Vocabulary.schema.name).map(predicate)
 
   /**
-    * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]].
-    * It generates an [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
+    * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]]. It generates an
+    * [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
     */
   def fromEventExchange[A, M](
       exchangedValue: EventExchangeValue[A, M]

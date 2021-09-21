@@ -18,23 +18,21 @@ sealed trait Message[+A] extends Product with Serializable {
 }
 
 /**
-  * Message that has been filtered out or raised an error during the projection
-  * process
+  * Message that has been filtered out or raised an error during the projection process
   */
 sealed trait SkippedMessage extends Message[Nothing]
 
 /**
-  * Message when its processing failed at a point of the projection
-  * See [[FailureMessage]] and [[CastFailedMessage]]
+  * Message when its processing failed at a point of the projection See [[FailureMessage]] and [[CastFailedMessage]]
   */
 sealed trait ErrorMessage extends SkippedMessage
 
 /**
-  * Message when its processing failed at a point of the projection
-  * After the failure, it keeps untouched
-  * until the end of the processing
+  * Message when its processing failed at a point of the projection After the failure, it keeps untouched until the end
+  * of the processing
   *
-  * @param throwable the exception which has been raised during the processing
+  * @param throwable
+  *   the exception which has been raised during the processing
   */
 final case class FailureMessage[A](
     offset: Offset,
@@ -45,11 +43,12 @@ final case class FailureMessage[A](
 ) extends ErrorMessage
 
 /**
-  * Message when it suffers a ClassCastException when parsing the event in
-  * the akka-persistence enveloppe
+  * Message when it suffers a ClassCastException when parsing the event in the akka-persistence enveloppe
   *
-  * @param expectedClassname the expected classname for the value
-  * @param encounteredClassName the classname we got for the value
+  * @param expectedClassname
+  *   the expected classname for the value
+  * @param encounteredClassName
+  *   the classname we got for the value
   */
 final case class CastFailedMessage(
     offset: Offset,
@@ -74,10 +73,10 @@ final case class DiscardedMessage(
 ) extends SkippedMessage
 
 /**
-  * Message which hasn't been filtered out nor been victim of a failure
-  * during the projection process
+  * Message which hasn't been filtered out nor been victim of a failure during the projection process
   *
-  * @param value the value of the message
+  * @param value
+  *   the value of the message
   */
 final case class SuccessMessage[A](
     offset: Offset,
@@ -103,8 +102,10 @@ object Message {
 
   /**
     * Parse an akka-persistence in a message
-    * @param envelope the envelope to parse
-    * @return a success message if it is fine or a castfailed message if the event value is not of type A
+    * @param envelope
+    *   the envelope to parse
+    * @return
+    *   a success message if it is fine or a castfailed message if the event value is not of type A
     */
   def apply[A: ClassTag](envelope: EventEnvelope)(implicit timestamp: Lens[A, Instant]): Message[A] = {
     val Value = implicitly[ClassTag[A]]

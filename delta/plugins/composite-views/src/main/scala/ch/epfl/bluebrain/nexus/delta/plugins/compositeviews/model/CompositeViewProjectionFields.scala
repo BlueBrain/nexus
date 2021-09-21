@@ -22,52 +22,62 @@ import scala.annotation.nowarn
 sealed trait CompositeViewProjectionFields {
 
   /**
-    * @return the id
+    * @return
+    *   the id
     */
   def id: Option[Iri]
 
   /**
-    * @return projection query
+    * @return
+    *   projection query
     */
   def query: SparqlConstructQuery
 
   /**
-    * @return the schemas to filter by, empty means all
+    * @return
+    *   the schemas to filter by, empty means all
     */
   def resourceSchemas: Set[Iri]
 
   /**
-    * @return the resource types to filter by, empty means all
+    * @return
+    *   the resource types to filter by, empty means all
     */
   def resourceTypes: Set[Iri]
 
   /**
-    * @return the optional tag to filter by
+    * @return
+    *   the optional tag to filter by
     */
   def resourceTag: Option[TagLabel]
 
   /**
-    * @return whether to include deprecated resources
+    * @return
+    *   whether to include deprecated resources
     */
   def includeDeprecated: Boolean
 
   /**
-    * @return whether to include resource metadata
+    * @return
+    *   whether to include resource metadata
     */
   def includeMetadata: Boolean
 
   /**
-    * @return permission required to query the projection
+    * @return
+    *   permission required to query the projection
     */
   def permission: Permission
 
   /**
-    * @return the projection type
+    * @return
+    *   the projection type
     */
   def tpe: ProjectionType
 
   /**
-    * @return transform from [[CompositeViewProjectionFields]] to [[CompositeViewProjection]]
+    * @return
+    *   transform from [[CompositeViewProjectionFields]] to [[CompositeViewProjection]]
     */
   def toProjection(uuid: UUID, generatedId: Iri): CompositeViewProjection
 }
@@ -75,7 +85,7 @@ sealed trait CompositeViewProjectionFields {
 object CompositeViewProjectionFields {
 
   /**
-    *  Necessary fields to create/update an ElasticSearch projection.
+    * Necessary fields to create/update an ElasticSearch projection.
     */
   final case class ElasticSearchProjectionFields(
       id: Option[Iri] = None,
@@ -109,7 +119,7 @@ object CompositeViewProjectionFields {
   }
 
   /**
-    *  Necessary fields to create/update a SPARQL projection.
+    * Necessary fields to create/update a SPARQL projection.
     */
   final case class SparqlProjectionFields(
       id: Option[Iri] = None,

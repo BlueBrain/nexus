@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.actor.typed.ActorSystem
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
@@ -10,15 +11,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
-import monix.bio.IO
+import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
-trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedClock with RemoteContextResolutionFixture {
+trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedClock with Fixtures {
 
   def config(implicit baseUri: BaseUri) = BlazegraphViewsConfig(
     baseUri.toString,
@@ -59,19 +60,11 @@ trait BlazegraphViewsSetup extends IOValues with ConfigFixtures with IOFixedCloc
   )(implicit base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): BlazegraphViews = {
     for {
       eventLog   <- EventLog.postgresEventLog[Envelope[BlazegraphViewEvent]](EventLogUtils.toEnvelope).hideErrors
+      deferred   <- Deferred[Task, BlazegraphViews]
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       cache       = BlazegraphViews.cache(config)
-      views      <- BlazegraphViews(
-                      config,
-                      eventLog,
-                      resolverCtx,
-                      perms,
-                      cache,
-                      orgs,
-                      projects,
-                      (_, _) => IO.unit,
-                      _ => IO.unit
-                    )
+      agg        <- BlazegraphViews.aggregate(config, deferred, perms, ResourceIdCheck.alwaysAvailable)
+      views      <- BlazegraphViews(config, eventLog, resolverCtx, cache, deferred, agg, orgs, projects, _ => IO.unit)
     } yield views
   }.accepted
 }

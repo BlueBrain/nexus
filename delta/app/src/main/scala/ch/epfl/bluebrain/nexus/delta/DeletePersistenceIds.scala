@@ -15,7 +15,8 @@ object DeletePersistenceIds {
 
   /**
     * Delete the given persistence ids
-    * @param persistenceIds the persistence ids to delete
+    * @param persistenceIds
+    *   the persistence ids to delete
     */
   def delete(persistenceIds: Seq[String])(implicit as: ActorSystem, sc: Scheduler): Unit = {
     logger.info(s"Deleting persistence ids ${persistenceIds.mkString(",")}...")

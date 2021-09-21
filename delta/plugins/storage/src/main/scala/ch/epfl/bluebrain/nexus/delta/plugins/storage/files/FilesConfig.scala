@@ -9,8 +9,10 @@ import pureconfig.generic.semiauto.deriveReader
 /**
   * Configuration for the files module.
   *
-  * @param aggregate         configuration of the underlying aggregate
-  * @param cacheIndexing     configuration of the cache indexing process
+  * @param aggregate
+  *   configuration of the underlying aggregate
+  * @param cacheIndexing
+  *   configuration of the cache indexing process
   */
 final case class FilesConfig(aggregate: AggregateConfig, cacheIndexing: CacheIndexingConfig)
 

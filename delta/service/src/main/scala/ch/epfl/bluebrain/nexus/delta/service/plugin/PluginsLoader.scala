@@ -15,12 +15,13 @@ import java.lang.reflect.InvocationTargetException
 import scala.jdk.CollectionConverters._
 
 /**
-  * Class responsible for loading [[PluginDef]]s.
+  * Class responsible for loading [[PluginDef]] s.
   *
-  * It looks for jar files in the passed directories in [[loaderConfig]] and tries to load a [[PluginDef]]
-  * from each jar file found.
+  * It looks for jar files in the passed directories in [[loaderConfig]] and tries to load a [[PluginDef]] from each jar
+  * file found.
   *
-  * @param loaderConfig [[PluginsLoader]] configuration
+  * @param loaderConfig
+  *   [[PluginsLoader]] configuration
   */
 class PluginsLoader(loaderConfig: PluginLoaderConfig) {
   private val logger: Logger = Logger[PluginsLoader]
@@ -29,10 +30,10 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
 
   /**
     * Loads all the available [[PluginDef]] from each of the discovered jar files. In order to solve class loading
-    * issues caused by plugin dependencies, the load operation accumulates all independent plugin classloaders and
-    * adds them to a mutable [[PluginsClassLoader]] which is the parent of all plugin class loaders. It traverses all
-    * the plugin jar files and attempts to load them in multiple passes where a new pass is attempted if the previous
-    * one managed to load some classes but not all.
+    * issues caused by plugin dependencies, the load operation accumulates all independent plugin classloaders and adds
+    * them to a mutable [[PluginsClassLoader]] which is the parent of all plugin class loaders. It traverses all the
+    * plugin jar files and attempts to load them in multiple passes where a new pass is attempted if the previous one
+    * managed to load some classes but not all.
     */
   def load: IO[PluginError, (ClassLoader, List[PluginDef])] = {
     UIO.delay(loaderConfig.directories.flatMap(loadFiles)).flatMap { jarFiles =>
@@ -127,15 +128,18 @@ object PluginsLoader {
   /**
     * Construct a new [[PluginsLoader]] instance.
     *
-    * @param loaderConfig [[PluginsLoader]] configuration.
-    * @return an instance of [[PluginsLoader]]
+    * @param loaderConfig
+    *   [[PluginsLoader]] configuration.
+    * @return
+    *   an instance of [[PluginsLoader]]
     */
   def apply(loaderConfig: PluginLoaderConfig): PluginsLoader = new PluginsLoader(loaderConfig)
 
   /**
     * [[PluginsLoader]] configuration.
     *
-    * @param directories  directories where to load [[Plugin]]s from.
+    * @param directories
+    *   directories where to load [[Plugin]] s from.
     */
   final case class PluginLoaderConfig(directories: List[String])
 

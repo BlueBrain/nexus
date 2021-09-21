@@ -40,13 +40,20 @@ import monix.execution.Scheduler
 /**
   * The Blazegraph views routes
   *
-  * @param views       the blazegraph views operations bundle
-  * @param identities  the identity module
-  * @param acls        the ACLs module
-  * @param projects    the projects module
-  * @param progresses  the statistics of the progresses for the blazegraph views
-  * @param restartView the action to restart a view indexing process triggered by a client
-  * @param index       the indexing action on write operations
+  * @param views
+  *   the blazegraph views operations bundle
+  * @param identities
+  *   the identity module
+  * @param acls
+  *   the ACLs module
+  * @param projects
+  *   the projects module
+  * @param progresses
+  *   the statistics of the progresses for the blazegraph views
+  * @param restartView
+  *   the action to restart a view indexing process triggered by a client
+  * @param index
+  *   the indexing action on write operations
   */
 class BlazegraphViewsRoutes(
     views: BlazegraphViews,
@@ -294,7 +301,8 @@ object BlazegraphViewsRoutes {
   type RestartView = (Iri, ProjectRef) => UIO[Unit]
 
   /**
-    * @return the [[Route]] for BlazegraphViews
+    * @return
+    *   the [[Route]] for BlazegraphViews
     */
   def apply(
       views: BlazegraphViews,

@@ -26,9 +26,12 @@ import java.util.UUID
 /**
   * A dummy Organizations implementation that uses a synchronized in memory journal.
   *
-  * @param journal     a ref to the journal containing all the events wrapped in an envelope
-  * @param cache       a ref to the cache containing all the current organization resources
-  * @param semaphore   a semaphore for serializing write operations on the journal
+  * @param journal
+  *   a ref to the journal containing all the events wrapped in an envelope
+  * @param cache
+  *   a ref to the cache containing all the current organization resources
+  * @param semaphore
+  *   a semaphore for serializing write operations on the journal
   */
 final class OrganizationsDummy private (
     journal: OrganizationsJournal,

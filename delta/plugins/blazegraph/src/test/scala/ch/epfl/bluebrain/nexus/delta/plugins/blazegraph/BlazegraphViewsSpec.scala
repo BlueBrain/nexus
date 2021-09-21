@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewReje
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{permissions, _}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -35,7 +36,7 @@ class BlazegraphViewsSpec
     with IOValues
     with TestHelpers
     with ConfigFixtures
-    with RemoteContextResolutionFixture {
+    with Fixtures {
 
   "BlazegraphViews" when {
     val uuid                      = UUID.randomUUID()
@@ -60,7 +61,7 @@ class BlazegraphViewsSpec
     val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
     val indexingViewId  = nxv + "indexing-view"
-    val indexingViewId2 = nxv + "indexing-view2"
+    val indexingViewId2 = nxv + "indexing-view3"
 
     val undefinedPermission = Permission.unsafe("not/defined")
 
@@ -68,14 +69,16 @@ class BlazegraphViewsSpec
     val orgDeprecated            = Label.unsafe("org-deprecated")
     val base                     = nxv.base
     val project                  = ProjectGen.project("org", "proj", base = base, mappings = ApiMappings.empty)
+    val project2                 = ProjectGen.project("org", "proj2", base = base, mappings = ApiMappings.empty)
     val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref
 
-    val viewRef         = ViewRef(project.ref, indexingViewId)
-    val aggregateValue  = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
-    val aggregateViewId = nxv + "aggregate-view"
-    val aggregateSource = jsonContentOf("aggregate-view-source.json")
+    val viewRef          = ViewRef(project.ref, indexingViewId)
+    val aggregateValue   = AggregateBlazegraphViewValue(NonEmptySet.of(viewRef))
+    val aggregateViewId  = nxv + "aggregate-view"
+    val aggregateViewId2 = nxv + "aggregate-view2"
+    val aggregateSource  = jsonContentOf("aggregate-view-source.json")
 
     val tag = TagLabel.unsafe("v1.5")
 
@@ -85,7 +88,7 @@ class BlazegraphViewsSpec
       ProjectSetup
         .init(
           orgsToCreate = org :: orgDeprecated :: Nil,
-          projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
+          projectsToCreate = project :: project2 :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
           projectsToDeprecate = deprecatedProject.ref :: Nil,
           organizationsToDeprecate = orgDeprecated :: Nil
         )
@@ -393,6 +396,7 @@ class BlazegraphViewsSpec
         aggregateViewId -> BlazegraphViewTagAdded,
         aggregateViewId -> BlazegraphViewDeprecated
       )
+
       "get events from start" in {
         val streams = List(
           views.events(NoOffset),
@@ -433,6 +437,17 @@ class BlazegraphViewsSpec
         val org = Label.unsafe("other")
         views.events(org, NoOffset).rejected shouldEqual WrappedOrganizationRejection(OrganizationNotFound(org))
       }
+    }
+
+    "finding references" should {
+
+      "get a reference on project from project2" in {
+        views.create(aggregateViewId2, project2.ref, aggregateValue).accepted
+
+        BlazegraphViews.projectReferenceFinder(views)(projectRef).accepted shouldEqual
+          ProjectReferenceMap.single(project2.ref, aggregateViewId2)
+      }
+
     }
   }
 }

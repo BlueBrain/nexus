@@ -18,20 +18,24 @@ import java.time.Instant
 sealed trait ResourceState extends Product with Serializable {
 
   /**
-    * @return the current state revision
+    * @return
+    *   the current state revision
     */
   def rev: Long
 
   /**
-    * @return the current deprecation status
+    * @return
+    *   the current deprecation status
     */
   def deprecated: Boolean
 
   /**
     * Converts the state into a resource representation.
     *
-    * @param mappings the Api mappings to be applied in order to shorten segment ids
-    * @param base     the project base to be applied in order to shorten segment ids
+    * @param mappings
+    *   the Api mappings to be applied in order to shorten segment ids
+    * @param base
+    *   the project base to be applied in order to shorten segment ids
     */
   def toResource(mappings: ApiMappings, base: ProjectBase): Option[DataResource]
 }
@@ -58,21 +62,36 @@ object ResourceState {
   /**
     * A resource active state.
     *
-    * @param id            the resource identifier
-    * @param project       the project where the resource belongs
-    * @param schemaProject the project where the schema belongs
-    * @param source        the representation of the resource as posted by the subject
-    * @param compacted     the compacted JSON-LD representation of the resource
-    * @param expanded      the expanded JSON-LD representation of the resource
-    * @param rev           the organization revision
-    * @param deprecated    the deprecation status of the organization
-    * @param schema        the optional schema used to constrain the resource
-    * @param types         the collection of known resource types
-    * @param tags          the collection of tag aliases
-    * @param createdAt     the instant when the organization was created
-    * @param createdBy     the identity that created the organization
-    * @param updatedAt     the instant when the organization was last updated
-    * @param updatedBy     the identity that last updated the organization
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaProject
+    *   the project where the schema belongs
+    * @param source
+    *   the representation of the resource as posted by the subject
+    * @param compacted
+    *   the compacted JSON-LD representation of the resource
+    * @param expanded
+    *   the expanded JSON-LD representation of the resource
+    * @param rev
+    *   the organization revision
+    * @param deprecated
+    *   the deprecation status of the organization
+    * @param schema
+    *   the optional schema used to constrain the resource
+    * @param types
+    *   the collection of known resource types
+    * @param tags
+    *   the collection of tag aliases
+    * @param createdAt
+    *   the instant when the organization was created
+    * @param createdBy
+    *   the identity that created the organization
+    * @param updatedAt
+    *   the instant when the organization was last updated
+    * @param updatedBy
+    *   the identity that last updated the organization
     */
   final case class Current(
       id: Iri,

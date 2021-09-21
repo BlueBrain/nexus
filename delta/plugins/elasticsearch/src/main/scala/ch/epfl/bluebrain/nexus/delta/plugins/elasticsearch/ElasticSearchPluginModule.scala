@@ -2,16 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{ElasticSearchViewAggregate, ElasticSearchViewCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, contexts, schema => viewsSchemaId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -22,15 +25,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -51,7 +55,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchClient].from {
     (cfg: ElasticSearchViewsConfig, client: HttpClient @Id("elasticsearch-client"), as: ActorSystem[Nothing]) =>
-      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(as.classicSystem)
+      new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
   make[IndexingSource].named("elasticsearch-source").from {
@@ -124,50 +128,79 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ElasticSearchViews.cache(config)(as)
   }
 
+  make[Deferred[Task, ElasticSearchViews]].fromEffect(Deferred[Task, ElasticSearchViews])
+
+  make[ElasticSearchViewAggregate].fromEffect {
+    (
+        config: ElasticSearchViewsConfig,
+        permissions: Permissions,
+        client: ElasticSearchClient,
+        deferred: Deferred[Task, ElasticSearchViews],
+        resourceIdCheck: ResourceIdCheck,
+        as: ActorSystem[Nothing],
+        uuidF: UUIDF,
+        clock: Clock[UIO]
+    ) =>
+      ElasticSearchViews.aggregate(config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
+  }
+
   make[ElasticSearchViews]
     .fromEffect {
       (
           cfg: ElasticSearchViewsConfig,
           log: EventLog[Envelope[ElasticSearchViewEvent]],
           contextResolution: ResolverContextResolution,
-          resourceIdCheck: ResourceIdCheck,
-          client: ElasticSearchClient,
-          permissions: Permissions,
           cache: ElasticSearchViewCache,
+          agg: ElasticSearchViewAggregate,
+          deferred: Deferred[Task, ElasticSearchViews],
           orgs: Organizations,
           projects: Projects,
-          clock: Clock[UIO],
+          api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
         ElasticSearchViews(
+          deferred,
           cfg,
           log,
           contextResolution,
           cache,
+          agg,
           orgs,
-          projects,
-          permissions,
-          client,
-          resourceIdCheck
+          projects
         )(
+          api,
           uuidF,
-          clock,
           scheduler,
           as
         )
     }
+
+  many[ResourcesDeletion].add {
+    (
+        cache: ElasticSearchViewCache,
+        agg: ElasticSearchViewAggregate,
+        views: ElasticSearchViews,
+        dbCleanup: DatabaseCleanup,
+        sa: ServiceAccount
+    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
+  }
+
+  many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>
+    ElasticSearchViews.projectReferenceFinder(views)
+  }
 
   make[ElasticSearchViewsQuery].from {
     (
         acls: Acls,
         projects: Projects,
         views: ElasticSearchViews,
+        cache: ElasticSearchViewCache,
         client: ElasticSearchClient,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(acls, projects, views, client)(cfg.indexing)
+      ElasticSearchViewsQuery(acls, projects, views, cache, client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("elasticsearch-statistics").from {
@@ -208,6 +241,26 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         OnEventInstant.combine(onEventInstantsSet)
       )(uuidF, as, sc)
 
+  }
+
+  make[ProjectEventMetricsStream].fromEffect {
+    (
+        eventLog: EventLog[Envelope[ProjectScopedEvent]],
+        exchanges: Set[EventExchange],
+        client: ElasticSearchClient,
+        projection: Projection[Unit],
+        config: ElasticSearchViewsConfig,
+        uuidF: UUIDF,
+        as: ActorSystem[Nothing],
+        sc: Scheduler
+    ) =>
+      ProjectEventMetricsStream(
+        eventLog.eventsByTag(Event.eventTag, _),
+        exchanges,
+        client,
+        projection,
+        config.indexing
+      )(uuidF, as, sc)
   }
 
   make[ElasticSearchViewsRoutes].from {
@@ -318,8 +371,10 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewEventExchange]
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
+  many[EventExchange].named("resources").ref[ElasticSearchViewEventExchange]
   many[EventExchange].ref[ElasticSearchViewEventExchange]
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
+
 }
