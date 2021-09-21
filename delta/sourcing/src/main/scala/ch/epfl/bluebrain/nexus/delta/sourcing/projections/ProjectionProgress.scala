@@ -43,7 +43,7 @@ final case class ProjectionProgress[A](
         copy(
           offset = m.offset,
           timestamp = m.timestamp,
-          processed = processed + 1,
+          processed = processed + m.skippedRevisions + 1,
           discarded = discarded + m.skippedRevisions + 1
         )
       case m: ErrorMessage      =>
@@ -52,6 +52,7 @@ final case class ProjectionProgress[A](
         copy(
           timestamp = timestamp.max(s.timestamp),
           offset = s.offset.max(offset),
+          discarded = discarded + s.skippedRevisions,
           warnings = warnings + s.warnings.size,
           processed = processed + s.skippedRevisions + 1,
           value = s.value
