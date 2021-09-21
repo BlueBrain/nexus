@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.JsonLdPathValueCol
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IOValues, TestHelpers}
 import io.circe.syntax._
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +17,8 @@ class JsonLdPathValueCollectionSpec
     with TestHelpers
     with IOValues
     with OptionValues
-    with ContextFixtures {
+    with ContextFixtures
+    with CirceEq {
   "A collection of JsonLdPathValue" should {
     implicit val jsonLdApi: JsonLdApi = JsonLdJavaApi.lenient
     val input                         = jsonContentOf("reconstructed-cell.json")
@@ -27,8 +28,10 @@ class JsonLdPathValueCollectionSpec
       val id            = iri"http://api.brain-map.org/api/v2/data/Structure/733"
       val properties    = JsonLdProperties.fromExpanded(expanded)
       val relationships = properties.values.find(_.metadata.id.contains(id)).value
-      JsonLdPathValueCollection(properties, JsonLdRelationships(Seq(relationships))).asJson shouldEqual
-        jsonContentOf("reconstructed-cell-paths.json")
+      JsonLdPathValueCollection(
+        properties,
+        JsonLdRelationships(Seq(relationships))
+      ).asJson should equalIgnoreArrayOrder(jsonContentOf("reconstructed-cell-paths.json"))
     }
   }
 
