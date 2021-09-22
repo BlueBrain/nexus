@@ -1,0 +1,108 @@
+{
+  "took": 1,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 100000,
+      "relation": "eq"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "properties": {
+      "doc_count": 4155000,
+      "filtered": {
+        "doc_count": 2475000,
+        "paths": {
+          "doc_count_error_upper_bound": 0,
+          "sum_other_doc_count": 0,
+          "buckets": [
+            {
+              "key": "http://schema.org/identifier",
+              "doc_count": 95000
+            },
+            {
+              "key": "http://schema.org/name",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/brainLocation",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion / http://www.w3.org/2000/01/rdf-schema#label",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/objectOfStudy",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/objectOfStudy / http://www.w3.org/2000/01/rdf-schema#label",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/subject",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/species / http://www.w3.org/2000/01/rdf-schema#label",
+              "doc_count": 95000
+            },
+            {
+              "key": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/atlasSpatialReferenceSystem",
+              "doc_count": 60000
+            },
+            {
+              "key": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/atlasSpatialReferenceSystem / http://schema.org/name",
+              "doc_count": 60000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/species",
+              "doc_count": 60000
+            },
+            {
+              "key": "http://schema.org/dateCreated",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/age",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/age / http://schema.org/unitCode",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/age / http://schema.org/value",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/age / https://neuroshapes.org/period",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/species / http://www.w3.org/2000/01/rdf-schema#isDefinedBy",
+              "doc_count": 35000
+            },
+            {
+              "key": "https://neuroshapes.org/subject / https://neuroshapes.org/species / http://www.w3.org/2000/01/rdf-schema#subClassOf",
+              "doc_count": 35000
+            }
+          ]
+        }
+      }
+    }
+  }
+}

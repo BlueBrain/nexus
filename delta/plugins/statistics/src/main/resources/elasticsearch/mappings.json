@@ -1,0 +1,69 @@
+{
+  "properties": {
+    "@id": {
+      "type": "keyword"
+    },
+    "@type": {
+      "type": "keyword"
+    },
+    "properties": {
+      "type": "nested",
+      "properties": {
+        "@id": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "isInArray": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "keyword"
+        },
+        "dataType": {
+          "type": "keyword"
+        }
+      }
+    },
+    "relationshipCandidates": {
+      "properties": {
+        "@id": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "isInArray": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "keyword"
+        },
+        "dataType": {
+          "type": "keyword"
+        }
+      }
+    },
+    "relationships": {
+      "type": "nested",
+      "properties": {
+        "@id": {
+          "type": "keyword"
+        },
+        "@type": {
+          "type": "keyword"
+        },
+        "isInArray": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "keyword"
+        },
+        "dataType": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

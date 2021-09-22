@@ -38,6 +38,8 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.setProperty("akka.remote.artery.canonical.port", "0")
     System.setProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout", "false")
     System.setProperty("datastax-java-driver.basic.request.timeout", "12 seconds")
+    System.setProperty("plugins.elasticsearch.credentials.username", "elastic")
+    System.setProperty("plugins.elasticsearch.credentials.password", "password")
     ConfigImpl.reloadSystemPropertiesConfig()
   }
 
@@ -51,6 +53,8 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.clearProperty("akka.remote.artery.canonical.port")
     System.clearProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout")
     System.clearProperty("datastax-java-driver.basic.request.timeout")
+    System.clearProperty("plugins.elasticsearch.credentials.username")
+    System.clearProperty("plugins.elasticsearch.credentials.password")
     new Directory(new File(folder)).deleteRecursively()
     ()
   }
