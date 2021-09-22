@@ -88,241 +88,77 @@ An example of the ElasticSearch Document looks as follows:
 
 ```json
 {
-    "took": 8,
-    "timed_out": false,
-    "_shards": {
-        "total": 1,
-        "successful": 1,
-        "skipped": 0,
-        "failed": 0
+  "@type": "http://schema.org/Person",
+  "@id": "http://example.com/Anna",
+  "properties": [
+    {
+      "path": "http://schema.org/address",
+      "isInArray": false
     },
-    "hits": {
-        "total": {
-            "value": 8,
-            "relation": "eq"
-        },
-        "max_score": 1.0,
-        "hits": [
-            {
-                "_index": "test_myorg%2fmyproject_statistics",
-                "_type": "_doc",
-                "_id": "http://example.com/Anna",
-                "_score": 1.0,
-                "_source": {
-                    "@type": "http://schema.org/Person",
-                    "@id": "http://example.com/Anna",
-                    "properties": [
-                        {
-                            "path": "http://schema.org/address",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/address / http://schema.org/street",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "numeric",
-                            "path": "http://schema.org/address / http://schema.org/zipcode",
-                            "isInArray": false
-                        },
-                        {
-                            "@id": "http://example.com/Robert",
-                            "path": "http://schema.org/brother",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/givenName",
-                            "isInArray": false
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true
-                        }
-                    ],
-                    "relationshipCandidates": [
-                        {
-                            "found": true,
-                            "@id": "http://example.com/Robert",
-                            "path": "http://schema.org/brother",
-                            "isInArray": false
-                        }
-                    ],
-                    "relationships": [
-                        {
-                            "@id": "http://example.com/Robert",
-                            "@type": "http://schema.org/Person",
-                            "path": "http://schema.org/brother",
-                            "isInArray": false
-                        }
-                    ]
-                }
-            },
-            {
-                "_index": "test_myorg%2fmyproject_statistics",
-                "_type": "_doc",
-                "_id": "http://example.com/Sam",
-                "_score": 1.0,
-                "_source": {
-                    "@type": "http://schema.org/Person",
-                    "@id": "http://example.com/Sam",
-                    "properties": [
-                        {
-                            "path": "http://schema.org/address",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/address / http://schema.org/street",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "numeric",
-                            "path": "http://schema.org/address / http://schema.org/zipcode",
-                            "isInArray": false
-                        },
-                        {
-                            "@id": "http://example.com/Pedro",
-                            "path": "http://schema.org/brother",
-                            "isInArray": false
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/givenName",
-                            "isInArray": false
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "dataType": "string",
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true
-                        }
-                    ],
-                    "relationshipCandidates": [
-                        {
-                            "found": false,
-                            "@id": "http://example.com/Pedro",
-                            "path": "http://schema.org/brother",
-                            "isInArray": false
-                        }
-                    ],
-                    "relationships": []
-                }
-            },
-            {
-                "_index": "test_myorg%2fmyproject_statistics",
-                "_type": "_doc",
-                "_id": "http://example.com/Robert",
-                "_score": 1.0,
-                "_source": {
-                    "relationships": [
-                        {
-                            "path": "http://schema.org/brother",
-                            "found": true,
-                            "isInArray": false,
-                            "@type": [
-                                "http://schema.org/Person"
-                            ],
-                            "@id": "http://example.com/Sam"
-                        }
-                    ],
-                    "@type": "http://schema.org/Person",
-                    "@id": "http://example.com/Robert",
-                    "relationshipCandidates": [
-                        {
-                            "path": "http://schema.org/brother",
-                            "found": true,
-                            "isInArray": false,
-                            "@type": [
-                                "http://schema.org/Person"
-                            ],
-                            "@id": "http://example.com/Sam"
-                        }
-                    ],
-                    "properties": [
-                        {
-                            "path": "http://schema.org/address",
-                            "isInArray": false
-                        },
-                        {
-                            "path": "http://schema.org/address / http://schema.org/street",
-                            "isInArray": false,
-                            "dataType": "string"
-                        },
-                        {
-                            "path": "http://schema.org/address / http://schema.org/zipcode",
-                            "isInArray": false,
-                            "dataType": "numeric"
-                        },
-                        {
-                            "path": "http://schema.org/brother",
-                            "isInArray": false,
-                            "@id": "http://example.com/Sam"
-                        },
-                        {
-                            "path": "http://schema.org/givenName",
-                            "isInArray": false,
-                            "dataType": "string"
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true,
-                            "dataType": "string"
-                        },
-                        {
-                            "path": "http://schema.org/studies",
-                            "isInArray": true
-                        },
-                        {
-                            "path": "http://schema.org/studies / http://schema.org/name",
-                            "isInArray": true,
-                            "dataType": "string"
-                        }
-                    ]
-                }
-            }
-        ]
+    {
+      "dataType": "string",
+      "path": "http://schema.org/address / http://schema.org/street",
+      "isInArray": false
+    },
+    {
+      "dataType": "numeric",
+      "path": "http://schema.org/address / http://schema.org/zipcode",
+      "isInArray": false
+    },
+    {
+      "@id": "http://example.com/Robert",
+      "path": "http://schema.org/brother",
+      "isInArray": false
+    },
+    {
+      "dataType": "string",
+      "path": "http://schema.org/givenName",
+      "isInArray": false
+    },
+    {
+      "path": "http://schema.org/studies",
+      "isInArray": true
+    },
+    {
+      "dataType": "string",
+      "path": "http://schema.org/studies / http://schema.org/name",
+      "isInArray": true
+    },
+    {
+      "path": "http://schema.org/studies",
+      "isInArray": true
+    },
+    {
+      "dataType": "string",
+      "path": "http://schema.org/studies / http://schema.org/name",
+      "isInArray": true
     }
+  ],
+  "relationshipCandidates": [
+    {
+      "found": true,
+      "@id": "http://example.com/Robert",
+      "path": "http://schema.org/brother",
+      "isInArray": false
+    }
+  ],
+  "relationships": [
+    {
+      "@id": "http://example.com/Robert",
+      "@type": "http://schema.org/Person",
+      "path": "http://schema.org/brother",
+      "isInArray": false
+    }
+  ]
 }
 ```
 
 ... where:
 
-- `properties` - Json Object Array: A flatten collection of fields present on a resource.
-- `relationshipCandidates` - Json Object Array: A flatten collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).
-- `relationships` - Json Object Array: A flatten collection of @id(s) that have been found in other resources.
-- `path` - String: The flatten expanded path of a field present on a resource. A path of an embedded field will be encoded as follows: `parent / child`.
+- `properties` - Json Object Array: A flat collection of fields present on a resource.
+- `relationshipCandidates` - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).
+- `relationships` - Json Object Array: A flat collection of @id(s) that have been found in other resources.
+- `path` - String: The flat expanded path of a field present on a resource. A path of an embedded field will be encoded as follows: `parent / child`.
 - `isInArray` - Boolean: Flag to inform whether the current path (or its parent) is part of an array.
 - `dataType` - String: The type of the value present in the current path. Possible values are: string, numeric and boolean
-- `found` - Boolean: Flag to inform whether a path inside `relationshipCandidates` is now promoted to `relationship`.
+- `found` - Boolean: Flag to inform whether a path inside `relationshipCandidates` is now promoted to `relationships`.
