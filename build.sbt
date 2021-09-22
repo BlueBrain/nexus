@@ -202,6 +202,7 @@ lazy val docs = project
         (sdkViews / Compile / resourceDirectory).value / "contexts",
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
+        (statisticsPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
         (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
@@ -241,6 +242,8 @@ lazy val testkit = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      akkaActorTyped, // Needed to create Uri
+      akkaHttpCore,
       catsRetry,
       dockerTestKit,
       dockerTestKitImpl,
@@ -368,6 +371,7 @@ lazy val sdk = project
       akkaHttpXml,
       akkaPersistenceQuery, // To have access to the Offset type
       caffeine,
+      circeLiteral,
       circeGenericExtras,
       distageCore,
       fs2,
@@ -467,24 +471,24 @@ lazy val app = project
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     copyPlugins           := {
-      val esFile              = (elasticsearchPlugin / assembly).value
-      val bgFile              = (blazegraphPlugin / assembly).value
-      val storageFile         = (storagePlugin / assembly).value
-      val archiveFile         = (archivePlugin / assembly).value
-      val compositeViewsFile  = (compositeViewsPlugin / assembly).value
-      val searchFile          = (searchPlugin / assembly).value
-      val projectDeletionFile = (projectDeletionPlugin / assembly).value
-      val pluginsTarget       = target.value / "plugins"
+      val esFile             = (elasticsearchPlugin / assembly).value
+      val bgFile             = (blazegraphPlugin / assembly).value
+      val statisticsFile     = (statisticsPlugin / assembly).value
+      val storageFile        = (storagePlugin / assembly).value
+      val archiveFile        = (archivePlugin / assembly).value
+      val compositeViewsFile = (compositeViewsPlugin / assembly).value
+      val searchFile         = (searchPlugin / assembly).value
+      val pluginsTarget      = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
         Set(
-          esFile              -> (pluginsTarget / esFile.getName),
-          bgFile              -> (pluginsTarget / bgFile.getName),
-          storageFile         -> (pluginsTarget / storageFile.getName),
-          archiveFile         -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
-          searchFile          -> (pluginsTarget / searchFile.getName),
-          projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
+          esFile             -> (pluginsTarget / esFile.getName),
+          bgFile             -> (pluginsTarget / bgFile.getName),
+          statisticsFile     -> (pluginsTarget / statisticsFile.getName),
+          storageFile        -> (pluginsTarget / storageFile.getName),
+          archiveFile        -> (pluginsTarget / archiveFile.getName),
+          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile         -> (pluginsTarget / searchFile.getName)
         )
       )
     },
@@ -504,6 +508,7 @@ lazy val app = project
     Universal / mappings ++= {
       val esFile             = (elasticsearchPlugin / assembly).value
       val bgFile             = (blazegraphPlugin / assembly).value
+      val statisticsFile     = (statisticsPlugin / assembly).value
       val storageFile        = (storagePlugin / assembly).value
       val archiveFile        = (archivePlugin / assembly).value
       val compositeViewsFile = (compositeViewsPlugin / assembly).value
@@ -511,6 +516,7 @@ lazy val app = project
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
+        (statisticsFile, "plugins/" + statisticsFile.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
         (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
@@ -765,6 +771,37 @@ lazy val projectDeletionPlugin = project
     Test / fork                := true
   )
 
+lazy val statisticsPlugin = project
+  .in(file("delta/plugins/statistics"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk                 % Provided,
+    storagePlugin       % "provided;test->test",
+    sdkViews            % "provided;test->test",
+    sdkTestkit          % "test;test->test",
+    elasticsearchPlugin % Provided
+  )
+  .settings(
+    name                       := "delta-statistics-plugin",
+    moduleName                 := "delta-statistics-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp % Provided,
+      akkaSlf4j     % Test,
+      logback       % Test,
+      scalaTest     % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.statistics",
+    assembly / assemblyJarName := "statistics.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-statistics-plugin", "plugin"), assembly),
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, compilation, noPublish)
@@ -776,7 +813,8 @@ lazy val plugins = project
     storagePlugin,
     archivePlugin,
     projectDeletionPlugin,
-    testPlugin
+    testPlugin,
+    statisticsPlugin
   )
 
 lazy val delta = project

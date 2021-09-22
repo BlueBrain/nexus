@@ -1,0 +1,180 @@
+{
+  "took": 170,
+  "timed_out": false,
+  "_shards": {
+    "total": 1,
+    "successful": 1,
+    "skipped": 0,
+    "failed": 0
+  },
+  "hits": {
+    "total": {
+      "value": 10000,
+      "relation": "gte"
+    },
+    "max_score": null,
+    "hits": []
+  },
+  "aggregations": {
+    "resourceTypes": {
+      "doc_count_error_upper_bound": 0,
+      "sum_other_doc_count": 0,
+      "buckets": [
+        {
+          "key": "https://neuroshapes.org/ReconstructedCell",
+          "doc_count": 60000,
+          "relationships": {
+            "doc_count": 60000,
+            "filtered": {
+              "doc_count": 60000,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": [
+                  {
+                    "key": "https://neuroshapes.org/annotation / https://neuroshapes.org/hasBody",
+                    "doc_count": 60000,
+                    "pathTypes": {
+                      "doc_count_error_upper_bound": 0,
+                      "sum_other_doc_count": 0,
+                      "buckets": [
+                        {
+                          "key": "https://neuroshapes.org/AnnotationBody",
+                          "doc_count": 60000
+                        },
+                        {
+                          "key": "https://neuroshapes.org/MType",
+                          "doc_count": 60000
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "https://neuroshapes.org/Trace",
+          "doc_count": 35000,
+          "relationships": {
+            "doc_count": 35000,
+            "filtered": {
+              "doc_count": 35000,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": [
+                  {
+                    "key": "https://neuroshapes.org/subject / https://neuroshapes.org/species",
+                    "doc_count": 35000,
+                    "pathTypes": {
+                      "doc_count_error_upper_bound": 0,
+                      "sum_other_doc_count": 0,
+                      "buckets": [
+                        {
+                          "key": "http://schema.org#Rat",
+                          "doc_count": 35000
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "http://schema.org/Person",
+          "doc_count": 5000,
+          "relationships": {
+            "doc_count": 5000,
+            "filtered": {
+              "doc_count": 5000,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": [
+                  {
+                    "key": "http://schema.org/affiliation",
+                    "doc_count": 5000,
+                    "pathTypes": {
+                      "doc_count_error_upper_bound": 0,
+                      "sum_other_doc_count": 0,
+                      "buckets": [
+                        {
+                          "key": "http://schema.org/Organization",
+                          "doc_count": 5000
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "key": "http://schema.org/Organization",
+          "doc_count": 1,
+          "relationships": {
+            "doc_count": 0,
+            "filtered": {
+              "doc_count": 0,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": []
+              }
+            }
+          }
+        },
+        {
+          "key": "http://schema.org#Rat",
+          "doc_count": 1,
+          "relationships": {
+            "doc_count": 0,
+            "filtered": {
+              "doc_count": 0,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": []
+              }
+            }
+          }
+        },
+        {
+          "key": "https://neuroshapes.org/AnnotationBody",
+          "doc_count": 1,
+          "relationships": {
+            "doc_count": 0,
+            "filtered": {
+              "doc_count": 0,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": []
+              }
+            }
+          }
+        },
+        {
+          "key": "https://neuroshapes.org/MType",
+          "doc_count": 1,
+          "relationships": {
+            "doc_count": 0,
+            "filtered": {
+              "doc_count": 0,
+              "paths": {
+                "doc_count_error_upper_bound": 0,
+                "sum_other_doc_count": 0,
+                "buckets": []
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

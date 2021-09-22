@@ -202,7 +202,7 @@ object BlazegraphViewRejection {
       extends BlazegraphViewRejection(s"Blazegraph view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Rejection returned when a resource [[IdSegment]] cannot be expanded to [[Iri]].
+    * Rejection returned when a resource id cannot be expanded to [[Iri]].
     *
     * @param id
     *   the resource identifier
