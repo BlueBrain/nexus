@@ -1,0 +1,24 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "{{deltaUri}}/resources/{{proj}}/_/resource11_with_schema",
+      "@type": "https://bluebrain.github.io/nexus/vocabulary/TestResource",
+      "_constrainedBy": "https://dev.nexus.test.com/test-schema",
+      "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+      "_deprecated": false,
+      "_incoming": "{{deltaUri}}/resources/{{org}}/{{proj}}/test-schema/resource11_with_schema/incoming",
+      "_outgoing": "{{deltaUri}}/resources/{{org}}/{{proj}}/test-schema/resource11_with_schema/outgoing",
+      "_project": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_rev": 1,
+      "_schemaProject": "{{deltaUri}}/projects/{{org}}/{{proj}}",
+      "_self": "{{deltaUri}}/resources/{{org}}/{{proj}}/test-schema/resource11_with_schema",
+      "_updatedBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}"
+    }
+  ]
+}
