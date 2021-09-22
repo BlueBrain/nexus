@@ -117,7 +117,7 @@ In order to be able to use this storage, the configuration flag `plugins.storage
 
 ## Indexing
 
-All the API calls modifying a storage(creation, update, tagging, deprecation) can specify whether the storage should be indexed
+All the API calls modifying a storage (creation, update, tagging, deprecation) can specify whether the storage should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the storage will be indexed asynchronously
@@ -334,6 +334,8 @@ GET /v1/storages/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
+This operation returns only storages from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
 ```
 GET /v1/storages/{org_label}?from={from}
                             &size={size}
@@ -347,6 +349,8 @@ GET /v1/storages/{org_label}?from={from}
 ```
 
 ### Within all projects
+
+This operation returns only storages from projects where the caller has the `resources/read` permission.
 
 ```
 GET /v1/storages?from={from}

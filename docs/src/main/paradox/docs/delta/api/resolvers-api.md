@@ -91,7 +91,7 @@ where...
 
 ## Indexing
 
-All the API calls modifying a resolver(creation, update, tagging, deprecation) can specify whether the resolver should be indexed
+All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the resolver will be indexed asynchronously
@@ -304,6 +304,8 @@ GET /v1/resolvers/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
+This operation returns only resolvers from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
 ```
 GET /v1/resolvers/{org_label}?from={from}
                              &size={size}
@@ -317,6 +319,8 @@ GET /v1/resolvers/{org_label}?from={from}
 ```
 
 ### Within all projects
+
+This operation returns only resolvers from projects where the caller has the `resources/read` permission.
 
 ```
 GET /v1/resolvers?from={from}

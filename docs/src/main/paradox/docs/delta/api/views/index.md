@@ -73,7 +73,7 @@ Afterwards, by defining multiple projections, the data can be adapted to the cli
 
 ## Indexing
 
-All the API calls modifying a view(creation, update, tagging, deprecation) can specify whether the view should be indexed
+All the API calls modifying a view (creation, update, tagging, deprecation) can specify whether the view should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the view will be indexed asynchronously
@@ -99,6 +99,8 @@ GET /v1/views/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
+This operation returns only views from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
 ```
 GET /v1/views/{org_label}?from={from}
                          &size={size}
@@ -112,6 +114,8 @@ GET /v1/views/{org_label}?from={from}
 ```
 
 ### Within all projects
+
+This operation returns only views from projects where the caller has the `resources/read` permission.
 
 ```
 GET /v1/views?from={from}

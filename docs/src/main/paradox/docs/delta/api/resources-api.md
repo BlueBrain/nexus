@@ -30,7 +30,7 @@ That means that when those get updated, the resources importing them must be als
 
 ## Indexing
 
-All the API calls modifying a resource(creation, update, tagging, deprecation) can specify whether the resource should be indexed 
+All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed 
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
   - `async` - (default value) the resource will be indexed asynchronously 
@@ -243,6 +243,8 @@ GET /v1/resources/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
+This operation returns only resources from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
 ```
 GET /v1/resources/{org_label}?from={from}
                              &size={size}
@@ -257,6 +259,8 @@ GET /v1/resources/{org_label}?from={from}
 ```
 
 ### Within all projects
+
+This operation returns only resources from projects where the caller has the `resources/read` permission.
 
 ```
 GET /v1/resources?from={from}
@@ -299,7 +303,7 @@ Response
 
 ## List filtering by schema
 
-There are three available endpoints to list resources filtered by schema in different scopes.
+This operation is only available at the project scope.
 
 ### Within a project
 
@@ -310,36 +314,6 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &rev={rev}&type={type}
                                                         &createdBy={createdBy}
                                                         &updatedBy={updatedBy}
-```
-
-### Within an organization
-
-```
-GET /v1/resources/{org_label}/{schemaId}?from={from}
-                                        &size={size}
-                                        &deprecated={deprecated}
-                                        &rev={rev}
-                                        &type={type}
-                                        &createdBy={createdBy}
-                                        &updatedBy={updatedBy}
-                                        &schema={schema}
-                                        &q={search}
-                                        &sort={sort}
-```
-
-### Within all projects
-
-```
-GET /v1/resources/{schemaId}?from={from}
-                            &size={size}
-                            &deprecated={deprecated}
-                            &rev={rev}
-                            &type={type}
-                            &createdBy={createdBy}
-                            &updatedBy={updatedBy}
-                            &schema={schema}
-                            &q={search}
-                            &sort={sort}
 ```
 
 ### Parameter description

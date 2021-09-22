@@ -16,7 +16,7 @@ Please visit @ref:[Authentication & authorization](authentication.md) section to
 
 ## Indexing
 
-All the API calls modifying a file(creation, update, tagging, deprecation) can specify whether the file should be indexed
+All the API calls modifying a file (creation, update, tagging, deprecation) can specify whether the file should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the file will be indexed asynchronously
@@ -275,6 +275,8 @@ GET /v1/files/{org_label}/{project_label}?from={from}
 
 ### Within an organization
 
+This operation returns only files from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
 ```
 GET /v1/files/{org_label}?from={from}
                          &size={size}
@@ -288,6 +290,8 @@ GET /v1/files/{org_label}?from={from}
 ```
 
 ### Within all projects
+
+This operation returns only files from projects where the caller has the `resources/read` permission.
 
 ```
 GET /v1/files?from={from}
