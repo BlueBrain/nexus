@@ -19,6 +19,7 @@
 * @ref:[Files](files-api.md)
 * @ref:[Archives](archives-api.md)
 * @ref:[Search](search-api.md)
+* @ref:[Statistics](statistics-api.md)
 
 @@@
 
