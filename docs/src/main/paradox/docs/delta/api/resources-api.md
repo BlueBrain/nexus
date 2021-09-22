@@ -224,6 +224,10 @@ Response
 
 ## List
 
+There are three available endpoints to list resources in different scopes.
+
+### Within a project
+
 ```
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
@@ -236,8 +240,38 @@ GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &q={search}
                                              &sort={sort}
 ```
-                                          
-where...
+
+### Within an organization
+
+```
+GET /v1/resources/{org_label}?from={from}
+                             &size={size}
+                             &deprecated={deprecated}
+                             &rev={rev}
+                             &type={type}
+                             &createdBy={createdBy}
+                             &updatedBy={updatedBy}
+                             &schema={schema}
+                             &q={search}
+                             &sort={sort}
+```
+
+### Within all projects
+
+```
+GET /v1/resources?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &type={type}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &schema={schema}
+                 &q={search}
+                 &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
@@ -265,6 +299,10 @@ Response
 
 ## List filtering by schema
 
+There are three available endpoints to list resources filtered by schema in different scopes.
+
+### Within a project
+
 ```
 GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &size={size}
@@ -274,7 +312,37 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &updatedBy={updatedBy}
 ```
 
-where...
+### Within an organization
+
+```
+GET /v1/resources/{org_label}/{schemaId}?from={from}
+                                        &size={size}
+                                        &deprecated={deprecated}
+                                        &rev={rev}
+                                        &type={type}
+                                        &createdBy={createdBy}
+                                        &updatedBy={updatedBy}
+                                        &schema={schema}
+                                        &q={search}
+                                        &sort={sort}
+```
+
+### Within all projects
+
+```
+GET /v1/resources/{schemaId}?from={from}
+                            &size={size}
+                            &deprecated={deprecated}
+                            &rev={rev}
+                            &type={type}
+                            &createdBy={createdBy}
+                            &updatedBy={updatedBy}
+                            &schema={schema}
+                            &q={search}
+                            &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`

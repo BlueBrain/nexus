@@ -81,6 +81,10 @@ synchronously or in the background. This behaviour is controlled using `indexing
 
 ## List views
 
+There are three available endpoints to list files in different scopes.
+
+### Within a project
+
 ```
 GET /v1/views/{org_label}/{project_label}?from={from}
                                          &size={size}
@@ -93,7 +97,35 @@ GET /v1/views/{org_label}/{project_label}?from={from}
                                          &sort={sort}
 ```
 
-where...
+### Within an organization
+
+```
+GET /v1/views/{org_label}?from={from}
+                         &size={size}
+                         &deprecated={deprecated}
+                         &rev={rev}
+                         &type={type}
+                         &createdBy={createdBy}
+                         &updatedBy={updatedBy}
+                         &q={search}
+                         &sort={sort}
+```
+
+### Within all projects
+
+```
+GET /v1/views?from={from}
+             &size={size}
+             &deprecated={deprecated}
+             &rev={rev}
+             &type={type}
+             &createdBy={createdBy}
+             &updatedBy={updatedBy}
+             &q={search}
+             &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
