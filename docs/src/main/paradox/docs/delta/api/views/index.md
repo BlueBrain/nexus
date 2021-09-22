@@ -81,7 +81,7 @@ synchronously or in the background. This behaviour is controlled using `indexing
 
 ## List views
 
-There are three available endpoints to list files in different scopes.
+There are three available endpoints to list views in different scopes.
 
 ### Within a project
 
