@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
-import com.whisk.docker.{DockerContainer, DockerReadyChecker, VolumeMapping}
+import com.whisk.docker.{DockerContainer, DockerReadyChecker, HostConfig, VolumeMapping}
 
 import java.nio.file.{Files, Path}
 import scala.concurrent.duration._
@@ -14,10 +14,13 @@ trait RemoteStorageDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 40.seconds
 
-  val remoteStorageContainer: DockerContainer = DockerContainer("bluebrain/nexus-storage:1.4.1")
+  val remoteStorageContainer: DockerContainer = DockerContainer("bluebrain/nexus-storage:1.5.1")
+    .withHostConfig(
+      HostConfig(memory = Some(384 * 1000000))
+    )
     .withPorts((RemoteStorageServicePort, Some(RemoteStorageServicePort)))
     .withEnv(
-      "JAVA_OPTS=-Dconfig.override_with_env_vars=true",
+      "JAVA_OPTS=-Xmx256m -Dconfig.override_with_env_vars=true",
       "CONFIG_FORCE_app_subject_anonymous=true",
       "CONFIG_FORCE_app_instance_interface=0.0.0.0",
       "CONFIG_FORCE_app_storage_root__volume=/app"

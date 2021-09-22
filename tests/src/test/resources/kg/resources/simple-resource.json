@@ -3,7 +3,9 @@
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "other": "https://some.other.prefix.com/"
   },
+  {{#resourceId}}
   "@id": "https://dev.nexus.test.com/simplified-resource/{{resourceId}}",
+  {{/resourceId}}
   "@type": "nxv:TestResource",
   "other:priority": {{priority}},
   "other:projects": [

@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IORef, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IORef, IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -32,6 +32,7 @@ import scala.concurrent.duration._
 trait BaseSpec
     extends AsyncWordSpecLike
     with CirceUnmarshalling
+    with CirceLiteral
     with CirceEq
     with BeforeAndAfterAll
     with TestHelpers
@@ -222,6 +223,7 @@ trait BaseSpec
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
 
+  private[tests] def tag(name: String, rev: Long) = json"""{"tag": "$name", "rev": $rev}"""
 }
 
 object BaseSpec {

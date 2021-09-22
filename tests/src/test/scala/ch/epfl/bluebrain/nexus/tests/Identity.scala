@@ -60,7 +60,8 @@ object Identity extends TestHelpers {
   }
 
   object resources {
-    val Rick = UserCredentials(genString(), genString(), testRealm)
+    val Rick  = UserCredentials(genString(), genString(), testRealm)
+    val Morty = UserCredentials(genString(), genString(), testRealm)
   }
 
   object storages {
@@ -72,6 +73,6 @@ object Identity extends TestHelpers {
   }
 
   lazy val allUsers =
-    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: storages.Coyote :: views.ScoobyDoo :: Nil
+    acls.Marge :: archives.Tweety :: compositeviews.Jerry :: events.BugsBunny :: orgs.Fry :: orgs.Leela :: projects.Bojack :: projects.PrincessCarolyn :: resources.Rick :: resources.Morty :: storages.Coyote :: views.ScoobyDoo :: Nil
 
 }
