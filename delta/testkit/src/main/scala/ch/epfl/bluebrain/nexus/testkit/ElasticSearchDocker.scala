@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.testkit
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
 import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.DefaultPort
-import com.whisk.docker.{DockerContainer, DockerReadyChecker}
+import com.whisk.docker.{DockerContainer, DockerReadyChecker, HostConfig}
 
 import scala.concurrent.duration._
 
@@ -13,7 +13,11 @@ trait ElasticSearchDocker extends DockerKitWithFactory {
 
   val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.13.4")
     .withPorts(DefaultPort -> Some(DefaultPort))
+    .withHostConfig(
+      HostConfig(memory = Some(384 * 1000000))
+    )
     .withEnv(
+      "ES_JAVA_OPTS=-Xmx256m",
       "discovery.type=single-node",
       "xpack.security.enabled=true",
       "ELASTIC_PASSWORD=password"

@@ -56,7 +56,7 @@ class RemoteStorageClientSpec
     val client = new RemoteDiskStorageClient(RemoteStorageEndpoint)
 
     "fetch the service description" in eventually {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("remoteStorage"), "1.4.1")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("remoteStorage"), "1.5.1")
     }
 
     "check if a bucket exists" in {
