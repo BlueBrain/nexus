@@ -30,7 +30,7 @@ That means that when those get updated, the resources importing them must be als
 
 ## Indexing
 
-All the API calls modifying a resource(creation, update, tagging, deprecation) can specify whether the resource should be indexed 
+All the API calls modifying a resource (creation, update, tagging, deprecation) can specify whether the resource should be indexed 
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
   - `async` - (default value) the resource will be indexed asynchronously 
@@ -224,6 +224,10 @@ Response
 
 ## List
 
+There are three available endpoints to list resources in different scopes.
+
+### Within a project
+
 ```
 GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &size={size}
@@ -236,8 +240,42 @@ GET /v1/resources/{org_label}/{project_label}?from={from}
                                              &q={search}
                                              &sort={sort}
 ```
-                                          
-where...
+
+### Within an organization
+
+This operation returns only resources from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
+```
+GET /v1/resources/{org_label}?from={from}
+                             &size={size}
+                             &deprecated={deprecated}
+                             &rev={rev}
+                             &type={type}
+                             &createdBy={createdBy}
+                             &updatedBy={updatedBy}
+                             &schema={schema}
+                             &q={search}
+                             &sort={sort}
+```
+
+### Within all projects
+
+This operation returns only resources from projects where the caller has the `resources/read` permission.
+
+```
+GET /v1/resources?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &type={type}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &schema={schema}
+                 &q={search}
+                 &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
@@ -265,6 +303,10 @@ Response
 
 ## List filtering by schema
 
+This operation is only available at the project scope.
+
+### Within a project
+
 ```
 GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &size={size}
@@ -274,7 +316,7 @@ GET /v1/resources/{org_label}/{project_label}/{schemaId}?from={from}
                                                         &updatedBy={updatedBy}
 ```
 
-where...
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`

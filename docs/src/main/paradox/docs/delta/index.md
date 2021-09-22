@@ -37,4 +37,4 @@ Please refer to the @ref:[architecture] and @ref:[api reference] sections for mo
 [RDF]: https://www.w3.org/RDF/
 [JSON-LD]: https://www.w3.org/TR/json-ld11/
 [SHACL]: https://www.w3.org/TR/shacl/
-[Server-Sent Events]: https://www.w3.org/TR/eventsource/
+[Server-Sent Events]: https://html.spec.whatwg.org/multipage/server-sent-events.html

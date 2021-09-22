@@ -160,7 +160,7 @@ The authorization flow is as follows:
 [Gossip Protocol]: https://en.wikipedia.org/wiki/Gossip_protocol
 [Akka Remoting]: https://doc.akka.io/docs/akka/current/remoting-artery.html
 [CQRS]: https://martinfowler.com/bliki/CQRS.html
-[Server Sent Events]: https://www.w3.org/TR/eventsource/
+[Server Sent Events]: https://html.spec.whatwg.org/multipage/server-sent-events.html
 [REST]: https://en.wikipedia.org/wiki/Representational_state_transfer
 [API Reference]: api/index.md
 [IRI]: https://datatracker.ietf.org/doc/html/rfc3987

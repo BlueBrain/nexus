@@ -91,7 +91,7 @@ where...
 
 ## Indexing
 
-All the API calls modifying a resolver(creation, update, tagging, deprecation) can specify whether the resolver should be indexed
+All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the resolver will be indexed asynchronously
@@ -287,6 +287,9 @@ Response
 
 ## List
 
+There are three available endpoints to list resolvers in different scopes.
+
+### Within a project
 ```
 GET /v1/resolvers/{org_label}/{project_label}?from={from}
                                              &size={size}
@@ -298,8 +301,40 @@ GET /v1/resolvers/{org_label}/{project_label}?from={from}
                                              &q={search}
                                              &sort={sort}
 ```
-                                          
-where...
+
+### Within an organization
+
+This operation returns only resolvers from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
+```
+GET /v1/resolvers/{org_label}?from={from}
+                             &size={size}
+                             &deprecated={deprecated}
+                             &rev={rev}
+                             &type={type}
+                             &createdBy={createdBy}
+                             &updatedBy={updatedBy}
+                             &q={search}
+                             &sort={sort}
+```
+
+### Within all projects
+
+This operation returns only resolvers from projects where the caller has the `resources/read` permission.
+
+```
+GET /v1/resolvers?from={from}
+                 &size={size}
+                 &deprecated={deprecated}
+                 &rev={rev}
+                 &type={type}
+                 &createdBy={createdBy}
+                 &updatedBy={updatedBy}
+                 &q={search}
+                 &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`
