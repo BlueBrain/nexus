@@ -30,6 +30,16 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
 
   protected def commonBeforeAll(): Unit = {
     Files.createDirectories(Path.of(folder))
+    val resourceTypesFile = Files.createTempFile("resource-types", ".json")
+    Files.writeString(resourceTypesFile, """["https://neuroshapes.org/Entity"]""")
+    val mappingFile       = Files.createTempFile("mapping", ".json")
+    Files.writeString(mappingFile, "{}")
+    val queryFile         = Files.createTempFile("query", ".json")
+    Files.writeString(
+      queryFile,
+      """CONSTRUCT { {resource_id} <http://schema.org/name> ?name } WHERE { {resource_id} <http://localhost/name> ?name }"""
+    )
+
     System.setProperty("app.database.flavour", flavour)
     System.setProperty(s"app.database.$flavour.keyspace-autocreate", "true")
     System.setProperty(s"app.database.$flavour.tables-autocreate", "true")
@@ -40,6 +50,12 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.setProperty("datastax-java-driver.basic.request.timeout", "12 seconds")
     System.setProperty("plugins.elasticsearch.credentials.username", "elastic")
     System.setProperty("plugins.elasticsearch.credentials.password", "password")
+    System.setProperty("plugins.statistics.enabled", "true")
+    System.setProperty("plugins.search.enabled", "true")
+    System.setProperty("plugins.search.indexing.resource-types", resourceTypesFile.toString)
+    System.setProperty("plugins.search.indexing.mapping", mappingFile.toString)
+    System.setProperty("plugins.search.indexing.query", queryFile.toString)
+
     ConfigImpl.reloadSystemPropertiesConfig()
   }
 
@@ -55,6 +71,12 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
     System.clearProperty("datastax-java-driver.basic.request.timeout")
     System.clearProperty("plugins.elasticsearch.credentials.username")
     System.clearProperty("plugins.elasticsearch.credentials.password")
+    System.clearProperty("plugins.statistics.enabled")
+    System.clearProperty("plugins.search.enabled")
+    System.clearProperty("plugins.search.indexing.mapping")
+    System.clearProperty("plugins.search.indexing.query")
+    System.clearProperty("plugins.search.indexing.resource-types")
+
     new Directory(new File(folder)).deleteRecursively()
     ()
   }

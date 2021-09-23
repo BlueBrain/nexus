@@ -22,15 +22,15 @@
                 "paths": {
                   "terms": {
                     "field": "relationships.path",
-                    "shard_size": 300,
-                    "size": 100
+                    "shard_size": {{shard_size}},
+                    "size": {{size}}
                   },
                   "aggs": {
                     "pathTypes": {
                       "terms": {
                         "field": "relationships.@type",
-                        "shard_size": 300,
-                        "size": 100
+                        "shard_size": {{shard_size}},
+                        "size": {{size}}
                       }
                     }
                   }
