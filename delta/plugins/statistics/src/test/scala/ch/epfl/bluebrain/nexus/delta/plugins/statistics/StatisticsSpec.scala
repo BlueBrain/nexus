@@ -5,6 +5,7 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient}
+import ch.epfl.bluebrain.nexus.delta.plugins.statistics.config.StatisticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.StatisticsGraph.{Edge, EdgePath, Node}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.{PropertiesStatistics, StatisticsGraph}
@@ -47,6 +48,7 @@ class StatisticsSpec
   implicit private val uuidF: UUIDF      = UUIDF.fixed(UUID.randomUUID())
   implicit private val subject: Subject  = Anonymous
   implicit private val externalIdxConfig = externalIndexing
+  implicit private val aggCfg            = TermAggregationsConfig(100, 300)
 
   private val org           = Label.unsafe("org")
   private val project       = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
