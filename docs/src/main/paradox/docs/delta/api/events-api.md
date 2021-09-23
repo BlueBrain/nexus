@@ -12,7 +12,7 @@ To be able to access the endpoint, the user needs to have `events/read` permissi
 ```
 HEAD /v1/events
 ```
-... this endpoint allows checking whether the user has permission to read the events without starting the events stream.
+This endpoint allows checking whether the user has permission to read the events without starting the events stream.
 The response will be either `200 OK` if the user does have `events/read` permission on `/` or `403 Forbidden` otherwise.
 
 ## Server Sent Events
