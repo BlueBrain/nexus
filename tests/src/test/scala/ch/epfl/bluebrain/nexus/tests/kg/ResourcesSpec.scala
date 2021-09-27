@@ -172,7 +172,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "update a cross-project-resolver for proj2" in {
       val updated = resolverPayload deepMerge Json.obj("priority" -> Json.fromInt(20))
       eventually {
-        deltaClient.put[Json](s"/resolvers/$id2/example-id?rev=1", updated, Rick) { (_, response) =>
+        deltaClient.put[Json](s"/resolvers/$id2/test-resolver?rev=1", updated, Rick) { (_, response) =>
           response.status shouldEqual StatusCodes.OK
         }
       }
@@ -189,7 +189,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         ): _*
       )
 
-      deltaClient.get[Json](s"/resolvers/$id2/example-id", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resolvers/$id2/test-resolver", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
@@ -224,7 +224,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                           response2.status shouldEqual StatusCodes.OK
                           jsonResolved should equalIgnoreArrayOrder(json)
                         }
-                   _ <- deltaClient.get[Json](s"/resolvers/$id2/example-id/test-schema", Rick) {
+                   _ <- deltaClient.get[Json](s"/resolvers/$id2/test-resolver/test-schema", Rick) {
                           (jsonResolved, response2) =>
                             response2.status shouldEqual StatusCodes.OK
                             jsonResolved should equalIgnoreArrayOrder(json)
@@ -239,7 +239,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
     s"return not found when attempting to resolve a non-existing resource in project '$id1' through project '$id2' resolvers" in {
       for {
-        _ <- deltaClient.get[Json](s"/resolvers/$id2/example-id/test-schema-2", Rick) { (_, response) =>
+        _ <- deltaClient.get[Json](s"/resolvers/$id2/test-resolver/test-schema-2", Rick) { (_, response) =>
                response.status shouldEqual StatusCodes.NotFound
              }
         _ <- deltaClient.get[Json](s"/resolvers/$id2/_/test-schema-2", Rick) { (_, response) =>

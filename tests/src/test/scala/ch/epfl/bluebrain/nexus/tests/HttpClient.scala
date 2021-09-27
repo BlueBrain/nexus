@@ -267,7 +267,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       identity: Identity,
       initialLastEventId: Option[String],
       take: Long = 100L,
-      takeWithin: FiniteDuration = 30.seconds
+      takeWithin: FiniteDuration = 5.seconds
   )(assertResponse: Seq[(Option[String], Option[Json])] => Assertion): Task[Assertion] = {
     def send(request: HttpRequest): Future[HttpResponse] =
       apply(request.addHeader(tokensMap.get(identity))).runToFuture

@@ -34,8 +34,8 @@
           "_prefix" : "defaultStorage"
         },
         {
-          "_namespace" : "http://example.com/id",
-          "_prefix" : "example-id"
+          "_namespace" : "http://localhost/resolver",
+          "_prefix" : "test-resolver"
         },
         {
           "_namespace" : "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/",
@@ -125,8 +125,8 @@
           "_prefix" : "defaultStorage"
         },
         {
-          "_namespace" : "http://example.com/id",
-          "_prefix" : "example-id"
+          "_namespace" : "http://localhost/resolver",
+          "_prefix" : "test-resolver"
         },
         {
           "_namespace" : "https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/",
