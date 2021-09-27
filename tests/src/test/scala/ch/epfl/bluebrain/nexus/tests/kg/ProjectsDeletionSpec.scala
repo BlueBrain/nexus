@@ -247,6 +247,10 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
         admin._markedForDeletion.getOption(deleteJson).value shouldEqual true
       }
     }
+
+    "succeed in creating the project again" in {
+      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+    }
   }
 
 }
