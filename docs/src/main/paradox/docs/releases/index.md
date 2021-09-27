@@ -27,7 +27,7 @@ The latest stable release is **v1.5.1** released on **04.06.2021**.
  - Allow listings on resources outside the project scope [#2737](https://github.com/BlueBrain/nexus/issues/2737)
  - Add information about supported operations on the config field [#2740](https://github.com/BlueBrain/nexus/issues/2740)
  - Allow streams other than those related to views to leverage Kamon [#2771](https://github.com/BlueBrain/nexus/issues/2771)
- - Allow rdf parser to be configurable [#2792](https://github.com/BlueBrain/nexus/issues/2792)
+ - Allow rdf parser to be configurable [#2792](https://github.com/BlueBrain/nexus/pull/2792)
  - BUGFIX: Invalid IRIs should be properly rejected [#2760](https://github.com/BlueBrain/nexus/issues/2760)
 
 ## v1.6.0-M3 (02.09.2021)
@@ -35,9 +35,9 @@ The latest stable release is **v1.5.1** released on **04.06.2021**.
 This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
 
  - Restrict volume of data through quotas (static configuration) [#2525](https://github.com/BlueBrain/nexus/issues/2525)
- - Delete projects implementation [#2720](https://github.com/BlueBrain/nexus/issues/2720)
+ - Delete projects implementation [#2720](https://github.com/BlueBrain/nexus/pull/2720)
  - Delete Projects: Check if project is being used anywhere before allowing deletion [#2723](https://github.com/BlueBrain/nexus/issues/2723)
- - Added endpoint to list projects deletions [#2744](https://github.com/BlueBrain/nexus/issues/2744)
+ - Added endpoint to list projects deletions [#2744](https://github.com/BlueBrain/nexus/pull/2744)
  - Document projects deletions [#2746](https://github.com/BlueBrain/nexus/issues/2746)
  - /v1/events endpoint is missing [#2397](https://github.com/BlueBrain/nexus/issues/2397)
  - Ability to customise visible/hidden fields in search results [#2613](https://github.com/BlueBrain/nexus/issues/2613)
@@ -57,7 +57,7 @@ This is a milestone release for v1.6.0, containing a series of bugfixes and impr
  - Repurpose the search bar to enable jump to project [#2609](https://github.com/BlueBrain/nexus/issues/2609)
  - Ability to paginate search results based on user view port or preference [#2623](https://github.com/BlueBrain/nexus/issues/2623)
  - Mooc tutorial update [#2652](https://github.com/BlueBrain/nexus/pull/2652)
- - YouTube Video Viewer Plugin [#1697](https://github.com/BlueBrain/nexus/pull/1697)
+ - YouTube Video Viewer Plugin [#1697](https://github.com/BlueBrain/nexus/issues/1697)
  - BUGFIX: Fix database initialization failures [#2689](https://github.com/BlueBrain/nexus/issues/2689)
  - BUGFIX: Fix SVG import in Fusion [#1553](https://github.com/BlueBrain/nexus/issues/1553)
  - BUGFIX: Create Blazegraph namespace on view updates [#2668](https://github.com/BlueBrain/nexus/issues/2668)
@@ -280,7 +280,7 @@ The release is backwards compatible with v1.0 in terms of API. If you're upgradi
 
 Summary of the significant changes:
 
-- Exposed the service event logs over a stable API via @link:[Server Sent Events](https://www.w3.org/TR/eventsource/){ open=new }.
+- Exposed the service event logs over a stable API via @link:[Server Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html){ open=new }.
 - Introduced configurable storage backends for files with local, remote and S3 implementations.
 - ElasticSearchView | AggregateElasticSearchView have been promoted to stable.
 - Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioCont
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel, QueryBuilder}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.WrappedElasticSearchClientError
+import ch.epfl.bluebrain.nexus.delta.plugins.statistics.config.StatisticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.PropertiesStatistics.propertiesDecoderFromEsAggregations
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.StatisticsRejection.{InvalidPropertyType, WrappedElasticSearchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.statistics.model.{PropertiesStatistics, StatisticsGraph, StatisticsRejection}
@@ -42,7 +43,7 @@ object Statistics {
   final def apply(
       client: ElasticSearchClient,
       projects: Projects
-  )(implicit config: ExternalIndexingConfig): Task[Statistics] =
+  )(implicit indexingCfg: ExternalIndexingConfig, aggCfg: TermAggregationsConfig): Task[Statistics] =
     for {
       script <- scriptContent
       _      <- client.createScript(updateRelationshipsScriptId, script)
@@ -51,12 +52,22 @@ object Statistics {
       private val expandIri: ExpandIri[InvalidPropertyType] = new ExpandIri(InvalidPropertyType.apply)
 
       private val propertiesAggQuery =
-        ioJsonObjectContentOf("elasticsearch/paths-properties-aggregations.json")
+        ioJsonObjectContentOf(
+          "elasticsearch/paths-properties-aggregations.json",
+          "shard_size" -> aggCfg.shardSize,
+          "size"       -> aggCfg.size,
+          "type"       -> "{{type}}"
+        )
           .logAndDiscardErrors("ElasticSearch 'paths-properties-aggregations.json' template not found")
           .memoizeOnSuccess
 
       private val relationshipsAggQuery =
-        ioJsonObjectContentOf("elasticsearch/paths-relationships-aggregations.json")
+        ioJsonObjectContentOf(
+          "elasticsearch/paths-relationships-aggregations.json",
+          "shard_size" -> aggCfg.shardSize,
+          "size"       -> aggCfg.size,
+          "type"       -> "{{type}}"
+        )
           .logAndDiscardErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
           .memoizeOnSuccess
 

@@ -310,11 +310,11 @@ final class ElasticSearchViewsRoutes(
     pathPrefix("resources") {
       extractCaller { implicit caller =>
         concat(
-          // List all resource
+          // List all resources
           (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) {
             list()
           },
-          // List all resource inside an organization
+          // List all resources inside an organization
           (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
             list(org)
           },
@@ -341,16 +341,16 @@ final class ElasticSearchViewsRoutes(
       pathPrefix(resourceSegment) {
         extractCaller { implicit caller =>
           concat(
-            // List all resource of type resourceSegment
+            // List all resources of type resourceSegment
             (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment")) {
               list(resourceSchema)
             },
-            // List all resource of type resourceSegment inside an organization
+            // List all resources of type resourceSegment inside an organization
             (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
               list(org, resourceSchema)
             },
             projectRef(projects).apply { ref =>
-              // List all resource of type resourceSegment inside a project
+              // List all resources of type resourceSegment inside a project
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
                 list(ref, resourceSchema)
               }

@@ -73,13 +73,17 @@ Afterwards, by defining multiple projections, the data can be adapted to the cli
 
 ## Indexing
 
-All the API calls modifying a view(creation, update, tagging, deprecation) can specify whether the view should be indexed
+All the API calls modifying a view (creation, update, tagging, deprecation) can specify whether the view should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the view will be indexed asynchronously
 - `sync` - the view will be indexed synchronously and the API call won't return until the indexing is finished
 
 ## List views
+
+There are three available endpoints to list views in different scopes.
+
+### Within a project
 
 ```
 GET /v1/views/{org_label}/{project_label}?from={from}
@@ -93,7 +97,39 @@ GET /v1/views/{org_label}/{project_label}?from={from}
                                          &sort={sort}
 ```
 
-where...
+### Within an organization
+
+This operation returns only views from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
+```
+GET /v1/views/{org_label}?from={from}
+                         &size={size}
+                         &deprecated={deprecated}
+                         &rev={rev}
+                         &type={type}
+                         &createdBy={createdBy}
+                         &updatedBy={updatedBy}
+                         &q={search}
+                         &sort={sort}
+```
+
+### Within all projects
+
+This operation returns only views from projects where the caller has the `resources/read` permission.
+
+```
+GET /v1/views?from={from}
+             &size={size}
+             &deprecated={deprecated}
+             &rev={rev}
+             &type={type}
+             &createdBy={createdBy}
+             &updatedBy={updatedBy}
+             &q={search}
+             &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`

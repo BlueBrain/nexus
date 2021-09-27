@@ -129,6 +129,7 @@ object Optics extends Optics {
   object resources {
     val _next    = root._next.string
     val _results = root._results.arr
+    val _total   = root._total.long
   }
 
   object events {
