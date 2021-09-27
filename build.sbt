@@ -471,24 +471,26 @@ lazy val app = project
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     copyPlugins           := {
-      val esFile             = (elasticsearchPlugin / assembly).value
-      val bgFile             = (blazegraphPlugin / assembly).value
-      val statisticsFile     = (statisticsPlugin / assembly).value
-      val storageFile        = (storagePlugin / assembly).value
-      val archiveFile        = (archivePlugin / assembly).value
-      val compositeViewsFile = (compositeViewsPlugin / assembly).value
-      val searchFile         = (searchPlugin / assembly).value
-      val pluginsTarget      = target.value / "plugins"
+      val esFile              = (elasticsearchPlugin / assembly).value
+      val bgFile              = (blazegraphPlugin / assembly).value
+      val statisticsFile      = (statisticsPlugin / assembly).value
+      val storageFile         = (storagePlugin / assembly).value
+      val archiveFile         = (archivePlugin / assembly).value
+      val compositeViewsFile  = (compositeViewsPlugin / assembly).value
+      val searchFile          = (searchPlugin / assembly).value
+      val projectDeletionFile = (projectDeletionPlugin / assembly).value
+      val pluginsTarget       = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
         Set(
-          esFile             -> (pluginsTarget / esFile.getName),
-          bgFile             -> (pluginsTarget / bgFile.getName),
-          statisticsFile     -> (pluginsTarget / statisticsFile.getName),
-          storageFile        -> (pluginsTarget / storageFile.getName),
-          archiveFile        -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
-          searchFile         -> (pluginsTarget / searchFile.getName)
+          esFile              -> (pluginsTarget / esFile.getName),
+          bgFile              -> (pluginsTarget / bgFile.getName),
+          statisticsFile      -> (pluginsTarget / statisticsFile.getName),
+          storageFile         -> (pluginsTarget / storageFile.getName),
+          archiveFile         -> (pluginsTarget / archiveFile.getName),
+          compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile          -> (pluginsTarget / searchFile.getName),
+          projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
         )
       )
     },
@@ -506,13 +508,14 @@ lazy val app = project
       (Test / testQuick).evaluated
     },
     Universal / mappings ++= {
-      val esFile             = (elasticsearchPlugin / assembly).value
-      val bgFile             = (blazegraphPlugin / assembly).value
-      val statisticsFile     = (statisticsPlugin / assembly).value
-      val storageFile        = (storagePlugin / assembly).value
-      val archiveFile        = (archivePlugin / assembly).value
-      val compositeViewsFile = (compositeViewsPlugin / assembly).value
-      val searchFile         = (searchPlugin / assembly).value
+      val esFile              = (elasticsearchPlugin / assembly).value
+      val bgFile              = (blazegraphPlugin / assembly).value
+      val statisticsFile      = (statisticsPlugin / assembly).value
+      val storageFile         = (storagePlugin / assembly).value
+      val archiveFile         = (archivePlugin / assembly).value
+      val compositeViewsFile  = (compositeViewsPlugin / assembly).value
+      val searchFile          = (searchPlugin / assembly).value
+      val projectDeletionFile = (projectDeletionPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
@@ -520,7 +523,8 @@ lazy val app = project
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
         (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
-        (searchFile, "plugins/" + searchFile.getName)
+        (searchFile, "plugins/" + searchFile.getName),
+        (projectDeletionFile, "plugins/disabled/" + projectDeletionFile.getName)
       )
     }
   )

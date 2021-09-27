@@ -33,14 +33,17 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectDeletionRoutes) => PriorityRoute(priority, route.routes) }
 
+  make[DeleteProject].from { (projects: Projects, serviceAccount: ServiceAccount, prf: ProjectReferenceFinder) =>
+    DeleteProject(projects)(serviceAccount.subject, prf)
+  }
+
   make[ProjectDeletion].fromEffect {
     (
         projects: Projects,
         config: ProjectDeletionConfig,
-        serviceAccount: ServiceAccount,
         eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        prf: ProjectReferenceFinder
+        deleteProject: DeleteProject
     ) =>
-      ProjectDeletion(projects, config, serviceAccount, eventLog)(prf)
+      ProjectDeletion(projects, config, eventLog, deleteProject)
   }
 }

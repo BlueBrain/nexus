@@ -12,6 +12,14 @@ import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.UIO
 import monix.execution.Scheduler
 
+/**
+  * The project deletion routes that expose the current configuration of the plugin.
+  *
+  * @param config
+  *   the automatic project deletion configuration
+  * @param baseUri
+  *   the system base uri
+  */
 class ProjectDeletionRoutes(config: ProjectDeletionConfig)(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -23,7 +31,7 @@ class ProjectDeletionRoutes(config: ProjectDeletionConfig)(implicit
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
       pathPrefix("project-deletion" / "config") {
-        operationName(s"$prefixSegment/project-deletion/config") {
+        operationName(s"$prefixSegment/v1/project-deletion/config") {
           emit(UIO.pure(config))
         }
       }

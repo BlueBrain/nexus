@@ -4,7 +4,15 @@
     "ProjectDeletionConfig": "https://bluebrain.github.io/nexus/vocabulary/ProjectDeletionConfig",
     "_idleIntervalInSeconds": "https://bluebrain.github.io/nexus/vocabulary/idleIntervalInSeconds",
     "_idleCheckPeriodInSeconds": "https://bluebrain.github.io/nexus/vocabulary/idleCheckPeriodInSeconds",
-    "_deleteDeprecatedProjects": "https://bluebrain.github.io/nexus/vocabulary/deleteDeprecatedProjects"
+    "_deleteDeprecatedProjects": "https://bluebrain.github.io/nexus/vocabulary/deleteDeprecatedProjects",
+    "_includedProjects": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/includedProjects",
+      "@container": "@list"
+    },
+    "_excludedProjects": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/excludedProjects",
+      "@container": "@list"
+    }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/project-deletion.json"
 }
