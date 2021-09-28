@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -31,7 +32,7 @@ final class SchemasDummy private (
     journal: SchemaJournal,
     orgs: Organizations,
     projects: Projects,
-    schemaImports: SchemaImports,
+    deferredSchemaImports: Deferred[Task, SchemaImports],
     semaphore: IOSemaphore,
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection],
     idAvailability: IdAvailability[ResourceAlreadyExists]
@@ -45,6 +46,7 @@ final class SchemasDummy private (
     for {
       project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       (iri, compacted, expanded) <- sourceParser(project, source)
+      schemaImports              <- deferredSchemaImports.get.hideErrors
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -58,6 +60,7 @@ final class SchemasDummy private (
       project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
+      schemaImports         <- deferredSchemaImports.get.hideErrors
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
     } yield res
@@ -72,6 +75,7 @@ final class SchemasDummy private (
       project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
       iri                   <- expandIri(id, project)
       (compacted, expanded) <- sourceParser(project, iri, source)
+      schemaImports         <- deferredSchemaImports.get.hideErrors
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
       res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
     } yield res
@@ -165,7 +169,7 @@ object SchemasDummy {
     (event: SchemaEvent) => (event.project, event.id)
 
   /**
-    * Creates a schema dummy instance
+    * Creates a schema dummy instance.
     *
     * @param orgs
     *   the organizations operations bundle
@@ -182,6 +186,35 @@ object SchemasDummy {
       orgs: Organizations,
       projects: Projects,
       schemaImports: SchemaImports,
+      contextResolution: ResolverContextResolution,
+      idAvailability: IdAvailability[ResourceAlreadyExists]
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] = {
+    val task = for {
+      df    <- Deferred[Task, SchemaImports]
+      _     <- df.complete(schemaImports)
+      dummy <- fromDeferredImports(orgs, projects, df, contextResolution, idAvailability)
+    } yield dummy
+    task.hideErrors
+  }
+
+  /**
+    * Creates a schema dummy instance using a lazy SchemaImports instance.
+    *
+    * @param orgs
+    *   the organizations operations bundle
+    * @param projects
+    *   the projects operations bundle
+    * @param schemaImports
+    *   resolves the OWL imports from a Schema
+    * @param contextResolution
+    *   the context resolver
+    * @param idAvailability
+    *   checks if an id is available upon creation
+    */
+  def fromDeferredImports(
+      orgs: Organizations,
+      projects: Projects,
+      schemaImports: Deferred[Task, SchemaImports],
       contextResolution: ResolverContextResolution,
       idAvailability: IdAvailability[ResourceAlreadyExists]
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): UIO[SchemasDummy] =
