@@ -136,7 +136,7 @@ class ProjectsRoutesSpec
       persist,
       AutomaticProvisioningConfig.disabled,
       QuotasConfig(None, None, enabled = false, Map.empty),
-      allowResourcesDeletion = true
+      denyProjectPruning = false
     )
 
   implicit private val finder: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)

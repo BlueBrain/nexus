@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted, ResourcesDeleted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -45,19 +44,18 @@ object ResourcesDeletion {
   )(implicit lensId: Lens[E, Iri])
       extends ResourcesDeletion {
     override def deleteRegistry(projectRef: ProjectRef): Task[ResourcesDeleted] =
-      Stream[Task, String](UrlUtils.encode(projectRef.toString))
-        .evalMap(encodedProject => currentEvents(projectRef, NoOffset).map(_ -> encodedProject))
-        .flatMap { case (stream, encodedProject) =>
+      currentEvents(projectRef, NoOffset)
+        .flatMap { stream =>
           stream
             .groupWithin(50, 10.seconds)
             .evalTap { events =>
               val idsList = events.map(ev => lensId.get(ev.event).toString).toList.distinct
-              Task.parTraverseUnordered(idsList)(id => stopActor(s"${projectRef}_${id}")) >>
-                dbCleanup.deleteAll(moduleType, encodedProject, idsList).as(ResourcesDeleted)
+              Task.parTraverseUnordered(idsList)(id => stopActor(s"${projectRef}_$id")) >>
+                dbCleanup.deleteAll(moduleType, projectRef.toString, idsList).as(ResourcesDeleted)
             }
+            .compile
+            .drain
         }
-        .compile
-        .drain
         .absorb
         .as(ResourcesDeleted)
 

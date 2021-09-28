@@ -18,12 +18,15 @@ import scala.annotation.nowarn
   *   When set to true checks that the ids are unique inside a project and across module types (resources, schemas,
   *   resolvers, etc). This is desired but it has a performance penalty on resources creation. If you know id
   *   duplication will not happen in your deployment, you can set this flag to false.
+  * @param denyCleanup
+  *   When set to false, allow to delete projects and resources
   */
 final case class DatabaseConfig(
     flavour: DatabaseFlavour,
     postgres: PostgresConfig,
     cassandra: CassandraConfig,
-    verifyIdUniqueness: Boolean
+    verifyIdUniqueness: Boolean,
+    denyCleanup: Boolean
 )
 
 object DatabaseConfig {

@@ -23,7 +23,13 @@ class PostgresDatabaseDefinitionSpec
 
   implicit private val actorSystem: ActorSystem[Nothing] = null
 
-  private val dbConfig       = DatabaseConfig(DatabaseFlavour.Postgres, PostgresSpecs.postgresConfig, null, false)
+  private val dbConfig       = DatabaseConfig(
+    DatabaseFlavour.Postgres,
+    PostgresSpecs.postgresConfig,
+    null,
+    verifyIdUniqueness = false,
+    denyCleanup = true
+  )
   private val definition     = DatabaseDefinitions(dbConfig).accepted
   private val postgresTables = Set(
     "snapshot",

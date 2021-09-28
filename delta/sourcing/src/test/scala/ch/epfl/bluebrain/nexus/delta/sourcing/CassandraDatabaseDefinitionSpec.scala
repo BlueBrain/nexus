@@ -26,7 +26,8 @@ class CassandraDatabaseDefinitionSpec
   implicit val actorSystem: ActorSystem[Nothing] = AkkaPersistenceCassandraSpec.actorSystem
   import monix.execution.Scheduler.Implicits.global
 
-  private val dbConfig        = DatabaseConfig(DatabaseFlavour.Cassandra, null, cassandraConfig, false)
+  private val dbConfig        =
+    DatabaseConfig(DatabaseFlavour.Cassandra, null, cassandraConfig, verifyIdUniqueness = false, denyCleanup = true)
   private val definition      = DatabaseDefinitions(dbConfig).accepted
   private val cassandraTables = Set(
     "all_persistence_ids",

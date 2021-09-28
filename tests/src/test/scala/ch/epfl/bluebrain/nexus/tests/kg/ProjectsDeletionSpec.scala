@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
+import org.scalatest.AppendedClues
 
-final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable {
+final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
   private val org   = genId()
   private val proj1 = genId()
@@ -208,8 +209,8 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       deltaClient.sseEvents(s"/resources/$org/events", Bojack, None) { events =>
         events.foreach {
           case (_, Some(json)) =>
-            root._projectId.string.exist(_ == ref1Iri)(json) shouldEqual false
-            root._project.string.exist(_ == ref1Iri)(json) shouldEqual false
+            root._projectId.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
+            root._project.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
           case (_, None)       =>
             fail("Every event should have a payload")
         }
@@ -248,9 +249,9 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       }
     }
 
-    "succeed in creating the project again" in {
-      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
-    }
+//    "succeed in creating the project again" in {
+//      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+//    }
   }
 
 }
