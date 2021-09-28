@@ -52,7 +52,7 @@ trait PluginDef {
     */
   def initialize(locator: Locator): Task[Plugin]
 
-  private lazy val pluginConfigObject: Config =
+  protected lazy val pluginConfigObject: Config =
     ConfigFactory
       .load(getClass.getClassLoader, configFileName, parseOptions, resolveOptions)
       .getConfig(s"plugins.${info.name.value}")

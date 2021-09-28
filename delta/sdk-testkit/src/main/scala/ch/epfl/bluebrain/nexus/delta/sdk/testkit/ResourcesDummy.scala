@@ -43,7 +43,7 @@ import monix.bio.{IO, Task, UIO}
   *   a semaphore for serializing write operations on the journal
   */
 final class ResourcesDummy private (
-    journal: ResourcesJournal,
+    val journal: ResourcesJournal,
     orgs: Organizations,
     projects: Projects,
     resourceResolution: ResourceResolution[Schema],
