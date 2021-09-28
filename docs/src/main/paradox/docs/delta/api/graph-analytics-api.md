@@ -1,12 +1,12 @@
-# Statistics
+# Graph analytics
 
-Statistics are a functionality introduced by the statistics plugin and rooted in the `/v1/statistics/{org_label}/{project_label}` collection. 
+Graph analytics are a functionality introduced by the `graph-analytics` plugin and rooted in the `/v1/graph-analytics/{org_label}/{project_label}` collection. 
 They provide ways to get insights about the data and their relationships in terms of types (@type field).
   
 
 @@@ note { .tip title="Authorization notes" }	
 
-When reading statistics, the caller must have `resources/read` permissions on the current path of the project or the 
+When reading graph analytics, the caller must have `resources/read` permissions on the current path of the project or the 
 ancestor paths.
 
 Please visit @ref:[Authentication & authorization](authentication.md) section to learn more about it.
@@ -25,16 +25,16 @@ Obtains all the @type relationships and their counts - defined by nodes and edge
 
 The edges are the properties linking different nodes, and the nodes are the resources containing a certain @type.
 ```
-GET /v1/statistics/{org_label}/{project_label}/relationships
+GET /v1/graph-analytics/{org_label}/{project_label}/relationships
 ```
 
 **Example**
 
 Request
-:   @@snip [fetch-relationships.sh](assets/statistics/fetch-relationships.sh)
+:   @@snip [fetch-relationships.sh](assets/graph-analytics/fetch-relationships.sh)
 
 Response
-:   @@snip [fetched-relationships.json](assets/statistics/fetched-relationships.json)
+:   @@snip [fetched-relationships.json](assets/graph-analytics/fetched-relationships.json)
 
 
 ## Fetch properties
@@ -44,7 +44,7 @@ Obtains all the @type properties and their counts.
 The different between properties and relationships is
 that properties are enclosed inside the same resource, while relationships are statements between different resources.
 ```
-GET /v1/statistics/{org_label}/{project_label}/properties/{type}
+GET /v1/graph-analytics/{org_label}/{project_label}/properties/{type}
 ```
 
 ...where `{type}` is an IRI defining for which @type we want to retrieve the properties.
@@ -52,15 +52,15 @@ GET /v1/statistics/{org_label}/{project_label}/properties/{type}
 **Example**
 
 Request
-:   @@snip [fetch-properties.sh](assets/statistics/fetch-properties.sh)
+:   @@snip [fetch-properties.sh](assets/graph-analytics/fetch-properties.sh)
 
 Response
-:   @@snip [fetched-properties.json](assets/statistics/fetched-properties.json)
+:   @@snip [fetched-properties.json](assets/graph-analytics/fetched-properties.json)
 
 ## Fetch progress
 
 ```
-GET /v1/statistics/{org_label}/{project_label}/progress
+GET /v1/graph-analytics/{org_label}/{project_label}/progress
 ```
 It returns:
 
@@ -71,10 +71,10 @@ It returns:
 **Example**
 
 Request
-:   @@snip [fetch-progress.sh](assets/statistics/fetch-progress.sh)
+:   @@snip [fetch-progress.sh](assets/graph-analytics/fetch-progress.sh)
 
 Response
-:   @@snip [fetched-progress.json](assets/statistics/fetched-progress.json)
+:   @@snip [fetched-progress.json](assets/graph-analytics/fetched-progress.json)
 
 ## Internals
 
