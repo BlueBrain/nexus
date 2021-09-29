@@ -1,18 +1,23 @@
 package ch.epfl.bluebrain.nexus.tests
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpMethods.{DELETE, PUT}
+import akka.http.scaladsl.model.HttpMethods.{DELETE, GET, PUT}
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, StatusCode}
 import akka.stream.Materializer
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
+import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
-class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer) extends TestHelpers with Matchers {
+class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer)
+    extends TestHelpers
+    with CirceLiteral
+    with CirceUnmarshalling
+    with Matchers {
 
   private val logger = Logger[this.type]
 
@@ -42,6 +47,21 @@ class ElasticsearchDsl(implicit as: ActorSystem, materializer: Materializer) ext
     }.map { res =>
       logger.info(s"Importing the elasticsearch template returned ${res.status}")
       res.status
+    }
+  }
+
+  def allIndices: Task[List[String]] = {
+    elasticClient(
+      HttpRequest(
+        method = GET,
+        uri = s"$elasticUrl/_aliases"
+      ).addCredentials(credentials)
+    ).flatMap { res =>
+      Task
+        .deferFuture {
+          jsonUnmarshaller(res.entity)(global, materializer)
+        }
+        .map(_.asObject.fold(List.empty[String])(_.keys.toList))
     }
   }
 

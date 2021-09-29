@@ -79,6 +79,10 @@ object AppConfig {
   private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
   private val resolverOptions = ConfigResolveOptions.defaults()
 
+  val projectPruningMisconfiguration: InvalidConfiguration = InvalidConfiguration(
+    "Database cleanup is a precondition to enable project pruning."
+  )
+
   /**
     * Loads the application in two steps:<br/>
     *   1. loads the default default.conf and identifies the database configuration<br/> 2. reloads the config using the
@@ -105,6 +109,9 @@ object AppConfig {
       mergedConfig   = pluginConfigs.foldLeft(config)(_ withFallback _).resolve()
       loaded        <- UIO.delay(ConfigSource.fromConfig(mergedConfig).at("app").load[AppConfig])
       appConfig     <- IO.fromEither(loaded)
+      _             <- IO.raiseWhen(appConfig.database.denyCleanup && appConfig.projects.allowProjectPruning)(
+                         ConfigReaderFailures(projectPruningMisconfiguration)
+                       )
     } yield (appConfig, mergedConfig)
   }
 

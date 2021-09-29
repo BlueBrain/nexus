@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
-import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, resources}
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
+import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
 import io.circe.Json
-import monix.bio.Task
 import org.scalatest.Inspectors
 
 import java.net.URLEncoder
@@ -25,10 +24,6 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   private val org2   = genId()
   private val proj21 = genId()
   private val ref21  = s"$org2/$proj21"
-
-  private def expectCreated[A] = (_: A, response: HttpResponse) => response.status shouldEqual StatusCodes.Created
-
-  private def expectOk[A] = (_: A, response: HttpResponse) => response.status shouldEqual StatusCodes.OK
 
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
@@ -121,14 +116,14 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     "get responses using after" in {
       // Building the next results, replace the public url by the one used by the tests
       def next(json: Json) = {
-        resources._next.getOption(json).map { url =>
+        listing._next.getOption(json).map { url =>
           url.replace(config.deltaUri.toString(), "")
         }
       }
 
       // Get results though a lens and filtering out some fields
       def lens(json: Json) =
-        resources._results
+        listing._results
           .getOption(json)
           .fold(Vector.empty[Json]) { _.map(filterMetadataKeys) }
 
@@ -142,7 +137,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         .compile
         .toList
 
-      val expected = resources._results
+      val expected = listing._results
         .getOption(
           jsonContentOf(
             "/kg/listings/project/resource-by-type.json",
@@ -155,9 +150,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         )
         .value
 
-      result.flatMap { l =>
-        Task.pure(l.flatten shouldEqual expected)
-      }
+      result.map(_.flatten shouldEqual expected)
     }
 
   }
@@ -200,8 +193,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     "get an empty list for anonymous" in {
       deltaClient.get[Json](s"/resources/$org1?type=$projectType", Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        resources._total.getOption(json).value shouldEqual 0L
-        resources._results.getOption(json).value.size shouldEqual 0
+        listing._total.getOption(json).value shouldEqual 0L
+        listing._results.getOption(json).value.size shouldEqual 0
       }
     }
   }
@@ -247,8 +240,8 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     "get an empty list for anonymous" in {
       deltaClient.get[Json](s"/resources?type=$testResourceType", Anonymous) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
-        resources._total.getOption(json).value shouldEqual 0L
-        resources._results.getOption(json).value.size shouldEqual 0
+        listing._total.getOption(json).value shouldEqual 0L
+        listing._results.getOption(json).value.size shouldEqual 0
       }
     }
 

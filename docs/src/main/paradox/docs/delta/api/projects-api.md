@@ -196,7 +196,7 @@ When the task is finished, the target project can be recreated if desired.
 
 ![deletion diagram](assets/projects/projects-delete-diagram.png)
 
-Deletion only works when the configuration flag `app.projects.allow-resources-deletion` is set to `true` and the current project is not referenced somewhere else (e.g.: a `CrossProjectResolver`, an `AggregatedView`, etc.).
+Deletion only works when the configuration flag `app.database.deny-cleanup` is set to `false` and the current project is not referenced somewhere else (e.g.: a `CrossProjectResolver`, an `AggregatedView`, etc.).
 
 ```
 DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}&prune=true

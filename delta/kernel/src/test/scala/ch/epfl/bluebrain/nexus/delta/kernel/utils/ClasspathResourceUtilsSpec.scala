@@ -45,7 +45,7 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     }
 
     "fail when resource is not a json" in {
-      reject(ioJsonContentOf("resource.txt")) shouldEqual InvalidJson("resource.txt")
+      reject(ioJsonContentOf("resource.txt")) shouldBe a[InvalidJson]
     }
 
     "fail when resource is not a json object" in {

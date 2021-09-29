@@ -21,6 +21,7 @@ services:
                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
                  "-Dapp.database.cassandra.keyspace-autocreate=true",
                  "-Dapp.database.cassandra.tables-autocreate=true",
+                 "-Dapp.database.deny-cleanup=false",
                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
                  "-Dplugins.elasticsearch.credentials.username=elastic",
                  "-Dplugins.elasticsearch.credentials.password=password",
@@ -42,7 +43,7 @@ services:
                  "-Dplugins.search.indexing.settings=/config/settings.json",
                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210728T00:00",
+                 "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210928T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
     ports:
@@ -72,6 +73,7 @@ services:
 #                  "-Dapp.cluster.remote-interface=delta2",
 #                  "-Dapp.cluster.seeds=delta:25520",
 #                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
+#                  "-Dapp.database.deny-cleanup=false",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
 #                  "-Dplugins.elasticsearch.credentials.username=elastic",
 #                  "-Dplugins.elasticsearch.credentials.password=password",
@@ -93,7 +95,7 @@ services:
 #                  "-Dplugins.search.indexing.settings=/config/settings.json",
 #                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
 #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210928T00:00",
 #                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
 #                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
 #    ports:
@@ -119,6 +121,7 @@ services:
 #                  "-Dapp.cluster.remote-interface=delta3",
 #                  "-Dapp.cluster.seeds=delta:25520",
 #                  "-Dapp.database.cassandra.contact-points.1=cassandra:9042",
+#                  "-Dapp.database.deny-cleanup=false",
 #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
 #                  "-Dplugins.elasticsearch.credentials.username=elastic",
 #                  "-Dplugins.elasticsearch.credentials.password=password",
@@ -140,7 +143,7 @@ services:
 #                  "-Dplugins.search.indexing.settings=/config/settings.json",
 #                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
 #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210503T00:00",
+#                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210928T00:00",
 #                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
 #                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
 #    ports:

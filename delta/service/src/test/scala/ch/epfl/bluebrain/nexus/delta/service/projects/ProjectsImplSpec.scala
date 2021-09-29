@@ -24,7 +24,7 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
       persist,
       AutomaticProvisioningConfig.disabled,
       QuotasConfig(None, None, enabled = false, Map.empty),
-      allowResourcesDeletion = false
+      denyProjectPruning = false
     )
 
   override def create(quotas: Quotas): Task[Projects] =

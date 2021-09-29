@@ -3,13 +3,11 @@
     "AggregateElasticSearchView"
   ],
   "views": [
+    {{#views}}
     {
-      "project": "{{project1}}",
-      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
-    },
-    {
-      "project": "{{project2}}",
-      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
-    }
+      "project": "{{project}}",
+      "viewId": "{{viewId}}"
+    }{{#_separator}},{{/_separator}}
+    {{/views}}
   ]
 }

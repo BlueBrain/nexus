@@ -11,13 +11,18 @@ class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with Bef
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    System.clearProperty("app.database.flavour")
-    ConfigImpl.reloadSystemPropertiesConfig()
+    clearProperties()
   }
 
   override protected def afterAll(): Unit = {
-    System.clearProperty("app.database.flavour")
+    clearProperties()
     super.afterAll()
+  }
+
+  private def clearProperties(): Unit = {
+    System.clearProperty("app.database.flavour")
+    System.clearProperty("app.projects.deny-project-pruning")
+    ConfigImpl.reloadSystemPropertiesConfig()
   }
 
   "AppConfig" should {
@@ -34,6 +39,12 @@ class AppConfigSpec extends AnyWordSpecLike with Matchers with IOValues with Bef
       val (conf, _) = AppConfig.load().accepted
 
       conf.database.flavour shouldEqual DatabaseFlavour.Postgres
+    }
+
+    "fail to load because of cleanup misconfiguration" in {
+      System.setProperty("app.projects.deny-project-pruning", "false")
+      ConfigImpl.reloadSystemPropertiesConfig()
+      AppConfig.load().rejected.head shouldEqual AppConfig.projectPruningMisconfiguration
     }
 
   }

@@ -23,14 +23,14 @@
       "_updatedBy": "{{deltaUri}}/realms/internal/users/delta"
     },
     {
-      "@id": "http://example.com/id",
+      "@id": "http://localhost/resolver",
       "@type": [
         "Resolver",
         "CrossProject"
       ],
-      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/example-id/incoming",
-      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/example-id/outgoing",
-      "_self": "{{deltaUri}}/resolvers/{{projId}}/example-id",
+      "_incoming": "{{deltaUri}}/resolvers/{{projId}}/test-resolver/incoming",
+      "_outgoing": "{{deltaUri}}/resolvers/{{projId}}/test-resolver/outgoing",
+      "_self": "{{deltaUri}}/resolvers/{{projId}}/test-resolver",
       "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
       "_project": "{{project}}",
       "_rev": 2,

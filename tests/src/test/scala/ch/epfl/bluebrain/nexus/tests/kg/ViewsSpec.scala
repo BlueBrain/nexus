@@ -105,11 +105,13 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "create an AggregateElasticSearchView" in {
-      val payload = jsonContentOf("/kg/views/agg-elastic-view.json", "project1" -> fullId, "project2" -> fullId2)
-
-      deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggEsView", payload, ScoobyDoo) { (_, response) =>
-        response.status shouldEqual StatusCodes.Created
-      }
+      elasticsearchViewsDsl.aggregate(
+        "test-resource:testAggEsView",
+        fullId2,
+        ScoobyDoo,
+        fullId  -> "https://dev.nexus.test.com/simplified-resource/testView",
+        fullId2 -> "https://dev.nexus.test.com/simplified-resource/testView"
+      )
     }
 
     "get the created AggregateElasticSearchView" in {

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.kernel.utils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassPathResourceUtilsStatic.templateEngine
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError.{InvalidJson, InvalidJsonObject, ResourcePathNotFound}
 import io.circe.parser.parse
-import io.circe.{Json, JsonObject}
+import io.circe.{Json, JsonObject, ParsingFailure}
 import monix.bio.IO
 import org.fusesource.scalate.TemplateEngine
 
@@ -84,7 +84,7 @@ trait ClasspathResourceUtils {
   )(implicit classLoader: ClassLoader): IO[ClasspathResourceError, Json] =
     for {
       text <- ioContentOf(resourcePath, attributes: _*)
-      json <- IO.fromEither(parse(text)).mapError(_ => InvalidJson(resourcePath))
+      json <- IO.fromEither(parse(text)).mapError(InvalidJson(resourcePath, text, _))
     } yield json
 
   /**
@@ -131,8 +131,10 @@ object ClasspathResourceError {
   /**
     * A retrieved resource from the classpath is not a Json
     */
-  final case class InvalidJson(resourcePath: String)
-      extends ClasspathResourceError(s"The resource path '$resourcePath' could not be converted to Json")
+  final case class InvalidJson(resourcePath: String, raw: String, failure: ParsingFailure)
+      extends ClasspathResourceError(
+        s"The resource path '$resourcePath' could not be converted to Json because of failure: $failure.\nResource content is:\n$raw"
+      )
 
   /**
     * A retrieved resource from the classpath is not a Json object
