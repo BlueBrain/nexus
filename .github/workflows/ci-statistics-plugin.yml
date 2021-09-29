@@ -1,4 +1,4 @@
-name: Delta Statistics Plugin
+name: Delta Graph Analytics Plugin
 on:
   pull_request:
     paths:
@@ -10,7 +10,7 @@ on:
       - 'delta/sourcing/**'
       - 'delta/testkit/**'
       - 'delta/plugins/elasticsearch/**'
-      - 'delta/plugins/statistics/**'
+      - 'delta/plugins/graph-analytics/**'
       - 'build.sbt'
       - 'project/**'
 jobs:
@@ -30,6 +30,6 @@ jobs:
         with:
           java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project statisticsPlugin" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project graphAnalyticsPlugin" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project statisticsPlugin" clean coverage test coverageReport coverageAggregate
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project graphAnalyticsPlugin" clean coverage test coverageReport coverageAggregate

@@ -202,7 +202,7 @@ lazy val docs = project
         (sdkViews / Compile / resourceDirectory).value / "contexts",
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
-        (statisticsPlugin / Compile / resourceDirectory).value / "contexts",
+        (graphAnalyticsPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
         (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
@@ -473,7 +473,7 @@ lazy val app = project
     copyPlugins           := {
       val esFile              = (elasticsearchPlugin / assembly).value
       val bgFile              = (blazegraphPlugin / assembly).value
-      val statisticsFile      = (statisticsPlugin / assembly).value
+      val graphAnalyticsFile  = (graphAnalyticsPlugin / assembly).value
       val storageFile         = (storagePlugin / assembly).value
       val archiveFile         = (archivePlugin / assembly).value
       val compositeViewsFile  = (compositeViewsPlugin / assembly).value
@@ -485,7 +485,7 @@ lazy val app = project
         Set(
           esFile              -> (pluginsTarget / esFile.getName),
           bgFile              -> (pluginsTarget / bgFile.getName),
-          statisticsFile      -> (pluginsTarget / statisticsFile.getName),
+          graphAnalyticsFile      -> (pluginsTarget / graphAnalyticsFile.getName),
           storageFile         -> (pluginsTarget / storageFile.getName),
           archiveFile         -> (pluginsTarget / archiveFile.getName),
           compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
@@ -510,7 +510,7 @@ lazy val app = project
     Universal / mappings ++= {
       val esFile              = (elasticsearchPlugin / assembly).value
       val bgFile              = (blazegraphPlugin / assembly).value
-      val statisticsFile      = (statisticsPlugin / assembly).value
+      val graphAnalytics      = (graphAnalyticsPlugin / assembly).value
       val storageFile         = (storagePlugin / assembly).value
       val archiveFile         = (archivePlugin / assembly).value
       val compositeViewsFile  = (compositeViewsPlugin / assembly).value
@@ -519,7 +519,7 @@ lazy val app = project
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
-        (statisticsFile, "plugins/" + statisticsFile.getName),
+        (graphAnalytics, "plugins/" + graphAnalytics.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
         (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
@@ -775,8 +775,8 @@ lazy val projectDeletionPlugin = project
     Test / fork                := true
   )
 
-lazy val statisticsPlugin = project
-  .in(file("delta/plugins/statistics"))
+lazy val graphAnalyticsPlugin = project
+  .in(file("delta/plugins/graph-analytics"))
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
@@ -787,8 +787,8 @@ lazy val statisticsPlugin = project
     elasticsearchPlugin % Provided
   )
   .settings(
-    name                       := "delta-statistics-plugin",
-    moduleName                 := "delta-statistics-plugin",
+    name                       := "delta-graph-analytics-plugin",
+    moduleName                 := "delta-graph-analytics-plugin",
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
@@ -797,11 +797,11 @@ lazy val statisticsPlugin = project
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
-    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.statistics",
-    assembly / assemblyJarName := "statistics.jar",
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics",
+    assembly / assemblyJarName := "graph-analytics.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-statistics-plugin", "plugin"), assembly),
+    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
     Test / fork                := true,
     coverageFailOnMinimum      := false
   )
@@ -818,7 +818,7 @@ lazy val plugins = project
     archivePlugin,
     projectDeletionPlugin,
     testPlugin,
-    statisticsPlugin
+    graphAnalyticsPlugin
   )
 
 lazy val delta = project
