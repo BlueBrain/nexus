@@ -54,27 +54,38 @@ object DatabaseCleanup {
               s"Cleanup is disabled, no actual deletion will be performed for module '$moduleType' in project '$project'."
             )
           )
-        else
-          sql"""DELETE FROM public.event_journal WHERE persistence_id LIKE $moduleType || '-' || ${UrlUtils.encode(
-            project
-          )} || '%'""".update.run
-            .transact(config.postgres.transactor)
-            .void
+        else {
+          Task.delay(
+            logger.info(s"Cleaning events from module '$moduleType' for project '$project'.")
+          ) >>
+            sql"""DELETE FROM public.event_journal WHERE persistence_id LIKE $moduleType || '-' || ${UrlUtils.encode(
+              project
+            )} || '%'""".update.run
+              .transact(config.postgres.transactor)
+              .void
+        }
       }
     }
 
   private[sourcing] def cassandra(cleanup: Cleanup): DatabaseCleanup =
     new DatabaseCleanup {
-      private def persistenceIds(moduleType: String, project: String, ids: Seq[String]): Seq[String] =
-        if (ids.isEmpty) List(EventSourceProcessor.persistenceId(moduleType, project))
-        else
-          ids.map { id =>
-            EventSourceProcessor.persistenceId(moduleType, s"${project}_$id")
-          }
-
-      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] =
-        Task
-          .deferFuture(cleanup.deleteAll(persistenceIds(moduleType, project, ids), neverUsePersistenceIdAgain = false))
-          .void
+      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] = {
+        val persistenceIds =
+          if (ids.isEmpty) List(EventSourceProcessor.persistenceId(moduleType, project))
+          else
+            ids.map { id =>
+              EventSourceProcessor.persistenceId(moduleType, s"${project}_$id")
+            }
+        Task.delay(
+          logger.info(
+            s"Cleaning events from module '$moduleType' for project '$project' with persistence ids: ${persistenceIds.mkString(",")}."
+          )
+        ) >>
+          Task
+            .deferFuture(
+              cleanup.deleteAll(persistenceIds, neverUsePersistenceIdAgain = false)
+            )
+            .void
+      }
     }
 }

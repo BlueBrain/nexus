@@ -23,10 +23,18 @@ class AclsImplSpec extends AbstractDBSpec with AclsBehaviors with Inspectors wit
 
   override def create: Task[(Acls, Permissions)] =
     for {
-      el <- eventLog
-      p  <- PermissionsDummy(minimum)
-      r  <- RealmSetup.init(realm, realm2)
-      a  <- AclsImpl(AclsConfig(aggregate, keyValueStore, cacheIndexing), p, r, el)
+      el  <- eventLog
+      c    = AclsConfig(aggregate, keyValueStore, cacheIndexing)
+      p   <- PermissionsDummy(minimum)
+      r   <- RealmSetup.init(realm, realm2)
+      agg <- AclsImpl.aggregate(p, r, aggregate)
+      a   <- AclsImpl(
+               agg,
+               AclsImpl.cache(c),
+               c,
+               p,
+               el
+             )
     } yield (a, p)
 
 }

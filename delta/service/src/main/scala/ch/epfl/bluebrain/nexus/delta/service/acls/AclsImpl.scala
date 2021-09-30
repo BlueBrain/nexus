@@ -108,7 +108,7 @@ object AclsImpl {
 
   private val logger: Logger = Logger[AclsImpl]
 
-  private def aggregate(
+  def aggregate(
       permissions: Permissions,
       realms: Realms,
       aggregateConfig: AggregateConfig
@@ -129,7 +129,7 @@ object AclsImpl {
       )
   }
 
-  private def cache(aclsConfig: AclsConfig)(implicit as: ActorSystem[Nothing]): AclsCache = {
+  def cache(aclsConfig: AclsConfig)(implicit as: ActorSystem[Nothing]): AclsCache = {
     implicit val cfg: KeyValueStoreConfig  = aclsConfig.keyValueStore
     val clock: (Long, AclResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)
@@ -161,31 +161,19 @@ object AclsImpl {
 
   /**
     * Constructs an [[AclsImpl]] instance.
-    *
-    * @param config
-    *   ACLs configurate
-    * @param permissions
-    *   [[Permissions]] instance
-    * @param realms
-    *   [[Realms]] instance
-    * @param eventLog
-    *   the event log
     */
   final def apply(
+      agg: AclsAggregate,
+      cache: AclsCache,
       config: AclsConfig,
       permissions: Permissions,
-      realms: Realms,
       eventLog: EventLog[Envelope[AclEvent]]
   )(implicit
       as: ActorSystem[Nothing],
       sc: Scheduler,
-      uuidF: UUIDF,
-      clock: Clock[UIO]
-  ): Task[AclsImpl] =
-    for {
-      agg   <- aggregate(permissions, realms, config.aggregate)
-      index <- UIO.delay(cache(config))
-      acls   = AclsImpl(agg, permissions, eventLog, index)
-      _     <- startIndexing(config, eventLog, index, acls)
-    } yield acls
+      uuidF: UUIDF
+  ): Task[AclsImpl] = {
+    val acls = AclsImpl(agg, permissions, eventLog, cache)
+    startIndexing(config, eventLog, cache, acls).as(acls)
+  }
 }

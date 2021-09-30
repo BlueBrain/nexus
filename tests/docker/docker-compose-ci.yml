@@ -33,6 +33,7 @@ services:
                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
                  "-Dplugins.composite-views.sources.max-batch-size=50",
                  "-Dplugins.composite-views.sources.max-time-window=50ms",
+                 "-Dplugins.storage.storages.disk.default-volume=/default-volume",
                  "-Dplugins.storage.storages.remote-disk.enabled=true",
                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                  "-Dplugins.storage.storages.amazon.enabled=true",
@@ -50,6 +51,7 @@ services:
       - 8080:8080
     volumes:
       - ./config:/config
+      - /tmp:/default-volume
 
 #  delta2:
 #    depends_on:
@@ -78,6 +80,7 @@ services:
 #                 "-Dplugins.composite-views.min-interval-rebuild=5seconds",
 #                 "-Dplugins.composite-views.sources.max-batch-size=50",
 #                 "-Dplugins.composite-views.sources.max-time-window=50ms",
+#                 "-Dplugins.storage.storages.disk.default-volume=/default-volume",
 #                 "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                 "-Dplugins.storage.storages.amazon.enabled=true",
@@ -95,6 +98,7 @@ services:
 #      - 8081:8080
 #    volumes:
 #      - ./config:/config
+#      - /tmp:/default-volume
 #
 #  delta3:
 #    depends_on:
@@ -123,6 +127,7 @@ services:
 #                 "-Dplugins.composite-views.min-interval-rebuild=5seconds",
 #                 "-Dplugins.composite-views.sources.max-batch-size=50",
 #                 "-Dplugins.composite-views.sources.max-time-window=50ms",
+#                 "-Dplugins.storage.storages.disk.default-volume=/default-volume",
 #                 "-Dplugins.storage.storages.remote-disk.enabled=true",
 #                 "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
 #                 "-Dplugins.storage.storages.amazon.enabled=true",
@@ -140,6 +145,7 @@ services:
 #      - 8082:8080
 #    volumes:
 #      - ./config:/config
+#      - /tmp:/default-volume
 
   keycloak:
     image: jboss/keycloak:15.0.0
