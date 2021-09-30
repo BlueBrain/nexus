@@ -33,7 +33,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "fetch permissions for user" in {
-      aclDsl.fetch("/", Identity.ServiceAccount) { acls =>
+      aclDsl.fetch("/", Identity.ServiceAccount, self = false) { acls =>
         acls._results.head.acl
           .find {
             case AclEntry(User(_, Marge.name), _) => true
