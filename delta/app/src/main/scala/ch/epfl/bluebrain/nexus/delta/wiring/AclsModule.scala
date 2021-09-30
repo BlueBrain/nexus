@@ -13,8 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.acls.{AclEventExchange, AclsImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
+import ch.epfl.bluebrain.nexus.delta.service.acls.{AclEventExchange, AclsDeletion, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -28,18 +29,31 @@ object AclsModule extends ModuleDef {
 
   make[EventLog[Envelope[AclEvent]]].fromEffect { databaseEventLog[AclEvent](_, _) }
 
+  make[AclsAggregate].fromEffect {
+    (config: AppConfig, permissions: Permissions, realms: Realms, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      AclsImpl.aggregate(permissions, realms, config.acls.aggregate)(as, clock)
+  }
+
+  make[AclsCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
+    AclsImpl.cache(config.acls)(as)
+  }
+
+  many[ResourcesDeletion].add { (cache: AclsCache, agg: AclsAggregate, dbCleanup: DatabaseCleanup) =>
+    AclsDeletion(cache, agg, dbCleanup)
+  }
+
   make[Acls].fromEffect {
     (
+        agg: AclsAggregate,
+        cache: AclsCache,
         cfg: AppConfig,
         eventLog: EventLog[Envelope[AclEvent]],
         as: ActorSystem[Nothing],
         uuidF: UUIDF,
-        clock: Clock[UIO],
         scheduler: Scheduler,
-        permissions: Permissions,
-        realms: Realms
+        permissions: Permissions
     ) =>
-      AclsImpl(cfg.acls, permissions, realms, eventLog)(as, scheduler, uuidF, clock)
+      AclsImpl(agg, cache, cfg.acls, permissions, eventLog)(as, scheduler, uuidF)
   }
 
   make[AclsRoutes].from {

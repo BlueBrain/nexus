@@ -18,6 +18,16 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
 
   private val logger = Logger[this.type]
 
+  def fetch(path: String, identity: Identity, self: Boolean = true, ancestors: Boolean = false)(
+      assertAcls: AclListing => Assertion
+  ): Task[Assertion] = {
+    path should not startWith "/acls"
+    cl.get[AclListing](s"/acls$path?ancestors=$ancestors&self=$self", identity) { (acls, response) =>
+      response.status shouldEqual StatusCodes.OK
+      assertAcls(acls)
+    }
+  }
+
   def addPermission(path: String, target: Authenticated, permission: Permission): Task[Assertion] =
     addPermissions(path, target, Set(permission))
 
@@ -43,7 +53,6 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
   }
 
   def addPermissions(path: String, payload: Json, targetName: String): Task[Assertion] = {
-    path should not startWith "/acls"
     logger.info(s"Addings permissions to $path for $targetName")
 
     def assertResponse(json: Json, response: HttpResponse) =
@@ -60,9 +69,8 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
         case s                                    => fail(s"We were not expecting $s when setting acls on $path for $targetName")
       }
 
-    cl.get[AclListing](s"/acls$path", Identity.ServiceAccount) { (acls, response) =>
+    fetch(path, Identity.ServiceAccount) { acls =>
       {
-        response.status shouldEqual StatusCodes.OK
         val rev = acls._results.headOption
         rev match {
           case Some(r) =>
@@ -79,9 +87,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
   }
 
   def cleanAcls(target: Authenticated): Task[Assertion] =
-    cl.get[AclListing](s"/acls/*/*?ancestors=true&self=false", Identity.ServiceAccount) { (acls, response) =>
-      response.status shouldEqual StatusCodes.OK
-
+    fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
           val userAcls = acls.acl.filter {
@@ -109,9 +115,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
     }
 
   def cleanAclsAnonymous: Task[Assertion] =
-    cl.get[AclListing](s"/acls/*/*?ancestors=true&self=false", Identity.ServiceAccount) { (acls, response) =>
-      response.status shouldEqual StatusCodes.OK
-
+    fetch(s"/*/*", Identity.ServiceAccount, ancestors = true, self = false) { acls =>
       val permissions = acls._results
         .map { acls =>
           val userAcls = acls.acl.filter {
@@ -139,24 +143,15 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
   def deletePermission(path: String, target: Authenticated, permission: Permission): Task[Assertion] =
     deletePermissions(path, target, Set(permission))
 
-  def deletePermissions(path: String, target: Authenticated, permissions: Set[Permission]): Task[Assertion] = {
-    path should not startWith "/acls"
-    cl.get[Json](s"/acls$path", Identity.ServiceAccount) { (json, response) =>
-      {
-        response.status shouldEqual StatusCodes.OK
-        val acls = json
-          .as[AclListing]
-          .getOrElse(throw new RuntimeException(s"Couldn't decode ${json.noSpaces} to AclListing"))
-
-        deletePermissions(
-          path,
-          target,
-          acls._results.head._rev,
-          permissions
-        )
-      }.runSyncUnsafe()
+  def deletePermissions(path: String, target: Authenticated, permissions: Set[Permission]): Task[Assertion] =
+    fetch(path, Identity.ServiceAccount) { acls =>
+      deletePermissions(
+        path,
+        target,
+        acls._results.head._rev,
+        permissions
+      ).runSyncUnsafe()
     }
-  }
 
   def deletePermission(path: String, target: Authenticated, revision: Long, permission: Permission): Task[Assertion] = {
     deletePermissions(path, target, revision, Set(permission))
@@ -181,8 +176,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
 
   def checkAdminAcls(path: String, authenticated: Authenticated): Task[Assertion] = {
     logger.info(s"Gettings acls for $path using ${authenticated.name}")
-    cl.get[AclListing](s"/acls$path", authenticated) { (acls, response) =>
-      response.status shouldEqual StatusCodes.OK
+    fetch(path, authenticated) { acls =>
       val acl   = acls._results.headOption.value
       val entry = acl.acl.headOption.value
       entry.permissions shouldEqual Permission.adminPermissions

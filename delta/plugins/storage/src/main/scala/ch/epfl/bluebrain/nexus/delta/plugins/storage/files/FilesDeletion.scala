@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.persistence.query.NoOffset
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesAggregate
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FilesDeletion.logger
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
+import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 
 import java.io.File
@@ -43,9 +44,17 @@ final class FilesDeletion(
         .collect { case Storage.DiskStorage(_, _, value, _, _) => value.volume }
         .changes
         .evalMap { volume =>
-          Task.delay(new Directory(new File(volume.value.toFile, projectRef.toString)).deleteRecursively())
+          val directory = new Directory(new File(volume.value.toFile, projectRef.toString))
+          if (directory.exists) directory.deleteRecursively() else true
+
+          Task.when(directory.exists) {
+            Task.delay {
+              if (!directory.deleteRecursively()) {
+                logger.warn(s"Directory ${directory.path} could not be deleted")
+              }
+            }
+          }
         }
-        .void
         .compile
         .drain
         .as(ResourcesDataDeleted)
@@ -57,6 +66,9 @@ final class FilesDeletion(
 }
 
 object FilesDeletion {
+
+  private val logger: Logger = Logger[FilesDeletion.type]
+
   final def apply(
       agg: FilesAggregate,
       storages: Storages,

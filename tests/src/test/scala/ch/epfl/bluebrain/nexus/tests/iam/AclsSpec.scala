@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.tests.iam
 
-import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.acls.Marge
 import ch.epfl.bluebrain.nexus.tests.Identity.testRealm
@@ -34,8 +33,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "fetch permissions for user" in {
-      deltaClient.get[AclListing]("/acls/?self=false", Identity.ServiceAccount) { (acls, result) =>
-        result.status shouldEqual StatusCodes.OK
+      aclDsl.fetch("/", Identity.ServiceAccount, self = false) { acls =>
         acls._results.head.acl
           .find {
             case AclEntry(User(_, Marge.name), _) => true
@@ -54,8 +52,7 @@ class AclsSpec extends BaseSpec {
       )
 
     "check if permissions were removed" in {
-      deltaClient.get[AclListing]("/acls/?self=false", Identity.ServiceAccount) { (acls, response) =>
-        response.status shouldEqual StatusCodes.OK
+      aclDsl.fetch("/", Identity.ServiceAccount, self = false) { acls =>
         acls._results.head.acl
           .find {
             case AclEntry(User(testRealm.name, Marge.name), _) => true
@@ -95,8 +92,7 @@ class AclsSpec extends BaseSpec {
         .permissions shouldEqual expectedPermissions
 
     "list permissions on /*/*" in {
-      deltaClient.get[AclListing]("/acls/*/*", Marge) { (acls, response) =>
-        response.status shouldEqual StatusCodes.OK
+      aclDsl.fetch("/*/*", Marge) { acls =>
         crossProduct.foreach { case (org, project) =>
           assertPermissions(acls, org, project, defaultPermissions)
         }
@@ -105,8 +101,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "list permissions on /orgpath1/*" in {
-      deltaClient.get[AclListing](s"/acls/$orgPath1/*", Marge) { (acls, response) =>
-        response.status shouldEqual StatusCodes.OK
+      aclDsl.fetch(s"/$orgPath1/*", Marge) { acls =>
         acls._total shouldEqual 2
         projects.foreach { project =>
           assertPermissions(acls, orgPath1, project, defaultPermissions)
@@ -116,8 +111,7 @@ class AclsSpec extends BaseSpec {
     }
 
     "list permissions on /*/* with ancestors" in {
-      deltaClient.get[AclListing]("/acls/*/*?ancestors=true", Marge) { (acls, response) =>
-        response.status shouldEqual StatusCodes.OK
+      aclDsl.fetch(s"/*/*", Marge, ancestors = true) { acls =>
         acls._results
           .find(_._path == "/")
           .value
