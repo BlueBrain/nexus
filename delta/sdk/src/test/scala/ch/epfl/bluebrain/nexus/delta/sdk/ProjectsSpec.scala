@@ -21,6 +21,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
+import scala.concurrent.duration._
 
 class ProjectsSpec
     extends AnyWordSpecLike
@@ -67,12 +68,15 @@ class ProjectsSpec
     }
     val ref                     = ProjectRef(orgLabel, label)
     val ref2                    = ProjectRef(org2Label, label)
+    val ref3                    = ProjectRef.unsafe("org", "cooldown")
 
     implicit val uuidF: UUIDF = UUIDF.fixed(uuid)
 
     "evaluating an incoming command" should {
 
-      val eval = evaluate(orgs)(_, _)
+      def creationCooldown(projectRef: ProjectRef) = IO.raiseWhen(projectRef == ref3)(42.minutes)
+
+      val eval = evaluate(orgs, creationCooldown)(_, _)
 
       "create a new event" in {
         eval(Initial, CreateProject(ref, desc, am, base, vocab, subject)).accepted shouldEqual
@@ -121,6 +125,11 @@ class ProjectsSpec
           eval(state, cmd).rejected shouldEqual
             WrappedOrganizationRejection(OrganizationNotFound(label))
         }
+      }
+
+      "reject with ProjectCreationCooldown" in {
+        eval(Initial, CreateProject(ref3, desc, am, base, vocab, subject)).rejected shouldEqual
+          ProjectCreationCooldown(ref3, 42.minutes)
       }
 
       "reject with ProjectIsDeprecated" in {

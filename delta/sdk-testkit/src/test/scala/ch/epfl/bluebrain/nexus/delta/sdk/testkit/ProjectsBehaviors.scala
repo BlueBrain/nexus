@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, Projects, Quotas, QuotasDummy}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.datastax.oss.driver.api.core.uuid.Uuids
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -35,6 +35,7 @@ import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 trait ProjectsBehaviors {
   this: AnyWordSpecLike
@@ -91,6 +92,14 @@ trait ProjectsBehaviors {
 
   // proj22 has no permission set
   val proj22 = Label.unsafe("proj22")
+
+  // this project must observe a cooldown before being created
+  val projCoolDown = Label.unsafe("projCoolDown")
+
+  val cooldown = 42.minutes
+
+  def creationCooldown(proj: ProjectRef): IO[FiniteDuration, Unit] =
+    IO.raiseWhen(proj == ProjectRef(org1, projCoolDown))(cooldown)
 
   private val order = ResourceF.defaultSort[Project]
 
@@ -167,6 +176,13 @@ trait ProjectsBehaviors {
 
       projects.create(ref, payload).rejectedWith[ProjectRejection] shouldEqual
         WrappedOrganizationRejection(OrganizationIsDeprecated(ref.organization))
+    }
+
+    "not create a project if a cooldown must be respected" in {
+      val ref = ProjectRef(org1, projCoolDown)
+
+      projects.create(ref, payload).rejected shouldEqual
+        ProjectCreationCooldown(ref, cooldown)
     }
 
     "not update a project if it doesn't exists" in {

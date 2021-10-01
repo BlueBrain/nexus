@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.projects
 
+import cats.Show
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -18,6 +19,7 @@ import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 /**
@@ -71,6 +73,14 @@ object ProjectRejection {
     */
   final case class ProjectNotDeleted(projectRef: ProjectRef)
       extends ProjectRejection(s"Project '$projectRef' is not marked for deletion")
+
+  /**
+    * Signals that the current project is expected to be deleted but it isn't
+    */
+  final case class ProjectCreationCooldown(projectRef: ProjectRef, end: FiniteDuration)
+      extends ProjectRejection(
+        s"Project '$projectRef' has been deleted recently and can't be created again before ${Show[FiniteDuration].show(end)}."
+      )
 
   /**
     * Signals that a project cannot be created because one with the same identifier already exists.

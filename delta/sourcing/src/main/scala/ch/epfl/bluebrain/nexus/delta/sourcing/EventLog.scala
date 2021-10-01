@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
+import akka.EventByTagSettingsLoader
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
 import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
-import akka.persistence.query.{EventEnvelope, NoOffset, Offset, PersistenceQuery, TimeBasedUUID}
+import akka.persistence.query._
 import cats.effect.ExitCase
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import com.typesafe.scalalogging.Logger
@@ -15,14 +16,9 @@ import monix.bio.{Task, UIO}
 trait EventLog[M] {
 
   /**
-    * The flavour of the event log
+    * Configuration related to the event log
     */
-  def flavour: DatabaseFlavour
-
-  /**
-    * Default offset to fetch from the beginning
-    */
-  def firstOffset: Offset
+  def config: EventLogConfig
 
   /**
     * [[akka.persistence.query.scaladsl.PersistenceIdsQuery#currentPersistenceIds]] in a fs2 stream
@@ -56,7 +52,7 @@ trait EventLog[M] {
 }
 object EventLog {
   import akka.actor.typed.ActorSystem
-  import akka.persistence.query.scaladsl.{ReadJournal, _}
+  import akka.persistence.query.scaladsl._
   import akka.stream.scaladsl.Source
   import streamz.converter._
 
@@ -73,10 +69,8 @@ object EventLog {
   /**
     * Implementation of [[EventLog]] based on Akka Persistence.
     *
-    * @param flavour
-    *   the flavour of the event log
-    * @param firstOffset
-    *   the default offset to fetch from the beginning
+    * @param config
+    *   Configuration related to the event log how long state about persistence ids is kept during eventByTag queries
     * @param readJournal
     *   the underlying akka persistence journal
     * @param f
@@ -89,8 +83,7 @@ object EventLog {
     *   the event type
     */
   private class AkkaEventLog[RJ <: Journal, M](
-      val flavour: DatabaseFlavour,
-      val firstOffset: Offset,
+      val config: EventLogConfig,
       readJournal: RJ,
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing])
@@ -166,8 +159,11 @@ object EventLog {
     val cassandraReadJournal =
       PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
     new AkkaEventLog(
-      DatabaseFlavour.Cassandra,
-      TimeBasedUUID(cassandraReadJournal.firstOffset),
+      EventLogConfig(
+        DatabaseFlavour.Cassandra,
+        TimeBasedUUID(cassandraReadJournal.firstOffset),
+        EventByTagSettingsLoader.load.cleanUpPersistenceIds
+      ),
       cassandraReadJournal,
       f
     )
@@ -182,8 +178,7 @@ object EventLog {
       f: EventEnvelope => UIO[Option[M]]
   )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] = Task.delay {
     new AkkaEventLog(
-      DatabaseFlavour.Postgres,
-      NoOffset,
+      EventLogConfig.postgresql,
       PersistenceQuery(as).readJournalFor[Journal](JdbcReadJournal.Identifier),
       f
     )

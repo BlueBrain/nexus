@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, ElasticSearchDocker, IOValues, TestHelpers}
 import io.circe.JsonObject
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
@@ -46,7 +46,7 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      esClient.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), "7.13.4")
+      esClient.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), ElasticSearchDocker.version)
     }
 
     "verify that an index does not exist" in {

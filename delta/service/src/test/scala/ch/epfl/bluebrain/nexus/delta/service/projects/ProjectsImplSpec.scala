@@ -33,7 +33,8 @@ class ProjectsImplSpec extends AbstractDBSpec with ProjectsBehaviors with Config
       agg        <- ProjectsImpl.aggregate(
                       projectsConfig,
                       organizations,
-                      ApiMappings.empty
+                      ApiMappings.empty,
+                      creationCooldown
                     )
       cache       = ProjectsImpl.cache(projectsConfig)
       deleteCache = ProjectsImpl.deletionCache(projectsConfig)
