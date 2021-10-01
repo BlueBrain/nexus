@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectEvent, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
@@ -90,8 +91,10 @@ object GraphAnalyticsIndexingCoordinator {
       projects: Projects,
       coordinator: GraphAnalyticsIndexingCoordinator
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] = {
-    def onEvent(event: ProjectEvent) =
-      coordinator.run(GraphAnalytics.typeStats, event.project, 1)
+    def onEvent(event: ProjectEvent): Task[Unit] = event match {
+      case _: ProjectCreated => coordinator.run(GraphAnalytics.typeStats, event.project, 1)
+      case _                 => Task.unit
+    }
 
     val name = "GraphAnalyticsCoordinatorScan"
     DaemonStreamCoordinator.run(

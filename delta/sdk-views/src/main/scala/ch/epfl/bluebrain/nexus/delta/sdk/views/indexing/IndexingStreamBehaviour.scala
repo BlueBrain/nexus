@@ -202,6 +202,10 @@ object IndexingStreamBehaviour {
                 logger.info("'Stop' has been requested for view {} in project {}, stopping the stream", id, project)
                 switch.stop(StoppedReason.StreamStopped).runAsyncAndForget
                 Behaviors.stopped
+              case CleanUpAndStop =>
+                logger.info("'CleanUpAndStop' has been requested for view {} in project {}, stopping the stream", id, project)
+                (switch.stop(StoppedReason.StreamPassivated) >> indexingCleanup(viewIndex)).runAsyncAndForget
+                Behaviors.same
             }
             .receiveSignal {
               case (_, PostStop) =>
@@ -255,6 +259,10 @@ object IndexingStreamBehaviour {
   /** Command that stops the stream handled by the supervisor
     */
   final case object Stop extends IndexingViewCommand[Nothing]
+
+  /** Command that deletes the underlying index and stops the stream.
+    */
+  final case object CleanUpAndStop extends IndexingViewCommand[Nothing]
 
   /** Command returned by the stream when it stops
     *

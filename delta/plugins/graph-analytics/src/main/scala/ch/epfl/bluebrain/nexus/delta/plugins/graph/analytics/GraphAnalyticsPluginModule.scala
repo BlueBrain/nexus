@@ -91,6 +91,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
+  many[GraphAnalyticsViewDeletion].add { (indexingController: GraphAnalyticsIndexingCoordinator) =>
+    new GraphAnalyticsViewDeletion(indexingController)
+  }
   make[GraphAnalytics]
     .fromEffect { (client: ElasticSearchClient, projects: Projects, config: GraphAnalyticsConfig) =>
       GraphAnalytics(client, projects)(config.indexing, config.termAggregations)
