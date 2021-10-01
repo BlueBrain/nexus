@@ -46,7 +46,10 @@ class ElasticSearchClientSpec
   "An ElasticSearch Client" should {
 
     "fetch the service description" in {
-      esClient.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("elasticsearch"), ElasticSearchDocker.version)
+      esClient.serviceDescription.accepted shouldEqual ServiceDescription(
+        Name.unsafe("elasticsearch"),
+        ElasticSearchDocker.version
+      )
     }
 
     "verify that an index does not exist" in {
