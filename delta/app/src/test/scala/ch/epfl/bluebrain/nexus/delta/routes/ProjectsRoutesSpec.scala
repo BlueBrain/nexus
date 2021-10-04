@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitiali
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -141,7 +141,7 @@ class ProjectsRoutesSpec
 
   implicit private val finder: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)
   private val projectDummy                            =
-    ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings).accepted
+    ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings, _ => IO.unit).accepted
 
   private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 

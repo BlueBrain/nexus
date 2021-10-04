@@ -160,23 +160,25 @@ object EventLogUtils {
       )
 
   private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
-    eventLog.flavour match {
+    eventLog.config.flavour match {
       case Postgres  => eventLog.eventsByTag(tag, offset)
       case Cassandra =>
         val maxOffset = OffsetUtils.offsetOrdering.max(
           offset,
-          OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
+          OffsetUtils.offsetOrdering
+            .max(eventLog.config.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
         )
         eventLog.eventsByTag(tag, maxOffset)
     }
 
   private def currentEvents[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
-    eventLog.flavour match {
+    eventLog.config.flavour match {
       case Postgres  => eventLog.currentEventsByTag(tag, offset)
       case Cassandra =>
         val maxOffset = OffsetUtils.offsetOrdering.max(
           offset,
-          OffsetUtils.offsetOrdering.max(eventLog.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
+          OffsetUtils.offsetOrdering
+            .max(eventLog.config.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
         )
         eventLog.currentEventsByTag(tag, maxOffset)
     }

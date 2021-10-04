@@ -98,7 +98,7 @@ object ProjectDeletion {
     // computes the event log start offset based on the current database flavour (postgres does not support replaying
     // logs from a specific point in time)
     def offset(now: Instant): Offset =
-      eventLog.flavour match {
+      eventLog.config.flavour match {
         case DatabaseFlavour.Postgres  => NoOffset
         case DatabaseFlavour.Cassandra => TimeBasedUUID(Uuids.startOf(now.toEpochMilli - config.idleInterval.toMillis))
       }
