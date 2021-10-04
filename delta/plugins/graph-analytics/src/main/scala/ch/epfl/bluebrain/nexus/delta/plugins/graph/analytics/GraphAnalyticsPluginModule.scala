@@ -91,7 +91,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[GraphAnalyticsViewDeletion].add { (indexingController: GraphAnalyticsIndexingCoordinator) =>
+  many[ResourcesDeletion].add { (indexingController: GraphAnalyticsIndexingCoordinator) =>
     new GraphAnalyticsViewDeletion(indexingController)
   }
   make[GraphAnalytics]
