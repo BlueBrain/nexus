@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.model.headers.Location
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.tests.Identity.projects.Bojack
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
+import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
 import io.circe.Json
@@ -14,6 +14,9 @@ import org.scalatest.AppendedClues
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+
+import java.io.File
+import scala.reflect.io.Directory
 
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
@@ -25,9 +28,9 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
 
   private val ref1Iri = s"${config.deltaUri}/projects/$ref1"
 
-  private var elasticsearchViewsRef1Uuids          = List.empty[String]
-  private var blazegraphViewsRef1Uuids             = List.empty[String]
-  private var compositeViewsRef1Uuids              = List.empty[String]
+  private var elasticsearchViewsRef1Uuids = List.empty[String]
+  private var blazegraphViewsRef1Uuids    = List.empty[String]
+  private var compositeViewsRef1Uuids     = List.empty[String]
 
   private def graphAnalyticsIndex(project: String) =
     s"${URLEncoder.encode(project, StandardCharsets.UTF_8).toLowerCase}_graph_analytics"
@@ -40,6 +43,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
         _ <- adminDsl.createOrganization(org, org, Bojack)
         _ <- adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
         _ <- adminDsl.createProject(org, proj2, kgDsl.projectJson(name = proj2), Bojack)
+        _ <- aclDsl.addPermission(s"/$ref1", PrincessCarolyn, Resources.Read)
       } yield succeed
     }
 
@@ -121,6 +125,20 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
                ref1 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex",
                ref2 -> "https://bluebrain.github.io/nexus/vocabulary/defaultElasticSearchIndex"
              )
+        _ <- deltaClient.putAttachment[Json](
+               s"/files/$ref1/attachment.json",
+               contentOf("/kg/files/attachment.json"),
+               ContentTypes.`application/json`,
+               "attachment.json",
+               Bojack
+             )(expectCreated)
+        _ <- deltaClient.putAttachment[Json](
+               s"/files/$ref2/attachment.json",
+               contentOf("/kg/files/attachment.json"),
+               ContentTypes.`application/json`,
+               "attachment.json",
+               Bojack
+             )(expectCreated)
       } yield succeed
     }
   }
@@ -217,12 +235,33 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       }
     }
 
-    "not return any sse event from the deleted project" in {
+    "not return any acl under the project path" in {
+      aclDsl.fetch(s"/*/*", Identity.ServiceAccount, ancestors = true) { acls =>
+        acls._results.foreach { acl =>
+          acl._path should not equal s"/$ref1"
+        }
+        succeed
+      }
+    }
+
+    "not return any resource sse event from the deleted project" in {
       deltaClient.sseEvents(s"/resources/$org/events", Bojack, None) { events =>
         events.foreach {
           case (_, Some(json)) =>
             root._projectId.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
             root._project.string.exist(_ == ref1Iri)(json) shouldEqual false withClue events
+          case (_, None)       =>
+            fail("Every event should have a payload")
+        }
+        succeed
+      }
+    }
+
+    "not return any acl sse event from the deleted project" in {
+      deltaClient.sseEvents(s"/acls/events", ServiceAccount, None) { events =>
+        events.foreach {
+          case (_, Some(json)) =>
+            root._path.string.exist(_ == s"/$ref1")(json) shouldEqual false withClue events
           case (_, None)       =>
             fail("Every event should have a payload")
         }
@@ -257,6 +296,13 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       elasticsearchDsl.allIndices.map { indices =>
         indices.exists(_.contains(graphAnalyticsIndex(ref1))) shouldEqual false
       }
+    }
+
+    "have deleted the default storage folder" in {
+      val proj1Directory = new Directory(new File(s"/tmp/$ref1"))
+      proj1Directory.exists shouldEqual false
+      val proj2Directory = new Directory(new File(s"/tmp/$ref2"))
+      proj2Directory.exists shouldEqual true
     }
 
     "succeed for a previously referenced project" in {

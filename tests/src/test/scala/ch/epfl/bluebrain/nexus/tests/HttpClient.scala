@@ -79,6 +79,17 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       identity: Identity,
       extraHeaders: Seq[HttpHeader] = jsonHeaders
   )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] = {
+    def buildClue(a: A, response: HttpResponse) =
+      s"""
+         |Endpoint: PUT $url
+         |Identity: $identity
+         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
+         |Status code: ${response.status}
+         |Body: None
+         |Response:
+         |$a
+         |""".stripMargin
+
     def onFail(e: Throwable) =
       fail(s"Something went wrong while processing the response for $url with identity $identity", e)
     request(
@@ -90,7 +101,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
         val entity = HttpEntity(contentType, s.getBytes)
         FormData(BodyPart.Strict("file", entity, Map("filename" -> fileName))).toEntity()
       },
-      assertResponse,
+      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
       onFail,
       extraHeaders
     )
