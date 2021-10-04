@@ -27,6 +27,12 @@ final class IndexingStreamCoordinator[V] private (controller: IndexingStreamCont
   def run(id: Iri, project: ProjectRef, rev: Long): Task[Unit] =
     controller.send(id, project, ViewRevision(rev))
 
+  /**
+    * Cleans up the index and stops indexing.
+    */
+  def cleanUpAndStop(id: Iri, project: ProjectRef): Task[Unit] =
+    controller.send(id, project, CleanUpAndStop)
+
 }
 
 object IndexingStreamCoordinator {

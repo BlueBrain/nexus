@@ -17,8 +17,6 @@ import scala.util.Try
 /**
   * Configuration for the graph analytics plugin.
   *
-  * @param base
-  *   the base uri to the Elasticsearch HTTP endpoint
   * @param keyValueStore
   *   configuration of the underlying key/value store
   * @param indexing
@@ -29,7 +27,6 @@ import scala.util.Try
   *   the term aggregations query configuration
   */
 final case class GraphAnalyticsConfig(
-    base: Uri,
     keyValueStore: KeyValueStoreConfig,
     indexing: ExternalIndexingConfig,
     idleTimeout: Duration,

@@ -55,6 +55,8 @@ class IndexingStreamCoordinatorSpec
   private val view1          = iri"view1"
   // View that gets updated and then deprecated
   private val view2          = iri"view2"
+  // View that gets cleaned up and stopped
+  private val view3          = iri"view3"
   // View already deprecated
   private val deprecatedView = iri"deprecatedView"
   // Unknown view
@@ -85,6 +87,7 @@ class IndexingStreamCoordinatorSpec
   private val probe: TestProbe[ProbeCommand]                               = createTestProbe[ProbeCommand]()
   private val view1Uuid                                                    = UUID.randomUUID()
   private val view2Uuid                                                    = UUID.randomUUID()
+  private val view3Uuid                                                    = UUID.randomUUID()
   private val fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[Unit]]] = (id: Iri, _: ProjectRef) =>
     UIO.pure {
       val newRevision = revisions.updateWith(id) {
@@ -94,6 +97,7 @@ class IndexingStreamCoordinatorSpec
         case (`view1`, _)                     => viewIndex(id, 1L, deprecated = false, view1Uuid)
         case (`view2`, Some(rev)) if rev < 3L => viewIndex(id, rev, deprecated = false, view2Uuid)
         case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true, view2Uuid)
+        case (`view3`, _)                     => viewIndex(id, 1L, deprecated = false, view3Uuid)
         case (`deprecatedView`, Some(rev))    => viewIndex(id, rev, deprecated = true)
         case (_, _)                           => None
       }
@@ -243,6 +247,28 @@ class IndexingStreamCoordinatorSpec
 
       probe.expectMessage(InitView(unknownView))
       probe.expectNoMessage()
+    }
+
+    "start one more view" in {
+      indexingCleanupValues.clear()
+      coordinator.run(view3, project, 1L).accepted
+
+      probe.expectMessage(InitView(view3))
+      probe.expectMessage(BuildStream(view3, 1L, ProgressStrategy.default))
+      probe.expectNoMessage()
+    }
+
+    "stop and clean up the view" in {
+      coordinator.cleanUpAndStop(view3, project).accepted
+
+      probe.expectMessage(StreamStopped(view3, 1L))
+      probe.expectNoMessage()
+
+      eventually {
+        indexingCleanupValues.toSet shouldEqual Set(
+          viewIndex(view3, 1L, deprecated = false, view3Uuid).value
+        )
+      }
     }
   }
 

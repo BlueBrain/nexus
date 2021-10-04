@@ -12,6 +12,9 @@ import io.circe.Json
 import io.circe.optics.JsonPath.root
 import org.scalatest.AppendedClues
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+
 import java.io.File
 import scala.reflect.io.Directory
 
@@ -28,6 +31,9 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
   private var elasticsearchViewsRef1Uuids = List.empty[String]
   private var blazegraphViewsRef1Uuids    = List.empty[String]
   private var compositeViewsRef1Uuids     = List.empty[String]
+
+  private def graphAnalyticsIndex(project: String) =
+    s"${URLEncoder.encode(project, StandardCharsets.UTF_8).toLowerCase}_graph_analytics"
 
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
@@ -83,6 +89,12 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
         } shouldEqual true
         compositeViewsRef1Uuids = uuids
         succeed
+      }
+    }
+
+    "wait for graph analytics index to be created" in eventually {
+      elasticsearchDsl.allIndices.map { indices =>
+        indices.exists(_.contains(graphAnalyticsIndex(ref1))) shouldEqual true
       }
     }
 
@@ -278,7 +290,12 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
                compositeViewsRef1Uuids.forall { uuid => indices.exists(_.contains(uuid)) } shouldEqual false
              }
       } yield succeed
+    }
 
+    "have deleted elasticsearch indices for graph analytics for the project" in eventually {
+      elasticsearchDsl.allIndices.map { indices =>
+        indices.exists(_.contains(graphAnalyticsIndex(ref1))) shouldEqual false
+      }
     }
 
     "have deleted the default storage folder" in {

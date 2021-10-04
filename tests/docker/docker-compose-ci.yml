@@ -12,7 +12,9 @@ services:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest
-    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--", "./bin/delta-app",
+    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--",
+                 "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
+                 "./bin/delta-app",
                  "-Xmx4G",
                  "-Dapp.http.interface=0.0.0.0",
                  "-Dapp.http.base-uri=http://delta:8080/v1",
@@ -44,6 +46,7 @@ services:
                  "-Dplugins.search.indexing.settings=/config/settings.json",
                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
+                 "-Dplugins.graph-analytics.enabled=true",
                  "-Dakka.persistence.cassandra.events-by-tag.first-time-bucket=20210928T00:00",
                  "-Dakka.persistence.cassandra.events-by-tag.eventual-consistency-delay=2s",
                  "-Dakka.persistence.cassandra.query.refresh-interval=500ms"]
