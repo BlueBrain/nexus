@@ -46,7 +46,6 @@ services:
                   "-Dplugins.search.indexing.query=/config/construct-query.sparql",
                   "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
                   "-Dplugins.graph-analytics.enabled=true",
-                  "-Dplugins.graph-analytics.base=http://elasticsearch:9200",
                   "-Djdbc-read-journal.refresh-interval=500ms" ]
     ports:
       - 8080:8080
