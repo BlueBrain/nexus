@@ -22,6 +22,7 @@ import monix.bio.{IO, Task, UIO}
 
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
 
 trait Projects {
 
@@ -288,18 +289,20 @@ object Projects {
     }
 
   private[delta] def evaluate(
-      orgs: Organizations
+      orgs: Organizations,
+      creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
   )(state: ProjectState, command: ProjectCommand)(implicit
       rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
     val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
-    evaluate(f)(state, command)
+    evaluate(f, creationCooldown)(state, command)
   }
 
   private[sdk] def evaluate(
-      fetchAndValidateOrg: FetchOrganization
+      fetchAndValidateOrg: FetchOrganization,
+      creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
   )(state: ProjectState, command: ProjectCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
@@ -311,6 +314,7 @@ object Projects {
         case Initial =>
           for {
             org  <- fetchAndValidateOrg(c.ref.organization)
+            _ <- creationCooldown(c.ref).mapError(ProjectCreationCooldown(c.ref, _))
             uuid <- uuidF()
             now  <- instant
           } yield ProjectCreated(c.ref.project, uuid, c.ref.organization, org.uuid, 1L, c.description, c.apiMappings, c.base, c.vocab, now, c.subject)

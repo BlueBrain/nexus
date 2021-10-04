@@ -11,26 +11,29 @@ trait ElasticSearchDocker extends DockerKitWithFactory {
 
   override val StartContainersTimeout: FiniteDuration = 1.minute
 
-  val elasticSearchContainer: DockerContainer = DockerContainer("docker.elastic.co/elasticsearch/elasticsearch:7.13.4")
-    .withPorts(DefaultPort -> Some(DefaultPort))
-    .withHostConfig(
-      HostConfig(memory = Some(384 * 1000000))
-    )
-    .withEnv(
-      "ES_JAVA_OPTS=-Xmx256m",
-      "discovery.type=single-node",
-      "xpack.security.enabled=true",
-      "ELASTIC_PASSWORD=password"
-    )
-    .withReadyChecker(
-      DockerReadyChecker.LogLineContains("Active license is now [BASIC]; Security is enabled")
-    )
+  val elasticSearchContainer: DockerContainer =
+    DockerContainer(s"docker.elastic.co/elasticsearch/elasticsearch:${ElasticSearchDocker.version}")
+      .withPorts(DefaultPort -> Some(DefaultPort))
+      .withHostConfig(
+        HostConfig(memory = Some(384 * 1000000))
+      )
+      .withEnv(
+        "ES_JAVA_OPTS=-Xmx256m",
+        "discovery.type=single-node",
+        "xpack.security.enabled=true",
+        "ELASTIC_PASSWORD=password"
+      )
+      .withReadyChecker(
+        DockerReadyChecker.LogLineContains("Active license is now [BASIC]; Security is enabled")
+      )
 
   override def dockerContainers: List[DockerContainer] =
     elasticSearchContainer :: super.dockerContainers
 }
 
 object ElasticSearchDocker {
+
+  val version: String = "7.15.0"
 
   final case class ElasticSearchHost(host: String, port: Int) {
     def endpoint: String = s"http://$host:$port"

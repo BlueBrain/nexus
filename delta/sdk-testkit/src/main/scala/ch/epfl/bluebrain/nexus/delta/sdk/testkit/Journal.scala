@@ -4,8 +4,7 @@ import akka.persistence.query.{NoOffset, Offset, Sequence}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, EventLogConfig}
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -152,9 +151,7 @@ private[testkit] class Journal[Id, E <: Event] private (
       maxStreamSize(offset)
     )
 
-  override def flavour: DatabaseFlavour = DatabaseFlavour.Postgres
-
-  override def firstOffset: Offset = NoOffset
+  override def config: EventLogConfig = EventLogConfig.postgresql
 }
 
 object Journal {
