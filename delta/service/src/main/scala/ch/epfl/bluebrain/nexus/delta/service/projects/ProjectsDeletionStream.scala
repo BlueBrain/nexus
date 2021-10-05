@@ -85,16 +85,19 @@ class ProjectsDeletionStream(
     Stream
       .eval(projection.progress(projectionId))
       .evalTap { progress =>
+        logger.info(s"Starting projects deletion stream")
         cache.putAll(progress.value.value)
       }
       .flatMap { initialProgress =>
         projects
           .events(initialProgress.offset)
           .collect { case env @ Envelope(_: ProjectMarkedForDeletion, _, _, _, _, _) =>
+            println(env)
             env.toMessage
           }
           .evalMap { msg =>
             val project = msg.value.project
+            logger.info(s"Starting deletion of project $project marked at ${msg.timestamp}")
             val uuid    = Projects.uuidFrom(project, msg.value.instant)
             Task
               .traverse(

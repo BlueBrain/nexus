@@ -262,7 +262,14 @@ class CompositeIndexingSpec
     RemoteIndexingSource.apply(remoteProjectStream, remoteResourceNQuads, config.remoteSourceClient, metadataPredicates)
 
   private val indexingCleanup =
-    new CompositeIndexingCleanup(config.elasticSearchIndexing, esClient, config.blazegraphIndexing, blazeClient, cache)
+    new CompositeIndexingCleanup(
+      config.elasticSearchIndexing,
+      esClient,
+      config.blazegraphIndexing,
+      blazeClient,
+      cache,
+      projection
+    )
   private val indexingStream  = new CompositeIndexingStream(
     config.elasticSearchIndexing,
     esClient,

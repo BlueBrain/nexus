@@ -25,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
@@ -102,8 +101,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ElasticSearchIndexingCleanup].from {
-    (client: ElasticSearchClient, cache: ProgressesCache @Id("elasticsearch-progresses")) =>
-      new ElasticSearchIndexingCleanup(client, cache)
+    (
+        client: ElasticSearchClient,
+        cache: ProgressesCache @Id("elasticsearch-progresses"),
+        projection: Projection[Unit]
+    ) =>
+      new ElasticSearchIndexingCleanup(client, cache, projection)
   }
 
   make[ElasticSearchIndexingCoordinator].fromEffect {
@@ -183,8 +186,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         agg: ElasticSearchViewAggregate,
         views: ElasticSearchViews,
         dbCleanup: DatabaseCleanup,
-        sa: ServiceAccount
-    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, sa)
+        coordinator: ElasticSearchIndexingCoordinator
+    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, coordinator)
   }
 
   many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>

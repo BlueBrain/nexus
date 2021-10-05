@@ -32,11 +32,8 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
 )(implicit clock: Clock[UIO])
     extends Projection[A] {
 
-  private val insertErrorQuery =
-    """INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
-                                   |value, value_timestamp, severity, error_type, message)
-                                   |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                   |ON CONFLICT DO NOTHING""".stripMargin
+  override def delete(id: ProjectionId): Task[Unit] =
+    sql"""DELETE FROM projections_progress where projection_id = ${id.value}""".update.run.transact(xa).void
 
   /**
     * Records progress against a projection identifier.
@@ -138,6 +135,12 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
         )
       case _                                           => None
     }
+
+  private val insertErrorQuery =
+    """INSERT INTO projections_errors (projection_id, akka_offset, timestamp, persistence_id, sequence_nr,
+      |value, value_timestamp, severity, error_type, message)
+      |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      |ON CONFLICT DO NOTHING""".stripMargin
 
   /**
     * Record a specific event against a index failures log projectionId.

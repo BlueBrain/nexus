@@ -1,21 +1,20 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.model.headers.Location
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
-import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
+import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, ServiceAccount}
 import ch.epfl.bluebrain.nexus.tests.Optics.{admin, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Projects, Resources}
+import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import io.circe.Json
 import io.circe.optics.JsonPath.root
 import org.scalatest.AppendedClues
 
+import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-
-import java.io.File
 import scala.reflect.io.Directory
 
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
@@ -312,9 +311,27 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       }
     }
 
-//    "succeed in creating the project again" in {
-//      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
-//    }
+    "succeed in creating the project again with postgres" in {
+      if (isPostgres) {
+        adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
+      } else {
+        //TODO find a way to automate test with Cassandra
+        succeed
+      }
+    }
+
+    "reject as a cooldown must be respected for cassandra" in {
+      if (isCassandra) {
+        deltaClient.put[Json](s"/projects/$org/$proj1", json"""{}""", Bojack) { (json, response) =>
+          response.status shouldEqual StatusCodes.BadRequest
+
+          root.`@type`.string.getOption(json).value shouldEqual "ProjectCreationCooldown"
+        }
+      } else {
+        // No cooldown for cassandra
+        succeed
+      }
+    }
   }
 
 }

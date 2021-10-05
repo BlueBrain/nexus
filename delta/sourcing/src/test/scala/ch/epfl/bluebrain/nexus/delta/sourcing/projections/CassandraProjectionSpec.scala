@@ -9,11 +9,10 @@ import org.scalatest.DoNotDiscover
 @DoNotDiscover
 class CassandraProjectionSpec extends ProjectionSpec {
 
-  import monix.execution.Scheduler.Implicits.global
   implicit val actorSystem: ActorSystem[Nothing] = AkkaPersistenceCassandraSpec.actorSystem
 
   override lazy val projections: Projection[SomeEvent] =
-    Projection.cassandra(cassandraConfig, SomeEvent.empty, throwableToString).runSyncUnsafe()
+    Projection.cassandra(cassandraConfig, SomeEvent.empty, throwableToString).accepted
 
   override def generateOffset: Offset = TimeBasedUUID(Uuids.timeBased())
 }

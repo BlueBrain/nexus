@@ -5,14 +5,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Ind
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingCleanup
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import monix.bio.UIO
 
 class BlazegraphIndexingCleanup(
     client: BlazegraphClient,
-    cache: ProgressesCache
+    cache: ProgressesCache,
+    projection: Projection[Unit]
 ) extends IndexingCleanup[IndexingBlazegraphView] {
 
-  // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
   override def apply(view: ViewIndex[IndexingBlazegraphView]): UIO[Unit] =
-    cache.remove(view.projectionId) >> client.deleteNamespace(view.index).attempt.void
+    client
+      .deleteNamespace(view.index)
+      .attempt
+      .void >> cache.remove(view.projectionId) >> projection.delete(view.projectionId).attempt.void
 }

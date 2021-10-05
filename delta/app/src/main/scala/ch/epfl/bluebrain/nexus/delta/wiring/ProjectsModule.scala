@@ -113,9 +113,7 @@ object ProjectsModule extends ModuleDef {
         projectsCounts: ProjectsCounts,
         dbCleanup: DatabaseCleanup
     ) =>
-      val list = deletions.toList :+ ProjectDeletion(cache, agg, projectsCounts, dbCleanup)
-      ResourcesDeletion.combine(NonEmptyList(list.head, list.tail))
-
+      ResourcesDeletion.combine(deletions, ProjectDeletion(cache, agg, projectsCounts, dbCleanup))
   }
 
   make[Projection[ResourcesDeletionStatusCollection]].fromEffect {

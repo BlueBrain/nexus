@@ -1,34 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{CompositeViewsAggregate, CompositeViewsCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.CompositeIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.{CurrentEvents, ProjectScopedResourcesDeletion, StopActor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
 import monix.bio.{Task, UIO}
 
 final class CompositeViewsDeletion(
-    views: CompositeViews,
     cache: CompositeViewsCache,
     stopActor: StopActor,
     currentEvents: CurrentEvents[CompositeViewEvent],
     dbCleanup: DatabaseCleanup,
-    serviceAccount: ServiceAccount
+    coordinator: CompositeIndexingCoordinator
 ) extends ProjectScopedResourcesDeletion(stopActor, currentEvents, dbCleanup, CompositeViews.moduleType)(_.id) {
-
-  implicit private val subject: Subject = serviceAccount.subject
 
   override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
     getViews(projectRef)
       .flatMap { viewsList =>
         Task.traverse(viewsList) { view =>
-          views
-            .deprecateWithoutProjectChecks(view.id, projectRef, view.rev)
-            .mapError(rej => new IllegalArgumentException(rej.reason))
+          coordinator.cleanUpAndStop(view.id, projectRef)
         }
       }
       .as(ResourcesDataDeleted)
@@ -49,15 +43,14 @@ object CompositeViewsDeletion {
       agg: CompositeViewsAggregate,
       views: CompositeViews,
       dbCleanup: DatabaseCleanup,
-      serviceAccount: ServiceAccount
+      coordinator: CompositeIndexingCoordinator
   ): CompositeViewsDeletion =
     new CompositeViewsDeletion(
-      views,
       cache,
       agg.stop,
       (project, offset) =>
         views.currentEvents(project, offset).mapError(rej => new IllegalArgumentException(rej.reason)),
       dbCleanup,
-      serviceAccount
+      coordinator
     )
 }
