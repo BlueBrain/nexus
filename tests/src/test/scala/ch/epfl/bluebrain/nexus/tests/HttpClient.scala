@@ -79,6 +79,17 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       identity: Identity,
       extraHeaders: Seq[HttpHeader] = jsonHeaders
   )(assertResponse: (A, HttpResponse) => Assertion)(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] = {
+    def buildClue(a: A, response: HttpResponse) =
+      s"""
+         |Endpoint: PUT $url
+         |Identity: $identity
+         |Token: ${Option(tokensMap.get(identity)).map(_.credentials.token()).getOrElse("None")}
+         |Status code: ${response.status}
+         |Body: None
+         |Response:
+         |$a
+         |""".stripMargin
+
     def onFail(e: Throwable) =
       fail(s"Something went wrong while processing the response for $url with identity $identity", e)
     request(
@@ -90,7 +101,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
         val entity = HttpEntity(contentType, s.getBytes)
         FormData(BodyPart.Strict("file", entity, Map("filename" -> fileName))).toEntity()
       },
-      assertResponse,
+      (a: A, response: HttpResponse) => assertResponse(a, response) withClue buildClue(a, response),
       onFail,
       extraHeaders
     )
@@ -207,7 +218,12 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
         uri = s"$baseUrl$url",
         headers = identity match {
           case Anonymous => extraHeaders
-          case _         => tokensMap.get(identity) +: extraHeaders
+          case _         =>
+            extraHeaders :+ Option(tokensMap.get(identity)).getOrElse(
+              throw new IllegalArgumentException(
+                "The provided user has not been properly initialized, please add it to Identity.allUsers."
+              )
+            )
         },
         entity = body.fold(HttpEntity.Empty)(toEntity)
       )
@@ -262,7 +278,7 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer:
       identity: Identity,
       initialLastEventId: Option[String],
       take: Long = 100L,
-      takeWithin: FiniteDuration = 30.seconds
+      takeWithin: FiniteDuration = 5.seconds
   )(assertResponse: Seq[(Option[String], Option[Json])] => Assertion): Task[Assertion] = {
     def send(request: HttpRequest): Future[HttpResponse] =
       apply(request.addHeader(tokensMap.get(identity))).runToFuture

@@ -1,7 +1,7 @@
 {
   "@id": "https://bluebrain.github.io/nexus/vocabulary/mystorage2",
   "@type": "DiskStorage",
-  "volume": "/tmp",
+  "volume": "/default-volume",
   "default": false,
   "readPermission": "disk/read",
   "writePermission": "disk/write"

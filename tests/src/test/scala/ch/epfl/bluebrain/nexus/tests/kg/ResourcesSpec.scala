@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.Delta
 import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
@@ -137,14 +136,6 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         json should equalIgnoreArrayOrder(expected)
       }
     }
-  }
-
-  "cross-project resolvers" should {
-    val resolverPayload =
-      jsonContentOf(
-        "/kg/resources/cross-project-resolver.json",
-        replacements(Rick, "project" -> id1): _*
-      )
 
     "fail if the schema doesn't exist in the project" in {
       val payload = jsonContentOf(
@@ -157,6 +148,14 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.NotFound
       }
     }
+  }
+
+  "cross-project resolvers" should {
+    val resolverPayload =
+      jsonContentOf(
+        "/kg/resources/cross-project-resolver.json",
+        replacements(Rick, "project" -> id1): _*
+      )
 
     "fail to create a cross-project-resolver for proj2 if identities are missing" in {
       deltaClient.post[Json](s"/resolvers/$id2", filterKey("identities")(resolverPayload), Rick) { (_, response) =>
@@ -173,7 +172,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     "update a cross-project-resolver for proj2" in {
       val updated = resolverPayload deepMerge Json.obj("priority" -> Json.fromInt(20))
       eventually {
-        deltaClient.put[Json](s"/resolvers/$id2/example-id?rev=1", updated, Rick) { (_, response) =>
+        deltaClient.put[Json](s"/resolvers/$id2/test-resolver?rev=1", updated, Rick) { (_, response) =>
           response.status shouldEqual StatusCodes.OK
         }
       }
@@ -190,7 +189,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         ): _*
       )
 
-      deltaClient.get[Json](s"/resolvers/$id2/example-id", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resolvers/$id2/test-resolver", Rick) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
@@ -215,7 +214,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    s"fetches a resource in project '$id1' through project '$id2' resolvers" in {
+    s"resolves a resource in project '$id1' through project '$id2' resolvers" in {
       for {
         _ <- deltaClient.get[Json](s"/schemas/$id1/test-schema", Rick) { (json, response1) =>
                response1.status shouldEqual StatusCodes.OK
@@ -225,7 +224,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                           response2.status shouldEqual StatusCodes.OK
                           jsonResolved should equalIgnoreArrayOrder(json)
                         }
-                   _ <- deltaClient.get[Json](s"/resolvers/$id2/example-id/test-schema", Rick) {
+                   _ <- deltaClient.get[Json](s"/resolvers/$id2/test-resolver/test-schema", Rick) {
                           (jsonResolved, response2) =>
                             response2.status shouldEqual StatusCodes.OK
                             jsonResolved should equalIgnoreArrayOrder(json)
@@ -235,7 +234,12 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                  }
                }
              }
-        _ <- deltaClient.get[Json](s"/resolvers/$id2/example-id/test-schema-2", Rick) { (_, response) =>
+      } yield succeed
+    }
+
+    s"return not found when attempting to resolve a non-existing resource in project '$id1' through project '$id2' resolvers" in {
+      for {
+        _ <- deltaClient.get[Json](s"/resolvers/$id2/test-resolver/test-schema-2", Rick) { (_, response) =>
                response.status shouldEqual StatusCodes.NotFound
              }
         _ <- deltaClient.get[Json](s"/resolvers/$id2/_/test-schema-2", Rick) { (_, response) =>
@@ -322,19 +326,20 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
 
   "tagging a resource" should {
     "create a tag" in {
-      val tag1 = jsonContentOf("/kg/resources/tag.json", "tag" -> "v1.0.0", "rev" -> "1")
-      val tag2 = jsonContentOf("/kg/resources/tag.json", "tag" -> "v1.0.1", "rev" -> "2")
-
       for {
         _ <- deltaClient
-               .post[Json](s"/resources/$id1/test-schema/test-resource:1/tags?rev=2&indexing=sync", tag1, Rick) {
+               .post[Json](
+                 s"/resources/$id1/test-schema/test-resource:1/tags?rev=2&indexing=sync",
+                 tag("v1.0.0", 1L),
+                 Rick
+               ) { (_, response) =>
+                 response.status shouldEqual StatusCodes.Created
+               }
+        _ <- deltaClient
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag("v1.0.1", 2L), Rick) {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
-        _ <- deltaClient.post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag2, Rick) {
-               (_, response) =>
-                 response.status shouldEqual StatusCodes.Created
-             }
       } yield succeed
     }
 
@@ -377,118 +382,8 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     }
   }
 
-  "listing resources" should {
-
-    "list default resources" in {
-      val mapping = replacements(
-        Delta,
-        "project-label" -> id1,
-        "project"       -> s"${config.deltaUri}/projects/$id1"
-      )
-
-      val resources = List(
-        "resolvers" -> jsonContentOf("/kg/listings/default-resolver.json", mapping: _*),
-        "views"     -> jsonContentOf("/kg/listings/default-view.json", mapping: _*),
-        "storages"  -> jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
-      )
-
-      resources.parTraverse { case (segment, expected) =>
-        deltaClient.get[Json](s"/$segment/$id1", Rick) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-        }
-      }
-    }
-
-    "add more resource to the project" in {
-      (2 to 5).toList.traverse { resourceId =>
-        val payload = jsonContentOf(
-          "/kg/resources/simple-resource.json",
-          "priority"   -> "3",
-          "resourceId" -> s"$resourceId"
-        )
-        deltaClient
-          .put[Json](s"/resources/$id1/test-schema/test-resource:$resourceId?indexing=sync", payload, Rick) {
-            (_, response) =>
-              response.status shouldEqual StatusCodes.Created
-          }
-      }
-    }
-
-    "list the resources" in {
-      val expected = jsonContentOf(
-        "/kg/listings/response.json",
-        replacements(
-          Rick,
-          "resources" -> s"${config.deltaUri}/resources/$id1",
-          "project"   -> s"${config.deltaUri}/projects/$id1"
-        ): _*
-      )
-
-      deltaClient.get[Json](s"/resources/$id1/test-schema", Rick) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
-      }
-    }
-
-    "return 400 when using both from and after" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema?from=10&after=%5B%22test%22%5D", Rick) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/listings/from-and-after-error.json")
-      }
-    }
-
-    "return 400 when from is bigger than limit" in {
-      deltaClient.get[Json](s"/resources/$id1/test-schema?from=10001", Rick) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/listings/from-over-limit-error.json")
-      }
-    }
-
-    "list responses using after" in {
-      // Building the next results, replace the public url by the one used by the tests
-      def next(json: Json) =
-        resources._next.getOption(json).map { url =>
-          url.replace(config.deltaUri.toString(), "")
-        }
-
-      // Get results though a lens and filtering out some fields
-      def lens(json: Json) =
-        resources._results
-          .getOption(json)
-          .fold(Vector.empty[Json]) { _.map(filterMetadataKeys) }
-
-      val result = deltaClient
-        .stream(
-          s"/resources/$id1/test-schema?size=2",
-          next,
-          lens,
-          Rick
-        )
-        .compile
-        .toList
-
-      val expected = resources._results
-        .getOption(
-          jsonContentOf(
-            "/kg/listings/response.json",
-            replacements(
-              Rick,
-              "resources" -> s"${config.deltaUri}/resources/$id1",
-              "project"   -> s"${config.deltaUri}/projects/$id1"
-            ): _*
-          )
-        )
-        .value
-
-      result.flatMap { l =>
-        Task.pure(l.flatten shouldEqual expected)
-      }
-    }
-  }
-
-  "check consistence of responses" in {
-    (6 to 100).toList.traverse { resourceId =>
+  "check consistency of responses" in {
+    (2 to 100).toList.traverse { resourceId =>
       val payload = jsonContentOf(
         "/kg/resources/simple-resource.json",
         "priority"   -> "3",

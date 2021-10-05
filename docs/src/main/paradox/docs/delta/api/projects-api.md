@@ -196,7 +196,7 @@ When the task is finished, the target project can be recreated if desired.
 
 ![deletion diagram](assets/projects/projects-delete-diagram.png)
 
-Deletion only works when the configuration flag `app.projects.allow-resources-deletion` is set to `true` and the current project is not referenced somewhere else (e.g.: a `CrossProjectResolver`, an `AggregatedView`, etc.).
+Deletion only works when the configuration flag `app.database.deny-cleanup` is set to `false` and the current project is not referenced somewhere else (e.g.: a `CrossProjectResolver`, an `AggregatedView`, etc.).
 
 ```
 DELETE /v1/projects/{org_label}/{label}?rev={previous_rev}&prune=true
@@ -373,3 +373,38 @@ Request
 
 Response
 :   @@snip [fetched-statistics.json](assets/projects/fetched-statistics.json)
+
+## Automatic project deletion
+
+@@@ note { .warning }
+
+This endpoint is experimental and the response structure might change in the future.
+
+The functionality is provided through the `project-deletion` plugin that is bundled with the software, but disabled by
+default. Due to the risk of inadvertently deleting unwanted projects, the plugin is disabled by default, but also
+provided in a different location than the default plugin location (the `disabled` sub-folder in the `plugins` folder).
+
+The plugin can be enabled by sym-linking or copying the plugin to the `plugins` folder and the configuring the plugin
+accordingly:
+
+- enable the plugin `-Dplugins.project-deletion.enabled=true`
+- adjust the inclusion and exclusion filters `-Dplugins.project-deletion.included-projects.1=".+""` and
+  `-Dplugins.project-deletion.excluded-projects.1=".+protected.+""`
+
+For details on available configuration, please visit @link:[the plugin configuration](https://github.com/BlueBrain/nexus/blob/master/delta/plugins/project-deletion/src/main/resources/project-deletion.conf).
+
+@@@
+
+```
+GET /v1/project-deletion/config
+```
+
+It returns the configuration of the project deletion plugin.
+
+**Example**
+
+Request
+:   @@snip [fetch-project-deletion-config.sh](assets/projects/fetch-project-deletion-config.sh)
+
+Response
+:   @@snip [fetched-project-deletion-config.json](assets/projects/fetched-project-deletion-config.json)

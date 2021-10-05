@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, IORef, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IORef, IOValues, TestHelpers}
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
-import ch.epfl.bluebrain.nexus.tests.kg.KgDsl
+import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
 import io.circe.Json
@@ -32,6 +32,7 @@ import scala.concurrent.duration._
 trait BaseSpec
     extends AsyncWordSpecLike
     with CirceUnmarshalling
+    with CirceLiteral
     with CirceEq
     with BeforeAndAfterAll
     with TestHelpers
@@ -51,12 +52,14 @@ trait BaseSpec
   private[tests] val deltaClient = HttpClient(deltaUrl)
 
   val elasticsearchDsl = new ElasticsearchDsl()
+  val blazegraphDsl    = new BlazegraphDsl()
   val keycloakDsl      = new KeycloakDsl()
 
-  val aclDsl        = new AclDsl(deltaClient)
-  val permissionDsl = new PermissionDsl(deltaClient)
-  val adminDsl      = new AdminDsl(deltaClient, config)
-  val kgDsl         = new KgDsl(config)
+  val aclDsl                = new AclDsl(deltaClient)
+  val permissionDsl         = new PermissionDsl(deltaClient)
+  val adminDsl              = new AdminDsl(deltaClient, config)
+  val kgDsl                 = new KgDsl(config)
+  val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
@@ -222,6 +225,15 @@ trait BaseSpec
   private[tests] def genId(length: Int = 15): String =
     genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))
 
+  private[tests] def expect[A](code: StatusCode) = (_: A, response: HttpResponse) => response.status shouldEqual code
+
+  private[tests] def expectCreated[A] = expect(StatusCodes.Created)
+
+  private[tests] def expectForbidden[A] = expect(StatusCodes.Forbidden)
+
+  private[tests] def expectOk[A] = expect(StatusCodes.OK)
+
+  private[tests] def tag(name: String, rev: Long) = json"""{"tag": "$name", "rev": $rev}"""
 }
 
 object BaseSpec {

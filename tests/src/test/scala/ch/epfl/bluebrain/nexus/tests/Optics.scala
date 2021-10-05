@@ -60,10 +60,14 @@ object Optics extends Optics {
   object admin {
     val `@type` = root.`@type`.string
 
-    val _label      = root._label.string
-    val description = root.description.string
-    val _rev        = root._rev.long
-    val _deprecated = root._deprecated.boolean
+    val _label             = root._label.string
+    val description        = root.description.string
+    val _rev               = root._rev.long
+    val _deprecated        = root._deprecated.boolean
+    val _markedForDeletion = root._markedForDeletion.boolean
+
+    val progress  = root.progress.string
+    val _finished = root._finished.boolean
 
     val base                 = root.base.string
     val vocab                = root.vocab.string
@@ -126,9 +130,11 @@ object Optics extends Optics {
     val `@type` = root.`@type`.string
   }
 
-  object resources {
-    val _next    = root._next.string
-    val _results = root._results.arr
+  object listing {
+    val _next      = root._next.string
+    val eachResult = root._results.each
+    val _results   = root._results.arr
+    val _total     = root._total.long
   }
 
   object events {

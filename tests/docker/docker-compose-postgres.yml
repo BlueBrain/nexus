@@ -11,7 +11,9 @@ services:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest
-    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--", "./bin/delta-app",
+    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
+                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
+                  "./bin/delta-app",
                   "-Xmx512m",
                   "-Dapp.http.interface=0.0.0.0",
                   "-Dapp.http.base-uri=http://delta:8080/v1",
@@ -20,6 +22,7 @@ services:
                   "-Dapp.database.flavour=postgres",
                   "-Dapp.database.postgres.host=postgres",
                   "-Dapp.database.postgres.tables-autocreate=true",
+                  "-Dapp.database.deny-cleanup=false",
                   "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
                   "-Dplugins.elasticsearch.credentials.username=elastic",
                   "-Dplugins.elasticsearch.credentials.password=password",
@@ -31,6 +34,7 @@ services:
                   "-Dplugins.composite-views.min-interval-rebuild=5seconds",
                   "-Dplugins.composite-views.sources.max-batch-size=50",
                   "-Dplugins.composite-views.sources.max-time-window=50ms",
+                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
                   "-Dplugins.storage.storages.remote-disk.enabled=true",
                   "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
                   "-Dplugins.storage.storages.amazon.enabled=true",
@@ -41,11 +45,13 @@ services:
                   "-Dplugins.search.indexing.settings=/config/settings.json",
                   "-Dplugins.search.indexing.query=/config/construct-query.sparql",
                   "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-                  "-Djdbc-read-journal.refresh-interval=500ms"]
+                  "-Dplugins.graph-analytics.enabled=true",
+                  "-Djdbc-read-journal.refresh-interval=500ms" ]
     ports:
       - 8080:8080
     volumes:
       - ./config:/config
+      - /tmp:/default-volume
     deploy:
       resources:
         limits:
@@ -70,6 +76,7 @@ services:
   #                  "-Dapp.cluster.seeds=delta:25520",
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
+  #                  "-Dapp.database.deny-cleanup=false",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
   #                  "-Dplugins.elasticsearch.credentials.username=elastic",
   #                  "-Dplugins.elasticsearch.credentials.password=password",
@@ -81,6 +88,7 @@ services:
   #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
   #                  "-Dplugins.composite-views.sources.max-batch-size=50",
   #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
+  #                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
@@ -96,6 +104,7 @@ services:
   #      - 8081:8080
   #    volumes:
   #      - ./config:/config
+  #      - /tmp:/default-volume
   #    deploy:
   #     resources:
   #       limits:
@@ -116,6 +125,7 @@ services:
   #                  "-Dapp.cluster.seeds=delta:25520",
   #                  "-Dapp.database.flavour=postgres",
   #                  "-Dapp.database.postgres.host=postgres",
+  #                  "-Dapp.database.deny-cleanup=false",
   #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
   #                  "-Dplugins.elasticsearch.credentials.username=elastic",
   #                  "-Dplugins.elasticsearch.credentials.password=password",
@@ -127,6 +137,7 @@ services:
   #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
   #                  "-Dplugins.composite-views.sources.max-batch-size=50",
   #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
+  #                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
   #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
   #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
   #                  "-Dplugins.storage.storages.amazon.enabled=true",
@@ -142,6 +153,7 @@ services:
   #      - 8082:8080
   #    volumes:
   #      - ./config:/config
+  #      - /tmp:/default-volume
   #    deploy:
   #      resources:
   #        limits:
@@ -163,7 +175,7 @@ services:
           memory: 384M
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.4
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
     environment:
       ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"

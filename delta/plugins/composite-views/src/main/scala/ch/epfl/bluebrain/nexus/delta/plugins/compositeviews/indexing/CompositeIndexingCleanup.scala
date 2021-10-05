@@ -21,7 +21,8 @@ class CompositeIndexingCleanup(
 
   // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
   override def apply(view: ViewIndex[CompositeView]): UIO[Unit] =
-    IO.traverse(projectionIds(view))(pId => cache.remove(pId)).void >>
+    blazeClient.deleteNamespace(view.index).attempt.void >>
+      IO.traverse(projectionIds(view))(pId => cache.remove(pId)) >>
       IO.traverse(view.value.projections.value) {
         case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
         case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void

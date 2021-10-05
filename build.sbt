@@ -202,6 +202,7 @@ lazy val docs = project
         (sdkViews / Compile / resourceDirectory).value / "contexts",
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
+        (graphAnalyticsPlugin / Compile / resourceDirectory).value / "contexts",
         (compositeViewsPlugin / Compile / resourceDirectory).value / "contexts",
         (searchPlugin / Compile / resourceDirectory).value / "contexts",
         (elasticsearchPlugin / Compile / resourceDirectory).value / "contexts",
@@ -241,6 +242,8 @@ lazy val testkit = project
   .settings(
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
+      akkaActorTyped, // Needed to create Uri
+      akkaHttpCore,
       catsRetry,
       dockerTestKit,
       dockerTestKitImpl,
@@ -368,6 +371,7 @@ lazy val sdk = project
       akkaHttpXml,
       akkaPersistenceQuery, // To have access to the Offset type
       caffeine,
+      circeLiteral,
       circeGenericExtras,
       distageCore,
       fs2,
@@ -467,22 +471,26 @@ lazy val app = project
     buildInfoPackage      := "ch.epfl.bluebrain.nexus.delta.config",
     Docker / packageName  := "nexus-delta",
     copyPlugins           := {
-      val esFile             = (elasticsearchPlugin / assembly).value
-      val bgFile             = (blazegraphPlugin / assembly).value
-      val storageFile        = (storagePlugin / assembly).value
-      val archiveFile        = (archivePlugin / assembly).value
-      val compositeViewsFile = (compositeViewsPlugin / assembly).value
-      val searchFile         = (searchPlugin / assembly).value
-      val pluginsTarget      = target.value / "plugins"
+      val esFile              = (elasticsearchPlugin / assembly).value
+      val bgFile              = (blazegraphPlugin / assembly).value
+      val graphAnalyticsFile  = (graphAnalyticsPlugin / assembly).value
+      val storageFile         = (storagePlugin / assembly).value
+      val archiveFile         = (archivePlugin / assembly).value
+      val compositeViewsFile  = (compositeViewsPlugin / assembly).value
+      val searchFile          = (searchPlugin / assembly).value
+      val projectDeletionFile = (projectDeletionPlugin / assembly).value
+      val pluginsTarget       = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
         Set(
-          esFile             -> (pluginsTarget / esFile.getName),
-          bgFile             -> (pluginsTarget / bgFile.getName),
-          storageFile        -> (pluginsTarget / storageFile.getName),
-          archiveFile        -> (pluginsTarget / archiveFile.getName),
-          compositeViewsFile -> (pluginsTarget / compositeViewsFile.getName),
-          searchFile         -> (pluginsTarget / searchFile.getName)
+          esFile              -> (pluginsTarget / esFile.getName),
+          bgFile              -> (pluginsTarget / bgFile.getName),
+          graphAnalyticsFile      -> (pluginsTarget / graphAnalyticsFile.getName),
+          storageFile         -> (pluginsTarget / storageFile.getName),
+          archiveFile         -> (pluginsTarget / archiveFile.getName),
+          compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
+          searchFile          -> (pluginsTarget / searchFile.getName),
+          projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
         )
       )
     },
@@ -500,19 +508,23 @@ lazy val app = project
       (Test / testQuick).evaluated
     },
     Universal / mappings ++= {
-      val esFile             = (elasticsearchPlugin / assembly).value
-      val bgFile             = (blazegraphPlugin / assembly).value
-      val storageFile        = (storagePlugin / assembly).value
-      val archiveFile        = (archivePlugin / assembly).value
-      val compositeViewsFile = (compositeViewsPlugin / assembly).value
-      val searchFile         = (searchPlugin / assembly).value
+      val esFile              = (elasticsearchPlugin / assembly).value
+      val bgFile              = (blazegraphPlugin / assembly).value
+      val graphAnalytics      = (graphAnalyticsPlugin / assembly).value
+      val storageFile         = (storagePlugin / assembly).value
+      val archiveFile         = (archivePlugin / assembly).value
+      val compositeViewsFile  = (compositeViewsPlugin / assembly).value
+      val searchFile          = (searchPlugin / assembly).value
+      val projectDeletionFile = (projectDeletionPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
+        (graphAnalytics, "plugins/" + graphAnalytics.getName),
         (storageFile, "plugins/" + storageFile.getName),
         (archiveFile, "plugins/" + archiveFile.getName),
         (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
-        (searchFile, "plugins/" + searchFile.getName)
+        (searchFile, "plugins/" + searchFile.getName),
+        (projectDeletionFile, "plugins/disabled/" + projectDeletionFile.getName)
       )
     }
   )
@@ -738,10 +750,76 @@ lazy val archivePlugin = project
     Test / fork                := true
   )
 
+lazy val projectDeletionPlugin = project
+  .in(file("delta/plugins/project-deletion"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk        % "provided;test->test",
+    sdkTestkit % "test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-project-deletion-plugin",
+    moduleName                 := "delta-project-deletion-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp % Provided,
+      scalaTest     % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion",
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "project-deletion.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
+    Test / fork                := true
+  )
+
+lazy val graphAnalyticsPlugin = project
+  .in(file("delta/plugins/graph-analytics"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk                 % Provided,
+    storagePlugin       % "provided;test->test",
+    sdkViews            % "provided;test->test",
+    sdkTestkit          % "test;test->test",
+    elasticsearchPlugin % Provided
+  )
+  .settings(
+    name                       := "delta-graph-analytics-plugin",
+    moduleName                 := "delta-graph-analytics-plugin",
+    libraryDependencies       ++= Seq(
+      kamonAkkaHttp % Provided,
+      akkaSlf4j     % Test,
+      logback       % Test,
+      scalaTest     % Test
+    ),
+    addCompilerPlugin(betterMonadicFor),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics",
+    assembly / assemblyJarName := "graph-analytics.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, compilation, noPublish)
-  .aggregate(elasticsearchPlugin, blazegraphPlugin, compositeViewsPlugin, searchPlugin, storagePlugin, archivePlugin, testPlugin)
+  .aggregate(
+    elasticsearchPlugin,
+    blazegraphPlugin,
+    compositeViewsPlugin,
+    searchPlugin,
+    storagePlugin,
+    archivePlugin,
+    projectDeletionPlugin,
+    testPlugin,
+    graphAnalyticsPlugin
+  )
 
 lazy val delta = project
   .in(file("delta"))

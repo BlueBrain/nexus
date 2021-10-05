@@ -25,6 +25,7 @@ class ProjectsDummySpec
       organizations,
       quotas,
       Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)),
-      ApiMappings.empty
+      ApiMappings.empty,
+      creationCooldown
     )
 }

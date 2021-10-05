@@ -10,7 +10,7 @@
   ],
   "default": false,
   "maxFileSize" : {{maxFileSize}},
-  "volume": "/tmp",
+  "volume": "/default-volume",
   "readPermission": "{{read}}",
   "writePermission": "{{write}}",
   "_algorithm": "SHA-256",

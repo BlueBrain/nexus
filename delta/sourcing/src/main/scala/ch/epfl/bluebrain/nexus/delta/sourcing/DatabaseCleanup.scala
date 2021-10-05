@@ -2,10 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import akka.actor.typed.ActorSystem
 import akka.persistence.cassandra.cleanup.Cleanup
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor
+import com.typesafe.scalalogging.Logger
 import doobie.implicits._
-import doobie.util.transactor.Transactor
 import monix.bio.Task
 
 sealed trait DatabaseCleanup {
@@ -34,30 +36,56 @@ sealed trait DatabaseCleanup {
 
 object DatabaseCleanup {
 
+  private val logger: Logger = Logger[DatabaseCleanup.type]
+
   def apply(config: DatabaseConfig)(implicit system: ActorSystem[Nothing]): DatabaseCleanup =
     config.flavour match {
-      case Postgres  => postgres(config.postgres.transactor)
+      case Postgres  => postgres(config)
       case Cassandra => cassandra(new Cleanup(system.classicSystem))
     }
 
-  private[sourcing] def postgres(xa: Transactor[Task]): DatabaseCleanup =
+  private[sourcing] def postgres(config: DatabaseConfig): DatabaseCleanup =
     new DatabaseCleanup {
 
-      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] =
-        sql"""DELETE FROM public.event_journal WHERE persistence_id LIKE $moduleType || '-' || $project || '%'""".update.run
-          .transact(xa)
-          .void
+      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] = {
+        if (config.denyCleanup)
+          Task.delay(
+            logger.warn(
+              s"Cleanup is disabled, no actual deletion will be performed for module '$moduleType' in project '$project'."
+            )
+          )
+        else {
+          Task.delay(
+            logger.info(s"Cleaning events from module '$moduleType' for project '$project'.")
+          ) >>
+            sql"""DELETE FROM public.event_journal WHERE persistence_id LIKE $moduleType || '-' || ${UrlUtils.encode(
+              project
+            )} || '%'""".update.run
+              .transact(config.postgres.transactor)
+              .void
+        }
+      }
     }
 
   private[sourcing] def cassandra(cleanup: Cleanup): DatabaseCleanup =
     new DatabaseCleanup {
-      private def persistenceId(moduleType: String, project: String, ids: Seq[String]): Seq[String] =
-        if (ids.isEmpty) List(s"${moduleType}-${project}")
-        else ids.map(id => s"${moduleType}-${project}_${id}")
-
-      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] =
-        Task
-          .deferFuture(cleanup.deleteAll(persistenceId(moduleType, project, ids), neverUsePersistenceIdAgain = false))
-          .void
+      override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] = {
+        val persistenceIds =
+          if (ids.isEmpty) List(EventSourceProcessor.persistenceId(moduleType, project))
+          else
+            ids.map { id =>
+              EventSourceProcessor.persistenceId(moduleType, s"${project}_$id")
+            }
+        Task.delay(
+          logger.info(
+            s"Cleaning events from module '$moduleType' for project '$project' with persistence ids: ${persistenceIds.mkString(",")}."
+          )
+        ) >>
+          Task
+            .deferFuture(
+              cleanup.deleteAll(persistenceIds, neverUsePersistenceIdAgain = false)
+            )
+            .void
+      }
     }
 }

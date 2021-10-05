@@ -157,14 +157,14 @@ final class ProjectsRoutes(
                     // Deprecate/delete project
                     (delete & pathEndOrSingleSlash) {
                       parameters("rev".as[Long], "prune".?(false)) {
-                        case (rev, true) if config.allowResourcesDeletion =>
+                        case (rev, true) if config.allowProjectPruning =>
                           authorizeFor(ref, projectsPermissions.delete).apply {
                             emit(projects.delete(ref, rev).map { case (uuid, value) =>
                               val location = Location(ResourceUris.project(ref).accessUri / "deletions" / uuid.toString)
                               Complete(SeeOther, Seq(location), value.map(_.metadata))
                             })
                           }
-                        case (rev, _)                                     =>
+                        case (rev, _)                                  =>
                           authorizeFor(ref, projectsPermissions.write).apply {
                             emit(projects.deprecate(ref, rev).mapValue(_.metadata))
                           }

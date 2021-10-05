@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OrganizationsDummy, OwnerPermissionsDummy, ProjectsDummy}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -71,7 +72,8 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
     organizations,
     QuotasDummy.neverReached,
     Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)),
-    ApiMappings.empty
+    ApiMappings.empty,
+    _ => IO.unit
   ).accepted
 
   val provisioning = ProjectProvisioning(acls, projects, provisioningConfig)

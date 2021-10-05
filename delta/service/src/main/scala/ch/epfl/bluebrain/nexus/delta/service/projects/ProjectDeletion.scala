@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.StopActor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted, ResourcesDeleted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -24,7 +23,7 @@ final class ProjectDeletion private (
 
   override def deleteRegistry(projectRef: ProjectRef): Task[ResourcesDeleted] =
     stopActor(projectRef.toString) >>
-      dbCleanup.deleteAll(Projects.moduleType, UrlUtils.encode(projectRef.toString)).as(ResourcesDeleted)
+      dbCleanup.deleteAll(Projects.moduleType, projectRef.toString).as(ResourcesDeleted)
 }
 
 object ProjectDeletion {

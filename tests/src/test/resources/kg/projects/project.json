@@ -23,8 +23,8 @@
       "namespace": "https://dev.nexus.test.com/simplified-resource/"
     },
     {
-      "prefix": "example-id",
-      "namespace": "http://example.com/id"
+      "prefix": "test-resolver",
+      "namespace": "http://localhost/resolver"
     },
     {
       "prefix": "patchedcell",

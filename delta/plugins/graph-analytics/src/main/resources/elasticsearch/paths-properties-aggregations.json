@@ -1,0 +1,37 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": {
+        "term": {
+          "@type": "{{type}}"
+        }
+      }
+    }
+  },
+  "aggs": {
+    "properties": {
+      "nested": {
+        "path": "properties"
+      },
+      "aggs": {
+        "filtered": {
+          "filter": {
+            "term": {
+              "properties.isInArray": false
+            }
+          },
+          "aggs": {
+            "paths": {
+              "terms": {
+                "field": "properties.path",
+                "shard_size": {{shard_size}},
+                "size": {{size}}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -34,7 +34,7 @@ That means that when those get updated, the schemas importing them must be also 
 
 ## Indexing
 
-All the API calls modifying a schema(creation, update, tagging, deprecation) can specify whether the schema should be indexed
+All the API calls modifying a schema (creation, update, tagging, deprecation) can specify whether the schema should be indexed
 synchronously or in the background. This behaviour is controlled using `indexing` query param, which can be one of two values:
 
 - `async` - (default value) the schema will be indexed asynchronously
@@ -227,6 +227,10 @@ Response
 
 ## List
 
+There are three available endpoint to list schemas in different scopes.
+
+### Within a project
+
 ```
 GET /v1/schemas/{org_label}/{project_label}?from={from}
                                            &size={size}
@@ -238,8 +242,40 @@ GET /v1/schemas/{org_label}/{project_label}?from={from}
                                            &q={search}
                                            &sort={sort}
 ```
-                                            
-where...
+
+### Within an organization
+
+This operation returns only schemas from projects defined in the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
+```
+GET /v1/schemas/{org_label}?from={from}
+                           &size={size}
+                           &deprecated={deprecated}
+                           &rev={rev}
+                           &type={type}
+                           &createdBy={createdBy}
+                           &updatedBy={updatedBy}
+                           &q={search}
+                           &sort={sort}
+```
+
+### Within all projects
+
+This operation returns only schemas from projects defined the organisation `{org_label}` and where the caller has the `resources/read` permission.
+
+```
+GET /v1/schemas?from={from}
+               &size={size}
+               &deprecated={deprecated}
+               &rev={rev}
+               &type={type}
+               &createdBy={createdBy}
+               &updatedBy={updatedBy}
+               &q={search}
+               &sort={sort}
+```
+
+### Parameter description
 
 - `{from}`: Number - is the parameter that describes the offset for the current query; defaults to `0`
 - `{size}`: Number - is the parameter that limits the number of results; defaults to `20`

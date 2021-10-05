@@ -34,8 +34,8 @@ import scala.annotation.nowarn
   *   configuration for automatic provisioning of projects
   * @param quotas
   *   quotas for projects
-  * @param allowResourcesDeletion
-  *   flag to decide whether to allow resources deletion
+  * @param denyProjectPruning
+  *   flag to decide whether to allow to prune entire projects
   */
 final case class ProjectsConfig(
     aggregate: AggregateConfig,
@@ -45,8 +45,10 @@ final case class ProjectsConfig(
     persistProgressConfig: SaveProgressConfig,
     automaticProvisioning: AutomaticProvisioningConfig,
     quotas: QuotasConfig,
-    allowResourcesDeletion: Boolean
-)
+    denyProjectPruning: Boolean
+) {
+  def allowProjectPruning = !denyProjectPruning
+}
 
 object ProjectsConfig {
 

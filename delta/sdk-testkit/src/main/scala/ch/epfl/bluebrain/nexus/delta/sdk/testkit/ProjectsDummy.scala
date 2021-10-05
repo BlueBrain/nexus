@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
+import scala.concurrent.duration.FiniteDuration
 
 final class ProjectsDummy private (
     journal: ProjectsJournal,
@@ -32,7 +33,8 @@ final class ProjectsDummy private (
     organizations: Organizations,
     quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
-    override val defaultApiMappings: ApiMappings
+    override val defaultApiMappings: ApiMappings,
+    creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -162,7 +164,7 @@ final class ProjectsDummy private (
     semaphore.withPermit {
       for {
         state <- journal.currentState(cmd.ref, Initial, next).map(_.getOrElse(Initial))
-        event <- Projects.evaluate(organizations)(state, cmd)
+        event <- Projects.evaluate(organizations, creationCooldown)(state, cmd)
         _     <- journal.add(event)
         res   <- IO.fromEither(next(state, event).toResource.toRight(UnexpectedInitialState(cmd.ref)))
         _     <- cache.setToCache(res)
@@ -199,12 +201,15 @@ object ProjectsDummy {
     *   the collection of registered scope initializations
     * @param defaultApiMappings
     *   the default api mappings
+    * @param creationCooldown
+    *   define if a cooldown must be observed before being able to (re)create a projecgt
     */
   def apply(
       organizations: Organizations,
       quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
-      defaultApiMappings: ApiMappings
+      defaultApiMappings: ApiMappings,
+      creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal       <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
@@ -219,7 +224,8 @@ object ProjectsDummy {
       organizations,
       quotas,
       scopeInitializations,
-      defaultApiMappings
+      defaultApiMappings,
+      creationCooldown
     )
 
   /**
@@ -248,7 +254,7 @@ object ProjectsDummy {
       r        <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a        <- AclsDummy(p, r)
       scopeInit = Set[ScopeInitialization](OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous)))
-      p        <- apply(organizations, quotas, scopeInit, defaultApiMappings)
+      p        <- apply(organizations, quotas, scopeInit, defaultApiMappings, _ => IO.unit)
     } yield p
 
 }

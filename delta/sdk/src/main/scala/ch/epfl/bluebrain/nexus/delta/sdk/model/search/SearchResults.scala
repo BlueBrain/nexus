@@ -139,11 +139,11 @@ object SearchResults {
   )(implicit baseUri: BaseUri): JsonLdEncoder[SearchResults[A]] = {
     val nextLink: SearchResults[A] => Option[Uri] = results =>
       pagination -> results.token match {
-        case (_: SearchAfterPagination, None)                           => None
-        case (p: FromPagination, _) if p.from + p.size >= results.total => None
-        case _ if results.sources.size >= results.total                 => None
-        case (_, Some(token))                                           => Some(next(searchUri, token))
-        case (p: FromPagination, _)                                     => Some(next(searchUri, p))
+        case (_: SearchAfterPagination, None)                    => None
+        case (p: Pagination, _) if p.size > results.results.size => None
+        case _ if results.results.size >= results.total          => None
+        case (_, Some(token))                                    => Some(next(searchUri, token))
+        case (p: FromPagination, _)                              => Some(next(searchUri, p))
       }
     searchResultsJsonLdEncoder(additionalContext, nextLink)
 

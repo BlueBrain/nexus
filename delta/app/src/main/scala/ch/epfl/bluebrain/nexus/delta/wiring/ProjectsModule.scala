@@ -62,6 +62,8 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         organizations: Organizations,
         mappings: ApiMappingsCollection,
+        cache: DeletionStatusCache,
+        eventLog: EventLog[Envelope[ProjectEvent]],
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -69,7 +71,8 @@ object ProjectsModule extends ModuleDef {
       ProjectsImpl.aggregate(
         config.projects,
         organizations,
-        mappings.merge
+        mappings.merge,
+        CreationCooldown.validate(cache, eventLog.config)
       )(as, clock, uuidF)
   }
 

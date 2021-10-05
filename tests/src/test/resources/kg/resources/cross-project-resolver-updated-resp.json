@@ -1,5 +1,5 @@
 {
-  "@id": "http://example.com/id",
+  "@id": "http://localhost/resolver",
   "@context": [
     {
       "nxv" : "https://bluebrain.github.io/nexus/vocabulary/"
@@ -26,9 +26,9 @@
     }
   ],
   "priority": 20,
-  "_incoming": "{{resources}}/example-id/incoming",
-  "_outgoing": "{{resources}}/example-id/outgoing",
-  "_self": "{{resources}}/example-id",
+  "_incoming": "{{resources}}/test-resolver/incoming",
+  "_outgoing": "{{resources}}/test-resolver/outgoing",
+  "_self": "{{resources}}/test-resolver",
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
   "_project": "{{project-parent}}",
   "_createdBy": "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
