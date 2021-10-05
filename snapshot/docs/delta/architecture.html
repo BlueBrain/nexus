@@ -207,6 +207,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -296,7 +298,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#anatomy" name="anatomy" class="anchor"><span class="anchor-link"></span></a>Anatomy</h2>
 <p>Nexus Delta was built following the Command Query Responsibility Segregation (<a href="https://martinfowler.com/bliki/CQRS.html" title="CQRS" target="_blank" rel="noopener noreferrer">CQRS</a>) pattern where there&rsquo;s a clear separation between the read and write models. Intent to change the application state is represented by commands that are validated for access and consistency before being evaluated. Successful evaluations of commands emit events that are persisted to the global event log.</p>
 <p>Asynchronous processes (projections) replay the event log and process the information for efficient consumption. The information in the recorded events is transformed into documents (in the case of ElasticSearch) and named graphs (in the case of BlazeGraph) and persisted in the respective stores. The projections persist their progress such that they can be resumed in case of a crash.</p>
-<p>Sources of events for projections are both the primary store and other (remote) Nexus Delta deployments through the <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a> W3C recommendation. This allows for data aggregation when building indices.</p>
+<p>Sources of events for projections are both the primary store and other (remote) Nexus Delta deployments through the <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a> W3C recommendation. This allows for data aggregation when building indices.</p>
 <p>Native interfaces are offered as part of the read (query) model for querying ElasticSearch and BlazeGraph.</p><div class="center">
 <p><img src="assets/architecture-anatomy.png" alt="Anatomy" /></p></div>
 <p>Asynchronous indexing (projections) and the separation between reads and writes have some interesting consequences:</p>

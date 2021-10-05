@@ -207,6 +207,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -227,6 +229,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m5-05-10-2021-" class="header">v1.6.0-M5 (05.10.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m4-16-09-2021-" class="header">v1.6.0-M4 (16.09.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m3-02-09-2021-" class="header">v1.6.0-M3 (02.09.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m2-17-08-2021-" class="header">v1.6.0-M2 (17.08.2021)</a></li>
@@ -266,6 +269,7 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#v1-6-0-m5-05-10-2021-" class="header">v1.6.0-M5 (05.10.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m4-16-09-2021-" class="header">v1.6.0-M4 (16.09.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m3-02-09-2021-" class="header">v1.6.0-M3 (02.09.2021)</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-m2-17-08-2021-" class="header">v1.6.0-M2 (17.08.2021)</a></li>
@@ -302,6 +306,21 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
 <p>The latest stable release is <strong>v1.5.1</strong> released on <strong>04.06.2021</strong>.</p>
+<h2><a href="#v1-6-0-m5-05-10-2021-" name="v1-6-0-m5-05-10-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M5 (05.10.2021)</h2>
+<ul>
+  <li>Add basic auth to Elasticsearch client <a href="https://github.com/BlueBrain/nexus/issues/2794">#2794</a></li>
+  <li>Introduced graph-analytics plugin <a href="https://github.com/BlueBrain/nexus/issues/2800">#2800</a>, <a href="https://github.com/BlueBrain/nexus/issues/2814">#2814</a>, <a href="https://github.com/BlueBrain/nexus/issues/2812">#2812</a>, <a href="https://github.com/BlueBrain/nexus/issues/2827">#2827</a>, <a href="https://github.com/BlueBrain/nexus/issues/2837">#2837</a></li>
+  <li>Introduced automatic project-deletion plugin <a href="https://github.com/BlueBrain/nexus/issues/2778">#2778</a>, <a href="https://github.com/BlueBrain/nexus/issues/2826">#2826</a></li>
+  <li>Documentation for /v1/events endpoint <a href="https://github.com/BlueBrain/nexus/issues/2813">#2813</a></li>
+  <li>Display values for which the count is null as greyed out (not selectable) in the column filter <a href="https://github.com/BlueBrain/nexus/issues/2642">#2642</a></li>
+  <li>Search bar behaviour improvements <a href="https://github.com/BlueBrain/nexus/issues/2731">#2731</a></li>
+  <li>Pagination improvements <a href="https://github.com/BlueBrain/nexus/issues/2732">#2732</a></li>
+  <li>Table rows can be selected <a href="https://github.com/BlueBrain/nexus/issues/2742">#2742</a></li>
+  <li>Filter improvements <a href="https://github.com/BlueBrain/nexus/issues/2783">#2783</a></li>
+  <li>BUGFIX: Youtube video plugin crashes if payload is missing some properties <a href="https://github.com/BlueBrain/nexus/issues/2765">#2765</a></li>
+  <li>BUGFIX: The Search column dropdown should always render in the viewport <a href="https://github.com/BlueBrain/nexus/issues/2782">#2782</a></li>
+  <li>BUGFIX: Project deletion fixes <a href="https://github.com/BlueBrain/nexus/issues/2821">#2821</a>, <a href="https://github.com/BlueBrain/nexus/issues/2832">#2832</a>, <a href="https://github.com/BlueBrain/nexus/issues/2833">#2833</a></li>
+</ul>
 <h2><a href="#v1-6-0-m4-16-09-2021-" name="v1-6-0-m4-16-09-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M4 (16.09.2021)</h2>
 <ul>
   <li>Record and present deployment usage stats <a href="https://github.com/BlueBrain/nexus/issues/2528">#2528</a></li>
@@ -310,16 +329,16 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Allow listings on resources outside the project scope <a href="https://github.com/BlueBrain/nexus/issues/2737">#2737</a></li>
   <li>Add information about supported operations on the config field <a href="https://github.com/BlueBrain/nexus/issues/2740">#2740</a></li>
   <li>Allow streams other than those related to views to leverage Kamon <a href="https://github.com/BlueBrain/nexus/issues/2771">#2771</a></li>
-  <li>Allow rdf parser to be configurable <a href="https://github.com/BlueBrain/nexus/issues/2792">#2792</a></li>
+  <li>Allow rdf parser to be configurable <a href="https://github.com/BlueBrain/nexus/pull/2792">#2792</a></li>
   <li>BUGFIX: Invalid IRIs should be properly rejected <a href="https://github.com/BlueBrain/nexus/issues/2760">#2760</a></li>
 </ul>
 <h2><a href="#v1-6-0-m3-02-09-2021-" name="v1-6-0-m3-02-09-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0-M3 (02.09.2021)</h2>
 <p>This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:</p>
 <ul>
   <li>Restrict volume of data through quotas (static configuration) <a href="https://github.com/BlueBrain/nexus/issues/2525">#2525</a></li>
-  <li>Delete projects implementation <a href="https://github.com/BlueBrain/nexus/issues/2720">#2720</a></li>
+  <li>Delete projects implementation <a href="https://github.com/BlueBrain/nexus/pull/2720">#2720</a></li>
   <li>Delete Projects: Check if project is being used anywhere before allowing deletion <a href="https://github.com/BlueBrain/nexus/issues/2723">#2723</a></li>
-  <li>Added endpoint to list projects deletions <a href="https://github.com/BlueBrain/nexus/issues/2744">#2744</a></li>
+  <li>Added endpoint to list projects deletions <a href="https://github.com/BlueBrain/nexus/pull/2744">#2744</a></li>
   <li>Document projects deletions <a href="https://github.com/BlueBrain/nexus/issues/2746">#2746</a></li>
   <li>/v1/events endpoint is missing <a href="https://github.com/BlueBrain/nexus/issues/2397">#2397</a></li>
   <li>Ability to customise visible/hidden fields in search results <a href="https://github.com/BlueBrain/nexus/issues/2613">#2613</a></li>
@@ -338,7 +357,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Repurpose the search bar to enable jump to project <a href="https://github.com/BlueBrain/nexus/issues/2609">#2609</a></li>
   <li>Ability to paginate search results based on user view port or preference <a href="https://github.com/BlueBrain/nexus/issues/2623">#2623</a></li>
   <li>Mooc tutorial update <a href="https://github.com/BlueBrain/nexus/pull/2652">#2652</a></li>
-  <li>YouTube Video Viewer Plugin <a href="https://github.com/BlueBrain/nexus/pull/1697">#1697</a></li>
+  <li>YouTube Video Viewer Plugin <a href="https://github.com/BlueBrain/nexus/issues/1697">#1697</a></li>
   <li>BUGFIX: Fix database initialization failures <a href="https://github.com/BlueBrain/nexus/issues/2689">#2689</a></li>
   <li>BUGFIX: Fix SVG import in Fusion <a href="https://github.com/BlueBrain/nexus/issues/1553">#1553</a></li>
   <li>BUGFIX: Create Blazegraph namespace on view updates <a href="https://github.com/BlueBrain/nexus/issues/2668">#2668</a></li>
@@ -516,7 +535,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>The release is backwards compatible with v1.0 in terms of API. If you&rsquo;re upgrading from v1.0 please visit the <a href="v1.0-to-v1.1-migration.html">migration instructions</a>.</p>
 <p>Summary of the significant changes:</p>
 <ul>
-  <li>Exposed the service event logs over a stable API via <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>.</li>
+  <li>Exposed the service event logs over a stable API via <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>.</li>
   <li>Introduced configurable storage backends for files with local, remote and S3 implementations.</li>
   <li>ElasticSearchView | AggregateElasticSearchView have been promoted to stable.</li>
   <li>Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and  aggregates the results.</li>

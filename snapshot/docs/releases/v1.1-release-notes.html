@@ -207,6 +207,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -342,7 +344,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#service-event-logs" name="service-event-logs" class="anchor"><span class="anchor-link"></span></a>Service event logs</h2>
 <p>Services now expose new API endpoints to replay their global event log or the virtual event logs specific to certain resource types or scope (organization, project). This new API allows building applications that integrate with Nexus to provide custom functionality for the data stored in the system. It allows applications to listen to events as they are emitted and react accordingly.</p>
 <p>An example application would be a custom index for data within a project where as new resources or updates are recorded in Nexus, the application is notified and updates the appropriate index.</p>
-<p>The implementation follows the <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a> specification and gives clients the responsibility of maintaining a cursor while replaying an event log. The event log is exposed over HTTP in a JSON-LD event representation.</p>
+<p>The implementation follows the <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a> specification and gives clients the responsibility of maintaining a cursor while replaying an event log. The event log is exposed over HTTP in a JSON-LD event representation.</p>
 <p>The new endpoints require proof of identity by passing within the <code>Authorization</code> header a &lsquo;&lsquo;Bearer&rsquo;&rsquo; token. An <code>Anonymous</code> identity is assumed if the client does not pass a token.</p>
 <p>Example:</p>
 <pre class="prettyprint"><code class="language-bash">curl -s -H &quot;Authorization: Bearer $TOKEN&quot; &quot;http://localhost/v1/resources/myorg/myproj/events&quot;

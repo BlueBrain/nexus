@@ -26,7 +26,7 @@ services:
     ]
 
   elasticsearch:
-    image: "docker.elastic.co/elasticsearch/elasticsearch:7.12.0"
+    image: "docker.elastic.co/elasticsearch/elasticsearch:7.15.0"
     environment:
       ES_JAVA_OPTS: "-Xmx1G"
       discovery.type: "single-node"

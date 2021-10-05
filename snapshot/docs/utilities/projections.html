@@ -207,6 +207,8 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -276,7 +278,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#indexing-data-in-other-systems" name="indexing-data-in-other-systems" class="anchor"><span class="anchor-link"></span></a>Indexing data in other systems</h1>
 <h2><a href="#introduction" name="introduction" class="anchor"><span class="anchor-link"></span></a>Introduction</h2>
 <p>Blue Brain Nexus supports out of the box document and RDF graph based indices of the data through Elasticsearch, Sparql and Composite views. These cover a wide range of requirements but may not suffice in certain cases. New indexing capabilities can be added using external processes that subscribe to the global event log, enrich the information and project the result in arbitrary stores. </p>
-<p>By exposing over HTTP(S) the event log using the <a href="https://www.w3.org/TR/eventsource/" title="Server-Sent Events W3C recommendation" target="_blank" rel="noopener noreferrer">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">
+<p>By exposing over HTTP(S) the event log using the <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server-Sent Events W3C recommendation" target="_blank" rel="noopener noreferrer">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">
 <p><img src="extending-nexus.png" alt="Extending Blue Brain Nexus" /></p></div>
 <p>An example of such a tool is the newly introduced docker image (<code>bluebrain/nexus-cli</code>) that supports projecting data to InfluxDB and PostgreSQL databases. The image is yet another software artifact in the Blue Brain Nexus ecosystem that complements the system to introduce new indexing capabilities that are not part of the core.</p>
 <p>It functions as described above following a simple streaming approach with the following stages:</p>

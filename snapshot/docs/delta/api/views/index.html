@@ -207,6 +207,8 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -233,7 +235,13 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
+    <ul>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -264,7 +272,13 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
+    <ul>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -311,12 +325,14 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Composite views are useful when aggregating data across multiple projects (local or remote) using multiple sources. Afterwards, by defining multiple projections, the data can be adapted to the client needs.</p>
 <p><a href="composite-view-api.html">More information</a></p>
 <h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
-<p>All the API calls modifying a view(creation, update, tagging, deprecation) can specify whether the view should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<p>All the API calls modifying a view (creation, update, tagging, deprecation) can specify whether the view should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
 <ul>
   <li><code>async</code> - (default value) the view will be indexed asynchronously</li>
   <li><code>sync</code> - the view will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
+<p>There are three available endpoints to list views in different scopes.</p>
+<h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
 <pre><code>GET /v1/views/{org_label}/{project_label}?from={from}
                                          &amp;size={size}
                                          &amp;deprecated={deprecated}
@@ -327,7 +343,31 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
                                          &amp;q={search}
                                          &amp;sort={sort}
 </code></pre>
-<p>where&hellip;</p>
+<h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
+<p>This operation returns only views from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/views/{org_label}?from={from}
+                         &amp;size={size}
+                         &amp;deprecated={deprecated}
+                         &amp;rev={rev}
+                         &amp;type={type}
+                         &amp;createdBy={createdBy}
+                         &amp;updatedBy={updatedBy}
+                         &amp;q={search}
+                         &amp;sort={sort}
+</code></pre>
+<h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
+<p>This operation returns only views from projects where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/views?from={from}
+             &amp;size={size}
+             &amp;deprecated={deprecated}
+             &amp;rev={rev}
+             &amp;type={type}
+             &amp;createdBy={createdBy}
+             &amp;updatedBy={updatedBy}
+             &amp;q={search}
+             &amp;sort={sort}
+</code></pre>
+<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
