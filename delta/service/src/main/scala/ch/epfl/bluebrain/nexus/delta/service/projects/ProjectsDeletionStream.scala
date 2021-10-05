@@ -92,7 +92,6 @@ class ProjectsDeletionStream(
         projects
           .events(initialProgress.offset)
           .collect { case env @ Envelope(_: ProjectMarkedForDeletion, _, _, _, _, _) =>
-            println(env)
             env.toMessage
           }
           .evalMap { msg =>
