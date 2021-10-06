@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoo
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import fs2.concurrent.Queue
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -42,6 +43,11 @@ trait StoragesStatistics {
     * Retrieve the current statistics for the given project
     */
   def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry]
+
+  /**
+    * Remove the statistics for the given project
+    */
+  def remove(project: ProjectRef): UIO[Unit]
 
 }
 
@@ -105,66 +111,84 @@ object StoragesStatistics {
 
     // Build the storage stat entry from the file event
     def fileEventToStatEntry(f: FileEvent): Task[((ProjectRef, Iri), StorageStatEntry)] = f match {
-      case c: FileCreated if !c.attributes.digest.computed =>
-        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, Some(c.instant)))
-      case c: FileCreated                                  =>
+      case c: FileCreated if c.attributes.digest.computed =>
         UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, c.attributes.bytes, Some(c.instant)))
-      case u: FileUpdated                                  =>
+      case c: FileCreated                                 =>
+        UIO.pure((c.project, c.storage.iri) -> StorageStatEntry(1L, 0L, Some(c.instant)))
+      case u: FileUpdated if u.attributes.digest.computed =>
         UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, u.attributes.bytes, Some(u.instant)))
-      case fau: FileAttributesUpdated                      =>
+      case u: FileUpdated                                 =>
+        UIO.pure((u.project, u.storage.iri) -> StorageStatEntry(1L, 0L, Some(u.instant)))
+      case fau: FileAttributesUpdated                     =>
         fetchFileStorage(fau.id, fau.project).map { storageIri =>
           (fau.project, storageIri) -> StorageStatEntry(0L, fau.bytes, Some(fau.instant))
         }
-      case other                                           =>
+      case other                                          =>
         fetchFileStorage(other.id, other.project).map { storageIri =>
           (other.project, storageIri) -> StorageStatEntry(0L, 0L, Some(other.instant))
         }
     }
 
-    def buildStream: Stream[Task, Unit] =
-      Stream
-        .eval(projection.progress(projectionId))
-        .evalTap { progress =>
-          cache.putAll(progress.value.value)
-        }
-        .flatMap { progress =>
-          val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
-          stream(progress.offset)
-            .evalMapAccumulate(initial) { case (acc, envelope) =>
+    Queue.unbounded[Task, ProjectRef].flatMap { queue =>
+      def buildStream: Stream[Task, Unit] =
+        Stream
+          .eval(projection.progress(projectionId))
+          .evalTap { progress =>
+            cache.putAll(progress.value.value)
+          }
+          .flatMap { progress =>
+            val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
+            Stream(stream(progress.offset).map(Right(_)), queue.dequeue.map(Left(_))).parJoinUnbounded
+              .evalMapAccumulate(initial) { case (acc, current) =>
+                current.fold(
+                  // Project has been deleted
+                  project =>
+                    cache.remove(project) >>
+                      Task.pure(acc.copy(value = acc.value - project) -> ()),
+                  // New file event
+                  envelope =>
+                    for {
+                      ((project, storageId), statEntry) <- fileEventToStatEntry(envelope.event)
+                      stats                              = acc.value.update(project, storageId, statEntry)
+                      _                                 <- stats
+                                                             .get(project, storageId)
+                                                             .fold(
+                                                               UIO.delay(
+                                                                 logger.warn(s"We should have an entry for storage $storageId in project $project")
+                                                               )
+                                                             )(cache.put(project, storageId, _))
+                    } yield envelope.toMessage.copy(
+                      value = stats
+                    ) -> ()
+                )
+              }
+              .map(_._1)
+              .persistProgress(progress, projectionId, projection, persistProgressConfig)
+              .enableMetrics
+              .void
+          }
+
+      DaemonStreamCoordinator
+        .run(id, buildStream, RetryStrategy.retryOnNonFatal(keyValueStoreConfig.retry, logger, "storage statistics"))
+        .as(
+          new StoragesStatistics {
+
+            override def get(): UIO[StorageStatsCollection] = cache.entries.map(StorageStatsCollection(_))
+
+            override def get(project: ProjectRef): UIO[Map[Iri, StorageStatEntry]] =
+              cache.get(project)
+
+            override def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry] =
               for {
-                ((project, storageId), statEntry) <- fileEventToStatEntry(envelope.event)
-                updatedEntries                     = acc.value.value |+| Map(project -> Map(storageId -> statEntry))
-                updatedEntry                       = updatedEntries.get(project).flatMap(_.get(storageId))
-                _                                 <- updatedEntry.fold(
-                                                       UIO.delay(logger.warn(s"We should have an entry for storage $storageId in project $project"))
-                                                     )(cache.put(project, storageId, _))
-              } yield envelope.toMessage.copy(
-                value = StorageStatsCollection(updatedEntries)
-              ) -> ()
-            }
-            .map(_._1)
-            .persistProgress(progress, projectionId, projection, persistProgressConfig)
-            .enableMetrics
-            .void
-        }
+                iri <- fetchStorageId(idSegment, project)
+                res <- cache.get(project, iri).map(_.getOrElse(StorageStatEntry.empty))
+              } yield res
 
-    DaemonStreamCoordinator
-      .run(id, buildStream, RetryStrategy.retryOnNonFatal(keyValueStoreConfig.retry, logger, "storage statistics"))
-      .as(
-        new StoragesStatistics {
+            override def remove(project: ProjectRef): UIO[Unit] = queue.enqueue1(project).hideErrors
+          }
+        )
+    }
 
-          override def get(): UIO[StorageStatsCollection] = cache.entries.map(StorageStatsCollection(_))
-
-          override def get(project: ProjectRef): UIO[Map[Iri, StorageStatEntry]] =
-            cache.get(project)
-
-          override def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry] =
-            for {
-              iri <- fetchStorageId(idSegment, project)
-              res <- cache.get(project, iri).map(_.getOrElse(StorageStatEntry.empty))
-            } yield res
-        }
-      )
   }
 
 }

@@ -185,6 +185,29 @@ class StoragesStatisticsSpec
         )
       )
     }
-  }
 
+    "delete properly the project" in {
+      stats.remove(project1).accepted
+
+      eventually {
+        stats.get(storage1, project1).accepted shouldEqual StorageStatEntry.empty
+
+        val progress = projection.progress(StoragesStatistics.projectionId).accepted
+
+        progress shouldEqual ProjectionProgress(
+          Sequence(7L),
+          Instant.ofEpochMilli(7000L),
+          8L,
+          0L,
+          0L,
+          0L,
+          StorageStatsCollection(
+            Map(
+              project2 -> Map(storage2 -> storage2Stats)
+            )
+          )
+        )
+      }
+    }
+  }
 }

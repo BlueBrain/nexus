@@ -21,6 +21,11 @@ import scala.math.Ordering.Implicits._
 final case class ProjectCountsCollection(value: Map[ProjectRef, ProjectCount]) extends AnyVal {
 
   /**
+    * Remove counts for the given project
+    */
+  def -(projectRef: ProjectRef): ProjectCountsCollection = copy(value = value - projectRef)
+
+  /**
     * Attempts to fetch the counts for a single project
     *
     * @param projectRef
