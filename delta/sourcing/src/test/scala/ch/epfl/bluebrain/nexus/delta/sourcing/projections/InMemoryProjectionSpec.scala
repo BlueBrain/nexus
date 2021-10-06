@@ -6,10 +6,8 @@ import scala.util.Random
 
 class InMemoryProjectionSpec extends ProjectionSpec {
 
-  import monix.execution.Scheduler.Implicits.global
-
   override val projections: Projection[SomeEvent] =
-    Projection.inMemory(SomeEvent.empty, throwableToString).runSyncUnsafe()
+    Projection.inMemory(SomeEvent.empty, throwableToString).accepted
 
   override def generateOffset: Offset = Sequence(Random.nextLong())
 }

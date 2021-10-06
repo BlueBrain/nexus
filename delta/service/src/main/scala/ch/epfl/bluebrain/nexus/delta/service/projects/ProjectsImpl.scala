@@ -30,7 +30,6 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
-import scala.concurrent.duration.FiniteDuration
 
 final class ProjectsImpl private (
     agg: ProjectsAggregate,
@@ -250,7 +249,7 @@ object ProjectsImpl {
       config: ProjectsConfig,
       organizations: Organizations,
       defaultApiMappings: ApiMappings,
-      creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
+      creationCooldown: ProjectRef => IO[ProjectCreationCooldown, Unit]
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO], uuidF: UUIDF): UIO[ProjectsAggregate] = {
     val definition = PersistentEventDefinition(
       entityType = moduleType,

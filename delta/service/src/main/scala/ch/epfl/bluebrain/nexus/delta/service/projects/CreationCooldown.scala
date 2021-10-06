@@ -5,11 +5,10 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionStatus
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectCreationCooldown
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.DeletionStatusCache
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLogConfig
 import monix.bio.{IO, UIO}
-
-import scala.concurrent.duration.{FiniteDuration, _}
 
 object CreationCooldown {
 
@@ -19,7 +18,7 @@ object CreationCooldown {
     */
   def validate(cache: DeletionStatusCache, eventLogConfig: EventLogConfig)(
       projectRef: ProjectRef
-  )(implicit clock: Clock[UIO]): IO[FiniteDuration, Unit] = {
+  )(implicit clock: Clock[UIO]): IO[ProjectCreationCooldown, Unit] = {
     def maxDeleteUpdate(statuses: Vector[ResourcesDeletionStatus]) = statuses.mapFilter { status =>
       Option.when(status.project == projectRef)(status.updatedAt)
     }.maxOption
@@ -28,17 +27,19 @@ object CreationCooldown {
     eventLogConfig.tagQueriesStateTimeToLive.map(_.mul(2.5)) match {
       case Some(ttl) =>
         for {
-          now         <- instant
-          statuses    <- cache.values
-          endCooldown  = maxDeleteUpdate(statuses).map(_.plusSeconds(ttl.toSeconds))
-          remainingTtl =
+          now        <- instant
+          statuses   <- cache.values
+          endCooldown = maxDeleteUpdate(statuses).map(_.plusSeconds(ttl.toSeconds))
+          rejection   =
             endCooldown
               .flatMap { e =>
                 val remaining = e.getEpochSecond - now.getEpochSecond
-                Option.when(remaining > 0)(remaining.seconds)
+                Option.when(remaining > 0)(
+                  ProjectCreationCooldown(projectRef, now.plusSeconds(remaining))
+                )
               }
               .toLeft(())
-          _           <- IO.fromEither(remainingTtl)
+          _          <- IO.fromEither(rejection)
         } yield ()
       case None      =>
         IO.unit

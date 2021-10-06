@@ -5,16 +5,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionError.{Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.RunResult.Warning
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, ShouldMatchers, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, ShouldMatchers, TestHelpers}
 import org.scalatest.matchers.should.Matchers.{contain, empty}
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers with ShouldMatchers {
-
-  import monix.execution.Scheduler.Implicits.global
+trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with IOValues with TestHelpers with ShouldMatchers {
 
   def projections: Projection[SomeEvent]
 
@@ -38,13 +36,13 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
         readUpdated <- projections.progress(id)
       } yield (init, read, readUpdated)
 
-      task.runSyncUnsafe() shouldBe ((init, progress, progressUpdated))
+      task.accepted shouldBe ((init, progress, progressUpdated))
     }
 
     "retrieve NoProgress for unknown projections" in {
       projections
         .progress(ViewProjectionId(genString()))
-        .runSyncUnsafe() shouldBe NoProgress(SomeEvent.empty)
+        .accepted shouldBe NoProgress(SomeEvent.empty)
     }
 
     val firstOffset: Offset  = NoOffset
@@ -91,12 +89,23 @@ trait ProjectionSpec extends AnyWordSpecLike with IOFixedClock with TestHelpers 
           "ClassCastException"
         )
       )
-      task.runSyncUnsafe() should contain theSameElementsAs expected
+      task.accepted should contain theSameElementsAs expected
     }
 
     "retrieve no failures for an unknown projection" in {
       val task = projections.errors(ViewProjectionId(genString())).compile.toVector
-      task.runSyncUnsafe() shouldBe empty
+      task.accepted shouldBe empty
+    }
+
+    "delete progress and errors when deleting a projection" in {
+      projections.delete(id).accepted
+
+      projections
+        .progress(id)
+        .accepted shouldBe NoProgress(SomeEvent.empty)
+
+      projections.errors(ViewProjectionId(genString())).compile.toVector.accepted shouldBe empty
+
     }
   }
 

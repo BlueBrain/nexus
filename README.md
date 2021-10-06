@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/src/main/paradox/assets/img/Blue-Brain-Nexus-Delta-Github-Banner.jpg"/></p>
+
 [![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrainnexus.io/)
 [![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)]()
 

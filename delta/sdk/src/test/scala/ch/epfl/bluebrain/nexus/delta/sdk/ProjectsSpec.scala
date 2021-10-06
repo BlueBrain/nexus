@@ -21,7 +21,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
-import scala.concurrent.duration._
 
 class ProjectsSpec
     extends AnyWordSpecLike
@@ -37,6 +36,7 @@ class ProjectsSpec
   "The Projects state machine" when {
     implicit val sc: Scheduler  = Scheduler.global
     val epoch                   = Instant.EPOCH
+    val cooldown                = epoch.plusSeconds(42 * 60L)
     val time2                   = Instant.ofEpochMilli(10L)
     val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
     val base                    = PrefixIri.unsafe(iri"http://example.com/base/")
@@ -74,7 +74,8 @@ class ProjectsSpec
 
     "evaluating an incoming command" should {
 
-      def creationCooldown(projectRef: ProjectRef) = IO.raiseWhen(projectRef == ref3)(42.minutes)
+      def creationCooldown(projectRef: ProjectRef) =
+        IO.raiseWhen(projectRef == ref3)(ProjectCreationCooldown(projectRef, cooldown))
 
       val eval = evaluate(orgs, creationCooldown)(_, _)
 
@@ -129,7 +130,7 @@ class ProjectsSpec
 
       "reject with ProjectCreationCooldown" in {
         eval(Initial, CreateProject(ref3, desc, am, base, vocab, subject)).rejected shouldEqual
-          ProjectCreationCooldown(ref3, 42.minutes)
+          ProjectCreationCooldown(ref3, cooldown)
       }
 
       "reject with ProjectIsDeprecated" in {

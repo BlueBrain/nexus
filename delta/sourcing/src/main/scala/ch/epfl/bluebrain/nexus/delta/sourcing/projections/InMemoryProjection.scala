@@ -19,6 +19,9 @@ class InMemoryProjection[A](
 )(implicit clock: Clock[UIO])
     extends Projection[A] {
 
+  override def delete(id: ProjectionId): Task[Unit] =
+    Task.delay(success.remove(id)) >> Task.delay(errors.remove(id)).void
+
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     Task.delay(success.update(id, progress))
 

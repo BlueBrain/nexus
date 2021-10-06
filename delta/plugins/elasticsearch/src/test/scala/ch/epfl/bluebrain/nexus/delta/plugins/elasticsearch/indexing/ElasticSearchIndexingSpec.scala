@@ -186,7 +186,7 @@ class ElasticSearchIndexingSpec
   private val indexingStream = new ElasticSearchIndexingStream(esClient, indexingSource, cache, config, projection)
 
   private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
-  private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache)
+  private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache, projection)
   private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
   private val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
   ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted

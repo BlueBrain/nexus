@@ -41,6 +41,12 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
 
   implicit private val materializer: Materializer = Materializer.createMaterializer(as)
 
+  private val deleteProgressQuery: String =
+    s"DELETE FROM ${config.keyspace}.projections_progress WHERE projection_id = ? IF EXISTS"
+
+  private val deleteProgressErrors: String =
+    s"DELETE FROM ${config.keyspace}.projections_errors WHERE projection_id = ? and timestamp = ? and persistence_id = ? and sequence_nr = ? IF EXISTS"
+
   private val recordProgressQuery: String =
     s"UPDATE ${config.keyspace}.projections_progress SET offset = ?, timestamp = ?, processed = ?, discarded = ?, warnings = ?, failed = ?, value = ?, value_timestamp = ? WHERE projection_id = ?"
 
@@ -61,6 +67,24 @@ private[projections] class CassandraProjection[A: Encoder: Decoder] private (
     }
 
   private def parseOffset(value: UUID): Offset = Option(value).fold[Offset](NoOffset)(TimeBasedUUID)
+
+  override def delete(id: ProjectionId): Task[Unit] =
+    Task.deferFuture {
+      session.executeWrite(deleteProgressQuery, id.value)
+    } >> errors(id)
+      .evalMap { error =>
+        Task.deferFuture {
+          session.executeWrite(
+            deleteProgressErrors,
+            id.value,
+            error.timestamp.toEpochMilli: java.lang.Long,
+            error.persistenceId,
+            error.sequenceNr: java.lang.Long
+          )
+        }
+      }
+      .compile
+      .drain
 
   override def recordProgress(id: ProjectionId, progress: ProjectionProgress[A]): Task[Unit] =
     instant.flatMap { timestamp =>

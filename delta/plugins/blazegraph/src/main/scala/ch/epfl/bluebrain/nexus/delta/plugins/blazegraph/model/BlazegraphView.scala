@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -9,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -105,6 +106,28 @@ object BlazegraphView {
     override def metadata: Metadata = Metadata(Some(uuid))
 
     override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
+  }
+
+  object IndexingBlazegraphView {
+
+    /**
+      * Create the view index from the [[IndexingBlazegraphView]]
+      */
+    def resourceToViewIndex(
+        res: IndexingViewResource,
+        config: BlazegraphViewsConfig
+    ): ViewIndex[IndexingBlazegraphView] = ViewIndex(
+      res.value.project,
+      res.id,
+      res.value.uuid,
+      BlazegraphViews.projectionId(res),
+      BlazegraphViews.namespace(res, config.indexing),
+      res.rev,
+      res.deprecated,
+      res.value.resourceTag,
+      res.updatedAt,
+      res.value
+    )
   }
 
   /**

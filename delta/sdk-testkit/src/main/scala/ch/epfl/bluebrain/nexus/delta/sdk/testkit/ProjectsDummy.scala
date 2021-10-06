@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
-import scala.concurrent.duration.FiniteDuration
 
 final class ProjectsDummy private (
     journal: ProjectsJournal,
@@ -34,7 +33,7 @@ final class ProjectsDummy private (
     quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
     override val defaultApiMappings: ApiMappings,
-    creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
+    creationCooldown: ProjectRef => IO[ProjectCreationCooldown, Unit]
 )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF)
     extends Projects {
 
@@ -202,14 +201,14 @@ object ProjectsDummy {
     * @param defaultApiMappings
     *   the default api mappings
     * @param creationCooldown
-    *   define if a cooldown must be observed before being able to (re)create a projecgt
+    *   define if a cooldown must be observed before being able to (re)create a project
     */
   def apply(
       organizations: Organizations,
       quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
-      creationCooldown: ProjectRef => IO[FiniteDuration, Unit]
+      creationCooldown: ProjectRef => IO[ProjectCreationCooldown, Unit]
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
       journal       <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))

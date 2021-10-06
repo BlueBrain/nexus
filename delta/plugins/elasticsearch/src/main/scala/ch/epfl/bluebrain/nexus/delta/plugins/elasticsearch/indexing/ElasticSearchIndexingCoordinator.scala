@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -27,18 +26,7 @@ object ElasticSearchIndexingCoordinator {
       .fetchIndexingView(id, project)
       .map { res =>
         Some(
-          ViewIndex(
-            res.value.project,
-            res.id,
-            res.value.uuid,
-            ElasticSearchViews.projectionId(res),
-            ElasticSearchViews.index(res, config.indexing),
-            res.rev,
-            res.deprecated,
-            res.value.resourceTag,
-            res.updatedAt,
-            res.value
-          )
+          IndexingElasticSearchView.resourceToViewIndex(res, config)
         )
       }
       .onErrorHandle {

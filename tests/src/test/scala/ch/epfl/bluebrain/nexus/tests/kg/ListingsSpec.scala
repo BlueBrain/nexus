@@ -113,7 +113,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       }
     }
 
-    "get responses using after" in {
+    "get responses using after" in eventually {
       // Building the next results, replace the public url by the one used by the tests
       def next(json: Json) = {
         listing._next.getOption(json).map { url =>

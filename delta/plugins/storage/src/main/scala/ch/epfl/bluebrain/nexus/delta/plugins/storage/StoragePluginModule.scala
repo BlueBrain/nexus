@@ -120,10 +120,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[ResourcesDeletion].add {
     (
         agg: FilesAggregate,
-        storages: Storages,
         files: Files,
         dbCleanup: DatabaseCleanup
-    ) => FilesDeletion(agg, storages, files, dbCleanup)
+    ) => FilesDeletion(agg, files, dbCleanup)
   }
 
   make[StoragesRoutes].from {

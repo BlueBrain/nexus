@@ -34,7 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFetchOptions, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
@@ -254,29 +254,9 @@ final class ElasticSearchViews private (
       id: IdSegment,
       project: ProjectRef,
       rev: Long
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    deprecate(id, project, notDeprecatedOrDeletedWithEventQuotas, rev)
-
-  /**
-    * Deprecate a view without any extra checks on the projects API.
-    * @see
-    *   [[deprecate(id, project, rev)]]
-    */
-  private[elasticsearch] def deprecateWithoutProjectChecks(
-      id: IdSegment,
-      project: ProjectRef,
-      rev: Long
-  )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] =
-    deprecate(id, project, Set.empty, rev)
-
-  private def deprecate(
-      id: IdSegment,
-      project: ProjectRef,
-      projectFetchOptions: Set[ProjectFetchOptions],
-      rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, projectFetchOptions)
+      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
       iri <- expandIri(id, p)
       res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
     } yield res

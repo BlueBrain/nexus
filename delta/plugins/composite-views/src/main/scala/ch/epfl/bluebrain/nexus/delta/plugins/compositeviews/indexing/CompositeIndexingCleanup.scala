@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingCleanup
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import monix.bio.{IO, UIO}
 
 class CompositeIndexingCleanup(
@@ -16,17 +17,18 @@ class CompositeIndexingCleanup(
     esClient: ElasticSearchClient,
     blazeConfig: ExternalIndexingConfig,
     blazeClient: BlazegraphClient,
-    cache: ProgressesCache
+    cache: ProgressesCache,
+    projection: Projection[Unit]
 ) extends IndexingCleanup[CompositeView] {
 
-  // TODO: We might want to delete the projection row too, but deletion is not implemented in Projection
   override def apply(view: ViewIndex[CompositeView]): UIO[Unit] =
     blazeClient.deleteNamespace(view.index).attempt.void >>
-      IO.traverse(projectionIds(view))(pId => cache.remove(pId)) >>
       IO.traverse(view.value.projections.value) {
         case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
         case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void
-      }.void
+      }.void >> IO
+        .traverse(projectionIds(view)) { pId => cache.remove(pId) >> projection.delete(pId).attempt.void }
+        .void
 
   private def projectionIds(view: ViewIndex[CompositeView])                                        =
     CompositeViews.projectionIds(view.value, view.rev).map { case (_, _, projectionId) => projectionId }

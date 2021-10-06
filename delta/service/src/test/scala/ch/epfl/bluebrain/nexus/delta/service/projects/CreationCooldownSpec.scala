@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Resourc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionStatus
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectCreationCooldown
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -54,7 +55,7 @@ class CreationCooldownSpec extends AnyWordSpecLike with IOValues with Matchers {
     }
 
     "detect any problem if the ttl has not been observed" in {
-      CreationCooldown.validate(cache, eventLogConfigWithTtl)(ref1).rejected shouldEqual 150.seconds
+      CreationCooldown.validate(cache, eventLogConfigWithTtl)(ref1).rejectedWith[ProjectCreationCooldown]
     }
 
     "not detect any problem if the ttl has been observed" in {
