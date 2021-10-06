@@ -113,8 +113,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cache: StoragesCache,
         agg: StoragesAggregate,
         storages: Storages,
-        dbCleanup: DatabaseCleanup
-    ) => StoragesDeletion(cache, agg, storages, dbCleanup)
+        dbCleanup: DatabaseCleanup,
+        storagesStatistics: StoragesStatistics
+    ) => StoragesDeletion(cache, agg, storages, dbCleanup, storagesStatistics)
   }
 
   many[ResourcesDeletion].add {

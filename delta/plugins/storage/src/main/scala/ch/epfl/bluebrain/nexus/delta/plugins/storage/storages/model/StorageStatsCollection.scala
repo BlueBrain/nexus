@@ -15,7 +15,35 @@ import io.circe.{Codec, Decoder, Encoder}
 import java.time.Instant
 import scala.math.Ordering.Implicits._
 
-final case class StorageStatsCollection(value: Map[ProjectRef, Map[Iri, StorageStatEntry]])
+final case class StorageStatsCollection(value: Map[ProjectRef, Map[Iri, StorageStatEntry]]) {
+
+  /**
+    * Remove statistics for the given project
+    */
+  def -(projectRef: ProjectRef): StorageStatsCollection = copy(value = value - projectRef)
+
+  /**
+    * Attempts to fetch the counts for a storage
+    * @param project
+    *   the project reference
+    * @param storageId
+    *   the storage identifier
+    */
+  def get(project: ProjectRef, storageId: Iri): Option[StorageStatEntry] = value.get(project).flatMap(_.get(storageId))
+
+  /**
+    * Update statistics for the given storage by merging the existing one with the provided stat entry
+    * @param project
+    *   the project reference
+    * @param storageId
+    *   the storage identifier
+    * @param statEntry
+    *   the entry to merge to the existing one
+    */
+  def update(project: ProjectRef, storageId: Iri, statEntry: StorageStatEntry): StorageStatsCollection =
+    copy(value = value |+| Map(project -> Map(storageId -> statEntry)))
+
+}
 
 object StorageStatsCollection {
 
@@ -38,7 +66,7 @@ object StorageStatsCollection {
 
   object StorageStatEntry {
 
-    val empty = StorageStatEntry(0L, 0L, None)
+    val empty: StorageStatEntry = StorageStatEntry(0L, 0L, None)
 
     implicit val storageStatEntrySemigroup: Semigroup[StorageStatEntry] =
       (x: StorageStatEntry, y: StorageStatEntry) =>

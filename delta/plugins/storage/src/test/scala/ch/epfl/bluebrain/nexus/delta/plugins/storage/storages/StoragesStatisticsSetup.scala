@@ -9,18 +9,21 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import monix.bio.{IO, UIO}
 
+import scala.collection.mutable.{Map => MutableMap}
+
 object StoragesStatisticsSetup {
 
   def init(stats: Map[Project, Map[Iri, StorageStatEntry]]): StoragesStatistics =
     new StoragesStatistics {
 
-      private val projectsMap: Map[ProjectRef, Project] = stats.keys.groupBy(_.ref).map {
-        case (ref, set) if set.size == 1 => ref -> set.head
-        case (ref, set)                  =>
-          throw new IllegalArgumentException(
-            s"All provided projects must have a distinct reference, $ref appears ${set.size} times"
-          )
-      }
+      private val projectsMap: MutableMap[ProjectRef, Project] = MutableMap.empty ++
+        stats.keys.groupBy(_.ref).map {
+          case (ref, set) if set.size == 1 => ref -> set.head
+          case (ref, set)                  =>
+            throw new IllegalArgumentException(
+              s"All provided projects must have a distinct reference, $ref appears ${set.size} times"
+            )
+        }
 
       private val statsByProjectRef = stats.map { case (project, value) =>
         project.ref -> value
@@ -40,6 +43,8 @@ object StoragesStatisticsSetup {
           iri  <- Storages.expandIri(idSegment, p)
           stat <- IO.fromOptionEval(get(project).map(_.get(iri)), StorageNotFound(iri, project))
         } yield stat
+
+      override def remove(project: ProjectRef): UIO[Unit] = UIO.delay(projectsMap.remove(project)).void
     }
 
 }

@@ -87,14 +87,14 @@ class ProjectsCountsSpec
       case _               => throw new IllegalArgumentException("")
     }
 
-  private val projection                                  = Projection.inMemory(ProjectCountsCollection.empty).accepted
-  implicit private val persistProgress                    = SaveProgressConfig(1, 5.millis)
-  implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
+  private val projection                                   = Projection.inMemory(ProjectCountsCollection.empty).accepted
+  implicit private val persistProgress: SaveProgressConfig = SaveProgressConfig(1, 5.millis)
+  implicit private val keyValueStore: KeyValueStoreConfig  = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
 
   "ProjectsCounts" should {
+    val counts = ProjectsCounts(projection, stream).accepted
 
     "be computed" in {
-      val counts = ProjectsCounts(projection, stream).accepted
       eventually {
         val currentCounts = counts.get().accepted
         currentCounts.get(project1).value shouldEqual ProjectCount(25, 25, now.plusSeconds(25))
@@ -114,6 +114,22 @@ class ProjectsCountsSpec
         )
       )
       currentProgress shouldEqual ProjectionProgress(Sequence(50), now.plusSeconds(50), 50, 0L, 0L, 0L, counts)
+    }
+
+    "delete properly the project" in {
+      counts.remove(project1).accepted
+
+      eventually {
+        val progress = projection.progress(ProjectsCounts.projectionId).accepted
+
+        val collection = ProjectCountsCollection(
+          Map(
+            project2 -> ProjectCount(15, 15, now.plusSeconds(40)),
+            project3 -> ProjectCount(10, 10, now.plusSeconds(50))
+          )
+        )
+        progress shouldEqual ProjectionProgress(Sequence(50), now.plusSeconds(50), 51, 0L, 0L, 0L, collection)
+      }
     }
   }
 
