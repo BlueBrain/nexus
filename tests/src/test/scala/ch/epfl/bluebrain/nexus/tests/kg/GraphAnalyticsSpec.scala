@@ -55,10 +55,14 @@ final class GraphAnalyticsSpec extends BaseSpec with CirceEq {
     "update resources" in {
       for {
         _ <- deltaClient.post[Json](s"/resources/$ref/", jsonContentOf("/kg/graph-analytics/person4.json"), Bojack)(
-          expectCreated
-        )
+               expectCreated
+             )
         _ <-
-          deltaClient.put[Json](s"/resources/$ref/_/http%3A%2F%2Fexample.com%2Fepfl?rev=1", jsonContentOf("/kg/graph-analytics/organization-updated.json"), Bojack)(
+          deltaClient.put[Json](
+            s"/resources/$ref/_/http%3A%2F%2Fexample.com%2Fepfl?rev=1",
+            jsonContentOf("/kg/graph-analytics/organization-updated.json"),
+            Bojack
+          )(
             expectOk
           )
       } yield succeed
