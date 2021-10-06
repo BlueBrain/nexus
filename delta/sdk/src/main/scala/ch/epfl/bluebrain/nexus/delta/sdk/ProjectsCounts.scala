@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoo
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
+import fs2.concurrent.Queue
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
@@ -71,43 +72,57 @@ object ProjectsCounts {
     val cache =
       KeyValueStore.distributed[ProjectRef, ProjectCount]("ProjectsCounts", (_, stats) => stats.events)
 
-    def buildStream: Stream[Task, Unit] =
-      Stream
-        .eval(projection.progress(projectionId))
-        .evalTap { progress =>
-          cache.putAll(progress.value.value)
-        }
-        .flatMap { progress =>
-          val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
-          stream(progress.offset)
-            .map { env =>
-              env.toMessage.as(env.event)
-            }
-            .mapAccumulate(initial) { (acc, msg) =>
-              (msg.as(acc.value.increment(msg.value.project, msg.value.rev, msg.timestamp)), msg.value.project)
-            }
-            .evalMap { case (acc, projectRef) =>
-              cache.put(projectRef, acc.value.value(projectRef)).as(acc)
-            }
-            .persistProgress(progress, projectionId, projection, persistProgressConfig)
-            .enableMetrics
-            .void
-        }
+    Queue.unbounded[Task, ProjectRef].flatMap { queue =>
+      def buildStream: Stream[Task, Unit] =
+        Stream
+          .eval(projection.progress(projectionId))
+          .evalTap { progress =>
+            cache.putAll(progress.value.value)
+          }
+          .flatMap { progress =>
+            val initial = SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
+            Stream(stream(progress.offset).map(Right(_)), queue.dequeue.map(Left(_))).parJoinUnbounded
+              .evalMapAccumulate(initial) { case (acc, current) =>
+                current.fold(
+                  // Project has been deleted
+                  project =>
+                    cache.remove(project) >>
+                      Task.pure(acc.copy(value = acc.value - project) -> ()),
+                  // New event
+                  envelope => {
+                    val event = envelope.event
+                    for {
+                      counts <- UIO.pure(acc.value.increment(event.project, event.rev, envelope.instant))
+                      _      <- counts
+                                  .get(event.project)
+                                  .fold(UIO.delay(logger.warn(s"We should have a count for project ${event.project}")))(
+                                    cache.put(event.project, _)
+                                  )
+                    } yield envelope.toMessage.copy(value = counts) -> ()
+                  }
+                )
+              }
+              .map(_._1)
+              .persistProgress(progress, projectionId, projection, persistProgressConfig)
+              .enableMetrics
+              .void
+          }
 
-    val retryStrategy =
-      RetryStrategy[Throwable](keyValueStoreConfig.retry, _ => true, logError(logger, "projects counts"))
+      val retryStrategy =
+        RetryStrategy[Throwable](keyValueStoreConfig.retry, _ => true, logError(logger, "projects counts"))
 
-    DaemonStreamCoordinator
-      .run("ProjectsCounts", buildStream, retryStrategy)
-      .as(
-        new ProjectsCounts {
+      DaemonStreamCoordinator
+        .run("ProjectsCounts", buildStream, retryStrategy)
+        .as(
+          new ProjectsCounts {
 
-          override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
+            override def get(): UIO[ProjectCountsCollection] = cache.entries.map(ProjectCountsCollection(_))
 
-          override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
+            override def get(project: ProjectRef): UIO[Option[ProjectCount]] = cache.get(project)
 
-          override def remove(project: ProjectRef): UIO[Unit] = cache.remove(project)
-        }
-      )
+            override def remove(project: ProjectRef): UIO[Unit] = queue.enqueue1(project).hideErrors
+          }
+        )
+    }
   }
 }

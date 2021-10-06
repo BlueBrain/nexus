@@ -18,7 +18,8 @@ final class StoragesDeletion(
     cache: StoragesCache,
     stopActor: StopActor,
     currentEvents: CurrentEvents[StorageEvent],
-    dbCleanup: DatabaseCleanup
+    dbCleanup: DatabaseCleanup,
+    storagesStatistics: StoragesStatistics
 ) extends ProjectScopedResourcesDeletion(stopActor, currentEvents, dbCleanup, Storages.moduleType)(_.id) {
 
   override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
@@ -46,7 +47,8 @@ final class StoragesDeletion(
           }
         }
 
-      }
+      } >> storagesStatistics
+      .remove(projectRef)
       .as(ResourcesDataDeleted)
 
   override def deleteCaches(projectRef: ProjectRef): Task[CachesDeleted] =
@@ -62,13 +64,15 @@ object StoragesDeletion {
       cache: StoragesCache,
       agg: StoragesAggregate,
       storages: Storages,
-      dbCleanup: DatabaseCleanup
+      dbCleanup: DatabaseCleanup,
+      storagesStatistics: StoragesStatistics
   ): StoragesDeletion =
     new StoragesDeletion(
       cache,
       agg.stop,
       (project, offset) =>
         storages.currentEvents(project, offset).mapError(rej => new IllegalArgumentException(rej.reason)),
-      dbCleanup
+      dbCleanup,
+      storagesStatistics
     )
 }
