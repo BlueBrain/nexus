@@ -23,9 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
@@ -111,8 +110,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         agg: CompositeViewsAggregate,
         views: CompositeViews,
         dbCleanup: DatabaseCleanup,
-        sa: ServiceAccount
-    ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, sa)
+        coordinator: CompositeIndexingCoordinator
+    ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, coordinator)
   }
 
   many[ProjectReferenceFinder].add { (views: CompositeViews) =>
@@ -208,6 +207,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         esClient: ElasticSearchClient,
         blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
         cache: ProgressesCache @Id("composite-progresses"),
+        projection: Projection[Unit],
         config: CompositeViewsConfig
     ) =>
       new CompositeIndexingCleanup(
@@ -215,7 +215,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         esClient,
         config.blazegraphIndexing,
         blazeClient,
-        cache
+        cache,
+        projection
       )
   }
 

@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
-import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
-import ch.epfl.bluebrain.nexus.tests.{BaseSpec, Identity}
 import com.fasterxml.uuid.Generators
 import io.circe.Json
 import monix.bio.Task
@@ -14,22 +13,13 @@ import org.scalatest.Inspectors
 
 class EventsSpec extends BaseSpec with Inspectors {
 
-  private val orgId                          = genId()
-  private val orgId2                         = genId()
-  private val projId                         = genId()
-  private val id                             = s"$orgId/$projId"
-  private val id2                            = s"$orgId2/$projId"
-  private var initialEventId: Option[String] = None
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    deltaClient
-      .get[VersionBundle]("/version", Identity.ServiceAccount) { (version, _) =>
-        initialEventId = version.dependencies.cassandra.map(_ => Generators.timeBasedGenerator().generate().toString)
-        succeed
-      }
-      .void
-      .runSyncUnsafe()
+  private val orgId                               = genId()
+  private val orgId2                              = genId()
+  private val projId                              = genId()
+  private val id                                  = s"$orgId/$projId"
+  private val id2                                 = s"$orgId2/$projId"
+  private lazy val initialEventId: Option[String] = Option.when(isCassandra) {
+    Generators.timeBasedGenerator().generate().toString
   }
 
   "creating projects" should {
@@ -159,7 +149,7 @@ class EventsSpec extends BaseSpec with Inspectors {
       } yield succeed
     }
 
-    "fetch resource events filtered by project" in {
+    "fetch resource events filtered by project" in eventually {
       for {
         uuids <- adminDsl.getUuids(orgId, projId, BugsBunny)
         _     <- deltaClient.sseEvents(s"/resources/$id/events", BugsBunny, initialEventId, take = 12L) { seq =>

@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -12,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -119,6 +121,29 @@ object ElasticSearchView {
     override def metadata: Metadata = Metadata(Some(uuid))
 
     override def tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
+  }
+
+  object IndexingElasticSearchView {
+
+    /**
+      * Create the view index from the [[IndexingElasticSearchView]]
+      */
+    def resourceToViewIndex(
+        res: IndexingViewResource,
+        config: ElasticSearchViewsConfig
+    ): ViewIndex[IndexingElasticSearchView] =
+      ViewIndex(
+        res.value.project,
+        res.id,
+        res.value.uuid,
+        ElasticSearchViews.projectionId(res),
+        ElasticSearchViews.index(res, config.indexing),
+        res.rev,
+        res.deprecated,
+        res.value.resourceTag,
+        res.updatedAt,
+        res.value
+      )
   }
 
   /**

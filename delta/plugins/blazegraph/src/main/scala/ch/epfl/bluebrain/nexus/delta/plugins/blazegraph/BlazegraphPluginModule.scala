@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
@@ -104,8 +103,12 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[BlazegraphIndexingCleanup].from {
-    (client: BlazegraphClient @Id("blazegraph-indexing-client"), cache: ProgressesCache @Id("blazegraph-progresses")) =>
-      new BlazegraphIndexingCleanup(client, cache)
+    (
+        client: BlazegraphClient @Id("blazegraph-indexing-client"),
+        cache: ProgressesCache @Id("blazegraph-progresses"),
+        projection: Projection[Unit]
+    ) =>
+      new BlazegraphIndexingCleanup(client, cache, projection)
   }
 
   make[BlazegraphIndexingCoordinator].fromEffect {
@@ -185,9 +188,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         agg: BlazegraphViewsAggregate,
         views: BlazegraphViews,
         dbCleanup: DatabaseCleanup,
-        sa: ServiceAccount
+        coordinator: BlazegraphIndexingCoordinator
     ) =>
-      BlazegraphViewsDeletion(cache, agg, views, dbCleanup, sa)
+      BlazegraphViewsDeletion(cache, agg, views, dbCleanup, coordinator)
   }
 
   many[ProjectReferenceFinder].add { (views: BlazegraphViews) =>

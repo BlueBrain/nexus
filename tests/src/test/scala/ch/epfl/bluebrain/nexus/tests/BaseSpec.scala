@@ -7,7 +7,8 @@ import akka.http.scaladsl.model.headers._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.ByteString
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IORef, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.tests.BaseSpec._
 import ch.epfl.bluebrain.nexus.tests.HttpClient._
 import ch.epfl.bluebrain.nexus.tests.Identity.{allUsers, testClient, testRealm, _}
 import ch.epfl.bluebrain.nexus.tests.admin.AdminDsl
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.TestsConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.{AclDsl, PermissionDsl}
+import ch.epfl.bluebrain.nexus.tests.kg.VersionSpec.VersionBundle
 import ch.epfl.bluebrain.nexus.tests.kg.{ElasticSearchViewsDsl, KgDsl}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.scalalogging.Logger
@@ -25,7 +27,6 @@ import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import org.scalatest.{Assertion, BeforeAndAfterAll, OptionValues}
-import BaseSpec._
 
 import scala.concurrent.duration._
 
@@ -60,6 +61,15 @@ trait BaseSpec
   val adminDsl              = new AdminDsl(deltaClient, config)
   val kgDsl                 = new KgDsl(config)
   val elasticsearchViewsDsl = new ElasticSearchViewsDsl(deltaClient)
+
+  lazy val isCassandra: Boolean = deltaClient
+    .getJson[VersionBundle]("/version", Identity.ServiceAccount)
+    .map { version =>
+      version.dependencies.cassandra.isDefined
+    }
+    .runSyncUnsafe()
+
+  lazy val isPostgres: Boolean = !isCassandra
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 

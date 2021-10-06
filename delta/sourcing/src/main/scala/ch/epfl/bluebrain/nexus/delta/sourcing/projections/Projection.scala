@@ -23,6 +23,13 @@ import scala.collection.concurrent.TrieMap
 trait Projection[A] {
 
   /**
+    * Delete the progress and the errors for the given projection
+    * @param id
+    *   the projection identifier
+    */
+  def delete(id: ProjectionId): Task[Unit]
+
+  /**
     * Records progress against a projection identifier.
     *
     * @param id

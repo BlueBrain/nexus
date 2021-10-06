@@ -69,8 +69,12 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[GraphAnalyticsIndexingCleanup].from {
-    (client: ElasticSearchClient, cache: ProgressesCache @Id("graph-analytics-progresses")) =>
-      new GraphAnalyticsIndexingCleanup(client, cache)
+    (
+        client: ElasticSearchClient,
+        cache: ProgressesCache @Id("graph-analytics-progresses"),
+        projection: Projection[Unit]
+    ) =>
+      new GraphAnalyticsIndexingCleanup(client, cache, projection)
   }
 
   make[GraphAnalyticsIndexingCoordinator].fromEffect {

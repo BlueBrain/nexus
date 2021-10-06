@@ -35,7 +35,6 @@ import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
 trait ProjectsBehaviors {
   this: AnyWordSpecLike
@@ -96,10 +95,10 @@ trait ProjectsBehaviors {
   // this project must observe a cooldown before being created
   val projCoolDown = Label.unsafe("projCoolDown")
 
-  val cooldown = 42.minutes
+  val cooldown = epoch.plusSeconds(42 * 60L)
 
-  def creationCooldown(proj: ProjectRef): IO[FiniteDuration, Unit] =
-    IO.raiseWhen(proj == ProjectRef(org1, projCoolDown))(cooldown)
+  def creationCooldown(proj: ProjectRef): IO[ProjectCreationCooldown, Unit] =
+    IO.raiseWhen(proj == ProjectRef(org1, projCoolDown))(ProjectCreationCooldown(proj, cooldown))
 
   private val order = ResourceF.defaultSort[Project]
 
