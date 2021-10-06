@@ -65,8 +65,7 @@ object GraphAnalytics {
         ioJsonObjectContentOf(
           "elasticsearch/paths-relationships-aggregations.json",
           "shard_size" -> aggCfg.shardSize,
-          "size"       -> aggCfg.size,
-          "type"       -> "{{type}}"
+          "size"       -> aggCfg.size
         )
           .logAndDiscardErrors("ElasticSearch 'paths-relationships-aggregations.json' template not found")
           .memoizeOnSuccess

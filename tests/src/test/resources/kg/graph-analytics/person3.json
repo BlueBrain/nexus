@@ -1,0 +1,14 @@
+{
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/",
+    "alumniOf": {
+      "@type": "@id"
+    }
+  },
+  "@type": "Person",
+  "@id": "http://example.com/person3",
+  "givenName": "Carol",
+  "alumniOf": "http://example.com/epfl"
+
+}

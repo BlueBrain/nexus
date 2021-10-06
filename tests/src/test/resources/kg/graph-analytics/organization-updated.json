@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/"
+  },
+  "@id": "http://example.com/epfl",
+  "@type": "EducationalOrganization",
+  "address": "Rte Cantonale, 1015 Lausanne"
+}

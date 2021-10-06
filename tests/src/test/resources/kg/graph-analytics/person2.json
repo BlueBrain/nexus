@@ -1,0 +1,13 @@
+{
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/",
+    "worksFor": {
+      "@type": "@id"
+    }
+  },
+  "@type": "Person",
+  "@id": "http://example.com/person2",
+  "givenName": "Bob",
+  "worksFor": "http://example.com/epfl"
+}
