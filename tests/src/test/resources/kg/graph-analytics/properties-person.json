@@ -1,0 +1,28 @@
+{
+  "@context" : "https://bluebrain.github.io/nexus/contexts/properties.json",
+  "@id" : "http://schema.org/Person",
+  "_count" : 3,
+  "_name" : "Person",
+  "_properties" : [
+    {
+      "@id" : "http://schema.org/colleague",
+      "_count" : 1,
+      "_name" : "colleague"
+    },
+    {
+      "@id" : "http://schema.org/alumniOf",
+      "_count" : 1,
+      "_name" : "alumniOf"
+    },
+    {
+      "@id" : "http://schema.org/worksFor",
+      "_count" : 2,
+      "_name" : "worksFor"
+    },
+    {
+      "@id" : "http://schema.org/givenName",
+      "_count" : 3,
+      "_name" : "givenName"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "@context": {
+    "@base": "http://example.com/",
+    "@vocab": "http://schema.org/"
+  },
+  "@type": "Person",
+  "@id": "http://example.com/person4",
+  "givenName": "Dave"
+}
