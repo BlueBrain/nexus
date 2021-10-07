@@ -6,7 +6,6 @@ import akka.persistence.query.{NoOffset, Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
@@ -89,11 +88,9 @@ class IndexingStreamAwakeStreamSpec
       case _               => throw new IllegalArgumentException("")
     }
 
-  private val projection                                  = Projection.inMemory(ProjectsEventsInstantCollection.empty).accepted
-  implicit private val persistProgress                    = SaveProgressConfig(1, 5.millis)
-  implicit private val keyValueStore: KeyValueStoreConfig = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
-  private val ref                                         = SignallingRef[Task, Seq[(ProjectRef, FiniteDuration)]](Seq.empty).accepted
-  implicit private val onEventInstant                     = new OnEventInstant {
+  private val projection     = Projection.inMemory(ProjectsEventsInstantCollection.empty).accepted
+  private val ref            = SignallingRef[Task, Seq[(ProjectRef, FiniteDuration)]](Seq.empty).accepted
+  private val onEventInstant = new OnEventInstant {
     override def awakeIndexingStream(
         project: ProjectRef,
         prevEvent: Option[Instant],
@@ -104,8 +101,10 @@ class IndexingStreamAwakeStreamSpec
 
   "IndexingStreamAwakeStream" should {
 
+    val indexingStreamAwake =
+      IndexingStreamAwake(projection, stream, onEventInstant, AlwaysGiveUp, SaveProgressConfig(1, 5.millis)).accepted
+
     "trigger awake callbacks" in {
-      val _ = IndexingStreamAwake(projection, stream, onEventInstant).accepted
       eventually {
         ref.get.accepted shouldEqual List(
           project1 -> 0.millis,
@@ -128,6 +127,21 @@ class IndexingStreamAwakeStreamSpec
         )
       )
       currentProgress shouldEqual ProjectionProgress(Sequence(6), now.plusSeconds(6), 7, 0, 0, 0, values)
+    }
+
+    "delete the provided project" in {
+      indexingStreamAwake.remove(project1).accepted
+
+      eventually {
+        val currentProgress = projection.progress(IndexingStreamAwake.projectionId).accepted
+        val values          = ProjectsEventsInstantCollection(
+          Map(
+            project2 -> now.plusSeconds(4),
+            project3 -> now.plusSeconds(6)
+          )
+        )
+        currentProgress shouldEqual ProjectionProgress(Sequence(6), now.plusSeconds(6), 8, 0, 0, 0, values)
+      }
     }
   }
 

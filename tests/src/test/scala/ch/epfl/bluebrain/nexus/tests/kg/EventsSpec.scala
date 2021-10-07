@@ -13,13 +13,18 @@ import org.scalatest.Inspectors
 
 class EventsSpec extends BaseSpec with Inspectors {
 
-  private val orgId                               = genId()
-  private val orgId2                              = genId()
-  private val projId                              = genId()
-  private val id                                  = s"$orgId/$projId"
-  private val id2                                 = s"$orgId2/$projId"
-  private lazy val initialEventId: Option[String] = Option.when(isCassandra) {
-    Generators.timeBasedGenerator().generate().toString
+  private val orgId                          = genId()
+  private val orgId2                         = genId()
+  private val projId                         = genId()
+  private val id                             = s"$orgId/$projId"
+  private val id2                            = s"$orgId2/$projId"
+  private var initialEventId: Option[String] = None
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    initialEventId = Option.when(isCassandra) {
+      Generators.timeBasedGenerator().generate().toString
+    }
   }
 
   "creating projects" should {

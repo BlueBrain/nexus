@@ -8,7 +8,20 @@ import java.time.Instant
 /**
   * The instants for all the projects
   */
-final case class ProjectsEventsInstantCollection(value: Map[ProjectRef, Instant])
+final case class ProjectsEventsInstantCollection(value: Map[ProjectRef, Instant]) {
+
+  /**
+    * Remove the provided project from the collection
+    */
+  def -(projectRef: ProjectRef): ProjectsEventsInstantCollection = copy(value = value - projectRef)
+
+  /**
+    * Upsert the given project at the given instant
+    */
+  def upsert(projectRef: ProjectRef, instant: Instant): ProjectsEventsInstantCollection =
+    copy(value = value + (projectRef -> instant))
+
+}
 object ProjectsEventsInstantCollection {
 
   val empty: ProjectsEventsInstantCollection = ProjectsEventsInstantCollection(Map.empty)

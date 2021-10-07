@@ -186,8 +186,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         agg: ElasticSearchViewAggregate,
         views: ElasticSearchViews,
         dbCleanup: DatabaseCleanup,
-        coordinator: ElasticSearchIndexingCoordinator
-    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, coordinator)
+        coordinator: ElasticSearchIndexingCoordinator,
+        indexingStreamAwake: IndexingStreamAwake
+    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, coordinator, indexingStreamAwake)
   }
 
   many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>
@@ -238,10 +239,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         sc: Scheduler
     ) =>
       IndexingStreamAwake(
-        cfg,
         projection,
         eventLog.eventsByTag(Event.eventTag, _),
-        OnEventInstant.combine(onEventInstantsSet)
+        OnEventInstant.combine(onEventInstantsSet),
+        cfg.keyValueStore.retry,
+        cfg.persistProgressConfig
       )(uuidF, as, sc)
 
   }

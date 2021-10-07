@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy.logError
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
@@ -19,10 +18,20 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoo
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, SuccessMessage}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
-import monix.bio.Task
+import fs2.concurrent.Queue
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
-sealed trait IndexingStreamAwake
+sealed trait IndexingStreamAwake {
+
+  /**
+    * Remove the project from the project that should be handled
+    *
+    * @param project
+    *   the project to remove
+    */
+  def remove(project: ProjectRef): UIO[Unit]
+}
 
 object IndexingStreamAwake {
 
@@ -36,52 +45,48 @@ object IndexingStreamAwake {
     * will store its progress and compute the latest event instant for each project.
     */
   def apply(
-      config: ProjectsConfig,
       projection: Projection[ProjectsEventsInstantCollection],
       stream: StreamFromOffset,
-      onNewEvent: OnEventInstant
+      onEvent: OnEventInstant,
+      retry: RetryStrategyConfig,
+      persistProgress: SaveProgressConfig
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[IndexingStreamAwake] = {
-    implicit val keyValueStoreCfg: KeyValueStoreConfig  = config.keyValueStore
-    implicit val persistProgressCfg: SaveProgressConfig = config.persistProgressConfig
-    apply(projection, stream, onNewEvent).as(new IndexingStreamAwake {})
-  }
+    Queue.unbounded[Task, ProjectRef].flatMap { queue =>
+      def buildStream: Stream[Task, Unit] =
+        Stream
+          .eval(projection.progress(projectionId))
+          .flatMap { progress =>
+            val initial =
+              SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
+            Stream(stream(progress.offset).map(Right(_)), queue.dequeue.map(Left(_))).parJoinUnbounded
+              .evalScan(initial) { case (acc, current) =>
+                current.fold(
+                  project => Task.pure(acc.copy(value = acc.value - project)),
+                  envelope => {
+                    val event = envelope.event
+                    val value = acc.value upsert (event.project, envelope.instant)
+                    onEvent
+                      .awakeIndexingStream(event.project, acc.value.value.get(event.project), envelope.instant)
+                      .as(envelope.toMessage.copy(value = value))
+                  }
+                )
+              }
+              .persistProgress(progress, projectionId, projection, persistProgress)
+              .enableMetrics
+              .void
+          }
 
-  private[indexing] def apply(
-      projection: Projection[ProjectsEventsInstantCollection],
-      stream: StreamFromOffset,
-      onEvent: OnEventInstant
-  )(implicit
-      uuidF: UUIDF,
-      keyValueStoreConfig: KeyValueStoreConfig,
-      persistProgressConfig: SaveProgressConfig,
-      as: ActorSystem[Nothing],
-      sc: Scheduler
-  ): Task[Unit] = {
+      val retryStrategy =
+        RetryStrategy[Throwable](retry, _ => true, logError(logger, "IndexingStreamAwake"))
 
-    def buildStream: Stream[Task, Unit] =
-      Stream
-        .eval(projection.progress(projectionId))
-        .flatMap { progress =>
-          val initial =
-            SuccessMessage(progress.offset, progress.timestamp, "", 1, progress.value, Vector.empty)
-          stream(progress.offset)
-            .map { env => env.toMessage.as(env.event.project) }
-            .evalScan(initial) { case (acc, msg) =>
-              val evInstant = msg.timestamp
-              val evProject = msg.value
-              onEvent
-                .awakeIndexingStream(evProject, acc.value.value.get(evProject), evInstant)
-                .as(msg.as(ProjectsEventsInstantCollection(acc.value.value + (evProject -> evInstant))))
-            }
-            .persistProgress(progress, projectionId, projection, persistProgressConfig)
-            .enableMetrics
-            .void
-        }
-
-    val retryStrategy =
-      RetryStrategy[Throwable](keyValueStoreConfig.retry, _ => true, logError(logger, "IndexingStreamAwake"))
-
-    DaemonStreamCoordinator.run("IndexingStreamAwake", buildStream, retryStrategy)
+      DaemonStreamCoordinator
+        .run("IndexingStreamAwake", buildStream, retryStrategy)
+        .as(
+          new IndexingStreamAwake {
+            override def remove(project: ProjectRef): UIO[Unit] = queue.enqueue1(project).hideErrors
+          }
+        )
+    }
   }
 
 }
