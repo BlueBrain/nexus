@@ -374,8 +374,6 @@ object Resources {
           IO.raiseError(IncorrectRev(c.rev, s.rev))
         case s: Current if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
           IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
-        case s: Current if s.deprecated                                       =>
-          IO.raiseError(ResourceIsDeprecated(c.id))
         case s: Current if c.targetRev <= 0 || c.targetRev > s.rev            =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case s: Current                                                       =>

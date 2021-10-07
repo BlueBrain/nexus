@@ -361,6 +361,21 @@ class ResourcesRoutesSpec
       }
     }
 
+    "tag a deprecated resource" in {
+      val payload = json"""{"tag": "mytag", "rev": 6}"""
+      Post("/v1/resources/myorg/myproject/_/myid/tags?rev=6", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual resourceMetadata(
+          projectRef,
+          myId,
+          schemas.resources,
+          (nxv + "Custom").toString,
+          rev = 7L,
+          deprecated = true
+        )
+      }
+    }
+
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
 
