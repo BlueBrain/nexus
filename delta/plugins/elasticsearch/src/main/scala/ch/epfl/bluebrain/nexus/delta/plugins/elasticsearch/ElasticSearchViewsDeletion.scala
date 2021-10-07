@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.{CurrentEvents, ProjectScopedResourcesDeletion, StopActor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamAwake
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
 import monix.bio.Task
 
@@ -14,7 +15,8 @@ final class ElasticSearchViewsDeletion(
     stopActor: StopActor,
     currentEvents: CurrentEvents[ElasticSearchViewEvent],
     dbCleanup: DatabaseCleanup,
-    coordinator: ElasticSearchIndexingCoordinator
+    coordinator: ElasticSearchIndexingCoordinator,
+    indexingStreamAwake: IndexingStreamAwake
 ) extends ProjectScopedResourcesDeletion(stopActor, currentEvents, dbCleanup, ElasticSearchViews.moduleType)(_.id) {
 
   override def freeResources(projectRef: ProjectRef): Task[ResourcesDataDeleted] =
@@ -29,7 +31,8 @@ final class ElasticSearchViewsDeletion(
               Task.unit
           }
         }
-      }
+      } >> indexingStreamAwake
+      .remove(projectRef)
       .as(ResourcesDataDeleted)
 
   override def deleteCaches(projectRef: ProjectRef): Task[CachesDeleted] =
@@ -43,7 +46,8 @@ object ElasticSearchViewsDeletion {
       agg: ElasticSearchViewAggregate,
       views: ElasticSearchViews,
       dbCleanup: DatabaseCleanup,
-      coordinator: ElasticSearchIndexingCoordinator
+      coordinator: ElasticSearchIndexingCoordinator,
+      indexingStreamAwake: IndexingStreamAwake
   ): ElasticSearchViewsDeletion =
     new ElasticSearchViewsDeletion(
       cache,
@@ -51,6 +55,7 @@ object ElasticSearchViewsDeletion {
       (project, offset) =>
         views.currentEvents(project, offset).mapError(rej => new IllegalArgumentException(rej.reason)),
       dbCleanup,
-      coordinator
+      coordinator,
+      indexingStreamAwake
     )
 }
