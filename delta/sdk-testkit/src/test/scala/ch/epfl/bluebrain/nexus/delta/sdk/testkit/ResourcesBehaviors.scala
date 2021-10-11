@@ -396,9 +396,8 @@ trait ResourcesBehaviors {
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
-      "reject if deprecated" in {
-        resources.tag(myId3, projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
-        resources.tag("nxv:myid3", projectRef, None, tag, 2L, 2L).rejectedWith[ResourceIsDeprecated]
+      "succeed if deprecated" in {
+        resources.tag(myId3, projectRef, None, tag, 2L, 2L).accepted
       }
 
       "reject if schemas do not match" in {
@@ -578,6 +577,7 @@ trait ResourcesBehaviors {
         myId2 -> ResourceUpdated,
         myId3 -> ResourceDeprecated,
         myId  -> ResourceTagAdded,
+        myId3 -> ResourceTagAdded,
         myId4 -> ResourceDeprecated
       )
 

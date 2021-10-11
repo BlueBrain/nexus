@@ -340,6 +340,15 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
+        _ <- deltaClient
+               .delete[Json](s"/resources/$id1/_/test-resource:1?rev=4&indexing=sync", Rick) { (_, response) =>
+                 response.status shouldEqual StatusCodes.OK
+               }
+        _ <- deltaClient
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=5&indexing=sync", tag("v1.0.2", 5L), Rick) {
+                 (_, response) =>
+                   response.status shouldEqual StatusCodes.Created
+               }
       } yield succeed
     }
 
@@ -367,6 +376,17 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
           "resourceId" -> "1"
         ): _*
       )
+      val expectedTag3 = jsonContentOf(
+        "/kg/resources/simple-resource-response.json",
+        replacements(
+          Rick,
+          "priority"   -> "3",
+          "rev"        -> "5",
+          "resources"  -> s"${config.deltaUri}/resources/$id1",
+          "project"    -> s"${config.deltaUri}/projects/$id1",
+          "resourceId" -> "1"
+        ): _*
+      ) deepMerge Json.obj("_deprecated" -> Json.fromBoolean(true))
 
       for {
         _ <-
@@ -377,6 +397,10 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.0", Rick) { (json, response) =>
                response.status shouldEqual StatusCodes.OK
                filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag2)
+             }
+        _ <- deltaClient.get[Json](s"/resources/$id1/_/test-resource:1?tag=v1.0.2", Rick) { (json, response) =>
+               response.status shouldEqual StatusCodes.OK
+               filterMetadataKeys(json) should equalIgnoreArrayOrder(expectedTag3)
              }
       } yield succeed
     }
