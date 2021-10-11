@@ -83,7 +83,7 @@ object DatabaseCleanup {
         ) >>
           Task
             .deferFuture(
-              cleanup.deleteAll(persistenceIds, neverUsePersistenceIdAgain = false)
+              cleanup.deleteAll(persistenceIds, neverUsePersistenceIdAgain = true)
             )
             .void
       }
