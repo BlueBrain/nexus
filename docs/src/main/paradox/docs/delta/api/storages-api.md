@@ -52,6 +52,10 @@ local file-system structure and that Nexus has read and write access to the targ
 
 ### Remote disk storage
 
+@@@ warning
+The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.
+@@@
+
 This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system.
 This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph,
 Gluster, GPFS, Lustre, ...) that you don't want to mount directly on the system where Nexus Delta runs.

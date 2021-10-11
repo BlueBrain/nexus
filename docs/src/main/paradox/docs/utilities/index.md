@@ -46,6 +46,10 @@ neuroscience data.
 
 ### Nexus CLI
 
+@@@ warning
+The Nexus client is now deprecated and will be removed in an upcoming release.
+@@@
+
 A command line interface (CLI) to perform basic operations on a Nexus deployment.
 
 @link:[Source Code](https://github.com/BlueBrain/nexus-cli){ open=new }
