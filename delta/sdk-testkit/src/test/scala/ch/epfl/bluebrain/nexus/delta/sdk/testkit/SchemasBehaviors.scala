@@ -220,8 +220,9 @@ trait SchemasBehaviors {
           IncorrectRev(provided = 3L, expected = 2L)
       }
 
-      "reject if deprecated" in {
-        schemas.tag(mySchema3, projectRef, tag, 2L, 2L).rejectedWith[SchemaIsDeprecated]
+      "succeed if deprecated" in {
+        schemas.tag(mySchema3, projectRef, tag, 2L, 2L).accepted shouldEqual
+          SchemaGen.resourceFor(schema, subject = subject, rev = 3L, am = am, base = projBase, deprecated = true)
       }
 
       "reject if tag revision not found" in {
