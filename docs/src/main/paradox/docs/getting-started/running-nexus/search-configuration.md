@@ -128,6 +128,8 @@ the rest of the search configuration:
 - `plugins.search.indexing.settings={pathToFile}`- additional Elasticsearch settings that will be used in the
   ElasticSearch projection
 
+The search plugin must also be enabled using the `plugins.search.enabled=true` setting.
+
 These additional settings pertain to the configuration of the CompositeViews that are automatically provisioned by the
 search plugin. The @ref:[CompositeView API Reference](../../delta/api/views/composite-view-api.md) provides a detailed
 explanation on how CompositeViews work and how these options affect the generation of the indices.
