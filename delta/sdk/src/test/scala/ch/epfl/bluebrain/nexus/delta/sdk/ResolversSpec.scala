@@ -323,10 +323,18 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
         }
       }
 
-      "fail if the resolver is already deprecated" in {
+      "succeed if  the resolver is deprecated" in {
         forAll(List(inProjectCurrent.copy(deprecated = true), crossProjectCurrent.copy(deprecated = true))) { state =>
-          eval(state, tagResolver)
-            .rejectedWith[ResolverRejection] shouldEqual ResolverIsDeprecated(state.id)
+          eval(state, tagResolver).accepted shouldEqual ResolverTagAdded(
+            tagResolver.id,
+            project,
+            state.value.tpe,
+            targetRev = tagResolver.targetRev,
+            tag = tagResolver.tag,
+            3L,
+            epoch,
+            bob.subject
+          )
         }
       }
 
