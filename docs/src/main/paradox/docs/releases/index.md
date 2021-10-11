@@ -1,5 +1,7 @@
 @@@ index
 
+- @ref:[v1.6 Release Notes](v1.6-release-notes.md)
+- @ref:[v1.5 To v1.6 Migration](v1.5-to-v1.6-migration.md)
 - @ref:[v1.5 Release Notes](v1.5-release-notes.md)
 - @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[v1.4 Release Notes](v1.4-release-notes.md)
@@ -21,10 +23,10 @@ The latest stable release is **v1.5.1** released on **04.06.2021**.
 
 ## v1.6.0-M5 (05.10.2021)
 
- - Add basic auth to Elasticsearch client [#2794](https://github.com/BlueBrain/nexus/issues/2794)
- - Introduced graph-analytics plugin [#2800](https://github.com/BlueBrain/nexus/issues/2800), [#2814](https://github.com/BlueBrain/nexus/issues/2814), [#2812](https://github.com/BlueBrain/nexus/issues/2812), [#2827](https://github.com/BlueBrain/nexus/issues/2827), [#2837](https://github.com/BlueBrain/nexus/issues/2837)
- - Introduced automatic project-deletion plugin [#2778](https://github.com/BlueBrain/nexus/issues/2778), [#2826](https://github.com/BlueBrain/nexus/issues/2826)
- - Documentation for /v1/events endpoint [#2813](https://github.com/BlueBrain/nexus/issues/2813)
+ - Add basic auth to Elasticsearch client [#2786](https://github.com/BlueBrain/nexus/issues/2786)
+ - Introduced graph-analytics plugin [#2800](https://github.com/BlueBrain/nexus/pull/2800), [#2814](https://github.com/BlueBrain/nexus/pull/2814), [#2812](https://github.com/BlueBrain/nexus/pull/2812), [#2827](https://github.com/BlueBrain/nexus/pull/2827), [#2837](https://github.com/BlueBrain/nexus/pull/2837)
+ - Introduced automatic project-deletion plugin [#2778](https://github.com/BlueBrain/nexus/pull/2778), [#2826](https://github.com/BlueBrain/nexus/pull/2826)
+ - Documentation for /v1/events endpoint [#2813](https://github.com/BlueBrain/nexus/pull/2813)
  - Display values for which the count is null as greyed out (not selectable) in the column filter [#2642](https://github.com/BlueBrain/nexus/issues/2642)
  - Search bar behaviour improvements [#2731](https://github.com/BlueBrain/nexus/issues/2731)
  - Pagination improvements [#2732](https://github.com/BlueBrain/nexus/issues/2732)
@@ -32,7 +34,7 @@ The latest stable release is **v1.5.1** released on **04.06.2021**.
  - Filter improvements [#2783](https://github.com/BlueBrain/nexus/issues/2783)
  - BUGFIX: Youtube video plugin crashes if payload is missing some properties [#2765](https://github.com/BlueBrain/nexus/issues/2765)
  - BUGFIX: The Search column dropdown should always render in the viewport [#2782](https://github.com/BlueBrain/nexus/issues/2782)
- - BUGFIX: Project deletion fixes [#2821](https://github.com/BlueBrain/nexus/issues/2821), [#2832](https://github.com/BlueBrain/nexus/issues/2832), [#2833](https://github.com/BlueBrain/nexus/issues/2833)
+ - BUGFIX: Project deletion fixes [#2821](https://github.com/BlueBrain/nexus/pull/2821), [#2832](https://github.com/BlueBrain/nexus/pull/2832), [#2833](https://github.com/BlueBrain/nexus/pull/2833)
 
 ## v1.6.0-M4 (16.09.2021)
 
