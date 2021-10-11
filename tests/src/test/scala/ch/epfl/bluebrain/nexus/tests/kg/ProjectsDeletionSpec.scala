@@ -16,7 +16,6 @@ import java.io.File
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.reflect.io.Directory
-
 final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuable with AppendedClues {
 
   private val org   = genId()
@@ -328,7 +327,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
           root.`@type`.string.getOption(json).value shouldEqual "ProjectCreationCooldown"
         }
       } else {
-        // No cooldown for cassandra
+        // No cooldown for postgresql
         succeed
       }
     }
