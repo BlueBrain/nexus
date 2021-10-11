@@ -1,8 +1,10 @@
 @@@ index
 
 - @ref:[Configuration](configuration/index.md)
+- @ref:[Search Configuration](search-configuration.md)
 
 @@@
+
 # Running Nexus
 
 If you wish to quickly try out Nexus, we provide a @ref:[public sandbox](#using-the-public-sandbox). 
