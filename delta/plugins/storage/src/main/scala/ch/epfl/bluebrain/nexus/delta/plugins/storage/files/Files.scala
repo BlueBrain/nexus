@@ -761,7 +761,6 @@ object Files {
     def tag(c: TagFile) = state match {
       case Initial                                                => IO.raiseError(FileNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated                             => IO.raiseError(FileIsDeprecated(c.id))
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(FileTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
