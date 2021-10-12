@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -347,7 +350,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>{capacity}</code>: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-capacity</code> (None).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-max-file-size</code> (10G).</li>
 </ul>
-<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3>
+<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
+<p>The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.</p></div>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus Delta runs.</p>
 <p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
 <p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>.</p>

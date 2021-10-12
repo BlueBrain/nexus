@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -275,7 +278,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#indexing-data-in-other-systems" name="indexing-data-in-other-systems" class="anchor"><span class="anchor-link"></span></a>Indexing data in other systems</h1>
+<h1><a href="#indexing-data-in-other-systems" name="indexing-data-in-other-systems" class="anchor"><span class="anchor-link"></span></a>Indexing data in other systems</h1><div class="callout warning "><div class="callout-title">Warning</div>
+<p>This feature is now deprecated and will be removed in an upcoming release.</p></div>
 <h2><a href="#introduction" name="introduction" class="anchor"><span class="anchor-link"></span></a>Introduction</h2>
 <p>Blue Brain Nexus supports out of the box document and RDF graph based indices of the data through Elasticsearch, Sparql and Composite views. These cover a wide range of requirements but may not suffice in certain cases. New indexing capabilities can be added using external processes that subscribe to the global event log, enrich the information and project the result in arbitrary stores. </p>
 <p>By exposing over HTTP(S) the event log using the <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server-Sent Events W3C recommendation" target="_blank" rel="noopener noreferrer">Server-Sent Events W3C recommendation</a>, Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service communication for resource projections.</p><div class="half center">

@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
-<title>Nexus Delta · Blue Brain Nexus</title>
+<title>v1.5 To v1.6 Migration · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Nexus Delta
+v1.5 To v1.6 Migration
 </span>
 </div>
 </div>
@@ -155,7 +155,7 @@ BlueBrain/nexus
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
-    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="active page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -179,7 +179,7 @@ BlueBrain/nexus
     <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
   </ul></li>
   <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
-  <li><a href="../../docs/delta/index.html" class="active page">Nexus Delta</a>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
   <ul>
     <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
     <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
@@ -228,6 +228,13 @@ BlueBrain/nexus
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#v1-5-to-v1-6-migration" class="header">v1.5 To v1.6 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#delete-the-project-statistics-row-in-the-projections-progress-table" class="header">Delete the project statistics row in the projections_progress table</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -241,6 +248,22 @@ BlueBrain/nexus
 </div>
 </div>
 </div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#v1-5-to-v1-6-migration" class="header">v1.5 To v1.6 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html#delete-the-project-statistics-row-in-the-projections-progress-table" class="header">Delete the project statistics row in the projections_progress table</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
@@ -251,15 +274,16 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h1>
-<p>Blue Brain Nexus Delta is a low latency, scalable and secure system that realizes a range of functions to support data management and knowledge graph lifecycles.</p>
-<p>It is a central piece of the Nexus ecosystem of software components as it offers a set of foundational capabilities to the other components (<a href="../fusion/index.html">Nexus Fusion</a> and <a href="../forge.html">Nexus Forge</a>) around data and metadata storage, management, validation and consumption in a secure setting.</p>
-<p>Nexus Delta is developed <a href="https://github.com/BlueBrain/nexus">in the open</a> with a permissive licence (<a href="https://www.apache.org/licenses/LICENSE-2.0">Apache License, version 2.0</a>) using open standards and interoperable semantic web technologies like <a href="https://openid.net/connect/">OpenID Connect</a>, <a href="https://datatracker.ietf.org/doc/html/rfc6749">OAuth 2.0</a>, <a href="https://www.w3.org/RDF/">RDF</a>, <a href="https://www.w3.org/TR/json-ld11/">JSON-LD</a>, <a href="https://www.w3.org/TR/shacl/">SHACL</a>, <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html">Server-Sent Events</a>.</p>
-<p>It is quite versatile as it is able to handle very small to very large amounts of data on-premise or in the cloud and can be used in a large spectrum of industries being completely domain agnostic.</p>
-<p>Please refer to the <a href="architecture.html">architecture</a> and <a href="api/index.html">api reference</a> sections for more information about this component.</p>
+<h1><a href="#v1-5-to-v1-6-migration" name="v1-5-to-v1-6-migration" class="anchor"><span class="anchor-link"></span></a>v1.5 To v1.6 Migration</h1>
+<p>The v1.6 release of Delta includes a change on how project statistics are computed which requires to run a query against the Cassandra primary store.</p>
+<h2><a href="#delete-the-project-statistics-row-in-the-projections-progress-table" name="delete-the-project-statistics-row-in-the-projections-progress-table" class="anchor"><span class="anchor-link"></span></a>Delete the project statistics row in the projections_progress table</h2>
+<p>This command has to be run after stopping Delta 1.5 and before starting Delta 1.6</p>
+<pre><code>    DELETE FROM {delta_1_5}.projections_progress where projection_id = &#39;ProjectsCounts&#39;;
+</code></pre>
+<p>Note that as project statistics will be recomputed according to all events in the system, it may take some time for the statistics computation to reach back to the most recent events.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/index.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.5-to-v1.6-migration.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -275,7 +299,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/forge.html" title="Nexus Forge" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.6-release-notes.html" title="v1.6 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -284,17 +308,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Nexus Forge
+v1.6 Release Notes
 </span>
 </div>
 </a>
-<a href="../../docs/delta/architecture.html" title="Architecture" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.5-release-notes.html" title="v1.5 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Architecture
+v1.5 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

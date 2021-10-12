@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -276,27 +279,17 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h1><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h1>
 <p>Nexus provides global search functionality across all projects through the <a href="https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src" title="search plugin" target="_blank" rel="noopener noreferrer">search plugin</a>.</p><div class="callout warning "><div class="callout-title">Warning</div>
 <p>The search plugin is experimental and its functionality and API can change without notice.</p></div>
-<p>The plugin is disabled by default and requires following configuration:</p>
-<ul>
-  <li><code>plugins.search.enabled=true</code> - enables the plugin. Enabling the plugin will trigger creating a <code>CompositeView</code> in each project.</li>
-  <li><code>plugins.search.fields={pathToFile}</code> - specifies which fields are available for searching and/or aggregations. This also serves as configuration returned by the <code>/search/config</code> endpoint. It is currently only used by Nexus Fusion and can be omitted if not used. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/fields.json" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><code>plugins.search.indexing.context={pathToFile}</code> - the context which is used to transform the results of the SPARQL construct query into compacted JSON-LD which will be indexed in the ElasticSearch projection. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/search-context.json" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><code>plugins.search.indexing.mapping={pathToFile}</code> - the Elasticsearch mappings that will be used in the ElasticSearch projection. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/mapping.json" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><code>plugins.search.indexing.settings={pathToFile}</code>- additional Elasticsearch settings that will be used in the ElasticSearch projection. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/settings.json" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><code>plugins.search.indexing.query={pathToFile}</code> - SPARQL construct query that will be used to create triples which will be then compacted using the provided context and indexed in the ElasticSearch projection. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/construct-query.sparql" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><code>plugins.search.indexing.resource-types={pathToFile}</code> - the list of types which will be used to filter resources to be indexed in the ElasticSearch projection. Example can be found <a href="https://github.com/BlueBrain/nexus/blob/master/tests/docker/config/resource-types.json" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-</ul>
-<p>This plugin creates a <a href="views/composite-view-api.html">CompositeView</a> with <code>https://bluebrain.github.io/nexus/vocabulary/searchView</code> id in each project, which can be queried using the endpoint provided by the plugin.</p>
-<p>The view contains a single source(<a href="views/composite-view-api.html#projecteventstream">ProjectEventStream</a>) and a single <a href="views/composite-view-api.html#elasticsearchprojection">ElasticSearchProjection</a>. The mappings and settings for the projection are defined by <code>plugins.search.indexing.mapping</code> and <code>plugins.search.indexing.settings</code> configuration files. The resources are first filtered by types specified in <code>plugins.search.indexing.resource-types</code> and then indexed into intermediate SPARQL space. Then a SPARQL construct query defined by <code>plugins.search.indexing.query</code> is performed against the intermediate SPARQL space and the results are compacted using <code>plugins.search.indexing.context</code> and indexed into the Elasticsearch projection. More details about this process can be found in <a href="views/composite-view-api.html#processing-pipeline">CompositeViews Documentation</a>.</p>
+<p>For instructions on how to configure global search in Nexus and how it works please visit the <a href="../../getting-started/running-nexus/search-configuration.html">Search configuration</a> page.</p>
 <h2><a href="#query" name="query" class="anchor"><span class="anchor-link"></span></a>Query</h2>
 <pre><code>POST /v1/search/query
 {payload}
 </code></pre>
-<p>&hellip; where <code>{payload}</code> is an <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices. The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
+<p>&hellip; where <code>{payload}</code> is a <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html" title="Elasticsearch query" target="_blank" rel="noopener noreferrer">Elasticsearch query</a> and the response is forwarded from the underlying Elasticsearch indices.</p>
+<p>The endpoint filters the Elasticsearch projections from the underlying composite views and only returns results from indices to which user has access to, i.e. has <code>views/query</code> permission.</p>
 <h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
 <pre><code>GET /v1/search/config
 </code></pre>
-<p>This endpoint returns the search configuration. The contents of <code>plugins.search.fields</code> config file are the payload of this response.</p>
+<p>This endpoint returns the search configuration. The contents of <code>plugins.search.fields</code> config file is the payload of this response.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/search-api.md" title="Edit this page" class="md-source-file md-edit">
