@@ -80,7 +80,7 @@ Nexus Fusion saves descriptions as a simple string inside the Resource's `descri
 
 Markdown is rendered using [showdown](https://github.com/showdownjs/showdown), with templating provided by [handlebars](https://handlebarsjs.com/guide/).
 
-This featured is also used in the @ref:[Studio Description](studio.md#studio-description), and inside the @ref:[Search Result View Card](search.md#result-grid).
+This feature is also used in the @ref:[Studio Description](studio.md#studio-description).
 
 @@@ note
 
