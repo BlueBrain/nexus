@@ -1,5 +1,7 @@
 @@@ index
 
+- @ref:[v1.6 Release Notes](v1.6-release-notes.md)
+- @ref:[v1.5 To v1.6 Migration](v1.5-to-v1.6-migration.md)
 - @ref:[v1.5 Release Notes](v1.5-release-notes.md)
 - @ref:[v1.4 To v1.5 Migration](v1.4-to-v1.5-migration.md)
 - @ref:[v1.4 Release Notes](v1.4-release-notes.md)
@@ -17,99 +19,33 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.5.1** released on **04.06.2021**.
+//TODO update release date
+The latest stable release is **v1.6.0** released on **12.10.2021**.
 
-## v1.6.0-M5 (05.10.2021)
+## v1.6.0
 
- - Add basic auth to Elasticsearch client [#2794](https://github.com/BlueBrain/nexus/issues/2794)
- - Introduced graph-analytics plugin [#2800](https://github.com/BlueBrain/nexus/issues/2800), [#2814](https://github.com/BlueBrain/nexus/issues/2814), [#2812](https://github.com/BlueBrain/nexus/issues/2812), [#2827](https://github.com/BlueBrain/nexus/issues/2827), [#2837](https://github.com/BlueBrain/nexus/issues/2837)
- - Introduced automatic project-deletion plugin [#2778](https://github.com/BlueBrain/nexus/issues/2778), [#2826](https://github.com/BlueBrain/nexus/issues/2826)
- - Documentation for /v1/events endpoint [#2813](https://github.com/BlueBrain/nexus/issues/2813)
- - Display values for which the count is null as greyed out (not selectable) in the column filter [#2642](https://github.com/BlueBrain/nexus/issues/2642)
- - Search bar behaviour improvements [#2731](https://github.com/BlueBrain/nexus/issues/2731)
- - Pagination improvements [#2732](https://github.com/BlueBrain/nexus/issues/2732)
- - Table rows can be selected [#2742](https://github.com/BlueBrain/nexus/issues/2742)
- - Filter improvements [#2783](https://github.com/BlueBrain/nexus/issues/2783)
- - BUGFIX: Youtube video plugin crashes if payload is missing some properties [#2765](https://github.com/BlueBrain/nexus/issues/2765)
- - BUGFIX: The Search column dropdown should always render in the viewport [#2782](https://github.com/BlueBrain/nexus/issues/2782)
- - BUGFIX: Project deletion fixes [#2821](https://github.com/BlueBrain/nexus/issues/2821), [#2832](https://github.com/BlueBrain/nexus/issues/2832), [#2833](https://github.com/BlueBrain/nexus/issues/2833)
+### Deprecations
 
-## v1.6.0-M4 (16.09.2021)
+ - @ref:[Nexus client](../utilities/index.md#nexus-cli)
+ - @ref:[Indexing data in other systems](../utilities/index.md#indexing-data-in-other-systems)
+ - @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)              
 
- - Record and present deployment usage stats [#2528](https://github.com/BlueBrain/nexus/issues/2528)
- - Ability to clear all search results customisations [#2616](https://github.com/BlueBrain/nexus/issues/2616)
- - Allow re-ordering of columns for presentation purposes [#2643](https://github.com/BlueBrain/nexus/issues/2643)
- - Allow listings on resources outside the project scope [#2737](https://github.com/BlueBrain/nexus/issues/2737)
- - Add information about supported operations on the config field [#2740](https://github.com/BlueBrain/nexus/issues/2740)
- - Allow streams other than those related to views to leverage Kamon [#2771](https://github.com/BlueBrain/nexus/issues/2771)
- - Allow rdf parser to be configurable [#2792](https://github.com/BlueBrain/nexus/pull/2792)
- - BUGFIX: Invalid IRIs should be properly rejected [#2760](https://github.com/BlueBrain/nexus/issues/2760)
+### New features / enhancements
 
-## v1.6.0-M3 (02.09.2021)
-
-This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
-
- - Restrict volume of data through quotas (static configuration) [#2525](https://github.com/BlueBrain/nexus/issues/2525)
- - Delete projects implementation [#2720](https://github.com/BlueBrain/nexus/pull/2720)
- - Delete Projects: Check if project is being used anywhere before allowing deletion [#2723](https://github.com/BlueBrain/nexus/issues/2723)
- - Added endpoint to list projects deletions [#2744](https://github.com/BlueBrain/nexus/pull/2744)
- - Document projects deletions [#2746](https://github.com/BlueBrain/nexus/issues/2746)
- - /v1/events endpoint is missing [#2397](https://github.com/BlueBrain/nexus/issues/2397)
- - Ability to customise visible/hidden fields in search results [#2613](https://github.com/BlueBrain/nexus/issues/2613)
- - Ability to filter search results based on known values [#2614](https://github.com/BlueBrain/nexus/issues/2614)
- - Ability to sort search results on multiple columns [#2615](https://github.com/BlueBrain/nexus/issues/2615)
- - Show only Home and Studios in the sidebar for anonymous users [#2637](https://github.com/BlueBrain/nexus/issues/2637)
- - BUGFIX: Login is broken in Safari when you login after opening a link [#2493](https://github.com/BlueBrain/nexus/issues/2493)
- - BUGFIX: Opening File resources results in JSON payload error [#2569](https://github.com/BlueBrain/nexus/issues/2569)
- - BUGFIX: Delete Projects: Delete ProjectsCounts from deleted project [#2722](https://github.com/BlueBrain/nexus/issues/2722)
- 
-## v1.6.0-M2 (17.08.2021)
-
-This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
-
- - Initial full text search on all projects (based on access) [#2610](https://github.com/BlueBrain/nexus/issues/2610)
- - Restrict volume of data through quotas (static configuration) [#2525](https://github.com/BlueBrain/nexus/issues/2525)
- - Repurpose the search bar to enable jump to project [#2609](https://github.com/BlueBrain/nexus/issues/2609)
- - Ability to paginate search results based on user view port or preference [#2623](https://github.com/BlueBrain/nexus/issues/2623)
- - Mooc tutorial update [#2652](https://github.com/BlueBrain/nexus/pull/2652)
- - YouTube Video Viewer Plugin [#1697](https://github.com/BlueBrain/nexus/issues/1697)
- - BUGFIX: Fix database initialization failures [#2689](https://github.com/BlueBrain/nexus/issues/2689)
- - BUGFIX: Fix SVG import in Fusion [#1553](https://github.com/BlueBrain/nexus/issues/1553)
- - BUGFIX: Create Blazegraph namespace on view updates [#2668](https://github.com/BlueBrain/nexus/issues/2668)
- - BUGFIX: Cannot edit the JSON payload of a View [#1407](https://github.com/BlueBrain/nexus/issues/1407)
- - BUGFIX: Search Result Table doesn't always show values even though it should from (Facet Config) [#2160](https://github.com/BlueBrain/nexus/issues/2160)
- - BUGFIX: Indexing storages via synchronous indexing does not properly encrypt the source [#2658](https://github.com/BlueBrain/nexus/issues/2658)
-
-
-## v1.6.0-M1 (02.08.2021)
-
-This is a milestone release for v1.6.0, containing a series of bugfixes and improvements:
-
- - Add support for Accept-Encoding on delta [#2589](https://github.com/BlueBrain/nexus/issues/2589)
- - Add support for compression on the HttpClient [#2588](https://github.com/BlueBrain/nexus/issues/2588)
- - PDF Viewer Plugin [#2566](https://github.com/BlueBrain/nexus/issues/2566)
- - CSV, TSV Table Viewer [#2565](https://github.com/BlueBrain/nexus/issues/2565)
- - Support JWT "aud" (audience) claim [#2546](https://github.com/BlueBrain/nexus/issues/2546)
- - Enable consistent resource writes through the API [#2537](https://github.com/BlueBrain/nexus/issues/2537), [#2573](https://github.com/BlueBrain/nexus/issues/2573), [#1395](https://github.com/BlueBrain/nexus/issues/1395)
- - Use separate blazegraph client for API queries [#2530](https://github.com/BlueBrain/nexus/issues/2530)
- - Support multiple versions in the website documentation [#2529](https://github.com/BlueBrain/nexus/issues/2529)
- - Provision a default project for a user upon his first interaction with the API while authenticated [#2520](https://github.com/BlueBrain/nexus/issues/2520)
- - Passivate view streams after an idleTimeout [#2461](https://github.com/BlueBrain/nexus/issues/2461), [#2518](https://github.com/BlueBrain/nexus/issues/2518)
- - Reduce integration tests footprint on a local machine [#2491](https://github.com/BlueBrain/nexus/issues/2491)
- - Blazegraph query timeout [#2469](https://github.com/BlueBrain/nexus/issues/2469)
- - BUGFIX: ACLs payload not handled as expected [#2626](https://github.com/BlueBrain/nexus/issues/2626)
- - BUGFIX: Deprecating resources using the generic endpoint doesn't work [#2597](https://github.com/BlueBrain/nexus/issues/2597)
- - BUGFIX: Listings sort parameter only allows for metadata sorting [#2596](https://github.com/BlueBrain/nexus/issues/2596), [#2592](https://github.com/BlueBrain/nexus/issues/2592)
- - BUGFIX: Cannot download metadata or data through data cart [#2581](https://github.com/BlueBrain/nexus/issues/2581)
- - BUGFIX: Unsupported new grant types in keycloak [#2580](https://github.com/BlueBrain/nexus/issues/2580)
- - BUGFIX: Fusion: Saving/Deprecating views results in 404 [#2570](https://github.com/BlueBrain/nexus/issues/2570)
- - BUGFIX: Fix data table actions and layout [#2556](https://github.com/BlueBrain/nexus/issues/2556)
- - BUGFIX: Use enhanced notifications everywhere [#2550](https://github.com/BlueBrain/nexus/issues/2550)
- - BUGFIX: Defaultquery text search is acting up [#2536](https://github.com/BlueBrain/nexus/issues/2536)
- - BUGFIX: When a prefixmapping that collides with a valid Uri schema is defined, it is not used [#2532](https://github.com/BlueBrain/nexus/issues/2532)
- - BUGFIX: Delta client crashes at startup [#2521](https://github.com/BlueBrain/nexus/issues/2521)
- - BUGFIX: Metadata plugin doesn't show up when there is no `contribution.agent` [#2506](https://github.com/BlueBrain/nexus/issues/2506)
- - BUGFIX: Studios don't work with AggregateSparqlView [#2484](https://github.com/BlueBrain/nexus/issues/2484)
+ - Introduced a plugin to search among different projects
+ - Introduced PDF, CSV, TSV and Youtube Viewer Fusion Plugins
+ - Add basic authentication to access a secured Elasticsearch cluster
+ - Handle user-defined queries to Blazegraph with a dedicated client
+ - Introduced a plugin to analyze properties and relationships of resources within a project
+ - Synchronous indexing
+ - Listing of resources outside the project scope
+ - The RDF parser to validate resources is now configurable
+ - Automatic project provisioning
+ - Introduced quotas on projects
+ - Project deletion (on demand and automatic)
+ - Tagging resources after deprecation
+            
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).  
 
 ## v1.5.1 (04.06.2021)
 

@@ -46,6 +46,10 @@ neuroscience data.
 
 ### Nexus CLI
 
+@@@ warning
+The Nexus client is now deprecated and will be removed in an upcoming release.
+@@@
+
 A command line interface (CLI) to perform basic operations on a Nexus deployment.
 
 @link:[Source Code](https://github.com/BlueBrain/nexus-cli){ open=new }
@@ -110,6 +114,10 @@ Another utility packages was written to facilitate chained calling behavior, whi
 - @link:[nexus-link](https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-link/README.md#readme){ open=new }
 
 ### Indexing data in other systems
+
+@@@ warning
+This feature is now deprecated and will be removed in an upcoming release.
+@@@
 
 Nexus also provides a CLI tool to index data into other systems. PostgreSQL and InfluxDB are currently supported.
 More information about this tool can be found @ref:[here](projections.md).

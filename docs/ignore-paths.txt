@@ -1,4 +1,5 @@
 https://bluebrain.github.io/nexus/contexts/metadata.json
+https://book.validatingrdf.com/
 https://dl.acm.org/.*
 http://example.com/.*
 https://github.com/BlueBrain/nexus-web/blob/main/README.md.*

@@ -1,5 +1,9 @@
 # Indexing data in other systems
 
+@@@ warning
+This feature is now deprecated and will be removed in an upcoming release.
+@@@
+
 ## Introduction
 
 Blue Brain Nexus supports out of the box document and RDF graph based indices of the data through Elasticsearch, Sparql and

@@ -43,6 +43,10 @@ There are many other configuration parameters to customize the behaviour of the 
 
 Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sourcing/src/main/resources/scripts/postgres.ddl){ open=new } should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: `app.database.postgres.tables-autocreate=true`
 
+# RDF parser
+
+The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[now configurable](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L84) to enable different levels of strictness.
+
 ## Service account configuration
 
 Nexus Delta uses a service account to perform automatic tasks under the hood. Examples of it are:
@@ -85,6 +89,8 @@ The elasticsearch plugin configuration can be found @link:[here](https://github.
 The most important flag are:
 * `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
 * `plugins.elasticsearch.credentials.username` and `plugins.elasticsearch.credentials.password` to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.
+
+Please refer to the @link[Elasticsearch configuration](https://www.elastic.co/guide/en/elasticsearch/reference/current/secure-cluster.html) which describes the different steps to achieve this.
 
 ### Blazegraph views plugin configuration
 
