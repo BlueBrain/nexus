@@ -27,6 +27,7 @@ The latest stable release is **v1.6.0** released on **12.10.2021**.
 ### Deprecations
 
  - @ref:[Nexus client](../utilities/index.md#nexus-cli)
+ - @ref:[Indexing data in other systems](../utilities/index.md#indexing-data-in-other-systems)
  - @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)              
 
 ### New features / enhancements

@@ -115,5 +115,9 @@ Another utility packages was written to facilitate chained calling behavior, whi
 
 ### Indexing data in other systems
 
+@@@ warning
+This feature is now deprecated and will be removed in an upcoming release.
+@@@
+
 Nexus also provides a CLI tool to index data into other systems. PostgreSQL and InfluxDB are currently supported.
 More information about this tool can be found @ref:[here](projections.md).
