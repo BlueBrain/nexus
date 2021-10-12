@@ -336,8 +336,6 @@ object Schemas {
           IO.raiseError(SchemaNotFound(c.id, c.project))
         case s: Current if s.rev != c.rev                          =>
           IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated                            =>
-          IO.raiseError(SchemaIsDeprecated(c.id))
         case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
           IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
         case s: Current                                            =>

@@ -491,7 +491,8 @@ trait ResolversBehaviors {
       }
     }
 
-    val tag = TagLabel.unsafe("my-tag")
+    val tag  = TagLabel.unsafe("my-tag")
+    val tag2 = TagLabel.unsafe("my-tag2")
 
     "tagging a resolver" should {
       "succeed" in {
@@ -682,14 +683,23 @@ trait ResolversBehaviors {
         }
       }
 
-      "fail if we try to tag it" in {
+      "tag it after it has been deprecated" in {
         forAll(
           List(
-            nxv + "in-project",
-            nxv + "cross-project"
+            nxv + "in-project"    -> updatedInProjectValue,
+            nxv + "cross-project" -> updatedCrossProjectValue
           )
-        ) { id =>
-          resolvers.tag(id, projectRef, tag, 3L, 4L).rejected shouldEqual ResolverIsDeprecated(id)
+        ) { case (id, value) =>
+          resolvers.tag(id, projectRef, tag2, 4L, 4L).accepted shouldEqual resolverResourceFor(
+            id,
+            project,
+            value,
+            sourceWithoutId(value),
+            tags = Map(tag -> 1L, tag2 -> 4),
+            rev = 5L,
+            subject = bob.subject,
+            deprecated = true
+          )
         }
       }
     }
@@ -699,8 +709,8 @@ trait ResolversBehaviors {
       project,
       updatedInProjectValue,
       sourceWithoutId(updatedInProjectValue),
-      tags = Map(tag -> 1L),
-      rev = 4L,
+      tags = Map(tag -> 1L, tag2 -> 4),
+      rev = 5L,
       subject = bob.subject,
       deprecated = true
     )
@@ -709,8 +719,8 @@ trait ResolversBehaviors {
       project,
       updatedCrossProjectValue,
       sourceWithoutId(updatedCrossProjectValue),
-      tags = Map(tag -> 1L),
-      rev = 4L,
+      tags = Map(tag -> 1L, tag2 -> 4),
+      rev = 5L,
       subject = bob.subject,
       deprecated = true
     )
@@ -724,9 +734,28 @@ trait ResolversBehaviors {
       }
 
       "succeed by rev" in {
-        forAll(List(inProjectExpected, crossProjectExpected)) { resource =>
+        val inProjectExpectedByRev    = resolverResourceFor(
+          nxv + "in-project",
+          project,
+          updatedInProjectValue,
+          sourceWithoutId(updatedInProjectValue),
+          tags = Map(tag -> 1L),
+          rev = 3L,
+          subject = bob.subject
+        )
+        val crossProjectExpectedByRev = resolverResourceFor(
+          nxv + "cross-project",
+          project,
+          updatedCrossProjectValue,
+          sourceWithoutId(updatedCrossProjectValue),
+          tags = Map(tag -> 1L),
+          rev = 3L,
+          subject = bob.subject
+        )
+
+        forAll(List(inProjectExpectedByRev, crossProjectExpectedByRev)) { resource =>
           resolvers.fetch(IdSegmentRef(resource.value.id, 3), projectRef).accepted shouldEqual
-            resource.copy(rev = 3L, deprecated = false)
+            resource
         }
       }
 
@@ -757,7 +786,7 @@ trait ResolversBehaviors {
 
       "fail if revision does not exist" in {
         resolvers.fetch(IdSegmentRef(nxv + "in-project", 30), projectRef).rejected shouldEqual
-          RevisionNotFound(30L, 4L)
+          RevisionNotFound(30L, 5L)
       }
 
       "fail if tag does not exist" in {
