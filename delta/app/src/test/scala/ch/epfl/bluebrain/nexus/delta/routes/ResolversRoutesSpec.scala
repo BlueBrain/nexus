@@ -419,16 +419,23 @@ class ResolversRoutesSpec
         }
       }
 
-      "prevent adding new tags" in {
+      "allow adding new tags" in {
+        val newTagPayload = json"""{"tag": "my-tag2", "rev": 4}"""
         Post(
           s"/v1/resolvers/${project.ref}/in-project-put/tags?rev=4",
-          tagPayload.toEntity
+          newTagPayload.toEntity
         ) ~> asAlice ~> routes ~> check {
-          status shouldEqual StatusCodes.BadRequest
-          response.asJson shouldEqual jsonContentOf(
-            "/resolvers/errors/resolver-deprecated.json",
-            "id" -> (nxv + "in-project-put")
-          )
+          status shouldEqual StatusCodes.Created
+          response.asJson shouldEqual
+            resolverMetadata(
+              nxv + "in-project-put",
+              InProject,
+              project.ref,
+              rev = 5L,
+              deprecated = true,
+              createdBy = bob,
+              updatedBy = alice
+            )
         }
       }
 
@@ -467,7 +474,7 @@ class ResolversRoutesSpec
         .deepMerge(json"""{"priority": $priority}""")
         .removeKeys("@context")
 
-    val inProjectLast = inProject(nxv + "in-project-put", 34, 4, deprecated = true, updatedBy = alice)
+    val inProjectLast = inProject(nxv + "in-project-put", 34, 5, deprecated = true, updatedBy = alice)
 
     val crossProjectUseCurrentLast = crossProjectUseCurrentPayload
       .deepMerge(json"""{"priority": 35}""")
@@ -619,7 +626,8 @@ class ResolversRoutesSpec
         forAll(endpoints) { endpoint =>
           Get(endpoint) ~> asBob ~> routes ~> check {
             status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}]}""".addContext(contexts.tags)
+            response.asJson shouldEqual json"""{"tags": [{"rev": 1, "tag": "my-tag"}, {"rev": 4, "tag": "my-tag2"}]}"""
+              .addContext(contexts.tags)
           }
         }
       }
@@ -641,7 +649,7 @@ class ResolversRoutesSpec
           response.asJson shouldEqual jsonContentOf(
             "/errors/revision-not-found.json",
             "provided" -> 10L,
-            "current"  -> 4L
+            "current"  -> 5L
           )
         }
       }

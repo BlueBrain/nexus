@@ -466,9 +466,6 @@ object Resolvers {
       // Revision to tag is invalid
       case s: Current if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      // State is deprecated
-      case s: Current if s.deprecated                            =>
-        IO.raiseError(ResolverIsDeprecated(s.id))
       case s: Current                                            =>
         instant.map { now =>
           ResolverTagAdded(

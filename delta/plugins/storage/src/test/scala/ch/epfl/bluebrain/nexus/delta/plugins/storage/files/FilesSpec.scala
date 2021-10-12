@@ -114,6 +114,12 @@ class FilesSpec
           FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
       }
 
+      "create a new event from a TagFile command when deprecated" in {
+        val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
+        eval(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
+          FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
+      }
+
       "create a new event from a DeprecateFile command" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2)
         eval(current, DeprecateFile(id, projectRef, 2, alice)).accepted shouldEqual
@@ -162,7 +168,6 @@ class FilesSpec
         val commands = List(
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
-          TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -657,34 +662,60 @@ class FilesSpec
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
       }
 
+      "allow tagging after deprecation" in {
+        files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted shouldEqual
+          FileGen.resourceFor(
+            file1,
+            projectRef,
+            diskRev,
+            attributes(size = 20),
+            rev = 6,
+            tags = Map(tag -> 4),
+            createdBy = bob,
+            updatedBy = bob,
+            deprecated = true
+          )
+      }
+
     }
 
     "fetching a file" should {
       val resourceRev1 =
         FileGen.resourceFor(file1, projectRef, diskRev, attributes("myfile.txt"), createdBy = bob, updatedBy = bob)
 
-      val resourceRev5 = FileGen.resourceFor(
+      val resourceRev4 = FileGen.resourceFor(
         file1,
         projectRef,
         diskRev,
         attributes(size = 20),
-        rev = 5,
+        rev = 4,
         tags = Map(tag -> 1),
+        createdBy = bob,
+        updatedBy = bob
+      )
+
+      val resourceRev6 = FileGen.resourceFor(
+        file1,
+        projectRef,
+        diskRev,
+        attributes(size = 20),
+        rev = 6,
+        tags = Map(tag -> 4),
         deprecated = true,
         createdBy = bob,
         updatedBy = bob
       )
 
       "succeed" in {
-        files.fetch(file1, projectRef).accepted shouldEqual resourceRev5
+        files.fetch(file1, projectRef).accepted shouldEqual resourceRev6
       }
 
       "succeed by tag" in {
-        files.fetch(IdSegmentRef(file1, tag), projectRef).accepted shouldEqual resourceRev1
+        files.fetch(IdSegmentRef(file1, tag), projectRef).accepted shouldEqual resourceRev4
       }
 
       "succeed by rev" in {
-        files.fetch(IdSegmentRef(file1, 5), projectRef).accepted shouldEqual resourceRev5
+        files.fetch(IdSegmentRef(file1, 6), projectRef).accepted shouldEqual resourceRev6
         files.fetch(IdSegmentRef(file1, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
@@ -694,8 +725,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetch(IdSegmentRef(file1, 6), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 6, current = 5)
+        files.fetch(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 7, current = 6)
       }
 
       "fail if it doesn't exist" in {
@@ -725,7 +756,7 @@ class FilesSpec
       "succeed by tag" in {
         val response = files.fetchContent(IdSegmentRef(file1, tag), projectRef).accepted
         consume(response.content) shouldEqual content
-        response.filename shouldEqual "myfile.txt"
+        response.filename shouldEqual "file.txt"
         response.contentType shouldEqual `text/plain(UTF-8)`
       }
 
@@ -742,8 +773,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetchContent(IdSegmentRef(file1, 6), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 6, current = 5)
+        files.fetchContent(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 7, current = 6)
       }
 
       "fail if it doesn't exist" in {

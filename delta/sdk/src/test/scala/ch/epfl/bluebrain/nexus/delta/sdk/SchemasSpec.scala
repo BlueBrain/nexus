@@ -142,7 +142,6 @@ class SchemasSpec
         val current = SchemaGen.currentState(schema, deprecated = true)
         val list    = List(
           current -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 1L, subject),
-          current -> TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("a"), 1L, subject),
           current -> DeprecateSchema(myId, project.value.ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
