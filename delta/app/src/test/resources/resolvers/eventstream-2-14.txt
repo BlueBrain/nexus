@@ -45,3 +45,7 @@ id:13
 data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/resolvers.json"],"@type":"ResolverDeprecated","_constrainedBy":"https://bluebrain.github.io/nexus/schemas/resolvers.json","_instant":"1970-01-01T00:00:00Z","_organizationUuid":"{{uuid}}","_project":"http://localhost/v1/projects/org/project","_projectUuid":"{{uuid}}","_resolverId":"https://bluebrain.github.io/nexus/vocabulary/in-project-put","_resourceId":"https://bluebrain.github.io/nexus/vocabulary/in-project-put","_rev":4,"_subject":"http://localhost/v1/realms/wonderland/users/alice","_types":["https://bluebrain.github.io/nexus/vocabulary/Resolver","https://bluebrain.github.io/nexus/vocabulary/InProject"]}
 event:ResolverDeprecated
 id:14
+
+data:{"@context":["https://bluebrain.github.io/nexus/contexts/metadata.json","https://bluebrain.github.io/nexus/contexts/resolvers.json"],"@type":"ResolverTagAdded","tag":"my-tag2","targetRev":4,"_constrainedBy":"https://bluebrain.github.io/nexus/schemas/resolvers.json","_instant":"1970-01-01T00:00:00Z","_organizationUuid":"{{uuid}}","_project":"http://localhost/v1/projects/org/project","_projectUuid":"{{uuid}}","_resolverId":"https://bluebrain.github.io/nexus/vocabulary/in-project-put","_resourceId":"https://bluebrain.github.io/nexus/vocabulary/in-project-put","_rev":5,"_subject":"http://localhost/v1/realms/wonderland/users/alice","_types":["https://bluebrain.github.io/nexus/vocabulary/Resolver","https://bluebrain.github.io/nexus/vocabulary/InProject"]}
+event:ResolverTagAdded
+id:15
