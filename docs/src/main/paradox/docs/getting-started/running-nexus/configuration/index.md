@@ -13,7 +13,6 @@ In terms of JVM pool memory allocation, we recommend setting the following value
 
 In order to successfully run Nexus Delta there is a minimum set of configuration flags that need to be specified
 
-
 ## Http configuration
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L9){ open=new } of the configuration defines the binding address and port where the service will be listening.
@@ -56,6 +55,20 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 - Creating default views on project creation.
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L394){ open=new } of the configuration defines the service account configuration.
+
+## Automatic project provisioning
+
+Automatic project provisioning allows to create a dedicated project for users the first time they connect to Delta that is to
+say the first time, they query the project listing endpoints.
+
+The generated project label will be:
+
+* The current username where only non-diacritic alphabetic characters (`[a-zA-Z]`), numbers, dashes and underscores will be preserved
+* This resulting string is then truncated to 64 characters if needed.
+
+This feature can be turned on via the flag `app.projects.automatic-provisioning.enabled`.
+
+@link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L223){ open=new } of the configuration defines the project provisioning configuration.
 
 ## Encryption configuration
 
