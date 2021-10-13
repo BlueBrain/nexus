@@ -1,353 +1,94 @@
 # Search
 
-The Search SubApp enables users to search or filter data stored in Nexus Delta in various projects in a configurable way. It's intended as a global search tool for your Nexus instance.
-
-![Search SubApp](assets/search-breakdown.png)
-
-The administrator who configures one or more `SearchConfigs` for their Search SubApp has power over what data is searchable, and how it will render in the Search interface.
+Search provides functionality to search across all data in Nexus. Search is accessible via the Search menu option and the Search bar.
 
 @@@ note
 
-### Powered by Elastic Search Views
-
-This feature leverages the Elastic Search indexing capability of Nexus Delta. It uses the `SearchConfig` to decide how to query an @ref:[Elastic Search View](../delta/api/views/elasticsearch-view-api.md). Because it depends on the @ref:[Elastic Search View](../delta/api/views/elasticsearch-view-api.md) feature, make sure that your `mappings` property is properly configured to index the data in the way you expect. An incorrectly configured `mapping` property might not show the appropriate `Facets` you might expect, or it could simply result in nothing shown.
-
-We recommend using an @ref:[Aggregate Search View](../delta/api/views/aggregated-es-view-api.md), so that you can query multiple projects at once. However, this feature is limited to 10 to 15 projects, depending on their index name length.
+Search requires Delta configuration. See the Delta Search documentation for details:  @ref:[Delta Search Documentation](../delta/api/search-api.md)
 
 @@@
-
-## Search Config
-
-### Where are SearchConfigs stored?
-
-Search configs are saved in a project as a simple @ref:[Resource](../delta/api/resources-api.md), with a type `nxv:SearchConfig`.
-
-Nexus Fusion must be made aware of which project to look for these resources, either by using the env var `SEARCH_CONFIG_PROJECT`
-
-```bash
-  SEARCH_CONFIG_PROJECT=my-org/my-project
-```
-
-or Nexus Fusion will use the default `SEARCH_CONFIG_PROJECT` value, `webapps/nexus-web`
-
-Signature:
-
-```
-{
-  // A unique ID
-  id: string;
-  // A label to show in the interface to users
-  label: string;
-  // Which view will be used to query against? can be of type AggregatedElasticSearchView or ElasticSearchView
-  view: string;
-  // An optional description
-  description?: string;
-  // An array of facet configurations that will drive the facet panel
-  facets?: FacetConfig[];
-  // An array of Result Table Fields configurations that will dictate the Result Table rendering
-  fields?: ResultTableFields[];
-};
-```
-
-### Example SearchConfig
-
-```
-{
-  "@type": [
-    "nxv:SearchConfig"
-  ],
-  "description": "global dataset search",
-  "facets": [
-    {
-      "key": "brainLocationLabel",
-      "label": "Brain Region",
-      "propertyKey": "brainLocation.brainRegion.label.raw",
-      "type": "terms"
-    },
-    {
-      "key": "objectOfStudyLabel",
-      "label": "Object of Study",
-      "propertyKey": "objectOfStudy.label.raw",
-      "type": "terms"
-    },
-    {
-      "key": "type",
-      "label": "Type",
-      "propertyKey": "@type",
-      "type": "terms"
-    }
-  ],
-  "fields": [
-    {
-      "dataIndex": "label",
-      "displayIndex": 0,
-      "key": "label",
-      "title": "Label"
-    },
-    {
-      "dataIndex": "@type",
-      "displayIndex": 3,
-      "key": "@type",
-      "sortable": true,
-      "title": "Type"
-    },
-    {
-      "dataIndex": "objectOfStudy.label",
-      "displayIndex": 2,
-      "key": "objectOfStudyLabel",
-      "title": "Object of Study"
-    },
-    {
-      "dataIndex": "brainLocation.brainRegion.label",
-      "displayIndex": 1,
-      "key": "brain-region",
-      "title": "Brain Region"
-    }
-  ],
-  "label": "MINDS",
-  "view": "https://my-nexus-deployment.com/v1/views/webapps/nexus-web/my-view-id"
-}
-```
-
-### Facets
-
-The Facet portion of the config dictates what will render in the left column of the Search interface that allows users to toggle facets or filters to narrow down their search. Each facet category is generated using an Elastic Search Aggregated query, and so far only supports [`term` aggregated queries](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html), but may be expanded in the future to allow filtering search against things like dates.
-
-Because of the `terms` limitation, it's only possible to create facets with the Elastic Search Mapping type of `object` or `text` and `keyword`
-
-Signature:
-
-```
-  {
-    // The full path to target property, according to the elastic search mapping
-    propertyKey: string;
-    // A unique key to distinguish against other Facet objects
-    key: string;
-    // The label to be used in the interface
-    label: string;
-    // The only available facet type
-    type: "terms";
-    // An optional value to sort the facets in the interface. A lower displayIndex value will render this option higher in the interface
-    // Note, if this value is blank, the label will be used to sort alphabetically to be consistent.
-    displayIndex?: number;
-  }[]
-```
-
-#### Default Facets Configuration
-
-The Facet configs are an optional field. The default will allow users to filter by project and @type.
-
-```
-{
-  propertyKey: '_project',
-  key: 'projects',
-  label: 'Projects',
-  type: 'terms',
-  displayIndex: 0,
-},
-{
-  propertyKey: '@type',
-  key: 'types',
-  label: 'Types',
-  type: 'terms',
-  displayIndex: 1,
-}
-```
-
-### Fields
-
-The Fields property of the Search Config allows users to specify what properties to show in the Result Table. They correspond to table columns.
-
-Signature:
-
-```
-{
-  // The table column header title
-  title: string;
-  // The property to access, in dot notation (eg: "brainLocation.brainRegion.label" )
-  dataIndex: string;
-  // Optionally make the field sortable
-  sortable?: boolean;
-  // A unique key to identify this column
-  key: string;
-  // Lower numbers will appear to the left of the table. If no displayIndex is given, it will sort alphabetically by the "key" property
-  displayIndex: number;
-}[]
-```
-
-#### Special properties
-
-The table will render the value found via the dataIndex property as simple text. However, there are some special rendering logic for the following keys, which will ignore the `dataIndex` property of the config.
-
-- project: Will render the org and project info
-- @type: Will render a list of @types as pills
-- schema: Will render the schema (`_constrainedBy`) field with a tooltip
-- label: Will render a human-readable label using the following:
-  ```
-  resource.prefLabel ||
-  resource.label ||
-  resource.name ||
-  resource["@id"]
-  ```
-- description: Will render a description using the enriched markdown template viewer (see @ref:[Description Viewer](admin.md#resource-descriptions))
-
-#### Default Fields Configuration
-
-If no fields property exists on the `SearchConfig`, the following default values will be used:
-
-```
-{
-  title: 'Label',
-  dataIndex: 'label',
-  key: 'label',
-  displayIndex: 0,
-},
-{
-  title: 'Project',
-  dataIndex: '_project',
-  sortable: true,
-  key: 'project',
-  displayIndex: 1,
-},
-{
-  title: 'Types',
-  dataIndex: '@type',
-  sortable: true,
-  key: '@type',
-  displayIndex: 3,
-},
-```
-
-## Search Results
-
-The Search Results body displays the resources that match the search / filtering criteria in two ways: a Results Grid or a Results Table
-
-### Result Grid
-
-The Result Grid displays matched `Resources` in preview cards, to show off visual content of Data stored in Nexus Delta. These preview cards can be used to show snippets of code or preview images, for example.
-
-![Results Grid](assets/search-grid.png)
-
-#### Result View Cards
-
-Each result card is rendered using an expanded version of the markdown + handlebars rendering used elsewhere in Nexus Fusion, but with some expanded functionality.
-
-The Search SubApp will attempt to render a card using a markdown + handlebar template string found in the `previewTemplate` property of that `Resource`. If no `previewTemplate` property is found, it will render using the default template string:
-
-```
-<div style="display: block">
-    <h3 class="title">{{ resourceLabel }}</h3>
-    {{#if description}}
-    <div class="description">
-        <div class="overlay"></div>
-        {{{ description }}}
-    </div>
-    {{/if}}
-    <div style="display:flex;" class="types">
-        {{#each type}}
-            <li>
-                <span class="ant-tag">{{this}}</span>
-            </li>
-        {{/each}}
-    </div>
-     {{#if fileData }}
-        <div class="file-data">
-           <span>name: <b>{{ _filename }}</b></span><br/>
-           <span>size: <b>{{ fileData.humanReadableFileSize }}</b></span><br/>
-           <span>type: <b>{{ _mediaType }}</b></span><br/>
-        </div>
-    {{/if}}
-    <div>
-    <span>{{ resourceAdminData.org }}</span> | <span>{{ resourceAdminData.project }}</span></div>
-</div>
-```
-
-As you can see above, instead of just passing the `Resource` object to the template, the template has access to a few more properties:
-
-```
-// Properties offered in the Preview Template
-{
-  ...resource,
-  // a human-readable label created from these values:
-  // resource.prefLabel ||
-  // resource.label ||
-  // resource.name ||
-  // resource["@id"]
-  resourceLabel: string,
-  // Useful metadat about the resource
-  resourceAdminData: {
-    url: string,
-    deployment: string,
-    apiVersion: string,
-    entityType: string, // Corresponds to Schema
-    org: string,
-    project: string,
-    id: string,
-  },
-  // if the resource is a file, a human-readable label
-  // will show off the size of the file.
-  fileData: {
-    humanReadableFileSize: string
-  } | null
-}
-```
-
-### Result Table
-
-The Result Table shows off data in a table, where each row corresponds to a `Resource` that matched the search and query criteria. The columns are defined by the `SearchConfig`.
-
-![Results Table Example](assets/search-table.png)
-
 ## Search Bar
+The search bar at the top of screen provides both instant access to full-text search as well as convenient navigation of Nexus. To activate, either click the search box or press the `/` key and begin typing.
 
-The Search Bar enables users to use full text search across their configured view, as well as navigate to matching `Resources`.
+![Search Bar](assets/fusion-search-bar.png)
 
-![Search Bar](assets/search-bar.png)
+### Full-text Search
+Full-text search is the default option within the search bar and is listed first. Hitting enter on the keyboard will display the Search page showing the results for the given search criteria. On the search page additional filter criteria and customisations can be applied to the search results (sort, filter, etc) as described in subsequent sections.
+### Jump to Project
+Projects matching the search criteria are listed below the search text from which you can instantly jump to the given project.
+
+## Sorting
+Where no explicit sort criteria has been applied, search results are ordered by their ElasticSearch relevance score. Sort criteria can be applied to one or more fields to customise the ordering of results in the table.
+
+In order to sort on a specific field, open the field’s dropdown menu and select one of `Sort Ascending` or `Sort Descending` (highlighted below). 
+
+![Field Sort](assets/fusion-search-field-sort.png)
+
+Upon selecting a sort direction the sorting criteria will be applied and the results updated immediately. Click the `Clear` button to remove the sorting criteria for the field. Sort criteria can be applied to several fields. 
 
 @@@ note
 
-### Hotkey!
-
-You can press `/` on most screens to focus the Search Bar for convenience.
+If a field doesn’t support sorting then the sorting option will not be displayed.
 
 @@@
 
-@@@ note
+A summary of the status of sorted columns is displayed at the top of the search results table (highlighted below).
 
-### Caveats
+![Sort Summary](assets/fusion-search-sort-summary.png)
 
-Full text search is powered using the Elastic Search Mapping property called `__original_source`, and _must_ be add to your view's mapping to be useful, otherwise no results will show. The proper mapping is as follows:
+The Sort dialog shows all sort criteria currently applied to the search results (shown below).
 
-```
-{
-  ...rest of mapping,
-  "_all_fields": {
-    "analyzer": "nexus",
-    "type": "text"
-  },
-  "_original_source": {
-    "analyzer": "nexus",
-    "copy_to": "_all_fields",
-    "type": "text"
-  },
-}
 
-```
+![Sort Summary Dialog](assets/fusion-search-sort-summary-dialog.png)
 
-This uses a specially developed analyzer, and also requires the `__all_fields` property to exist. Simply copying these two properties should be sufficient.
+The sort direction can be changed here as well as removed entirely.
+## Filtering
+Filters allow you to filter the search results further. The field’s dropdown menu provides access to the filter options. In the example below, the filter options for the Brain Region field are highlighted.
 
-@@@
+![Field Filtering](assets/fusion-search-field-filter.png
+)
 
-## Action Bar
+The Operator dropdown determines the type of filter operation and can be one of:
 
-The action bar allows users to deselect filters, toggle between `SearchConfigs`, and export their search resuts.
+- is all of (AND) - resource must have all selected filter criteria
+- is any of (OR) - resource must have one of the selected filter criteria
+- is none of (NOT) - resource must not have any of the selected filter criteria
+- is missing - resource must not have a value for the property
 
-### Exporting
+The list of filter values is displayed below the operator dropdown ordered by the terms that appear most frequently. The search box provides the ability to search for a specific filter term.
 
-#### CSV
+A summary showing the number of filters applied is displayed above the search results table. Clicking on it reveals the filter dialog (see below).
 
-This option will generate a CSV, whose columns are configured from the `fields` property of the `SearchConfig`
+![Filter Summary Dialog](assets/fusion-search-filter-summary-dialog.png)
 
-#### As ES Query
+The filter dialog lists all currently applied filters and provides the ability to remove a filter.
+## Hidden Columns and Ordering
+The search results table can be customised to display only the columns that you are interested in. The summary displaying the number of hidden columns is displayed at the top-left of the search results table (highlighted below).
 
-This option will copy the Elastic Search query used to generate the results, excluding the pagination properties `from` and `size`. You can then use this query that is in your clipboard to create an Elastic Search Studio, or query for yourself in the Query Elastic Search View of a project in the @ref:[Admin](admin.md) SubApp.
+![Hidden Columns Summary](assets/fusion-search-hidden-column-summary.png)
+
+Click on the hidden columns summary to open the hidden columns and column order configuration dialog which is shown below.
+
+![Hidden Columns Dialog](assets/fusion-search-hidden-column-dialog.png)
+
+Each available column to display in the search results is listed along with a toggle to show or hide the column. The `(Show all Columns)` option provides a convenient way to show all columns.
+
+### Column ordering
+Columns can be reordered by clicking on the three vertical dots next to the column name and dragging to the desired location.
+
+### Hiding column using the Field menu
+An individual column can also be hidden using the field menu’s `Hide column` option (highlighted below).
+
+![Hidden Columns Dialog](assets/fusion-search-field-hide.png)
+
+## Pagination
+The search results table is paginated to allow for convenient browsing of the search results. The paging controls for navigating the pages of results along with page size options are displayed at the top-right of the search results table (highlighted below).
+
+![Paging](assets/fusion-search-field-paging.png)
+
+By default, the page size is set to match the number of rows that fit your screen. You can however use the pagination dropdown in order to select a different page size. If a page size with more results than fit the page is selected, a scrollbar will display enabling vertical scrolling of the results.
+
+## Reset Search Customisations
+All customisations to the search results can be removed using the `Reset` option displayed above the search results table (highlighted in the screenshot below).
+
+![Paging](assets/fusion-search-reset.png)
