@@ -203,7 +203,7 @@ The release is backwards compatible with v1.0 in terms of API. If you're upgradi
 
 Summary of the significant changes:
 
-- Exposed the service event logs over a stable API via @link:[Server Sent Events](https://www.w3.org/TR/eventsource/){ open=new }.
+- Exposed the service event logs over a stable API via @link:[Server Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html){ open=new }.
 - Introduced configurable storage backends for files with local, remote and S3 implementations.
 - ElasticSearchView | AggregateElasticSearchView have been promoted to stable.
 - Introduced a new SPARQL view, AggregateSparqlView, that dispatches SPARQL queries to the appropriate namespaces and

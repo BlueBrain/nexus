@@ -7,7 +7,7 @@ Composite views. These cover a wide range of requirements but may not suffice in
 capabilities can be added using external processes that subscribe to the global event log, enrich the information and
 project the result in arbitrary stores. 
 
-By exposing over HTTP(S) the event log using the @link:[Server-Sent Events W3C recommendation](https://www.w3.org/TR/eventsource/){ open=new },
+By exposing over HTTP(S) the event log using the @link:[Server-Sent Events W3C recommendation](https://html.spec.whatwg.org/multipage/server-sent-events.html){ open=new },
 Blue Brain Nexus allows clients to replicate the internal streaming approach, and the push based asynchronous service
 communication for resource projections.
 
