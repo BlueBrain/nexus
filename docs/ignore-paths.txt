@@ -1,0 +1,16 @@
+https://bluebrain.github.io/nexus/contexts/metadata.json
+https://book.validatingrdf.com/
+https://dl.acm.org/.*
+http://example.com/.*
+https://github.com/BlueBrain/nexus-web/blob/main/README.md.*
+https://www.janelia.org
+http://mouselight.janelia.org/
+http://ml-neuronbrowser.janelia.org
+https://movies.com/movieId/1
+https://link.springer.com/.*
+https://sandbox.bluebrainnexus.io.*
+https://www.sciencedirect.com/.*
+https://shacl.org/.*
+http://www.w3.org/2001/XMLSchema.*
+https://www.youtube.com/.*
+https://web.stanford.edu/.*

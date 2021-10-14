@@ -132,7 +132,7 @@ decide whether to use schemas to constrain their data or not, depending on their
 
 ### Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?
 
-@link:[Datashapes.org](http://datashapes.org/){ open=new } provides an automated conversion of 
+@link:[Datashapes.org](https://datashapes.org/){ open=new } provides an automated conversion of 
 @link:[schema.org](https://schema.org/){ open=new } as SHACL entities. A neuroscience community effort and INCF Special 
 Interest Group - @link:[Neuroshapes](https://github.com/INCF/neuroshapes){ open=new }, provides open schemas for 
 neuroscience data based on common use cases.
