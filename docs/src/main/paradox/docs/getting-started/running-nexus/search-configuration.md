@@ -1,7 +1,7 @@
 # Search configuration
 
 Nexus provides global search functionality across all projects through the
-@link:[search plugin](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src){ open=new }.
+@link:[search plugin](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/search/src){ open=new }.
 
 @@@ warning
 
@@ -444,4 +444,4 @@ that the `/v1/search/config` endpoint will return as means of data model discove
 This completes the configuration required to enable Global Search capabilities into Nexus. It may seem quite cumbersome,
 but all the configuration options presented are required for a good end-user experience. A different, more complex
 configuration example can be found in the
-@link:[test project](https://github.com/BlueBrain/nexus/tree/master/tests/docker/config).
+@link:[test project](https://github.com/BlueBrain/nexus/tree/$git.branch$/tests/docker/config).
