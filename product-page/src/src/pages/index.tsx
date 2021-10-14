@@ -7,7 +7,7 @@ import Features from "../components/Features"
 import PoweredByNexus from "../components/PoweredByNexus"
 import GetStartedWithNexus from "../components/GetStarted"
 import AnyQuestions from "../components/AnyQuestions"
-import EmailCatch from "../containers/EmailCatch"
+import TwitterCallout from "../components/TwitterCallout"
 
 import scienceDriven from "../../static/img/icons/microscope.svg"
 import productionReady from "../../static/img/icons/server.svg"
@@ -72,7 +72,7 @@ export default function Home() {
       />
       <PoweredByNexus />
       <GetStartedWithNexus />
-      <EmailCatch />
+      <TwitterCallout />
       <AnyQuestions />
     </MainLayout>
   )
