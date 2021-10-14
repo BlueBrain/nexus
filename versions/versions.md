@@ -11,7 +11,7 @@
 
 ## Previous releases
 
-## Current (v1.5.x)
+### v1.5.x
 - @link:[Documentation](https://bluebrainnexus.io/v1.5.x/docs/)
 - @link:[Github](https://github.com/BlueBrain/nexus/tree/v1.5.x){ open=new }
 - @link:[Release notes](https://bluebrainnexus.io/docs/releases/v1.5-release-notes.html)
