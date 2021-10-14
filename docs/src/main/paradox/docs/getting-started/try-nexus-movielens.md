@@ -98,9 +98,9 @@ project within Nexus Delta using the python framework @link:[Nexus Forge](https:
 A @link:[jupyter](https://jupyter.org/){ open=new } notebook is available for this part of the tutorial and can be spawn 
 easily using Google Colab, binder, or locally:
 
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb){ open=new }
 - @link:[binder](https://mybinder.org/v2/gh/BlueBrain/nexus/master?filepath=docs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2Fbuilding_a_kg.ipynb){ open=new }
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/building_a_kg.ipynb){ open=new }
 
 For local execution, Nexus Forge can be installed using these 
 @link:[instructions](https://nexus-forge.readthedocs.io/en/latest/#installation){ open=new }. Make sure that the jupyter 
@@ -201,8 +201,8 @@ You will need Python 3.5 or higher with support for Jupyter notebook.
 
 This tutorial code is available on:
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Query_Sparql_View.ipynb){ open=new }
 
 ### Querying a Knowledge Graph using Elasticsearch
 
@@ -219,8 +219,8 @@ You will need Python 3.5 or higher with support for Jupyter notebook.
 
 The tutorial code is available on:
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Querying_ElasticSearchView.ipynb){ open=new }
 
 ### Linking data on the web
 
@@ -242,6 +242,6 @@ You will need Python 3.6 or higher with support for Jupyter notebook.
 
 This tutorial code is available on:
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/v1.5.0/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/Linking%20data%20on%20the%20web.ipynb){ open=new }
 

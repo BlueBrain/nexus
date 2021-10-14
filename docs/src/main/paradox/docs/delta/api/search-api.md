@@ -1,7 +1,7 @@
 # Global search
 
 Nexus provides global search functionality across all projects through the
-@link:[search plugin](https://github.com/BlueBrain/nexus/tree/master/delta/plugins/search/src){ open=new }.
+@link:[search plugin](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/search/src){ open=new }.
 
 @@@ warning
 The search plugin is experimental and its functionality and API can change without notice.
