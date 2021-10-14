@@ -234,12 +234,12 @@ We see that the original `id` will be formatted to a type identifier, that the `
 
 @link:[Read more about mapping with Forge.](https://nexus-forge.readthedocs.io/en/latest/interaction.html#mapping){ open=new }
 
-In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide mappers for both data sources. You can check the mappers @link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open=new }. There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. For MouseLight, there's only one mapper, as both morphologies and traces are in the same data source.
+In the code available, we will integrate data from two sources: the AIBS and MouseLight (see Step 3). We will provide mappers for both data sources. You can check the mappers @link:[directly on GitHub](https://github.com/BlueBrain/nexus/tree/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/mappings){ open=new }. There are two mappers for the AIBS, one for neuron morphologies and another for electrophysiology data. For MouseLight, there's only one mapper, as both morphologies and traces are in the same data source.
 
 ### 2.6. Running the Notebook
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/one_cell_minds.ipynb){ open=new }
 - @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
 To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
@@ -289,8 +289,8 @@ The example notebooks will use these endpoints to collect and download the datas
 
 ### 3.2. Running the Notebook
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/dataset_from_different_sources.ipynb){ open=new }
 - @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
 To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:
@@ -798,8 +798,8 @@ Further reads on graph embedding:
 
 ### 5.2. Running the Notebook
 
-- @link:[Github](https://github.com/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
-- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/master/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
+- @link:[Github](https://github.com/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
+- @link:[Google Colab](https://colab.research.google.com/github/BlueBrain/nexus/blob/$git.branch$/docs/src/main/paradox/docs/getting-started/notebooks/MOOC_Content_based_Recommender_System_using_Blue_Brain_Nexus.ipynb){ open=new }
 - @link:[Binder](https://mybinder.org/v2/gh/BlueBrain/nexus/HEAD?filepath=%2Fdocs%2Fsrc%2Fmain%2Fparadox%2Fdocs%2Fgetting-started%2Fnotebooks%2F){ open=new }
 
 To run the notebook locally, open your terminal, clone the @link:[Nexus repository](https://github.com/BlueBrain/nexus){ open=new }, go to the notebook directory, and run Jupyter:

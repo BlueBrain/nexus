@@ -1,6 +1,6 @@
 # Nexus configuration
 
-Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
+Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
 
 There are 2 ways to modify the default configuration:
 
@@ -15,7 +15,7 @@ In order to successfully run Nexus Delta there is a minimum set of configuration
 
 ## Http configuration
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L9){ open=new } of the configuration defines the binding address and port where the service will be listening.
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L9){ open=new } of the configuration defines the binding address and port where the service will be listening.
 
 The configuration flag `akka.http.server.parsing.max-content-length` can be used to control the maximum payload size allowed for Nexus Delta resources. This value applies to all posted resources except for files.
 
@@ -25,7 +25,7 @@ Since 1.5.0 Nexus Delta comes in two database flavours: postgres or cassandra. T
 
 ### Cassandra configuration
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L58){ open=new } of the configuration defines the cassandra specific configuration (username, password, contact points, etc).
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L64){ open=new } of the configuration defines the cassandra specific configuration (username, password, contact points, etc).
 
 Before running Nexus Delta, the keyspace defined on the configuration `app.database.cassandra.keyspace` must be present along with the expected tables. However, one can let Nexus Delta automatically create keyspaces and tables using the following configuration parameters: `app.database.cassandra.keyspace-autocreate=true` and `app.database.cassandra.tables-autocreate=true`.
 
@@ -35,17 +35,17 @@ Auto creation of the keyspace and tables is included as a development convenienc
 
 @@@
 
-There are many other configuration parameters to customize the behaviour of the cassandra driver (timeouts, intervals, etc). These can be be found in the @link:[application-cassandra.conf](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/application-cassandra.conf){ open=new } file. One of the most relevant among these settings is: `akka.persistence.cassandra.events-by-tag.first-time-bucket`. Its value must be the date-time of the first event stored in Nexus Delta in the format YYYYMMDDTHH:MM.
+There are many other configuration parameters to customize the behaviour of the cassandra driver (timeouts, intervals, etc). These can be be found in the @link:[application-cassandra.conf](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/application-cassandra.conf){ open=new } file. One of the most relevant among these settings is: `akka.persistence.cassandra.events-by-tag.first-time-bucket`. Its value must be the date-time of the first event stored in Nexus Delta in the format YYYYMMDDTHH:MM.
 
 ### Postgres configuration
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L37){ open=new } of the configuration defines the postgres specific configuration (username, password, host, etc).
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L43){ open=new } of the configuration defines the postgres specific configuration (username, password, host, etc).
 
-Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/sourcing/src/main/resources/scripts/postgres.ddl){ open=new } should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: `app.database.postgres.tables-autocreate=true`
+Before running Nexus Delta, the @link:[expected tables](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sourcing/src/main/resources/scripts/postgres/postgres-tables.ddl){ open=new } should be created. However, one can let Nexus Delta automatically them using the following configuration parameters: `app.database.postgres.tables-autocreate=true`
 
 # RDF parser
 
-The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[now configurable](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L84) to enable different levels of strictness.
+The underlying @link:[Apache Jena](https://jena.apache.org/) parser used to validate incoming data is @link:[now configurable](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L84) to enable different levels of strictness.
 
 ## Service account configuration
 
@@ -54,7 +54,7 @@ Nexus Delta uses a service account to perform automatic tasks under the hood. Ex
 - Granting default ACLs to the user creating a project.
 - Creating default views on project creation.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L394){ open=new } of the configuration defines the service account configuration.
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L466){ open=new } of the configuration defines the service account configuration.
 
 ## Automatic project provisioning
 
@@ -68,13 +68,13 @@ The generated project label will be:
 
 This feature can be turned on via the flag `app.projects.automatic-provisioning.enabled`.
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L223){ open=new } of the configuration defines the project provisioning configuration.
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L223){ open=new } of the configuration defines the project provisioning configuration.
 
 ## Encryption configuration
 
 Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).
 
-@link:[This section](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L235){ open=new } of the configuration defines the encryption configuration.
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L298){ open=new } of the configuration defines the encryption configuration.
 
 ## Plugins configuration
 
@@ -84,7 +84,7 @@ Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins h
 
 ### Elasticsearch views plugin configuration
 
-The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
+The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
 
 The most important flag are:
 * `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
@@ -94,19 +94,19 @@ Please refer to the @link[Elasticsearch configuration](https://www.elastic.co/gu
 
 ### Blazegraph views plugin configuration
 
-The blazegraph plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/blazegraph/src/main/resources/blazegraph.conf){ open=new }. 
+The blazegraph plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/blazegraph/src/main/resources/blazegraph.conf){ open=new }. 
 
 The most important flag is `plugins.blazegraph.base` which defines the endpoint where the Blazegraph service is running.
 
 ### Composite views plugin configuration
 
-The composite views plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/composite-views/src/main/resources/composite-views.conf){ open=new }. 
+The composite views plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/composite-views/src/main/resources/composite-views.conf){ open=new }. 
 
 There are several configuration flags related to tweaking the range of values allowed for sources, projections and rebuild interval.
 
 ### Storage plugin configuration
 
-The storage plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/storage/src/main/resources/storage.conf){ open=new }. 
+The storage plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/storage/src/main/resources/storage.conf){ open=new }. 
 
 Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and 'remote'.
 
@@ -117,7 +117,7 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 
 ### Archive plugin configuration
 
-The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
+The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
 
 ## Monitoring
 
@@ -125,7 +125,7 @@ For monitoring, Nexus Delta relies on @link:[Kamon](https://kamon.io/){ open=new
 
 Kamon can be disabled by passing the environment variable `KAMON_ENABLED` to `false`
 
-Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L358){ open=new }.
+Delta configuration for Kamon is provided @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L430){ open=new }.
 For a more complete description on the different options available, please look at the Kamon website.
 
 ### Instrumentation
