@@ -1,12 +1,12 @@
 import * as React from "react"
 import { useLocation } from "@reach/router"
 import MainLayout from "../layouts/Main"
-import EmailCatch from "../containers/EmailCatch"
 import { scrollIntoView } from "../libs/scroll"
 import Features from "../components/Features"
 import ProductDiagram from "../components/ProductDiagram"
 import Fun from "../components/Fun"
 import { isSmall } from "../libs/browser"
+import TwitterCallout from "../components/TwitterCallout"
 
 export type Product = {
   name: string
@@ -88,7 +88,7 @@ const ProductPage: React.FC<{ pageContext: { product: Product } }> = ({
         </div>
       </section>
       <Features title="Features" subtitle={featureText} features={features} />
-      <EmailCatch />
+      <TwitterCallout />
       <section id="overview">
         <div className="container">
           <div className={`content ${!hasOverviewItems && "centered"}`}>

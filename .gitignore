@@ -64,3 +64,6 @@ rules.log
 # Rust
 **/*.rs.bk
 Cargo.lock
+yarn.lock
+node_modules/.yarn-integrity
+product-page/src/yarn.lock
