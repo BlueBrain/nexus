@@ -10,3 +10,7 @@
 	path = versions/v1.5.x
 	url = git@github.com:BlueBrain/nexus.git
 	branch = v1.5.x
+[submodule "versions/v1.6.x"]
+	path = versions/v1.6.x
+	url = git@github.com:BlueBrain/nexus.git
+	branch = v1.6.x
