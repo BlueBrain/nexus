@@ -353,7 +353,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
 <p>The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.</p></div>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus Delta runs.</p>
-<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
+<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/master/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
 <p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>.</p>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,

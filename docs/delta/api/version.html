@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Version endpoint · Blue Brain Nexus</title>
+<title>Version · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Version endpoint
+Version
 </span>
 </div>
 </div>
@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="active page">Version endpoint</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="active page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -227,7 +234,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -237,7 +244,7 @@ BlueBrain/nexus
 <div class="md-content">
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
-<h1><a href="#version-endpoint" name="version-endpoint" class="anchor"><span class="anchor-link"></span></a>Version endpoint</h1>
+<h1><a href="#version" name="version" class="anchor"><span class="anchor-link"></span></a>Version</h1>
 <pre class="prettyprint"><code class="language-http request">GET /v1/version
 </code></pre>
 <p>This endpoint returns information about the running Delta instance: Delta version, plugin versions and service dependency versions(e.g Cassandra).</p>
@@ -271,7 +278,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

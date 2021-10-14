@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="active page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -230,6 +237,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
@@ -238,7 +246,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-resource-using-resolvers" class="header">Fetch resource using resolvers</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
@@ -249,7 +263,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -269,6 +283,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/resolvers-api.html#inproject-resolver" class="header">InProject resolver</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html#crossproject-resolver" class="header">CrossProject resolver</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#update" class="header">Update</a></li>
@@ -277,7 +292,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-tags" class="header">Fetch tags</a></li>
-    <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/resolvers-api.html#list" class="header">List</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../docs/delta/api/resolvers-api.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#fetch-resource-using-resolvers" class="header">Fetch resource using resolvers</a></li>
     <li><a href="../../../docs/delta/api/resolvers-api.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
@@ -342,6 +363,12 @@ BlueBrain/nexus
   <li><code>{project}</code>: String - the user friendly reference to the project from where the resolution process will attempt to  find the @id&rsquo;s. It follows the format <code>{organization}/{project}</code>.</li>
   <li><code>{identity}</code>: Json object - the identity against which to enforce ACLs during resolution process. Can&rsquo;t be defined if <code>useCurrentCaller</code> is set to <code>true</code></li>
   <li><code>{useCurrentCaller}</code>: Boolean - the resolution process will use the caller and its identitites to enforce acls. Can&rsquo;t be <code>true</code> when <code>_identity_</code> is defined.</li>
+</ul>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a resolver (creation, update, tagging, deprecation) can specify whether the resolver should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the resolver will be indexed asynchronously</li>
+  <li><code>sync</code> - the resolver will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/resolvers/{org_label}/{project_label}
@@ -766,6 +793,8 @@ BlueBrain/nexus
 }</code></pre></dd>
 </dl>
 <h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
+<p>There are three available endpoints to list resolvers in different scopes.</p>
+<h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
 <pre><code>GET /v1/resolvers/{org_label}/{project_label}?from={from}
                                              &amp;size={size}
                                              &amp;deprecated={deprecated}
@@ -776,7 +805,31 @@ BlueBrain/nexus
                                              &amp;q={search}
                                              &amp;sort={sort}
 </code></pre>
-<p>where&hellip;</p>
+<h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
+<p>This operation returns only resolvers from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/resolvers/{org_label}?from={from}
+                             &amp;size={size}
+                             &amp;deprecated={deprecated}
+                             &amp;rev={rev}
+                             &amp;type={type}
+                             &amp;createdBy={createdBy}
+                             &amp;updatedBy={updatedBy}
+                             &amp;q={search}
+                             &amp;sort={sort}
+</code></pre>
+<h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
+<p>This operation returns only resolvers from projects where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/resolvers?from={from}
+                 &amp;size={size}
+                 &amp;deprecated={deprecated}
+                 &amp;rev={rev}
+                 &amp;type={type}
+                 &amp;createdBy={createdBy}
+                 &amp;updatedBy={updatedBy}
+                 &amp;q={search}
+                 &amp;sort={sort}
+</code></pre>
+<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
@@ -936,7 +989,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

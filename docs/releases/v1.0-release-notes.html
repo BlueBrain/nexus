@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -255,7 +262,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -436,9 +443,9 @@ BlueBrain/nexus
 <h4><a href="#introduced-a-command-line-interface-cli-for-nexus" name="introduced-a-command-line-interface-cli-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced a Command Line Interface (CLI) for Nexus</h4>
 <p>We released a <a href="https://github.com/BlueBrain/nexus-cli" title="Nexus CLI" target="_blank" rel="noopener noreferrer">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk" title="Python SDK for Nexus" target="_blank" rel="noopener noreferrer">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and facilitate your data management with Nexus. The use of the CLI is extensively demonstrated in our [Nexus Tutorial].</p>
 <h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
-<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://gitter.im/BlueBrain/nexus" title="Gitter" target="_blank" rel="noopener noreferrer">Gitter</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
+<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
 <h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>
-<p>Services have been updated to expose their event logs or subsets via HTTP through <a href="https://www.w3.org/TR/eventsource/" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>, removing the need to use Kafka as means of service to service communication. It uses the same authentication and authorization mechanism as with the rest of the API, thus ensuring that the information exchanged in guarded by the ACLs defined.</p>
+<p>Services have been updated to expose their event logs or subsets via HTTP through <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>, removing the need to use Kafka as means of service to service communication. It uses the same authentication and authorization mechanism as with the rest of the API, thus ensuring that the information exchanged in guarded by the ACLs defined.</p>
 <p>The change reduces the additional operational burden of maintaining a Kafka cluster and also opens up the system for extension as the event logs can be consumed by third party applications in an efficient manner without the need of direct access to the message broker.</p>
 <h4><a href="#in-memory-indices" name="in-memory-indices" class="anchor"><span class="anchor-link"></span></a>In memory indices</h4>
 <p>Versions <code>v0.y.z</code> of <em>iam</em> and later on <em>admin</em> services depended on ElasticSearch and BlazeGraph to maintain indices of the resources managed. Since these resources easily fit in memory on a single node, the dependency on these external systems has been removed in favour of in memory indices to provide a consistent view on the data and increase the general availability. In between nodes, when services are deployed as a cluster, the indices are replicated by using <a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type" title="CRDTs" target="_blank" rel="noopener noreferrer">CRDTs</a> which are natively supported by <a href="https://doc.akka.io/docs/akka/2.5/distributed-data.html" title="Akka Distributed Data" target="_blank" rel="noopener noreferrer">Akka Distributed Data</a>.</p>
@@ -450,7 +457,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

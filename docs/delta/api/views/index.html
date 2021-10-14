@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -230,7 +237,14 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#sparqlview" class="header">SparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
+    <ul>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -240,7 +254,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -260,7 +274,14 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#sparqlview" class="header">SparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
-    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
+    <ul>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../../docs/delta/api/views/index.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../../docs/delta/api/views/index.html#server-sent-events" class="header">Server Sent Events</a></li>
   </ul></li>
 </ul>
@@ -299,7 +320,15 @@ BlueBrain/nexus
 <p>A projection defines the type of indexing and the transformations to apply to the data.</p>
 <p>Composite views are useful when aggregating data across multiple projects (local or remote) using multiple sources. Afterwards, by defining multiple projections, the data can be adapted to the client needs.</p>
 <p><a href="composite-view-api.html">More information</a></p>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a view (creation, update, tagging, deprecation) can specify whether the view should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the view will be indexed asynchronously</li>
+  <li><code>sync</code> - the view will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
+</ul>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
+<p>There are three available endpoints to list views in different scopes.</p>
+<h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
 <pre><code>GET /v1/views/{org_label}/{project_label}?from={from}
                                          &amp;size={size}
                                          &amp;deprecated={deprecated}
@@ -310,7 +339,31 @@ BlueBrain/nexus
                                          &amp;q={search}
                                          &amp;sort={sort}
 </code></pre>
-<p>where&hellip;</p>
+<h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
+<p>This operation returns only views from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/views/{org_label}?from={from}
+                         &amp;size={size}
+                         &amp;deprecated={deprecated}
+                         &amp;rev={rev}
+                         &amp;type={type}
+                         &amp;createdBy={createdBy}
+                         &amp;updatedBy={updatedBy}
+                         &amp;q={search}
+                         &amp;sort={sort}
+</code></pre>
+<h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
+<p>This operation returns only views from projects where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/views?from={from}
+             &amp;size={size}
+             &amp;deprecated={deprecated}
+             &amp;rev={rev}
+             &amp;type={type}
+             &amp;createdBy={createdBy}
+             &amp;updatedBy={updatedBy}
+             &amp;q={search}
+             &amp;sort={sort}
+</code></pre>
+<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
@@ -439,7 +492,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

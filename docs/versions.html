@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -225,9 +232,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../docs/versions.html#versions" class="header">Versions</a>
   <ul>
-    <li><a href="../docs/versions.html#current-v1-5-x-" class="header">Current (v1.5.x)</a></li>
+    <li><a href="../docs/versions.html#current-v1-6-x-" class="header">Current (v1.6.x)</a></li>
     <li><a href="../docs/versions.html#snapshot" class="header">Snapshot</a></li>
-    <li><a href="../docs/versions.html#previous-releases" class="header">Previous releases</a>
+    <li><a href="../docs/versions.html#previous-releases" class="header">Previous releases</a></li>
+    <li><a href="../docs/versions.html#current-v1-5-x-" class="header">Current (v1.5.x)</a>
     <ul>
       <li><a href="../docs/versions.html#v1-4-x" class="header">v1.4.x</a></li>
     </ul></li>
@@ -239,7 +247,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -254,9 +262,10 @@ BlueBrain/nexus
 <ul>
   <li><a href="../docs/versions.html#versions" class="header">Versions</a>
   <ul>
-    <li><a href="../docs/versions.html#current-v1-5-x-" class="header">Current (v1.5.x)</a></li>
+    <li><a href="../docs/versions.html#current-v1-6-x-" class="header">Current (v1.6.x)</a></li>
     <li><a href="../docs/versions.html#snapshot" class="header">Snapshot</a></li>
-    <li><a href="../docs/versions.html#previous-releases" class="header">Previous releases</a>
+    <li><a href="../docs/versions.html#previous-releases" class="header">Previous releases</a></li>
+    <li><a href="../docs/versions.html#current-v1-5-x-" class="header">Current (v1.5.x)</a>
     <ul>
       <li><a href="../docs/versions.html#v1-4-x" class="header">v1.4.x</a></li>
     </ul></li>
@@ -271,11 +280,11 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#versions" name="versions" class="anchor"><span class="anchor-link"></span></a>Versions</h1>
-<h2><a href="#current-v1-5-x-" name="current-v1-5-x-" class="anchor"><span class="anchor-link"></span></a>Current (v1.5.x)</h2>
+<h2><a href="#current-v1-6-x-" name="current-v1-6-x-" class="anchor"><span class="anchor-link"></span></a>Current (v1.6.x)</h2>
 <ul>
   <li><a href="https://bluebrainnexus.io/docs/" title="Documentation">Documentation</a></li>
-  <li><a href="https://github.com/BlueBrain/nexus/tree/v1.5.x" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
-  <li><a href="https://bluebrainnexus.io/docs/releases/v1.5-release-notes.html" title="Release notes">Release notes</a></li>
+  <li><a href="https://github.com/BlueBrain/nexus/tree/v1.6.x" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://bluebrainnexus.io/docs/releases/v1.6-release-notes.html" title="Release notes">Release notes</a></li>
 </ul>
 <h2><a href="#snapshot" name="snapshot" class="anchor"><span class="anchor-link"></span></a>Snapshot</h2>
 <ul>
@@ -283,6 +292,12 @@ BlueBrain/nexus
   <li><a href="https://github.com/BlueBrain/nexus" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
 </ul>
 <h2><a href="#previous-releases" name="previous-releases" class="anchor"><span class="anchor-link"></span></a>Previous releases</h2>
+<h2><a href="#current-v1-5-x-" name="current-v1-5-x-" class="anchor"><span class="anchor-link"></span></a>Current (v1.5.x)</h2>
+<ul>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/" title="Documentation">Documentation</a></li>
+  <li><a href="https://github.com/BlueBrain/nexus/tree/v1.5.x" title="Github" target="_blank" rel="noopener noreferrer">Github</a></li>
+  <li><a href="https://bluebrainnexus.io/docs/releases/v1.5-release-notes.html" title="Release notes">Release notes</a></li>
+</ul>
 <h3><a href="#v1-4-x" name="v1-4-x" class="anchor"><span class="anchor-link"></span></a>v1.4.x</h3>
 <ul>
   <li><a href="https://bluebrainnexus.io/v1.4.x/docs/" title="Documentation">Documentation</a></li>
@@ -297,7 +312,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

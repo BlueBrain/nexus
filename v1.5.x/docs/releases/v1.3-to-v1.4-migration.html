@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>v1.3 To v1.4 Migration · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+v1.3 To v1.4 Migration
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="active page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
+    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#v1-3-to-v1-4-migration" class="header">v1.3 To v1.4 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#steps" class="header">Steps</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#configuration" class="header">Configuration</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> v1.5.x
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#v1-3-to-v1-4-migration" class="header">v1.3 To v1.4 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#steps" class="header">Steps</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html#configuration" class="header">Configuration</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.5.x,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#v1-3-to-v1-4-migration" name="v1-3-to-v1-4-migration" class="anchor"><span class="anchor-link"></span></a>v1.3 To v1.4 Migration</h1>
+<p>As part of the v1.4 release, cassandra schema has changed due to a <a href="https://doc.akka.io/docs/akka-persistence-cassandra/current/migrations.html" title="dependency update" target="_blank" rel="noopener noreferrer">dependency update</a>. Additionally, the 3 existing keyspaces (iam, admin and kg) must be merged into a single keyspace (delta).</p>
+<h2><a href="#steps" name="steps" class="anchor"><span class="anchor-link"></span></a>Steps</h2>
+<p>The migration steps are as follows:</p>
+<ol>
+  <li>
+  <p>Stop the 3 services: iam, admin and kg.</p></li>
+  <li>
+  <p><a href="https://docs.datastax.com/en/archived/cassandra/3.0/cassandra/operations/opsBackupRestore.html" title="Backup" target="_blank" rel="noopener noreferrer">Backup</a>  the cassandra store.</p></li>
+  <li>
+    <p>Delete all ElasticSearch indices:</p>
+    <pre><code>curl -XDELETE &#39;http://{elasticsearch_host}/kg_*&#39;
+</code></pre>
+  </li>
+  <li>
+    <p>Delete all BlazeGraph namespaces:</p>
+    <pre><code>for i in `curl -s &#39;http://{blazegraph_host}/blazegraph/namespace?describe-each-named-graph=false&#39; | grep sparqlEndpoint | grep -o --color &quot;rdf:resource=\&quot;[^\&quot;]*&quot; | sed &#39;s/rdf:resource=&quot;//&#39; | sed &#39;s#/sparql$##&#39; | grep -v kb | grep -v LBS`
+   do curl -X DELETE &quot;$i&quot;
+done
+</code></pre>
+  </li>
+  <li>
+  <p>Make sure to allocate enough space to Cassandra, at least twice the space used by the keyspaces iam, admin and kg.  The data migration involves copying the messages tables.</p></li>
+  <li>
+    <p>Create the delta keyspace and tables:</p>
+    <pre><code>CREATE KEYSPACE IF NOT EXISTS delta WITH replication = {&#39;class&#39;: &#39;NetworkTopologyStrategy&#39;, &#39;&lt;your_dc_name&gt;&#39; : 3 };
+
+CREATE KEYSPACE IF NOT EXISTS delta_snapshot WITH replication = {&#39;class&#39;: &#39;NetworkTopologyStrategy&#39;, &#39;&lt;your_dc_name&gt;&#39; : 3 }; 
+
+CREATE TABLE IF NOT EXISTS delta.messages (
+  persistence_id text,
+  partition_nr bigint,
+  sequence_nr bigint,
+  timestamp timeuuid,
+  timebucket text,
+  writer_uuid text,
+  ser_id int,
+  ser_manifest text,
+  event_manifest text,
+  event blob,
+  meta_ser_id int,
+  meta_ser_manifest text,
+  meta blob,
+  tags set&lt;text&gt;,
+  PRIMARY KEY ((persistence_id, partition_nr), sequence_nr, timestamp))
+  WITH gc_grace_seconds =864000
+  AND compaction = {
+    &#39;class&#39; : &#39;SizeTieredCompactionStrategy&#39;,
+    &#39;enabled&#39; : true,
+    &#39;tombstone_compaction_interval&#39; : 86400,
+    &#39;tombstone_threshold&#39; : 0.2,
+    &#39;unchecked_tombstone_compaction&#39; : false,
+    &#39;bucket_high&#39; : 1.5,
+    &#39;bucket_low&#39; : 0.5,
+    &#39;max_threshold&#39; : 32,
+    &#39;min_threshold&#39; : 4,
+    &#39;min_sstable_size&#39; : 50
+    };
+
+CREATE TABLE IF NOT EXISTS delta.tag_views (
+  tag_name text,
+  persistence_id text,
+  sequence_nr bigint,
+  timebucket bigint,
+  timestamp timeuuid,
+  tag_pid_sequence_nr bigint,
+  writer_uuid text,
+  ser_id int,
+  ser_manifest text,
+  event_manifest text,
+  event blob,
+  meta_ser_id int,
+  meta_ser_manifest text,
+  meta blob,
+  PRIMARY KEY ((tag_name, timebucket), timestamp, persistence_id, tag_pid_sequence_nr))
+  WITH gc_grace_seconds =864000
+  AND compaction = {
+    &#39;class&#39; : &#39;SizeTieredCompactionStrategy&#39;,
+    &#39;enabled&#39; : true,
+    &#39;tombstone_compaction_interval&#39; : 86400,
+    &#39;tombstone_threshold&#39; : 0.2,
+    &#39;unchecked_tombstone_compaction&#39; : false,
+    &#39;bucket_high&#39; : 1.5,
+    &#39;bucket_low&#39; : 0.5,
+    &#39;max_threshold&#39; : 32,
+    &#39;min_threshold&#39; : 4,
+    &#39;min_sstable_size&#39; : 50
+    };
+
+CREATE TABLE IF NOT EXISTS delta.tag_write_progress(
+  persistence_id text,
+  tag text,
+  sequence_nr bigint,
+  tag_pid_sequence_nr bigint,
+  offset timeuuid,
+  PRIMARY KEY (persistence_id, tag));
+
+CREATE TABLE IF NOT EXISTS delta.tag_scanning(
+  persistence_id text,
+  sequence_nr bigint,
+  PRIMARY KEY (persistence_id));
+
+CREATE TABLE IF NOT EXISTS delta.metadata(
+  persistence_id text PRIMARY KEY,
+  deleted_to bigint,
+  properties map&lt;text,text&gt;);
+
+CREATE TABLE IF NOT EXISTS delta.all_persistence_ids(
+  persistence_id text PRIMARY KEY);
+
+CREATE TABLE IF NOT EXISTS delta.projections_progress (
+    projection_id text PRIMARY KEY,
+    progress text
+) WITH bloom_filter_fp_chance = 0.01
+    AND caching = {&#39;keys&#39;: &#39;ALL&#39;, &#39;rows_per_partition&#39;: &#39;NONE&#39;}
+    AND comment = &#39;&#39;
+    AND compaction = {&#39;class&#39;: &#39;org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy&#39;, &#39;max_threshold&#39;: &#39;32&#39;, &#39;min_threshold&#39;: &#39;4&#39;}
+    AND compression = {&#39;chunk_length_in_kb&#39;: &#39;64&#39;, &#39;class&#39;: &#39;org.apache.cassandra.io.compress.LZ4Compressor&#39;}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.1
+    AND default_time_to_live = 0
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = &#39;99PERCENTILE&#39;;
+
+CREATE TABLE IF NOT EXISTS delta.projections_failures (
+    projection_id text,
+    offset text,
+    persistence_id text,
+    sequence_nr bigint,
+    value text,
+    PRIMARY KEY (projection_id, offset, persistence_id, sequence_nr)
+) WITH CLUSTERING ORDER BY (offset ASC, persistence_id ASC, sequence_nr ASC)
+    AND bloom_filter_fp_chance = 0.01
+    AND caching = {&#39;keys&#39;: &#39;ALL&#39;, &#39;rows_per_partition&#39;: &#39;NONE&#39;}
+    AND comment = &#39;&#39;
+    AND compaction = {&#39;class&#39;: &#39;org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy&#39;, &#39;max_threshold&#39;: &#39;32&#39;, &#39;min_threshold&#39;: &#39;4&#39;}
+    AND compression = {&#39;chunk_length_in_kb&#39;: &#39;64&#39;, &#39;class&#39;: &#39;org.apache.cassandra.io.compress.LZ4Compressor&#39;}
+    AND crc_check_chance = 1.0
+    AND dclocal_read_repair_chance = 0.1
+    AND default_time_to_live = 0
+    AND gc_grace_seconds = 864000
+    AND max_index_interval = 2048
+    AND memtable_flush_period_in_ms = 0
+    AND min_index_interval = 128
+    AND read_repair_chance = 0.0
+    AND speculative_retry = &#39;99PERCENTILE&#39;;
+
+CREATE TABLE IF NOT EXISTS delta_snapshot.snapshots (
+  persistence_id text,
+  sequence_nr bigint,
+  timestamp bigint,
+  ser_id int,
+  ser_manifest text,
+  snapshot_data blob,
+  snapshot blob,
+  meta_ser_id int,
+  meta_ser_manifest text,
+  meta blob,
+  PRIMARY KEY (persistence_id, sequence_nr))
+  WITH CLUSTERING ORDER BY (sequence_nr DESC) AND gc_grace_seconds =864000
+  AND compaction = {
+    &#39;class&#39; : &#39;SizeTieredCompactionStrategy&#39;,
+    &#39;enabled&#39; : true,
+    &#39;tombstone_compaction_interval&#39; : 86400,
+    &#39;tombstone_threshold&#39; : 0.2,
+    &#39;unchecked_tombstone_compaction&#39; : false,
+    &#39;bucket_high&#39; : 1.5,
+    &#39;bucket_low&#39; : 0.5,
+    &#39;max_threshold&#39; : 32,
+    &#39;min_threshold&#39; : 4,
+    &#39;min_sstable_size&#39; : 50
+    };
+</code></pre>
+  </li>
+  <li>Check and update the necessary configuration environment variables/JVM properties according to  <a href="v1.3-to-v1.4-migration.html#configuration">configuration migration guide</a></li>
+  <li>
+  <p>Deploy the new service images (tag <code>1.4</code>) for <a href="https://hub.docker.com/r/bluebrain/nexus-delta">delta</a> and run it with  the <code>MIGRATE_V13_TO_V14=true</code> and <code>REPAIR_FROM_MESSAGES=true</code> environment variables.  This will instruct the service to copy all the messages table from iam, admin and kg into the delta keyspace.  Afterwards the <code>tag_views</code> table and their related tables will be properly initialized.  When populating the <code>tag_views</code> table consider increasing the <code>batch_size_fail_threshold_in_kb</code> in your  cassandra.yaml configuration file if you see TagWriter error messages. Decreasing the value of the JVM property  <code>akka.persistence.cassandra.events-by-tag.max-message-batch-size</code> and  <code>akka.persistence.cassandra.journal.max-message-batch-size</code> to <code>1</code> can also help mitigate the issue.</p></li>
+  <li>
+    <p>Once the service is up and running, and you have verified the resources are accessible, you can proceed to delete  the previous keyspaces:</p>
+    <pre><code>DROP KEYSPACE iam;
+DROP KEYSPACE admin;
+DROP KEYSPACE kg;
+</code></pre>
+  </li>
+</ol>
+<h2><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h2>
+<p>This section provides a table with the equivalences in terms of configuration environment variables from 1.3 (and older versions) to 1.4. Only the most relevant environment configuration properties are described</p>
+<p>There are 2 ways to modify the default configuration values:</p>
+<ul>
+  <li>Using JVM properties as arguments when running the service: -D<code>{property}</code>. For example: <code>-Dapp.instance.interface=&quot;127.0.0.1&quot;</code>.</li>
+  <li>Setting <a href="https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides" title="FORCE_CONFIG_" target="_blank" rel="noopener noreferrer">FORCE_CONFIG_</a>  style environment variables. In order to enable this style of configuration the JVM property  <code>-Dconfig.override_with_env_vars=true</code> needs to be set. For example: <code>CONFIG_FORCE_app_instance_interface=&quot;127.0.0.1&quot;</code>.</li>
+</ul>
+<p>Note that there has been one important change which cannot be mapped using the following table: the service account token.</p>
+<p>In 1.4 release, the <code>IAM_SA_TOKEN</code> is not used. Instead, the JVM properties <code>app.service-account-caller.realm</code>, <code>app.service-account-caller.subject</code> and <code>app.service-account-caller.groups</code> should be set matching the identity of the service account. If these properties are not present, the service account identity will be set to anonymous.</p>
+<table>
+  <thead>
+    <tr>
+      <th>Description </th>
+      <th>Env. variable 1.3 </th>
+      <th>property 1.4 </th>
+      <th>Env. variable override 1.4 </th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Default timeout for Actors interaction </td>
+      <td>DEFAULT_ASK_TIMEOUT </td>
+      <td>app.default-ask-timeout </td>
+      <td>CONFIG_FORCE_app_default__ask__timeout </td>
+    </tr>
+    <tr>
+      <td>The service binding interface </td>
+      <td>BIND_INTERFACE </td>
+      <td>app.instance.interface </td>
+      <td>CONFIG_FORCE_app_instance_interface </td>
+    </tr>
+    <tr>
+      <td>The service binding port </td>
+      <td>BIND_PORT </td>
+      <td>app.http.port </td>
+      <td>CONFIG_FORCE_app_http_port </td>
+    </tr>
+    <tr>
+      <td>The service Uri Path prefix </td>
+      <td>HTTP_PREFIX </td>
+      <td>app.http.prefix </td>
+      <td>CONFIG_FORCE_app_http_prefix </td>
+    </tr>
+    <tr>
+      <td>The service publicly exposed Uri </td>
+      <td>PUBLIC_URI </td>
+      <td>app.http.public-uri </td>
+      <td>CONFIG_FORCE_app_http_public__uri </td>
+    </tr>
+    <tr>
+      <td>The service account realm (when different than anonymous) </td>
+      <td> </td>
+      <td>app.service-account-caller.realm </td>
+      <td>CONFIG_FORCE_app_service__account__caller_realm </td>
+    </tr>
+    <tr>
+      <td>The service account subject (when different than anonymous) </td>
+      <td> </td>
+      <td>app.service-account-caller.subject </td>
+      <td>CONFIG_FORCE_app_service__account__caller_subject </td>
+    </tr>
+    <tr>
+      <td>The service account groups (when desired). Array field </td>
+      <td> </td>
+      <td>app.service-account-caller.groups </td>
+      <td>CONFIG_FORCE_app_service__account__caller_groups </td>
+    </tr>
+    <tr>
+      <td>The cassandra contact point (1) </td>
+      <td>CASSANDRA_CONTACT_POINT1 </td>
+      <td>datastax-java-driver.basic.contact-points.1 </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>The cassandra contact point (2) </td>
+      <td>CASSANDRA_CONTACT_POINT2 </td>
+      <td>datastax-java-driver.basic.contact-points.2 </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>The cassandra contact point (3) </td>
+      <td>CASSANDRA_CONTACT_POINT3 </td>
+      <td>datastax-java-driver.basic.contact-points.3 </td>
+      <td> </td>
+    </tr>
+    <tr>
+      <td>The cassandra username </td>
+      <td>CASSANDRA_USERNAME </td>
+      <td>datastax-java-driver.advanced.auth-provider.username </td>
+      <td>CONFIG_FORCE_datastax__java__driver_advanced_auth__provider_username </td>
+    </tr>
+    <tr>
+      <td>The cassandra password </td>
+      <td>CASSANDRA_PASSWORD </td>
+      <td>datastax-java-driver.advanced.auth-provider.password </td>
+      <td>CONFIG_FORCE_datastax__java__driver_advanced_auth__provider_password </td>
+    </tr>
+    <tr>
+      <td>The time after which actors without interaction are shutdown </td>
+      <td>PASSIVATION_TIMEOUT </td>
+      <td>app.cluster.passivation-timeout </td>
+      <td>CONFIG_FORCE_app_cluster_passivation__timeout </td>
+    </tr>
+    <tr>
+      <td>The Caches (Akka Distributed Data) request timeout </td>
+      <td>REPLICATION_TIMEOUT </td>
+      <td>app.cluster.replication-timeout </td>
+      <td>CONFIG_FORCE_app_cluster_replication__timeout </td>
+    </tr>
+    <tr>
+      <td>The number of cluster shards </td>
+      <td>SHARDS </td>
+      <td>app.cluster.shards </td>
+      <td>CONFIG_FORCE_app_cluster_shards </td>
+    </tr>
+    <tr>
+      <td>The seeds to use for joining a cluster </td>
+      <td>SEED_NODES </td>
+      <td>app.cluster.seeds </td>
+      <td>CONFIG_FORCE_app_cluster_seeds </td>
+    </tr>
+    <tr>
+      <td>The default page size when paginating on listings </td>
+      <td>PAGINATION_DEFAULT_SIZE </td>
+      <td>app.pagination.default-size </td>
+      <td>CONFIG_FORCE_app_pagination_default__size </td>
+    </tr>
+    <tr>
+      <td>The maximum page size allowed when paginating on listings </td>
+      <td>PAGINATION_MAX_SIZE </td>
+      <td>app.pagination.size-limit </td>
+      <td>CONFIG_FORCE_app_pagination_size__limit </td>
+    </tr>
+    <tr>
+      <td>The default indexing number of events taken per batch </td>
+      <td>INDEXING_BATCH </td>
+      <td>app.indexing.batch </td>
+      <td>CONFIG_FORCE_app_indexing_batch </td>
+    </tr>
+    <tr>
+      <td>The default indexing amount of time to wait for the bach events </td>
+      <td>INDEXING_BATCH_TIMEOUT </td>
+      <td>app.indexing.batch-timeout </td>
+      <td>CONFIG_FORCE_app_indexing_batch__timeout </td>
+    </tr>
+    <tr>
+      <td>The default indexing retry strategy </td>
+      <td>INDEXING_RETRY_STRATEGY </td>
+      <td>app.indexing.retry.strategy </td>
+      <td>CONFIG_FORCE_app_indexing_retry_strategy </td>
+    </tr>
+    <tr>
+      <td>The default indexing first retry delay </td>
+      <td>INDEXING_RETRY_INITIAL_DELAY </td>
+      <td>app.indexing.retry.initial-delay </td>
+      <td>CONFIG_FORCE_app_indexing_retry_initial__delay </td>
+    </tr>
+    <tr>
+      <td>The default indexing maximum retry delay </td>
+      <td>INDEXING_RETRY_MAX_DELAY </td>
+      <td>app.indexing.retry.max-delay </td>
+      <td>CONFIG_FORCE_app_indexing_retry_max__delay </td>
+    </tr>
+    <tr>
+      <td>The default indexing maximum number of retries </td>
+      <td>INDEXING_RETRY_MAX_RETRIES </td>
+      <td>app.indexing.retry.max-retries </td>
+      <td>CONFIG_FORCE_app_indexing_retry_max__retries </td>
+    </tr>
+    <tr>
+      <td>The default number of events after which the indexing progress is persisted </td>
+      <td>INDEXING_PROGRESS_EVENTS </td>
+      <td>app.indexing.progress.persist-after-processed </td>
+      <td>CONFIG_FORCE_app_indexing_progress_persist__after__processed </td>
+    </tr>
+    <tr>
+      <td>The default amount of time after which the indexing progress is persisted </td>
+      <td>INDEXING_PROGRESS_TIME </td>
+      <td>app.indexing.progress.max-time-window </td>
+      <td>CONFIG_FORCE_app_indexing_progress_max__time__window </td>
+    </tr>
+    <tr>
+      <td>Default number of shards for aggregates </td>
+      <td>AGGREGATE_SHARDS </td>
+      <td>app.aggregate.shards </td>
+      <td>CONFIG_FORCE_app_aggregate_shards </td>
+    </tr>
+    <tr>
+      <td>The amount of time ACLs are kept in memory after being accessed </td>
+      <td>ACLS_AGGREGATE_LAST_INTERACTION_PASSIVATION_TIMEOUT </td>
+      <td>app.acls.aggregate.passivation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_acls_aggregate_passivation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The amount of time permissions are kept in memory after being accessed </td>
+      <td>PERMISSIONS_AGGREGATE_LAST_INTERACTION_PASSIVATION_TIMEOUT </td>
+      <td>app.permissions.aggregate.passivation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_permissions_aggregate_passivation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The amount of time Realms are kept in memory after being accessed </td>
+      <td>REALMS_AGGREGATE_LAST_INTERACTION_PASSIVATION_TIMEOUT </td>
+      <td>app.realms.aggregate.passivation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_realms_aggregate_passivation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The amount of time Groups are kept in memory after being accessed </td>
+      <td>GROUPS_CACHE_LAST_INTERACTION_STOP_TIMEOUT </td>
+      <td>app.groups.invalidation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_groups_invalidation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The amount of time Organizations are kept in memory after being accessed </td>
+      <td>AGGREGATE_LAST_INTERACTION_PASSIVATION_TIMEOUT </td>
+      <td>app.organizations.aggregate.passivation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_organizations_aggregate_passivation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The amount of time Projects are kept in memory after being accessed </td>
+      <td>AGGREGATE_LAST_INTERACTION_PASSIVATION_TIMEOUT </td>
+      <td>app.projects.aggregate.passivation.lapsed-since-last-interaction </td>
+      <td>CONFIG_FORCE_app_organizations_aggregate_passivation_lapsed__since__last__interaction </td>
+    </tr>
+    <tr>
+      <td>The path where the DiskStorage reads/writes files </td>
+      <td>VOLUME_PATH </td>
+      <td>app.storage.disk.volume </td>
+      <td>CONFIG_FORCE_app_storage_disk_volume </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed upload size (in bytes) for DiskStorage </td>
+      <td>DISK_MAX_FILE_SIZE </td>
+      <td>app.storage.disk.max-file-size </td>
+      <td>CONFIG_FORCE_app_storage_disk_max__file__size </td>
+    </tr>
+    <tr>
+      <td>The default RemoteDiskStorage endpoint </td>
+      <td>REMOTE_DISK_DEFAULT_ENDPOINT </td>
+      <td>app.storage.remote-disk.default-endpoint </td>
+      <td>CONFIG_FORCE_app_storage_remote__disk_default__endpoint </td>
+    </tr>
+    <tr>
+      <td>The default RemoteDiskStorage Uri Path prefix </td>
+      <td>REMOTE_DISK_DEFAULT_ENDPOINT_PREFIX </td>
+      <td>app.storage.remote-disk.default-endpoint-prefix </td>
+      <td>CONFIG_FORCE_app_storage_remote__disk_default__endpoint__prefix </td>
+    </tr>
+    <tr>
+      <td>The default RemoteDiskStorage Bearer Token </td>
+      <td>REMOTE_DISK_DEFAULT_CREDENTIALS </td>
+      <td>app.storage.remote-disk.default-credentials </td>
+      <td>CONFIG_FORCE_app_storage_remote__disk_default__credentials </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed upload size (in bytes) for RemoteDiskStorage </td>
+      <td>REMOTE_DISK_MAX_FILE_SIZE </td>
+      <td>app.storage.remote-disk.max-file-size </td>
+      <td>CONFIG_FORCE_app_storage_remote__disk_max__file__size </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed upload size (in bytes) for S3Storage </td>
+      <td>S3_MAX_FILE_SIZE </td>
+      <td>app.storage.amazon.max-file-size </td>
+      <td>CONFIG_FORCE_app_storage_amazon_max__file__size </td>
+    </tr>
+    <tr>
+      <td>The Blazegraph endpoint </td>
+      <td>SPARQL_BASE_URI </td>
+      <td>app.sparql.base </td>
+      <td>CONFIG_FORCE_app_sparql_base </td>
+    </tr>
+    <tr>
+      <td>The Blazegraph query retry strategy </td>
+      <td>QUERYING_SPARQL_RETRY_STRATEGY </td>
+      <td>app.sparql.query.retry.strategy </td>
+      <td>CONFIG_FORCE_app_sparql_query_retry_strategy </td>
+    </tr>
+    <tr>
+      <td>The Blazegraph query first retry delay </td>
+      <td>QUERYING_SPARQL_RETRY_INITIAL_DELAY </td>
+      <td>app.sparql.query.retry.initial-delay </td>
+      <td>CONFIG_FORCE_app_sparql_query_retry_initial__delay </td>
+    </tr>
+    <tr>
+      <td>The Blazegraph query maximum retry delay </td>
+      <td>QUERYING_SPARQL_RETRY_MAX_DELAY </td>
+      <td>app.sparql.query.retry.max-delay </td>
+      <td>CONFIG_FORCE_app_sparql_query_retry_max__delay </td>
+    </tr>
+    <tr>
+      <td>The Blazegraph query maximum number of retries </td>
+      <td>QUERYING_SPARQL_RETRY_MAX_RETRIES </td>
+      <td>app.sparql.query.retry.max-retries </td>
+      <td>CONFIG_FORCE_app_sparql_query_retry_max__retries </td>
+    </tr>
+    <tr>
+      <td>The ElasticSearch endpoint </td>
+      <td>ELASTIC_SEARCH_BASE_URI </td>
+      <td>app.elastic-search.base </td>
+      <td>CONFIG_FORCE_app_elastic__search_base </td>
+    </tr>
+    <tr>
+      <td>The ElasticSearch query retry strategy </td>
+      <td>QUERYING_ELASTIC_SEARCH_RETRY_STRATEGY </td>
+      <td>app.elastic-search.query.retry.strategy </td>
+      <td>CONFIG_FORCE_app_elastic__search_query_retry_strategy </td>
+    </tr>
+    <tr>
+      <td>The ElasticSearch query first retry delay </td>
+      <td>QUERYING_ELASTIC_SEARCH_RETRY_INITIAL_DELAY </td>
+      <td>app.elastic-search.query.retry.initial-delay </td>
+      <td>CONFIG_FORCE_app_elastic__search_query_retry_initial__delay </td>
+    </tr>
+    <tr>
+      <td>The ElasticSearch query maximum retry delay </td>
+      <td>QUERYING_ELASTIC_SEARCH_RETRY_MAX_DELAY </td>
+      <td>app.elastic-search.query.retry.max-delay </td>
+      <td>CONFIG_FORCE_app_elastic__search_query_retry_max__delay </td>
+    </tr>
+    <tr>
+      <td>The ElasticSearch query maximum number of retries </td>
+      <td>QUERYING_ELASTIC_SEARCH_RETRY_MAX_RETRIES </td>
+      <td>app.elastic-search.query.retry.max-retries </td>
+      <td>CONFIG_FORCE_app_elastic__search_query_retry_max__retries </td>
+    </tr>
+    <tr>
+      <td>The CompositeView allowed maximum number of sources </td>
+      <td>COMPOSITE_MAX_SOURCES </td>
+      <td>app.composite.max-sources </td>
+      <td>CONFIG_FORCE_app_composite_max__sources </td>
+    </tr>
+    <tr>
+      <td>The CompositeView allowed maximum number of projections </td>
+      <td>COMPOSITE_MAX_PROJECTIONS </td>
+      <td>app.composite.max-projections </td>
+      <td>CONFIG_FORCE_app_composite_max__projections </td>
+    </tr>
+    <tr>
+      <td>The CompositeView allowed minimum rebuild interval time </td>
+      <td>COMPOSITE_MIN_REBUILD_INTERVAL </td>
+      <td>app.composite.min-interval-rebuild </td>
+      <td>CONFIG_FORCE_app_composite_min__interval__rebuild </td>
+    </tr>
+    <tr>
+      <td>The CompositeView password used to encrypt token </td>
+      <td>COMPOSITE_TOKEN_PASSWORD </td>
+      <td>app.composite.password </td>
+      <td>CONFIG_FORCE_app_composite_password </td>
+    </tr>
+    <tr>
+      <td>The CompositeView salt used to encrypt token </td>
+      <td>COMPOSITE_TOKEN_SALT </td>
+      <td>app.composite.salt </td>
+      <td>CONFIG_FORCE_app_composite_salt </td>
+    </tr>
+    <tr>
+      <td>The amount of time Archives are kept in memory after being accessed </td>
+      <td>ARCHIVES_CACHE_INVALIDATE_AFTER </td>
+      <td>app.archives.cache-invalidate-after </td>
+      <td>CONFIG_FORCE_app_archives_cache__invalidate__after </td>
+    </tr>
+    <tr>
+      <td>The maximum number of resources allowed on an Archive </td>
+      <td>ARCHIVES_MAX_RESOURCES </td>
+      <td>app.archives.max-resources </td>
+      <td>CONFIG_FORCE_app_archives_max__resources </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed service payload size (except for files) </td>
+      <td>AKKA_HTTP_SERVER_MAX_CONTENT_LENGTH </td>
+      <td>akka.http.server.parsing.max-content-length </td>
+      <td>CONFIG_FORCE_akka_http_server_parsing_max__content__length </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed client payload size (used for storages) </td>
+      <td>AKKA_HTTP_CLIENT_MAX_CONTENT_LENGTH </td>
+      <td>akka.http.client.parsing.max-content-length </td>
+      <td>CONFIG_FORCE_akka_http_client_parsing_max__content__length </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed number of connections </td>
+      <td>AKKA_HTTP_MAX_CONNECTIONS </td>
+      <td>akka.http.host-connection-pool.max-connections </td>
+      <td>CONFIG_FORCE_akka_http_host__connection__pool_max__connections </td>
+    </tr>
+    <tr>
+      <td>The maximum allowed concurrently opened requests </td>
+      <td>AKKA_HTTP_MAX_OPEN_REQUESTS </td>
+      <td>akka.http.host-connection-pool.max-open-requests </td>
+      <td>CONFIG_FORCE_akka_http_host__connection__pool_max__open__requests </td>
+    </tr>
+    <tr>
+      <td>The log level for Akka logs </td>
+      <td>AKKA_LOG_LEVEL </td>
+      <td>akka.loglevel </td>
+      <td>CONFIG_FORCE_akka_loglevel </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.3-to-v1.4-migration.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+v1.5.x
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/releases/v1.4-release-notes.html" title="v1.4 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+v1.4 Release Notes
+</span>
+</div>
+</a>
+<a href="../../docs/releases/v1.3-release-notes.html" title="v1.3 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+v1.3 Release Notes
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

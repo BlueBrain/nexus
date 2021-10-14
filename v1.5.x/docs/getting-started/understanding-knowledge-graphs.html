@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>Understanding Knowledge Graphs · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+Understanding Knowledge Graphs
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="active page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
+    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#understanding-knowledge-graphs" class="header">Understanding Knowledge Graphs</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#what-is-a-knowledge-graph-" class="header">What is a knowledge graph?</a>
+    <ul>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#the-graph-structure" class="header">The graph structure</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#describing-knowledge-in-a-graph" class="header">Describing knowledge in a graph</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#inferring-new-data-from-existing-relationships" class="header">Inferring new data from existing relationships</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#growing-a-knowledge-graph" class="header">Growing a knowledge graph</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#encoding-knowledge-graphs-rdf-json-ld-and-other-standards" class="header">Encoding knowledge graphs: RDF, JSON-LD, and other standards</a>
+    <ul>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#rdf" class="header">RDF</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#json-ld" class="header">JSON-LD</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#using-schema-org-as-a-common-vocabulary" class="header">Using Schema.org as a common vocabulary</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#reasoning-with-owl" class="header">Reasoning with OWL</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#references-and-resources-" class="header">References and resources:</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> v1.5.x
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#understanding-knowledge-graphs" class="header">Understanding Knowledge Graphs</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#what-is-a-knowledge-graph-" class="header">What is a knowledge graph?</a>
+    <ul>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#the-graph-structure" class="header">The graph structure</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#describing-knowledge-in-a-graph" class="header">Describing knowledge in a graph</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#inferring-new-data-from-existing-relationships" class="header">Inferring new data from existing relationships</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#growing-a-knowledge-graph" class="header">Growing a knowledge graph</a></li>
+    </ul></li>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#encoding-knowledge-graphs-rdf-json-ld-and-other-standards" class="header">Encoding knowledge graphs: RDF, JSON-LD, and other standards</a>
+    <ul>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#rdf" class="header">RDF</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#json-ld" class="header">JSON-LD</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#using-schema-org-as-a-common-vocabulary" class="header">Using Schema.org as a common vocabulary</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#reasoning-with-owl" class="header">Reasoning with OWL</a></li>
+      <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html#references-and-resources-" class="header">References and resources:</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.5.x,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#understanding-knowledge-graphs" name="understanding-knowledge-graphs" class="anchor"><span class="anchor-link"></span></a>Understanding Knowledge Graphs</h1>
+<p>This section will help you understand knowledge graphs and related standards and technologies.</p>
+<h2><a href="#what-is-a-knowledge-graph-" name="what-is-a-knowledge-graph-" class="anchor"><span class="anchor-link"></span></a>What is a knowledge graph?</h2>
+<p>A knowledge graph is a <a href="https://en.wikipedia.org/wiki/Graph_%28abstract_data_type%29" title="graph" target="_blank" rel="noopener noreferrer">graph</a> structure that links entities together. The links between the entities contain knowledge, based on how they connect to each other. For example, an apple can be connected to a tree (to show that it grows on trees) or in another case connected to a pie recipe (to show that it is part of a recipe). It is a formalized knowledge that enables programmatical reasoning about concepts in the world around us.</p>
+<p>In <a href="https://link.springer.com/chapter/10.1007%2F978-3-030-37439-6_1" title="this introduction to knowledge graphs" target="_blank" rel="noopener noreferrer">this introduction to knowledge graphs</a> the authors conclude that there is no clear definition of what a knowledge graph is. The term itself was coined in 2012 by Google as they <a href="https://blog.google/products/search/introducing-knowledge-graph-things-not/" title="introduced their Knowledge Graph" target="_blank" rel="noopener noreferrer">introduced their Knowledge Graph</a> as a mean of finding more relevant related search results by linking connected data on the web. As an idea, knowledge graphs are similar to <a href="https://en.wikipedia.org/wiki/Semantic_network" title="semantic networks" target="_blank" rel="noopener noreferrer">semantic networks</a> which date back to the 60&rsquo;s and 70&rsquo;s. The difference mainly lies in the size of the network, with knowledge graphs being larger. Knowledge graphs are also often generated in a rather manual way (data ingestion, data cleaning) instead of being generated and governed by a set of strict logical rules.</p>
+<p>For a further introduction to knowledge graphs the <a href="https://www.youtube.com/watch?v=bvwjG-3qAmY" title="&quot;What is a knowledge graph&quot;" target="_blank" rel="noopener noreferrer">&ldquo;What is a knowledge graph&rdquo;</a> video from the <a href="https://web.stanford.edu/class/cs520/" title="CS520 Stanford course" target="_blank" rel="noopener noreferrer">CS520 Stanford course</a> is a good resource.</p>
+<h3><a href="#the-graph-structure" name="the-graph-structure" class="anchor"><span class="anchor-link"></span></a>The graph structure</h3>
+<p>A knowledge graph consists of entities (nodes) that are connected to each other with relations (edges).</p>
+<p>The entity is an object with properties that describe it. For example, a person, a company, an event, a thing&hellip; These properties can be called the entity&rsquo;s &ldquo;metadata&rdquo;.</p>
+<p>The relation describes how entities are connected. For example, being member of, visiting a place, belonging to a country&hellip;</p><div class="half center">
+<p><img src="./assets/kg-entity_relation.png" alt="Graph Structure" /></p></div>
+<p>It&rsquo;s worth noting that having this graph data structure makes it easy to add new data into an existing graph by connecting new entities and new relations.</p>
+<h3><a href="#describing-knowledge-in-a-graph" name="describing-knowledge-in-a-graph" class="anchor"><span class="anchor-link"></span></a>Describing knowledge in a graph</h3>
+<p>After deciding what concept or idea that we wish to model in a knowledge graph, we need to collect the metadata that describes our entities. In order to make our data interoperable with other data and to allow us to import data from existing sources we should use a shared language when describing entities and relations. This is achieved using an <a href="https://en.wikipedia.org/wiki/Ontology_%28information_science%29" title="ontology" target="_blank" rel="noopener noreferrer">ontology</a>.</p>
+<p>The ontology is a kind of dictionary containing types that can be used to describe entities. The metadata is created by picking a type from the ontology that matches what you wish to describe and defining the properties of the chosen type. E.g. a person can be described by a <a href="https://schema.org/Person" title="Person" target="_blank" rel="noopener noreferrer">Person</a> type. The name of the person can be encoded in a <a href="https://schema.org/givenName" title="givenName" target="_blank" rel="noopener noreferrer">givenName</a> property. This results in a set of data that can be processed both by humans and computers (as it is structured).</p>
+<p>For example, in the image below, you can see that the entity <strong>Toy Story</strong> with a property <strong>Release date</strong> that has the value <strong>March 29th, 1995</strong> and the <strong>Director</strong> property with the value John Lasseter.</p><div class="half center">
+<p><img src="./assets/kg-structure0.png" alt="Graph Structure" /></p></div>
+<h3><a href="#inferring-new-data-from-existing-relationships" name="inferring-new-data-from-existing-relationships" class="anchor"><span class="anchor-link"></span></a>Inferring new data from existing relationships</h3>
+<p>Since the entities are encoded using well-defined ontologies it allows us to draw conclusions based on the data we have and create new inferred data. This is done by giving the knowledge graph to an <a href="https://en.wikipedia.org/wiki/Inference_engine" title="inference engine" target="_blank" rel="noopener noreferrer">inference engine</a> that can apply a set of logical rules to the data to derive new information. For example, if we have a knowledge graph containing persons and their birth year we could create an inference engine with rules that determine whether a person is a child or a retired person.</p>
+<p>In the second example below, we have <strong>Toy Story</strong>, it has characters (using the relation called <strong>Character</strong>) and we have asserted the cast of characters. Having defined this, we can now define a rule that instructs the inference engine to create new relations <strong>Voice Cast</strong> whenever we find the <strong>Cast</strong> of a <strong>Character</strong>. This enables us to query the graph and directly get <strong>Toy Story</strong>&rsquo;s voices cast without having to navigate through its <strong>Cast</strong> first.</p><div class="half center">
+<p><img src="./assets/kg_inferred-relation.png" alt="Graph Structure" /></p></div>
+<p>In reality inferring knowledge is a complex topic. <a href="https://www.youtube.com/watch?v=AUtk6NBqEFY" title="This video lecture" target="_blank" rel="noopener noreferrer">This video lecture</a> shows some real-world examples of algorithms and rules for inference engines. E.g. <a href="https://www.youtube.com/watch?v=AUtk6NBqEFY&feature=youtu.be&t=3867" title="reasoning about a persons creditworthiness based on what their home address is" target="_blank" rel="noopener noreferrer">reasoning about a persons creditworthiness based on what their home address is</a> or <a href="https://www.youtube.com/watch?v=AUtk6NBqEFY&feature=youtu.be&t=1690" title="trying to spot fake papers that have been submitted to a journal" target="_blank" rel="noopener noreferrer">trying to spot fake papers that have been submitted to a journal</a>.</p>
+<h3><a href="#growing-a-knowledge-graph" name="growing-a-knowledge-graph" class="anchor"><span class="anchor-link"></span></a>Growing a knowledge graph</h3>
+<p>A graph is a flexible data structure, and an ontology can evolve as new data comes in. As a result, data can continually be added to help serve new use cases.</p>
+<p>The illustration below shows how the initial graph representing <strong>Toy Story</strong> can be augmented to capture many other related domains such as:</p>
+<ul>
+  <li>Toy Story&rsquo;s similar movies (e.g. Cars)</li>
+  <li>Cities and associations related to motion picture production (e.g. Motion Picture Association of America)</li>
+  <li>Places and people connected to animation movies (e.g. Steve Jobs)</li>
+</ul><div class="half center">
+<p><img src="./assets/kg_alive-structure0.png" alt="Graph Structure" /></p></div>
+<h2><a href="#encoding-knowledge-graphs-rdf-json-ld-and-other-standards" name="encoding-knowledge-graphs-rdf-json-ld-and-other-standards" class="anchor"><span class="anchor-link"></span></a>Encoding knowledge graphs: RDF, JSON-LD, and other standards</h2>
+<h3><a href="#rdf" name="rdf" class="anchor"><span class="anchor-link"></span></a>RDF</h3>
+<p>How do you encode knowledge graphs in a way that is interoperable with other applications and can be integrated with other data sources? You use some common formalism, a language, to describe your entities and relationships. For knowledge graphs this format is RDF. <a href="https://en.wikipedia.org/wiki/RDF" title="RDF (Resource Description Framework)" target="_blank" rel="noopener noreferrer">RDF (Resource Description Framework)</a> is a data format where every piece of knowledge can be broken down into a structure (subject, predicate and object) called triple.</p><div class="half center">
+<p><img src="./assets/triple.png" alt="ds" /></p></div>
+<p>RDF-formatted data can be queried using a query language such as <a href="https://en.wikipedia.org/wiki/SPARQL" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a>. This allows us to create applications that can process knowledge graphs, for example, to infer new data or get answers to questions we may have for the data that is stored in the knowledge graph.</p>
+<h3><a href="#json-ld" name="json-ld" class="anchor"><span class="anchor-link"></span></a>JSON-LD</h3>
+<p>RDF is however only a part of what we need in order to encode a graph. We also need an implementation, a <a href="https://www.w3.org/TR/rdf11-concepts/#dfn-concrete-rdf-syntax" title="&quot;concrete RDF syntax&quot;" target="_blank" rel="noopener noreferrer">&ldquo;concrete RDF syntax&rdquo;</a> that shows how to write down an RDF-formatted graph in a format that can be shared e.g. between applications. One syntax that can be used is <a href="https://json-ld.org/" title="JSON-LD" target="_blank" rel="noopener noreferrer">JSON-LD</a>. It stands for JSON for Linking Data.</p>
+<p>We start by looking at a simple <a href="https://en.wikipedia.org/wiki/JSON" title="JSON" target="_blank" rel="noopener noreferrer">JSON</a> example:</p>
+<pre class="prettyprint"><code class="language-json">[
+  	{
+            &quot;title&quot;:&quot;Floating island&quot;,
+            &quot;author&quot;:&quot;Unknown&quot;
+  	},
+  	{
+            &quot;title&quot;:&quot;Apple balloon&quot;,
+            &quot;author&quot;:&quot;Grant Achatz&quot;
+  	},
+  	{
+            &quot;title&quot;:&quot;Opera&quot;,
+            &quot;author&quot;:&quot;Cyriaque Gavillon&quot;
+  	}
+
+  ]
+</code></pre>
+<p>After reading the above JSON we can ask ourselves what this data describes? If we don&rsquo;t recognise the names we may think these perhaps are titles of books or movies. There is clearly a lack of context resulting in an ambiguity. JSON-LD allows to solve the ambiguity problem by enabling a semantic-preserving data encoding. This is achieved by adding an <strong>@context</strong> object where every key is associated with an identifier.</p>
+<p>If we extend the JSON example with the payload below, then both a machine and a human can look up the context to find out that the JSON refers to recipes. I.e. <a href="https://en.wikipedia.org/wiki/Floating_island_%28dessert%29" title="Floating island" target="_blank" rel="noopener noreferrer">Floating island</a>, <a href="https://www.businessinsider.com/edible-balloon-alinea-restaurant-chicago-three-michelin-stars-2016-5?r=US&IR=T" title="Apple balloon" target="_blank" rel="noopener noreferrer">Apple balloon</a> and <a href="https://en.wikipedia.org/wiki/Opera_cake" title="Opera" target="_blank" rel="noopener noreferrer">Opera</a>.</p>
+<pre class="prettyprint"><code class="language-json">  [
+  	{
+            &quot;@context&quot;:&quot;https://json-ld.org/contexts/recipe.jsonld&quot;,
+            &quot;title&quot;:&quot;Floating island&quot;,
+            &quot;author&quot;:&quot;Unknown&quot;
+  	},
+  	{
+            &quot;@context&quot;:&quot;https://json-ld.org/contexts/recipe.jsonld&quot;,
+            &quot;title&quot;:&quot;Apple balloon&quot;,
+            &quot;author&quot;:&quot;Grant Achatz&quot;
+  	},
+  	{
+            &quot;@context&quot;:&quot;https://json-ld.org/contexts/recipe.jsonld&quot;,
+            &quot;title&quot;:&quot;Opera&quot;,
+            &quot;author&quot;:&quot;Cyriaque Gavillon&quot;
+  	 }
+
+  ] 
+  
+</code></pre>
+<p>In the <a href="https://json-ld.org/playground/" title="JSON-LD playground" target="_blank" rel="noopener noreferrer">JSON-LD playground</a> you can try examples of JSON-LD.</p>
+<h3><a href="#using-schema-org-as-a-common-vocabulary" name="using-schema-org-as-a-common-vocabulary" class="anchor"><span class="anchor-link"></span></a>Using Schema.org as a common vocabulary</h3>
+<p>Having defined a grammar (RDF) and a concrete syntax (JSON-LD) to encode knowledge graphs, there is one more thing to add in order to achieve interoperability with other knowledge graphs. We need a common vocabulary that defines which properties an entity should have - an ontology.</p>
+<p>One such ontology that is commonly used is the <a href="https://schema.org/" title="Schema.org" target="_blank" rel="noopener noreferrer">Schema.org</a> vocabulary. You can look up how different concepts are described by searching for them on the schema.org web page. For example, a <a href="https://schema.org/VideoGame" title="video game entity" target="_blank" rel="noopener noreferrer">video game entity</a> is described by properties such as <code>cheatCode</code> or <code>gamePlatform</code>.</p>
+<h3><a href="#reasoning-with-owl" name="reasoning-with-owl" class="anchor"><span class="anchor-link"></span></a>Reasoning with OWL</h3>
+<p>If you wish to reason about knowledge that is stored in a knowledge graph it is useful to have a language that can express properties and relations for the entities in the ontology (the dictionary) that your knowledge graph consists of. <a href="https://www.w3.org/TR/owl2-primer/#What_is_OWL_2.3F" title="OWL (Web Ontology Language)" target="_blank" rel="noopener noreferrer">OWL (Web Ontology Language)</a> is such a language. It is built on top of RDF (which can be seen as the grammar for OWL) and it is different from JSON-LD, since JSON-LD merely describes the syntax we use to encode our knowledge graph.</p>
+<p>With OWL you can <a href="https://www.w3.org/TR/owl2-primer/#Modeling_Knowledge:_Basic_Notions" title="form axioms and expressions for the entities" target="_blank" rel="noopener noreferrer">form axioms and expressions for the entities</a> in your ontology. For example, expressing that a woman is a subclass of a person:</p>
+<pre><code>SubClassOf( :Woman :Person )
+</code></pre>
+<h3><a href="#references-and-resources-" name="references-and-resources-" class="anchor"><span class="anchor-link"></span></a>References and resources:</h3>
+<p>The sections below contain references and resources that can be used to learn more about knowledge graphs.</p>
+<ol>
+  <li>
+  <p><a href="https://link.springer.com/chapter/10.1007%2F978-3-030-37439-6_1" title="Introduction: What Is a Knowledge Graph?" target="_blank" rel="noopener noreferrer">Introduction: What Is a Knowledge Graph?</a>  in Knowledge Graphs: Methodology, Tools and Selected Use Cases<br/> Author: Fensel, Dieter et al<br/> Published: Springer International Publishing, 2020<br/> DOI: 10.1007/978-3-030-37439-6_1</p></li>
+  <li>
+  <p><a href="https://www.youtube.com/watch?v=AUtk6NBqEFY" title="What are some knowledge graph inference algorithms?" target="_blank" rel="noopener noreferrer">What are some knowledge graph inference algorithms?</a><br/> Published: 23.04.2020, Youtube.com</p></li>
+  <li>
+  <p><a href="https://www.youtube.com/watch?v=VRe5yOjmuEY&feature=youtu.be&t=3669" title="What is the role of knowledge graphs in machine learning? - Challenges for explainable AI" target="_blank" rel="noopener noreferrer">What is the role of knowledge graphs in machine learning? - Challenges for explainable AI</a><br/> Published: 20.05.2020, Youtube.com</p></li>
+  <li>
+  <p><a href="https://www.oreilly.com/library/view/programming-the-semantic/9780596802141/" title="Programming the Semantic Web" target="_blank" rel="noopener noreferrer">Programming the Semantic Web</a><br/> Author: Segaran, Toby et al<br/> Published: O’Reilly Media, Inc., 2009<br/> ISBN: 9780596153816</p></li>
+  <li>
+  <p><a href="https://www.youtube.com/watch?v=bvwjG-3qAmY" title="What is a knowledge graph?" target="_blank" rel="noopener noreferrer">What is a knowledge graph?</a><br/> Published: 23.04.2020, Youtube.com</p></li>
+  <li>
+  <p><a href="https://www.w3.org/TR/rdf11-primer/">RDF 1.1 primer</a><br/> Author: W3C Working Group<br/> Editors: Schreiber, G., Raimond, Y<br/> Published: 24.06.2014</p></li>
+  <li>
+  <p><a href="https://www.w3.org/TR/json-ld11/" title="JSON-LD 1.1" target="_blank" rel="noopener noreferrer">JSON-LD 1.1</a><br/> Editors: Kellogg G., Champin P-A., Longley D.<br/> Published: 16.07.2020</p></li>
+  <li>
+  <p><a href="https://json-ld.org/" title="JSON LD - curated resources" target="_blank" rel="noopener noreferrer">JSON LD - curated resources</a><br/> This is probably one of the best resources to start with if you are interested in JSON-LD.</p></li>
+  <li>
+  <p><a href="https://www.w3.org/TR/owl2-overview/" title="OWL 2 Web Ontology Language Document Overview (Second Edition)" target="_blank" rel="noopener noreferrer">OWL 2 Web Ontology Language Document Overview (Second Edition)</a><br/> Author: W3C Working Group<br/> Published: 11.12.2012</p></li>
+  <li>
+  <p><a href="https://patterns.dataincubator.org/book/" title="Linked Data Patterns" target="_blank" rel="noopener noreferrer">Linked Data Patterns</a><br/>Authors: Leigh Dodds, Ian Davis<br/>Published: 31.05.2012 </p></li>
+  <li>
+  <p><a href="https://book.validatingrdf.com/" title="Validating RDF Data" target="_blank" rel="noopener noreferrer">Validating RDF Data</a><br/>Authors: Jose Emilio labra Gayo, Eric Prud’hommeaux, Iovka Boneva, Dimitris Kontokostas<br/>Published: 2018 </p></li>
+</ol>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/getting-started/understanding-knowledge-graphs.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+v1.5.x
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/getting-started/index.html" title="Getting Started" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+Getting Started
+</span>
+</div>
+</a>
+<a href="../../docs/getting-started/try-nexus.html" title="Try Nexus with Neuroscience Datasets" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+Try Nexus with Neuroscience Datasets
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

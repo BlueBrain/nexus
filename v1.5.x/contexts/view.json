@@ -1,0 +1,36 @@
+{
+  "@context": {
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
+    "View": "nxv:View",
+    "ElasticSearchView": "nxv:ElasticSearchView",
+    "SparqlView": "nxv:SparqlView",
+    "AggregateElasticSearchView": "nxv:AggregateElasticSearchView",
+    "AggregateSparqlView": "nxv:AggregateSparqlView",
+    "_uuid": "nxv:uuid",
+    "resourceSchemas": {
+      "@id": "nxv:resourceSchemas",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceTypes": {
+      "@id": "nxv:resourceTypes",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "views": {
+      "@id": "nxv:views",
+      "@container": "@set"
+    },
+    "project": "nxv:project",
+    "viewId": {
+      "@id": "nxv:viewId",
+      "@type": "@id"
+    },
+    "resourceTag": "nxv:resourceTag",
+    "includeMetadata": "nxv:includeMetadata",
+    "includeDeprecated": "nxv:includeDeprecated",
+    "sourceAsText": "nxv:sourceAsText",
+    "mapping": "nxv:mapping"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/view.json"
+}

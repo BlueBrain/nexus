@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html" class="active page">Storages</a></li>
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -231,6 +238,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -239,8 +247,15 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -249,7 +264,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -270,6 +285,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/storages-api.html#remote-disk-storage" class="header">Remote disk storage</a></li>
       <li><a href="../../../docs/delta/api/storages-api.html#amazon-s3-compatible-storage" class="header">Amazon S3 compatible storage</a></li>
     </ul></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#indexing" class="header">Indexing</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-post" class="header">Create using POST</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#update" class="header">Update</a></li>
@@ -278,8 +294,15 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/storages-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
     <li><a href="../../../docs/delta/api/storages-api.html#fetch-tags" class="header">Fetch tags</a></li>
-    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#list" class="header">List</a>
+    <ul>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-a-project" class="header">Within a project</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-an-organization" class="header">Within an organization</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#within-all-projects" class="header">Within all projects</a></li>
+      <li><a href="../../../docs/delta/api/storages-api.html#parameter-description" class="header">Parameter description</a></li>
+    </ul></li>
     <li><a href="../../../docs/delta/api/storages-api.html#server-sent-events" class="header">Server Sent Events</a></li>
+    <li><a href="../../../docs/delta/api/storages-api.html#fetch-statistics" class="header">Fetch statistics</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -307,6 +330,7 @@ BlueBrain/nexus
   &quot;volume&quot;: &quot;{volume}&quot;,
   &quot;readPermission&quot;: &quot;{read_permission}&quot;,
   &quot;writePermission&quot;: &quot;{write_permission}&quot;,
+  &quot;capacity&quot;: &quot;{capacity}&quot;,
   &quot;maxFileSize&quot;: {max_file_size}
 }
 </code></pre>
@@ -316,11 +340,13 @@ BlueBrain/nexus
   <li><code>{volume}</code>: String - the path to the local file-system volume where files using this storage will be stored. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-volume</code> (<code>/tmp</code>).</li>
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-write-permission</code> (<code>files/write</code>).</li>
+  <li><code>{capacity}</code>: Long - the maximum allocated capacity in bytes for storing files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-capacity</code> (None).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.disk.default-max-file-size</code> (10G).</li>
 </ul>
-<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3>
+<h3><a href="#remote-disk-storage" name="remote-disk-storage" class="anchor"><span class="anchor-link"></span></a>Remote disk storage</h3><div class="callout warning "><div class="callout-title">Warning</div>
+<p>The Remote disk storage and it remote service implementation are now deprecated and will be removed in an upcoming release.</p></div>
 <p>This storage type relies on a remote HTTP service that exposes basic file operations on an underlying POSIX file-system. This is particularly handy if your organization is running some kind of distributed network storage (such as Ceph, Gluster, GPFS, Lustre, &hellip;) that you don&rsquo;t want to mount directly on the system where Nexus Delta runs.</p>
-<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
+<p>While there&rsquo;s no formal specification for this service, you can check out or deploy our own implementation: <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/storage" title="Nexus remote storage service" target="_blank" rel="noopener noreferrer">Nexus remote storage service</a>.</p>
 <p>In order to be able to use this storage, the configuration flag <code>plugins.storage.storages.remote-disk.enabled</code> should be set to <code>true</code>.</p>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@type&quot;: &quot;RemoteDiskStorage&quot;,
@@ -368,6 +394,12 @@ BlueBrain/nexus
   <li><code>{read_permission}</code>: String - the permission a client must have in order to fetch files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-read-permission</code> (<code>resources/read</code>).</li>
   <li><code>{write_permission}</code>: String - the permission a client must have in order to create files using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-write-permission</code> (<code>files/write</code>).</li>
   <li><code>{max_file_size}</code>: Long - the maximum allowed size in bytes for files uploaded using this storage. This field is optional, defaulting to the configuration flag <code>plugins.storage.storages.amazon.default-max-file-size</code> (10G).</li>
+</ul>
+<h2><a href="#indexing" name="indexing" class="anchor"><span class="anchor-link"></span></a>Indexing</h2>
+<p>All the API calls modifying a storage (creation, update, tagging, deprecation) can specify whether the storage should be indexed synchronously or in the background. This behaviour is controlled using <code>indexing</code> query param, which can be one of two values:</p>
+<ul>
+  <li><code>async</code> - (default value) the storage will be indexed asynchronously</li>
+  <li><code>sync</code> - the storage will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
 <h2><a href="#create-using-post" name="create-using-post" class="anchor"><span class="anchor-link"></span></a>Create using POST</h2>
 <pre><code>POST /v1/storages/{org_label}/{project_label}
@@ -718,6 +750,8 @@ BlueBrain/nexus
 }</code></pre></dd>
 </dl>
 <h2><a href="#list" name="list" class="anchor"><span class="anchor-link"></span></a>List</h2>
+<p>There are three available endpoints to list storages in different scopes.</p>
+<h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>
 <pre><code>GET /v1/storages/{org_label}/{project_label}?from={from}
                                              &amp;size={size}
                                              &amp;deprecated={deprecated}
@@ -728,7 +762,31 @@ BlueBrain/nexus
                                              &amp;q={search}
                                              &amp;sort={sort}
 </code></pre>
-<p>where&hellip;</p>
+<h3><a href="#within-an-organization" name="within-an-organization" class="anchor"><span class="anchor-link"></span></a>Within an organization</h3>
+<p>This operation returns only storages from projects defined in the organisation <code>{org_label}</code> and where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/storages/{org_label}?from={from}
+                            &amp;size={size}
+                            &amp;deprecated={deprecated}
+                            &amp;rev={rev}
+                            &amp;type={type}
+                            &amp;createdBy={createdBy}
+                            &amp;updatedBy={updatedBy}
+                            &amp;q={search}
+                            &amp;sort={sort}
+</code></pre>
+<h3><a href="#within-all-projects" name="within-all-projects" class="anchor"><span class="anchor-link"></span></a>Within all projects</h3>
+<p>This operation returns only storages from projects where the caller has the <code>resources/read</code> permission.</p>
+<pre><code>GET /v1/storages?from={from}
+                &amp;size={size}
+                &amp;deprecated={deprecated}
+                &amp;rev={rev}
+                &amp;type={type}
+                &amp;createdBy={createdBy}
+                &amp;updatedBy={updatedBy}
+                &amp;q={search}
+                &amp;sort={sort}
+</code></pre>
+<h3><a href="#parameter-description" name="parameter-description" class="anchor"><span class="anchor-link"></span></a>Parameter description</h3>
 <ul>
   <li><code>{from}</code>: Number - is the parameter that describes the offset for the current query; defaults to <code>0</code></li>
   <li><code>{size}</code>: Number - is the parameter that limits the number of results; defaults to <code>20</code></li>
@@ -860,6 +918,30 @@ data:{&quot;@context&quot;:[&quot;https://bluebrain.github.io/nexus/contexts/met
 event:StorageDeprecated
 id:8714dae0-b254-11eb-b48a-9d94c78eda08</code></pre></dd>
 </dl>
+<h2><a href="#fetch-statistics" name="fetch-statistics" class="anchor"><span class="anchor-link"></span></a>Fetch statistics</h2><div class="callout note warning"><div class="callout-title">Note</div>
+<p>This endpoint is experimental and the response structure might change in the future.</p></div>
+<pre><code>GET /v1/storages/{org_label}/{project_label}/{storage_id}/statistics
+</code></pre>
+<p>It returns:</p>
+<ul>
+  <li>the instant of the latest consumed event (<code>lastProcessedEventDateTime</code>).</li>
+  <li>the number of physical files stored on the storage (<code>files</code>).</li>
+  <li>the space used by this file on the given storage (<code>spaceUsed</code>).</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetch-statistics.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/storages/myorg/myproject/remote/statistics&quot;</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/storages/fetched-statistics.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot; : &quot;https://bluebrain.github.io/nexus/contexts/storages.json&quot;,
+  &quot;files&quot; : 50,
+  &quot;lastProcessedEventDateTime&quot; : &quot;1970-01-01T00:00:05Z&quot;,
+  &quot;spaceUsed&quot; : 5000
+}</code></pre></dd>
+</dl>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/storages-api.md" title="Edit this page" class="md-source-file md-edit">
@@ -868,7 +950,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

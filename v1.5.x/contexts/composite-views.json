@@ -1,0 +1,24 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "resourceTypes": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "resourceSchemas": {
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "identities": {
+      "@container": "@set"
+    },
+    "sources": {
+      "@container": "@set"
+    },
+    "projections": {
+      "@container": "@set"
+    },
+    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/compositeview.json"
+}

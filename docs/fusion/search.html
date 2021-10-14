@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -225,42 +232,20 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/fusion/search.html#search" class="header">Search</a>
   <ul>
-    <li><a href="../../docs/fusion/search.html#powered-by-elastic-search-views" class="header">Powered by Elastic Search Views</a></li>
-    <li><a href="../../docs/fusion/search.html#search-config" class="header">Search Config</a>
-    <ul>
-      <li><a href="../../docs/fusion/search.html#where-are-searchconfigs-stored-" class="header">Where are SearchConfigs stored?</a></li>
-      <li><a href="../../docs/fusion/search.html#example-searchconfig" class="header">Example SearchConfig</a></li>
-      <li><a href="../../docs/fusion/search.html#facets" class="header">Facets</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#default-facets-configuration" class="header">Default Facets Configuration</a></li>
-      </ul></li>
-      <li><a href="../../docs/fusion/search.html#fields" class="header">Fields</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#special-properties" class="header">Special properties</a></li>
-        <li><a href="../../docs/fusion/search.html#default-fields-configuration" class="header">Default Fields Configuration</a></li>
-      </ul></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/search.html#search-results" class="header">Search Results</a>
-    <ul>
-      <li><a href="../../docs/fusion/search.html#result-grid" class="header">Result Grid</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#result-view-cards" class="header">Result View Cards</a></li>
-      </ul></li>
-      <li><a href="../../docs/fusion/search.html#result-table" class="header">Result Table</a></li>
-    </ul></li>
     <li><a href="../../docs/fusion/search.html#search-bar" class="header">Search Bar</a>
     <ul>
-      <li><a href="../../docs/fusion/search.html#hotkey-" class="header">Hotkey!</a></li>
-      <li><a href="../../docs/fusion/search.html#caveats" class="header">Caveats</a></li>
+      <li><a href="../../docs/fusion/search.html#full-text-search" class="header">Full-text Search</a></li>
+      <li><a href="../../docs/fusion/search.html#jump-to-project" class="header">Jump to Project</a></li>
     </ul></li>
-    <li><a href="../../docs/fusion/search.html#action-bar" class="header">Action Bar</a>
+    <li><a href="../../docs/fusion/search.html#sorting" class="header">Sorting</a></li>
+    <li><a href="../../docs/fusion/search.html#filtering" class="header">Filtering</a></li>
+    <li><a href="../../docs/fusion/search.html#hidden-columns-and-ordering" class="header">Hidden Columns and Ordering</a>
     <ul>
-      <li><a href="../../docs/fusion/search.html#exporting" class="header">Exporting</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#csv" class="header">CSV</a></li>
-        <li><a href="../../docs/fusion/search.html#as-es-query" class="header">As ES Query</a></li>
-      </ul></li>
+      <li><a href="../../docs/fusion/search.html#column-ordering" class="header">Column ordering</a></li>
+      <li><a href="../../docs/fusion/search.html#hiding-column-using-the-field-menu" class="header">Hiding column using the Field menu</a></li>
     </ul></li>
+    <li><a href="../../docs/fusion/search.html#pagination" class="header">Pagination</a></li>
+    <li><a href="../../docs/fusion/search.html#reset-search-customisations" class="header">Reset Search Customisations</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -269,7 +254,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -284,42 +269,20 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/fusion/search.html#search" class="header">Search</a>
   <ul>
-    <li><a href="../../docs/fusion/search.html#powered-by-elastic-search-views" class="header">Powered by Elastic Search Views</a></li>
-    <li><a href="../../docs/fusion/search.html#search-config" class="header">Search Config</a>
-    <ul>
-      <li><a href="../../docs/fusion/search.html#where-are-searchconfigs-stored-" class="header">Where are SearchConfigs stored?</a></li>
-      <li><a href="../../docs/fusion/search.html#example-searchconfig" class="header">Example SearchConfig</a></li>
-      <li><a href="../../docs/fusion/search.html#facets" class="header">Facets</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#default-facets-configuration" class="header">Default Facets Configuration</a></li>
-      </ul></li>
-      <li><a href="../../docs/fusion/search.html#fields" class="header">Fields</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#special-properties" class="header">Special properties</a></li>
-        <li><a href="../../docs/fusion/search.html#default-fields-configuration" class="header">Default Fields Configuration</a></li>
-      </ul></li>
-    </ul></li>
-    <li><a href="../../docs/fusion/search.html#search-results" class="header">Search Results</a>
-    <ul>
-      <li><a href="../../docs/fusion/search.html#result-grid" class="header">Result Grid</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#result-view-cards" class="header">Result View Cards</a></li>
-      </ul></li>
-      <li><a href="../../docs/fusion/search.html#result-table" class="header">Result Table</a></li>
-    </ul></li>
     <li><a href="../../docs/fusion/search.html#search-bar" class="header">Search Bar</a>
     <ul>
-      <li><a href="../../docs/fusion/search.html#hotkey-" class="header">Hotkey!</a></li>
-      <li><a href="../../docs/fusion/search.html#caveats" class="header">Caveats</a></li>
+      <li><a href="../../docs/fusion/search.html#full-text-search" class="header">Full-text Search</a></li>
+      <li><a href="../../docs/fusion/search.html#jump-to-project" class="header">Jump to Project</a></li>
     </ul></li>
-    <li><a href="../../docs/fusion/search.html#action-bar" class="header">Action Bar</a>
+    <li><a href="../../docs/fusion/search.html#sorting" class="header">Sorting</a></li>
+    <li><a href="../../docs/fusion/search.html#filtering" class="header">Filtering</a></li>
+    <li><a href="../../docs/fusion/search.html#hidden-columns-and-ordering" class="header">Hidden Columns and Ordering</a>
     <ul>
-      <li><a href="../../docs/fusion/search.html#exporting" class="header">Exporting</a>
-      <ul>
-        <li><a href="../../docs/fusion/search.html#csv" class="header">CSV</a></li>
-        <li><a href="../../docs/fusion/search.html#as-es-query" class="header">As ES Query</a></li>
-      </ul></li>
+      <li><a href="../../docs/fusion/search.html#column-ordering" class="header">Column ordering</a></li>
+      <li><a href="../../docs/fusion/search.html#hiding-column-using-the-field-menu" class="header">Hiding column using the Field menu</a></li>
     </ul></li>
+    <li><a href="../../docs/fusion/search.html#pagination" class="header">Pagination</a></li>
+    <li><a href="../../docs/fusion/search.html#reset-search-customisations" class="header">Reset Search Customisations</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -331,273 +294,58 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#search" name="search" class="anchor"><span class="anchor-link"></span></a>Search</h1>
-<p>The Search SubApp enables users to search or filter data stored in Nexus Delta in various projects in a configurable way. It&rsquo;s intended as a global search tool for your Nexus instance.</p>
-<p><img src="assets/search-breakdown.png" alt="Search SubApp" /></p>
-<p>The administrator who configures one or more <code>SearchConfigs</code> for their Search SubApp has power over what data is searchable, and how it will render in the Search interface.</p><div class="callout note "><div class="callout-title">Note</div>
-<h3><a href="#powered-by-elastic-search-views" name="powered-by-elastic-search-views" class="anchor"><span class="anchor-link"></span></a>Powered by Elastic Search Views</h3>
-<p>This feature leverages the Elastic Search indexing capability of Nexus Delta. It uses the <code>SearchConfig</code> to decide how to query an <a href="../delta/api/views/elasticsearch-view-api.html">Elastic Search View</a>. Because it depends on the <a href="../delta/api/views/elasticsearch-view-api.html">Elastic Search View</a> feature, make sure that your <code>mappings</code> property is properly configured to index the data in the way you expect. An incorrectly configured <code>mapping</code> property might not show the appropriate <code>Facets</code> you might expect, or it could simply result in nothing shown.</p>
-<p>We recommend using an <a href="../delta/api/views/aggregated-es-view-api.html">Aggregate Search View</a>, so that you can query multiple projects at once. However, this feature is limited to 10 to 15 projects, depending on their index name length.</p></div>
-<h2><a href="#search-config" name="search-config" class="anchor"><span class="anchor-link"></span></a>Search Config</h2>
-<h3><a href="#where-are-searchconfigs-stored-" name="where-are-searchconfigs-stored-" class="anchor"><span class="anchor-link"></span></a>Where are SearchConfigs stored?</h3>
-<p>Search configs are saved in a project as a simple <a href="../delta/api/resources-api.html">Resource</a>, with a type <code>nxv:SearchConfig</code>.</p>
-<p>Nexus Fusion must be made aware of which project to look for these resources, either by using the env var <code>SEARCH_CONFIG_PROJECT</code></p>
-<pre class="prettyprint"><code class="language-bash">  SEARCH_CONFIG_PROJECT=my-org/my-project
-</code></pre>
-<p>or Nexus Fusion will use the default <code>SEARCH_CONFIG_PROJECT</code> value, <code>webapps/nexus-web</code></p>
-<p>Signature:</p>
-<pre><code>{
-  // A unique ID
-  id: string;
-  // A label to show in the interface to users
-  label: string;
-  // Which view will be used to query against? can be of type AggregatedElasticSearchView or ElasticSearchView
-  view: string;
-  // An optional description
-  description?: string;
-  // An array of facet configurations that will drive the facet panel
-  facets?: FacetConfig[];
-  // An array of Result Table Fields configurations that will dictate the Result Table rendering
-  fields?: ResultTableFields[];
-};
-</code></pre>
-<h3><a href="#example-searchconfig" name="example-searchconfig" class="anchor"><span class="anchor-link"></span></a>Example SearchConfig</h3>
-<pre><code>{
-  &quot;@type&quot;: [
-    &quot;nxv:SearchConfig&quot;
-  ],
-  &quot;description&quot;: &quot;global dataset search&quot;,
-  &quot;facets&quot;: [
-    {
-      &quot;key&quot;: &quot;brainLocationLabel&quot;,
-      &quot;label&quot;: &quot;Brain Region&quot;,
-      &quot;propertyKey&quot;: &quot;brainLocation.brainRegion.label.raw&quot;,
-      &quot;type&quot;: &quot;terms&quot;
-    },
-    {
-      &quot;key&quot;: &quot;objectOfStudyLabel&quot;,
-      &quot;label&quot;: &quot;Object of Study&quot;,
-      &quot;propertyKey&quot;: &quot;objectOfStudy.label.raw&quot;,
-      &quot;type&quot;: &quot;terms&quot;
-    },
-    {
-      &quot;key&quot;: &quot;type&quot;,
-      &quot;label&quot;: &quot;Type&quot;,
-      &quot;propertyKey&quot;: &quot;@type&quot;,
-      &quot;type&quot;: &quot;terms&quot;
-    }
-  ],
-  &quot;fields&quot;: [
-    {
-      &quot;dataIndex&quot;: &quot;label&quot;,
-      &quot;displayIndex&quot;: 0,
-      &quot;key&quot;: &quot;label&quot;,
-      &quot;title&quot;: &quot;Label&quot;
-    },
-    {
-      &quot;dataIndex&quot;: &quot;@type&quot;,
-      &quot;displayIndex&quot;: 3,
-      &quot;key&quot;: &quot;@type&quot;,
-      &quot;sortable&quot;: true,
-      &quot;title&quot;: &quot;Type&quot;
-    },
-    {
-      &quot;dataIndex&quot;: &quot;objectOfStudy.label&quot;,
-      &quot;displayIndex&quot;: 2,
-      &quot;key&quot;: &quot;objectOfStudyLabel&quot;,
-      &quot;title&quot;: &quot;Object of Study&quot;
-    },
-    {
-      &quot;dataIndex&quot;: &quot;brainLocation.brainRegion.label&quot;,
-      &quot;displayIndex&quot;: 1,
-      &quot;key&quot;: &quot;brain-region&quot;,
-      &quot;title&quot;: &quot;Brain Region&quot;
-    }
-  ],
-  &quot;label&quot;: &quot;MINDS&quot;,
-  &quot;view&quot;: &quot;https://my-nexus-deployment.com/v1/views/webapps/nexus-web/my-view-id&quot;
-}
-</code></pre>
-<h3><a href="#facets" name="facets" class="anchor"><span class="anchor-link"></span></a>Facets</h3>
-<p>The Facet portion of the config dictates what will render in the left column of the Search interface that allows users to toggle facets or filters to narrow down their search. Each facet category is generated using an Elastic Search Aggregated query, and so far only supports <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html"><code>term</code> aggregated queries</a>, but may be expanded in the future to allow filtering search against things like dates.</p>
-<p>Because of the <code>terms</code> limitation, it&rsquo;s only possible to create facets with the Elastic Search Mapping type of <code>object</code> or <code>text</code> and <code>keyword</code></p>
-<p>Signature:</p>
-<pre><code>  {
-    // The full path to target property, according to the elastic search mapping
-    propertyKey: string;
-    // A unique key to distinguish against other Facet objects
-    key: string;
-    // The label to be used in the interface
-    label: string;
-    // The only available facet type
-    type: &quot;terms&quot;;
-    // An optional value to sort the facets in the interface. A lower displayIndex value will render this option higher in the interface
-    // Note, if this value is blank, the label will be used to sort alphabetically to be consistent.
-    displayIndex?: number;
-  }[]
-</code></pre>
-<h4><a href="#default-facets-configuration" name="default-facets-configuration" class="anchor"><span class="anchor-link"></span></a>Default Facets Configuration</h4>
-<p>The Facet configs are an optional field. The default will allow users to filter by project and @type.</p>
-<pre><code>{
-  propertyKey: &#39;_project&#39;,
-  key: &#39;projects&#39;,
-  label: &#39;Projects&#39;,
-  type: &#39;terms&#39;,
-  displayIndex: 0,
-},
-{
-  propertyKey: &#39;@type&#39;,
-  key: &#39;types&#39;,
-  label: &#39;Types&#39;,
-  type: &#39;terms&#39;,
-  displayIndex: 1,
-}
-</code></pre>
-<h3><a href="#fields" name="fields" class="anchor"><span class="anchor-link"></span></a>Fields</h3>
-<p>The Fields property of the Search Config allows users to specify what properties to show in the Result Table. They correspond to table columns.</p>
-<p>Signature:</p>
-<pre><code>{
-  // The table column header title
-  title: string;
-  // The property to access, in dot notation (eg: &quot;brainLocation.brainRegion.label&quot; )
-  dataIndex: string;
-  // Optionally make the field sortable
-  sortable?: boolean;
-  // A unique key to identify this column
-  key: string;
-  // Lower numbers will appear to the left of the table. If no displayIndex is given, it will sort alphabetically by the &quot;key&quot; property
-  displayIndex: number;
-}[]
-</code></pre>
-<h4><a href="#special-properties" name="special-properties" class="anchor"><span class="anchor-link"></span></a>Special properties</h4>
-<p>The table will render the value found via the dataIndex property as simple text. However, there are some special rendering logic for the following keys, which will ignore the <code>dataIndex</code> property of the config.</p>
-<ul>
-  <li>project: Will render the org and project info</li>
-  <li>@type: Will render a list of @types as pills</li>
-  <li>schema: Will render the schema (<code>_constrainedBy</code>) field with a tooltip</li>
-  <li>label: Will render a human-readable label using the following:  <code>
-  resource.prefLabel ||
-  resource.label ||
-  resource.name ||
-  resource[&quot;@id&quot;]
-</code></li>
-  <li>description: Will render a description using the enriched markdown template viewer (see <a href="admin.html#resource-descriptions">Description Viewer</a>)</li>
-</ul>
-<h4><a href="#default-fields-configuration" name="default-fields-configuration" class="anchor"><span class="anchor-link"></span></a>Default Fields Configuration</h4>
-<p>If no fields property exists on the <code>SearchConfig</code>, the following default values will be used:</p>
-<pre><code>{
-  title: &#39;Label&#39;,
-  dataIndex: &#39;label&#39;,
-  key: &#39;label&#39;,
-  displayIndex: 0,
-},
-{
-  title: &#39;Project&#39;,
-  dataIndex: &#39;_project&#39;,
-  sortable: true,
-  key: &#39;project&#39;,
-  displayIndex: 1,
-},
-{
-  title: &#39;Types&#39;,
-  dataIndex: &#39;@type&#39;,
-  sortable: true,
-  key: &#39;@type&#39;,
-  displayIndex: 3,
-},
-</code></pre>
-<h2><a href="#search-results" name="search-results" class="anchor"><span class="anchor-link"></span></a>Search Results</h2>
-<p>The Search Results body displays the resources that match the search / filtering criteria in two ways: a Results Grid or a Results Table</p>
-<h3><a href="#result-grid" name="result-grid" class="anchor"><span class="anchor-link"></span></a>Result Grid</h3>
-<p>The Result Grid displays matched <code>Resources</code> in preview cards, to show off visual content of Data stored in Nexus Delta. These preview cards can be used to show snippets of code or preview images, for example.</p>
-<p><img src="assets/search-grid.png" alt="Results Grid" /></p>
-<h4><a href="#result-view-cards" name="result-view-cards" class="anchor"><span class="anchor-link"></span></a>Result View Cards</h4>
-<p>Each result card is rendered using an expanded version of the markdown + handlebars rendering used elsewhere in Nexus Fusion, but with some expanded functionality.</p>
-<p>The Search SubApp will attempt to render a card using a markdown + handlebar template string found in the <code>previewTemplate</code> property of that <code>Resource</code>. If no <code>previewTemplate</code> property is found, it will render using the default template string:</p>
-<pre><code>&lt;div style=&quot;display: block&quot;&gt;
-    &lt;h3 class=&quot;title&quot;&gt;{{ resourceLabel }}&lt;/h3&gt;
-    {{#if description}}
-    &lt;div class=&quot;description&quot;&gt;
-        &lt;div class=&quot;overlay&quot;&gt;&lt;/div&gt;
-        {{{ description }}}
-    &lt;/div&gt;
-    {{/if}}
-    &lt;div style=&quot;display:flex;&quot; class=&quot;types&quot;&gt;
-        {{#each type}}
-            &lt;li&gt;
-                &lt;span class=&quot;ant-tag&quot;&gt;{{this}}&lt;/span&gt;
-            &lt;/li&gt;
-        {{/each}}
-    &lt;/div&gt;
-     {{#if fileData }}
-        &lt;div class=&quot;file-data&quot;&gt;
-           &lt;span&gt;name: &lt;b&gt;{{ _filename }}&lt;/b&gt;&lt;/span&gt;&lt;br/&gt;
-           &lt;span&gt;size: &lt;b&gt;{{ fileData.humanReadableFileSize }}&lt;/b&gt;&lt;/span&gt;&lt;br/&gt;
-           &lt;span&gt;type: &lt;b&gt;{{ _mediaType }}&lt;/b&gt;&lt;/span&gt;&lt;br/&gt;
-        &lt;/div&gt;
-    {{/if}}
-    &lt;div&gt;
-    &lt;span&gt;{{ resourceAdminData.org }}&lt;/span&gt; | &lt;span&gt;{{ resourceAdminData.project }}&lt;/span&gt;&lt;/div&gt;
-&lt;/div&gt;
-</code></pre>
-<p>As you can see above, instead of just passing the <code>Resource</code> object to the template, the template has access to a few more properties:</p>
-<pre><code>// Properties offered in the Preview Template
-{
-  ...resource,
-  // a human-readable label created from these values:
-  // resource.prefLabel ||
-  // resource.label ||
-  // resource.name ||
-  // resource[&quot;@id&quot;]
-  resourceLabel: string,
-  // Useful metadat about the resource
-  resourceAdminData: {
-    url: string,
-    deployment: string,
-    apiVersion: string,
-    entityType: string, // Corresponds to Schema
-    org: string,
-    project: string,
-    id: string,
-  },
-  // if the resource is a file, a human-readable label
-  // will show off the size of the file.
-  fileData: {
-    humanReadableFileSize: string
-  } | null
-}
-</code></pre>
-<h3><a href="#result-table" name="result-table" class="anchor"><span class="anchor-link"></span></a>Result Table</h3>
-<p>The Result Table shows off data in a table, where each row corresponds to a <code>Resource</code> that matched the search and query criteria. The columns are defined by the <code>SearchConfig</code>.</p>
-<p><img src="assets/search-table.png" alt="Results Table Example" /></p>
+<p>Search provides functionality to search across all data in Nexus. Search is accessible via the Search menu option and the Search bar.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>Search requires Delta configuration. See the Delta Search documentation for details: <a href="../delta/api/search-api.html">Delta Search Documentation</a></p></div>
 <h2><a href="#search-bar" name="search-bar" class="anchor"><span class="anchor-link"></span></a>Search Bar</h2>
-<p>The Search Bar enables users to use full text search across their configured view, as well as navigate to matching <code>Resources</code>.</p>
-<p><img src="assets/search-bar.png" alt="Search Bar" /></p><div class="callout note "><div class="callout-title">Note</div>
-<h3><a href="#hotkey-" name="hotkey-" class="anchor"><span class="anchor-link"></span></a>Hotkey!</h3>
-<p>You can press <code>/</code> on most screens to focus the Search Bar for convenience.</p></div><div class="callout note "><div class="callout-title">Note</div>
-<h3><a href="#caveats" name="caveats" class="anchor"><span class="anchor-link"></span></a>Caveats</h3>
-<p>Full text search is powered using the Elastic Search Mapping property called <code>__original_source</code>, and <em>must</em> be add to your view&rsquo;s mapping to be useful, otherwise no results will show. The proper mapping is as follows:</p>
-<pre><code>{
-  ...rest of mapping,
-  &quot;_all_fields&quot;: {
-    &quot;analyzer&quot;: &quot;nexus&quot;,
-    &quot;type&quot;: &quot;text&quot;
-  },
-  &quot;_original_source&quot;: {
-    &quot;analyzer&quot;: &quot;nexus&quot;,
-    &quot;copy_to&quot;: &quot;_all_fields&quot;,
-    &quot;type&quot;: &quot;text&quot;
-  },
-}
-
-</code></pre>
-<p>This uses a specially developed analyzer, and also requires the <code>__all_fields</code> property to exist. Simply copying these two properties should be sufficient.</p></div>
-<h2><a href="#action-bar" name="action-bar" class="anchor"><span class="anchor-link"></span></a>Action Bar</h2>
-<p>The action bar allows users to deselect filters, toggle between <code>SearchConfigs</code>, and export their search resuts.</p>
-<h3><a href="#exporting" name="exporting" class="anchor"><span class="anchor-link"></span></a>Exporting</h3>
-<h4><a href="#csv" name="csv" class="anchor"><span class="anchor-link"></span></a>CSV</h4>
-<p>This option will generate a CSV, whose columns are configured from the <code>fields</code> property of the <code>SearchConfig</code></p>
-<h4><a href="#as-es-query" name="as-es-query" class="anchor"><span class="anchor-link"></span></a>As ES Query</h4>
-<p>This option will copy the Elastic Search query used to generate the results, excluding the pagination properties <code>from</code> and <code>size</code>. You can then use this query that is in your clipboard to create an Elastic Search Studio, or query for yourself in the Query Elastic Search View of a project in the <a href="admin.html">Admin</a> SubApp.</p>
+<p>The search bar at the top of screen provides both instant access to full-text search as well as convenient navigation of Nexus. To activate, either click the search box or press the <code>/</code> key and begin typing.</p>
+<p><img src="assets/fusion-search-bar.png" alt="Search Bar" /></p>
+<h3><a href="#full-text-search" name="full-text-search" class="anchor"><span class="anchor-link"></span></a>Full-text Search</h3>
+<p>Full-text search is the default option within the search bar and is listed first. Hitting enter on the keyboard will display the Search page showing the results for the given search criteria. On the search page additional filter criteria and customisations can be applied to the search results (sort, filter, etc) as described in subsequent sections.</p>
+<h3><a href="#jump-to-project" name="jump-to-project" class="anchor"><span class="anchor-link"></span></a>Jump to Project</h3>
+<p>Projects matching the search criteria are listed below the search text from which you can instantly jump to the given project.</p>
+<h2><a href="#sorting" name="sorting" class="anchor"><span class="anchor-link"></span></a>Sorting</h2>
+<p>Where no explicit sort criteria has been applied, search results are ordered by their ElasticSearch relevance score. Sort criteria can be applied to one or more fields to customise the ordering of results in the table.</p>
+<p>In order to sort on a specific field, open the field’s dropdown menu and select one of <code>Sort Ascending</code> or <code>Sort Descending</code> (highlighted below). </p>
+<p><img src="assets/fusion-search-field-sort.png" alt="Field Sort" /></p>
+<p>Upon selecting a sort direction the sorting criteria will be applied and the results updated immediately. Click the <code>Clear</code> button to remove the sorting criteria for the field. Sort criteria can be applied to several fields. </p><div class="callout note "><div class="callout-title">Note</div>
+<p>If a field doesn’t support sorting then the sorting option will not be displayed.</p></div>
+<p>A summary of the status of sorted columns is displayed at the top of the search results table (highlighted below).</p>
+<p><img src="assets/fusion-search-sort-summary.png" alt="Sort Summary" /></p>
+<p>The Sort dialog shows all sort criteria currently applied to the search results (shown below).</p>
+<p><img src="assets/fusion-search-sort-summary-dialog.png" alt="Sort Summary Dialog" /></p>
+<p>The sort direction can be changed here as well as removed entirely.</p>
+<h2><a href="#filtering" name="filtering" class="anchor"><span class="anchor-link"></span></a>Filtering</h2>
+<p>Filters allow you to filter the search results further. The field’s dropdown menu provides access to the filter options. In the example below, the filter options for the Brain Region field are highlighted.</p>
+<p><img src="assets/fusion-search-field-filter.png" alt="Field Filtering" /></p>
+<p>The Operator dropdown determines the type of filter operation and can be one of:</p>
+<ul>
+  <li>is all of (AND) - resource must have all selected filter criteria</li>
+  <li>is any of (OR) - resource must have one of the selected filter criteria</li>
+  <li>is none of (NOT) - resource must not have any of the selected filter criteria</li>
+  <li>is missing - resource must not have a value for the property</li>
+</ul>
+<p>The list of filter values is displayed below the operator dropdown ordered by the terms that appear most frequently. The search box provides the ability to search for a specific filter term.</p>
+<p>A summary showing the number of filters applied is displayed above the search results table. Clicking on it reveals the filter dialog (see below).</p>
+<p><img src="assets/fusion-search-filter-summary-dialog.png" alt="Filter Summary Dialog" /></p>
+<p>The filter dialog lists all currently applied filters and provides the ability to remove a filter.</p>
+<h2><a href="#hidden-columns-and-ordering" name="hidden-columns-and-ordering" class="anchor"><span class="anchor-link"></span></a>Hidden Columns and Ordering</h2>
+<p>The search results table can be customised to display only the columns that you are interested in. The summary displaying the number of hidden columns is displayed at the top-left of the search results table (highlighted below).</p>
+<p><img src="assets/fusion-search-hidden-column-summary.png" alt="Hidden Columns Summary" /></p>
+<p>Click on the hidden columns summary to open the hidden columns and column order configuration dialog which is shown below.</p>
+<p><img src="assets/fusion-search-hidden-column-dialog.png" alt="Hidden Columns Dialog" /></p>
+<p>Each available column to display in the search results is listed along with a toggle to show or hide the column. The <code>(Show all Columns)</code> option provides a convenient way to show all columns.</p>
+<h3><a href="#column-ordering" name="column-ordering" class="anchor"><span class="anchor-link"></span></a>Column ordering</h3>
+<p>Columns can be reordered by clicking on the three vertical dots next to the column name and dragging to the desired location.</p>
+<h3><a href="#hiding-column-using-the-field-menu" name="hiding-column-using-the-field-menu" class="anchor"><span class="anchor-link"></span></a>Hiding column using the Field menu</h3>
+<p>An individual column can also be hidden using the field menu’s <code>Hide column</code> option (highlighted below).</p>
+<p><img src="assets/fusion-search-field-hide.png" alt="Hidden Columns Dialog" /></p>
+<h2><a href="#pagination" name="pagination" class="anchor"><span class="anchor-link"></span></a>Pagination</h2>
+<p>The search results table is paginated to allow for convenient browsing of the search results. The paging controls for navigating the pages of results along with page size options are displayed at the top-right of the search results table (highlighted below).</p>
+<p><img src="assets/fusion-search-field-paging.png" alt="Paging" /></p>
+<p>By default, the page size is set to match the number of rows that fit your screen. You can however use the pagination dropdown in order to select a different page size. If a page size with more results than fit the page is selected, a scrollbar will display enabling vertical scrolling of the results.</p>
+<h2><a href="#reset-search-customisations" name="reset-search-customisations" class="anchor"><span class="anchor-link"></span></a>Reset Search Customisations</h2>
+<p>All customisations to the search results can be removed using the <code>Reset</code> option displayed above the search results table (highlighted in the screenshot below).</p>
+<p><img src="assets/fusion-search-reset.png" alt="Paging" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/search.md" title="Edit this page" class="md-source-file md-edit">
@@ -606,7 +354,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

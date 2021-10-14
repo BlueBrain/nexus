@@ -1,0 +1,6 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/statistics.json",
+  "lastProcessedEventDateTime": "2021-05-10T00:00:00Z",
+  "eventsCount": 10,
+  "resourcesCount": 8
+}

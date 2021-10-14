@@ -1,0 +1,27 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json",
+    "https://bluebrain.github.io/nexus/contexts/search-metadata.json"
+  ],
+  "_total": 1,
+  "_results": [
+    {
+      "@id": "http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+      "@type": "http://localhost:8080/ustom",
+      "_incoming": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming",
+      "_outgoing": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing",
+      "_self": "http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0",
+      "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resource",
+      "_project": "http://localhost:8080/v1/projects/myorg/myproj",
+      "_schemaProject": "http://localhost:8080/v1/projects/myorg/myproj",
+      "_rev": 4,
+      "_deprecated": true,
+      "_createdAt": "2021-04-17T14:54:42.939Z",
+      "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/john",
+      "_updatedAt": "2021-04-17T15:02:42.939Z",
+      "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/john"
+    }
+  ],
+  "_next": "http://localhost:8080/v1/resources/myorg/myproj?after=%5B1559045718752,%22https://nexus.example.com/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b029%22%5D"
+}

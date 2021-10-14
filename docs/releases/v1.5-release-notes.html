@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="active page">v1.5 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -251,7 +258,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -311,11 +318,11 @@ BlueBrain/nexus
 <p>Plugins support painless extensibility and evolution of different features of the Nexus Delta API while keeping isolation and stability to the rest of the feature set.</p>
 <p>In order to adopt and validate this new design, we have identified a set features that have been implemented as plugins:</p>
 <ul>
-  <li>archives <a href="../delta/api/archives-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/archive/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>SPARQL views <a href="../delta/api/views/sparql-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/blazegraph/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>Elasticsearch views <a href="../delta/api/views/elasticsearch-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/elasticsearch/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>composite views <a href="../delta/api/views/composite-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/composite-views/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>files and storages <a href="../delta/api/files-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.5.0/delta/plugins/storage/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>archives <a href="../delta/api/archives-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/archive/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>SPARQL views <a href="../delta/api/views/sparql-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/blazegraph/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>Elasticsearch views <a href="../delta/api/views/elasticsearch-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/elasticsearch/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>composite views <a href="../delta/api/views/composite-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/composite-views/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>files and storages <a href="../delta/api/files-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/storage/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
 </ul>
 <p>If you&rsquo;re interested into building your own plugin, please visit the <a href="../delta/plugins/index.html">plugins</a> section.</p>
 <h3><a href="#json-ld" name="json-ld" class="anchor"><span class="anchor-link"></span></a>JSON-LD</h3><div class="callout note warning"><div class="callout-title">Note</div>
@@ -409,7 +416,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>
@@ -419,7 +426,7 @@ v1.5.x
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.5-to-v1.6-migration.html" title="v1.5 To v1.6 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -428,7 +435,7 @@ v1.5.x
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Releases
+v1.5 To v1.6 Migration
 </span>
 </div>
 </a>

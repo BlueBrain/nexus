@@ -741,7 +741,7 @@ done
   <p>As the entire indexing will take place, some timeouts may occur</p></li>
   <li>Leaving kamon disabled (environment variable KAMON_ENABLED set to false) during this indexing is recommended</li>
   <li>Allocating temporarily more resources to Cassandra/Delta/elasticsearch/Blazegraph may help as this part is greedy in resources</li>
-  <li>Increasing temporarily the delay in retry strategies can also help reduce the pressure on the platform. See: <a href="https://github.com/BlueBrain/nexus/blob/v1.5.0/delta/app/src/main/resources/app.conf#L294" title="Delta configuration">Delta configuration</a></li>
+  <li>Increasing temporarily the delay in retry strategies can also help reduce the pressure on the platform. See: <a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L294" title="Delta configuration">Delta configuration</a></li>
   <li>
   <p>Check the statistics views for different views, they should progressively tend to get to 0 remaining events.</p></li>
   <li>Check the cluster stats endpoint in <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-stats.html" title="elasticsearch">elasticsearch</a>, the number of indices and docs should stabilize after a while.</li>

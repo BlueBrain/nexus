@@ -149,10 +149,13 @@ BlueBrain/nexus
     <li><a href="../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
     <ul>
       <li><a href="../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
     </ul></li>
   </ul></li>
   <li><a href="../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
     <li><a href="../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
     <li><a href="../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
@@ -183,7 +186,7 @@ BlueBrain/nexus
     <ul>
       <li><a href="../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
       <li><a href="../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
-      <li><a href="../docs/delta/api/version.html" class="page">Version endpoint</a></li>
+      <li><a href="../docs/delta/api/version.html" class="page">Version</a></li>
       <li><a href="../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
       <li><a href="../docs/delta/api/identities.html" class="page">Identities</a></li>
       <li><a href="../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
@@ -191,6 +194,7 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
       <li><a href="../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
       <li><a href="../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../docs/delta/api/quotas.html" class="page">Quotas</a></li>
       <li><a href="../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
       <li><a href="../docs/delta/api/resources-api.html" class="page">Resources</a></li>
       <li><a href="../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
@@ -205,6 +209,9 @@ BlueBrain/nexus
       <li><a href="../docs/delta/api/storages-api.html" class="page">Storages</a></li>
       <li><a href="../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../docs/delta/plugins/index.html" class="page">Plugins</a></li>
     <li><a href="../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
@@ -259,7 +266,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.5.x
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
 </label>
 </li>
 </ul>
@@ -340,7 +347,7 @@ BlueBrain/nexus
 <p>There are several channels provided to address different issues:</p>
 <ul>
   <li><strong>Bug report</strong>: If you have found a bug while using the Nexus ecosystem, please create an issue  <a href="https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dbug" title="here" target="_blank" rel="noopener noreferrer">here</a>.</li>
-  <li><strong>Questions</strong>: if you need support, we will be reachable through the <a href="https://gitter.im/BlueBrain/nexus" title="Nexus Gitter channel" target="_blank" rel="noopener noreferrer">Nexus Gitter channel</a></li>
+  <li><strong>Questions</strong>: if you need support, we will be reachable through the <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a></li>
   <li><strong>Documentation</strong>: Technical documentation and &lsquo;Quick Start&rsquo; to Nexus related concepts can be found  <a href="https://bluebrainnexus.io/docs/" title="here" target="_blank" rel="noopener noreferrer">here</a></li>
   <li><strong>Feature request</strong>: If there is a feature you would like to see in Blue Brain Nexus, please first consult the  <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aopen+is%3Aissue+label%3Afeature" title="list of open feature requests" target="_blank" rel="noopener noreferrer">list of open feature requests</a>.  In case there isn&rsquo;t already one, please  <a href="https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2FBlueBrain%2Fnexus%2Fissues%2Fnew%3Flabels%3Dfeature" title="open a feature request" target="_blank" rel="noopener noreferrer">open a feature request</a> describing  your feature with as much detail as possible.</li>
 </ul>
@@ -369,7 +376,7 @@ BlueBrain/nexus
 <h3><a href="#do-i-need-to-define-shacl-schemas-to-bring-data-in-" name="do-i-need-to-define-shacl-schemas-to-bring-data-in-" class="anchor"><span class="anchor-link"></span></a>Do I need to define SHACL schemas to bring data in?</h3>
 <p>No. <a href="https://www.w3.org/TR/shacl/" title="SHACL" target="_blank" rel="noopener noreferrer">SHACL</a> schemas provide an extra layer of quality control for the data that is ingested into Nexus. However, we acknowledge the complexity of defining schemas. That&rsquo;s why clients can decide whether to use schemas to constrain their data or not, depending on their use case and their available resources.</p>
 <h3><a href="#where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" name="where-can-i-find-shacl-shapes-i-can-reuse-point-to-resources-like-schema-org-" class="anchor"><span class="anchor-link"></span></a>Where can I find SHACL shapes I can reuse (point to resources, like schema.org)?</h3>
-<p><a href="http://datashapes.org/" title="Datashapes.org" target="_blank" rel="noopener noreferrer">Datashapes.org</a> provides an automated conversion of <a href="https://schema.org/" title="schema.org" target="_blank" rel="noopener noreferrer">schema.org</a> as SHACL entities. A neuroscience community effort and INCF Special Interest Group - <a href="https://github.com/INCF/neuroshapes" title="Neuroshapes" target="_blank" rel="noopener noreferrer">Neuroshapes</a>, provides open schemas for neuroscience data based on common use cases.</p>
+<p><a href="https://datashapes.org/" title="Datashapes.org" target="_blank" rel="noopener noreferrer">Datashapes.org</a> provides an automated conversion of <a href="https://schema.org/" title="schema.org" target="_blank" rel="noopener noreferrer">schema.org</a> as SHACL entities. A neuroscience community effort and INCF Special Interest Group - <a href="https://github.com/INCF/neuroshapes" title="Neuroshapes" target="_blank" rel="noopener noreferrer">Neuroshapes</a>, provides open schemas for neuroscience data based on common use cases.</p>
 <h3><a href="#why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" name="why-are-rdf-and-json-ld-important-for-blue-brain-nexus-" class="anchor"><span class="anchor-link"></span></a>Why are RDF and JSON-LD important for Blue Brain Nexus?</h3>
 <p>RDF is the data model used to ingest data into the Knowledge Graph and it is also used for SHACL schema data validation. JSON-LD is an RDF concrete syntax, and it is the main format we use for messages exchange. The choice of JSON-LD is due to the fact that is plain JSON but with some special <a href="https://www.w3.org/TR/json-ld11/#syntax-tokens-and-keywords" title="keywords" target="_blank" rel="noopener noreferrer">keywords</a> and JSON is a broadly adopted API exchange format.</p>
 <h3><a href="#can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" name="can-i-connect-any-sparql-client-to-nexus-sparql-endpoint-" class="anchor"><span class="anchor-link"></span></a>Can I connect any SPARQL client to Nexus’ SPARQL endpoint?</h3>
@@ -386,7 +393,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.5.x
+v1.6.x
 </span>
 </div>
 </article>

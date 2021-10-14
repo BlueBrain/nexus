@@ -1,0 +1,34 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/files.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/myfile",
+  "@type": "File",
+  "_bytes": 5963969,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/files.json",
+  "_createdAt": "2021-05-12T07:30:54.576Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": false,
+  "_digest": {
+    "_algorithm": "SHA-256",
+    "_value": "d14a7cb4602a2c6e1e7035809aa319d07a6d3c58303ecce7804d2e481cd4965f"
+  },
+  "_filename": "myfile.pdf",
+  "_incoming": "http://localhost:8080/v1/files/myorg/myproject/myfile/incoming",
+  "_location": "file:///tmp/test/nexus/myorg/myproject/c/b/5/c/4/d/8/e/myfile.pdf",
+  "_mediaType": "application/pdf",
+  "_origin": "Client",
+  "_outgoing": "http://localhost:8080/v1/files/myorg/myproject/myfile/outgoing",
+  "_project": "http://localhost:8080/v1/projects/myorg/myproject",
+  "_rev": 1,
+  "_self": "http://localhost:8080/v1/files/myorg/myproject/myfile",
+  "_storage": {
+    "@id": "http://localhost:8080/v1/resources/myorg/myproject/_/remote",
+    "@type": "RemoteDiskStorage",
+    "_rev": 1
+  },
+  "_updatedAt": "2021-05-12T07:30:54.576Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_uuid": "cb5c4d8e-0189-49ab-b761-c92b2d4f49d2"
+}
