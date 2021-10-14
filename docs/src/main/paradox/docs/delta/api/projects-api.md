@@ -391,7 +391,7 @@ accordingly:
 - adjust the inclusion and exclusion filters `-Dplugins.project-deletion.included-projects.1=".+""` and
   `-Dplugins.project-deletion.excluded-projects.1=".+protected.+""`
 
-For details on available configuration, please visit @link:[the plugin configuration](https://github.com/BlueBrain/nexus/blob/master/delta/plugins/project-deletion/src/main/resources/project-deletion.conf).
+For details on available configuration, please visit @link:[the plugin configuration](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/project-deletion/src/main/resources/project-deletion.conf).
 
 @@@
 
