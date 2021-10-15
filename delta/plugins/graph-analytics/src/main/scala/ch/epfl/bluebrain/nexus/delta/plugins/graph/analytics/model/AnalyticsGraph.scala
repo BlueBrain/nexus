@@ -22,7 +22,18 @@ import scala.annotation.nowarn
   * @param edges
   *   the edges
   */
-final case class AnalyticsGraph(nodes: Seq[Node], edges: Seq[Edge])
+final case class AnalyticsGraph(nodes: Seq[Node], edges: Seq[Edge]) {
+
+  /**
+    * @return
+    *   [[AnalyticsGraph]] with [[Edge]] s where `_target` or `_source` in not present in the [[Node]] s list. This
+    *   situation can happen when indexing is not finished.
+    */
+  def withoutNonExistentEdges: AnalyticsGraph = {
+    val nodeIds = nodes.map(_.id).toSet
+    AnalyticsGraph(nodes, edges.filter(e => nodeIds(e.source) && nodeIds(e.target)))
+  }
+}
 
 object AnalyticsGraph {
 
@@ -118,7 +129,7 @@ object AnalyticsGraph {
                                 acc.copy(nodes = acc.nodes :+ node, edges = acc.edges ++ edges)
                               }
                             )
-      } yield resourceTypesAgg
+      } yield resourceTypesAgg.withoutNonExistentEdges
 
     }
   }
