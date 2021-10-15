@@ -108,6 +108,20 @@
                         }
                       ]
                     }
+                  },
+                  {
+                    "key": "http://schema.org/uknown",
+                    "doc_count": 5000,
+                    "pathTypes": {
+                      "doc_count_error_upper_bound": 0,
+                      "sum_other_doc_count": 0,
+                      "buckets": [
+                        {
+                          "key": "http://schema.org/UknownType",
+                          "doc_count": 5000
+                        }
+                      ]
+                    }
                   }
                 ]
               }
