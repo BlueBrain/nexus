@@ -1,19 +1,12 @@
 # Roadmap
 
-@@@ note
-The roadmap is subject to change at any time and is given for information only.
-@@@
+Check our @link:[GitHub Milestones](https://github.com/BlueBrain/nexus/milestones?direction=asc&sort=title&state=open){ open=new } for the latest updates and priorities for Nexus.
 
-## Release 1.5.1 
+Note that the content of milestones is subject to change without notice (for example depending on sprint completion). 
+We favor frequent releases, so we might remove some items of the milestone instead of extending the due date.
 
-Nexus 1.5.1 will focus on fixing bugs and under the hood improvements, mostly stemming from the 1.5.0 release.
+Our current release schedule is one milestone every two weeks approximately, resulting in the next patch, minor or major release.
 
-Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/20){ open=new } for more details or start contributing today!
+The schedule might vary depending on urgency of patch releases, feature complexity, and time of year (among other things).
 
-## Release 1.6
-
-Nexus 1.6.0 will focus on delivering a better search experience across the ecosystem.
-
-Details coming soon!
-
-Check our @link:[Github milestone](https://github.com/BlueBrain/nexus/milestone/19){ open=new } for more (preliminary) details or start contributing today!
+Please reach out to us on our @link:[GitHub Discussions](https://github.com/BlueBrain/nexus/discussions){ open=new } page if you have questions.
