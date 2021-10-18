@@ -1,0 +1,12 @@
+prefix example: <http://example.com/>
+prefix schema: <http://schema.org/>
+
+CONSTRUCT {
+  ?person 	        schema:name             ?name ;
+                    schema:birthDate        ?birthDate ;
+                    schema:description      ?description ;
+} WHERE {
+  ?person 	        schema:name             ?name ;
+                    schema:birthDate        ?birthDate ;
+                    example:stringProperty  ?description ;
+}

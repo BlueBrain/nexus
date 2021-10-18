@@ -336,7 +336,7 @@ lazy val rdf = project
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
-      akkaHttpCore,
+      akkaHttp,
       catsCore,
       circeParser,
       circeGeneric,

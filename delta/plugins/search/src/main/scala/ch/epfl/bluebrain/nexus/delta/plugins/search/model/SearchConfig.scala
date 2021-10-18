@@ -1,15 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search.model
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfigError.{InvalidJsonError, InvalidSparqlConstructQuery, LoadingFileError}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import com.typesafe.config.Config
-import io.circe.{Decoder, JsonObject}
 import io.circe.parser._
+import io.circe.{Decoder, JsonObject}
 import monix.bio.IO
 
 import java.nio.file.{Files, Path}

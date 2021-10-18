@@ -90,10 +90,6 @@ object ProjectsConfig {
     )
 
   @nowarn("cat=unused")
-  implicit private val iriConfigReader: ConfigReader[Iri] =
-    ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
-
-  @nowarn("cat=unused")
   implicit private val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(str =>
     Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage))
   )

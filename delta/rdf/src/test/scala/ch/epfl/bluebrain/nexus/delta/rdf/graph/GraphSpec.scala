@@ -5,11 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.rdfType
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextEmpty, ContextObject}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -30,6 +32,9 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
     val namedGraph       = Graph(
       ExpandedJsonLd.expanded(jsonContentOf("/graph/expanded-multiple-roots-namedgraph.json")).rightValue
     ).rightValue
+
+    val name      = predicate(schema.name)
+    val birthDate = predicate(schema + "birthDate")
 
     "be created from expanded jsonld" in {
       Graph(expanded).rightValue.triples.size shouldEqual 16
@@ -55,8 +60,6 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
 
     "return a filtered graph" in {
       val deprecated = predicate(schema + "deprecated")
-      val name       = predicate(schema.name)
-      val birthDate  = predicate(schema + "birthDate")
       val result     = graph.filter { case (s, p, _) => s == iriSubject && p.getNameSpace == schema.base.toString }
       result.triples shouldEqual
         Set(
@@ -215,6 +218,47 @@ class GraphSpec extends AnyWordSpecLike with Matchers with Fixtures {
       val context   = jsonContentOf("context.json").topContextValueOrEmpty
       val compacted = jsonContentOf("graph/compacted.json").removeAll("id" -> "john-doé")
       graphNoId.toCompactedJsonLd(context).accepted.json shouldEqual compacted
+    }
+
+    "return a new graph after running a construct query on it" in {
+      val query = SparqlConstructQuery.unsafe("""
+          |prefix example: <http://example.com/>
+          |prefix schema: <http://schema.org/>
+          |
+          |CONSTRUCT {
+          |  ?person 	        a                       ?type ;
+          |                   schema:name             ?name ;
+          |                   schema:birthDate        ?birthDate ;
+          |} WHERE {
+          |  ?person 	        a                       ?type ;
+          |         	        schema:name             ?name ;
+          |                   schema:birthDate        ?birthDate ;
+          |}
+          |""".stripMargin)
+
+      graph.transform(query).rightValue shouldEqual graph.filter { case (s, p, _) =>
+        s == graph.rootResource && (p == name || p == birthDate || p == rdfType)
+      }
+    }
+
+    "raise an error for an invalid query" in {
+      val query = SparqlConstructQuery.unsafe("""
+          |prefix example: <http://example.com/>
+          |prefix schema: <http://schema.org/>
+          |
+          |CONSTRUCT {
+          |  ?person 	        a                       ?type ;
+          |                   schema:name             ?name ;
+          |                   schema:birthDate        ?birthDate ;
+          |} WHERE {
+          |  fail 	          a                       ?type ;
+          |         	        schema:name             ?name ;
+          |                   schema:birthDate        ?birthDate ;
+          |}
+          |""".stripMargin)
+
+      val error = graph.transform(query).leftValue
+      error.rootNode shouldEqual error.rootNode
     }
 
     "raise an error with a strict parser when an iri is invalid" in {
