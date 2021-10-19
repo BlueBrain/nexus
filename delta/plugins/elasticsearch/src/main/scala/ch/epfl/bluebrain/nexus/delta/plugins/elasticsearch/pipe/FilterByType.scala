@@ -1,19 +1,19 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.transformation
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.pipe
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import monix.bio.Task
-import pureconfig.ConfigReader
-import pureconfig.generic.semiauto.deriveReader
 
 object FilterByType {
 
   final private case class Context(types: Set[Iri])
 
-  implicit private val contextReader: ConfigReader[Context] = deriveReader[Context]
+  implicit private val contextReader: Decoder[Context] = deriveDecoder[Context]
 
-  val value: Transformation =
-    Transformation.withContext(
+  val value: Pipe =
+    Pipe.withContext(
       "filterByType",
       (context: Context, data: IndexingData) =>
         Task.pure(

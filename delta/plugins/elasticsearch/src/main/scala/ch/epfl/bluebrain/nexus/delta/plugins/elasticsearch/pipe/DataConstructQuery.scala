@@ -1,18 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.transformation
+package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.pipe
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import monix.bio.Task
-import pureconfig.ConfigReader
-import pureconfig.generic.semiauto._
 
 object DataConstructQuery {
 
   final private case class Context(query: SparqlConstructQuery)
 
-  implicit private val contextReader: ConfigReader[Context] = deriveReader[Context]
+  implicit private val contextReader: Decoder[Context] = deriveDecoder[Context]
 
-  val value: Transformation =
-    Transformation.withContext(
+  val value: Pipe =
+    Pipe.withContext(
       "dataConstructQuery",
       (context: Context, data: IndexingData) =>
         Task
