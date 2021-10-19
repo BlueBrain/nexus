@@ -97,7 +97,7 @@ object EventLogUtils {
     * @param eventLog
     *   a [[EventLog]] instance
     * @param projectRef
-    *   the project ref where the events belongs
+    *   the project ref where the events belong
     * @param offset
     *   the requested offset
     * @param rejectionMapper
@@ -114,13 +114,44 @@ object EventLogUtils {
       )
 
   /**
+    * Fetch events related to the given project
+    * @param projects
+    *   a [[Projects]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param projectRef
+    *   the project ref where the events belong
+    * @param module
+    *   the module ref where the events belong
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
+    */
+  def projectEvents[R, M](
+      projects: Projects,
+      eventLog: EventLog[M],
+      projectRef: ProjectRef,
+      module: String,
+      offset: Offset
+  )(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    projects
+      .fetch(projectRef)
+      .bimap(
+        rejectionMapper.to,
+        p => events(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
+      )
+
+  /**
     * Fetch current events related to the given project
     * @param projects
     *   a [[Projects]] instance
     * @param eventLog
     *   a [[EventLog]] instance
     * @param projectRef
-    *   the project ref where the events belongs
+    *   the project ref where the events belong
     * @param offset
     *   the requested offset
     * @param rejectionMapper
@@ -137,13 +168,44 @@ object EventLogUtils {
       )
 
   /**
+    * Fetch current events related to the given project and module
+    * @param projects
+    *   a [[Projects]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param projectRef
+    *   the project ref where the events belong
+    * @param module
+    *   the project ref where the events belong
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
+    */
+  def currentProjectEvents[R, M](
+      projects: Projects,
+      eventLog: EventLog[M],
+      projectRef: ProjectRef,
+      module: String,
+      offset: Offset
+  )(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    projects
+      .fetch(projectRef)
+      .bimap(
+        rejectionMapper.to,
+        p => currentEvents(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
+      )
+
+  /**
     * Fetch events related to the given project
     * @param orgs
     *   a [[Organizations]] instance
     * @param eventLog
     *   a [[EventLog]] instance
     * @param label
-    *   the project ref where the events belongs
+    *   the project ref where the events belong
     * @param offset
     *   the requested offset
     * @param rejectionMapper
@@ -157,6 +219,31 @@ object EventLogUtils {
       .bimap(
         rejectionMapper.to,
         o => events(eventLog, Organizations.orgTag(label), o.createdAt, offset)
+      )
+
+  /**
+    * Fetch events related to the given project for the selected module
+    * @param orgs
+    *   a [[Organizations]] instance
+    * @param eventLog
+    *   a [[EventLog]] instance
+    * @param label
+    *   the project ref where the events belong
+    * @param module
+    *   the module where the events belong
+    * @param offset
+    *   the requested offset
+    * @param rejectionMapper
+    *   to fit the project rejection to one handled by the caller
+    */
+  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, module: String, offset: Offset)(implicit
+      rejectionMapper: Mapper[OrganizationRejection, R]
+  ): IO[R, fs2.Stream[Task, M]] =
+    orgs
+      .fetch(label)
+      .bimap(
+        rejectionMapper.to,
+        o => events(eventLog, Organizations.orgTag(module, label), o.createdAt, offset)
       )
 
   private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =

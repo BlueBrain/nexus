@@ -354,7 +354,7 @@ final class ElasticSearchViews private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
@@ -369,7 +369,7 @@ final class ElasticSearchViews private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
@@ -384,7 +384,7 @@ final class ElasticSearchViews private (
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   /**
     * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The

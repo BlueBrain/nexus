@@ -413,7 +413,7 @@ final class CompositeViews private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The event
@@ -440,7 +440,7 @@ final class CompositeViews private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
@@ -455,7 +455,7 @@ final class CompositeViews private (
       organization: Label,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     eventLog

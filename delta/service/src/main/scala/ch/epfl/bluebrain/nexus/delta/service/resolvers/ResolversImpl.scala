@@ -174,19 +174,19 @@ final class ResolversImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   override def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   override def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)

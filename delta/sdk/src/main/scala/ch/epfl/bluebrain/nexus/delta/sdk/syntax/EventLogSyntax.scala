@@ -42,6 +42,14 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
     EventLogUtils.projectEvents(projects, eventLog, projectRef, offset)
 
   /**
+    * Fetch project events for the given module
+    */
+  def projectEvents[R](projects: Projects, projectRef: ProjectRef, module: String, offset: Offset)(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, Stream[Task, Envelope[E]]] =
+    EventLogUtils.projectEvents(projects, eventLog, projectRef, module, offset)
+
+  /**
     * Fetch project events
     */
   def currentProjectEvents[R](projects: Projects, projectRef: ProjectRef, offset: Offset)(implicit
@@ -50,10 +58,26 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
     EventLogUtils.currentProjectEvents(projects, eventLog, projectRef, offset)
 
   /**
+    * Fetch project events for the given module
+    */
+  def currentProjectEvents[R](projects: Projects, projectRef: ProjectRef, module: String, offset: Offset)(implicit
+      rejectionMapper: Mapper[ProjectNotFound, R]
+  ): IO[R, Stream[Task, Envelope[E]]] =
+    EventLogUtils.currentProjectEvents(projects, eventLog, projectRef, module, offset)
+
+  /**
     * Fetch organization events
     */
   def orgEvents[R](orgs: Organizations, label: Label, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
     EventLogUtils.orgEvents(orgs, eventLog, label, offset)
+
+  /**
+    * Fetch organization events for the given module
+    */
+  def orgEvents[R](orgs: Organizations, label: Label, module: String, offset: Offset)(implicit
+      rejectionMapper: Mapper[OrganizationRejection, R]
+  ): IO[R, Stream[Task, Envelope[E]]] =
+    EventLogUtils.orgEvents(orgs, eventLog, label, module, offset)
 }

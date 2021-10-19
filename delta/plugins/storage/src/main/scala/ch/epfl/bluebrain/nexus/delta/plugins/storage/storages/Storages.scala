@@ -375,7 +375,7 @@ final class Storages private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -390,7 +390,7 @@ final class Storages private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -405,7 +405,7 @@ final class Storages private (
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are

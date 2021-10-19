@@ -423,7 +423,7 @@ final class Files(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
@@ -438,7 +438,7 @@ final class Files(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -453,7 +453,7 @@ final class Files(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
