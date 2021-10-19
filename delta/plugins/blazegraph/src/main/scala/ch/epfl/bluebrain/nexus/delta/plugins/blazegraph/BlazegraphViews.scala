@@ -318,7 +318,7 @@ final class BlazegraphViews(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
@@ -333,7 +333,7 @@ final class BlazegraphViews(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
@@ -348,7 +348,7 @@ final class BlazegraphViews(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new

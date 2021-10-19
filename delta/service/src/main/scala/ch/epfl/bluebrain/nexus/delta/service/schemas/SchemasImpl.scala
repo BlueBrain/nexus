@@ -127,19 +127,19 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
 
   override def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    eventLog.projectEvents(projects, projectRef, moduleType, offset)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    eventLog.orgEvents(orgs, organization, moduleType, offset)
 
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
