@@ -42,54 +42,9 @@
       "_name" : "Person"
     },
     {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/View",
-      "_count" : 3,
-      "_name" : "View"
-    },
-    {
       "@id" : "http://schema.org/EducationalOrganization",
       "_count" : 1,
       "_name" : "EducationalOrganization"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/CompositeView",
-      "_count" : 1,
-      "_name" : "CompositeView"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
-      "_count" : 1,
-      "_name" : "DiskStorage"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
-      "_count" : 1,
-      "_name" : "ElasticSearchView"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/InProject",
-      "_count" : 1,
-      "_name" : "InProject"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/Project",
-      "_count" : 1,
-      "_name" : "Project"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/Resolver",
-      "_count" : 1,
-      "_name" : "Resolver"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/SparqlView",
-      "_count" : 1,
-      "_name" : "SparqlView"
-    },
-    {
-      "@id" : "https://bluebrain.github.io/nexus/vocabulary/Storage",
-      "_count" : 1,
-      "_name" : "Storage"
     }
   ]
 }
