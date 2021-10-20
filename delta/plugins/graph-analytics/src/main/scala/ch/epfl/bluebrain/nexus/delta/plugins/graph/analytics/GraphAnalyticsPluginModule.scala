@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingCoordinator.{GraphAnalyticsIndexingController, GraphAnalyticsIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsIndexingCleanup, GraphAnalyticsIndexingCoordinator, GraphAnalyticsIndexingStream, GraphAnalyticsOnEventInstant, GraphAnalyticsView}
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
@@ -38,11 +40,28 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
 
   make[RelationshipResolution].from { (exchanges: Set[ReferenceExchange]) => RelationshipResolution(exchanges.toList) }
 
+  make[IndexingSource].named("graph-analytics-source").from {
+    (
+        cfg: ElasticSearchViewsConfig,
+        projects: Projects,
+        eventLog: EventLog[Envelope[Event]],
+        exchanges: Set[EventExchange] @Id("data-resources")
+    ) =>
+      IndexingSource(
+        projects,
+        eventLog,
+        exchanges,
+        cfg.indexing.maxBatchSize,
+        cfg.indexing.maxTimeWindow,
+        cfg.indexing.retry
+      )
+  }
+
   make[GraphAnalyticsIndexingStream].from {
     (
         client: ElasticSearchClient,
         projection: Projection[Unit],
-        indexingSource: IndexingSource @Id("elasticsearch-source"),
+        indexingSource: IndexingSource @Id("graph-analytics-source"),
         cache: ProgressesCache @Id("graph-analytics-progresses"),
         config: GraphAnalyticsConfig,
         relationshipResolution: RelationshipResolution,
