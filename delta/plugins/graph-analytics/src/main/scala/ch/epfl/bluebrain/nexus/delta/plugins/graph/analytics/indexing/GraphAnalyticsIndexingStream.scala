@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.RelationshipResolution
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValue.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{JsonLdPathValue, JsonLdPathValueCollection}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationships}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{JsonLdPathValue, JsonLdPathValueCollection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
