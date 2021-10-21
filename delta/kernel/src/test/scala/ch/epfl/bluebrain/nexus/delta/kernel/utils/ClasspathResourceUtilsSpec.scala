@@ -10,8 +10,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with ClasspathResourceUtils with ScalaFutures {
-  implicit private val sc: Scheduler = Scheduler.global
-  implicit private val classLoader   = getClass.getClassLoader
+  implicit private val sc: Scheduler            = Scheduler.global
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   private def accept[E, A](io: IO[E, A]): A =
     io.attempt.runSyncUnsafe() match {
@@ -29,10 +29,7 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
     val resourceIO = ioContentOf("resource.txt", "value" -> "v")
 
     "return the path" in {
-      absolutePath("resource.txt") match {
-        case Right(r) => r should endWith("resource.txt")
-        case Left(_)  => fail("'resource.txt can't be found.'")
-      }
+      accept(absolutePath("resource.txt")) should endWith("resource.txt")
     }
 
     "return a text" in {
