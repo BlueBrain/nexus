@@ -30,10 +30,11 @@ import scala.concurrent.duration.DurationInt
 
 object Main extends BIOApp {
 
-  private val pluginEnvVariable = "DELTA_PLUGINS"
-  private val log: Logging      = Logging[Main.type]
-  val pluginsMaxPriority: Int   = 100
-  val pluginsMinPriority: Int   = 1
+  private val externalConfigEnvVariable = "DELTA_EXTERNAL_CONF"
+  private val pluginEnvVariable         = "DELTA_PLUGINS"
+  private val log: Logging              = Logging[Main.type]
+  val pluginsMaxPriority: Int           = 100
+  val pluginsMinPriority: Int           = 1
 
   override def run(args: List[String]): UIO[ExitCode] = {
     LoggerFactory.getLogger("Main") // initialize logging to suppress SLF4J error
@@ -64,7 +65,8 @@ object Main extends BIOApp {
       _                         <- validatePriority(enabledDefs)
       _                         <- validateDifferentName(enabledDefs)
       configNames                = enabledDefs.map(_.configFileName)
-      (appConfig, mergedConfig) <- AppConfig.load(configNames, classLoader).handleError
+      (appConfig, mergedConfig) <-
+        AppConfig.load(sys.env.get(externalConfigEnvVariable), configNames, classLoader).handleError
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
 
   private def logPlugins(pluginDefs: List[PluginDef]): UIO[Unit] = {

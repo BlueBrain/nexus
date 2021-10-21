@@ -16,7 +16,7 @@ import pureconfig.error.ConfigReaderFailures
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
-import java.io.InputStreamReader
+import java.io.{File, InputStreamReader}
 import java.nio.charset.StandardCharsets.UTF_8
 
 /**
@@ -89,29 +89,41 @@ object AppConfig {
     *      selected database configuration and the plugin configurations
     */
   def load(
-      pluginsConfigs: List[String] = List.empty,
+      externalConfigPath: Option[String] = None,
+      pluginsConfigPaths: List[String] = List.empty,
       accClassLoader: ClassLoader = getClass.getClassLoader
-  ): IO[ConfigReaderFailures, (AppConfig, Config)] =
-    loadWithPlugins(pluginsConfigs.map { string =>
-      ConfigFactory.parseReader(new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8), parseOptions)
-    })
+  ): IO[ConfigReaderFailures, (AppConfig, Config)] = {
 
-  private def loadWithPlugins(pluginConfigs: List[Config]): IO[ConfigReaderFailures, (AppConfig, Config)] = {
+    // Merge configs according to their order
+    def merge(configs: Config*) = IO.fromEither {
+      val merged = configs
+        .foldLeft(ConfigFactory.defaultOverrides())(_ withFallback _)
+        .withFallback(ConfigFactory.load())
+        .resolve(resolverOptions)
+      ConfigSource.fromConfig(merged).at("app").load[AppConfig].map(_ -> merged)
+    }
+
     for {
-      defaultConfig <- UIO.delay(ConfigFactory.load("default.conf", parseOptions, resolverOptions))
-      default       <- UIO.delay(ConfigSource.fromConfig(defaultConfig).at("app").load[AppConfig])
-      flavour       <- IO.fromEither(default.map(_.database.flavour))
-      file           = flavour match {
-                         case DatabaseFlavour.Postgres  => "application-postgresql.conf"
-                         case DatabaseFlavour.Cassandra => "application-cassandra.conf"
-                       }
-      config        <- UIO.delay(ConfigFactory.load(file))
-      mergedConfig   = pluginConfigs.foldLeft(config)(_ withFallback _).resolve()
-      loaded        <- UIO.delay(ConfigSource.fromConfig(mergedConfig).at("app").load[AppConfig])
-      appConfig     <- IO.fromEither(loaded)
-      _             <- IO.raiseWhen(appConfig.database.denyCleanup && appConfig.projects.allowProjectPruning)(
-                         ConfigReaderFailures(projectPruningMisconfiguration)
-                       )
+      externalConfig            <- UIO.delay(externalConfigPath.fold(ConfigFactory.empty()) { p =>
+                                     ConfigFactory.parseFile(new File(p), parseOptions)
+                                   })
+      defaultConfig             <- UIO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
+      (default, _)              <- merge(externalConfig, defaultConfig)
+      file                       = default.database.flavour match {
+                                     case DatabaseFlavour.Postgres  => "application-postgresql.conf"
+                                     case DatabaseFlavour.Cassandra => "application-cassandra.conf"
+                                   }
+      config                    <- UIO.delay(ConfigFactory.parseResources(file, parseOptions))
+      pluginConfigs              = pluginsConfigPaths.map { string =>
+                                     ConfigFactory.parseReader(
+                                       new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
+                                       parseOptions
+                                     )
+                                   }
+      (appConfig, mergedConfig) <- merge(externalConfig :: config :: pluginConfigs: _*)
+      _                         <- IO.raiseWhen(appConfig.database.denyCleanup && appConfig.projects.allowProjectPruning)(
+                                     ConfigReaderFailures(projectPruningMisconfiguration)
+                                   )
     } yield (appConfig, mergedConfig)
   }
 

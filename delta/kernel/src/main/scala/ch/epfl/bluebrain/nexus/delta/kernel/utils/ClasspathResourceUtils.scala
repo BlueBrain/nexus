@@ -14,6 +14,12 @@ import scala.jdk.CollectionConverters._
 
 trait ClasspathResourceUtils {
 
+  final def absolutePath(resourcePath: String)(implicit classLoader: ClassLoader): IO[ResourcePathNotFound, String] =
+    IO.fromOption(
+      Option(getClass.getResource(resourcePath)) orElse Option(classLoader.getResource(resourcePath)),
+      ResourcePathNotFound(resourcePath)
+    ).map(_.getPath)
+
   /**
     * Loads the content of the argument classpath resource as an [[InputStream]].
     *

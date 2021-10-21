@@ -28,6 +28,13 @@ class ClasspathResourceUtilsSpec extends AnyWordSpecLike with Matchers with Clas
   "A ClasspathResourceUtils" should {
     val resourceIO = ioContentOf("resource.txt", "value" -> "v")
 
+    "return the path" in {
+      absolutePath("resource.txt") match {
+        case Right(r) => r should endWith("resource.txt")
+        case Left(_)  => fail("'resource.txt can't be found.'")
+      }
+    }
+
     "return a text" in {
       accept(resourceIO) shouldEqual "A text resource with replacement 'v'"
     }
