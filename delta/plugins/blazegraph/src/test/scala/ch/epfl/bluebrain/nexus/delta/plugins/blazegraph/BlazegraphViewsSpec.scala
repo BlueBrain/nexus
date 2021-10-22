@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import io.circe.syntax._
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -283,9 +284,18 @@ class BlazegraphViewsSpec
         )
       }
 
-      "reject when view is deprecated" in {
-        views.tag(indexingViewId2, projectRef, tag, tagRev = 1L, 2L).rejected shouldEqual ViewIsDeprecated(
-          indexingViewId2
+      "succeed when view is deprecated" in {
+        views.tag(indexingViewId2, projectRef, tag, tagRev = 1L, 2L).accepted shouldEqual resourceFor(
+          indexingViewId2,
+          projectRef,
+          indexingValue,
+          uuid,
+          indexingSource.deepMerge(Json.obj("@id" -> indexingViewId2.asJson)),
+          3L,
+          tags = Map(tag -> 1L),
+          createdBy = bob,
+          updatedBy = bob,
+          deprecated = true
         )
       }
 
@@ -322,13 +332,6 @@ class BlazegraphViewsSpec
           2L
         )
       }
-
-      "reject when view is deprecated" in {
-        views.deprecate(indexingViewId2, projectRef, 2L).rejected shouldEqual ViewIsDeprecated(
-          indexingViewId2
-        )
-      }
-
     }
 
     "fetching a view" should {
@@ -394,6 +397,7 @@ class BlazegraphViewsSpec
         indexingViewId2 -> BlazegraphViewCreated,
         indexingViewId2 -> BlazegraphViewDeprecated,
         aggregateViewId -> BlazegraphViewTagAdded,
+        indexingViewId2 -> BlazegraphViewTagAdded,
         aggregateViewId -> BlazegraphViewDeprecated
       )
 
