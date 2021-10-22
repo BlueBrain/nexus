@@ -110,6 +110,12 @@ class StoragesSpec
           StorageTagAdded(dId, project, DiskStorageType, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
       }
 
+      "create a new event from a TagStorage command when storage is deprecated" in {
+        val current = currentState(dId, project, diskVal, rev = 3, deprecated = true)
+        eval(current, TagStorage(dId, project, 2, TagLabel.unsafe("myTag"), 3, alice)).accepted shouldEqual
+          StorageTagAdded(dId, project, DiskStorageType, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
+      }
+
       "create a new event from a DeprecateStorage command" in {
         val current = currentState(dId, project, diskVal, rev = 3)
         eval(current, DeprecateStorage(dId, project, 3, alice)).accepted shouldEqual
@@ -226,7 +232,6 @@ class StoragesSpec
         val current  = currentState(dId, project, diskVal, rev = 2, deprecated = true)
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -533,6 +538,22 @@ class StoragesSpec
       "reject if organization is deprecated" in {
         storages.tag(s3Id, projectWithDeprecatedOrg.ref, tag, 1, 2).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
+      }
+
+      "allow tagging" in {
+        val payload = s3FieldsJson.map(_ deepMerge json"""{"@id": "$s3Id", "default": false}""")
+        storages.tag(s3Id, projectRef, tag, tagRev = 3, 3).accepted shouldEqual
+          resourceFor(
+            s3Id,
+            projectRef,
+            s3Val.copy(default = false),
+            payload,
+            rev = 4,
+            deprecated = true,
+            createdBy = bob,
+            updatedBy = bob,
+            tags = Map(tag -> 3)
+          )
       }
 
     }
