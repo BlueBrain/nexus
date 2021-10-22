@@ -9,44 +9,14 @@ services:
       - minio
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
+      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
                   "./bin/delta-app",
                   "-Xmx512m",
-                  "-Dapp.http.interface=0.0.0.0",
-                  "-Dapp.http.base-uri=http://delta:8080/v1",
-                  "-Dapp.cluster.remote-interface=delta",
-                  "-Dapp.cluster.seeds=delta:25520",
-                  "-Dapp.database.flavour=postgres",
-                  "-Dapp.database.postgres.host=postgres",
-                  "-Dapp.database.postgres.tables-autocreate=true",
-                  "-Dapp.database.deny-cleanup=false",
-                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
-                  "-Dplugins.elasticsearch.credentials.username=elastic",
-                  "-Dplugins.elasticsearch.credentials.password=password",
-                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
-                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
-                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
-                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
-                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-                  "-Dplugins.composite-views.sources.max-batch-size=50",
-                  "-Dplugins.composite-views.sources.max-time-window=50ms",
-                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
-                  "-Dplugins.storage.storages.remote-disk.enabled=true",
-                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
-                  "-Dplugins.storage.storages.amazon.enabled=true",
-                  "-Dplugins.search.enabled=true",
-                  "-Dplugins.search.fields=/config/fields.json",
-                  "-Dplugins.search.indexing.context=/config/search-context.json",
-                  "-Dplugins.search.indexing.mapping=/config/mapping.json",
-                  "-Dplugins.search.indexing.settings=/config/settings.json",
-                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
-                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-                  "-Dplugins.graph-analytics.enabled=true",
-                  "-Djdbc-read-journal.refresh-interval=500ms" ]
+                  "-Dapp.cluster.remote-interface=delta" ]
     ports:
       - 8080:8080
     volumes:
@@ -66,40 +36,12 @@ services:
   #      - delta
   #    environment:
   #      DELTA_PLUGINS: "/opt/docker/plugins/"
+  #      DELTA_EXTERNAL_CONF: "/config/postgres.conf"
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest<localBuild>
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
   #                  "-Xmx512m",
-  #                  "-Dapp.http.interface=0.0.0.0",
-  #                  "-Dapp.http.base-uri=http://delta:8080/v1",
-  #                  "-Dapp.cluster.remote-interface=delta2",
-  #                  "-Dapp.cluster.seeds=delta:25520",
-  #                  "-Dapp.database.flavour=postgres",
-  #                  "-Dapp.database.postgres.host=postgres",
-  #                  "-Dapp.database.deny-cleanup=false",
-  #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
-  #                  "-Dplugins.elasticsearch.credentials.username=elastic",
-  #                  "-Dplugins.elasticsearch.credentials.password=password",
-  #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
-  #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
-  #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-  #                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
-  #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
-  #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-  #                  "-Dplugins.composite-views.sources.max-batch-size=50",
-  #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
-  #                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
-  #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
-  #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
-  #                  "-Dplugins.storage.storages.amazon.enabled=true",
-  #                  "-Dplugins.search.enabled=true",
-  #                  "-Dplugins.search.fields=/config/fields.json",
-  #                  "-Dplugins.search.indexing.context=/config/search-context.json",
-  #                  "-Dplugins.search.indexing.mapping=/config/mapping.json",
-  #                  "-Dplugins.search.indexing.settings=/config/settings.json",
-  #                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
-  #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-  #                  "-Djdbc-read-journal.refresh-interval=500ms"]
+  #                  "-Dapp.cluster.remote-interface=delta2" ]
   #    ports:
   #      - 8081:8080
   #    volumes:
@@ -115,40 +57,12 @@ services:
   #      - delta2
   #    environment:
   #      DELTA_PLUGINS: "/opt/docker/plugins/"
+  #      DELTA_EXTERNAL_CONF: "/config/postgres.conf"
   #      KAMON_ENABLED: "false"
   #    image: bluebrain/nexus-delta:latest<localBuild>
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
   #                  "-Xmx512m",
-  #                  "-Dapp.http.interface=0.0.0.0",
-  #                  "-Dapp.http.base-uri=http://delta:8080/v1",
-  #                  "-Dapp.cluster.remote-interface=delta3",
-  #                  "-Dapp.cluster.seeds=delta:25520",
-  #                  "-Dapp.database.flavour=postgres",
-  #                  "-Dapp.database.postgres.host=postgres",
-  #                  "-Dapp.database.deny-cleanup=false",
-  #                  "-Dplugins.elasticsearch.base=http://elasticsearch:9200",
-  #                  "-Dplugins.elasticsearch.credentials.username=elastic",
-  #                  "-Dplugins.elasticsearch.credentials.password=password",
-  #                  "-Dplugins.elasticsearch.indexing.max-batch-size=50",
-  #                  "-Dplugins.elasticsearch.indexing.max-time-window=50ms",
-  #                  "-Dplugins.blazegraph.base=http://blazegraph:9999/blazegraph",
-  #                  "-Dplugins.blazegraph.indexing.max-batch-size=50",
-  #                  "-Dplugins.blazegraph.indexing.max-time-window=50ms",
-  #                  "-Dplugins.composite-views.min-interval-rebuild=5seconds",
-  #                  "-Dplugins.composite-views.sources.max-batch-size=50",
-  #                  "-Dplugins.composite-views.sources.max-time-window=50ms",
-  #                  "-Dplugins.storage.storages.disk.default-volume=/default-volume",
-  #                  "-Dplugins.storage.storages.remote-disk.enabled=true",
-  #                  "-Dplugins.storage.storages.remote-disk.default-endpoint=http://storage-service:8080/v1",
-  #                  "-Dplugins.storage.storages.amazon.enabled=true",
-  #                  "-Dplugins.search.enabled=true",
-  #                  "-Dplugins.search.fields=/config/fields.json",
-  #                  "-Dplugins.search.indexing.context=/config/search-context.json",
-  #                  "-Dplugins.search.indexing.mapping=/config/mapping.json",
-  #                  "-Dplugins.search.indexing.settings=/config/settings.json",
-  #                  "-Dplugins.search.indexing.query=/config/construct-query.sparql",
-  #                  "-Dplugins.search.indexing.resource-types=/config/resource-types.json",
-  #                  "-Djdbc-read-journal.refresh-interval=500ms"
+  #                  "-Dapp.cluster.remote-interface=delta3" ]
   #    ports:
   #      - 8082:8080
   #    volumes:

@@ -2,8 +2,9 @@
 
 Nexus Delta service can be highly customized using @link:[configuration file(s)](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/app/src/main/resources){ open=new }. Many things can be adapted to your deployment needs: port where the service is running, timeouts, the database you decide to support, pagination defaults, etc. 
 
-There are 2 ways to modify the default configuration:
+There are 3 ways to modify the default configuration:
 
+- Setting the env variable `DELTA_EXTERNAL_CONF` which defines the path to a HOCON file. The configuration keys that are defined here can be overriden by the other methods.
 - Using JVM properties as arguments when running the service: -D`{property}`. For example: `-Dapp.http.interface="127.0.0.1"`.
 - Using @link:[FORCE_CONFIG_{property}](https://github.com/lightbend/config#user-content-optional-system-or-env-variable-overrides){ open=new }
   environment variables. In order to enable this style of configuration, the JVM property
