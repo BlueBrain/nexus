@@ -361,19 +361,20 @@ class ElasticSearchViewsSpec
       "using a correct revision" in {
         views.tag(viewId, projectRef, tag, 1L, 2L).accepted
       }
+
+      "the view is deprecated" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
+        views.create(id, projectRef, source).accepted
+        views.deprecate(id, projectRef, 1L).accepted
+        views.tag(id, projectRef, tag, 1L, 2L).accepted
+      }
     }
 
     "fail to tag a view" when {
       val tag = TagLabel.unsafe("mytag")
       "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
         views.tag(viewId, projectRef, tag, 1L, 100L).rejectedWith[IncorrectRev]
-      }
-      "the view is deprecated" in {
-        val id     = iri"http://localhost/${genString()}"
-        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
-        views.create(id, projectRef, source).accepted
-        views.deprecate(id, projectRef, 1L).accepted
-        views.tag(id, projectRef, tag, 1L, 2L).rejectedWith[ViewIsDeprecated]
       }
       "the target view is not found" in {
         val id = iri"http://localhost/${genString()}"
