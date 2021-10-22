@@ -143,8 +143,9 @@ class CompositeViewsStmSpec
       "raise a IncorrectRev rejection" in {
         eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
       }
-      "raise a ViewIsDeprecated rejection" in {
-        eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
+      "emit an CompositeViewTagAdded when deprecated" in {
+        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
+        eval(current(deprecated = true), cmd).accepted shouldEqual expected
       }
       "raise a RevisionNotFound rejection for revisions higher that the current" in {
         eval(current(), cmd.copy(targetRev = 2L)).rejectedWith[RevisionNotFound]

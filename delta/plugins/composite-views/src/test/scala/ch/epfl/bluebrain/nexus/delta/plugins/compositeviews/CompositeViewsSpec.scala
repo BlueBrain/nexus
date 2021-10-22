@@ -218,9 +218,15 @@ class CompositeViewsSpec
       }
     }
 
-    "tag a view" in {
+    "tag a view" when {
       val tag = TagLabel.unsafe("mytag")
-      compositeViews.tag(viewId, projectRef, tag, 1L, 2L).accepted
+      "view is not deprecated" in {
+        compositeViews.tag(viewId, projectRef, tag, 1L, 2L).accepted
+      }
+
+      "view is deprecated" in {
+        compositeViews.tag(otherViewId, projectRef, tag, 1L, 3L).accepted
+      }
     }
 
     "reject tagging a view" when {

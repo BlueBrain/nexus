@@ -647,8 +647,6 @@ object CompositeViews {
         IO.raiseError(ViewNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev                           =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated                             =>
-        IO.raiseError(ViewIsDeprecated(c.id))
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
