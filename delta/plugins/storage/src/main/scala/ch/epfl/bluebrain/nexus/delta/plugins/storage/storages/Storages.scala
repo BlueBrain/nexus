@@ -711,7 +711,6 @@ object Storages {
     def tag(c: TagStorage) = state match {
       case Initial                                                => IO.raiseError(StorageNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev                           => IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated                             => IO.raiseError(StorageIsDeprecated(c.id))
       case s: Current if c.targetRev <= 0L || c.targetRev > s.rev => IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
       case s: Current                                             =>
         IOUtils.instant.map(StorageTagAdded(c.id, c.project, s.value.tpe, c.targetRev, c.tag, s.rev + 1L, _, c.subject))

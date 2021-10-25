@@ -227,10 +227,11 @@ class ElasticSearchViewSTMSpec
         val cmd = TagElasticSearchView(id, project, 1L, tag, 2L, subject)
         eval(current(), cmd).rejectedWith[IncorrectRev]
       }
-      "raise a ViewIsDeprecated rejection" in {
-        val cmd = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
-        eval(current(deprecated = true), cmd)
-          .rejectedWith[ViewIsDeprecated]
+      "tag a deprecated view" in {
+        val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
+        val expected = ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1L, tag, 2L, epoch, subject)
+        eval(current(deprecated = true), cmd).accepted shouldEqual expected
+
       }
       "raise a RevisionNotFound rejection for negative revision values" in {
         val cmd = TagElasticSearchView(id, project, 0L, tag, 1L, subject)
