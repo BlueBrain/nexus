@@ -320,8 +320,7 @@ lazy val sourcing = project
       akkaSlf4j              % Test,
       catsEffectLaws         % Test,
       logback                % Test
-    ) ++ akkaPersistenceJdbc,
-    Test / fork          := true
+    ) ++ akkaPersistenceJdbc
   )
 
 lazy val rdf = project
@@ -350,8 +349,7 @@ lazy val rdf = project
       akkaTestKit % Test,
       logback     % Test,
       scalaTest   % Test
-    ),
-    Test / fork              := true,
+    )
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -443,8 +441,7 @@ lazy val service = project
       logback          % Test,
       scalaTest        % Test
     ),
-    addCompilerPlugin(betterMonadicFor),
-    Test / fork          := true
+    addCompilerPlugin(betterMonadicFor)
   )
 
 lazy val app = project
@@ -494,8 +491,7 @@ lazy val app = project
           projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
         )
       )
-    },
-    Test / fork           := true,
+    }
     Test / test           := {
       val _ = copyPlugins.value
       (Test / test).value
@@ -538,8 +534,7 @@ lazy val testPlugin = project
     name                          := "delta-test-plugin",
     moduleName                    := "delta-test-plugin",
     assembly / assemblyOutputPath := target.value / "delta-test-plugin.jar",
-    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false),
-    Test / fork                   := true
+    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false)
   )
 
 lazy val elasticsearchPlugin = project
@@ -553,8 +548,7 @@ lazy val elasticsearchPlugin = project
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
-    moduleName                 := "delta-elasticsearch-plugin",
-    Test / fork                := true,
+    moduleName                 := "delta-elasticsearch-plugin"
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
@@ -572,8 +566,7 @@ lazy val elasticsearchPlugin = project
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly)
   )
 
 lazy val blazegraphPlugin = project
@@ -603,8 +596,7 @@ lazy val blazegraphPlugin = project
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly)
   )
 
 lazy val compositeViewsPlugin = project
@@ -641,8 +633,7 @@ lazy val compositeViewsPlugin = project
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly)
   )
 
 lazy val searchPlugin = project
@@ -676,8 +667,7 @@ lazy val searchPlugin = project
     assembly / assemblyJarName := "search.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly)
   )
 
 lazy val storagePlugin = project
@@ -714,8 +704,7 @@ lazy val storagePlugin = project
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
   )
 
 lazy val archivePlugin = project
@@ -747,8 +736,7 @@ lazy val archivePlugin = project
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly)
   )
 
 lazy val projectDeletionPlugin = project
@@ -772,8 +760,7 @@ lazy val projectDeletionPlugin = project
     assembly / assemblyJarName := "project-deletion.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
-    Test / fork                := true
+    addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly)
   )
 
 lazy val graphAnalyticsPlugin = project
@@ -802,8 +789,7 @@ lazy val graphAnalyticsPlugin = project
     assembly / assemblyJarName := "graph-analytics.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
-    Test / fork                := true,
+    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly)
     coverageFailOnMinimum      := false
   )
 

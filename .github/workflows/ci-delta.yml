@@ -7,7 +7,18 @@ on:
       - 'project/**'
       - '.github/workflows/ci-delta.yml'
 jobs:
-  review:
+  static-analysis:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Static Analysis
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
+  test:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 30
@@ -16,7 +27,5 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate

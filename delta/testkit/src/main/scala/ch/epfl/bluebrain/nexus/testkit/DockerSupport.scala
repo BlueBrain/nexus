@@ -7,6 +7,8 @@ import com.whisk.docker.impl.dockerjava.{Docker => JDocker, DockerJavaExecutorFa
 import izumi.distage.docker.Docker
 import izumi.distage.docker.Docker.DockerReusePolicy
 
+import scala.concurrent.duration._
+
 object DockerSupport {
 
   def clientConfig: Docker.ClientConfig =
@@ -21,6 +23,10 @@ object DockerSupport {
     )
 
   trait DockerKitWithFactory extends DockerKitDockerJava {
+    override val PullImagesTimeout      = 20.minutes
+    override val StartContainersTimeout = 60.seconds
+    override val StopContainersTimeout  = 60.seconds
+
     implicit override val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(
       new JDocker(
         DefaultDockerClientConfig.createDefaultConfigBuilder().build(),
