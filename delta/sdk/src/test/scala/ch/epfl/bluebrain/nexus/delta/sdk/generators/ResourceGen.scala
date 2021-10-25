@@ -68,6 +68,40 @@ object ResourceGen extends OptionValues with IOValues {
     Resource(id, project, tags, schema, source, compacted, expanded)
   }
 
+  def sourceToResourceF(
+      id: Iri,
+      project: ProjectRef,
+      source: Json,
+      schema: ResourceRef = Latest(schemas.resources),
+      tags: Map[TagLabel, Long] = Map.empty,
+      rev: Long = 1L,
+      subject: Subject = Anonymous,
+      deprecated: Boolean = false,
+      am: ApiMappings = ApiMappings.empty,
+      base: Iri = nxv.base
+  )(implicit resolution: RemoteContextResolution): DataResource = {
+    val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
+    val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
+    Resource(id, project, tags, schema, source, compacted, expanded)
+    Current(
+      id,
+      project,
+      project,
+      source,
+      compacted,
+      expanded,
+      rev,
+      deprecated,
+      schema,
+      expanded.cursor.getTypes.getOrElse(Set.empty),
+      tags,
+      Instant.EPOCH,
+      subject,
+      Instant.EPOCH,
+      subject
+    ).toResource(am, ProjectBase.unsafe(base)).value
+  }
+
   def resourceFor(
       resource: Resource,
       types: Set[Iri] = Set.empty,

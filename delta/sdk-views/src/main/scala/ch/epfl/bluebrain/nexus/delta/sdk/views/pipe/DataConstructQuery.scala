@@ -1,17 +1,19 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.pipe
+package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import monix.bio.Task
 
+/**
+  * Transforms a resource according to a construct query
+  */
 object DataConstructQuery {
 
   final private case class Context(query: SparqlConstructQuery)
 
-  implicit private val contextReader: Decoder[Context] = deriveDecoder[Context]
-
-  val value: Pipe =
+  val value: Pipe = {
+    implicit val contextReader: Decoder[Context] = deriveDecoder[Context]
     Pipe.withContext(
       "dataConstructQuery",
       (context: Context, data: IndexingData) =>
@@ -28,5 +30,6 @@ object DataConstructQuery {
             )
           }
     )
+  }
 
 }
