@@ -349,7 +349,7 @@ lazy val rdf = project
       akkaTestKit % Test,
       logback     % Test,
       scalaTest   % Test
-    )
+    ),
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -483,7 +483,7 @@ lazy val app = project
         Set(
           esFile              -> (pluginsTarget / esFile.getName),
           bgFile              -> (pluginsTarget / bgFile.getName),
-          graphAnalyticsFile      -> (pluginsTarget / graphAnalyticsFile.getName),
+          graphAnalyticsFile  -> (pluginsTarget / graphAnalyticsFile.getName),
           storageFile         -> (pluginsTarget / storageFile.getName),
           archiveFile         -> (pluginsTarget / archiveFile.getName),
           compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
@@ -491,7 +491,7 @@ lazy val app = project
           projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
         )
       )
-    }
+    },
     Test / test           := {
       val _ = copyPlugins.value
       (Test / test).value
@@ -548,7 +548,7 @@ lazy val elasticsearchPlugin = project
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
-    moduleName                 := "delta-elasticsearch-plugin"
+    moduleName                 := "delta-elasticsearch-plugin",
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
@@ -789,7 +789,7 @@ lazy val graphAnalyticsPlugin = project
     assembly / assemblyJarName := "graph-analytics.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
     coverageFailOnMinimum      := false
   )
 
