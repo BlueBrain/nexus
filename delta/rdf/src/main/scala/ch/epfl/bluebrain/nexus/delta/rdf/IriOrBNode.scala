@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
-import pureconfig.ConfigReader
-import pureconfig.error.CannotConvert
 
 import java.util.UUID
 import scala.annotation.tailrec
@@ -356,10 +354,6 @@ object IriOrBNode {
     implicit val iriKeyDecoder: KeyDecoder[Iri] = KeyDecoder.instance(absolute(_).toOption)
 
     implicit final val iriOrder: Order[Iri] = Order.by(_.toString)
-
-    implicit val iriConfigReader: ConfigReader[Iri] =
-      ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
-
   }
 
   /**

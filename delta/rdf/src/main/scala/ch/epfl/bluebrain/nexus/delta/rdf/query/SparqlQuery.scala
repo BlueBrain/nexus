@@ -7,8 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.{Decoder, Encoder}
 import org.apache.jena.query.{Query, QueryFactory}
-import pureconfig.ConfigReader
-import pureconfig.error.CannotConvert
 
 import scala.util.Try
 
@@ -67,11 +65,6 @@ object SparqlQuery {
 
     implicit val sparqlConstructQueryDecoder: Decoder[SparqlConstructQuery] =
       Decoder.decodeString.map(SparqlConstructQuery.unsafe(_))
-
-    implicit final val sparqlConstructQueryReader: ConfigReader[SparqlConstructQuery] =
-      ConfigReader.fromString(str =>
-        SparqlConstructQuery(str).leftMap(err => CannotConvert(str, classOf[SparqlConstructQuery].getSimpleName, err))
-      )
 
   }
 
