@@ -5,8 +5,8 @@ on:
 jobs:
   release:
     if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    runs-on: it
+    timeout-minutes: 30
     env:
       CI_RELEASE: publishSigned
       RELEASE_TO_SONATYPE: true
@@ -18,12 +18,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
       - name: Publish To Dockerhub
