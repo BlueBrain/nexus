@@ -23,9 +23,9 @@ object DockerSupport {
     )
 
   trait DockerKitWithFactory extends DockerKitDockerJava {
-    override val PullImagesTimeout      = 20.minutes
-    override val StartContainersTimeout = 60.seconds
-    override val StopContainersTimeout  = 60.seconds
+    override val PullImagesTimeout: FiniteDuration      = 20.minutes
+    override val StartContainersTimeout: FiniteDuration = 2.minutes
+    override val StopContainersTimeout: FiniteDuration  = 1.minute
 
     implicit override val dockerFactory: DockerFactory = new DockerJavaExecutorFactory(
       new JDocker(

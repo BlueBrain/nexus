@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 
 trait MinioDocker extends DockerKitWithFactory {
 
-  override val StartContainersTimeout: FiniteDuration = 40.seconds
-
   val minioContainer: DockerContainer = DockerContainer("minio/minio:RELEASE.2020-07-20T02-25-16Z")
     .withPorts((MinioServicePort, Some(MinioServicePort)))
     .withEnv(
