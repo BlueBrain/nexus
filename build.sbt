@@ -945,7 +945,7 @@ lazy val shared = Seq(
     )
   ),
   Test / parallelExecution           := false,
-  Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.ScalaLibrary
+  Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
 )
 
 lazy val kamonSettings = Seq(
