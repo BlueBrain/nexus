@@ -320,7 +320,8 @@ lazy val sourcing = project
       akkaSlf4j              % Test,
       catsEffectLaws         % Test,
       logback                % Test
-    ) ++ akkaPersistenceJdbc
+    ) ++ akkaPersistenceJdbc,
+    Test / fork          := true
   )
 
 lazy val rdf = project
@@ -350,6 +351,7 @@ lazy val rdf = project
       logback     % Test,
       scalaTest   % Test
     ),
+    Test / fork              := true,
     addCompilerPlugin(betterMonadicFor)
   )
 
@@ -441,7 +443,8 @@ lazy val service = project
       logback          % Test,
       scalaTest        % Test
     ),
-    addCompilerPlugin(betterMonadicFor)
+    addCompilerPlugin(betterMonadicFor),
+    Test / fork          := true
   )
 
 lazy val app = project
@@ -492,6 +495,7 @@ lazy val app = project
         )
       )
     },
+    Test / fork           := true,
     Test / test           := {
       val _ = copyPlugins.value
       (Test / test).value
@@ -534,7 +538,8 @@ lazy val testPlugin = project
     name                          := "delta-test-plugin",
     moduleName                    := "delta-test-plugin",
     assembly / assemblyOutputPath := target.value / "delta-test-plugin.jar",
-    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false)
+    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false),
+    Test / fork                   := true
   )
 
 lazy val elasticsearchPlugin = project
@@ -566,7 +571,8 @@ lazy val elasticsearchPlugin = project
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val blazegraphPlugin = project
@@ -596,7 +602,8 @@ lazy val blazegraphPlugin = project
     assembly / assemblyJarName := "blazegraph.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val compositeViewsPlugin = project
@@ -633,7 +640,8 @@ lazy val compositeViewsPlugin = project
     assembly / assemblyJarName := "composite-views.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val searchPlugin = project
@@ -667,7 +675,8 @@ lazy val searchPlugin = project
     assembly / assemblyJarName := "search.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val storagePlugin = project
@@ -704,7 +713,8 @@ lazy val storagePlugin = project
     assembly / assemblyJarName := "storage.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val archivePlugin = project
@@ -736,7 +746,8 @@ lazy val archivePlugin = project
     assembly / assemblyJarName := "archive.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val projectDeletionPlugin = project
@@ -760,7 +771,8 @@ lazy val projectDeletionPlugin = project
     assembly / assemblyJarName := "project-deletion.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
-    addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly)
+    addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
+    Test / fork                := true
   )
 
 lazy val graphAnalyticsPlugin = project
@@ -790,6 +802,7 @@ lazy val graphAnalyticsPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     assembly / test            := {},
     addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
+    Test / fork                := true,
     coverageFailOnMinimum      := false
   )
 
@@ -864,6 +877,7 @@ lazy val storage = project
       baseDirectory.value / "nexus-storage.jar"
     ),
     Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    Test / parallelExecution := false,
     Universal / mappings     := {
       (Universal / mappings).value :+ cargo.value
     }
@@ -935,17 +949,15 @@ lazy val assertJavaVersion =
   )
 
 lazy val shared = Seq(
-  organization                       := "ch.epfl.bluebrain.nexus",
+  organization      := "ch.epfl.bluebrain.nexus",
   // TODO: remove when https://github.com/djspiewak/sbt-github-packages/issues/28 is fixed
-  githubTokenSource                  := TokenSource.Or(
+  githubTokenSource := TokenSource.Or(
     TokenSource.Environment("GITHUB_TOKEN"), // Injected during a github workflow for publishing
     TokenSource.Or(
       TokenSource.Environment("CI"),   // available in GH Actions
       TokenSource.Environment("SHELL") // safe to assume this will be set in all our devs environments
     )
-  ),
-  Test / parallelExecution           := false,
-  Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat
+  )
 )
 
 lazy val kamonSettings = Seq(
