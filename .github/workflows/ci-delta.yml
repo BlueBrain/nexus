@@ -18,14 +18,51 @@ jobs:
         uses: actions/checkout@v2
       - name: Static Analysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
-  test:
+  test-core:
     if: github.event_name == 'pull_request'
     runs-on: it
-    timeout-minutes: 30
+    timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Tests
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean coverage test coverageReport coverageAggregate
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            coverage \
+            app/test \
+            kernel/test \
+            rdf/test \
+            sdk/test \
+            sdkTestkit/test \
+            sdkViews/test \
+            service/test \
+            sourcing/test \
+            testkit/test \
+            app/coverageReport \
+            kernel/coverageReport \
+            rdf/coverageReport \
+            sdk/coverageReport \
+            sdkTestkit/coverageReport \
+            sdkViews/coverageReport \
+            service/coverageReport \
+            sourcing/coverageReport \
+            testkit/coverageReport
+  test-plugins:
+    if: github.event_name == 'pull_request'
+    runs-on: it
+    timeout-minutes: 20
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Tests
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            coverage \
+            plugins/test \
+            plugins/coverageReport
