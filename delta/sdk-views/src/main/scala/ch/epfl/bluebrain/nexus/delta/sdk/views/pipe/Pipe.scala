@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import monix.bio.{IO, Task}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 /**
   * Transformation unit of a pipeline within a view
@@ -160,5 +162,19 @@ object Pipe {
     withoutConfig(
       "excludeDeprecated",
       (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
+    )
+
+  /**
+    * Add source as text
+    */
+  val sourceAsText: Pipe =
+    withoutConfig(
+      "sourceAsText",
+      (data: IndexingData) =>
+        Task.some(
+          data.copy(
+            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces)
+          )
+        )
     )
 }

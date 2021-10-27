@@ -9,13 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, validate, withoutConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, sourceAsText, validate, withoutConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.bio.Task
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 import scala.collection.mutable
 
@@ -65,6 +66,14 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
     "filter out deprecated data" in {
       excludeDeprecated.parseAndRun(None, data.copy(deprecated = true)).accepted shouldEqual None
+    }
+  }
+
+  "Source as test" should {
+    "add source as a field in the graph" in {
+      sourceAsText.parseAndRun(None, data).accepted.value shouldEqual data.copy(graph =
+        data.graph.add(nxv.originalSource.iri, data.source.noSpaces)
+      )
     }
   }
 
