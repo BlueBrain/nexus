@@ -36,9 +36,9 @@ services:
   #      - delta
   #    environment:
   #      DELTA_PLUGINS: "/opt/docker/plugins/"
-  #      DELTA_EXTERNAL_CONF: "/config/postgres.conf"
+  #      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
   #      KAMON_ENABLED: "false"
-  #    image: bluebrain/nexus-delta:latest<localBuild>
+  #    image: bluebrain/nexus-delta:latest
   #    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
   #                  "-Xmx512m",
   #                  "-Dapp.cluster.remote-interface=delta2" ]
