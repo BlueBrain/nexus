@@ -82,9 +82,9 @@ class RemoteStorageClientSpec
     }
 
     "move a file" in {
-      client.moveFile(BucketName, Uri.Path("my/file.txt"), Uri.Path("other/file.txt")).accepted shouldEqual
+      client.moveFile(BucketName, Uri.Path("my/file-1.txt"), Uri.Path("other/file-1.txt")).accepted shouldEqual
         attributes.copy(
-          location = s"file:///app/$BucketName/nexus/other/file.txt",
+          location = s"file:///app/$BucketName/nexus/other/file-1.txt",
           digest = NotComputedDigest
         )
     }

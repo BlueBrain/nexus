@@ -420,7 +420,8 @@ lazy val sdkViews = project
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
-    addCompilerPlugin(betterMonadicFor)
+    addCompilerPlugin(betterMonadicFor),
+    Test / fork           := true
   )
 
 lazy val service = project
@@ -1058,7 +1059,7 @@ lazy val release = Seq(
 
 lazy val servicePackaging = {
   import com.typesafe.sbt.packager.Keys._
-  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerChmodType, Docker}
+  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerChmodType}
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(
