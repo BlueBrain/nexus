@@ -10,16 +10,16 @@ import monix.bio.Task
   */
 object DataConstructQuery {
 
-  final private case class Context(query: SparqlConstructQuery)
+  final private case class Config(query: SparqlConstructQuery)
 
   val value: Pipe = {
-    implicit val contextReader: JsonLdDecoder[Context] = deriveJsonLdDecoder[Context]
-    Pipe.withContext(
+    implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
+    Pipe.withConfig(
       "dataConstructQuery",
-      (context: Context, data: IndexingData) =>
+      (config: Config, data: IndexingData) =>
         Task
           .fromEither(
-            data.graph.transform(context.query)
+            data.graph.transform(config.query)
           )
           .map { newGraph =>
             Some(

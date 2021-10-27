@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidContext, PipeNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import monix.bio.{IO, Task}
 
 /**
@@ -14,7 +14,7 @@ import monix.bio.{IO, Task}
 trait Pipe {
 
   /**
-    * The context to apply for the pipeline
+    * The config to apply for the pipeline
     */
   type Config
 
@@ -26,7 +26,7 @@ trait Pipe {
   /**
     * Parse and validate the provided config
     */
-  def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Config]
+  def parse(config: Option[ExpandedJsonLd]): Either[InvalidConfig, Config]
 
   /**
     * Apply the provided config and create the pipe task
@@ -34,7 +34,7 @@ trait Pipe {
   def run(config: Config, data: IndexingData): Task[Option[IndexingData]]
 
   /**
-    * Parse the config and run the resulting context with the provided data
+    * Parse the config and run the resulting config with the provided data
     * @param config
     *   the config to parse
     * @param data
@@ -60,7 +60,7 @@ object Pipe {
     definitions.traverse { d =>
       availablePipes.get(d.name) match {
         case None    => Left(PipeNotFound(d.name))
-        case Some(t) => t.parse(d.context)
+        case Some(t) => t.parse(d.config)
       }
     }.void
 
@@ -81,7 +81,7 @@ object Pipe {
         availablePipes.get(d.name) match {
           case None    => IO.raiseError(PipeNotFound(d.name))
           case Some(t) =>
-            IO.fromEither(t.parse(d.context))
+            IO.fromEither(t.parse(d.config))
               .map { c => t.run(c, _) }
         }
       }
@@ -94,61 +94,61 @@ object Pipe {
   }
 
   /**
-    * Create a pipe which does not need a context
+    * Create a pipe which does not need a config
     * @param pipeName
     *   the pipe name
     * @param f
     *   the pipe function
     */
-  def withoutContext(pipeName: String, f: IndexingData => PipeResult): Pipe =
+  def withoutConfig(pipeName: String, f: IndexingData => PipeResult): Pipe =
     new Pipe {
 
-      override type Context = Unit
+      override type Config = Unit
 
       override def name: String = pipeName
 
-      override def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Context] =
+      override def parse(config: Option[ExpandedJsonLd]): Either[InvalidConfig, Config] =
         config match {
-          case Some(_) => Left(InvalidContext(pipeName, "No config is needed."))
+          case Some(_) => Left(InvalidConfig(pipeName, "No config is needed."))
           case None    => Right(())
         }
 
-      override def run(context: Context, data: IndexingData): PipeResult = f(data)
+      override def run(config: Config, data: IndexingData): PipeResult = f(data)
     }
 
   /**
-    * Creates a pipe relying on a context to operate
+    * Creates a pipe relying on a config to operate
     * @param pipeName
     *   the pipe name
     * @param f
     *   the pipe function
     */
-  def withContext[C0](
+  def withConfig[C0](
       pipeName: String,
       f: (C0, IndexingData) => PipeResult
   )(implicit decoder: JsonLdDecoder[C0]): Pipe = new Pipe {
 
-    override type Context = C0
+    override type Config = C0
 
     override def name: String = pipeName
 
-    override def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Context] =
+    override def parse(config: Option[ExpandedJsonLd]): Either[InvalidConfig, Config] =
       config match {
         case Some(c) =>
           c.to[C0].leftMap { e =>
-            InvalidContext(pipeName, e.getMessage())
+            InvalidConfig(pipeName, e.getMessage())
           }
-        case None    => Left(InvalidContext(pipeName, "A context is required."))
+        case None    => Left(InvalidConfig(pipeName, "A config is required."))
       }
 
-    override def run(context: Context, data: IndexingData): PipeResult = f(context, data)
+    override def run(config: Config, data: IndexingData): PipeResult = f(config, data)
   }
 
   /**
     * Excludes metadata from being indexed
     */
   val excludeMetadata: Pipe =
-    withoutContext(
+    withoutConfig(
       "excludeMetadata",
       (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty))
     )
@@ -157,7 +157,7 @@ object Pipe {
     * Filters out deprecated resources
     */
   val excludeDeprecated: Pipe =
-    withoutContext(
+    withoutConfig(
       "excludeDeprecated",
       (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
     )

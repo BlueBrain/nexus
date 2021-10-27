@@ -12,9 +12,9 @@ object PipeError {
         s"Pipe $name can not be found."
       )
 
-  final case class InvalidContext(name: String, details: String)
+  final case class InvalidConfig(name: String, details: String)
       extends PipeError(
-        s"The context provided for the pipe $name is invalid.",
+        s"The config provided for the pipe $name is invalid.",
         Some(details)
       )
 

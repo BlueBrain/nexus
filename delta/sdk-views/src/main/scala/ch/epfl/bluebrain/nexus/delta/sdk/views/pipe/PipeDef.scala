@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
   *   the identifier of the pipe to apply
   * @param description
   *   a description of what is expected from the pipe
-  * @param context
-  *   the context to provide to the pipe
+  * @param config
+  *   the config to provide to the pipe
   */
-final case class PipeDef(name: String, description: Option[String], context: Option[ExpandedJsonLd])
+final case class PipeDef(name: String, description: Option[String], config: Option[ExpandedJsonLd])

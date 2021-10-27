@@ -11,15 +11,15 @@ import monix.bio.Task
   */
 object FilterByType {
 
-  final private case class Context(types: Set[Iri])
+  final private case class Config(types: Set[Iri])
 
   val value: Pipe = {
-    implicit val contextReader: JsonLdDecoder[Context] = deriveJsonLdDecoder[Context]
-    Pipe.withContext(
+    implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
+    Pipe.withConfig(
       "filterByType",
-      (context: Context, data: IndexingData) =>
+      (config: Config, data: IndexingData) =>
         Task.pure(
-          Option.when(context.types.isEmpty || context.types.exists(data.types.contains))(data)
+          Option.when(config.types.isEmpty || config.types.exists(data.types.contains))(data)
         )
     )
   }

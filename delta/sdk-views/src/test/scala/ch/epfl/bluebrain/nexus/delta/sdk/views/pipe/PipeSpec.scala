@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, validate, withoutContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidContext, PipeNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, validate, withoutConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.bio.Task
 import org.scalatest.OptionValues
@@ -30,10 +30,10 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
   val recorded: mutable.Seq[Iri] = mutable.Seq()
 
-  val recorder: Pipe = withoutContext("recorder", d => Task.delay(recorded.appended(d.id)).as(Some(d)))
+  val recorder: Pipe = withoutConfig("recorder", d => Task.delay(recorded.appended(d.id)).as(Some(d)))
 
   val error            = new IllegalArgumentException("Fail !!!")
-  val alwaysFail: Pipe = withoutContext("alwaysFail", _ => Task.raiseError(error))
+  val alwaysFail: Pipe = withoutConfig("alwaysFail", _ => Task.raiseError(error))
 
   val availablePipes: Map[String, Pipe] = List(excludeMetadata, excludeDeprecated, recorder, alwaysFail).map { p =>
     p.name -> p
@@ -87,7 +87,7 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
       validate(
         PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, Some(ExpandedJsonLd.empty)) :: Nil,
         availablePipes
-      ).leftValue.asInstanceOf[InvalidContext].name shouldEqual "excludeMetadata"
+      ).leftValue.asInstanceOf[InvalidConfig].name shouldEqual "excludeMetadata"
     }
   }
 
@@ -141,7 +141,7 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
           ) :: Nil,
           availablePipes
         )
-        .rejectedWith[InvalidContext]
+        .rejectedWith[InvalidConfig]
         .name shouldEqual "excludeMetadata"
     }
   }
