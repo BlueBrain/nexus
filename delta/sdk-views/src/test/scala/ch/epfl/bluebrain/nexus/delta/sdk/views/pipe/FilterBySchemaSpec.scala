@@ -1,20 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
-import io.circe.JsonObject
-import io.circe.syntax.EncoderOps
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class FilterBySchemaSpec
     extends AnyWordSpec
+    with CirceLiteral
     with IOValues
     with Matchers
     with TestHelpers
@@ -42,22 +43,28 @@ class FilterBySchemaSpec
     )
     .accepted
 
+  private def config(tpe: Iri) = ExpandedJsonLd
+    .expanded(
+      json"""[{ "https://bluebrain.github.io/nexus/vocabulary/types": [{ "@id" : "$tpe" }] }]"""
+    )
+    .rightValue
+
   "Filtering by schema" should {
 
     "reject an invalid config" in {
-      FilterBySchema.value.parseAndRun(Some(JsonObject.empty), data).rejected
+      FilterBySchema.value.parseAndRun(Some(ExpandedJsonLd.empty), data).rejected
     }
 
     "keep data matching the schemas without modifying it" in {
       FilterBySchema.value
-        .parseAndRun(Some(JsonObject("types" -> Vector(schema.asJson).asJson)), data)
+        .parseAndRun(Some(config(schema)), data)
         .accepted
         .value shouldEqual data
     }
 
     "filter out data not matching the schemas" in {
       FilterBySchema.value
-        .parseAndRun(Some(JsonObject("types" -> Vector((nxv + "Another").asJson).asJson)), data)
+        .parseAndRun(Some(config(nxv + "Another")), data)
         .accepted shouldEqual None
     }
   }

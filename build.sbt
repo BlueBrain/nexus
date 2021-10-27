@@ -336,7 +336,7 @@ lazy val rdf = project
     javaSpecificationVersion := "1.8",
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
-      akkaHttp,
+      akkaHttpCore,
       catsCore,
       circeParser,
       circeGeneric,
@@ -486,7 +486,7 @@ lazy val app = project
         Set(
           esFile              -> (pluginsTarget / esFile.getName),
           bgFile              -> (pluginsTarget / bgFile.getName),
-          graphAnalyticsFile      -> (pluginsTarget / graphAnalyticsFile.getName),
+          graphAnalyticsFile  -> (pluginsTarget / graphAnalyticsFile.getName),
           storageFile         -> (pluginsTarget / storageFile.getName),
           archiveFile         -> (pluginsTarget / archiveFile.getName),
           compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),

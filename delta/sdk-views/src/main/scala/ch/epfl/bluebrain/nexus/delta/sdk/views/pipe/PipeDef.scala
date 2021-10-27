@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
-import io.circe.JsonObject
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 
 /**
   * Definition of a pipe to include in a view
@@ -11,4 +11,4 @@ import io.circe.JsonObject
   * @param context
   *   the context to provide to the pipe
   */
-final case class PipeDef(name: String, description: Option[String], context: Option[JsonObject])
+final case class PipeDef(name: String, description: Option[String], context: Option[ExpandedJsonLd])

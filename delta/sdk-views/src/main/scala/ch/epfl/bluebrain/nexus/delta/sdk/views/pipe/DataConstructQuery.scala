@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
-import io.circe.Decoder
-import io.circe.generic.semiauto.deriveDecoder
 import monix.bio.Task
 
 /**
@@ -13,7 +13,7 @@ object DataConstructQuery {
   final private case class Context(query: SparqlConstructQuery)
 
   val value: Pipe = {
-    implicit val contextReader: Decoder[Context] = deriveDecoder[Context]
+    implicit val contextReader: JsonLdDecoder[Context] = deriveJsonLdDecoder[Context]
     Pipe.withContext(
       "dataConstructQuery",
       (context: Context, data: IndexingData) =>

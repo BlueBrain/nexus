@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.query
 
-import akka.http.scaladsl.model.MediaTypes
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromStringUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.{Decoder, Encoder}
 import org.apache.jena.query.{Query, QueryFactory}
@@ -64,19 +64,13 @@ object SparqlQuery {
       Encoder.encodeString.contramap(_.value)
 
     implicit val sparqlConstructQueryDecoder: Decoder[SparqlConstructQuery] =
-      Decoder.decodeString.map(SparqlConstructQuery.unsafe(_))
+      Decoder.decodeString.map(SparqlConstructQuery.unsafe)
+
+    implicit val sparqlConstructQueryJsonLdDecoder: JsonLdDecoder[SparqlConstructQuery] =
+      (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { apply(_).leftMap { e => ParsingFailure(e) } }
 
   }
 
   def apply(v: String): SparqlQuery =
     SparqlConstructQuery(v).getOrElse(AnySparqlQuery(v))
-
-  implicit val fromEntitySparqlQueryUnmarshaller: FromEntityUnmarshaller[SparqlQuery] =
-    PredefinedFromEntityUnmarshallers.stringUnmarshaller
-      .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
-      .map(SparqlQuery(_))
-
-  implicit val fromStringSparqlQueryUnmarshaller: FromStringUnmarshaller[SparqlQuery] =
-    Unmarshaller.strict(SparqlQuery(_))
-
 }

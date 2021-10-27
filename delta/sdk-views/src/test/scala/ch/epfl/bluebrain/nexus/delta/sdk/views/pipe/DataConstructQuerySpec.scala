@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -9,11 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
+import io.circe.syntax.EncoderOps
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class FilterByTypeSpec
+class DataConstructQuerySpec
     extends AnyWordSpec
     with CirceLiteral
     with IOValues
@@ -40,29 +41,39 @@ class FilterByTypeSpec
     )
     .accepted
 
-  private def config(tpe: Iri) = ExpandedJsonLd
+  private def config(query: String) = ExpandedJsonLd
     .expanded(
-      json"""[{ "https://bluebrain.github.io/nexus/vocabulary/types": [{ "@id" : "$tpe" }] }]"""
+      json"""[{ "https://bluebrain.github.io/nexus/vocabulary/query": [{ "@value" : ${query.asJson} }] }]"""
     )
     .rightValue
 
-  "Filtering by type" should {
+  "DataConstructQuery" should {
 
     "reject an invalid config" in {
-      FilterByType.value.parseAndRun(Some(ExpandedJsonLd.empty), data).rejected
+      DataConstructQuery.value.parseAndRun(Some(ExpandedJsonLd.empty), data).rejected
     }
 
-    "keep data matching the types without modifying it" in {
-      FilterByType.value
-        .parseAndRun(Some(config(nxv + "Custom")), data)
+    "transform the data according to the query" in {
+      val query  = """prefix nxv: <https://bluebrain.github.io/nexus/vocabulary/>
+                    |
+                    |CONSTRUCT {
+                    |  ?person 	        nxv:name             ?name ;
+                    |                   nxv:number           ?number ;
+                    |} WHERE {
+                    |  ?person 	        nxv:name             ?name ;
+                    |                   nxv:number           ?number ;
+                    |}""".stripMargin
+      val name   = predicate(nxv + "name")
+      val number = predicate(nxv + "number")
+      DataConstructQuery.value
+        .parseAndRun(Some(config(query)), data)
         .accepted
-        .value shouldEqual data
-    }
-
-    "filter out data not matching the types" in {
-      FilterByType.value
-        .parseAndRun(Some(config(nxv + "Another")), data)
-        .accepted shouldEqual None
+        .value shouldEqual data.copy(
+        types = Set.empty,
+        graph = data.graph.filter { case (_, p, _) =>
+          p == name || p == number
+        }
+      )
     }
   }
 }

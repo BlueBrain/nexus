@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
@@ -11,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, validate, withoutContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidContext, PipeNotFound}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
-import io.circe.JsonObject
 import monix.bio.Task
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
@@ -85,7 +85,7 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
     "fail if a pipeline configuration is invalid" in {
       validate(
-        PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, Some(JsonObject.empty)) :: Nil,
+        PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, Some(ExpandedJsonLd.empty)) :: Nil,
         availablePipes
       ).leftValue.asInstanceOf[InvalidContext].name shouldEqual "excludeMetadata"
     }
@@ -134,7 +134,11 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
     "fail if a pipeline configuration is invalid" in {
       Pipe
         .run(
-          PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, Some(JsonObject.empty)) :: Nil,
+          PipeDef("excludeDeprecated", None, None) :: PipeDef(
+            "excludeMetadata",
+            None,
+            Some(ExpandedJsonLd.empty)
+          ) :: Nil,
           availablePipes
         )
         .rejectedWith[InvalidContext]

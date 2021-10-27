@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidContext, PipeNotFound}
-import io.circe.syntax._
-import io.circe.{Decoder, JsonObject}
 import monix.bio.{IO, Task}
 
 /**
@@ -16,7 +16,7 @@ trait Pipe {
   /**
     * The context to apply for the pipeline
     */
-  type Context
+  type Config
 
   /**
     * Identifier of the pipe
@@ -26,12 +26,12 @@ trait Pipe {
   /**
     * Parse and validate the provided config
     */
-  def parse(config: Option[JsonObject]): Either[InvalidContext, Context]
+  def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Config]
 
   /**
-    * Apply the provided context and create the pipe task
+    * Apply the provided config and create the pipe task
     */
-  def run(context: Context, data: IndexingData): Task[Option[IndexingData]]
+  def run(config: Config, data: IndexingData): Task[Option[IndexingData]]
 
   /**
     * Parse the config and run the resulting context with the provided data
@@ -40,7 +40,7 @@ trait Pipe {
     * @param data
     *   the data to apply the pipe on
     */
-  def parseAndRun(config: Option[JsonObject], data: IndexingData): Task[Option[IndexingData]] =
+  def parseAndRun(config: Option[ExpandedJsonLd], data: IndexingData): Task[Option[IndexingData]] =
     Task.fromEither(parse(config)).flatMap(run(_, data))
 
 }
@@ -107,7 +107,7 @@ object Pipe {
 
       override def name: String = pipeName
 
-      override def parse(config: Option[JsonObject]): Either[InvalidContext, Context] =
+      override def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Context] =
         config match {
           case Some(_) => Left(InvalidContext(pipeName, "No config is needed."))
           case None    => Right(())
@@ -126,16 +126,16 @@ object Pipe {
   def withContext[C0](
       pipeName: String,
       f: (C0, IndexingData) => PipeResult
-  )(implicit decoder: Decoder[C0]): Pipe = new Pipe {
+  )(implicit decoder: JsonLdDecoder[C0]): Pipe = new Pipe {
 
     override type Context = C0
 
     override def name: String = pipeName
 
-    override def parse(config: Option[JsonObject]): Either[InvalidContext, Context] =
+    override def parse(config: Option[ExpandedJsonLd]): Either[InvalidContext, Context] =
       config match {
         case Some(c) =>
-          decoder.decodeJson(c.asJson).leftMap { e =>
+          c.to[C0].leftMap { e =>
             InvalidContext(pipeName, e.getMessage())
           }
         case None    => Left(InvalidContext(pipeName, "A context is required."))
