@@ -1,14 +1,5 @@
 name: Storage Integration Service
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - 'delta/kernel/**'
-      - 'delta/rdf/**'
-      - 'storage/**'
-      - 'build.sbt'
-      - 'project/**'
   pull_request:
     paths:
       - 'delta/kernel/**'
@@ -16,24 +7,19 @@ on:
       - 'storage/**'
       - 'build.sbt'
       - 'project/**'
+      - '.github/workflows/ci-storage.yml'
 jobs:
   review:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: it
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8.0-272
       - name: StaticAnalysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean coverage test coverageReport coverageAggregate
       - name: Assembly
@@ -42,7 +28,8 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Build image
         run: docker build ./storage/permissions-fixer --tag=nexus/fixer
       - name: Compile and run tests

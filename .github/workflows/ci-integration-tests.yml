@@ -2,27 +2,38 @@ name: Delta Integration Tests
 on:
   pull_request:
     paths:
-      - 'delta/kernel/**'
-      - 'delta/sdk-testkit/**'
-      - 'delta/testkit/**'
+      - 'delta/**'
+      - 'storage/**'
       - 'tests/**'
       - 'build.sbt'
       - 'project/**'
+      - '.github/workflows/ci-integration-tests.yml'
 jobs:
-  review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+  test:
+    runs-on: it
+    timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
-      - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" clean scalafmtCheck test:scalafmtCheck test:compile scapegoat
+      - name: Clean, build Delta & Storage images
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            clean \
+            app/Docker/publishLocal \
+            storage/Docker/publishLocal
+      - name: Start services
+        run: docker-compose -f tests/docker/docker-compose-ci.yml up -d && sleep 60
+      - name: Test
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project tests" test
+      - name: Stop Docker
+        if: ${{ always() }}
+        run: docker-compose -f tests/docker/docker-compose-ci.yml down
+      - name: Cleanup Docker Containers
+        if: ${{ always() }}
+        run: |
+          for container in `docker images | grep none | awk '{print $3}'`; do
+            echo "Deleting container: $container";
+            docker rmi $container;
+          done

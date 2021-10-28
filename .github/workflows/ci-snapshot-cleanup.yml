@@ -1,4 +1,4 @@
-name: Delta Snapshot Cleanup
+name: Snapshot Cleanup
 on:
   workflow_dispatch:
   schedule:
@@ -33,3 +33,6 @@ jobs:
             ch.epfl.bluebrain.nexus.delta-archive-plugin_2.13
             ch.epfl.bluebrain.nexus.delta-composite-views-plugin_2.13
             ch.epfl.bluebrain.nexus.delta-blazegraph-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-search-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-project-deletion-plugin_2.13
+            ch.epfl.bluebrain.nexus.delta-graph-analytics-plugin_2.13

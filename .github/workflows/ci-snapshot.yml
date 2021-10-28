@@ -1,9 +1,10 @@
-name: Delta Snapshot
+name: Snapshot
 on:
   push:
     branches:
       - master
     paths:
+      - 'cli/**'
       - 'delta/**'
       - 'storage/**'
       - 'build.sbt'
@@ -12,7 +13,7 @@ on:
 jobs:
   publish-snapshot:
     if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: it
     timeout-minutes: 40
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -21,19 +22,13 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
       - name: Publish To DockerHub
         run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false docker:publishLocal
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
-          docker push bluebrain/nexus-delta:latest
-          docker push bluebrain/nexus-cli:latest
-          docker push bluebrain/nexus-storage:latest
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            app/Docker/publish \
+            storage/Docker/publish \
+            cli/Docker/publish
       - name: Publish to Github Packages
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false publish

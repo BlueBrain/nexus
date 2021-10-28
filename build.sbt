@@ -54,7 +54,7 @@ val nimbusJoseJwtVersion            = "9.8.1"
 val pureconfigVersion               = "0.14.0" // 0.15.0 conflicts with distage 1.0.5
 val scalaLoggingVersion             = "3.9.3"
 val scalateVersion                  = "1.9.6"
-val scalaTestVersion                = "3.2.8"
+val scalaTestVersion                = "3.2.9"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2"
@@ -420,7 +420,8 @@ lazy val sdkViews = project
       scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
-    addCompilerPlugin(betterMonadicFor)
+    addCompilerPlugin(betterMonadicFor),
+    Test / fork           := true
   )
 
 lazy val service = project
@@ -486,7 +487,7 @@ lazy val app = project
         Set(
           esFile              -> (pluginsTarget / esFile.getName),
           bgFile              -> (pluginsTarget / bgFile.getName),
-          graphAnalyticsFile      -> (pluginsTarget / graphAnalyticsFile.getName),
+          graphAnalyticsFile  -> (pluginsTarget / graphAnalyticsFile.getName),
           storageFile         -> (pluginsTarget / storageFile.getName),
           archiveFile         -> (pluginsTarget / archiveFile.getName),
           compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
@@ -554,7 +555,6 @@ lazy val elasticsearchPlugin = project
   .settings(
     name                       := "delta-elasticsearch-plugin",
     moduleName                 := "delta-elasticsearch-plugin",
-    Test / fork                := true,
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
@@ -1059,7 +1059,7 @@ lazy val release = Seq(
 
 lazy val servicePackaging = {
   import com.typesafe.sbt.packager.Keys._
-  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{dockerChmodType, Docker}
+  import com.typesafe.sbt.packager.docker.DockerPlugin.autoImport.{Docker, dockerChmodType}
   import com.typesafe.sbt.packager.docker.{DockerChmodType, DockerVersion}
   import com.typesafe.sbt.packager.universal.UniversalPlugin.autoImport.Universal
   Seq(

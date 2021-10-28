@@ -5,20 +5,15 @@ on:
       - 'docs/**'
       - 'build.sbt'
       - 'project/**'
+      - '.github/workflows/ci-docs.yml'
 
 jobs:
   review:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: it
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
       - name: Review
         run: sbt "project docs" clean scalafmtCheck scalafmtSbtCheck paradox paradoxValidateLinks

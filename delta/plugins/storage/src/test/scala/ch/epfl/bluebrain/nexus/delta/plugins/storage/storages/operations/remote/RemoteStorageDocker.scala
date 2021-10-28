@@ -5,9 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
-import com.whisk.docker.{DockerContainer, DockerReadyChecker, HostConfig, VolumeMapping}
+import com.whisk.docker.{DockerContainer, DockerReadyChecker, VolumeMapping}
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
+import java.nio.file.attribute.PosixFilePermissions
 import scala.concurrent.duration._
 
 trait RemoteStorageDocker extends DockerKitWithFactory {
@@ -15,9 +16,6 @@ trait RemoteStorageDocker extends DockerKitWithFactory {
   override val StartContainersTimeout: FiniteDuration = 40.seconds
 
   val remoteStorageContainer: DockerContainer = DockerContainer("bluebrain/nexus-storage:1.5.1")
-    .withHostConfig(
-      HostConfig(memory = Some(384 * 1000000))
-    )
     .withPorts((RemoteStorageServicePort, Some(RemoteStorageServicePort)))
     .withEnv(
       "JAVA_OPTS=-Xmx256m -Dconfig.override_with_env_vars=true",
@@ -39,18 +37,24 @@ object RemoteStorageDocker {
   private[remote] val RemoteStorageServicePort: Int = 8080
   val RemoteStorageEndpoint: BaseUri                = BaseUri(s"http://localhost:$RemoteStorageServicePort", Label.unsafe("v1"))
   val BucketName: Label                             = Label.unsafe("nexustest")
-  private[remote] val RootVolume: Path              = Files.createTempDirectory("root")
-  private val Bucket: Path                          = Files.createDirectories(RootVolume.resolve(s"$BucketName/nexus")).getParent
-  private val my                                    = Files.createDirectory(Bucket.resolve("my"))
-  private val file                                  = my.resolve("file.txt")
-  private val file2                                 = my.resolve("file-2.txt")
-  private val file3                                 = my.resolve("file-3.txt")
-  private val file4                                 = my.resolve("file-4.txt")
-  List(file, file2, file3, file4).foreach { file =>
-    Files.createFile(file)
-    Files.writeString(file, "file content")
+
+  private val rwx = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
+
+  private[remote] val RootVolume = Files.createTempDirectory("root", rwx)
+  private val bucket             = Files.createDirectory(RootVolume.resolve(BucketName.value), rwx)
+  private val bucketNexus        = Files.createDirectory(bucket.resolve("nexus"), rwx)
+  private val my                 = Files.createDirectory(bucket.resolve("my"), rwx)
+
+  (1 to 4).map(idx => s"file-$idx.txt").foreach { fileName =>
+    val path = Files.createFile(my.resolve(fileName), rwx)
+    path.toFile.setWritable(true, false)
+    Files.writeString(path, "file content")
   }
-  val digest: ComputedDigest                        =
+  List(bucket, bucketNexus, my).foreach { path =>
+    path.toFile.setWritable(true, false)
+  }
+
+  val digest: ComputedDigest =
     ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
 
 }

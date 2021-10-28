@@ -1,4 +1,4 @@
-name: CONTRUBUTING and README
+name: CONTRIBUTING and README
 on:
   pull_request:
     paths:

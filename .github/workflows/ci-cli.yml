@@ -5,23 +5,18 @@ on:
       - 'cli/**'
       - 'build.sbt'
       - 'project/**'
+      - '.github/workflows/ci-cli.yml'
 jobs:
   review:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: it
     timeout-minutes: 20
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Coursier Cache
-        uses: coursier/cache-action@v6
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean scalafmtCheck test:scalafmtCheck scalafmtSbtCheck scapegoat
+        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project cli" clean coverage test coverageReport coverageAggregate
