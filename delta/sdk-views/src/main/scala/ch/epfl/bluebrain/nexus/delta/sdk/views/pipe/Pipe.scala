@@ -5,10 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
+import io.circe.Json
 import monix.bio.{IO, Task}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 /**
   * Transformation unit of a pipeline within a view
@@ -55,12 +56,12 @@ object Pipe {
     * Validate the definitions against the available pipes
     * @param definitions
     *   the definitions to validate
-    * @param availablePipes
-    *   the available pipes
+    * @param pipeConfig
+    *   the pipe configuration
     */
-  def validate(definitions: List[PipeDef], availablePipes: Map[String, Pipe]): Either[PipeError, Unit] =
+  def validate(definitions: List[PipeDef], pipeConfig: PipeConfig): Either[PipeError, Unit] =
     definitions.traverse { d =>
-      availablePipes.get(d.name) match {
+      pipeConfig.availablePipes.get(d.name) match {
         case None    => Left(PipeNotFound(d.name))
         case Some(t) => t.parse(d.config)
       }
@@ -70,17 +71,17 @@ object Pipe {
     * Parse and fold the provided definitions to create the pipeline function
     * @param definitions
     *   the definitions to run
-    * @param availablePipes
-    *   the available pipes
+    * @param pipeConfig
+    *   the pipe configuration
     * @return
     */
   def run(
       definitions: List[PipeDef],
-      availablePipes: Map[String, Pipe]
+      pipeConfig: PipeConfig
   ): IO[PipeError, IndexingData => PipeResult] = {
     definitions
       .traverse { d =>
-        availablePipes.get(d.name) match {
+        pipeConfig.availablePipes.get(d.name) match {
           case None    => IO.raiseError(PipeNotFound(d.name))
           case Some(t) =>
             IO.fromEither(t.parse(d.config))
@@ -167,14 +168,17 @@ object Pipe {
   /**
     * Add source as text
     */
-  val sourceAsText: Pipe =
+  val sourceAsText: Pipe = {
+    val empty = Json.obj()
     withoutConfig(
       "sourceAsText",
       (data: IndexingData) =>
         Task.some(
           data.copy(
-            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces)
+            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces),
+            source = empty
           )
         )
     )
+  }
 }

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
@@ -21,6 +23,17 @@ object FilterByType {
         Task.pure(
           Option.when(config.types.isEmpty || config.types.exists(data.types.contains))(data)
         )
+    )
+  }
+
+  private val typesKey = nxv + "types"
+
+  def definition(set: Set[Iri]): PipeDef = {
+    PipeDef.withConfig(
+      "filterByType",
+      set.foldLeft(ExpandedJsonLd.empty) { case (expanded, tpe) =>
+        expanded.add(typesKey, tpe)
+      }
     )
   }
 }

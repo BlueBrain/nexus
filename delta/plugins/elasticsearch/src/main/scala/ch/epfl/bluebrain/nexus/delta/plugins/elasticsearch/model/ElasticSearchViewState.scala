@@ -97,28 +97,22 @@ object ElasticSearchViewState {
       */
     def asElasticSearchView(defaultMapping: JsonObject, defaultSettings: JsonObject): ElasticSearchView = value match {
       case IndexingElasticSearchViewValue(
-            resourceSchemas,
-            resourceTypes,
             resourceTag,
-            sourceAsText,
-            includeMetadata,
-            includeDeprecated,
+            pipeline,
             mapping,
             settings,
+            context,
             permission
           ) =>
         IndexingElasticSearchView(
           id = id,
           project = project,
           uuid = uuid,
-          resourceSchemas = resourceSchemas,
-          resourceTypes = resourceTypes,
           resourceTag = resourceTag,
-          sourceAsText = sourceAsText,
-          includeMetadata = includeMetadata,
-          includeDeprecated = includeDeprecated,
+          pipeline = pipeline,
           mapping = mapping.getOrElse(defaultMapping),
           settings = settings.getOrElse(defaultSettings),
+          context = context,
           permission = permission,
           tags = tags,
           source = source

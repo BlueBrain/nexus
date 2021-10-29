@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeDef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -78,19 +80,11 @@ object ElasticSearchView {
     *   a reference to the parent project
     * @param uuid
     *   the unique view identifier
-    * @param resourceSchemas
-    *   the set of schemas considered that constrains resources; empty implies all
-    * @param resourceTypes
-    *   the set of resource types considered for indexing; empty implies all
+    * @param pipeline
+    *   the list of operations to apply on a resource before indexing it
     * @param resourceTag
     *   an optional tag to consider for indexing; when set, all resources that are tagged with the value of the field
     *   are indexed with the corresponding revision
-    * @param sourceAsText
-    *   whether to include the source of the resource as a text field in the document
-    * @param includeMetadata
-    *   whether to include the metadata of the resource as individual fields in the document
-    * @param includeDeprecated
-    *   whether to consider deprecated resources for indexing
     * @param mapping
     *   the elasticsearch mapping to be used in order to create the index
     * @param settings
@@ -106,12 +100,9 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       uuid: UUID,
-      resourceSchemas: Set[Iri],
-      resourceTypes: Set[Iri],
+      pipeline: List[PipeDef],
       resourceTag: Option[TagLabel],
-      sourceAsText: Boolean,
-      includeMetadata: Boolean,
-      includeDeprecated: Boolean,
+      context: Option[ContextObject],
       mapping: JsonObject,
       settings: JsonObject,
       permission: Permission,

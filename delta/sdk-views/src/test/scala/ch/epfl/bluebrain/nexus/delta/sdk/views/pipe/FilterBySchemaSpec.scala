@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -43,12 +42,6 @@ class FilterBySchemaSpec
     )
     .accepted
 
-  private def config(tpe: Iri) = ExpandedJsonLd
-    .expanded(
-      json"""[{ "https://bluebrain.github.io/nexus/vocabulary/types": [{ "@id" : "$tpe" }] }]"""
-    )
-    .rightValue
-
   "Filtering by schema" should {
 
     "reject an invalid config" in {
@@ -57,14 +50,14 @@ class FilterBySchemaSpec
 
     "keep data matching the schemas without modifying it" in {
       FilterBySchema.value
-        .parseAndRun(Some(config(schema)), data)
+        .parseAndRun(FilterBySchema.definition(Set(schema)).config, data)
         .accepted
         .value shouldEqual data
     }
 
     "filter out data not matching the schemas" in {
       FilterBySchema.value
-        .parseAndRun(Some(config(nxv + "Another")), data)
+        .parseAndRun(FilterBySchema.definition(Set(nxv + "Another")).config, data)
         .accepted shouldEqual None
     }
   }

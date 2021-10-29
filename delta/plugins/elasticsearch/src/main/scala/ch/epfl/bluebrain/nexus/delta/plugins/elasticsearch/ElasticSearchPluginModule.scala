@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsCo
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
@@ -88,12 +89,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         projection: Projection[Unit],
         indexingSource: IndexingSource @Id("elasticsearch-source"),
         cache: ProgressesCache @Id("elasticsearch-progresses"),
+        pipeConfig: PipeConfig,
         config: ElasticSearchViewsConfig,
         scheduler: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         base: BaseUri
     ) =>
-      new ElasticSearchIndexingStream(client, indexingSource, cache, config, projection)(cr, base, scheduler)
+      new ElasticSearchIndexingStream(client, indexingSource, cache, pipeConfig, config, projection)(
+        cr,
+        base,
+        scheduler
+      )
   }
 
   make[ElasticSearchIndexingController].from { (as: ActorSystem[Nothing]) =>
@@ -367,11 +373,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         client: ElasticSearchClient,
         cache: ElasticSearchViewCache,
+        pipeConfig: PipeConfig,
         config: ElasticSearchViewsConfig,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate")
     ) =>
-      new ElasticSearchIndexingAction(client, cache, config)(cr, baseUri)
+      new ElasticSearchIndexingAction(client, cache, pipeConfig, config)(cr, baseUri)
   }
 
   make[ElasticSearchViewEventExchange]

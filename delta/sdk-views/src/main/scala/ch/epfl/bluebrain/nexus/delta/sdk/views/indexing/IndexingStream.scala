@@ -17,7 +17,7 @@ trait IndexingStream[V] {
     * @param strategy
     *   the progress strategy used to build a stream
     */
-  def apply(view: ViewIndex[V], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit]
+  def apply(view: ViewIndex[V], strategy: IndexingStream.ProgressStrategy): Task[Stream[Task, Unit]]
 
 }
 

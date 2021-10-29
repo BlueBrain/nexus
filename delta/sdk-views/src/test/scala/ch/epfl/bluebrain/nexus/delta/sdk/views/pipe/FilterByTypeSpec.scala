@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -40,12 +39,6 @@ class FilterByTypeSpec
     )
     .accepted
 
-  private def config(tpe: Iri) = ExpandedJsonLd
-    .expanded(
-      json"""[{ "https://bluebrain.github.io/nexus/vocabulary/types": [{ "@id" : "$tpe" }] }]"""
-    )
-    .rightValue
-
   "Filtering by type" should {
 
     "reject an invalid config" in {
@@ -54,14 +47,14 @@ class FilterByTypeSpec
 
     "keep data matching the types without modifying it" in {
       FilterByType.value
-        .parseAndRun(Some(config(nxv + "Custom")), data)
+        .parseAndRun(FilterByType.definition(Set(nxv + "Custom")).config, data)
         .accepted
         .value shouldEqual data
     }
 
     "filter out data not matching the types" in {
       FilterByType.value
-        .parseAndRun(Some(config(nxv + "Another")), data)
+        .parseAndRun(FilterByType.definition(Set(nxv + "Another")).config, data)
         .accepted shouldEqual None
     }
   }

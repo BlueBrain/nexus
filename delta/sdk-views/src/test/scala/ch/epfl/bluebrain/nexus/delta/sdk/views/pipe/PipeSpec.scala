@@ -6,17 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.IndexingDataGen
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.{excludeDeprecated, excludeMetadata, sourceAsText, validate, withoutConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
+import io.circe.Json
 import monix.bio.Task
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 
 import scala.collection.mutable
 
@@ -31,14 +32,14 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
   val recorded: mutable.Seq[Iri] = mutable.Seq()
 
-  val recorder: Pipe = withoutConfig("recorder", d => Task.delay(recorded.appended(d.id)).as(Some(d)))
+  val recorder: Pipe       = withoutConfig("recorder", d => Task.delay(recorded.appended(d.id)).as(Some(d)))
+  val recorderDef: PipeDef = PipeDef.noConfig("recorder")
 
-  val error            = new IllegalArgumentException("Fail !!!")
-  val alwaysFail: Pipe = withoutConfig("alwaysFail", _ => Task.raiseError(error))
+  val error                  = new IllegalArgumentException("Fail !!!")
+  val alwaysFail: Pipe       = withoutConfig("alwaysFail", _ => Task.raiseError(error))
+  val alwaysFailDef: PipeDef = PipeDef.noConfig("alwaysFail")
 
-  val availablePipes: Map[String, Pipe] = List(excludeMetadata, excludeDeprecated, recorder, alwaysFail).map { p =>
-    p.name -> p
-  }.toMap
+  val pipeConfig: PipeConfig = PipeConfig(Set(excludeMetadata, excludeDeprecated, recorder, alwaysFail)).rightValue
 
   private val project = ProjectRef.unsafe("org", "proj")
 
@@ -71,8 +72,9 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
   "Source as test" should {
     "add source as a field in the graph" in {
-      sourceAsText.parseAndRun(None, data).accepted.value shouldEqual data.copy(graph =
-        data.graph.add(nxv.originalSource.iri, data.source.noSpaces)
+      sourceAsText.parseAndRun(None, data).accepted.value shouldEqual data.copy(
+        graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces),
+        source = Json.obj()
       )
     }
   }
@@ -80,22 +82,22 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
   "Validating pipes" should {
     "succeed if all definitions are valid" in {
       validate(
-        PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, None) :: Nil,
-        availablePipes
+        PipeDef.excludeDeprecated :: PipeDef.excludeMetadata :: Nil,
+        pipeConfig
       ).rightValue
     }
 
     "fail if a pipe definition references an unknown pipe" in {
       validate(
-        PipeDef("excludeDeprecated", None, None) :: PipeDef("xxx", None, None) :: Nil,
-        availablePipes
+        PipeDef.excludeDeprecated :: PipeDef.noConfig("xxx") :: Nil,
+        pipeConfig
       ).leftValue shouldEqual PipeNotFound("xxx")
     }
 
     "fail if a pipeline configuration is invalid" in {
       validate(
-        PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, Some(ExpandedJsonLd.empty)) :: Nil,
-        availablePipes
+        PipeDef.excludeDeprecated :: PipeDef.withConfig("excludeMetadata", ExpandedJsonLd.empty) :: Nil,
+        pipeConfig
       ).leftValue.asInstanceOf[InvalidConfig].name shouldEqual "excludeMetadata"
     }
   }
@@ -104,7 +106,7 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
     "succeed if all definitions are valid" in {
       val result = Pipe
-        .run(PipeDef("excludeDeprecated", None, None) :: PipeDef("excludeMetadata", None, None) :: Nil, availablePipes)
+        .run(PipeDef.excludeDeprecated :: PipeDef.excludeMetadata :: Nil, pipeConfig)
         .flatMap(_(data))
         .accepted
       result.value shouldEqual data.copy(metadataGraph = Graph.empty)
@@ -113,12 +115,8 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
     "fail if any of the pipe fail" in {
       val result = Pipe
         .run(
-          PipeDef("excludeDeprecated", None, None) :: PipeDef("alwaysFail", None, None) :: PipeDef(
-            "recorder",
-            None,
-            None
-          ) :: Nil,
-          availablePipes
+          PipeDef.excludeDeprecated :: alwaysFailDef :: recorderDef :: Nil,
+          pipeConfig
         )
         .flatMap(_(data))
         .rejected
@@ -127,7 +125,7 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
     "not attempt to run later pipes if data gets filtered out" in {
       val result = Pipe
-        .run(PipeDef("excludeDeprecated", None, None) :: PipeDef("recorder", None, None) :: Nil, availablePipes)
+        .run(PipeDef.excludeDeprecated :: recorderDef :: Nil, pipeConfig)
         .flatMap(_(data.copy(deprecated = true)))
         .accepted
       result shouldEqual None
@@ -136,19 +134,18 @@ class PipeSpec extends AnyWordSpec with TestHelpers with IOValues with Matchers 
 
     "fail if a pipe definition references an unknown pipe" in {
       Pipe
-        .run(PipeDef("excludeDeprecated", None, None) :: PipeDef("xxx", None, None) :: Nil, availablePipes)
+        .run(PipeDef.excludeDeprecated :: PipeDef.noConfig("xxx") :: Nil, pipeConfig)
         .rejected shouldEqual PipeNotFound("xxx")
     }
 
     "fail if a pipeline configuration is invalid" in {
       Pipe
         .run(
-          PipeDef("excludeDeprecated", None, None) :: PipeDef(
+          PipeDef.excludeDeprecated :: PipeDef.withConfig(
             "excludeMetadata",
-            None,
-            Some(ExpandedJsonLd.empty)
+            ExpandedJsonLd.empty
           ) :: Nil,
-          availablePipes
+          pipeConfig
         )
         .rejectedWith[InvalidConfig]
         .name shouldEqual "excludeMetadata"
