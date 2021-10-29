@@ -239,9 +239,12 @@ trait Acls {
     * ''onError'' when it doesn't
     */
   def authorizeForOr[E](path: AclAddress, permission: Permission)(onError: => E)(implicit caller: Caller): IO[E, Unit] =
-    fetchWithAncestors(path).flatMap { acls =>
-      IO.raiseWhen(!acls.exists(caller.identities, permission, path))(onError)
-    }
+    path.ancestors
+      .foldM(false) {
+        case (false, address) => fetch(address).redeem(_ => false, _.value.hasPermission(caller.identities, permission))
+        case (true, _)        => UIO.pure(true)
+      }
+      .flatMap { result => IO.raiseWhen(!result)(onError) }
 
   /**
     * Checks whether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
@@ -255,13 +258,26 @@ trait Acls {
     */
   def authorizeForEveryOr[E](path: AclAddress, permissions: Set[Permission])(
       onError: => E
-  )(implicit caller: Caller): IO[E, Unit] =
-    fetchWithAncestors(path).flatMap { acls =>
-      val hasAccess = permissions.toList
-        .foldM(false)((_, perm) => Option.when(acls.exists(caller.identities, perm, path))(true))
-        .getOrElse(false)
-      IO.raiseWhen(!hasAccess)(onError)
-    }
+  )(implicit caller: Caller): IO[E, Unit]                   =
+    path.ancestors
+      .foldM((false, Set.empty[Permission])) {
+        case ((true, set), _)        => UIO.pure((true, set))
+        case ((false, set), address) =>
+          fetch(address)
+            .redeem(
+              _ => (false, set),
+              { res =>
+                val resSet =
+                  res.value.value // fetch the set of permissions defined in the resource that apply to the caller
+                    .filter { case (identity, _) => caller.identities.contains(identity) }
+                    .values
+                    .foldLeft(Set.empty[Permission])(_ ++ _)
+                val sum = set ++ resSet // add it to the accumulated set
+                (permissions.forall(sum.contains), sum) // true if all permissions are found, recurse otherwise
+              }
+            )
+      }
+      .flatMap { case (result, _) => IO.raiseWhen(!result)(onError) }
 
   /**
     * Checks whether a given [[Caller]] has the ''permissions'' on the passed ''paths''.
