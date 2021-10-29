@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import monix.bio.IO
@@ -94,19 +94,15 @@ object IndexingData {
       rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
       typesGraph         = rootMetaGraph.rootTypesGraph
       finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
-    } yield IndexingData(resource, finalRootGraph, rootMetaGraph, source.removeAllKeys(keywords.context))
-  }
-
-  def apply(resource: ResourceF[_], graph: Graph, metadataGraph: Graph, source: Json)(implicit
-      baseUri: BaseUri
-  ): IndexingData =
-    IndexingData(
+    } yield IndexingData(
       resource.resolvedId,
       resource.deprecated,
       resource.schema,
       resource.types,
-      graph,
-      metadataGraph,
-      source
+      finalRootGraph,
+      rootMetaGraph,
+      source.removeAllKeys(keywords.context)
     )
+  }
+
 }

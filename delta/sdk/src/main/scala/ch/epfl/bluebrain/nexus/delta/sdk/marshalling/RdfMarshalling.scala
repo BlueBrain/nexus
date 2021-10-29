@@ -3,11 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import akka.http.scaladsl.marshalling.{Marshaller, ToEntityMarshaller}
 import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.MediaTypes._
-import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaType}
+import akka.http.scaladsl.model.{ContentType, HttpCharsets, HttpEntity, MediaType, MediaTypes}
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, FromStringUnmarshaller, PredefinedFromEntityUnmarshallers, Unmarshaller}
 import akka.util.ByteString
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Dot, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.JsonLd
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.{Json, Printer}
@@ -81,6 +84,14 @@ trait RdfMarshalling {
     */
   implicit val dotMarshaller: ToEntityMarshaller[Dot] =
     Marshaller.StringMarshaller.wrap(`text/vnd.graphviz`)(_.value)
+
+  implicit val fromEntitySparqlQueryUnmarshaller: FromEntityUnmarshaller[SparqlQuery] =
+    PredefinedFromEntityUnmarshallers.stringUnmarshaller
+      .forContentTypes(RdfMediaTypes.`application/sparql-query`, MediaTypes.`text/plain`)
+      .map(SparqlQuery(_))
+
+  implicit val fromStringSparqlQueryUnmarshaller: FromStringUnmarshaller[SparqlQuery] =
+    Unmarshaller.strict(SparqlQuery(_))
 }
 
 object RdfMarshalling extends RdfMarshalling

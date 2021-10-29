@@ -3,11 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.rdf.graph
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Quad.Quad
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, UnexpectedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{ConversionError, SparqlConstructQueryError, UnexpectedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{obj, predicate, subject, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.rdf
 import ch.epfl.bluebrain.nexus.delta.rdf._
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.fakeId
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph.{fakeId, rdfType}
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jena.writer.DotWriter._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdJavaApi._
@@ -15,11 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 import org.apache.jena.graph.{Node, Triple => JenaTriple}
-import org.apache.jena.query.DatasetFactory
+import org.apache.jena.query.{DatasetFactory, QueryExecutionFactory}
 import org.apache.jena.riot.{Lang, RDFParser, RDFWriter}
 import org.apache.jena.sparql.core.DatasetGraph
 import org.apache.jena.sparql.graph.GraphFactory
@@ -40,7 +41,6 @@ import scala.util.Try
 final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { self =>
 
   val rootResource: Node = subject(rootNode)
-  private val rdfType    = predicate(rdf.tpe)
 
   /**
     * Returns all the triples of the current graph
@@ -188,6 +188,19 @@ final case class Graph private (rootNode: IriOrBNode, value: DatasetGraph) { sel
       .map(NQuads(_, rootNode))
 
   /**
+    * Transform the current graph to a new one via the provided construct query
+    * @param query
+    *   the construct query
+    */
+  def transform(query: SparqlConstructQuery): Either[SparqlConstructQueryError, Graph] =
+    Try {
+      val qe = QueryExecutionFactory.create(query.jenaQuery, value)
+      Graph(rootNode, qe.execConstructDataset().asDatasetGraph())
+    }.toEither.leftMap { e =>
+      SparqlConstructQueryError(query, rootNode, e.getMessage)
+    }
+
+  /**
     * Attempts to convert the current Graph with the passed ''context'' value to the DOT format:
     * https://graphviz.org/doc/info/lang.html
     *
@@ -292,6 +305,8 @@ object Graph {
   // Since a Blank Node is ephemeral, its value can change on any conversion Json-LD <-> Graph.
   // We replace the Blank Node for the fakeId, do the conversion and then replace the fakeId with the Blank Node again.
   private[graph] val fakeId = iri"http://localhost/${UUID.randomUUID()}"
+
+  val rdfType = predicate(rdf.tpe)
 
   /**
     * An empty graph with a auto generated [[BNode]] as a root node
