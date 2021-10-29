@@ -4,14 +4,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.Computed
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import com.whisk.docker.{DockerContainer, DockerReadyChecker, VolumeMapping}
 
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
 import scala.concurrent.duration._
 
-trait RemoteStorageDocker extends DockerKitWithFactory {
+trait RemoteStorageDocker extends DockerKitWithTimeouts {
 
   override val StartContainersTimeout: FiniteDuration = 40.seconds
 

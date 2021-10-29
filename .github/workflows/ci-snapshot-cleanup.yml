@@ -17,7 +17,6 @@ jobs:
           keep: 5
           names: |
             ch.epfl.bluebrain.nexus.docs_2.13
-            ch.epfl.bluebrain.nexus.cli_2.13
             ch.epfl.bluebrain.nexus.storage_2.13
             ch.epfl.bluebrain.nexus.delta-kernel_2.13
             ch.epfl.bluebrain.nexus.delta-testkit_2.13
