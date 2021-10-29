@@ -239,10 +239,9 @@ trait Acls {
     * ''onError'' when it doesn't
     */
   def authorizeForOr[E](path: AclAddress, permission: Permission)(onError: => E)(implicit caller: Caller): IO[E, Unit] =
-    ancestorsOf(path)
+    path.ancestors
       .foldM(false) {
-        case (false, address) =>
-          fetch(address).map(_.value.hasPermission(caller.identities, permission)).redeem(_ => false, identity)
+        case (false, address) => fetch(address).redeem(_ => false, _.value.hasPermission(caller.identities, permission))
         case (true, _)        => UIO.pure(true)
       }
       .flatMap { result => IO.raiseWhen(!result)(onError) }
@@ -260,21 +259,23 @@ trait Acls {
   def authorizeForEveryOr[E](path: AclAddress, permissions: Set[Permission])(
       onError: => E
   )(implicit caller: Caller): IO[E, Unit]                   =
-    ancestorsOf(path)
+    path.ancestors
       .foldM((false, Set.empty[Permission])) {
         case ((true, set), _)        => UIO.pure((true, set))
         case ((false, set), address) =>
           fetch(address)
-            .map { res =>
-              val resSet =
-                res.value.value // fetch the set of permissions defined in the resource that apply to the caller
-                  .filter { case (identity, _) => caller.identities.contains(identity) }
-                  .values
-                  .foldLeft(Set.empty[Permission])(_ ++ _)
-              val sum = set ++ resSet // add it to the accumulated set
-              (permissions.forall(sum.contains), sum) // true if all permissions are found, recurse otherwise
-            }
-            .redeem(_ => (false, set), identity)
+            .redeem(
+              _ => (false, set),
+              { res =>
+                val resSet =
+                  res.value.value // fetch the set of permissions defined in the resource that apply to the caller
+                    .filter { case (identity, _) => caller.identities.contains(identity) }
+                    .values
+                    .foldLeft(Set.empty[Permission])(_ ++ _)
+                val sum = set ++ resSet // add it to the accumulated set
+                (permissions.forall(sum.contains), sum) // true if all permissions are found, recurse otherwise
+              }
+            )
       }
       .flatMap { case (result, _) => IO.raiseWhen(!result)(onError) }
 
@@ -308,12 +309,6 @@ trait Acls {
 
   private def filterSelf(resource: AclResource)(implicit caller: Caller): AclResource =
     resource.map(_.filter(caller.identities))
-
-  def ancestorsOf(path: AclAddress): List[AclAddress] = path match {
-    case AclAddress.Root            => List(AclAddress.Root)
-    case AclAddress.Organization(_) => List(path, AclAddress.Root)
-    case AclAddress.Project(org, _) => List(path, AclAddress.Organization(org), AclAddress.Root)
-  }
 
 }
 
