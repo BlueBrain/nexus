@@ -232,7 +232,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#v1-6-0" class="header">v1.6.0</a>
+    <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
@@ -272,7 +273,8 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
-    <li><a href="../../docs/releases/index.html#v1-6-0" class="header">v1.6.0</a>
+    <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
+    <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
       <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
@@ -308,8 +310,28 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.6.0</strong> released on <strong>13.10.2021</strong>.</p>
-<h2><a href="#v1-6-0" name="v1-6-0" class="anchor"><span class="anchor-link"></span></a>v1.6.0</h2>
+<p>The latest stable release is <strong>v1.6.1</strong> released on <strong>29.10.2021</strong>.</p>
+<h2><a href="#v1-6-1" name="v1-6-1" class="anchor"><span class="anchor-link"></span></a>v1.6.1</h2>
+<p>This release contains bugfixes and minor improvements:</p>
+<ul>
+  <li>Graph-analytics returns edges for non-existing nodes <a href="https://github.com/BlueBrain/nexus/issues/2871" title="#2871">#2871</a></li>
+  <li>Graph analytics is trying to resolve every link to all types of resources <a href="https://github.com/BlueBrain/nexus/issues/2852" title="#2852">#2852</a></li>
+  <li>Composite key values cache is not distributed across nodes <a href="https://github.com/BlueBrain/nexus/issues/2909" title="#2909">#2909</a></li>
+  <li>Shortcut Acl permission check (project -&gt; org -&gt; root) when address matches early <a href="https://github.com/BlueBrain/nexus/issues/2916" title="#2916">#2916</a></li>
+  <li>Resource-view opens up as a side panel <a href="https://github.com/BlueBrain/nexus/issues/2617" title="#2617">#2617</a></li>
+  <li>User can see all data, when the search query is empty <a href="https://github.com/BlueBrain/nexus/issues/2875" title="#2875">#2875</a></li>
+  <li>A loading spinner shows up when there is a delay in fetching search results <a href="https://github.com/BlueBrain/nexus/issues/2880" title="#2880">#2880</a></li>
+  <li>Label &lsquo;none of&rsquo; in filter was previously mis labelled as &lsquo;any of&rsquo; <a href="https://github.com/BlueBrain/nexus/issues/2872" title="#2872">#2872</a></li>
+  <li>The behaviour of &lsquo;none of&rsquo; filter has been fixed to avoid confusion with other filters <a href="https://github.com/BlueBrain/nexus/issues/2898" title="#2898">#2898</a></li>
+  <li>Preview plugin big fix to prevent it from crashing for certain file paths <a href="https://github.com/BlueBrain/nexus/issues/2884" title="#2884">#2884</a></li>
+  <li>Search bar matches query content <a href="https://github.com/BlueBrain/nexus/issues/2874" title="#2874">#2874</a></li>
+</ul>
+<p><strong>Full Changelogs</strong>:</p>
+<ul>
+  <li>Delta: <a href="https://github.com/BlueBrain/nexus/compare/v1.6.0...v1.6.1" title="v1.6.0...v1.6.1">v1.6.0&hellip;v1.6.1</a></li>
+  <li>Fusion: <a href="https://github.com/BlueBrain/nexus-web/compare/v1.6.0...v1.6.1" title="v1.6.0...v1.6.1">v1.6.0&hellip;v1.6.1</a></li>
+</ul>
+<h2><a href="#v1-6-0-13-10-2021-" name="v1-6-0-13-10-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0 (13.10.2021)</h2>
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
 <ul>
   <li><a href="../utilities/index.html#nexus-cli">Nexus client</a></li>
