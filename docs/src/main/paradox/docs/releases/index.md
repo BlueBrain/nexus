@@ -19,9 +19,30 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.6.0** released on **13.10.2021**.
+The latest stable release is **v1.6.1** released on **29.10.2021**.
 
-## v1.6.0
+## v1.6.1
+
+This release contains bugfixes and minor improvements:
+
+- Graph-analytics returns edges for non-existing nodes @link:[#2871](https://github.com/BlueBrain/nexus/issues/2871)
+- Graph analytics is trying to resolve every link to all types of resources @link:[#2852](https://github.com/BlueBrain/nexus/issues/2852)
+- Composite key values cache is not distributed across nodes @link:[#2909](https://github.com/BlueBrain/nexus/issues/2909)
+- Shortcut Acl permission check (project -> org -> root) when address matches early @link:[#2916](https://github.com/BlueBrain/nexus/issues/2916)
+- Resource-view opens up as a side panel @link:[#2617](https://github.com/BlueBrain/nexus/issues/2617)
+- User can see all data, when the search query is empty @link:[#2875](https://github.com/BlueBrain/nexus/issues/2875)
+- A loading spinner shows up when there is a delay in fetching search results @link:[#2880](https://github.com/BlueBrain/nexus/issues/2880)
+- Label 'none of' in filter was previously mis labelled as 'any of' @link:[#2872](https://github.com/BlueBrain/nexus/issues/2872)
+- The behaviour of  'none of' filter has been fixed to avoid confusion with other filters @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
+- Preview plugin big fix to prevent it from crashing for certain file paths @link:[#2884](https://github.com/BlueBrain/nexus/issues/2884)
+- Search bar matches query content @link:[#2874](https://github.com/BlueBrain/nexus/issues/2874)
+
+**Full Changelogs**:
+
+- Delta: @link:[v1.6.0...v1.6.1](https://github.com/BlueBrain/nexus/compare/v1.6.0...v1.6.1)
+- Fusion: @link:[v1.6.0...v1.6.1](https://github.com/BlueBrain/nexus-web/compare/v1.6.0...v1.6.1)
+
+## v1.6.0 (13.10.2021)
 
 ### Deprecations
 
