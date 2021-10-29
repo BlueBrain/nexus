@@ -22,6 +22,12 @@ sealed trait AclAddress extends Product with Serializable {
     */
   def parent: Option[AclAddress]
 
+  /**
+    * @return
+    *   an ordered list of ancestors (that includes this address) first to last being project to root
+    */
+  def ancestors: List[AclAddress]
+
   override def toString: String = string
 }
 
@@ -55,8 +61,9 @@ object AclAddress {
     */
   final case object Root extends AclAddress {
 
-    val string: String             = "/"
-    val parent: Option[AclAddress] = None
+    val string: String              = "/"
+    val parent: Option[AclAddress]  = None
+    val ancestors: List[AclAddress] = List(this)
   }
 
   /**
@@ -64,9 +71,9 @@ object AclAddress {
     */
   final case class Organization(org: Label) extends AclAddress {
 
-    val string                     = s"/$org"
-    val parent: Option[AclAddress] = Some(Root)
-
+    val string                      = s"/$org"
+    val parent: Option[AclAddress]  = Some(Root)
+    val ancestors: List[AclAddress] = List(this, Root)
   }
 
   /**
@@ -74,9 +81,9 @@ object AclAddress {
     */
   final case class Project(org: Label, project: Label) extends AclAddress {
 
-    val string                     = s"/$org/$project"
-    val parent: Option[AclAddress] = Some(Organization(org))
-
+    val string                      = s"/$org/$project"
+    val parent: Option[AclAddress]  = Some(Organization(org))
+    val ancestors: List[AclAddress] = List(this, Organization(org), Root)
   }
 
   object Project {

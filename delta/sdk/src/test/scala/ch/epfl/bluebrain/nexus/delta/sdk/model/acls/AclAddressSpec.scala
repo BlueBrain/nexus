@@ -38,5 +38,16 @@ class AclAddressSpec extends AnyWordSpecLike with Matchers with AclFixtures with
         AclAddress.fromString(string).leftValue
       }
     }
+
+    "return the correct ancestor list" in {
+      val list = List(
+        Root        -> List(Root),
+        orgAddress  -> List(orgAddress, Root),
+        projAddress -> List(projAddress, orgAddress, Root)
+      )
+      forAll(list) { case (address, ancestors) =>
+        address.ancestors shouldEqual ancestors
+      }
+    }
   }
 }
