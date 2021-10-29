@@ -53,23 +53,7 @@ final class ElasticSearchIndexingStream(
         }
         .flatMap { progress =>
           indexingSource(view.projectRef, progress.offset, view.resourceTag)
-            .evalMapFilterValue { eventExchangeValue =>
-              for {
-                data   <- IndexingData(eventExchangeValue)
-                result <- pipeline(data)
-                bulk   <- result match {
-                            case None    => Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
-                            case Some(r) =>
-                              encoder(r).flatMap {
-                                case json if json.isEmpty() => Task.none // TODO Delete ?
-                                case json                   =>
-                                  Task.some(
-                                    ElasticSearchBulk.Index(index, data.id.toString, json)
-                                  )
-                              }
-                          }
-              } yield bulk
-            }
+            .evalMapFilterValue(ElasticSearchIndexingStream.process(_, index, pipeline, encoder))
             .runAsyncUnit { bulk =>
               // Pushes INDEX/DELETE Elasticsearch bulk operations
               IO.when(bulk.nonEmpty)(client.bulk(bulk))
