@@ -3,16 +3,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.RelationshipResolution
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.GraphDocument
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValue.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationships}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{JsonLdPathValue, JsonLdPathValueCollection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -22,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{IndexingData, ViewIndex}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
@@ -74,7 +73,7 @@ final class GraphAnalyticsIndexingStream(
   override def apply(
       view: ViewIndex[GraphAnalyticsView],
       strategy: IndexingStream.ProgressStrategy
-  ): Stream[Task, Unit] = {
+  ): Task[Stream[Task, Unit]] = Task.delay {
     implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, nxv + "GraphAnalytics")
     val index                                      = idx(view)
     Stream
@@ -88,15 +87,15 @@ final class GraphAnalyticsIndexingStream(
             // Creates a JsonLdPathValueCollection from the event exchange response
             fromEventExchange(view.projectRef, eventExchangeValue)
           }
-          .evalMapFilterValue { res =>
-            res
-              .index(index, includeMetadata = false, sourceAsText = false)
-              .map(_.map(bulk => (res.resource.id, res.resource.types, bulk)))
-          }
           .runAsyncUnit { list =>
             IO.when(list.nonEmpty) {
-              val idTypesMap = list.map { case (id, types, _) => id -> types }.toMap
-              val bulkOps    = list.map { case (_, _, bulkOp) => bulkOp }
+              val (idTypesMap, bulkOps) = list.foldLeft((Map.empty[Iri, Set[Iri]], List.empty[ElasticSearchBulk])) {
+                case ((typesMap, bulkList), doc) =>
+                  (
+                    typesMap + (doc.id -> doc.types),
+                    ElasticSearchBulk.Index(index, doc.id.toString, doc.value) :: bulkList
+                  )
+              }
               // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
               client.bulk(bulkOps, Refresh.WaitFor) >>
                 client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
@@ -140,7 +139,7 @@ final class GraphAnalyticsIndexingStream(
   private def fromEventExchange[A, M](
       project: ProjectRef,
       exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution): IO[RdfError, ElasticSearchIndexingStreamEntry] = {
+  )(implicit cr: RemoteContextResolution): IO[RdfError, GraphDocument] = {
     val res     = exchangedValue.value.resource
     val encoder = exchangedValue.value.encoder
     for {
@@ -149,9 +148,7 @@ final class GraphAnalyticsIndexingStream(
       pathRelationships <- relationships(pathProperties.relationshipCandidates, project)
       paths              = JsonLdPathValueCollection(pathProperties, pathRelationships)
       types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
-      source             = paths.asJson deepMerge types
-      data               = IndexingData(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source)
-    } yield ElasticSearchIndexingStreamEntry(data)
+    } yield GraphDocument(res.id, res.types, paths.asJson deepMerge types)
   }
 
   private def relationships(candidates: Map[Iri, JsonLdPathValue], projectRef: ProjectRef): UIO[JsonLdRelationships] = {
@@ -164,5 +161,11 @@ final class GraphAnalyticsIndexingStream(
       .map(list => JsonLdRelationships(list.flatten))
 
   }
+
+}
+
+object GraphAnalyticsIndexingStream {
+
+  final case class GraphDocument(id: Iri, types: Set[Iri], value: Json)
 
 }

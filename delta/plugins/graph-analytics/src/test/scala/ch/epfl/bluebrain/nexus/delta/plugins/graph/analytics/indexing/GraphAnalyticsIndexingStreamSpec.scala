@@ -150,7 +150,7 @@ class GraphAnalyticsIndexingStreamSpec
         Instant.EPOCH,
         GraphAnalyticsView(mapping)
       )
-      stream(viewIndex, ProgressStrategy.FullRestart).take(3).compile.toList.accepted
+      stream(viewIndex, ProgressStrategy.FullRestart).accepted.take(3).compile.toList.accepted
       eventually {
         client
           .search(JsonObject.empty, Set("idx"), Uri.Query.Empty)()
