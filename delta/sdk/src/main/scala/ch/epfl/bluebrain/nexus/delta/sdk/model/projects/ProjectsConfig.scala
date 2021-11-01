@@ -15,8 +15,6 @@ import pureconfig.configurable._
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto._
 
-import scala.annotation.nowarn
-
 /**
   * Configuration for the Projects module.
   *
@@ -47,7 +45,7 @@ final case class ProjectsConfig(
     quotas: QuotasConfig,
     denyProjectPruning: Boolean
 ) {
-  def allowProjectPruning = !denyProjectPruning
+  def allowProjectPruning: Boolean = !denyProjectPruning
 }
 
 object ProjectsConfig {
@@ -83,26 +81,21 @@ object ProjectsConfig {
 
   }
 
-  @nowarn("cat=unused")
   implicit private val permissionConfigReader: ConfigReader[Permission] =
     ConfigReader.fromString(str =>
       Permission(str).leftMap(err => CannotConvert(str, classOf[Permission].getSimpleName, err.getMessage))
     )
 
-  @nowarn("cat=unused")
   implicit private val iriConfigReader: ConfigReader[Iri] =
     ConfigReader.fromString(str => Iri(str).leftMap(err => CannotConvert(str, classOf[Iri].getSimpleName, err)))
 
-  @nowarn("cat=unused")
   implicit private val labelConfigReader: ConfigReader[Label] = ConfigReader.fromString(str =>
     Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage))
   )
 
-  @nowarn("cat=unused")
   implicit private val mapReader: ConfigReader[Map[Label, Label]] =
     genericMapReader(str => Label(str).leftMap(e => CannotConvert(str, classOf[Label].getSimpleName, e.getMessage)))
 
-  @nowarn("cat=unused")
   implicit private val prefixIriReader: ConfigReader[PrefixIri] = ConfigReader.fromString { str =>
     (for {
       iri       <- Iri(str)
@@ -110,7 +103,6 @@ object ProjectsConfig {
     } yield prefixIri).leftMap(e => CannotConvert(str, classOf[PrefixIri].getSimpleName, e))
   }
 
-  @nowarn("cat=unused")
   implicit private val apiMappingsReader: ConfigReader[ApiMappings] = ConfigReader[Map[String, Iri]].map(ApiMappings(_))
 
   implicit val provisioningConfigReader: ConfigReader[AutomaticProvisioningConfig] = ConfigReader.fromCursor { cursor =>

@@ -12,50 +12,50 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.8"
-val scalaCompilerVersion   = "2.13.5"
+val scalacScapegoatVersion = "1.4.10"
+val scalaCompilerVersion   = "2.13.6"
 
-val akkaHttpVersion                 = "10.2.4"
-val akkaHttpCirceVersion            = "1.36.0"
-val akkaCorsVersion                 = "1.1.1"
+val akkaHttpVersion                 = "10.2.6"
+val akkaHttpCirceVersion            = "1.38.2"
+val akkaCorsVersion                 = "1.1.2"
 val akkaPersistenceCassandraVersion = "1.0.5"
-val akkaPersistenceJdbcVersion      = "5.0.0"
-val akkaVersion                     = "2.6.14"
-val alpakkaVersion                  = "2.0.2"
-val apacheCompressVersion           = "1.20"
-val awsSdkVersion                   = "2.16.44"
+val akkaPersistenceJdbcVersion      = "5.0.4"
+val akkaVersion                     = "2.6.17"
+val alpakkaVersion                  = "3.0.3"
+val apacheCompressVersion           = "1.21"
+val awsSdkVersion                   = "2.17.71"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
-val caffeineVersion                 = "3.0.1"
-val catsEffectVersion               = "2.5.0"
-val catsRetryVersion                = "2.1.0"
-val catsVersion                     = "2.6.0"
-val circeVersion                    = "0.13.0"
-val classgraphVersion               = "4.8.104"
-val distageVersion                  = "1.0.3"  // 1.0.5 conflicts with pureconfig 0.15.0
+val caffeineVersion                 = "3.0.4"
+val catsEffectVersion               = "2.5.4"
+val catsRetryVersion                = "2.1.1"
+val catsVersion                     = "2.6.1"
+val circeVersion                    = "0.14.1"
+val classgraphVersion               = "4.8.129"
+val distageVersion                  = "1.0.8"
 val dockerTestKitVersion            = "0.9.9"
-val doobieVersion                   = "0.10.0"
-val fs2Version                      = "2.5.4"
+val doobieVersion                   = "0.13.4"
+val fs2Version                      = "2.5.10"
 val h2Version                       = "1.4.200"
-val jenaVersion                     = "3.17.0"
+val jenaVersion                     = "4.2.0"
 val jsonldjavaVersion               = "0.13.3"
-val kamonVersion                    = "2.1.16"
-val kanelaAgentVersion              = "1.0.9"
-val kindProjectorVersion            = "0.11.3"
-val kryoVersion                     = "2.1.0"
-val logbackVersion                  = "1.2.3"
+val kamonVersion                    = "2.3.1"
+val kanelaAgentVersion              = "1.0.13"
+val kindProjectorVersion            = "0.13.2"
+val kryoVersion                     = "2.3.0"
+val logbackVersion                  = "1.2.6"
 val magnoliaVersion                 = "0.17.0"
-val mockitoVersion                  = "1.16.37"
-val monixVersion                    = "3.3.0"
-val monixBioVersion                 = "1.1.0"
-val nimbusJoseJwtVersion            = "9.8.1"
-val pureconfigVersion               = "0.14.0" // 0.15.0 conflicts with distage 1.0.5
-val scalaLoggingVersion             = "3.9.3"
-val scalateVersion                  = "1.9.6"
-val scalaTestVersion                = "3.2.9"
+val mockitoVersion                  = "1.16.46"
+val monixVersion                    = "3.4.0"
+val monixBioVersion                 = "1.2.0"
+val nimbusJoseJwtVersion            = "9.15.2"
+val pureconfigVersion               = "0.17.0"
+val scalaLoggingVersion             = "3.9.4"
+val scalateVersion                  = "1.9.6" // scala-parser-combinators_2.13:2.0.0 ... is selected over 1.1.2
+val scalaTestVersion                = "3.2.10"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
-val topBraidVersion                 = "1.3.2"
+val topBraidVersion                 = "1.3.2" // 1.4.1 fails to validate some test schemas
 val uuidGeneratorVersion            = "4.0.1"
 
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
@@ -925,7 +925,7 @@ lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
     kamonAkkaHttp,
     "io.kamon" %% "kamon-akka"           % kamonVersion,
-    // "io.kamon" %% "kamon-cassandra"      % kamonVersion, // does not support v4.x of the cassandra driver
+    "io.kamon" %% "kamon-cassandra"      % kamonVersion,
     "io.kamon" %% "kamon-core"           % kamonVersion,
     "io.kamon" %% "kamon-executors"      % kamonVersion,
     "io.kamon" %% "kamon-jaeger"         % kamonVersion,
@@ -947,6 +947,7 @@ lazy val storageAssemblySettings = Seq(
     case PathList("org", "apache", "commons", "codec", xs @ _*)          => MergeStrategy.last
     case PathList("akka", "remote", "kamon", xs @ _*)                    => MergeStrategy.last
     case PathList("kamon", "instrumentation", "akka", "remote", xs @ _*) => MergeStrategy.last
+    case PathList("javax", "annotation", xs @ _*)                        => MergeStrategy.first
     case x if x.endsWith("module-info.class")                            => MergeStrategy.discard
     case x                                                               =>
       val oldStrategy = (assembly / assemblyMergeStrategy).value
