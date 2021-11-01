@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.ElasticSearchIndexingStreamEntry._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStreamEntry._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
@@ -15,7 +15,7 @@ import io.circe.syntax._
 import monix.bio.Task
 
 //TODO remove when composite views are migrated to pipes
-final case class ElasticSearchIndexingStreamEntry(
+final case class CompositeIndexingStreamEntry(
     resource: IndexingData
 )(implicit cr: RemoteContextResolution) {
 
@@ -64,18 +64,6 @@ final case class ElasticSearchIndexingStreamEntry(
       Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
     }
 
-  /**
-    * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
-    */
-  def containsSchema(resourceSchemas: Set[Iri]): Boolean =
-    resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
-
-  /**
-    * Checks if the current resource contains some of the types passed as ''resourceTypes''
-    */
-  def containsTypes[A](resourceTypes: Set[Iri]): Boolean =
-    resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
-
   private def toDocument(
       includeMetadata: Boolean,
       sourceAsText: Boolean,
@@ -105,9 +93,21 @@ final case class ElasticSearchIndexingStreamEntry(
     else if (b.isEmpty()) a
     else a deepMerge b
 
+  /**
+    * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
+    */
+  def containsSchema(resourceSchemas: Set[Iri]): Boolean =
+    resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
+
+  /**
+    * Checks if the current resource contains some of the types passed as ''resourceTypes''
+    */
+  def containsTypes[A](resourceTypes: Set[Iri]): Boolean =
+    resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
+
 }
 
-object ElasticSearchIndexingStreamEntry {
+object CompositeIndexingStreamEntry {
 
   implicit private[indexing] val api: JsonLdApi = JsonLdJavaApi.lenient
 
