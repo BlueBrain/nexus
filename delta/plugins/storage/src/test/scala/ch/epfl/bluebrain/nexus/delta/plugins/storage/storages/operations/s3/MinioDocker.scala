@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 
 import scala.concurrent.duration._
 
-trait MinioDocker extends DockerKitWithFactory {
+trait MinioDocker extends DockerKitWithTimeouts {
 
   val minioContainer: DockerContainer = DockerContainer("minio/minio:RELEASE.2020-07-20T02-25-16Z")
     .withPorts((MinioServicePort, Some(MinioServicePort)))

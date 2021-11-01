@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.DefaultPort
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 
 import scala.concurrent.duration._
 
-trait BlazegraphDocker extends DockerKitWithFactory {
+trait BlazegraphDocker extends DockerKitWithTimeouts {
 
   val blazegraphContainer: DockerContainer = DockerContainer("bluebrain/blazegraph-nexus:2.1.5")
     .withEnv(

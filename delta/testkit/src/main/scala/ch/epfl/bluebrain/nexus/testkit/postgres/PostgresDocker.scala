@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerCommandExecutor, DockerContainer, DockerContainerState, DockerReadyChecker}
@@ -10,7 +10,7 @@ import java.sql.DriverManager
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-trait PostgresDocker extends DockerKitWithFactory {
+trait PostgresDocker extends DockerKitWithTimeouts {
   import scala.concurrent.duration._
 
   val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.2")

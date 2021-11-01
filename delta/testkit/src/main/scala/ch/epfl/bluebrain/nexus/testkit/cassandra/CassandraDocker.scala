@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.testkit.cassandra
 
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.DefaultCqlPort
 import com.whisk.docker.scalatest.DockerTestKit
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 import org.scalatest.wordspec.AnyWordSpecLike
 
-trait CassandraDocker extends DockerKitWithFactory {
+trait CassandraDocker extends DockerKitWithTimeouts {
 
   val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.11")
     .withPorts(DefaultCqlPort -> Some(DefaultCqlPort))

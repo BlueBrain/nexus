@@ -32,12 +32,10 @@ val catsRetryVersion                = "2.1.0"
 val catsVersion                     = "2.6.0"
 val circeVersion                    = "0.13.0"
 val classgraphVersion               = "4.8.104"
-val declineVersion                  = "1.3.0"
 val distageVersion                  = "1.0.3"  // 1.0.5 conflicts with pureconfig 0.15.0
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.10.0"
 val fs2Version                      = "2.5.4"
-val http4sVersion                   = "0.21.22"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "3.17.0"
 val jsonldjavaVersion               = "0.13.3"
@@ -107,19 +105,13 @@ lazy val circeLiteral         = "io.circe"                     %% "circe-literal
 lazy val circeOptics          = "io.circe"                     %% "circe-optics"                    % circeVersion
 lazy val circeParser          = "io.circe"                     %% "circe-parser"                    % circeVersion
 lazy val classgraph           = "io.github.classgraph"          % "classgraph"                      % classgraphVersion
-lazy val decline              = "com.monovore"                 %% "decline"                         % declineVersion
 lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"                    % distageVersion
-lazy val distageDocker        = "io.7mind.izumi"               %% "distage-framework-docker"        % distageVersion
-lazy val distageTestkit       = "io.7mind.izumi"               %% "distage-testkit-scalatest"       % distageVersion
 lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"                 % doobieVersion
 lazy val dockerTestKit        = "com.whisk"                    %% "docker-testkit-scalatest"        % dockerTestKitVersion
 lazy val dockerTestKitImpl    = "com.whisk"                    %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                        % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                          % fs2Version
 lazy val h2                   = "com.h2database"                % "h2"                              % h2Version
-lazy val http4sCirce          = "org.http4s"                   %% "http4s-circe"                    % http4sVersion
-lazy val http4sClient         = "org.http4s"                   %% "http4s-blaze-client"             % http4sVersion
-lazy val http4sDsl            = "org.http4s"                   %% "http4s-dsl"                      % http4sVersion
 lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                        % jenaVersion
 lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"                     % jsonldjavaVersion
 lazy val kamonAkkaHttp        = "io.kamon"                     %% "kamon-akka-http"                 % kamonVersion
@@ -249,43 +241,10 @@ lazy val testkit = project
       dockerTestKit,
       dockerTestKitImpl,
       doobiePostgres,
-      distageDocker,
-      distageTestkit,
       monixBio,
       scalaTest
     ),
     addCompilerPlugin(kindProjector)
-  )
-
-lazy val cli = project
-  .in(file("cli"))
-  .dependsOn(testkit % "test->compile")
-  .enablePlugins(UniversalPlugin, JavaAppPackaging, DockerPlugin)
-  .settings(shared, compilation, assertJavaVersion, coverage, release, servicePackaging)
-  .settings(
-    name                 := "cli",
-    moduleName           := "cli",
-    Docker / packageName := "nexus-cli",
-    coverageMinimum      := 70d,
-    run / fork           := true,
-    libraryDependencies ++= Seq(
-      catsCore,
-      catsEffect,
-      catsRetry,
-      circeGeneric,
-      circeParser,
-      decline,
-      distageCore,
-      doobiePostgres,
-      http4sCirce,
-      http4sClient,
-      fs2,
-      monixEval,
-      pureconfig,
-      circeLiteral % Test,
-      http4sDsl    % Test,
-      jenaArq      % Test
-    )
   )
 
 lazy val sourcing = project
@@ -897,6 +856,7 @@ lazy val tests = project
       akkaHttp,
       akkaStream,
       circeOptics,
+      circeGenericExtras,
       fs2,
       logback,
       monixBio,
@@ -920,7 +880,7 @@ lazy val root = project
   .in(file("."))
   .settings(name := "nexus", moduleName := "nexus")
   .settings(compilation, shared, noPublish)
-  .aggregate(docs, cli, delta, storage, tests)
+  .aggregate(docs, delta, storage, tests)
 
 lazy val noPublish = Seq(
   publish / skip                         := true,
