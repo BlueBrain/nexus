@@ -24,10 +24,12 @@ class IdentitiesRoutes(identities: Identities, acls: Acls)(implicit
     ordering: JsonKeyOrdering
 ) extends AuthDirectives(identities, acls) {
 
+  import baseUri.prefixSegment
+
   def routes: Route = {
     baseUriPrefix(baseUri.prefix) {
       (pathPrefix("identities") & pathEndOrSingleSlash) {
-        operationName(s"/${baseUri.prefix}/identities") {
+        operationName(s"/$prefixSegment/identities") {
           (extractCaller & get) { caller =>
             emit(IO.pure(caller))
           }

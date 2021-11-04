@@ -924,17 +924,18 @@ lazy val shared = Seq(
 lazy val kamonSettings = Seq(
   libraryDependencies ++= Seq(
     kamonAkkaHttp,
-    "io.kamon" %% "kamon-akka"           % kamonVersion,
-    "io.kamon" %% "kamon-cassandra"      % kamonVersion,
-    "io.kamon" %% "kamon-core"           % kamonVersion,
-    "io.kamon" %% "kamon-executors"      % kamonVersion,
-    "io.kamon" %% "kamon-jaeger"         % kamonVersion,
-    "io.kamon" %% "kamon-jdbc"           % kamonVersion,
-    "io.kamon" %% "kamon-logback"        % kamonVersion,
-    "io.kamon" %% "kamon-prometheus"     % kamonVersion,
-    "io.kamon" %% "kamon-scala-future"   % kamonVersion,
-    "io.kamon" %% "kamon-status-page"    % kamonVersion,
-    "io.kamon" %% "kamon-system-metrics" % kamonVersion
+    "io.kamon"        %% "kamon-akka"           % kamonVersion,
+    "io.kamon"        %% "kamon-cassandra"      % kamonVersion,
+    "io.kamon"        %% "kamon-core"           % kamonVersion,
+    "io.kamon"        %% "kamon-executors"      % kamonVersion,
+    "io.kamon"        %% "kamon-jaeger"         % kamonVersion,
+    "io.jaegertracing" % "jaeger-thrift"        % "1.6.0", // included jaeger-thrift causes a NoSuchMethod error
+    "io.kamon"        %% "kamon-jdbc"           % kamonVersion,
+    "io.kamon"        %% "kamon-logback"        % kamonVersion,
+    "io.kamon"        %% "kamon-prometheus"     % kamonVersion,
+    "io.kamon"        %% "kamon-scala-future"   % kamonVersion,
+    "io.kamon"        %% "kamon-status-page"    % kamonVersion,
+    "io.kamon"        %% "kamon-system-metrics" % kamonVersion
   ),
   javaAgents           += kanelaAgent
 )
