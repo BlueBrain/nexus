@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject}
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
@@ -17,7 +16,7 @@ import org.apache.jena.graph.Node
 object IncludePredicates {
 
   // TODO make this configurable
-  private val defaultLabelPredicates = Set(skos.prefLabel, rdf.tpe, rdfs.label, Vocabulary.schema.name)
+  private val defaultLabelPredicates = Set(skos.prefLabel, rdf.tpe, rdfs.label, schema.name)
 
   final private case class Config(predicates: Set[Iri]) {
     lazy val graphPredicates: Set[Node] = predicates.map(predicate)
@@ -31,8 +30,12 @@ object IncludePredicates {
       name,
       (config: Config, data: IndexingData) =>
         Task.some {
-          val id = subject(data.id)
-          data.copy(graph = data.graph.filter { case (s, p, _) => s == id && config.graphPredicates.contains(p) })
+          val id       = subject(data.id)
+          val newGraph = data.graph.filter { case (s, p, _) => s == id && config.graphPredicates.contains(p) }
+          data.copy(
+            graph = newGraph,
+            types = newGraph.rootTypes
+          )
         }
     )
   }
