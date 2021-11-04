@@ -69,7 +69,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
   "Listing resources within a project" should {
 
-    "get default resources" in {
+    "get default resources" in eventually {
       val mapping = replacements(
         Delta,
         "project-label" -> ref11,

@@ -303,7 +303,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       proj2Directory.exists shouldEqual true
     }
 
-    "succeed for a previously referenced project" in {
+    "succeed for a previously referenced project" in eventually {
       deltaClient.delete[Json](s"/projects/$ref2?rev=1&prune=true", Bojack) { (deleteJson, deleteResponse) =>
         deleteResponse.status shouldEqual StatusCodes.SeeOther
         admin._markedForDeletion.getOption(deleteJson).value shouldEqual true
