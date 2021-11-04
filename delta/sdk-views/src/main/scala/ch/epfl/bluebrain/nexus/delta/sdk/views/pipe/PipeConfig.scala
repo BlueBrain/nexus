@@ -23,4 +23,17 @@ object PipeConfig {
       .map(PipeConfig(_))
   }
 
+  val builtInPipes =
+    Set(
+      DataConstructQuery.pipe,
+      DiscardMetadata.pipe,
+      FilterBySchema.pipe,
+      FilterByType.pipe,
+      FilterDeprecated.pipe,
+      IncludePredicates.pipe,
+      SourceAsText.pipe
+    )
+
+  val builtInConfig: Either[String, PipeConfig] = PipeConfig(builtInPipes)
+
 }

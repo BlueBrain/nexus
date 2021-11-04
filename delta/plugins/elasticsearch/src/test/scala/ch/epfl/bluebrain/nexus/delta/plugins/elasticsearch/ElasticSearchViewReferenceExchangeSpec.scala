@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import io.circe.literal._
-import io.circe.syntax._
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 
@@ -39,7 +38,7 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
       permissions.read
     )
 
-  private val mapping = defaultElasticsearchMapping.accepted.asJson
+  private val mapping = json"""{ "name": "delta-mapping" }"""
 
   "An ElasticSearchViewReferenceExchange" should {
     val id      = iri"http://localhost/${genString()}"

@@ -31,16 +31,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Span}
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, EitherValues, Inspectors}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
 
 import java.time.Instant
 import java.util.UUID
@@ -49,7 +50,6 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class ElasticSearchIndexingSpec
     extends AbstractDBSpec
-    with EitherValues
     with Inspectors
     with IOFixedClock
     with IOValues
@@ -57,6 +57,7 @@ class ElasticSearchIndexingSpec
     with CancelAfterFailure
     with ElasticSearchClientSetup
     with ConfigFixtures
+    with EitherValuable
     with Eventually
     with Fixtures {
 
@@ -69,14 +70,11 @@ class ElasticSearchIndexingSpec
   private val viewId = IriSegment(Iri.unsafe("https://example.com"))
 
   private val indexingValue = IndexingElasticSearchViewValue(
-    Set.empty,
-    Set.empty,
     None,
-    includeMetadata = false,
-    includeDeprecated = false,
-    sourceAsText = true,
+    IndexingElasticSearchViewValue.defaultPipeline :+ SourceAsText.definition,
     mapping = Some(jsonObjectContentOf("/mapping.json")),
     settings = None,
+    context = None,
     permission = permissions.query
   )
 
@@ -183,7 +181,14 @@ class ElasticSearchIndexingSpec
   implicit private val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
-  private val indexingStream = new ElasticSearchIndexingStream(esClient, indexingSource, cache, config, projection)
+  private val indexingStream = new ElasticSearchIndexingStream(
+    esClient,
+    indexingSource,
+    cache,
+    PipeConfig.builtInConfig.rightValue,
+    config,
+    projection
+  )
 
   private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
   private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache, projection)
@@ -212,7 +217,7 @@ class ElasticSearchIndexingSpec
       checkElasticSearchDocuments(view, documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
     }
     "index resources with metadata" in {
-      val indexVal = indexingValue.copy(includeMetadata = true)
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == DiscardMetadata.definition))
       val view     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
@@ -221,7 +226,7 @@ class ElasticSearchIndexingSpec
       )
     }
     "index resources including deprecated" in {
-      val indexVal = indexingValue.copy(includeDeprecated = true)
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == FilterDeprecated.definition))
       val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
@@ -232,7 +237,12 @@ class ElasticSearchIndexingSpec
     }
 
     "index resources constrained by schema" in {
-      val indexVal = indexingValue.copy(includeDeprecated = true, resourceSchemas = Set(schema1))
+      val indexVal =
+        indexingValue.copy(pipeline =
+          List(FilterBySchema.definition(Set(schema1))) ++ indexingValue.pipeline.filterNot(
+            _ == FilterDeprecated.definition
+          )
+        )
       val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
@@ -246,12 +256,17 @@ class ElasticSearchIndexingSpec
       cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
     }
     "index resources with type" in {
-      val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
+      val indexVal =
+        indexingValue.copy(pipeline =
+          List(FilterByType.definition(Set(type1))) ++ indexingValue.pipeline.filterNot(
+            _ == FilterDeprecated.definition
+          )
+        )
       val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(view, documentFor(res3Proj1, value3Proj1))
     }
     "index resources without source" in {
-      val indexVal = indexingValue.copy(sourceAsText = false)
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == SourceAsText.definition))
       val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,

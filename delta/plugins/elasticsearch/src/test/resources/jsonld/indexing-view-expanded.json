@@ -1,59 +1,110 @@
 [
   {
-    "@type" : [
+    "@type": [
       "https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView",
       "https://bluebrain.github.io/nexus/vocabulary/View"
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/includeDeprecated" : [
+    "https://bluebrain.github.io/nexus/vocabulary/context": [
       {
-        "@value" : true
+        "@value": "{\"@vocab\":\"http://schema.org/\"}"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/includeMetadata" : [
+    "https://bluebrain.github.io/nexus/vocabulary/includeDeprecated": [
       {
-        "@value" : true
+        "@value": true
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/permission" : [
+    "https://bluebrain.github.io/nexus/vocabulary/includeMetadata": [
       {
-        "@value" : "views/query"
+        "@value": true
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/resourceSchemas" : [
+    "https://bluebrain.github.io/nexus/vocabulary/mapping": [
       {
-        "@id" : "https://bluebrain.github.io/nexus/vocabulary/Schema"
+        "@value": "{\"properties\":{\"@type\":{\"type\":\"keyword\"},\"@id\":{\"type\":\"keyword\"}}}"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/resourceTag" : [
+    "https://bluebrain.github.io/nexus/vocabulary/permission": [
       {
-        "@value" : "mytag"
+        "@value": "views/query"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/resourceTypes" : [
+    "https://bluebrain.github.io/nexus/vocabulary/pipeline": [
       {
-        "@id" : "https://bluebrain.github.io/nexus/vocabulary/Morphology"
+        "https://bluebrain.github.io/nexus/vocabulary/config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
+              }
+            ]
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/name": [
+          {
+            "@value": "filterBySchema"
+          }
+        ]
+      },
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
+              }
+            ]
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/name": [
+          {
+            "@value": "filterByType"
+          }
+        ]
+      },
+      {
+        "https://bluebrain.github.io/nexus/vocabulary/description": [
+          {
+            "@value": "Formatting source as text"
+          }
+        ],
+        "https://bluebrain.github.io/nexus/vocabulary/name": [
+          {
+            "@value": "sourceAsText"
+          }
+        ]
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/sourceAsText" : [
+    "https://bluebrain.github.io/nexus/vocabulary/resourceSchemas": [
       {
-        "@value" : true
+        "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/uuid" : [
+    "https://bluebrain.github.io/nexus/vocabulary/resourceTag": [
       {
-        "@value" : "f85d862a-9ec0-4b9a-8aed-2938d7ca9981"
+        "@value": "mytag"
       }
     ],
-    "@id" : "https://bluebrain.github.io/nexus/vocabulary/myview",
-    "https://bluebrain.github.io/nexus/vocabulary/mapping" : [
+    "https://bluebrain.github.io/nexus/vocabulary/resourceTypes": [
       {
-        "@value" : "{\"properties\":{\"@type\":{\"type\":\"keyword\"},\"@id\":{\"type\":\"keyword\"}}}"
+        "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
       }
     ],
-    "https://bluebrain.github.io/nexus/vocabulary/settings" : [
+    "https://bluebrain.github.io/nexus/vocabulary/settings": [
       {
-        "@value" : "{\"analysis\":{\"analyzer\":{\"nexus\":{}}}}"
+        "@value": "{\"analysis\":{\"analyzer\":{\"nexus\":{}}}}"
       }
-    ]
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/sourceAsText": [
+      {
+        "@value": true
+      }
+    ],
+    "https://bluebrain.github.io/nexus/vocabulary/uuid": [
+      {
+        "@value": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981"
+      }
+    ],
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/myview"
   }
 ]

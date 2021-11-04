@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, IncludePredicates, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, IncludePredicates, PipeDef, SourceAsText}
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -78,7 +78,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
     final case class IndexingElasticSearchViewFields(
         resourceTag: Option[TagLabel] = None,
-        pipeline: List[PipeDef] = List.empty,
+        pipeline: Option[List[PipeDef]] = None,
         mapping: JsonObject,
         settings: Option[JsonObject] = None,
         context: Option[ContextObject] = None,
@@ -135,11 +135,11 @@ object ElasticSearchViewJsonLdSourceDecoder {
         } ++
           Option.when(i.resourceTypes.nonEmpty) {
             FilterByType.definition(i.resourceTypes)
-          } ++ Option.unless(i.includeDeprecated)(PipeDef.excludeDeprecated) ++ Option.unless(i.includeMetadata)(
-            PipeDef.excludeMetadata
+          } ++ Option.unless(i.includeDeprecated)(FilterDeprecated.definition) ++ Option.unless(i.includeMetadata)(
+            DiscardMetadata.definition
           ) ++
           Some(IncludePredicates.defaultLabelPredicatesDef) ++
-          Option.when(i.sourceAsText)(PipeDef.sourceAsText)
+          Option.when(i.sourceAsText)(SourceAsText.definition)
 
       IndexingElasticSearchViewValue(
         resourceTag = i.resourceTag,
@@ -152,7 +152,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
     case i: IndexingElasticSearchViewFields       =>
       IndexingElasticSearchViewValue(
         resourceTag = i.resourceTag,
-        pipeline = i.pipeline,
+        pipeline = i.pipeline.getOrElse(IndexingElasticSearchViewValue.defaultPipeline),
         mapping = Some(i.mapping),
         settings = i.settings,
         context = i.context,

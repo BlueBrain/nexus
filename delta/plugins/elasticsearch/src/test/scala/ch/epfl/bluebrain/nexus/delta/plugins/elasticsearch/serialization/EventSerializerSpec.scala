@@ -2,17 +2,19 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.serialization
 
 import akka.actor.{ActorSystem, ExtendedActorSystem}
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewCreated, ElasticSearchViewDeprecated, ElasticSearchViewTagAdded, ElasticSearchViewUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, SourceAsText}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -40,14 +42,15 @@ class EventSerializerSpec
   private val indexingId       = nxv + "indexing-view"
   private val aggregateId      = nxv + "aggregate-view"
   private val indexingValue    = IndexingElasticSearchViewValue(
-    Set(nxv + "some-schema"),
-    Set(nxv + "SomeType"),
     Some(TagLabel.unsafe("some.tag")),
-    sourceAsText = true,
-    includeMetadata = false,
-    includeDeprecated = false,
+    List(
+      FilterBySchema.definition(Set(nxv + "some-schema")).copy(description = Some("Only keeping a specific schema")),
+      FilterByType.definition(Set(nxv + "SomeType")),
+      SourceAsText.definition
+    ),
     Some(jobj"""{"properties": {}}"""),
     Some(jobj"""{"analysis": {}}"""),
+    context = Some(ContextObject(jobj"""{"@vocab": "http://schema.org/"}""")),
     Permission.unsafe("my/permission")
   )
   private val viewRef          = ViewRef(projectRef, indexingId)

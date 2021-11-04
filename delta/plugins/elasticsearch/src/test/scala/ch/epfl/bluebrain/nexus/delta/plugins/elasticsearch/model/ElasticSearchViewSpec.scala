@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, SourceAsText}
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -35,14 +37,15 @@ class ElasticSearchViewSpec
       id,
       project,
       uuid,
-      Set(nxv.Schema),
-      Set(nxv + "Morphology"),
       Some(TagLabel.unsafe("mytag")),
-      sourceAsText = true,
-      includeMetadata = true,
-      includeDeprecated = true,
+      List(
+        FilterBySchema.definition(Set(nxv.Schema)),
+        FilterByType.definition(Set(nxv + "Morphology")),
+        SourceAsText.definition.copy(description = Some("Formatting source as text"))
+      ),
       jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
       jobj"""{"analysis": {"analyzer": {"nexus": {} } } }""",
+      context = Some(ContextObject(jobj"""{"@vocab": "http://schema.org/"}""")),
       perm,
       tagsMap,
       source

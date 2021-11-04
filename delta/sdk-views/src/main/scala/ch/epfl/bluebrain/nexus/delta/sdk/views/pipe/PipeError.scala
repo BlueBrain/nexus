@@ -9,7 +9,12 @@ object PipeError {
 
   final case class PipeNotFound(name: String)
       extends PipeError(
-        s"Pipe $name can not be found."
+        s"Pipe '$name' can not be found."
+      )
+
+  final case class PipeDefinitionMismatch(pipeName: String, definitionName: String)
+      extends PipeError(
+        s"Pipe '$pipeName' is expecting a definition matching its name. Found '$definitionName' instead."
       )
 
   final case class InvalidConfig(name: String, details: String)

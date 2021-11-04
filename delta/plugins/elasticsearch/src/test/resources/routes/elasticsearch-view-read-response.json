@@ -22,142 +22,37 @@
   "_uuid" : "{{uuid}}",
   "includeDeprecated" : {{includeDeprecated}},
   "includeMetadata" : false,
-  "mapping" : {
-    "dynamic" : false,
-    "properties" : {
-      "@id" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "@type" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_all_fields" : {
-        "analyzer" : "standard",
-        "type" : "text"
-      },
-      "_bytes" : {
-        "copy_to" : "_all_fields",
-        "type" : "long"
-      },
-      "_constrainedBy" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_createdAt" : {
-        "copy_to" : "_all_fields",
-        "type" : "date"
-      },
-      "_createdBy" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_deprecated" : {
-        "copy_to" : "_all_fields",
-        "type" : "boolean"
-      },
-      "_digest" : {
-        "properties" : {
-          "_algorithm" : {
-            "copy_to" : "_all_fields",
-            "type" : "keyword"
-          },
-          "_value" : {
-            "copy_to" : "_all_fields",
-            "type" : "keyword"
-          }
-        },
-        "type" : "nested"
-      },
-      "_filename" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_incoming" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_location" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_mediaType" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_original_source" : {
-        "analyzer" : "standard",
-        "copy_to" : "_all_fields",
-        "type" : "text"
-      },
-      "_outgoing" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_project" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_rev" : {
-        "copy_to" : "_all_fields",
-        "type" : "long"
-      },
-      "_self" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "_storage" : {
-        "properties" : {
-          "@id" : {
-            "copy_to" : "_all_fields",
-            "type" : "keyword"
-          },
-          "_rev" : {
-            "copy_to" : "_all_fields",
-            "type" : "long"
-          }
-        },
-        "type" : "nested"
-      },
-      "_updatedAt" : {
-        "copy_to" : "_all_fields",
-        "type" : "date"
-      },
-      "_updatedBy" : {
-        "copy_to" : "_all_fields",
-        "type" : "keyword"
-      },
-      "label" : {
-        "copy_to" : "_all_fields",
-        "fields" : {
-          "raw" : {
-            "type" : "keyword"
-          }
-        },
-        "type" : "text"
-      },
-      "name" : {
-        "copy_to" : "_all_fields",
-        "fields" : {
-          "raw" : {
-            "type" : "keyword"
-          }
-        },
-        "type" : "text"
-      },
-      "prefLabel" : {
-        "copy_to" : "_all_fields",
-        "fields" : {
-          "raw" : {
-            "type" : "keyword"
-          }
-        },
-        "type" : "text"
-      }
-    }
-  },
+  "mapping" : {"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } },
   "permission" : "views/query",
+  "pipeline" : [
+    {{^includeDeprecated}}
+    {
+      "name" : "filterDeprecated"
+    },
+    {{/includeDeprecated}}
+    {
+      "name" : "discardMetadata"
+    },
+    {
+      "config" : {
+        "predicates" : [
+          {
+            "@id" : "http://www.w3.org/2004/02/skos/core#prefLabel"
+          },
+          {
+            "@id" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+          },
+          {
+            "@id" : "http://www.w3.org/2000/01/rdf-schema#label"
+          },
+          {
+            "@id" : "http://schema.org/name"
+          }
+        ]
+      },
+      "name" : "includePredicates"
+    }
+  ],
   "resourceSchemas" : [
   ],
   "resourceTypes" : [

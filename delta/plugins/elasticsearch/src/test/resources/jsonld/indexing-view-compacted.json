@@ -5,9 +5,34 @@
     "ElasticSearchView",
     "View"
   ],
+  "context": {
+    "@vocab": "http://schema.org/"
+  },
   "includeDeprecated": true,
   "includeMetadata": true,
   "permission": "views/query",
+  "pipeline": [
+    {
+      "config": {
+        "types": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
+        }
+      },
+      "name": "filterBySchema"
+    },
+    {
+      "config": {
+        "types": {
+          "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
+        }
+      },
+      "name": "filterByType"
+    },
+    {
+      "name": "sourceAsText",
+      "description": "Formatting source as text"
+    }
+  ],
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/vocabulary/Schema"
   ],

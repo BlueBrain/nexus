@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
@@ -192,14 +193,11 @@ class ElasticSearchViewsSpec
         val expected = resourceFor(
           id = viewId,
           value = IndexingElasticSearchViewValue(
-            resourceSchemas = Set.empty,
-            resourceTypes = Set.empty,
             resourceTag = None,
+            IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
             settings = Some(settings),
-            includeMetadata = false,
-            includeDeprecated = false,
-            sourceAsText = false,
+            context = None,
             permission = queryPermissions
           ),
           source = source
@@ -208,14 +206,15 @@ class ElasticSearchViewsSpec
       }
       "using an IndexingElasticSearchViewValue" in {
         val value = IndexingElasticSearchViewValue(
-          resourceSchemas = Set(iri"http://localhost/schema"),
-          resourceTypes = Set(iri"http://localhost/type"),
           resourceTag = Some(TagLabel.unsafe("tag")),
-          sourceAsText = false,
-          includeMetadata = false,
-          includeDeprecated = false,
+          List(
+            FilterBySchema.definition(Set(iri"http://localhost/schema")),
+            FilterByType.definition(Set(iri"http://localhost/type")),
+            FilterDeprecated.definition
+          ),
           mapping = Some(mapping),
           settings = None,
+          context = None,
           permission = queryPermissions
         )
         views.create(viewId2, projectRef, value).accepted
@@ -433,14 +432,11 @@ class ElasticSearchViewsSpec
         views.fetch(id, projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            resourceSchemas = Set.empty,
-            resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = false,
-            includeMetadata = false,
-            includeDeprecated = false,
+            IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
             settings = None,
+            context = None,
             permission = queryPermissions
           ),
           source = source
@@ -455,14 +451,11 @@ class ElasticSearchViewsSpec
         views.fetch(IdSegmentRef(id, 1), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            resourceSchemas = Set.empty,
-            resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = false,
-            includeMetadata = false,
-            includeDeprecated = false,
+            IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
             settings = None,
+            context = None,
             permission = queryPermissions
           ),
           source = source
@@ -479,14 +472,11 @@ class ElasticSearchViewsSpec
         views.fetch(IdSegmentRef(id, tag), projectRef).accepted shouldEqual resourceFor(
           id = id,
           value = IndexingElasticSearchViewValue(
-            resourceSchemas = Set.empty,
-            resourceTypes = Set.empty,
             resourceTag = None,
-            sourceAsText = false,
-            includeMetadata = false,
-            includeDeprecated = false,
+            IndexingElasticSearchViewValue.defaultPipeline,
             mapping = Some(mapping),
             settings = None,
+            context = None,
             permission = queryPermissions
           ),
           source = source

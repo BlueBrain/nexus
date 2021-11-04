@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeDef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{IncludePredicates, SourceAsText}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -64,7 +64,7 @@ class ElasticSearchScopeInitializationSpec
       resource.value match {
         case v: IndexingElasticSearchView  =>
           v.resourceTag shouldEqual None
-          v.pipeline shouldEqual List(PipeDef.sourceAsText)
+          v.pipeline shouldEqual List(IncludePredicates.defaultLabelPredicatesDef, SourceAsText.definition)
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions

@@ -59,6 +59,10 @@ final class ElasticSearchIndexingStream(
               IO.when(bulk.nonEmpty)(client.bulk(bulk))
             }
             .flatMap(Stream.chunk)
+            .filterValue {
+              case _: ElasticSearchBulk.Delete => false
+              case _                           => true
+            }
             .map(_.void)
             // Persist progress in cache and in primary store
             .persistProgressWithCache(

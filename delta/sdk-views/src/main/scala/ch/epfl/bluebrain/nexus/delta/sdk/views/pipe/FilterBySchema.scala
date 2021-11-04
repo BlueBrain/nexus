@@ -15,10 +15,12 @@ object FilterBySchema {
 
   final private case class Config(types: Set[Iri])
 
-  val value: Pipe = {
+  val name = "filterBySchema"
+
+  val pipe: Pipe = {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
     Pipe.withConfig(
-      "filterBySchema",
+      name,
       (config: Config, data: IndexingData) =>
         Task.pure(
           Option.when(config.types.isEmpty || config.types.contains(data.schema.iri))(data)
@@ -30,10 +32,14 @@ object FilterBySchema {
 
   def definition(set: Set[Iri]): PipeDef = {
     PipeDef.withConfig(
-      "filterBySchema",
-      set.foldLeft(ExpandedJsonLd.empty) { case (expanded, tpe) =>
+      name,
+      set.foldLeft(ExpandedJsonLd.empty.copy(rootId = nxv + name)) { case (expanded, tpe) =>
         expanded.add(typesKey, tpe)
       }
     )
   }
+
+  def extractTypes(pipeDef: PipeDef): Either[PipeError.InvalidConfig, Set[Iri]] =
+    pipe.parse(pipeDef.config).map { _.asInstanceOf[Config].types }
+
 }

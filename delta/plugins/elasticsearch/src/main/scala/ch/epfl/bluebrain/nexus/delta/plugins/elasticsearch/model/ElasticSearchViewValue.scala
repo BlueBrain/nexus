@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeDef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated, IncludePredicates, PipeDef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -23,7 +23,7 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     */
   def tpe: ElasticSearchViewType
 
-  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.dropNullValues
+  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
 
 }
 
@@ -55,6 +55,15 @@ object ElasticSearchViewValue {
       permission: Permission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
+  }
+
+  object IndexingElasticSearchViewValue {
+
+    /**
+      * Default pipeline to apply if none is present in the payload
+      */
+    val defaultPipeline =
+      List(FilterDeprecated.definition, DiscardMetadata.definition, IncludePredicates.defaultLabelPredicatesDef)
   }
 
   /**

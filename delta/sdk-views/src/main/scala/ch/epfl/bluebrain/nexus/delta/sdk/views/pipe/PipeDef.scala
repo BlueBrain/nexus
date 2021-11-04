@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
@@ -42,10 +42,6 @@ object PipeDef {
     */
   def withConfig(name: String, config: ExpandedJsonLd): PipeDef = PipeDef(name, None, Some(config))
 
-  val excludeMetadata: PipeDef   = noConfig("excludeMetadata")
-  val excludeDeprecated: PipeDef = noConfig("excludeDeprecated")
-  val sourceAsText: PipeDef      = noConfig("sourceAsText")
-
   implicit val pipeDefEncoder: Encoder.AsObject[PipeDef] = {
     implicit val expandedEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
     deriveEncoder[PipeDef]
@@ -54,7 +50,10 @@ object PipeDef {
   implicit val pipeDefDecoder: Decoder[PipeDef] = {
     implicit val expandedEncoder: Decoder[ExpandedJsonLd] =
       Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
-    deriveDecoder[PipeDef]
+    deriveDecoder[PipeDef].map {
+      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name)))
+      case p                       => p
+    }
   }
 
   implicit val pipeDefJsonLdEncoder: JsonLdEncoder[PipeDef] =

@@ -1,14 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeDefinitionMismatch, PipeNotFound}
 import monix.bio.{IO, Task}
 
 /**
@@ -45,6 +41,19 @@ trait Pipe {
     */
   def parseAndRun(config: Option[ExpandedJsonLd], data: IndexingData): Task[Option[IndexingData]] =
     Task.fromEither(parse(config)).flatMap(run(_, data))
+
+  /**
+    * Check definition name, parse its config and run the resulting config with the provided data
+    * @param definition
+    *   the config to parse
+    * @param data
+    *   the data to apply the pipe on
+    */
+  def parseAndRun(definition: PipeDef, data: IndexingData): Task[Option[IndexingData]] =
+    Task.raiseWhen(name != definition.name)(PipeDefinitionMismatch(name, definition.name)) >> parseAndRun(
+      definition.config,
+      data
+    )
 
 }
 
@@ -145,40 +154,5 @@ object Pipe {
       }
 
     override def run(config: Config, data: IndexingData): PipeResult = f(config, data)
-  }
-
-  /**
-    * Excludes metadata from being indexed
-    */
-  val excludeMetadata: Pipe =
-    withoutConfig(
-      "excludeMetadata",
-      (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty))
-    )
-
-  /**
-    * Filters out deprecated resources
-    */
-  val excludeDeprecated: Pipe =
-    withoutConfig(
-      "excludeDeprecated",
-      (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
-    )
-
-  /**
-    * Add source as text
-    */
-  val sourceAsText: Pipe = {
-    val empty = Json.obj()
-    withoutConfig(
-      "sourceAsText",
-      (data: IndexingData) =>
-        Task.some(
-          data.copy(
-            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces),
-            source = empty
-          )
-        )
-    )
   }
 }

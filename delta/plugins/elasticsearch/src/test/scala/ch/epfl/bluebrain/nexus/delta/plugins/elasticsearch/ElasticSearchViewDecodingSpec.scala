@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, IncludePredicates}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -89,15 +90,12 @@ class ElasticSearchViewDecodingSpec
       }""".asObject.value
 
     val indexingView = IndexingElasticSearchViewValue(
-      resourceSchemas = Set.empty,
-      resourceTypes = Set.empty,
       resourceTag = None,
+      pipeline = IndexingElasticSearchViewValue.defaultPipeline,
       mapping = Some(mapping),
       settings = None,
-      includeMetadata = false,
-      includeDeprecated = false,
-      sourceAsText = false,
-      permission = permissions.query
+      permission = permissions.query,
+      context = None
     )
 
     "be decoded correctly from json-ld" when {
@@ -125,15 +123,18 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
-          resourceSchemas = Set(project.vocab / "Person"),
-          resourceTypes = Set(project.vocab / "Person"),
           resourceTag = Some(TagLabel.unsafe("release")),
-          sourceAsText = false,
-          includeMetadata = false,
-          includeDeprecated = false,
+          pipeline = List(
+            FilterBySchema.definition(Set(project.vocab / "Person")),
+            FilterByType.definition(Set(project.vocab / "Person")),
+            FilterDeprecated.definition,
+            DiscardMetadata.definition,
+            IncludePredicates.defaultLabelPredicatesDef
+          ),
           mapping = Some(mapping),
           settings = Some(settings),
-          permission = Permission.unsafe("custom/permission")
+          permission = Permission.unsafe("custom/permission"),
+          context = None
         )
         val (id, value) = decoder(project, source).accepted
         value shouldEqual expected

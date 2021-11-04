@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeDef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -100,11 +100,11 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       uuid: UUID,
-      pipeline: List[PipeDef],
       resourceTag: Option[TagLabel],
-      context: Option[ContextObject],
+      pipeline: List[PipeDef],
       mapping: JsonObject,
       settings: JsonObject,
+      context: Option[ContextObject],
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
@@ -177,11 +177,42 @@ object ElasticSearchView {
     implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
 
+    def encodeLegacyFields(v: ElasticSearchView) =
+      v match {
+        case _: AggregateElasticSearchView => JsonObject.empty
+        case i: IndexingElasticSearchView  =>
+          JsonObject(
+            "resourceSchemas"   -> Json.arr(),
+            "resourceTypes"     -> Json.arr(),
+            "sourceAsText"      -> Json.False,
+            "includeMetadata"   -> Json.True,
+            "includeDeprecated" -> Json.True
+          ).deepMerge(
+            i.pipeline
+              .foldLeft(JsonObject.empty) {
+                case (obj, pipeDef) if pipeDef.name == FilterBySchema.name   =>
+                  obj.add("resourceSchemas", FilterBySchema.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
+                case (obj, pipeDef) if pipeDef.name == FilterByType.name     =>
+                  obj.add("resourceTypes", FilterByType.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
+                case (obj, pipeDef) if pipeDef.name == SourceAsText.name     =>
+                  obj.add("sourceAsText", Json.True)
+                case (obj, pipeDef) if pipeDef.name == DiscardMetadata.name  =>
+                  obj.add("includeMetadata", Json.False)
+                case (obj, pipeDef) if pipeDef.name == FilterDeprecated.name =>
+                  obj.add("includeDeprecated", Json.False)
+                case (obj, _)                                                =>
+                  obj
+              }
+          )
+      }
+
     Encoder.encodeJsonObject.contramapObject[ElasticSearchView] { e =>
       deriveConfiguredEncoder[ElasticSearchView]
         .encodeObject(e)
+        .deepMerge(encodeLegacyFields(e))
         .add(keywords.tpe, e.tpe.types.asJson)
         .remove("tags")
+        .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)
         .remove("source")
@@ -202,6 +233,7 @@ object ElasticSearchView {
 
       private def stringToJson(obj: JsonObject) =
         obj
+          .mapAllKeys("context", parseJson)
           .mapAllKeys("mapping", parseJson)
           .mapAllKeys("settings", parseJson)
 

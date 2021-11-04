@@ -23,10 +23,12 @@ object IncludePredicates {
     lazy val graphPredicates: Set[Node] = predicates.map(predicate)
   }
 
-  val value: Pipe = {
+  val name = "includePredicates"
+
+  val pipe: Pipe = {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
     Pipe.withConfig(
-      "includePredicates",
+      name,
       (config: Config, data: IndexingData) =>
         Task.some {
           val id = subject(data.id)
@@ -39,8 +41,8 @@ object IncludePredicates {
 
   def definition(set: Set[Iri]): PipeDef = {
     PipeDef.withConfig(
-      "includePredicates",
-      set.foldLeft(ExpandedJsonLd.empty) { case (expanded, tpe) =>
+      name,
+      set.foldLeft(ExpandedJsonLd.empty.copy(rootId = nxv + name)) { case (expanded, tpe) =>
         expanded.add(predicatesKey, tpe)
       }
     )

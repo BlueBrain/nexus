@@ -1,4 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
@@ -12,10 +14,12 @@ object DataConstructQuery {
 
   final private case class Config(query: SparqlConstructQuery)
 
-  val value: Pipe = {
+  val name: String = "dataConstructQuery"
+
+  val pipe: Pipe = {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
     Pipe.withConfig(
-      "dataConstructQuery",
+      name,
       (config: Config, data: IndexingData) =>
         Task
           .fromEither(
@@ -31,5 +35,13 @@ object DataConstructQuery {
           }
     )
   }
+
+  private val queryKey = nxv + "query"
+
+  def definition(query: SparqlConstructQuery): PipeDef =
+    PipeDef.withConfig(
+      name,
+      ExpandedJsonLd.empty.copy(rootId = nxv + name).add(queryKey, query.value)
+    )
 
 }

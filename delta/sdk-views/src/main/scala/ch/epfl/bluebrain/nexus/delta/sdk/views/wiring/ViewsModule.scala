@@ -9,15 +9,7 @@ import izumi.distage.model.definition.ModuleDef
 object ViewsModule extends ModuleDef {
 
   many[Pipe].addSetValue(
-    Set(
-      Pipe.excludeMetadata,
-      Pipe.excludeDeprecated,
-      Pipe.sourceAsText,
-      DataConstructQuery.value,
-      IncludePredicates.value,
-      FilterBySchema.value,
-      FilterByType.value
-    )
+    PipeConfig.builtInPipes
   )
 
   make[PipeConfig].from { (pipes: Set[Pipe]) =>
