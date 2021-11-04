@@ -202,7 +202,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   "Listing resources within all accessible projects in the system" should {
     val testResourceType = URLEncoder.encode("https://bluebrain.github.io/nexus/vocabulary/TestResource", "UTF-8")
 
-    "get resources from all projects for user with appropriate acls" in {
+    "get resources from all projects for user with appropriate acls" in eventually {
       val expected = jsonContentOf(
         "/kg/listings/all/resource-by-type-4.json",
         replacements(

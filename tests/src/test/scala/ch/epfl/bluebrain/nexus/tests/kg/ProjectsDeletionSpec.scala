@@ -220,7 +220,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
       deltaClient.get[Json](s"/projects/$ref1", Bojack)(expect(StatusCodes.NotFound))
     }
 
-    "not return the deleted project in the project list" in {
+    "not return the deleted project in the project list" in eventually {
       deltaClient.get[Json](s"/projects/$org", Bojack) { (json, _) =>
         listing._total.getOption(json).value shouldEqual 1L
         listing.eachResult._label.string.exist(_ == proj1)(json) shouldEqual false
