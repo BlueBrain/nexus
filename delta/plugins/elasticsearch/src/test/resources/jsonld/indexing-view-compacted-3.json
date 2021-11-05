@@ -11,36 +11,11 @@
   "includeDeprecated": true,
   "includeMetadata": true,
   "permission": "views/query",
-  "pipeline": [
-    {
-      "config": {
-        "types": {
-          "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
-        }
-      },
-      "name": "filterBySchema"
-    },
-    {
-      "config": {
-        "types": {
-          "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
-        }
-      },
-      "name": "filterByType"
-    },
-    {
-      "name": "sourceAsText",
-      "description": "Formatting source as text"
-    }
-  ],
-  "resourceSchemas": [
-    "https://bluebrain.github.io/nexus/vocabulary/Schema"
-  ],
+  "pipeline": [],
+  "resourceSchemas": [],
   "resourceTag": "mytag",
-  "resourceTypes": [
-    "https://bluebrain.github.io/nexus/vocabulary/Morphology"
-  ],
-  "sourceAsText": true,
+  "resourceTypes": [],
+  "sourceAsText": false,
   "_uuid": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981",
   "mapping": {
     "properties": {

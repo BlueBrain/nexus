@@ -38,7 +38,7 @@ object DataConstructQuery {
 
   private val queryKey = nxv + "query"
 
-  def definition(query: SparqlConstructQuery): PipeDef =
+  def apply(query: SparqlConstructQuery): PipeDef =
     PipeDef.withConfig(
       name,
       ExpandedJsonLd.empty.copy(rootId = nxv + name).add(queryKey, query.value)

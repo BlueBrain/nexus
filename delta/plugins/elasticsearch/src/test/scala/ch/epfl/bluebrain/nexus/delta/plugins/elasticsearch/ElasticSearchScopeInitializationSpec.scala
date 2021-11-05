@@ -64,7 +64,7 @@ class ElasticSearchScopeInitializationSpec
       resource.value match {
         case v: IndexingElasticSearchView  =>
           v.resourceTag shouldEqual None
-          v.pipeline shouldEqual List(IncludePredicates.defaultLabelPredicatesDef, SourceAsText.definition)
+          v.pipeline shouldEqual List(IncludePredicates.defaultLabels, SourceAsText())
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions

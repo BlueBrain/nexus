@@ -13,14 +13,14 @@ class FilterByTypeSpec extends PipeBaseSpec {
 
     "keep data matching the types without modifying it" in {
       FilterByType.pipe
-        .parseAndRun(FilterByType.definition(Set(nxv + "Custom")).config, sampleData)
+        .parseAndRun(FilterByType(Set(nxv + "Custom")).config, sampleData)
         .accepted
         .value shouldEqual sampleData
     }
 
     "filter out data not matching the types" in {
       FilterByType.pipe
-        .parseAndRun(FilterByType.definition(Set(nxv + "Another")).config, sampleData)
+        .parseAndRun(FilterByType(Set(nxv + "Another")).config, sampleData)
         .accepted shouldEqual None
     }
   }

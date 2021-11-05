@@ -44,9 +44,9 @@ class EventSerializerSpec
   private val indexingValue    = IndexingElasticSearchViewValue(
     Some(TagLabel.unsafe("some.tag")),
     List(
-      FilterBySchema.definition(Set(nxv + "some-schema")).copy(description = Some("Only keeping a specific schema")),
-      FilterByType.definition(Set(nxv + "SomeType")),
-      SourceAsText.definition
+      FilterBySchema(Set(nxv + "some-schema")).description("Only keeping a specific schema"),
+      FilterByType(Set(nxv + "SomeType")),
+      SourceAsText()
     ),
     Some(jobj"""{"properties": {}}"""),
     Some(jobj"""{"analysis": {}}"""),

@@ -141,6 +141,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewAggregate].fromEffect {
     (
+        pipeConfig: PipeConfig,
         config: ElasticSearchViewsConfig,
         permissions: Permissions,
         client: ElasticSearchClient,
@@ -150,7 +151,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO]
     ) =>
-      ElasticSearchViews.aggregate(config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
+      ElasticSearchViews.aggregate(pipeConfig, config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
   }
 
   make[ElasticSearchViews]

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.subject
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,7 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import monix.bio.IO
-import org.apache.jena.graph.Node
 
 /**
   * ElasticSearch indexing data
@@ -49,25 +47,6 @@ final case class IndexingData(
 object IndexingData {
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
-
-  /**
-    * Helper function to generate an IndexingData from the [[EventExchangeValue]]. The resource data is divided in 2
-    * graphs. One containing only metadata and the other containing only data from the predicates present in
-    * ''graphPredicates''.
-    *
-    * @tparam A
-    *   the value type
-    * @tparam M
-    *   the metadata type
-    */
-  def apply[A, M](
-      exchangedValue: EventExchangeValue[A, M],
-      graphPredicates: Set[Node]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] =
-    IndexingData(exchangedValue).map { data =>
-      val id = subject(data.id)
-      data.copy(graph = data.graph.filter { case (s, p, _) => s == id && graphPredicates.contains(p) })
-    }
 
   /**
     * Helper function to generate an IndexingData from the [[EventExchangeValue]]. The resource data is divided in 2

@@ -31,46 +31,50 @@
     ],
     "https://bluebrain.github.io/nexus/vocabulary/pipeline": [
       {
-        "https://bluebrain.github.io/nexus/vocabulary/config": [
+        "@list": [
           {
-            "https://bluebrain.github.io/nexus/vocabulary/types": [
+            "https://bluebrain.github.io/nexus/vocabulary/config": [
               {
-                "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
+                "https://bluebrain.github.io/nexus/vocabulary/types": [
+                  {
+                    "@id": "https://bluebrain.github.io/nexus/vocabulary/Schema"
+                  }
+                ]
+              }
+            ],
+            "https://bluebrain.github.io/nexus/vocabulary/name": [
+              {
+                "@value": "filterBySchema"
               }
             ]
-          }
-        ],
-        "https://bluebrain.github.io/nexus/vocabulary/name": [
+          },
           {
-            "@value": "filterBySchema"
-          }
-        ]
-      },
-      {
-        "https://bluebrain.github.io/nexus/vocabulary/config": [
-          {
-            "https://bluebrain.github.io/nexus/vocabulary/types": [
+            "https://bluebrain.github.io/nexus/vocabulary/config": [
               {
-                "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
+                "https://bluebrain.github.io/nexus/vocabulary/types": [
+                  {
+                    "@id": "https://bluebrain.github.io/nexus/vocabulary/Morphology"
+                  }
+                ]
+              }
+            ],
+            "https://bluebrain.github.io/nexus/vocabulary/name": [
+              {
+                "@value": "filterByType"
               }
             ]
-          }
-        ],
-        "https://bluebrain.github.io/nexus/vocabulary/name": [
+          },
           {
-            "@value": "filterByType"
-          }
-        ]
-      },
-      {
-        "https://bluebrain.github.io/nexus/vocabulary/description": [
-          {
-            "@value": "Formatting source as text"
-          }
-        ],
-        "https://bluebrain.github.io/nexus/vocabulary/name": [
-          {
-            "@value": "sourceAsText"
+            "https://bluebrain.github.io/nexus/vocabulary/description": [
+              {
+                "@value": "Formatting source as text"
+              }
+            ],
+            "https://bluebrain.github.io/nexus/vocabulary/name": [
+              {
+                "@value": "sourceAsText"
+              }
+            ]
           }
         ]
       }

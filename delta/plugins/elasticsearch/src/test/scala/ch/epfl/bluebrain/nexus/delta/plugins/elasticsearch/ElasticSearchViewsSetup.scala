@@ -15,15 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Permissions, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
 import scala.concurrent.duration._
 
-trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedClock {
+trait ElasticSearchViewsSetup extends IOValues with EitherValuable with ConfigFixtures with IOFixedClock {
 
   private def config(implicit baseUri: BaseUri) = ElasticSearchViewsConfig(
     baseUri.toString,
@@ -79,7 +80,14 @@ trait ElasticSearchViewsSetup extends IOValues with ConfigFixtures with IOFixedC
       eventLog   <- EventLog.postgresEventLog[Envelope[ElasticSearchViewEvent]](EventLogUtils.toEnvelope).hideErrors
       deferred   <- Deferred[Task, ElasticSearchViews]
       cache      <- ElasticSearchViews.cache(config)
-      agg        <- ElasticSearchViews.aggregate(config, perms, (_, _) => IO.unit, deferred, ResourceIdCheck.alwaysAvailable)
+      agg        <- ElasticSearchViews.aggregate(
+                      PipeConfig.builtInConfig.rightValue,
+                      config,
+                      perms,
+                      (_, _) => IO.unit,
+                      deferred,
+                      ResourceIdCheck.alwaysAvailable
+                    )
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       views      <- ElasticSearchViews(deferred, config, eventLog, resolverCtx, cache, agg, orgs, projects)
     } yield views

@@ -20,14 +20,14 @@ class FilterBySchemaSpec extends PipeBaseSpec {
 
     "keep data matching the schemas without modifying it" in {
       FilterBySchema.pipe
-        .parseAndRun(FilterBySchema.definition(Set(schema)), validatedData)
+        .parseAndRun(FilterBySchema(Set(schema)), validatedData)
         .accepted
         .value shouldEqual validatedData
     }
 
     "filter out data not matching the schemas" in {
       FilterBySchema.pipe
-        .parseAndRun(FilterBySchema.definition(Set(nxv + "Another")), validatedData)
+        .parseAndRun(FilterBySchema(Set(nxv + "Another")), validatedData)
         .accepted shouldEqual None
     }
   }

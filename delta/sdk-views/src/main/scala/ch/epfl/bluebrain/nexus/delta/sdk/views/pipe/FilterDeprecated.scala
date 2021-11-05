@@ -18,6 +18,6 @@ object FilterDeprecated {
       (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
     )
 
-  val definition: PipeDef = noConfig(name)
+  def apply(): PipeDef = noConfig(name)
 
 }

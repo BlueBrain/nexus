@@ -42,7 +42,7 @@ object IncludePredicates {
 
   private val predicatesKey = nxv + "predicates"
 
-  def definition(set: Set[Iri]): PipeDef = {
+  def apply(set: Set[Iri]): PipeDef = {
     PipeDef.withConfig(
       name,
       set.foldLeft(ExpandedJsonLd.empty.copy(rootId = nxv + name)) { case (expanded, tpe) =>
@@ -51,5 +51,5 @@ object IncludePredicates {
     )
   }
 
-  val defaultLabelPredicatesDef: PipeDef = definition(defaultLabelPredicates)
+  val defaultLabels: PipeDef = apply(defaultLabelPredicates)
 }

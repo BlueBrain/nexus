@@ -30,7 +30,7 @@ object FilterByType {
 
   private val typesKey = nxv + "types"
 
-  def definition(set: Set[Iri]): PipeDef = {
+  def apply(set: Set[Iri]): PipeDef = {
     PipeDef.withConfig(
       name,
       set.foldLeft(ExpandedJsonLd.empty.copy(rootId = nxv + name)) { case (expanded, tpe) =>

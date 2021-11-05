@@ -1,10 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewJsonLdSourceDecoder.{toValue, ElasticSearchViewFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, permissions, ElasticSearchViewRejection, ElasticSearchViewType, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -98,6 +100,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
       val legacyFieldsJsonLdDecoder    = deriveJsonLdDecoder[LegacyIndexingElasticSearchViewFields]
       val indexingFieldsJsonLdDecoder  = deriveJsonLdDecoder[IndexingElasticSearchViewFields]
       val aggregateFieldsJsonLdDecoder = deriveJsonLdDecoder[AggregateElasticSearchViewFields]
+      val pipeline                     = nxv + "pipeline"
       (cursor: ExpandedJsonLdCursor) =>
         cursor.getTypes.flatMap { types =>
           (
@@ -111,7 +114,11 @@ object ElasticSearchViewJsonLdSourceDecoder {
                 )
               )
             case (true, false)  =>
-              legacyFieldsJsonLdDecoder(cursor).orElse(indexingFieldsJsonLdDecoder(cursor))
+              //TODO implement strict json-ld decoding
+              if (cursor.downField(pipeline).succeeded)
+                indexingFieldsJsonLdDecoder(cursor)
+              else
+                legacyFieldsJsonLdDecoder(cursor)
             case (false, true)  =>
               aggregateFieldsJsonLdDecoder(cursor)
             case (false, false) =>
@@ -131,21 +138,18 @@ object ElasticSearchViewJsonLdSourceDecoder {
   private def toValue(fields: ElasticSearchViewFields): ElasticSearchViewValue = fields match {
     case i: LegacyIndexingElasticSearchViewFields =>
       // Translate legacy fields into a pipeline
-      val pipeLine =
-        Option.when(i.resourceSchemas.nonEmpty) {
-          FilterBySchema.definition(i.resourceSchemas)
-        } ++
-          Option.when(i.resourceTypes.nonEmpty) {
-            FilterByType.definition(i.resourceTypes)
-          } ++ Option.unless(i.includeDeprecated)(FilterDeprecated.definition) ++ Option.unless(i.includeMetadata)(
-            DiscardMetadata.definition
-          ) ++
-          Some(IncludePredicates.defaultLabelPredicatesDef) ++
-          Option.when(i.sourceAsText)(SourceAsText.definition)
+      val pipeLine = List(
+        i.resourceSchemas.nonEmpty -> FilterBySchema(i.resourceSchemas),
+        i.resourceTypes.nonEmpty   -> FilterByType(i.resourceTypes),
+        !i.includeDeprecated       -> FilterDeprecated(),
+        !i.includeMetadata         -> DiscardMetadata(),
+        true                       -> IncludePredicates.defaultLabels,
+        i.sourceAsText             -> SourceAsText()
+      ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(
         resourceTag = i.resourceTag,
-        pipeLine.toList,
+        pipeLine,
         mapping = Some(i.mapping),
         settings = i.settings,
         context = None,

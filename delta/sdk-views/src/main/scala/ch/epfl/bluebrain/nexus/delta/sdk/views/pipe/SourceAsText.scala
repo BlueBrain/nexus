@@ -27,6 +27,6 @@ object SourceAsText {
         )
     )
 
-  val definition: PipeDef = noConfig(name)
+  def apply(): PipeDef = noConfig(name)
 
 }

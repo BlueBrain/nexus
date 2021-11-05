@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
@@ -59,12 +58,11 @@ final class ElasticSearchIndexingStream(
               IO.when(bulk.nonEmpty)(client.bulk(bulk))
             }
             .flatMap(Stream.chunk)
-            .filterValue {
+            .collectSomeValue {
               // Delete operation count as discarded in the projection progress
-              case _: ElasticSearchBulk.Delete => false
-              case _                           => true
+              case _: ElasticSearchBulk.Delete => None
+              case _                           => Some(())
             }
-            .map(_.void)
             // Persist progress in cache and in primary store
             .persistProgressWithCache(
               progress,
@@ -116,11 +114,11 @@ object ElasticSearchIndexingStream {
       data   <- IndexingData(eventExchangeValue)
       result <- pipeline(data)
       bulk   <- result match {
-                  case None =>
-                    Task.some(ElasticSearchBulk.Delete(index, data.id.toString)) // TODO skip delete if rev = 1 ?
+                  case None    =>
+                    Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
                   case Some(r) =>
                     dataEncoder(r).flatMap {
-                      case json if json.isEmpty() => Task.none // TODO Delete ?
+                      case json if json.isEmpty() => Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
                       case json                   =>
                         Task.some(
                           ElasticSearchBulk.Index(index, data.id.toString, json)

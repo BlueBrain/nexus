@@ -62,8 +62,7 @@ object ElasticSearchViewValue {
     /**
       * Default pipeline to apply if none is present in the payload
       */
-    val defaultPipeline =
-      List(FilterDeprecated.definition, DiscardMetadata.definition, IncludePredicates.defaultLabelPredicatesDef)
+    val defaultPipeline = List(FilterDeprecated(), DiscardMetadata(), IncludePredicates.defaultLabels)
   }
 
   /**

@@ -27,7 +27,7 @@ class DataConstructQuerySpec extends PipeBaseSpec {
       val name   = predicate(schema + "name")
       val number = predicate(nxv + "number")
       DataConstructQuery.pipe
-        .parseAndRun(DataConstructQuery.definition(query), sampleData)
+        .parseAndRun(DataConstructQuery(query), sampleData)
         .accepted
         .value shouldEqual sampleData.copy(
         types = Set.empty,

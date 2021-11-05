@@ -21,8 +21,11 @@ import scala.annotation.nowarn
   * @param config
   *   the config to provide to the pipe
   */
-final case class PipeDef(name: String, description: Option[String], config: Option[ExpandedJsonLd])
+final case class PipeDef(name: String, description: Option[String], config: Option[ExpandedJsonLd]) {
 
+  def description(value: String): PipeDef = copy(description = Some(value))
+
+}
 @nowarn("cat=unused")
 object PipeDef {
 
@@ -61,6 +64,9 @@ object PipeDef {
 
   implicit val pipeDefJsonLdDecoder: JsonLdDecoder[PipeDef] = {
     implicit val expandedJsonLdDecoder: JsonLdDecoder[ExpandedJsonLd] = (cursor: ExpandedJsonLdCursor) => cursor.focus
-    deriveJsonLdDecoder[PipeDef]
+    deriveJsonLdDecoder[PipeDef].map {
+      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name)))
+      case p                       => p
+    }
   }
 }

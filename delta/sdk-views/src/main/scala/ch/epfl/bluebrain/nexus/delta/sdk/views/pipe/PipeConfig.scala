@@ -23,6 +23,8 @@ object PipeConfig {
       .map(PipeConfig(_))
   }
 
+  def apply(pipes: Pipe*): Either[String, PipeConfig] = apply(pipes.toSet)
+
   val builtInPipes =
     Set(
       DataConstructQuery.pipe,

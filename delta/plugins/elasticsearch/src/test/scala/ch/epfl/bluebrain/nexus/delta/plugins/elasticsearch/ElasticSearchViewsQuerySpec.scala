@@ -101,7 +101,7 @@ class ElasticSearchViewsQuerySpec
       project,
       IndexingElasticSearchViewValue(
         resourceTag = None,
-        pipeline = List(FilterDeprecated.definition, DiscardMetadata.definition),
+        pipeline = List(FilterDeprecated(), DiscardMetadata()),
         mapping = None,
         settings = None,
         permission = permissions.query,

@@ -71,7 +71,7 @@ class ElasticSearchIndexingSpec
 
   private val indexingValue = IndexingElasticSearchViewValue(
     None,
-    IndexingElasticSearchViewValue.defaultPipeline :+ SourceAsText.definition,
+    IndexingElasticSearchViewValue.defaultPipeline :+ SourceAsText(),
     mapping = Some(jsonObjectContentOf("/mapping.json")),
     settings = None,
     context = None,
@@ -217,7 +217,7 @@ class ElasticSearchIndexingSpec
       checkElasticSearchDocuments(view, documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))
     }
     "index resources with metadata" in {
-      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == DiscardMetadata.definition))
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == DiscardMetadata()))
       val view     = views.update(viewId, project1.ref, 1L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
@@ -226,7 +226,7 @@ class ElasticSearchIndexingSpec
       )
     }
     "index resources including deprecated" in {
-      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == FilterDeprecated.definition))
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == FilterDeprecated()))
       val view     = views.update(viewId, project1.ref, 2L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,
@@ -239,8 +239,8 @@ class ElasticSearchIndexingSpec
     "index resources constrained by schema" in {
       val indexVal =
         indexingValue.copy(pipeline =
-          List(FilterBySchema.definition(Set(schema1))) ++ indexingValue.pipeline.filterNot(
-            _ == FilterDeprecated.definition
+          List(FilterBySchema(Set(schema1))) ++ indexingValue.pipeline.filterNot(
+            _ == FilterDeprecated()
           )
         )
       val view     = views.update(viewId, project1.ref, 3L, indexVal).accepted.asInstanceOf[IndexingViewResource]
@@ -258,15 +258,15 @@ class ElasticSearchIndexingSpec
     "index resources with type" in {
       val indexVal =
         indexingValue.copy(pipeline =
-          List(FilterByType.definition(Set(type1))) ++ indexingValue.pipeline.filterNot(
-            _ == FilterDeprecated.definition
+          List(FilterByType(Set(type1))) ++ indexingValue.pipeline.filterNot(
+            _ == FilterDeprecated()
           )
         )
       val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(view, documentFor(res3Proj1, value3Proj1))
     }
     "index resources without source" in {
-      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == SourceAsText.definition))
+      val indexVal = indexingValue.copy(pipeline = indexingValue.pipeline.filterNot(_ == SourceAsText()))
       val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(
         view,

@@ -19,7 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterByType, PipeConfig, PipeDef}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -33,10 +35,10 @@ import java.util.UUID
 class ElasticSearchViewSTMSpec
     extends AnyWordSpecLike
     with Matchers
+    with EitherValuable
     with Inspectors
     with IOFixedClock
-    with IOValues
-    with TestHelpers {
+    with IOValues {
 
   "An ElasticSearch STM" when {
 
@@ -92,7 +94,13 @@ class ElasticSearchViewSTMSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val eval = evaluate(validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(_, _)
+    val pipeConfig = PipeConfig.builtInConfig.rightValue
+
+    val eval =
+      evaluate(pipeConfig, validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        _,
+        _
+      )
 
     "evaluating the CreateElasticSearchView command" should {
       "emit an ElasticSearchViewCreated for an IndexingElasticSearchViewValue" in {
@@ -112,6 +120,7 @@ class ElasticSearchViewSTMSpec
       }
       "raise a ResourceAlreadyExists rejection" in {
         val eval = evaluate(
+          pipeConfig,
           validPermission,
           validIndex,
           validRef,
@@ -126,7 +135,16 @@ class ElasticSearchViewSTMSpec
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, validIndex, invalidRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          validPermission,
+          validIndex,
+          invalidRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           Initial,
           cmd
         )
@@ -134,20 +152,70 @@ class ElasticSearchViewSTMSpec
       }
       "raise a TooManyViewReferences rejection" in {
         val cmd = CreateElasticSearchView(id, project, aggregateValue, source, subject)
-        evaluate(validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 1)(Initial, cmd)
+        evaluate(pipeConfig, validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 1)(
+          Initial,
+          cmd
+        )
           .rejectedWith[TooManyViewReferences]
       }
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(validPermission, invalidIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          validPermission,
+          invalidIndex,
+          validRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           Initial,
           cmd
         )
           .rejectedWith[InvalidElasticSearchIndexPayload]
       }
+
+      "raise an InvalidPipeline rejection for a unknown pipe" in {
+        val cmd = CreateElasticSearchView(
+          id,
+          project,
+          indexingValue.copy(pipeline = List(PipeDef.noConfig("xxx"))),
+          source,
+          subject
+        )
+        evaluate(pipeConfig, validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+          Initial,
+          cmd
+        ).rejected shouldEqual InvalidPipeline(PipeNotFound("xxx"))
+      }
+
+      "raise an InvalidPipeline rejection an invalid pipe configuration" in {
+        val cmd = CreateElasticSearchView(
+          id,
+          project,
+          indexingValue.copy(pipeline = List(PipeDef.noConfig(FilterByType.name))),
+          source,
+          subject
+        )
+        evaluate(pipeConfig, validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+          Initial,
+          cmd
+        ).rejected shouldEqual InvalidPipeline(InvalidConfig(FilterByType.name, "A config is required."))
+      }
+
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = CreateElasticSearchView(id, project, indexingValue, source, subject)
-        evaluate(invalidPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          invalidPermission,
+          validIndex,
+          validRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           Initial,
           cmd
         )
@@ -188,7 +256,16 @@ class ElasticSearchViewSTMSpec
       }
       "raise an InvalidViewReference rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, aggregateValue, source, subject)
-        evaluate(validPermission, validIndex, invalidRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          validPermission,
+          validIndex,
+          invalidRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           current(value = aggregateValue),
           cmd
         )
@@ -196,7 +273,16 @@ class ElasticSearchViewSTMSpec
       }
       "raise an InvalidElasticSearchMapping rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(validPermission, invalidIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          validPermission,
+          invalidIndex,
+          validRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           current(),
           cmd
         )
@@ -204,7 +290,16 @@ class ElasticSearchViewSTMSpec
       }
       "raise a PermissionIsNotDefined rejection" in {
         val cmd = UpdateElasticSearchView(id, project, 1L, indexingValue, source, subject)
-        evaluate(invalidPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(
+        evaluate(
+          pipeConfig,
+          invalidPermission,
+          validIndex,
+          validRef,
+          viewRefResolution,
+          (_, _) => IO.unit,
+          "prefix",
+          10
+        )(
           current(),
           cmd
         )

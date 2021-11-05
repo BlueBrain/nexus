@@ -30,7 +30,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
-      List(IncludePredicates.defaultLabelPredicatesDef, SourceAsText.definition),
+      List(IncludePredicates.defaultLabels, SourceAsText()),
       mapping = None,
       settings = None,
       context = None,

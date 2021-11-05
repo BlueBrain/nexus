@@ -33,7 +33,7 @@ class KryoSerializationSpec
 
   private val indexingValue = IndexingElasticSearchViewValue(
     resourceTag = None,
-    List(SourceAsText.definition),
+    List(SourceAsText()),
     mapping = Some(jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""),
     settings = None,
     None,

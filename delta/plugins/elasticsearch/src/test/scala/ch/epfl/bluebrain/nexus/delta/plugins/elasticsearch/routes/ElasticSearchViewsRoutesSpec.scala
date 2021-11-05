@@ -112,6 +112,7 @@ class ElasticSearchViewsRoutesSpec
   private val myIdEncoded  = UrlUtils.encode(myId.toString)
   private val myId2        = nxv + "myid2"
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
+  private val myId3        = nxv + "myid3"
 
   private val mapping  = json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""
   private val settings = json"""{"analysis": {"analyzer": {"nexus": {} } } }"""
@@ -219,11 +220,33 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
+    "create a view with the given pipeline" in {
+      Put(
+        "/v1/views/myorg/myproject/myid3",
+        payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "filterDeprecated" } ]}""").toEntity
+      ) ~> asAlice ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual
+          elasticSearchViewMetadata(myId3, createdBy = alice, updatedBy = alice)
+      }
+    }
+
     "reject the creation of a view which already exists" in {
       Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("/routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+      }
+    }
+
+    "reject the creation of a view with an unknown pipe" in {
+      Put(
+        "/v1/views/myorg/myproject/unknown-pipe",
+        payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "xxx" } ]}""").toEntity
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual
+          jsonContentOf("/routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 

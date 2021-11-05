@@ -16,32 +16,30 @@ class PipeSpec extends PipeBaseSpec {
   val recorder: Pipe       = withoutConfig("recorder", d => Task.delay(recorded.appended(d.id)).as(Some(d)))
   val recorderDef: PipeDef = PipeDef.noConfig("recorder")
 
+  val invalidConfig: PipeDef = PipeDef.withConfig(DiscardMetadata.name, ExpandedJsonLd.empty)
+  val unknownPipe: PipeDef   = PipeDef.noConfig("xxx")
+
   val error                  = new IllegalArgumentException("Fail !!!")
   val alwaysFail: Pipe       = withoutConfig("alwaysFail", _ => Task.raiseError(error))
   val alwaysFailDef: PipeDef = PipeDef.noConfig("alwaysFail")
 
-  val pipeConfig: PipeConfig = PipeConfig(
-    Set(FilterDeprecated.pipe, DiscardMetadata.pipe, recorder, alwaysFail)
-  ).rightValue
+  val pipeConfig: PipeConfig = PipeConfig(FilterDeprecated.pipe, DiscardMetadata.pipe, recorder, alwaysFail).rightValue
 
   "Validating pipes" should {
     "succeed if all definitions are valid" in {
-      validate(
-        FilterDeprecated.definition :: DiscardMetadata.definition :: Nil,
-        pipeConfig
-      ).rightValue
+      validate(FilterDeprecated() :: DiscardMetadata() :: Nil, pipeConfig).rightValue
     }
 
     "fail if a pipe definition references an unknown pipe" in {
       validate(
-        FilterDeprecated.definition :: PipeDef.noConfig("xxx") :: Nil,
+        FilterDeprecated() :: unknownPipe :: Nil,
         pipeConfig
       ).leftValue shouldEqual PipeNotFound("xxx")
     }
 
     "fail if a pipeline configuration is invalid" in {
       validate(
-        FilterDeprecated.definition :: PipeDef.withConfig("discardMetadata", ExpandedJsonLd.empty) :: Nil,
+        FilterDeprecated() :: invalidConfig :: Nil,
         pipeConfig
       ).leftValue.asInstanceOf[InvalidConfig].name shouldEqual "discardMetadata"
     }
@@ -51,7 +49,7 @@ class PipeSpec extends PipeBaseSpec {
 
     "succeed if all definitions are valid" in {
       val result = Pipe
-        .run(FilterDeprecated.definition :: DiscardMetadata.definition :: Nil, pipeConfig)
+        .run(FilterDeprecated() :: DiscardMetadata() :: Nil, pipeConfig)
         .flatMap(_(sampleData))
         .accepted
       result.value shouldEqual sampleData.copy(metadataGraph = Graph.empty)
@@ -60,7 +58,7 @@ class PipeSpec extends PipeBaseSpec {
     "fail if any of the pipe fail" in {
       val result = Pipe
         .run(
-          FilterDeprecated.definition :: alwaysFailDef :: recorderDef :: Nil,
+          FilterDeprecated() :: alwaysFailDef :: recorderDef :: Nil,
           pipeConfig
         )
         .flatMap(_(sampleData))
@@ -70,7 +68,7 @@ class PipeSpec extends PipeBaseSpec {
 
     "not attempt to run later pipes if data gets filtered out" in {
       val result = Pipe
-        .run(FilterDeprecated.definition :: recorderDef :: Nil, pipeConfig)
+        .run(FilterDeprecated() :: recorderDef :: Nil, pipeConfig)
         .flatMap(_(sampleData.copy(deprecated = true)))
         .accepted
       result shouldEqual None
@@ -79,19 +77,13 @@ class PipeSpec extends PipeBaseSpec {
 
     "fail if a pipe definition references an unknown pipe" in {
       Pipe
-        .run(FilterDeprecated.definition :: PipeDef.noConfig("xxx") :: Nil, pipeConfig)
+        .run(FilterDeprecated() :: unknownPipe :: Nil, pipeConfig)
         .rejected shouldEqual PipeNotFound("xxx")
     }
 
     "fail if a pipeline configuration is invalid" in {
       Pipe
-        .run(
-          FilterDeprecated.definition :: PipeDef.withConfig(
-            "discardMetadata",
-            ExpandedJsonLd.empty
-          ) :: Nil,
-          pipeConfig
-        )
+        .run(FilterDeprecated() :: invalidConfig :: Nil, pipeConfig)
         .rejectedWith[InvalidConfig]
         .name shouldEqual "discardMetadata"
     }

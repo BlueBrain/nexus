@@ -15,7 +15,7 @@ class IncludePredicatesSpec extends PipeBaseSpec {
 
     "keep only matching predicates" in {
       val result =
-        IncludePredicates.pipe.parseAndRun(IncludePredicates.defaultLabelPredicatesDef, sampleData).accepted.value
+        IncludePredicates.pipe.parseAndRun(IncludePredicates.defaultLabels, sampleData).accepted.value
 
       val expectedGraph = Graph
         .empty(sampleData.id)

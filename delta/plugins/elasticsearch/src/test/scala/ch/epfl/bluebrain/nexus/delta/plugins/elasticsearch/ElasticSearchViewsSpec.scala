@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.persistence.query.{NoOffset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TagNotFound, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{DifferentElasticSearchViewType, IncorrectRev, InvalidPipeline, InvalidViewReference, PermissionIsNotDefined, ResourceAlreadyExists, RevisionNotFound, TagNotFound, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.AggregateElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
@@ -83,42 +83,8 @@ class ElasticSearchViewsSpec
 
     val views = ElasticSearchViewsSetup.init(orgs, projects, queryPermissions)
 
-    val mapping =
-      json"""{
-        "dynamic": false,
-        "properties": {
-          "@id": {
-            "type": "keyword"
-          },
-          "@type": {
-            "type": "keyword"
-          },
-          "name": {
-            "type": "keyword"
-          },
-          "number": {
-            "type": "long"
-          },
-          "bool": {
-            "type": "boolean"
-          }
-        }
-      }""".asObject.value
-
-    val settings =
-      json"""{
-        "analysis": {
-          "analyzer": {
-            "nexus": {
-              "type": "custom",
-              "tokenizer": "classic",
-              "filter": [
-                "my_multiplexer"
-              ]
-            }
-          }
-        }
-      }""".asObject.value
+    val mapping  = json"""{ "dynamic": false }""".asObject.value
+    val settings = json"""{ "analysis": { } }""".asObject.value
 
     def currentStateFor(
         id: Iri,
@@ -180,8 +146,9 @@ class ElasticSearchViewsSpec
         .toResource(project.apiMappings, project.base, defaultEsMapping, defaultEsSettings)
         .value
 
-    val viewId  = iri"http://localhost/indexing"
-    val viewId2 = iri"http://localhost/${genString()}"
+    val viewId         = iri"http://localhost/indexing"
+    val viewPipelineId = iri"http://localhost/indexing-pipeline"
+    val viewId2        = iri"http://localhost/${genString()}"
     "create a view" when {
       "using the minimum fields for an IndexingElasticSearchViewValue" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
@@ -204,13 +171,18 @@ class ElasticSearchViewsSpec
         )
         views.create(projectRef, source).accepted shouldEqual expected
       }
+      "using the minimum fields a valid pipeline" in {
+        val source =
+          json"""{"@id": $viewPipelineId, "@type": "ElasticSearchView", "pipeline": [{"name": "filterDeprecated"}], "mapping": $mapping }"""
+        views.create(projectRef, source).accepted
+      }
       "using an IndexingElasticSearchViewValue" in {
         val value = IndexingElasticSearchViewValue(
           resourceTag = Some(TagLabel.unsafe("tag")),
           List(
-            FilterBySchema.definition(Set(iri"http://localhost/schema")),
-            FilterByType.definition(Set(iri"http://localhost/type")),
-            FilterDeprecated.definition
+            FilterBySchema(Set(iri"http://localhost/schema")),
+            FilterByType(Set(iri"http://localhost/type")),
+            FilterDeprecated()
           ),
           mapping = Some(mapping),
           settings = None,
@@ -245,6 +217,19 @@ class ElasticSearchViewsSpec
         views.create(projectRef, source).rejectedWith[ResourceAlreadyExists]
         views.create(viewId, projectRef, source).rejectedWith[ResourceAlreadyExists]
       }
+      "the pipe does not exist" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source = json"""{"@type": "ElasticSearchView", "pipeline": [ { "name": "xxx" } ], "mapping": $mapping }"""
+        views.create(id, projectRef, source).rejectedWith[InvalidPipeline]
+      }
+
+      "the pipe configuration is invalid" in {
+        val id     = iri"http://localhost/${genString()}"
+        val source =
+          json"""{"@type": "ElasticSearchView", "pipeline": [ { "name": "filterByType" } ], "mapping": $mapping }"""
+        views.create(id, projectRef, source).rejectedWith[InvalidPipeline]
+      }
+
       "the permission is not defined" in {
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping, "permission": "not/exists"}"""

@@ -182,6 +182,7 @@ object ElasticSearchView {
       v match {
         case _: AggregateElasticSearchView => JsonObject.empty
         case i: IndexingElasticSearchView  =>
+          // Default legacy values
           JsonObject(
             "resourceSchemas"   -> Json.arr(),
             "resourceTypes"     -> Json.arr(),
