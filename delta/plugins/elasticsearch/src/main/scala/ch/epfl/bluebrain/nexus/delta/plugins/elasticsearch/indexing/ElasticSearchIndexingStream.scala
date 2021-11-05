@@ -60,6 +60,7 @@ final class ElasticSearchIndexingStream(
             }
             .flatMap(Stream.chunk)
             .filterValue {
+              // Delete operation count as discarded in the projection progress
               case _: ElasticSearchBulk.Delete => false
               case _                           => true
             }

@@ -62,6 +62,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   private object ElasticSearchViewFields {
 
+    // Describe the legacy payload using deprecated fields to keep retro-compatibility
     final case class LegacyIndexingElasticSearchViewFields(
         resourceSchemas: Set[Iri] = Set.empty,
         resourceTypes: Set[Iri] = Set.empty,
@@ -129,6 +130,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
   private def toValue(fields: ElasticSearchViewFields): ElasticSearchViewValue = fields match {
     case i: LegacyIndexingElasticSearchViewFields =>
+      // Translate legacy fields into a pipeline
       val pipeLine =
         Option.when(i.resourceSchemas.nonEmpty) {
           FilterBySchema.definition(i.resourceSchemas)
@@ -152,6 +154,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
     case i: IndexingElasticSearchViewFields       =>
       IndexingElasticSearchViewValue(
         resourceTag = i.resourceTag,
+        // If there is no pipeline defined, we use a default one to keep the historic behaviour
         pipeline = i.pipeline.getOrElse(IndexingElasticSearchViewValue.defaultPipeline),
         mapping = Some(i.mapping),
         settings = i.settings,

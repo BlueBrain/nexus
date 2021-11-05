@@ -177,6 +177,7 @@ object ElasticSearchView {
     implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
 
+    // To keep retro-compatibility, we compute legacy fields from the view pipeline
     def encodeLegacyFields(v: ElasticSearchView) =
       v match {
         case _: AggregateElasticSearchView => JsonObject.empty

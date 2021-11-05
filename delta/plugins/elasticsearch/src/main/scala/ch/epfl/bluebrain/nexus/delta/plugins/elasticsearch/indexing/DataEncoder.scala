@@ -22,6 +22,10 @@ object DataEncoder extends DataEncoder {
 
   implicit private[indexing] val api: JsonLdApi = JsonLdJavaApi.lenient
 
+  /**
+    * Default function to encode data into a json document to index into Elasticsearch. Merges source with the data
+    * graph and the metadata graph previously compacted and stripped from `@id` and context
+    */
   def defaultEncoder(
       context: Option[ContextObject]
   )(implicit cr: RemoteContextResolution): IndexingData => IO[RdfError, Json] =
