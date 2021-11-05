@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStreamEntry._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -92,18 +92,6 @@ final case class CompositeIndexingStreamEntry(
     if (a.isEmpty()) b
     else if (b.isEmpty()) a
     else a deepMerge b
-
-  /**
-    * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
-    */
-  def containsSchema(resourceSchemas: Set[Iri]): Boolean =
-    resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
-
-  /**
-    * Checks if the current resource contains some of the types passed as ''resourceTypes''
-    */
-  def containsTypes[A](resourceTypes: Set[Iri]): Boolean =
-    resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
 }
 
