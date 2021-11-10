@@ -66,5 +66,20 @@ trait EventExchange {
 }
 
 object EventExchange {
-  final case class EventExchangeValue[A, M](value: ReferenceExchangeValue[A], metadata: JsonLdValue.Aux[M])
+
+  /**
+    * Successful result of [[EventExchange]].
+    *
+    * @param value
+    *   the resource value
+    * @param metadata
+    *   the resource metadata
+    * @param tag
+    *   the optional tag at which this value was fetched
+    */
+  final case class EventExchangeValue[A, M](
+      value: ReferenceExchangeValue[A],
+      metadata: JsonLdValue.Aux[M],
+      tag: Option[TagLabel]
+  )
 }

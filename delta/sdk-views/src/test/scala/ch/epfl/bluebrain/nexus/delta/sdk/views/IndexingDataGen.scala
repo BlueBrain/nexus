@@ -7,9 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import io.circe.Json
 import monix.bio.IO
@@ -30,7 +30,8 @@ object IndexingDataGen {
   )(implicit resolution: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
     IndexingData(
       Resources.eventExchangeValue(
-        ResourceGen.sourceToResourceF(id, project, source, schema, tags, rev, subject, deprecated, am, base)
+        ResourceGen.sourceToResourceF(id, project, source, schema, tags, rev, subject, deprecated, am, base),
+        None
       )
     )
   }

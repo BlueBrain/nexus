@@ -225,7 +225,7 @@ object Schemas {
     * Create an [[EventExchangeValue]] for schema
     */
   def eventExchangeValue(res: SchemaResource)(implicit enc: JsonLdEncoder[Schema]): EventExchangeValue[Schema, Unit] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()), None)
 
   /**
     * The schemas module type.

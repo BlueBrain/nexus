@@ -106,13 +106,24 @@ class ResourceEventExchangeSpec
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual ()
+      result.tag shouldEqual None
     }
 
-    "return the latest resource state from the event at a particular tag" in {
+    "return the resource state from the event at a particular tag" in {
       val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
+      result.tag.value shouldEqual tag
+    }
+
+    "return the latest resource state if the tag has been deleted" in {
+      val resRev3 = resources.deleteTag(id, project.ref, None, tag, 2L).accepted
+      val result  = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
+      result.value.source shouldEqual source
+      result.value.resource shouldEqual resRev3
+      result.metadata.value shouldEqual ()
+      result.tag shouldEqual None
     }
 
     "return the metric" in {

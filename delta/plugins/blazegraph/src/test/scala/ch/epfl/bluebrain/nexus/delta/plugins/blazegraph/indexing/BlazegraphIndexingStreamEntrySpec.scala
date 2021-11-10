@@ -38,7 +38,7 @@ class BlazegraphIndexingStreamEntrySpec extends AnyWordSpecLike with Matchers wi
     val nQuads = NQuads(contentOf("resource.nq"), id)
 
     "filter metadata correctly" in {
-      val entry = BlazegraphIndexingStreamEntry.fromNQuads(id, nQuads, metadataPredicates).value.resource
+      val entry = BlazegraphIndexingStreamEntry.fromNQuads(id, nQuads, metadataPredicates, None).value.resource
       entry.id shouldEqual id
       entry.deprecated shouldEqual false
       entry.schema shouldEqual Latest(iri"https://bluebrain.github.io/nexus/schemas/unconstrained.json")
@@ -49,14 +49,14 @@ class BlazegraphIndexingStreamEntrySpec extends AnyWordSpecLike with Matchers wi
     "fail when schema predicate is missing" in {
       val nQuadsNoSchema = NQuads(contentOf("resource-no-schema.nq"), id)
       BlazegraphIndexingStreamEntry
-        .fromNQuads(id, nQuadsNoSchema, metadataPredicates)
+        .fromNQuads(id, nQuadsNoSchema, metadataPredicates, None)
         .left
         .value shouldEqual MissingPredicate(nxv.constrainedBy.iri)
     }
     "fail when deprecated predicate is missing" in {
       val nQuadsNoDeprecated = NQuads(contentOf("resource-no-deprecated.nq"), id)
       BlazegraphIndexingStreamEntry
-        .fromNQuads(id, nQuadsNoDeprecated, metadataPredicates)
+        .fromNQuads(id, nQuadsNoDeprecated, metadataPredicates, None)
         .left
         .value shouldEqual MissingPredicate(nxv.deprecated.iri)
     }

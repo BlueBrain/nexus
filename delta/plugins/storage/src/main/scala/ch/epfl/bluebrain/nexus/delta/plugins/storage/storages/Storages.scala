@@ -494,7 +494,7 @@ object Storages {
   ): EventExchangeValue[Storage, Storage.Metadata] = {
     val secret = res.value.source
     val source = Storage.encryptSourceUnsafe(secret, crypto)
-    EventExchangeValue(ReferenceExchangeValue(res, source, enc), JsonLdValue(res.value.metadata))
+    EventExchangeValue(ReferenceExchangeValue(res, source, enc), JsonLdValue(res.value.metadata), None)
   }
 
   /**

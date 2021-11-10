@@ -166,7 +166,7 @@ class CompositeIndexingSpec
         acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages)
 
   private val projection = Projection.inMemory(()).accepted
 
@@ -328,7 +328,7 @@ class CompositeIndexingSpec
       value
     )
     val metadata = JsonLdValue(Metadata(uuid))
-    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, jsonldEncoder), metadata)
+    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, jsonldEncoder), metadata, None)
   }
 
   private val page = FromPagination(0, 5000)

@@ -42,7 +42,9 @@ class RealmEventExchange(realms: Realms)(implicit base: BaseUri) extends EventEx
   ) =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata)))
+        Some(
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata), None)
+        )
       }
       .onErrorHandle(_ => None)
 }

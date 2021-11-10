@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
@@ -12,13 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.Task
 import org.apache.jena.graph.Node
-import ElasticSearchIndexingStreamEntry._
 
 final case class ElasticSearchIndexingStreamEntry(
     resource: IndexingData
@@ -30,7 +30,8 @@ final case class ElasticSearchIndexingStreamEntry(
         index,
         view.includeMetadata,
         view.includeDeprecated,
-        view.sourceAsText
+        view.sourceAsText,
+        view.resourceTag
       )
     else if (containsSchema(view.resourceSchemas))
       delete(index).map(Some.apply)
@@ -47,9 +48,10 @@ final case class ElasticSearchIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      sourceAsText: Boolean
+      sourceAsText: Boolean,
+      tag: Option[TagLabel]
   ): Task[Option[ElasticSearchBulk]] = {
-    if (resource.deprecated && !includeDeprecated) delete(idx).map(Some.apply)
+    if ((resource.deprecated && !includeDeprecated) || !hasTag(tag)) delete(idx).map(Some.apply)
     else index(idx, includeMetadata, sourceAsText)
   }
 
@@ -87,6 +89,14 @@ final case class ElasticSearchIndexingStreamEntry(
     */
   def containsSchema(resourceSchemas: Set[Iri]): Boolean =
     resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
+
+  /**
+    * Checks if the current resource has the tag specified by the view
+    */
+  def hasTag(viewTag: Option[TagLabel]): Boolean = viewTag match {
+    case None      => true
+    case Some(tag) => resource.tag.contains(tag)
+  }
 
   /**
     * Checks if the current resource contains some of the types passed as ''resourceTypes''

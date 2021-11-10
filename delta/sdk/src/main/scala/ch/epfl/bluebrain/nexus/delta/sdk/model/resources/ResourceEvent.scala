@@ -158,6 +158,34 @@ object ResourceEvent {
   ) extends ResourceEvent
 
   /**
+    * Event representing a tag deletion from a resource.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param types
+    *   the collection of known resource types
+    * @param tag
+    *   the tag that was deleted
+    * @param rev
+    *   the resource revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class ResourceTagDeleted(
+      id: Iri,
+      project: ProjectRef,
+      types: Set[Iri],
+      tag: TagLabel,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ResourceEvent
+
+  /**
     * Event representing a resource deprecation.
     *
     * @param id

@@ -562,6 +562,44 @@ trait ResourcesBehaviors {
       }
     }
 
+    "deleting a tag" should {
+      "succeed" in {
+        val schemaRev    = Revision(resourceSchema.iri, 1)
+        val expectedData = ResourceGen.resource(myId, projectRef, source, schemaRev)
+        val resource     =
+          resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 2L).accepted
+        resource shouldEqual
+          ResourceGen.resourceFor(
+            expectedData,
+            types = types,
+            subject = subject,
+            rev = 3L,
+            am = allApiMappings,
+            base = projBase
+          )
+      }
+
+      "reject if the resource doesn't exists" in {
+        resources.deleteTag(nxv + "other", projectRef, None, tag, 1L).rejectedWith[ResourceNotFound]
+      }
+
+      "reject if the revision passed is incorrect" in {
+        resources.deleteTag(myId, projectRef, None, tag, 4L).rejected shouldEqual
+          IncorrectRev(provided = 4L, expected = 3L)
+      }
+
+      "reject if schemas do not match" in {
+        resources
+          .deleteTag(myId2, projectRef, Some(schemas.resources), tag, 3L)
+          .rejectedWith[UnexpectedResourceSchema]
+      }
+
+      "reject if the tag doesn't exist" in {
+        resources.deleteTag(myId, projectRef, Some(schemas.resources), tag, 3L).rejectedWith[TagNotFound]
+      }
+
+    }
+
     "fetching SSE" should {
       val allEvents = SSEUtils.list(
         myId  -> ResourceCreated,

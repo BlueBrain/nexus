@@ -4,8 +4,8 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
@@ -116,13 +116,15 @@ class BlazegraphIndexingSpec
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  val tag = TagLabel.unsafe("mytag")
+
+  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, Some(tag))
+  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, Some(tag))
+  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, Some(tag))
   private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
   private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
   private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  private val res1rev2Proj1 = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  private val res1rev2Proj1 = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, None)
 
   private val messages =
     List(
@@ -145,7 +147,7 @@ class BlazegraphIndexingSpec
       acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages)
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
@@ -240,6 +242,16 @@ class BlazegraphIndexingSpec
       checkBlazegraphTriples(view, triplesFor(res3Proj1, value3Proj1))
     }
 
+    "index resources with a certain tag" in {
+      val indexVal = indexingValue.copy(resourceTag = Some(tag), includeDeprecated = true)
+      val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
+        triplesFor(res2Proj1, value2Proj1),
+        triplesFor(res3Proj1, value3Proj1)
+      )
+    }
+
   }
 
   private def checkBlazegraphTriples(view: IndexingViewResource, expected: NTriples*) = {
@@ -295,7 +307,7 @@ class BlazegraphIndexingSpec
     )
   }
 
-  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
+  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int, tag: Option[TagLabel] = None)(implicit
       caller: Caller
   ) = {
     val resource = ResourceF(
@@ -312,7 +324,7 @@ class BlazegraphIndexingSpec
       Value(id, tpe, value)
     )
     val metadata = JsonLdValue(())
-    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata)
+    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata, tag)
   }
 
 }

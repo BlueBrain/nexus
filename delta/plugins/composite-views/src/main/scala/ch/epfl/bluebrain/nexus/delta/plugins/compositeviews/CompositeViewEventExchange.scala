@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent.{CompositeViewCreated, CompositeViewDeprecated, CompositeViewTagAdded, CompositeViewUpdated}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{compositeViewType, CompositeView, CompositeViewEvent, CompositeViewRejection, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
@@ -62,7 +62,9 @@ class CompositeViewEventExchange(views: CompositeViews)(implicit base: BaseUri) 
   )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata)))
+        Some(
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata), None)
+        )
       }
       .onErrorHandle(_ => None)
 }

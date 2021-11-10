@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.Json
 import monix.bio.IO
@@ -32,6 +32,8 @@ import org.apache.jena.graph.Node
   *   the graph with the metadata value triples
   * @param source
   *   the original payload of the resource posted by the caller
+  * @param tag
+  *   the tag at which the resource was fetched, None if it's the latest version
   */
 final case class IndexingData(
     id: Iri,
@@ -40,7 +42,8 @@ final case class IndexingData(
     types: Set[Iri],
     graph: Graph,
     metadataGraph: Graph,
-    source: Json
+    source: Json,
+    tag: Option[TagLabel]
 ) {
 
   def discardSource: IndexingData = copy(source = Json.obj())
@@ -101,7 +104,8 @@ object IndexingData {
       resource.types,
       finalRootGraph,
       rootMetaGraph,
-      source.removeAllKeys(keywords.context)
+      source.removeAllKeys(keywords.context),
+      exchangedValue.tag
     )
   }
 

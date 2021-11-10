@@ -45,7 +45,9 @@ class AclEventExchange(acls: Acls)(implicit base: BaseUri) extends EventExchange
   )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata)))
+        Some(
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata), None)
+        )
       }
       .onErrorHandle(_ => None)
 }

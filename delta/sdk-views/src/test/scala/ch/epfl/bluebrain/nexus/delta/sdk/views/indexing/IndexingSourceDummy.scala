@@ -9,7 +9,7 @@ import fs2.{Chunk, Stream}
 import monix.bio.Task
 
 class IndexingSourceDummy(
-    messages: Map[(ProjectRef, Option[TagLabel]), Seq[Message[EventExchangeValue[_, _]]]]
+    messages: Map[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]
 ) extends IndexingSource {
 
   override def apply(
@@ -17,15 +17,6 @@ class IndexingSourceDummy(
       offset: Offset,
       tag: Option[TagLabel]
   ): Stream[Task, Chunk[Message[EventExchangeValue[_, _]]]] =
-    tag match {
-      case Some(_) if messages.contains(project -> tag) =>
-        Stream.iterable(messages(project -> tag).map(Chunk(_))) ++ Stream.never[Task]
-      case Some(_) => Stream.never[Task]
-      case None    => Stream.iterable(allMessages(project).map(Chunk(_))) ++ Stream.never[Task]
-
-    }
-
-  private def allMessages(project: ProjectRef) =
-    messages.view.collect { case ((`project`, _), values) => values }.flatten
+    Stream.iterable(messages(project)).map(Chunk(_)) ++ Stream.never[Task]
 
 }

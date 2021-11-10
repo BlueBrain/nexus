@@ -150,7 +150,7 @@ final class GraphAnalyticsIndexingStream(
       paths              = JsonLdPathValueCollection(pathProperties, pathRelationships)
       types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
       source             = paths.asJson deepMerge types
-      data               = IndexingData(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source)
+      data               = IndexingData(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source, None)
     } yield ElasticSearchIndexingStreamEntry(data)
   }
 

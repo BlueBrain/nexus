@@ -42,7 +42,7 @@ class PermissionsEventExchange(permissions: Permissions)(implicit base: BaseUri)
   )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(())))
+        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(()), None))
       }
       .onErrorHandle(_ => None)
 }

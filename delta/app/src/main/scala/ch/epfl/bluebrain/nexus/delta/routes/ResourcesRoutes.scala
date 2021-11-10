@@ -67,7 +67,7 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
-  implicit private val eventExchangeMapper = Mapper(Resources.eventExchangeValue(_))
+  implicit private val eventExchaxngeMapper = Mapper(Resources.eventExchangeValue(_, None))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
@@ -213,16 +213,16 @@ final class ResourcesRoutes(
                           }
                         },
                         // Tag a resource
-                        (pathPrefix("tags") & pathEndOrSingleSlash) {
+                        (pathPrefix("tags")) {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
                             concat(
                               // Fetch a resource tags
-                              (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                              (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                                 val tagsIO = resources.fetch(id, ref, schemaOpt).map(res => Tags(res.value.tags))
                                 emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                               },
                               // Tag a resource
-                              (post & parameter("rev".as[Long])) { rev =>
+                              (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
                                     emit(
@@ -235,6 +235,13 @@ final class ResourcesRoutes(
                                     )
                                   }
                                 }
+                              },
+                              // Delete a tag
+                              (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                                ref,
+                                Write
+                              )) { (tag, rev) =>
+                                emit(resources.deleteTag(id, ref, schemaOpt, tag, rev).map(_.void))
                               }
                             )
                           }

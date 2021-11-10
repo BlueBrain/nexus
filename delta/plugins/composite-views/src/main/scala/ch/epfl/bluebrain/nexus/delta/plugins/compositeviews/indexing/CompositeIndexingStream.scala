@@ -5,7 +5,6 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -23,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -130,7 +130,9 @@ final class CompositeIndexingStream(
             .evalMapFilterValue {
               // Either delete the named graph or insert triples to it depending on filtering options
               case res if res.containsSchema(source.resourceSchemas) && res.containsTypes(source.resourceTypes) =>
-                res.deleteOrIndex(includeMetadata = true, source.includeDeprecated).map(_.map(res -> _))
+                res
+                  .deleteOrIndex(includeMetadata = true, source.includeDeprecated, source.resourceTag)
+                  .map(_.map(res -> _))
               case res if res.containsSchema(source.resourceSchemas)                                            =>
                 res.delete().map(q => Some(res -> q))
               case _                                                                                            =>
@@ -202,7 +204,7 @@ final class CompositeIndexingStream(
     _.evalMapFilterValue {
       // Filters out the resources that are not to be indexed by the projections and the ones that are to be deleted
       case res if res.containsSchema(projection.resourceSchemas) && res.containsTypes(projection.resourceTypes) =>
-        Task.pure(Some(res -> res.deleteCandidate(projection.includeDeprecated)))
+        Task.pure(Some(res -> res.deleteCandidate(projection.includeDeprecated, projection.resourceTag)))
       case res if res.containsSchema(projection.resourceSchemas)                                                =>
         Task.pure(Some(res -> true))
       case _                                                                                                    =>
