@@ -67,7 +67,7 @@ final class ResourcesRoutes(
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue.empty)
 
-  implicit private val eventExchaxngeMapper = Mapper(Resources.eventExchangeValue(_, None))
+  implicit private val eventExchangeMapper = Mapper(Resources.eventExchangeValue(_, None))
 
   def routes: Route =
     baseUriPrefix(baseUri.prefix) {
