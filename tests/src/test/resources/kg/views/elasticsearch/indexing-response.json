@@ -1,0 +1,149 @@
+{
+  "@context" : [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
+  ],
+  "@id" : "{{id}}",
+  "@type" : [
+    "ElasticSearchView",
+    "View"
+  ],
+  "_constrainedBy" : "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_deprecated" : false,
+  "_incoming" : "{{self}}/incoming",
+  "_outgoing" : "{{self}}/outgoing",
+  "_project" : "{{deltaUri}}/projects/{{project}}",
+  "_rev" : 1,
+  "_self" : "{{self}}",
+  "_createdBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "_updatedBy" : "{{deltaUri}}/realms/{{realm}}/users/{{user}}",
+  "includeDeprecated" : false,
+  "includeMetadata" : false,
+  "mapping" : {
+    "dynamic" : false,
+    "properties" : {
+      "@id" : {
+        "type" : "keyword"
+      },
+      "@type" : {
+        "type" : "keyword"
+      },
+      "_project" : {
+        "type" : "keyword"
+      },
+      "brainRegion" : {
+        "properties" : {
+          "@id" : {
+            "fields" : {
+              "raw" : {
+                "type" : "keyword"
+              }
+            },
+            "type" : "text"
+          },
+          "label" : {
+            "fields" : {
+              "raw" : {
+                "type" : "keyword"
+              }
+            },
+            "type" : "text"
+          },
+          "shortName" : {
+            "fields" : {
+              "raw" : {
+                "type" : "keyword"
+              }
+            },
+            "type" : "text"
+          }
+        },
+        "type" : "nested"
+      },
+      "name" : {
+        "fields" : {
+          "raw" : {
+            "type" : "keyword"
+          }
+        },
+        "type" : "text"
+      }
+    }
+  },
+  "permission" : "views/query",
+  "pipeline" : [
+    {
+      "config" : {
+        "types" : [
+          "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+        ]
+      },
+      "name" : "filterBySchema"
+    },
+    {
+      "name" : "filterDeprecated"
+    },
+    {
+      "name" : "discardMetadata"
+    },
+    {
+      "config" : {
+        "predicates" : [
+          {
+            "@id" : "http://schema.org/name"
+          },
+          {
+            "@id" : "http://www.w3.org/2000/01/rdf-schema#label"
+          },
+          {
+            "@id" : "http://www.w3.org/2004/02/skos/core#prefLabel"
+          },
+          {
+            "@id" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+          }
+        ]
+      },
+      "name" : "includePredicates"
+    },
+    {
+      "config" : {
+        "types" : [
+          "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+        ]
+      },
+      "name" : "filterByType"
+    }
+  ],
+  "resourceSchemas" : [
+    "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+  ],
+  "resourceTypes" : [
+    "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+  ],
+  "settings" : {
+    "analysis" : {
+      "analyzer" : {
+        "nexus" : {
+          "filter" : [
+            "word_delimiter_nexus",
+            "lowercase",
+            "trim"
+          ],
+          "tokenizer" : "classic",
+          "type" : "custom"
+        }
+      },
+      "filter" : {
+        "word_delimiter_nexus" : {
+          "preserve_original" : true,
+          "split_on_numerics" : false,
+          "type" : "word_delimiter_graph"
+        }
+      }
+    },
+    "index" : {
+      "number_of_shards" : 1
+    }
+  },
+  "sourceAsText" : false
+}

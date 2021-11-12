@@ -1,0 +1,97 @@
+{
+  "@type": "ElasticSearchView",
+  "pipeline" : [
+    {
+      "config" : {
+        "types" : [
+          "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
+        ]
+      },
+      "name" : "filterBySchema"
+    },
+    {
+      "name" : "filterDeprecated"
+    },
+    {
+      "name" : "discardMetadata"
+    },
+    {
+      "config" : {
+        "predicates" : [
+          {
+            "@id" : "http://schema.org/name"
+          },
+          {
+            "@id" : "http://www.w3.org/2000/01/rdf-schema#label"
+          },
+          {
+            "@id" : "http://www.w3.org/2004/02/skos/core#prefLabel"
+          },
+          {
+            "@id" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+          }
+        ]
+      },
+      "name" : "includePredicates"
+    },
+    {
+      "config" : {
+        "types" : [
+          "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+        ]
+      },
+      "name" : "filterByType"
+    }
+  ],
+  "mapping": {
+    "properties": {
+      "@id": {
+        "type": "keyword"
+      },
+      "@type": {
+        "type": "keyword"
+      },
+      "_project": {
+        "type": "keyword"
+      },
+      "brainRegion": {
+        "type": "nested",
+        "properties": {
+          "@id": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "label": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          },
+          "shortName": {
+            "type": "text",
+            "fields": {
+              "raw": {
+                "type": "keyword"
+              }
+            }
+          }
+        }
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "raw": {
+            "type": "keyword"
+          }
+        }
+      }
+    },
+    "dynamic": false
+  }
+}
