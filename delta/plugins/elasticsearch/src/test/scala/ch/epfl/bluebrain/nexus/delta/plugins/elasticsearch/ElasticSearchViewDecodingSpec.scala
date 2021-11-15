@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, IncludePredicates}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, SelectPredicates}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -95,7 +95,7 @@ class ElasticSearchViewDecodingSpec
             FilterByType(Set(project.vocab / "Person")),
             FilterDeprecated(),
             DiscardMetadata(),
-            IncludePredicates.defaultLabels
+            SelectPredicates.defaultLabels
           ),
           mapping = Some(mapping),
           settings = Some(settings),

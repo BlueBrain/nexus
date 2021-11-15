@@ -185,7 +185,7 @@ class ElasticSearchIndexingSpec
     esClient,
     indexingSource,
     cache,
-    PipeConfig.builtInConfig.rightValue,
+    PipeConfig.coreConfig.rightValue,
     config,
     projection
   )

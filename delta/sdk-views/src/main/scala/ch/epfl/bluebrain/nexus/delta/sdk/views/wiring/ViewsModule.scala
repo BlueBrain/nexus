@@ -9,7 +9,7 @@ import izumi.distage.model.definition.ModuleDef
 object ViewsModule extends ModuleDef {
 
   many[Pipe].addSetValue(
-    PipeConfig.builtInPipes
+    PipeConfig.corePipes
   )
 
   make[PipeConfig].from { (pipes: Set[Pipe]) =>

@@ -94,7 +94,7 @@ class ElasticSearchViewSTMSpec
     ): Current =
       Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
 
-    val pipeConfig = PipeConfig.builtInConfig.rightValue
+    val pipeConfig = PipeConfig.coreConfig.rightValue
 
     val eval =
       evaluate(pipeConfig, validPermission, validIndex, validRef, viewRefResolution, (_, _) => IO.unit, "prefix", 10)(

@@ -81,7 +81,7 @@ trait ElasticSearchViewsSetup extends IOValues with EitherValuable with ConfigFi
       deferred   <- Deferred[Task, ElasticSearchViews]
       cache      <- ElasticSearchViews.cache(config)
       agg        <- ElasticSearchViews.aggregate(
-                      PipeConfig.builtInConfig.rightValue,
+                      PipeConfig.coreConfig.rightValue,
                       config,
                       perms,
                       (_, _) => IO.unit,

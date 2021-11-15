@@ -13,7 +13,7 @@ import org.apache.jena.graph.Node
 /**
   * Keeps only predicates matching the provided `Iri` list
   */
-object IncludePredicates {
+object SelectPredicates {
 
   // TODO make this configurable
   private val defaultLabelPredicates = Set(skos.prefLabel, rdf.tpe, rdfs.label, schema.name)
@@ -22,7 +22,7 @@ object IncludePredicates {
     lazy val graphPredicates: Set[Node] = predicates.map(predicate)
   }
 
-  val name = "includePredicates"
+  val name = "selectPredicates"
 
   val pipe: Pipe = {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
@@ -41,13 +41,12 @@ object IncludePredicates {
   }
 
   private val predicatesKey = nxv + "predicates"
+  private val init = ExpandedJsonLd.empty.copy(rootId = nxv + name)
 
-  def apply(set: Set[Iri]): PipeDef = {
+  def apply(include: Set[Iri]): PipeDef = {
     PipeDef.withConfig(
       name,
-      set.foldLeft(ExpandedJsonLd.empty.copy(rootId = nxv + name)) { case (expanded, tpe) =>
-        expanded.add(predicatesKey, tpe)
-      }
+      init.addAll(predicatesKey, include)
     )
   }
 

@@ -14,7 +14,7 @@ import io.circe.Json
 import monix.bio.IO
 
 /**
-  * ElasticSearch indexing data
+  * Describes data to be indexed by the different views
   *
   * @param id
   *   the resource id

@@ -4,6 +4,10 @@
     "types": {
       "@type": "@id",
       "@container": "@set"
+    },
+    "predicates": {
+      "@type": "@id",
+      "@container": "@set"
     }
   },
   "@id": "https://bluebrain.github.io/nexus/contexts/pipeline.json"

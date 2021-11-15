@@ -73,12 +73,20 @@
   "permission" : "views/query",
   "pipeline" : [
     {
+      "name" : "filterBySchema",
       "config" : {
         "types" : [
           "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
         ]
       },
-      "name" : "filterBySchema"
+    },
+    {
+      "name" : "filterByType",
+      "config" : {
+        "types" : [
+          "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
+        ]
+      }
     },
     {
       "name" : "filterDeprecated"
@@ -87,6 +95,7 @@
       "name" : "discardMetadata"
     },
     {
+      "name" : "selectPredicates",
       "config" : {
         "predicates" : [
           {
@@ -102,16 +111,7 @@
             "@id" : "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
           }
         ]
-      },
-      "name" : "includePredicates"
-    },
-    {
-      "config" : {
-        "types" : [
-          "https://bbp-nexus.epfl.ch/vocabs/bbp/neurosciencegraph/core/v0.1.0/Cell"
-        ]
-      },
-      "name" : "filterByType"
+      }
     }
   ],
   "resourceSchemas" : [

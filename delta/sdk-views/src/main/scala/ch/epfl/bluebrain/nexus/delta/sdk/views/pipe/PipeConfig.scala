@@ -25,17 +25,17 @@ object PipeConfig {
 
   def apply(pipes: Pipe*): Either[String, PipeConfig] = apply(pipes.toSet)
 
-  val builtInPipes =
+  val corePipes =
     Set(
       DataConstructQuery.pipe,
       DiscardMetadata.pipe,
       FilterBySchema.pipe,
       FilterByType.pipe,
       FilterDeprecated.pipe,
-      IncludePredicates.pipe,
+      SelectPredicates.pipe,
       SourceAsText.pipe
     )
 
-  val builtInConfig: Either[String, PipeConfig] = PipeConfig(builtInPipes)
+  val coreConfig: Either[String, PipeConfig] = PipeConfig(corePipes)
 
 }

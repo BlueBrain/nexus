@@ -5,17 +5,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 
-class IncludePredicatesSpec extends PipeBaseSpec {
+class SelectPredicatesSpec extends PipeBaseSpec {
 
   "Include by schema" should {
 
     "reject an invalid config" in {
-      IncludePredicates.pipe.parseAndRun(Some(ExpandedJsonLd.empty), sampleData)
+      SelectPredicates.pipe.parseAndRun(Some(ExpandedJsonLd.empty), sampleData)
     }
 
     "keep only matching predicates" in {
       val result =
-        IncludePredicates.pipe.parseAndRun(IncludePredicates.defaultLabels, sampleData).accepted.value
+        SelectPredicates.pipe.parseAndRun(SelectPredicates.defaultLabels, sampleData).accepted.value
 
       val expectedGraph = Graph
         .empty(sampleData.id)

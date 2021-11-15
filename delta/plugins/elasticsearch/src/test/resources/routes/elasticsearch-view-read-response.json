@@ -34,6 +34,7 @@
       "name" : "discardMetadata"
     },
     {
+      "name" : "selectPredicates",
       "config" : {
         "predicates" : [
           {
@@ -49,8 +50,7 @@
             "@id" : "http://schema.org/name"
           }
         ]
-      },
-      "name" : "includePredicates"
+      }
     }
   ],
   "resourceSchemas" : [

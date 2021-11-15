@@ -19,16 +19,22 @@ The last stage takes the JSON document, generated through the pipeline steps, an
 
 ## Payload
 
+The payload includes a pipeline of transformations and filters to apply to the different resources.
+The stages of the pipeline are applied sequentially on the resource as defined in the payload.
+
 ```json
 {
   "@id": "{someid}",
   "@type": "ElasticSearchView",
-  "resourceSchemas": [ "{resourceSchema}", ...],
-  "resourceTypes": [ "{resourceType}", ...],
   "resourceTag": "{tag}",
-  "sourceAsText": {sourceAsText},
-  "includeMetadata": {includeMetadata},
-  "includeDeprecated": {includeDeprecated},
+  "pipeline": [
+    {
+      "name" : "{pipeName}",
+      "config" : _pipe_config_
+    },
+    ...
+  ],
+  "context": _context_,
   "mapping": _elasticsearch mapping_,
   "settings": _elasticsearch settings_,
   "permission": "{permission}"
@@ -37,24 +43,29 @@ The last stage takes the JSON document, generated through the pipeline steps, an
 
 where...
 
-- `{resourceSchema}`: Iri - Selects only resources that are validated against the provided schema Iri. This field is
-  optional.
-- `{resourceType}`: Iri - Select only resources of the provided type Iri. This field is optional.
 - `{tag}`: String - Selects only resources with the provided tag. This field is optional.
+- `{pipeName}`: String - Identifier of the pipe to apply. More information about pipe is available @ref:[here](./pipes.md)
+- _pipe_config_ : Json object - Configuration for the pipe `{pipeName}`. This field can be optional depending on `{pipeName}`
+- ._context_ : Json - Additional JSON-LD context value applied when compacting the resource before indexing it to Elasticsearch.
 - `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the
   @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-put-mapping.html#indices-put-mapping){
   open=new }.
 - `_elasticssearch settings_`: Json object - defines Elasticsearch
   @link:[index settings](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-create-index.html#create-index-settings){
   open=new } for the underlying Elasticsearch index. Default settings are applied, if not specified.
-- `{sourceAsText}`: Boolean - If true, the resource's payload will be stored in the ElasticSearch document as a single
-  escaped string value under the key `_original_source`. If false, the resource's payload will be stored normally in the
-  ElasticSearch document. The default value is `false`.
-- `{includeMetadata}`: Boolean - If true, the resource's nexus metadata (`_constrainedBy`, `_deprecated`, ...) will be
-  stored in the ElasticSearch document. Otherwise it won't. The default value is `false`.
-- `{includeDeprecated}`: Boolean - If true, deprecated resources are also indexed. The default value is `false`.
 - `{someid}`: Iri - The @id value for this view.
 - `{permission}`: String - permission required to query this view. Defaults to `views/query`.
+
+Please note that for retro-compatibility purposes, omitting the pipeline will apply a default one including 
+@ref:[filtering deprecated resources](./pipes.md#filter-deprecated), @ref:[discarding metadata](./pipes.md#discard-metadata) and @ref:[selecting default label predicates](./pipes.md#select-predicates)
+
+## Legacy payload
+
+//TODO update to v1.6.x docs when created
+
+Retro-compatibility is ensured with the legacy payload as defined @link:[here](https://bluebrainnexus.io/v1.5.x/docs/delta/api/views/elasticsearch-view-api.html)
+
+The legacy payload is now deprecated and will be removed in an upcoming version.
 
 ## **Example**
 
@@ -90,13 +101,22 @@ include the resource metadata fields.
       }
     }
   },
-  "includeMetadata": false,
-  "includeDeprecated": false,
-  "sourceAsText": false,
-  "resourceSchemas": [
-    "https://bluebrain.github.io/nexus/schemas/myschema"
-  ],
-  "resourceTypes": []
+  "pipeline": [
+    {
+      "name" : "filterDeprecated"
+    },
+    {
+      "name" : "filterBySchema",
+      "config" : {
+        "types" : [
+          "https://bluebrain.github.io/nexus/schemas/myschema"
+        ]
+      }
+    },
+    {
+      "name" : "discardMetadata"
+    }
+  ]
 }
 ```
 
@@ -256,6 +276,8 @@ Request
 Response
 :   @@snip [fetched.json](../assets/views/elasticsearch/fetched.json)
 
+Note that for retro-compatibility purposes, fetching an elasticsearch view returns legacy fields.
+
 ## Fetch original payload
 
 ```
@@ -378,7 +400,7 @@ DELETE /v1/views/{org_label}/{project_label}/{view_id}/offset
 **Example**
 
 Request
-:   @@snip [=restart.sh](../assets/views/blazegraph/restart.sh)
+:   @@snip [restart.sh](../assets/views/elasticsearch/restart.sh)
 
 Response
-:   @@snip [restart.json](../assets/views/blazegraph/restart.json)
+:   @@snip [restart.json](../assets/views/elasticsearch/restart.json)
