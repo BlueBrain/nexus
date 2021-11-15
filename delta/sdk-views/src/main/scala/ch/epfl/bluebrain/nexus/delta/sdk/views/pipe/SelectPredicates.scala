@@ -41,7 +41,7 @@ object SelectPredicates {
   }
 
   private val predicatesKey = nxv + "predicates"
-  private val init = ExpandedJsonLd.empty.copy(rootId = nxv + name)
+  private val init          = ExpandedJsonLd.empty.copy(rootId = nxv + name)
 
   def apply(include: Set[Iri]): PipeDef = {
     PipeDef.withConfig(

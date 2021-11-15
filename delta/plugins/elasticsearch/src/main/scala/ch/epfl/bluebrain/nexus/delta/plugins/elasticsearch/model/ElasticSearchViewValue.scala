@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated, SelectPredicates, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated, PipeDef, SelectPredicates}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
