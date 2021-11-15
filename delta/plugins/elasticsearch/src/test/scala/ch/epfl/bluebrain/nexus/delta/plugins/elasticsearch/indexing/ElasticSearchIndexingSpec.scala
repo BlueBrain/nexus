@@ -211,7 +211,6 @@ class ElasticSearchIndexingSpec
         documentFor(res1rev2Proj1, value1rev2Proj1)
       )
     }
-
     "index resources for project2" in {
       val view = views.create(viewId, project2.ref, indexingValue).accepted.asInstanceOf[IndexingViewResource]
       checkElasticSearchDocuments(view, documentFor(res1Proj2, value1Proj2), documentFor(res2Proj2, value2Proj2))

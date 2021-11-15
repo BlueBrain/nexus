@@ -9,7 +9,7 @@ class SourceAsTextSpec extends PipeBaseSpec {
   "Source as test" should {
     "add source as a field in the graph" in {
       SourceAsText.pipe.parseAndRun(None, sampleData).accepted.value shouldEqual sampleData.copy(
-        graph = sampleData.graph.add(nxv.originalSource.iri, sampleData.source.noSpaces),
+        metadataGraph = sampleData.metadataGraph.add(nxv.originalSource.iri, sampleData.source.noSpaces),
         source = Json.obj()
       )
     }

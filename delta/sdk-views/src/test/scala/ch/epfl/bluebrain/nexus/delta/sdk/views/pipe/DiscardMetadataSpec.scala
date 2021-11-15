@@ -7,7 +7,7 @@ class DiscardMetadataSpec extends PipeBaseSpec {
   "Discard metadata" should {
     "remove all metadata" in {
       DiscardMetadata.pipe.parseAndRun(None, sampleData).accepted.value shouldEqual sampleData.copy(metadataGraph =
-        Graph.empty
+        Graph.empty(sampleData.id)
       )
     }
   }

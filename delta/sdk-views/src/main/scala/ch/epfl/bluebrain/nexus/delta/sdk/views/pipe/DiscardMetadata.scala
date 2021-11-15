@@ -16,7 +16,7 @@ object DiscardMetadata {
   val pipe: Pipe =
     withoutConfig(
       name,
-      (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty))
+      (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty(data.id)))
     )
 
   def apply(): PipeDef = noConfig(name)

@@ -52,7 +52,7 @@ class PipeSpec extends PipeBaseSpec {
         .run(FilterDeprecated() :: DiscardMetadata() :: Nil, pipeConfig)
         .flatMap(_(sampleData))
         .accepted
-      result.value shouldEqual sampleData.copy(metadataGraph = Graph.empty)
+      result.value shouldEqual sampleData.copy(metadataGraph = Graph.empty(sampleData.id))
     }
 
     "fail if any of the pipe fail" in {

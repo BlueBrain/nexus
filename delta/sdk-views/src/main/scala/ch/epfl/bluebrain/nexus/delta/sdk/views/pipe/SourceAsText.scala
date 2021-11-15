@@ -21,7 +21,7 @@ object SourceAsText {
       (data: IndexingData) =>
         Task.some(
           data.copy(
-            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces),
+            metadataGraph = data.metadataGraph.add(nxv.originalSource.iri, data.source.noSpaces),
             source = empty
           )
         )
