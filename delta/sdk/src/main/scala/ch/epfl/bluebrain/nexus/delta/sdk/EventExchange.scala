@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
@@ -62,10 +63,14 @@ trait EventExchange {
     * @return
     *   some value if the event is defined for this instance, none otherwise
     */
-  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]]
+  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]]
 }
 
 object EventExchange {
+
+  sealed trait EventExchangeResult
+
+  final case class NotFound(id: Iri) extends EventExchangeResult
 
   /**
     * Successful result of [[EventExchange]].
@@ -74,12 +79,9 @@ object EventExchange {
     *   the resource value
     * @param metadata
     *   the resource metadata
-    * @param tag
-    *   the optional tag at which this value was fetched
     */
   final case class EventExchangeValue[A, M](
       value: ReferenceExchangeValue[A],
-      metadata: JsonLdValue.Aux[M],
-      tag: Option[TagLabel]
-  )
+      metadata: JsonLdValue.Aux[M]
+  ) extends EventExchangeResult
 }

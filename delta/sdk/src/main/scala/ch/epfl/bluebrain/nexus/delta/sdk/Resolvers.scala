@@ -284,7 +284,7 @@ object Resolvers {
   def eventExchangeValue(res: ResolverResource)(implicit
       enc: JsonLdEncoder[Resolver]
   ): EventExchangeValue[Resolver, Unit] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()), None)
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
     * Create a reference exchange from a [[Resolvers]] instance

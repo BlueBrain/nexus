@@ -264,10 +264,10 @@ object Resources {
     * Create an [[EventExchangeValue]] for a resource.
     * @return
     */
-  def eventExchangeValue(res: DataResource, tag: Option[TagLabel])(implicit
+  def eventExchangeValue(res: DataResource)(implicit
       enc: JsonLdEncoder[Resource]
   ): EventExchangeValue[Resource, Unit] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()), tag)
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
     * The resources module type.
