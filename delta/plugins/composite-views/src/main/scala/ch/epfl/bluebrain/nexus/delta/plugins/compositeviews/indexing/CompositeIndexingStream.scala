@@ -5,7 +5,6 @@ import cats.effect.Clock
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
@@ -23,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCounts
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
@@ -127,14 +128,15 @@ final class CompositeIndexingStream(
           }
           // Converts the resource to a graph we are interested when indexing into the common blazegraph namespace
           stream
-            .evalMapFilterValue {
-              // Either delete the named graph or insert triples to it depending on filtering options
-              case res if res.containsSchema(source.resourceSchemas) && res.containsTypes(source.resourceTypes) =>
-                res.deleteOrIndex(includeMetadata = true, source.includeDeprecated).map(_.map(res -> _))
-              case res if res.containsSchema(source.resourceSchemas)                                            =>
-                res.delete().map(q => Some(res -> q))
-              case _                                                                                            =>
-                Task.none
+            .evalMapFilterValue { res =>
+              res
+                .writeOrNone(
+                  source.resourceSchemas,
+                  source.resourceTypes,
+                  source.includeDeprecated,
+                  includeMetadata = true
+                )
+                .map(_.map(q => res -> q))
             }
             .runAsyncUnit(
               bulkResource =>
@@ -199,16 +201,12 @@ final class CompositeIndexingStream(
       )
     )
     val cfg                                        = indexingConfig(projection)
-    _.evalMapFilterValue {
-      // Filters out the resources that are not to be indexed by the projections and the ones that are to be deleted
-      case res if res.containsSchema(projection.resourceSchemas) && res.containsTypes(projection.resourceTypes) =>
-        Task.pure(Some(res -> res.deleteCandidate(projection.includeDeprecated)))
-      case res if res.containsSchema(projection.resourceSchemas)                                                =>
-        Task.pure(Some(res -> true))
-      case _                                                                                                    =>
-        Task.none
+    _.collectSomeValue { res =>
+      res
+        .deleteCandidate(projection.resourceSchemas, projection.resourceTypes, projection.includeDeprecated)
+        .map(res -> _)
     }.evalMapValue {
-      case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) if !deleteCandidate =>
+      case (BlazegraphIndexingStreamEntry(resource: IndexingData), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
         for {
           ntriples       <- blazeClient.query(Set(view.index), replaceId(projection.query, resource.id), SparqlNTriples)
@@ -217,7 +215,7 @@ final class CompositeIndexingStream(
           newResource     = resource.copy(graph = rootGraphResult)
         } yield BlazegraphIndexingStreamEntry(newResource) -> false
 
-      case resDeleteCandidate                                                             => Task.pure(resDeleteCandidate)
+      case resDeleteCandidate                                                                           => Task.pure(resDeleteCandidate)
     }.through(projection match {
       case p: ElasticSearchProjection => esProjectionPipeIndex(view, p)
       case p: SparqlProjection        => blazegraphProjectionPipeIndex(view, p)
@@ -242,9 +240,17 @@ final class CompositeIndexingStream(
     _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
       val esRes = ElasticSearchIndexingStreamEntry(resource.discardSource)
       val index = idx(projection, view)
-      if (deleteCandidate) esRes.delete(index).map(Some.apply)
+      if (deleteCandidate) esRes.delete(resource.id, index).map(Some.apply)
       else
-        esRes.index(index, projection.includeMetadata, sourceAsText = false, projection.context)
+        esRes.writeOrNone(
+          index,
+          projection.resourceSchemas,
+          projection.resourceTypes,
+          projection.includeMetadata,
+          projection.includeDeprecated,
+          sourceAsText = false,
+          context = projection.context
+        )
     }.runAsyncUnit { bulk =>
       // Pushes INDEX/DELETE Elasticsearch bulk operations
       IO.when(bulk.nonEmpty)(esClient.bulk(bulk))
@@ -256,7 +262,13 @@ final class CompositeIndexingStream(
   ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
     _.evalMapFilterValue { case (res, deleteCandidate) =>
       if (deleteCandidate) res.delete().map(Some.apply)
-      else res.index(projection.includeMetadata)
+      else
+        res.writeOrNone(
+          projection.resourceSchemas,
+          projection.resourceTypes,
+          projection.includeDeprecated,
+          projection.includeMetadata
+        )
     }.runAsyncUnit { bulk =>
       // Pushes DROP/REPLACE queries to Blazegraph
       IO.when(bulk.nonEmpty)(blazeClient.bulk(ns(projection, view), bulk))

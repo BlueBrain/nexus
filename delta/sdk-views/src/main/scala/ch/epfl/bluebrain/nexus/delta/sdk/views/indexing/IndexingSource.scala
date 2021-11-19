@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -37,7 +37,7 @@ trait IndexingSource {
       project: ProjectRef,
       offset: Offset,
       tag: Option[TagLabel]
-  ): Stream[Task, Chunk[Message[EventExchangeValue[_, _]]]]
+  ): Stream[Task, Chunk[Message[EventExchangeResult]]]
 }
 
 object IndexingSource {
@@ -63,7 +63,7 @@ object IndexingSource {
           project: ProjectRef,
           offset: Offset,
           tag: Option[TagLabel]
-      ): Stream[Task, Chunk[Message[EventExchangeValue[_, _]]]] =
+      ): Stream[Task, Chunk[Message[EventExchangeResult]]] =
         Stream
           .eval(
             eventLog

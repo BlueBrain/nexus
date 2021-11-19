@@ -190,6 +190,17 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
+    * Consumes a path Segment and parse it into a [[TagLabel]]
+    */
+  def tagLabel: Directive1[TagLabel] =
+    pathPrefix(Segment).flatMap { segment =>
+      TagLabel(segment) match {
+        case Right(tagLabel) => provide(tagLabel)
+        case Left(err)       => reject(validationRejection(err.getMessage))
+      }
+    }
+
+  /**
     * Consumes a path Segment and parse it into an [[Iri]]. It fetches the project in order to expand the segment into
     * an Iri
     */

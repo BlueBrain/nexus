@@ -16,13 +16,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{IndexingData, ViewIndex}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
@@ -84,14 +85,18 @@ final class GraphAnalyticsIndexingStream(
       }
       .flatMap { progress =>
         indexingSource(view.projectRef, progress.offset, view.resourceTag)
-          .evalMapValue { eventExchangeValue =>
+          .evalMapFilterValue {
+            case TagNotFound(_)                               => Task.none
+            case eventExchangeValue: EventExchangeValue[_, _] =>
+              fromEventExchange(view.projectRef, eventExchangeValue).map(Some(_))
             // Creates a JsonLdPathValueCollection from the event exchange response
-            fromEventExchange(view.projectRef, eventExchangeValue)
+
           }
           .evalMapFilterValue { res =>
-            res
-              .index(index, includeMetadata = false, sourceAsText = false)
-              .map(_.map(bulk => (res.resource.id, res.resource.types, bulk)))
+            val esEntry = ElasticSearchIndexingStreamEntry(res)
+            esEntry
+              .index(res, index, includeMetadata = false, sourceAsText = false)
+              .map(_.map(bulk => (res.id, res.types, bulk)))
           }
           .runAsyncUnit { list =>
             IO.when(list.nonEmpty) {
@@ -140,7 +145,7 @@ final class GraphAnalyticsIndexingStream(
   private def fromEventExchange[A, M](
       project: ProjectRef,
       exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution): IO[RdfError, ElasticSearchIndexingStreamEntry] = {
+  )(implicit cr: RemoteContextResolution): IO[RdfError, IndexingData] = {
     val res     = exchangedValue.value.resource
     val encoder = exchangedValue.value.encoder
     for {
@@ -151,7 +156,7 @@ final class GraphAnalyticsIndexingStream(
       types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
       source             = paths.asJson deepMerge types
       data               = IndexingData(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source)
-    } yield ElasticSearchIndexingStreamEntry(data)
+    } yield data
   }
 
   private def relationships(candidates: Map[Iri, JsonLdPathValue], projectRef: ProjectRef): UIO[JsonLdRelationships] = {

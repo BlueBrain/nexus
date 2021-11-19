@@ -376,6 +376,27 @@ class ResourcesRoutesSpec
       }
     }
 
+    "delete a tag on resource" in {
+      Delete("/v1/resources/myorg/myproject/_/myid2/tags/mytag?rev=2") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3L)
+      }
+    }
+
+    "not return the deleted tag" in {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags", payload.toEntity) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      }
+    }
+
+    "fail to fetch resource by the deleted tag" in {
+      Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+      }
+    }
+
     "fail to get the events stream without events/read permission" in {
       acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
 

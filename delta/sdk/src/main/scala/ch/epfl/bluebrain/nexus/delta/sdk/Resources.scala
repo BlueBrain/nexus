@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand.{CreateResource, DeprecateResource, TagResource, UpdateResource}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
@@ -117,6 +117,29 @@ trait Resources {
       schemaOpt: Option[IdSegment],
       tag: TagLabel,
       tagRev: Long,
+      rev: Long
+  )(implicit caller: Subject): IO[ResourceRejection, DataResource]
+
+  /**
+    * Delete a tag on an existing resource.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the resource
+    * @param projectRef
+    *   the project reference where the resource belongs
+    * @param schemaOpt
+    *   the optional identifier that will be expanded to the schema reference of the resource. A None value uses the
+    *   currently available resource schema reference.
+    * @param tag
+    *   the tag name
+    * @param rev
+    *   the current revision of the resource
+    */
+  def deleteTag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      tag: TagLabel,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
@@ -241,7 +264,9 @@ object Resources {
     * Create an [[EventExchangeValue]] for a resource.
     * @return
     */
-  def eventExchangeValue(res: DataResource)(implicit enc: JsonLdEncoder[Resource]): EventExchangeValue[Resource, Unit] =
+  def eventExchangeValue(res: DataResource)(implicit
+      enc: JsonLdEncoder[Resource]
+  ): EventExchangeValue[Resource, Unit] =
     EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(()))
 
   /**
@@ -278,6 +303,11 @@ object Resources {
       case Initial    => Initial
       case s: Current => s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
+
+    def tagDeleted(e: ResourceTagDeleted): ResourceState = state match {
+      case Initial    => Initial
+      case s: Current => s.copy(rev = e.rev, tags = s.tags.removed(e.tag), updatedAt = e.instant, updatedBy = e.subject)
+    }
     // format: on
 
     def deprecated(e: ResourceDeprecated): ResourceState = state match {
@@ -288,6 +318,7 @@ object Resources {
       case e: ResourceCreated    => created(e)
       case e: ResourceUpdated    => updated(e)
       case e: ResourceTagAdded   => tagAdded(e)
+      case e: ResourceTagDeleted => tagDeleted(e)
       case e: ResourceDeprecated => deprecated(e)
     }
   }
@@ -381,6 +412,19 @@ object Resources {
 
       }
 
+    def deleteTag(c: DeleteResourceTag) =
+      state match {
+        case Initial                                                          =>
+          IO.raiseError(ResourceNotFound(c.id, c.project, c.schemaOpt))
+        case s: Current if s.rev != c.rev                                     =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if c.schemaOpt.exists(cur => cur.iri != s.schema.iri) =>
+          IO.raiseError(UnexpectedResourceSchema(s.id, c.schemaOpt.get, s.schema))
+        case s: Current if !s.tags.contains(c.tag)                            => IO.raiseError(TagNotFound(c.tag))
+        case s: Current                                                       =>
+          IOUtils.instant.map(ResourceTagDeleted(c.id, c.project, s.types, c.tag, s.rev + 1, _, c.subject))
+      }
+
     def deprecate(c: DeprecateResource) =
       state match {
         case Initial                                                          =>
@@ -399,6 +443,7 @@ object Resources {
       case c: CreateResource    => create(c)
       case c: UpdateResource    => update(c)
       case c: TagResource       => tag(c)
+      case c: DeleteResourceTag => deleteTag(c)
       case c: DeprecateResource => deprecate(c)
     }
   }

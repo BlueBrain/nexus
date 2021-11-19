@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.service.serialization
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
@@ -26,10 +25,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{Resolver
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptyList, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
@@ -344,7 +344,16 @@ class EventSerializerSpec
       4L,
       instant,
       subject
-    ) -> jsonContentOf("/serialization/resource-deprecated.json")
+    ) -> jsonContentOf("/serialization/resource-deprecated.json"),
+    ResourceTagDeleted(
+      myId,
+      projectRef,
+      Set(schema.Person),
+      TagLabel.unsafe("mytag"),
+      5L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/resource-tag-deleted.json")
   )
 
   val projectsMapping: Map[ProjectEvent, Json] = Map(

@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -135,30 +135,34 @@ class ElasticSearchIndexingSpec
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, uuid1Proj1)
-  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, uuid2Proj1)
-  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, uuid3Proj1)
-  private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2, uuid1Proj2)
-  private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2, uuid2Proj2)
-  private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2, uuid3Proj2)
-  private val res1rev2Proj1 =
+  val tag = TagLabel.unsafe("mytag")
+
+  private val res1Proj1                = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, uuid1Proj1)
+  private val res2Proj1                = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, uuid2Proj1)
+  private val res3Proj1                = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, uuid3Proj1)
+  private val res1Proj2                = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2, uuid1Proj2)
+  private val res2Proj2                = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2, uuid2Proj2)
+  private val res3Proj2                = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2, uuid3Proj2)
+  private val res1rev2Proj1            =
     exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, uuid1rev2Proj1)
+  private val res1rev2Proj1TagNotFound = TagNotFound(id1Proj1)
 
   private val messages =
     List(
-      res1Proj1     -> project1.ref,
-      res2Proj1     -> project1.ref,
-      res3Proj1     -> project1.ref,
-      res1Proj2     -> project2.ref,
-      res2Proj2     -> project2.ref,
-      res3Proj2     -> project2.ref,
-      res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) {
+      res1Proj1                -> ((project1.ref, Some(tag))),
+      res2Proj1                -> ((project1.ref, Some(tag))),
+      res3Proj1                -> ((project1.ref, Some(tag))),
+      res1Proj2                -> ((project2.ref, None)),
+      res2Proj2                -> ((project2.ref, None)),
+      res3Proj2                -> ((project2.ref, None)),
+      res1rev2Proj1            -> ((project1.ref, None)),
+      res1rev2Proj1TagNotFound -> ((project1.ref, Some(tag)))
+    ).zipWithIndex.foldLeft(Map.empty[(ProjectRef, Option[TagLabel]), Seq[Message[EventExchangeResult]]]) {
       case (acc, ((res, project), i)) =>
         val entry = SuccessMessage(
           Sequence(i.toLong),
           Instant.EPOCH,
-          res.value.resource.id.toString,
+          res.id.toString,
           i.toLong,
           res,
           Vector.empty
@@ -166,7 +170,7 @@ class ElasticSearchIndexingSpec
         acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages)
 
   private val projection = Projection.inMemory(()).accepted
 
@@ -243,7 +247,7 @@ class ElasticSearchIndexingSpec
     "cache projection for view" in {
       val projectionId =
         ElasticSearchViews.projectionId(views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource])
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 4, 1, 0, 0)
     }
     "index resources with type" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
@@ -257,6 +261,16 @@ class ElasticSearchIndexingSpec
         view,
         documentWithSourceAsJsonFor(res2Proj1, value2Proj1),
         documentWithSourceAsJsonFor(res1rev2Proj1, value1rev2Proj1)
+      )
+    }
+
+    "index resources with a certain tag" in {
+      val indexVal = indexingValue.copy(resourceTag = Some(tag), includeDeprecated = true)
+      val view     = views.update(viewId, project1.ref, 6L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkElasticSearchDocuments(
+        view,
+        documentFor(res2Proj1, value2Proj1),
+        documentFor(res3Proj1, value3Proj1)
       )
     }
   }
@@ -323,7 +337,10 @@ class ElasticSearchIndexingSpec
       Value(id, value)
     )
     val metadata = JsonLdValue(Metadata(uuid))
-    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata)
+    EventExchangeValue(
+      ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue),
+      metadata
+    )
   }
 
 }

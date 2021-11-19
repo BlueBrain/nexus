@@ -128,6 +128,31 @@ object ResourceCommand {
   ) extends ResourceCommand
 
   /**
+    * Command that signals the intent to delete a tag from an existing resource.
+    *
+    * @param id
+    *   the resource identifier
+    * @param project
+    *   the project where the resource belongs
+    * @param schemaOpt
+    *   the optional schema of the resource. A None value ignores the schema from this operation
+    * @param tag
+    *   the tag to delete
+    * @param rev
+    *   the last known revision of the resource
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class DeleteResourceTag(
+      id: Iri,
+      project: ProjectRef,
+      schemaOpt: Option[ResourceRef],
+      tag: TagLabel,
+      rev: Long,
+      subject: Subject
+  ) extends ResourceCommand
+
+  /**
     * Command that signals the intent to deprecate a resource.
     *
     * @param id

@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.service.resources
 
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent, ResourceRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.{DataResource, EventExchange, JsonValue, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue, Resources}
 import io.circe.JsonObject
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 
 /**
   * Resource specific [[EventExchange]] implementation.
@@ -39,6 +38,7 @@ class ResourceEventExchange(resources: Resources)(implicit base: BaseUri) extend
               case _: ResourceCreated    => EventMetric.Created
               case _: ResourceUpdated    => EventMetric.Updated
               case _: ResourceTagAdded   => EventMetric.Tagged
+              case _: ResourceTagDeleted => EventMetric.TagDeleted
               case _: ResourceDeprecated => EventMetric.Deprecated
             },
             r.id,
@@ -49,12 +49,13 @@ class ResourceEventExchange(resources: Resources)(implicit base: BaseUri) extend
       case _                => UIO.none
     }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]] =
     event match {
-      case ev: ResourceEvent => resourceToValue(resources.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project, None))
+      case ev: ResourceEvent =>
+        resources
+          .fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project, None)
+          .map(Resources.eventExchangeValue)
+          .redeem(_ => Some(TagNotFound(ev.id)), Some(_))
       case _                 => UIO.none
     }
-
-  private def resourceToValue(resourceIO: IO[ResourceRejection, DataResource])(implicit enc: JsonLdEncoder[A]) =
-    resourceIO.map(Resources.eventExchangeValue).redeem(_ => None, Some(_))
 }
