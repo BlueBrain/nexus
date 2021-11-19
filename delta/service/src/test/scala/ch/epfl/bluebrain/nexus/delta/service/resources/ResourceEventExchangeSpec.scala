@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen}
@@ -102,28 +103,22 @@ class ResourceEventExchangeSpec
     val exchange = new ResourceEventExchange(resources)
 
     "return the latest resource state from the event" in {
-      val result = exchange.toResource(deprecatedEvent, None).accepted.value
+      val result = exchange.toResource(deprecatedEvent, None).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual ()
-      result.tag shouldEqual None
     }
 
     "return the resource state from the event at a particular tag" in {
-      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
+      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
-      result.tag.value shouldEqual tag
     }
 
-    "return the latest resource state if the tag has been deleted" in {
-      val resRev3 = resources.deleteTag(id, project.ref, None, tag, 2L).accepted
-      val result  = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
-      result.value.source shouldEqual source
-      result.value.resource shouldEqual resRev3
-      result.metadata.value shouldEqual ()
-      result.tag shouldEqual None
+    "return the TagNotFound if the tag has been deleted" in {
+      resources.deleteTag(id, project.ref, None, tag, 2L).accepted
+      exchange.toResource(deprecatedEvent, Some(tag)).accepted.value shouldBe a[TagNotFound]
     }
 
     "return the metric" in {

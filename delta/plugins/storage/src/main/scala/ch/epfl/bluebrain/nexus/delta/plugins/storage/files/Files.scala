@@ -578,7 +578,7 @@ object Files {
   def eventExchangeValue(
       res: FileResource
   )(implicit enc: JsonLdEncoder[File], config: StorageTypeConfig): EventExchangeValue[File, File] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value), None)
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value))
 
   /**
     * Constructs a Files instance

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.service.resources
 
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, NotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
@@ -55,7 +55,7 @@ class ResourceEventExchange(resources: Resources)(implicit base: BaseUri) extend
         resources
           .fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project, None)
           .map(Resources.eventExchangeValue)
-          .redeem(_ => Some(NotFound(ev.id)), Some(_))
+          .redeem(_ => Some(TagNotFound(ev.id)), Some(_))
       case _                 => UIO.none
     }
 }

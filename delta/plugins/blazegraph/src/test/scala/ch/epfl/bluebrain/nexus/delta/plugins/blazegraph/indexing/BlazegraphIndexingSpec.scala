@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -118,28 +118,30 @@ class BlazegraphIndexingSpec
 
   val tag = TagLabel.unsafe("mytag")
 
-  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1, Some(tag))
-  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1, Some(tag))
-  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1, Some(tag))
-  private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  private val res1rev2Proj1 = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1, None)
+  private val res1Proj1                = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  private val res2Proj1                = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  private val res3Proj1                = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  private val res1Proj2                = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  private val res2Proj2                = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  private val res3Proj2                = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  private val res1rev2Proj1            = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  private val res1rev2Proj1TagNotFound = TagNotFound(id1Proj1)
 
   private val messages =
     List(
-      res1Proj1     -> project1.ref,
-      res2Proj1     -> project1.ref,
-      res3Proj1     -> project1.ref,
-      res1Proj2     -> project2.ref,
-      res2Proj2     -> project2.ref,
-      res3Proj2     -> project2.ref,
-      res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) { case (acc, ((res, project), i)) =>
+      res1Proj1                -> ((project1.ref, Some(tag))),
+      res2Proj1                -> ((project1.ref, Some(tag))),
+      res3Proj1                -> ((project1.ref, Some(tag))),
+      res1Proj2                -> ((project2.ref, None)),
+      res2Proj2                -> ((project2.ref, None)),
+      res3Proj2                -> ((project2.ref, None)),
+      res1rev2Proj1            -> ((project1.ref, None)),
+      res1rev2Proj1TagNotFound -> ((project1.ref, Some(tag)))
+    ).zipWithIndex.foldLeft(Map.empty[(ProjectRef, Option[TagLabel]), Seq[Message[EventExchangeResult]]]) { case (acc, ((res, project), i)) =>
       val entry = SuccessMessage(
         Sequence(i.toLong),
         Instant.EPOCH,
-        res.value.resource.id.toString,
+        res.id.toString,
         i.toLong,
         res,
         Vector.empty
@@ -233,7 +235,7 @@ class BlazegraphIndexingSpec
 
     "cache projection for view" in {
       val projectionId = BlazegraphViews.projectionId(views.fetchIndexingView(viewId, project1.ref).accepted)
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 4, 1, 0, 0)
     }
 
     "index resources with type" in {
@@ -307,7 +309,7 @@ class BlazegraphIndexingSpec
     )
   }
 
-  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int, tag: Option[TagLabel] = None)(implicit
+  private def exchangeValue(id: Iri, project: ProjectRef, tpe: Iri, deprecated: Boolean, schema: Iri, value: Int)(implicit
       caller: Caller
   ) = {
     val resource = ResourceF(
@@ -324,7 +326,7 @@ class BlazegraphIndexingSpec
       Value(id, tpe, value)
     )
     val metadata = JsonLdValue(())
-    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata, tag)
+    EventExchangeValue(ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue), metadata)
   }
 
 }

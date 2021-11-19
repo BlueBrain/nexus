@@ -14,29 +14,45 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingMessage
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingMessage.{IndexingData, NotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.{IndexingResource, TagNotFound}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.Task
 import org.apache.jena.graph.Node
 
 final case class ElasticSearchIndexingStreamEntry(
-    message: IndexingMessage
+    data: IndexingData
 )(implicit cr: RemoteContextResolution) {
 
-  def writeOrNone(index: IndexLabel, view: IndexingElasticSearchView): Task[Option[ElasticSearchBulk]] = message match {
-    case NotFound(id)           => delete(id, index).map(Some(_))
-    case resource: IndexingData =>
-      if (containsSchema(resource, view.resourceSchemas) && containsTypes(resource, view.resourceTypes))
+  def writeOrNone(index: IndexLabel, view: IndexingElasticSearchView): Task[Option[ElasticSearchBulk]] = writeOrNone(
+    index,
+    view.resourceSchemas,
+    view.resourceTypes,
+    view.includeMetadata,
+    view.includeDeprecated,
+    view.sourceAsText
+  )
+
+  def writeOrNone(
+      index: IndexLabel,
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
+      includeMetadata: Boolean,
+      includeDeprecated: Boolean,
+      sourceAsText: Boolean
+  ): Task[Option[ElasticSearchBulk]] = data match {
+    case TagNotFound(id)            => delete(id, index).map(Some(_))
+    case resource: IndexingResource =>
+      if (containsSchema(resource, resourceSchemas) && containsTypes(resource, resourceTypes))
         deleteOrIndex(
           resource,
           index,
-          view.includeMetadata,
-          view.includeDeprecated,
-          view.sourceAsText
+          includeMetadata,
+          includeDeprecated,
+          sourceAsText
         )
-      else if (containsSchema(resource, view.resourceSchemas))
+      else if (containsSchema(resource, resourceSchemas))
         delete(resource.id, index).map(Some.apply)
       else
         Task.none
@@ -49,7 +65,7 @@ final case class ElasticSearchIndexingStreamEntry(
     * Deletes or indexes the current resource into ElasticSearch as a Document depending on the passed filters
     */
   def deleteOrIndex(
-      resource: IndexingData,
+      resource: IndexingResource,
       idx: IndexLabel,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
@@ -69,7 +85,7 @@ final case class ElasticSearchIndexingStreamEntry(
     * Generates an ElasticSearch Bulk Index query with the Document to be added to the index ''idx''
     */
   def index(
-      resource: IndexingData,
+      resource: IndexingResource,
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean
@@ -80,7 +96,7 @@ final case class ElasticSearchIndexingStreamEntry(
     * Generates an ElasticSearch Bulk Index query with the Document to be added to the index ''idx''
     */
   def index(
-      resource: IndexingData,
+      resource: IndexingResource,
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
@@ -93,17 +109,17 @@ final case class ElasticSearchIndexingStreamEntry(
   /**
     * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
     */
-  def containsSchema(resource: IndexingData, resourceSchemas: Set[Iri]): Boolean =
+  def containsSchema(resource: IndexingResource, resourceSchemas: Set[Iri]): Boolean =
     resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
 
   /**
     * Checks if the current resource contains some of the types passed as ''resourceTypes''
     */
-  def containsTypes[A](resource: IndexingData, resourceTypes: Set[Iri]): Boolean =
+  def containsTypes[A](resource: IndexingResource, resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
   private def toDocument(
-      resource: IndexingData,
+      resource: IndexingResource,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
       context: ContextValue
@@ -143,10 +159,10 @@ object ElasticSearchIndexingStreamEntry {
 
   /**
     * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]]. It generates an
-    * [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
+    * [[IndexingResource]] out of the relevant parts of the resource for elasticsearch indexing
     */
   def fromEventExchange(
       exchangeResult: EventExchangeResult
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
-    IndexingMessage(exchangeResult, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
+    IndexingData(exchangeResult, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
 }

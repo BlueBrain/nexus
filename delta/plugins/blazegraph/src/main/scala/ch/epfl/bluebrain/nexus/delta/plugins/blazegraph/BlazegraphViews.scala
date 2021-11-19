@@ -439,7 +439,7 @@ object BlazegraphViews {
   def eventExchangeValue(
       res: ViewResource
   )(implicit enc: JsonLdEncoder[BlazegraphView]): EventExchangeValue[BlazegraphView, BlazegraphView.Metadata] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata), None)
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * Create a reference exchange from a [[BlazegraphViews]] instance

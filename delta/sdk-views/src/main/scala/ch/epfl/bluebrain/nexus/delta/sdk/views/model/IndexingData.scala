@@ -16,16 +16,22 @@ import io.circe.Json
 import monix.bio.IO
 import org.apache.jena.graph.Node
 
-sealed trait IndexingMessage {
+/**
+  * Representation of indexing data.
+  */
+sealed trait IndexingData {
+
   def id: Iri
+
+  def discardSource: IndexingData
 }
 
-object IndexingMessage {
+object IndexingData {
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   /**
-    * ElasticSearch indexing data
+    * Representation of resource for indexing
     *
     * @param id
     *   the resource id
@@ -42,7 +48,7 @@ object IndexingMessage {
     * @param source
     *   the original payload of the resource posted by the caller
     */
-  final case class IndexingData(
+  final case class IndexingResource(
       id: Iri,
       deprecated: Boolean,
       schema: ResourceRef,
@@ -50,17 +56,26 @@ object IndexingMessage {
       graph: Graph,
       metadataGraph: Graph,
       source: Json
-  ) extends IndexingMessage {
+  ) extends IndexingData {
 
-    def discardSource: IndexingData = copy(source = Json.obj())
-
+    def discardSource: IndexingResource = copy(source = Json.obj())
   }
 
-  object IndexingData {
+  /**
+    * Representation of a resource which was not found using a tag
+    *
+    * @param id
+    *   the id of the resource
+    */
+  final case class TagNotFound(id: Iri) extends IndexingData {
+    override def discardSource: TagNotFound = this
+  }
+
+  object IndexingResource {
 
     def apply[A, M](
         exchangedValue: EventExchangeValue[A, M]
-    )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
+    )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingResource] = {
 
       val resource = exchangedValue.value.resource
       val encoder  = exchangedValue.value.encoder
@@ -75,7 +90,7 @@ object IndexingMessage {
         rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
         typesGraph         = rootMetaGraph.rootTypesGraph
         finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
-      } yield IndexingData(
+      } yield IndexingResource(
         resource.resolvedId,
         resource.deprecated,
         resource.schema,
@@ -87,20 +102,18 @@ object IndexingMessage {
     }
   }
 
-  final case class NotFound(id: Iri) extends IndexingMessage
-
   /**
-    * Helper function to generate an IndexingData from the [[EventExchangeValue]]. The resource data is divided in 2
+    * Helper function to generate an IndexingData from the [[EventExchangeResult]]. The resource data is divided in 2
     * graphs. One containing only metadata and the other containing only data from the predicates present in
     * ''graphPredicates''.
     */
   def apply(
       exchangeResult: EventExchangeResult,
       graphPredicates: Set[Node]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingMessage] = exchangeResult match {
-    case EventExchange.NotFound(id)               => IO.pure(NotFound(id))
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = exchangeResult match {
+    case EventExchange.TagNotFound(id)            => IO.pure(TagNotFound(id))
     case exchangedValue: EventExchangeValue[_, _] =>
-      IndexingData(exchangedValue).map { data =>
+      IndexingResource(exchangedValue).map { data =>
         val id = subject(data.id)
         data.copy(graph = data.graph.filter { case (s, p, _) => s == id && graphPredicates.contains(p) })
       }
@@ -112,10 +125,10 @@ object IndexingMessage {
     */
   def apply(
       exchangeResult: EventExchangeResult
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingMessage] = {
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
     exchangeResult match {
-      case EventExchange.NotFound(id)               => IO.pure(NotFound(id))
-      case exchangedValue: EventExchangeValue[_, _] => IndexingData(exchangedValue)
+      case EventExchange.TagNotFound(id)            => IO.pure(TagNotFound(id))
+      case exchangedValue: EventExchangeValue[_, _] => IndexingResource(exchangedValue)
     }
   }
 

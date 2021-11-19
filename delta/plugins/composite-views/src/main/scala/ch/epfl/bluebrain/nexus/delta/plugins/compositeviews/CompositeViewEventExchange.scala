@@ -63,7 +63,7 @@ class CompositeViewEventExchange(views: CompositeViews)(implicit base: BaseUri) 
     resourceIO
       .map { res =>
         Some(
-          EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata), None)
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
         )
       }
       .onErrorHandle(_ => None)

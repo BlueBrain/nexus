@@ -68,9 +68,21 @@ trait EventExchange {
 
 object EventExchange {
 
-  sealed trait EventExchangeResult
+  /**
+    * Result of event exchange
+    */
+  sealed trait EventExchangeResult {
 
-  final case class NotFound(id: Iri) extends EventExchangeResult
+    /**
+      * The id of the resource for which the exchange took place.
+      */
+    def id: Iri
+  }
+
+  /**
+    * Representation of event exchange that failed because the resource couldn't be found by a given tag.
+    */
+  final case class TagNotFound(id: Iri) extends EventExchangeResult
 
   /**
     * Successful result of [[EventExchange]].
@@ -83,5 +95,7 @@ object EventExchange {
   final case class EventExchangeValue[A, M](
       value: ReferenceExchangeValue[A],
       metadata: JsonLdValue.Aux[M]
-  ) extends EventExchangeResult
+  ) extends EventExchangeResult {
+    override def id: Iri = value.resource.id
+  }
 }

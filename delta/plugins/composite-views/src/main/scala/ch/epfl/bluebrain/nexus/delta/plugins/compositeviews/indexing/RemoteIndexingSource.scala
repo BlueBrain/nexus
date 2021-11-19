@@ -56,7 +56,7 @@ object RemoteIndexingSource {
       .discardDuplicates()
       .evalMapFilterValue(sse => remoteResourceNQuads(source, sse.resourceId, source.resourceTag).map(_.map((_, sse))))
       .evalMapValue { case (quads, sse) =>
-        IO.fromEither(BlazegraphIndexingStreamEntry.fromNQuads(sse.resourceId, quads, metadataPredicates, None))
+        IO.fromEither(BlazegraphIndexingStreamEntry.fromNQuads(sse.resourceId, quads, metadataPredicates))
       }
   }
 }

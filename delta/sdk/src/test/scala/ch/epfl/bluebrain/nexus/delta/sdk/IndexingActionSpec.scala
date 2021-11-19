@@ -50,7 +50,7 @@ class IndexingActionSpec extends AnyWordSpecLike with Matchers with EitherValuab
   )
 
   val exchangeValue =
-    EventExchangeValue(ReferenceExchangeValue(res, Json.obj(), JsonLdEncoder.jsonLdEncoderUnit), JsonLdValue(()), None)
+    EventExchangeValue(ReferenceExchangeValue(res, Json.obj(), JsonLdEncoder.jsonLdEncoderUnit), JsonLdValue(()))
 
   "AggregateConsistentWrite" should {
 

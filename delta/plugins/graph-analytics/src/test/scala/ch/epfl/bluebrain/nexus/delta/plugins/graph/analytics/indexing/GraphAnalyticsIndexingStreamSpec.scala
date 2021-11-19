@@ -90,8 +90,7 @@ class GraphAnalyticsIndexingStreamSpec
       )
       EventExchangeValue(
         ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue),
-        JsonLdValue(()),
-        None
+        JsonLdValue(())
       )
     }
 
@@ -112,6 +111,7 @@ class GraphAnalyticsIndexingStreamSpec
           )
           acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
         }
+        .map { case (k, v) => (k, None) -> v }
     )
 
     val projection: Projection[Unit] = Projection.inMemory(()).accepted

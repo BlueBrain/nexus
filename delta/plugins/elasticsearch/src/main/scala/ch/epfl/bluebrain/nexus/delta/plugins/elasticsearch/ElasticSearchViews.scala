@@ -476,7 +476,7 @@ object ElasticSearchViews {
   def eventExchangeValue(res: ViewResource)(implicit
       enc: JsonLdEncoder[ElasticSearchView]
   ): EventExchangeValue[ElasticSearchView, ElasticSearchView.Metadata] =
-    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata), None)
+    EventExchangeValue(ReferenceExchangeValue(res, res.value.source, enc), JsonLdValue(res.value.metadata))
 
   /**
     * Create a reference exchange from a [[ElasticSearchViews]] instance

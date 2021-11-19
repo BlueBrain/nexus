@@ -9,79 +9,86 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.{InvalidIri, MissingPredicate}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.{IndexingResource, TagNotFound}
 import io.circe.Json
 import monix.bio.{IO, Task}
 
 final case class BlazegraphIndexingStreamEntry(
-    resource: IndexingData
+    data: IndexingData
 ) {
 
   def writeOrNone(view: IndexingBlazegraphView): Task[Option[SparqlWriteQuery]] =
-    // Either delete the named graph or insert triples to it depending on filtering options
-    if (containsSchema(view.resourceSchemas) && containsTypes(view.resourceTypes))
-      deleteOrIndex(view.includeMetadata, view.includeDeprecated, view.resourceTag)
-    else if (containsSchema(view.resourceSchemas))
-      delete().map(Some.apply)
-    else
-      Task.none
+    writeOrNone(view.resourceSchemas, view.resourceTypes, view.includeDeprecated, view.includeMetadata)
 
-  /**
-    * Deletes or indexes the current resource depending on the passed filters
-    */
-  def deleteOrIndex(
-      includeMetadata: Boolean,
+  def writeOrNone(
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
       includeDeprecated: Boolean,
-      tag: Option[TagLabel]
-  ): Task[Option[SparqlWriteQuery]] =
-    if (deleteCandidate(includeDeprecated, tag)) delete().map(Some.apply)
-    else index(includeMetadata)
+      includeMetadata: Boolean
+  ): Task[Option[SparqlWriteQuery]] = data match {
+    case TagNotFound(_)             => delete().map(Some(_))
+    case resource: IndexingResource =>
+      deleteCandidateResource(resource, resourceSchemas, resourceTypes, includeDeprecated) match {
+        case Some(true)  => delete().map(Some(_))
+        case Some(false) => index(resource, includeMetadata)
+        case None        => Task.none
+      }
+  }
+
+  def deleteCandidate(
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
+      includeDeprecated: Boolean
+  ): Option[Boolean] = data match {
+    case TagNotFound(_)             => Some(true)
+    case resource: IndexingResource =>
+      deleteCandidateResource(resource, resourceSchemas, resourceTypes, includeDeprecated)
+  }
+
+  private def deleteCandidateResource(
+      resource: IndexingResource,
+      resourceSchemas: Set[Iri],
+      resourceTypes: Set[Iri],
+      includeDeprecated: Boolean
+  ): Option[Boolean] = if (containsSchema(resource, resourceSchemas) && containsTypes(resource, resourceTypes))
+    Some(resource.deprecated && !includeDeprecated)
+  else if (containsSchema(resource, resourceSchemas))
+    Some(true)
+  else
+    None
 
   /**
     * Deletes the current resource named graph (and all its triples)
     */
   def delete(): Task[SparqlWriteQuery] =
-    namedGraph(resource.id).map(SparqlWriteQuery.drop)
+    namedGraph(data.id).map(SparqlWriteQuery.drop)
 
   /**
     * Generates an Sparql replace query with all the triples to be added to the resource named graph
     */
-  def index(includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
+  def index(resource: IndexingResource, includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
     for {
-      triples    <- IO.fromEither(toTriples(includeMetadata))
+      triples    <- IO.fromEither(toTriples(resource, includeMetadata))
       namedGraph <- namedGraph(resource.id)
     } yield Option.when(triples.value.trim.nonEmpty)(SparqlWriteQuery.replace(namedGraph, triples))
 
   /**
-    * Checks if the current resource is candidate to be deleted
-    */
-  def deleteCandidate(includeDeprecated: Boolean, tag: Option[TagLabel]): Boolean =
-    (resource.deprecated && !includeDeprecated) || !hasTag(tag)
-
-  /**
     * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
     */
-  def containsSchema(resourceSchemas: Set[Iri]): Boolean =
+  private def containsSchema(resource: IndexingResource, resourceSchemas: Set[Iri]): Boolean =
     resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
-
-  /**
-    * Checks if the current resource has the tag specified by the view
-    */
-  def hasTag(viewTag: Option[TagLabel]): Boolean = viewTag match {
-    case None      => true
-    case Some(tag) => resource.tag.contains(tag)
-  }
 
   /**
     * Checks if the current resource contains some of the types passed as ''resourceTypes''
     */
-  def containsTypes[A](resourceTypes: Set[Iri]): Boolean =
+  private def containsTypes(resource: IndexingResource, resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
-  private def toTriples(includeMetadata: Boolean): Either[RdfError, NTriples] = {
+  private def toTriples(resource: IndexingResource, includeMetadata: Boolean): Either[RdfError, NTriples] = {
     val metadataGraph =
       if (includeMetadata) resource.metadataGraph
       else Graph.empty
@@ -98,10 +105,10 @@ object BlazegraphIndexingStreamEntry {
 
   /**
     * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]]. It generates an
-    * [[IndexingData]] for blazegraph indexing
+    * [[IndexingResource]] for blazegraph indexing
     */
-  def fromEventExchange[A, M](
-      exchangedValue: EventExchangeValue[A, M]
+  def fromEventExchange(
+      exchangedValue: EventExchangeResult
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
     IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
 
@@ -111,8 +118,7 @@ object BlazegraphIndexingStreamEntry {
   def fromNQuads(
       id: Iri,
       nQuads: NQuads,
-      metadataPredicates: MetadataPredicates,
-      tag: Option[TagLabel]
+      metadataPredicates: MetadataPredicates
   ): Either[RdfError, BlazegraphIndexingStreamEntry] = {
     for {
       graph      <- Graph(nQuads)
@@ -128,7 +134,7 @@ object BlazegraphIndexingStreamEntry {
                       .map(_.getLiteralLexicalForm.toBoolean)
                       .toRight(MissingPredicate(nxv.deprecated.iri))
     } yield BlazegraphIndexingStreamEntry(
-      IndexingData(id, deprecated, schema, types, valueGraph, metaGraph, Json.obj(), tag)
+      IndexingResource(id, deprecated, schema, types, valueGraph, metaGraph, Json.obj())
     )
   }
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.IndexingResource
 import monix.bio.Task
 
 /**
@@ -17,7 +17,7 @@ object FilterBySchema {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
     Pipe.withConfig(
       "filterBySchema",
-      (config: Config, data: IndexingData) =>
+      (config: Config, data: IndexingResource) =>
         Task.pure(
           Option.when(config.types.isEmpty || config.types.contains(data.schema.iri))(data)
         )

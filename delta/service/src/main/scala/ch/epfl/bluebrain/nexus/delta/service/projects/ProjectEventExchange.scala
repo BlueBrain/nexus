@@ -68,7 +68,7 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
     resourceIO
       .map { res =>
         Some(
-          EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata), None)
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata))
         )
       }
       .onErrorHandle(_ => None)
