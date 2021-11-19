@@ -41,7 +41,7 @@ docker run --name elasticsearch \
   -e discovery.type="single-node" \
   -e bootstrap.memory_lock="true" \
   -p 9200:9200 \
-  -d docker.elastic.co/elasticsearch/elasticsearch:7.12.0
+  -d docker.elastic.co/elasticsearch/elasticsearch:7.15.2
 
 docker run --name blazegraph \
   -e JAVA_OPTS="-Djava.awt.headless=true -XX:MaxDirectMemorySize=100m -Xms1g -Xmx1g" \
