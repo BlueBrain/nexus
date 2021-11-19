@@ -248,7 +248,8 @@ final class CompositeIndexingStream(
           projection.resourceTypes,
           projection.includeMetadata,
           projection.includeDeprecated,
-          sourceAsText = false
+          sourceAsText = false,
+          context = projection.context
         )
     }.runAsyncUnit { bulk =>
       // Pushes INDEX/DELETE Elasticsearch bulk operations

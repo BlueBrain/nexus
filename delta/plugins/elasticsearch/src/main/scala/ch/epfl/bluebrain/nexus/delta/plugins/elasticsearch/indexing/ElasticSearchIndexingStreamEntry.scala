@@ -40,7 +40,8 @@ final case class ElasticSearchIndexingStreamEntry(
       resourceTypes: Set[Iri],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      sourceAsText: Boolean
+      sourceAsText: Boolean,
+      context: ContextValue = ctx
   ): Task[Option[ElasticSearchBulk]] = data match {
     case TagNotFound(id)            => delete(id, index).map(Some(_))
     case resource: IndexingResource =>
@@ -50,7 +51,8 @@ final case class ElasticSearchIndexingStreamEntry(
           index,
           includeMetadata,
           includeDeprecated,
-          sourceAsText
+          sourceAsText,
+          context
         )
       else if (containsSchema(resource, resourceSchemas))
         delete(resource.id, index).map(Some.apply)
@@ -69,10 +71,11 @@ final case class ElasticSearchIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
-      sourceAsText: Boolean
+      sourceAsText: Boolean,
+      context: ContextValue
   ): Task[Option[ElasticSearchBulk]] = {
     if (resource.deprecated && !includeDeprecated) delete(resource.id, idx).map(Some.apply)
-    else index(resource, idx, includeMetadata, sourceAsText)
+    else index(resource, idx, includeMetadata, sourceAsText, context)
   }
 
   /**
@@ -88,19 +91,8 @@ final case class ElasticSearchIndexingStreamEntry(
       resource: IndexingResource,
       idx: IndexLabel,
       includeMetadata: Boolean,
-      sourceAsText: Boolean
-  ): Task[Option[ElasticSearchBulk]] =
-    index(resource, idx, includeMetadata, sourceAsText, ctx)
-
-  /**
-    * Generates an ElasticSearch Bulk Index query with the Document to be added to the index ''idx''
-    */
-  def index(
-      resource: IndexingResource,
-      idx: IndexLabel,
-      includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue
+      context: ContextValue = ctx
   ): Task[Option[ElasticSearchBulk]] =
     toDocument(resource, includeMetadata, sourceAsText, context).map { doc =>
       Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
