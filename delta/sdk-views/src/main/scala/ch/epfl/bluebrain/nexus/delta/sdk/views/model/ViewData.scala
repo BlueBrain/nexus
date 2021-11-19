@@ -19,14 +19,14 @@ import org.apache.jena.graph.Node
 /**
   * Representation of indexing data.
   */
-sealed trait IndexingData {
+sealed trait ViewData {
 
   def id: Iri
 
-  def discardSource: IndexingData
+  def discardSource: ViewData
 }
 
-object IndexingData {
+object ViewData {
 
   implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
@@ -48,7 +48,7 @@ object IndexingData {
     * @param source
     *   the original payload of the resource posted by the caller
     */
-  final case class IndexingResource(
+  final case class IndexingData(
       id: Iri,
       deprecated: Boolean,
       schema: ResourceRef,
@@ -56,9 +56,9 @@ object IndexingData {
       graph: Graph,
       metadataGraph: Graph,
       source: Json
-  ) extends IndexingData {
+  ) extends ViewData {
 
-    def discardSource: IndexingResource = copy(source = Json.obj())
+    def discardSource: IndexingData = copy(source = Json.obj())
   }
 
   /**
@@ -67,15 +67,15 @@ object IndexingData {
     * @param id
     *   the id of the resource
     */
-  final case class TagNotFound(id: Iri) extends IndexingData {
+  final case class TagNotFound(id: Iri) extends ViewData {
     override def discardSource: TagNotFound = this
   }
 
-  object IndexingResource {
+  object IndexingData {
 
     def apply[A, M](
         exchangedValue: EventExchangeValue[A, M]
-    )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingResource] = {
+    )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
 
       val resource = exchangedValue.value.resource
       val encoder  = exchangedValue.value.encoder
@@ -90,7 +90,7 @@ object IndexingData {
         rootMetaGraph      = metaGraph.replaceRootNode(id) ++ resourceMetaGraph
         typesGraph         = rootMetaGraph.rootTypesGraph
         finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
-      } yield IndexingResource(
+      } yield IndexingData(
         resource.resolvedId,
         resource.deprecated,
         resource.schema,
@@ -110,10 +110,10 @@ object IndexingData {
   def apply(
       exchangeResult: EventExchangeResult,
       graphPredicates: Set[Node]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = exchangeResult match {
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, ViewData] = exchangeResult match {
     case EventExchange.TagNotFound(id)            => IO.pure(TagNotFound(id))
     case exchangedValue: EventExchangeValue[_, _] =>
-      IndexingResource(exchangedValue).map { data =>
+      IndexingData(exchangedValue).map { data =>
         val id = subject(data.id)
         data.copy(graph = data.graph.filter { case (s, p, _) => s == id && graphPredicates.contains(p) })
       }
@@ -125,10 +125,10 @@ object IndexingData {
     */
   def apply(
       exchangeResult: EventExchangeResult
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, IndexingData] = {
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[RdfError, ViewData] = {
     exchangeResult match {
       case EventExchange.TagNotFound(id)            => IO.pure(TagNotFound(id))
-      case exchangedValue: EventExchangeValue[_, _] => IndexingResource(exchangedValue)
+      case exchangedValue: EventExchangeValue[_, _] => IndexingData(exchangedValue)
     }
   }
 

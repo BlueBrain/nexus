@@ -32,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.IndexingResource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
@@ -206,7 +206,7 @@ final class CompositeIndexingStream(
         .deleteCandidate(projection.resourceSchemas, projection.resourceTypes, projection.includeDeprecated)
         .map(res -> _)
     }.evalMapValue {
-      case (BlazegraphIndexingStreamEntry(resource: IndexingResource), deleteCandidate) if !deleteCandidate =>
+      case (BlazegraphIndexingStreamEntry(resource: IndexingData), deleteCandidate) if !deleteCandidate =>
         // Run projection query against common blazegraph namespace
         for {
           ntriples       <- blazeClient.query(Set(view.index), replaceId(projection.query, resource.id), SparqlNTriples)
@@ -215,7 +215,7 @@ final class CompositeIndexingStream(
           newResource     = resource.copy(graph = rootGraphResult)
         } yield BlazegraphIndexingStreamEntry(newResource) -> false
 
-      case resDeleteCandidate                                                                               => Task.pure(resDeleteCandidate)
+      case resDeleteCandidate                                                                           => Task.pure(resDeleteCandidate)
     }.through(projection match {
       case p: ElasticSearchProjection => esProjectionPipeIndex(view, p)
       case p: SparqlProjection        => blazegraphProjectionPipeIndex(view, p)

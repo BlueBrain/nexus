@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.IndexingResource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import monix.bio.{IO, Task}
 
@@ -33,7 +33,7 @@ trait Pipe {
   /**
     * Apply the provided config and create the pipe task
     */
-  def run(config: Config, data: IndexingResource): Task[Option[IndexingResource]]
+  def run(config: Config, data: IndexingData): Task[Option[IndexingData]]
 
   /**
     * Parse the config and run the resulting config with the provided data
@@ -42,14 +42,14 @@ trait Pipe {
     * @param data
     *   the data to apply the pipe on
     */
-  def parseAndRun(config: Option[ExpandedJsonLd], data: IndexingResource): Task[Option[IndexingResource]] =
+  def parseAndRun(config: Option[ExpandedJsonLd], data: IndexingData): Task[Option[IndexingData]] =
     Task.fromEither(parse(config)).flatMap(run(_, data))
 
 }
 
 object Pipe {
 
-  type PipeResult = Task[Option[IndexingResource]]
+  type PipeResult = Task[Option[IndexingData]]
 
   /**
     * Validate the definitions against the available pipes
@@ -77,7 +77,7 @@ object Pipe {
   def run(
       definitions: List[PipeDef],
       availablePipes: Map[String, Pipe]
-  ): IO[PipeError, IndexingResource => PipeResult] = {
+  ): IO[PipeError, IndexingData => PipeResult] = {
     definitions
       .traverse { d =>
         availablePipes.get(d.name) match {
@@ -87,7 +87,7 @@ object Pipe {
               .map { c => t.run(c, _) }
         }
       }
-      .map { pipes => data: IndexingResource =>
+      .map { pipes => data: IndexingData =>
         pipes.foldLeftM(Option(data)) {
           case (Some(d), t) => t(d)
           case (None, _)    => Task.none
@@ -102,7 +102,7 @@ object Pipe {
     * @param f
     *   the pipe function
     */
-  def withoutConfig(pipeName: String, f: IndexingResource => PipeResult): Pipe =
+  def withoutConfig(pipeName: String, f: IndexingData => PipeResult): Pipe =
     new Pipe {
 
       override type Config = Unit
@@ -115,7 +115,7 @@ object Pipe {
           case None    => Right(())
         }
 
-      override def run(config: Config, data: IndexingResource): PipeResult = f(data)
+      override def run(config: Config, data: IndexingData): PipeResult = f(data)
     }
 
   /**
@@ -127,7 +127,7 @@ object Pipe {
     */
   def withConfig[C0](
       pipeName: String,
-      f: (C0, IndexingResource) => PipeResult
+      f: (C0, IndexingData) => PipeResult
   )(implicit decoder: JsonLdDecoder[C0]): Pipe = new Pipe {
 
     override type Config = C0
@@ -143,7 +143,7 @@ object Pipe {
         case None    => Left(InvalidConfig(pipeName, "A config is required."))
       }
 
-    override def run(config: Config, data: IndexingResource): PipeResult = f(config, data)
+    override def run(config: Config, data: IndexingData): PipeResult = f(config, data)
   }
 
   /**
@@ -152,7 +152,7 @@ object Pipe {
   val excludeMetadata: Pipe =
     withoutConfig(
       "excludeMetadata",
-      (data: IndexingResource) => Task.some(data.copy(metadataGraph = Graph.empty))
+      (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty))
     )
 
   /**
@@ -161,7 +161,7 @@ object Pipe {
   val excludeDeprecated: Pipe =
     withoutConfig(
       "excludeDeprecated",
-      (data: IndexingResource) => Task.pure(Option.when(!data.deprecated)(data))
+      (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
     )
 
   /**
@@ -170,7 +170,7 @@ object Pipe {
   val sourceAsText: Pipe =
     withoutConfig(
       "sourceAsText",
-      (data: IndexingResource) =>
+      (data: IndexingData) =>
         Task.some(
           data.copy(
             graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces)

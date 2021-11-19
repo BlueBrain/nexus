@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.{IndexingResource, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.{IndexingData, TagNotFound}
 import io.circe.Json
 import monix.bio.{IO, Task}
 
 final case class BlazegraphIndexingStreamEntry(
-    data: IndexingData
+    data: ViewData
 ) {
 
   def writeOrNone(view: IndexingBlazegraphView): Task[Option[SparqlWriteQuery]] =
@@ -30,8 +30,8 @@ final case class BlazegraphIndexingStreamEntry(
       includeDeprecated: Boolean,
       includeMetadata: Boolean
   ): Task[Option[SparqlWriteQuery]] = data match {
-    case TagNotFound(_)             => delete().map(Some(_))
-    case resource: IndexingResource =>
+    case TagNotFound(_)         => delete().map(Some(_))
+    case resource: IndexingData =>
       deleteCandidateResource(resource, resourceSchemas, resourceTypes, includeDeprecated) match {
         case Some(true)  => delete().map(Some(_))
         case Some(false) => index(resource, includeMetadata)
@@ -44,13 +44,13 @@ final case class BlazegraphIndexingStreamEntry(
       resourceTypes: Set[Iri],
       includeDeprecated: Boolean
   ): Option[Boolean] = data match {
-    case TagNotFound(_)             => Some(true)
-    case resource: IndexingResource =>
+    case TagNotFound(_)         => Some(true)
+    case resource: IndexingData =>
       deleteCandidateResource(resource, resourceSchemas, resourceTypes, includeDeprecated)
   }
 
   private def deleteCandidateResource(
-      resource: IndexingResource,
+      resource: IndexingData,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
       includeDeprecated: Boolean
@@ -70,7 +70,7 @@ final case class BlazegraphIndexingStreamEntry(
   /**
     * Generates an Sparql replace query with all the triples to be added to the resource named graph
     */
-  def index(resource: IndexingResource, includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
+  def index(resource: IndexingData, includeMetadata: Boolean): Task[Option[SparqlWriteQuery]] =
     for {
       triples    <- IO.fromEither(toTriples(resource, includeMetadata))
       namedGraph <- namedGraph(resource.id)
@@ -79,16 +79,16 @@ final case class BlazegraphIndexingStreamEntry(
   /**
     * Checks if the current resource contains some of the schemas passed as ''resourceSchemas''
     */
-  private def containsSchema(resource: IndexingResource, resourceSchemas: Set[Iri]): Boolean =
+  private def containsSchema(resource: IndexingData, resourceSchemas: Set[Iri]): Boolean =
     resourceSchemas.isEmpty || resourceSchemas.contains(resource.schema.iri)
 
   /**
     * Checks if the current resource contains some of the types passed as ''resourceTypes''
     */
-  private def containsTypes(resource: IndexingResource, resourceTypes: Set[Iri]): Boolean =
+  private def containsTypes(resource: IndexingData, resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
-  private def toTriples(resource: IndexingResource, includeMetadata: Boolean): Either[RdfError, NTriples] = {
+  private def toTriples(resource: IndexingData, includeMetadata: Boolean): Either[RdfError, NTriples] = {
     val metadataGraph =
       if (includeMetadata) resource.metadataGraph
       else Graph.empty
@@ -105,12 +105,12 @@ object BlazegraphIndexingStreamEntry {
 
   /**
     * Converts the resource retrieved from an event exchange to [[BlazegraphIndexingStreamEntry]]. It generates an
-    * [[IndexingResource]] for blazegraph indexing
+    * [[IndexingData]] for blazegraph indexing
     */
   def fromEventExchange(
       exchangedValue: EventExchangeResult
   )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[BlazegraphIndexingStreamEntry] =
-    IndexingData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
+    ViewData(exchangedValue).map(BlazegraphIndexingStreamEntry(_))
 
   /**
     * Converts the resource in n-quads format to [[BlazegraphIndexingStreamEntry]]
@@ -134,7 +134,7 @@ object BlazegraphIndexingStreamEntry {
                       .map(_.getLiteralLexicalForm.toBoolean)
                       .toRight(MissingPredicate(nxv.deprecated.iri))
     } yield BlazegraphIndexingStreamEntry(
-      IndexingResource(id, deprecated, schema, types, valueGraph, metaGraph, Json.obj())
+      IndexingData(id, deprecated, schema, types, valueGraph, metaGraph, Json.obj())
     )
   }
 }

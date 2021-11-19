@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.IndexingResource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -145,7 +145,7 @@ final class GraphAnalyticsIndexingStream(
   private def fromEventExchange[A, M](
       project: ProjectRef,
       exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution): IO[RdfError, IndexingResource] = {
+  )(implicit cr: RemoteContextResolution): IO[RdfError, IndexingData] = {
     val res     = exchangedValue.value.resource
     val encoder = exchangedValue.value.encoder
     for {
@@ -155,7 +155,7 @@ final class GraphAnalyticsIndexingStream(
       paths              = JsonLdPathValueCollection(pathProperties, pathRelationships)
       types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
       source             = paths.asJson deepMerge types
-      data               = IndexingResource(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source)
+      data               = IndexingData(res.id, res.deprecated, res.schema, res.types, Graph.empty, Graph.empty, source)
     } yield data
   }
 

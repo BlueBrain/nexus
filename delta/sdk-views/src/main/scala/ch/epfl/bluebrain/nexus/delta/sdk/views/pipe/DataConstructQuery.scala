@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData.IndexingResource
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import monix.bio.Task
 
 /**
@@ -16,7 +16,7 @@ object DataConstructQuery {
     implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
     Pipe.withConfig(
       "dataConstructQuery",
-      (config: Config, data: IndexingResource) =>
+      (config: Config, data: IndexingData) =>
         Task
           .fromEither(
             data.graph.transform(config.query)
