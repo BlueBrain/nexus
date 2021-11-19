@@ -121,6 +121,34 @@ class ResourcesSpec
         }
       }
 
+      "create a new event from a DeleteResourceTag command" in {
+        val list = List(
+          (None, Latest(schemas.resources), false),
+          (None, Latest(schema1.id), false),
+          (Some(Latest(schema1.id)), Latest(schema1.id), true)
+        )
+        val tag  = TagLabel.unsafe("myTag")
+        forAll(list) { case (schemaOptCmd, schemaEvent, deprecated) =>
+          val current =
+            ResourceGen.currentState(
+              myId,
+              projectRef,
+              source,
+              schemaEvent,
+              types,
+              rev = 2L,
+              deprecated = deprecated,
+              tags = Map(tag -> 1L)
+            )
+
+          eval(
+            current,
+            DeleteResourceTag(myId, projectRef, schemaOptCmd, tag, 2L, subject)
+          ).accepted shouldEqual
+            ResourceTagDeleted(myId, projectRef, types, TagLabel.unsafe("myTag"), 3L, epoch, subject)
+        }
+      }
+
       "create a new event from a DeprecateResource command" in {
         val list = List(
           None                     -> Latest(schemas.resources),
@@ -156,6 +184,7 @@ class ResourcesSpec
         val list      = List(
           current -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 2L, caller),
           current -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("tag"), 2L, subject),
+          current -> DeleteResourceTag(myId, projectRef, None, TagLabel.unsafe("tag"), 2L, subject),
           current -> DeprecateResource(myId, projectRef, None, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>

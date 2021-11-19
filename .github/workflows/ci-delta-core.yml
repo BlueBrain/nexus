@@ -1,11 +1,11 @@
-name: Delta
+name: Delta Core
 on:
   pull_request:
     paths:
       - 'delta/**'
       - 'build.sbt'
       - 'project/**'
-      - '.github/workflows/ci-delta.yml'
+      - '.github/workflows/ci-delta-core.yml'
 jobs:
   static-analysis:
     if: github.event_name == 'pull_request'
@@ -16,9 +16,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Static Analysis
-        run: sbt -Dsbt.color=always -Dsbt.supershell=false "project delta" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
-  test-core:
+        run: |
+          sbt -Dsbt.color=always -Dsbt.supershell=false \
+            "project delta" \
+            clean \
+            scalafmtCheck \
+            Test/scalafmtCheck \
+            scalafmtSbtCheck \
+            scapegoat
+  review:
     if: github.event_name == 'pull_request'
     runs-on: it
     timeout-minutes: 20
@@ -27,6 +36,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Tests
         run: |
           sbt -Dsbt.color=always -Dsbt.supershell=false \
@@ -50,19 +61,3 @@ jobs:
             service/coverageReport \
             sourcing/coverageReport \
             testkit/coverageReport
-  test-plugins:
-    if: github.event_name == 'pull_request'
-    runs-on: it
-    timeout-minutes: 20
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Tests
-        run: |
-          sbt -Dsbt.color=always -Dsbt.supershell=false \
-            clean \
-            coverage \
-            plugins/test \
-            plugins/coverageReport

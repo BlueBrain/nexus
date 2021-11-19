@@ -5,13 +5,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{IndexingData, ViewIndex}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.PipeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -105,26 +107,30 @@ object ElasticSearchIndexingStream {
     * Process the event exchange value to get a Elasticsearch bulk entry
     */
   def process(
-      eventExchangeValue: EventExchangeValue[_, _],
+      eventExchangeResult: EventExchangeResult,
       index: IndexLabel,
       pipeline: IndexingData => PipeResult,
       dataEncoder: IndexingData => Task[Json]
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): IO[Throwable, Option[ElasticSearchBulk]] =
-    for {
-      data   <- IndexingData(eventExchangeValue)
-      result <- pipeline(data)
-      bulk   <- result match {
-                  case None    =>
-                    Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
-                  case Some(r) =>
-                    dataEncoder(r).flatMap {
-                      case json if json.isEmpty() => Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
-                      case json                   =>
-                        Task.some(
-                          ElasticSearchBulk.Index(index, data.id.toString, json)
-                        )
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[Option[ElasticSearchBulk]] =
+    eventExchangeResult match {
+      case EventExchange.TagNotFound(id)            => Task.some(ElasticSearchBulk.Delete(index, id.toString))
+      case exchangedValue: EventExchangeValue[_, _] =>
+        for {
+          data   <- IndexingData(exchangedValue)
+          result <- pipeline(data)
+          bulk   <- result match {
+                      case None    =>
+                        Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
+                      case Some(r) =>
+                        dataEncoder(r).flatMap {
+                          case json if json.isEmpty() => Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
+                          case json                   =>
+                            Task.some(
+                              ElasticSearchBulk.Index(index, data.id.toString, json)
+                            )
+                        }
                     }
-                }
-    } yield bulk
+        } yield bulk
+    }
 
 }

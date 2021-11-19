@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
       - name: Publish To Dockerhub
@@ -25,5 +27,4 @@ jobs:
           echo ${{ secrets.DOCKER_PASS }} | docker login --username ${{ secrets.DOCKER_USER }} --password-stdin
           sbt -Dsbt.color=always -Dsbt.supershell=false \
             app/Docker/publish \
-            storage/Docker/publish \
-            cli/Docker/publish
+            storage/Docker/publish

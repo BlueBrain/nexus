@@ -51,7 +51,7 @@ object PipeDef {
   }
 
   implicit val pipeDefDecoder: Decoder[PipeDef] = {
-    implicit val expandedEncoder: Decoder[ExpandedJsonLd] =
+    implicit val expandedDecoder: Decoder[ExpandedJsonLd] =
       Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
     deriveDecoder[PipeDef].map {
       case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name)))

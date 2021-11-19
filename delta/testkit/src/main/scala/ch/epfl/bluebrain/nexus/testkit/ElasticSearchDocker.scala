@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.testkit
 
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithFactory
+import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker.DefaultPort
 import com.whisk.docker.{DockerContainer, DockerReadyChecker}
 
-trait ElasticSearchDocker extends DockerKitWithFactory {
+trait ElasticSearchDocker extends DockerKitWithTimeouts {
 
   val elasticSearchContainer: DockerContainer =
     DockerContainer(s"docker.elastic.co/elasticsearch/elasticsearch:${ElasticSearchDocker.version}")
@@ -26,7 +26,7 @@ trait ElasticSearchDocker extends DockerKitWithFactory {
 
 object ElasticSearchDocker {
 
-  val version: String = "7.15.0"
+  val version: String = "7.15.2"
 
   final case class ElasticSearchHost(host: String, port: Int) {
     def endpoint: String = s"http://$host:$port"

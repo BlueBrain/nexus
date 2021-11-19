@@ -208,7 +208,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "tag resources resource" in {
+    "tag resources" in {
       (1 to 5).toList.parTraverse { i =>
         val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
         val id           = `@id`.getOption(payload).value
@@ -233,13 +233,35 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
+    "delete tags" in {
+      (1 to 5).toList.parTraverse { i =>
+        val payload      = jsonContentOf(s"/kg/views/instances/instance$i.json")
+        val id           = `@id`.getOption(payload).value
+        val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
+        deltaClient.delete[Json](
+          s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags/one?rev=2",
+          ScoobyDoo
+        ) { (_, response) =>
+          response.status shouldEqual StatusCodes.OK
+        }
+      }
+    }
+
+    "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags are deleted" in eventually {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
+        (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          json shouldEqual jsonContentOf("/kg/views/sparql-search-response-empty.json")
+      }
+    }
+
     "remove @type on a resource" in {
       val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance1.json"))
       val id           = `@id`.getOption(payload).value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
 
       deltaClient.put[Json](
-        s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=2",
+        s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=3",
         filterKey("@id")(payload),
         ScoobyDoo
       ) { (_, response) =>
@@ -251,7 +273,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance2.json"))
       val id           = payload.asObject.value("@id").value.asString.value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
-      deltaClient.delete[Json](s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=2", ScoobyDoo) { (_, response) =>
+      deltaClient.delete[Json](s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=3", ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
       }
     }

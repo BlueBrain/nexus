@@ -4,8 +4,8 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -116,28 +116,32 @@ class BlazegraphIndexingSpec
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  private val res1Proj1     = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
-  private val res2Proj1     = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
-  private val res3Proj1     = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
-  private val res1Proj2     = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
-  private val res2Proj2     = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
-  private val res3Proj2     = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
-  private val res1rev2Proj1 = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  val tag = TagLabel.unsafe("mytag")
+
+  private val res1Proj1                = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
+  private val res2Proj1                = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
+  private val res3Proj1                = exchangeValue(id3Proj1, project1.ref, type1, true, schema1, value3Proj1)
+  private val res1Proj2                = exchangeValue(id1Proj2, project2.ref, type1, false, schema1, value1Proj2)
+  private val res2Proj2                = exchangeValue(id2Proj2, project2.ref, type2, false, schema2, value2Proj2)
+  private val res3Proj2                = exchangeValue(id3Proj2, project2.ref, type1, true, schema2, value3Proj2)
+  private val res1rev2Proj1            = exchangeValue(id1Proj1, project1.ref, type3, false, schema1, value1rev2Proj1)
+  private val res1rev2Proj1TagNotFound = TagNotFound(id1Proj1)
 
   private val messages =
     List(
-      res1Proj1     -> project1.ref,
-      res2Proj1     -> project1.ref,
-      res3Proj1     -> project1.ref,
-      res1Proj2     -> project2.ref,
-      res2Proj2     -> project2.ref,
-      res3Proj2     -> project2.ref,
-      res1rev2Proj1 -> project1.ref
-    ).zipWithIndex.foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) { case (acc, ((res, project), i)) =>
+      res1Proj1                -> ((project1.ref, Some(tag))),
+      res2Proj1                -> ((project1.ref, Some(tag))),
+      res3Proj1                -> ((project1.ref, Some(tag))),
+      res1Proj2                -> ((project2.ref, None)),
+      res2Proj2                -> ((project2.ref, None)),
+      res3Proj2                -> ((project2.ref, None)),
+      res1rev2Proj1            -> ((project1.ref, None)),
+      res1rev2Proj1TagNotFound -> ((project1.ref, Some(tag)))
+    ).zipWithIndex.foldLeft(Map.empty[(ProjectRef, Option[TagLabel]), Seq[Message[EventExchangeResult]]]) { case (acc, ((res, project), i)) =>
       val entry = SuccessMessage(
         Sequence(i.toLong),
         Instant.EPOCH,
-        res.value.resource.id.toString,
+        res.id.toString,
         i.toLong,
         res,
         Vector.empty
@@ -145,7 +149,7 @@ class BlazegraphIndexingSpec
       acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
     }
 
-  private val indexingSource = new IndexingSourceDummy(messages.map { case (k, v) => (k, None) -> v })
+  private val indexingSource = new IndexingSourceDummy(messages)
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
@@ -231,13 +235,23 @@ class BlazegraphIndexingSpec
 
     "cache projection for view" in {
       val projectionId = BlazegraphViews.projectionId(views.fetchIndexingView(viewId, project1.ref).accepted)
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(6), Instant.EPOCH, 4, 1, 0, 0)
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 4, 1, 0, 0)
     }
 
     "index resources with type" in {
       val indexVal = indexingValue.copy(includeDeprecated = true, resourceTypes = Set(type1))
       val view     = views.update(viewId, project1.ref, 4L, indexVal).accepted.asInstanceOf[IndexingViewResource]
       checkBlazegraphTriples(view, triplesFor(res3Proj1, value3Proj1))
+    }
+
+    "index resources with a certain tag" in {
+      val indexVal = indexingValue.copy(resourceTag = Some(tag), includeDeprecated = true)
+      val view     = views.update(viewId, project1.ref, 5L, indexVal).accepted.asInstanceOf[IndexingViewResource]
+      checkBlazegraphTriples(
+        view,
+        triplesFor(res2Proj1, value2Proj1),
+        triplesFor(res3Proj1, value3Proj1)
+      )
     }
 
   }

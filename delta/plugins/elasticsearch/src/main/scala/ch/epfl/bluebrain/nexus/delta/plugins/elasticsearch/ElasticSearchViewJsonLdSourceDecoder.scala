@@ -138,7 +138,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
   private def toValue(fields: ElasticSearchViewFields): ElasticSearchViewValue = fields match {
     case i: LegacyIndexingElasticSearchViewFields =>
       // Translate legacy fields into a pipeline
-      val pipeLine = List(
+      val pipeline = List(
         i.resourceSchemas.nonEmpty -> FilterBySchema(i.resourceSchemas),
         i.resourceTypes.nonEmpty   -> FilterByType(i.resourceTypes),
         !i.includeDeprecated       -> FilterDeprecated(),
@@ -149,7 +149,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
       IndexingElasticSearchViewValue(
         resourceTag = i.resourceTag,
-        pipeLine,
+        pipeline,
         mapping = Some(i.mapping),
         settings = i.settings,
         context = None,

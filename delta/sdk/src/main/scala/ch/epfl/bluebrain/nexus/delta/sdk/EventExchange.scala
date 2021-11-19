@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
@@ -62,9 +63,39 @@ trait EventExchange {
     * @return
     *   some value if the event is defined for this instance, none otherwise
     */
-  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]]
+  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]]
 }
 
 object EventExchange {
-  final case class EventExchangeValue[A, M](value: ReferenceExchangeValue[A], metadata: JsonLdValue.Aux[M])
+
+  /**
+    * Result of event exchange
+    */
+  sealed trait EventExchangeResult {
+
+    /**
+      * The id of the resource for which the exchange took place.
+      */
+    def id: Iri
+  }
+
+  /**
+    * Representation of event exchange that failed because the resource couldn't be found by a given tag.
+    */
+  final case class TagNotFound(id: Iri) extends EventExchangeResult
+
+  /**
+    * Successful result of [[EventExchange]].
+    *
+    * @param value
+    *   the resource value
+    * @param metadata
+    *   the resource metadata
+    */
+  final case class EventExchangeValue[A, M](
+      value: ReferenceExchangeValue[A],
+      metadata: JsonLdValue.Aux[M]
+  ) extends EventExchangeResult {
+    override def id: Iri = value.resource.id
+  }
 }

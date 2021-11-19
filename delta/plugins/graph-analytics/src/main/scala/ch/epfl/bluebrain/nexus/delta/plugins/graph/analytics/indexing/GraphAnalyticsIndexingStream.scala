@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -83,9 +83,11 @@ final class GraphAnalyticsIndexingStream(
       }
       .flatMap { progress =>
         indexingSource(view.projectRef, progress.offset, view.resourceTag)
-          .evalMapValue { eventExchangeValue =>
-            // Creates a JsonLdPathValueCollection from the event exchange response
-            fromEventExchange(view.projectRef, eventExchangeValue)
+          .evalMapFilterValue {
+            case TagNotFound(_)                               => Task.none
+            case eventExchangeValue: EventExchangeValue[_, _] =>
+              // Creates a JsonLdPathValueCollection from the event exchange response
+              fromEventExchange(view.projectRef, eventExchangeValue).map(Some(_))
           }
           .runAsyncUnit { list =>
             IO.when(list.nonEmpty) {

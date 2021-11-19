@@ -67,7 +67,9 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
   )(implicit enc: JsonLdEncoder[A], metaEnc: JsonLdEncoder[M]): UIO[Option[EventExchangeValue[A, M]]] =
     resourceIO
       .map { res =>
-        Some(EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata)))
+        Some(
+          EventExchangeValue(ReferenceExchangeValue(res, res.value.asJson, enc), JsonLdValue(res.value.metadata))
+        )
       }
       .onErrorHandle(_ => None)
 }

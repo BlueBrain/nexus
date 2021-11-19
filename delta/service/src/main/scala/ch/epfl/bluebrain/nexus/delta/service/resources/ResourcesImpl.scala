@@ -99,6 +99,20 @@ final class ResourcesImpl private (
       res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
     } yield res).named("tagResource", moduleType)
 
+  override def deleteTag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      schemaOpt: Option[IdSegment],
+      tag: TagLabel,
+      rev: Long
+  )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
+    (for {
+      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
+      iri          <- expandIri(id, project)
+      schemeRefOpt <- expandResourceRef(schemaOpt, project)
+      res          <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller), project)
+    } yield res).named("deleteResourceTag", moduleType)
+
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,

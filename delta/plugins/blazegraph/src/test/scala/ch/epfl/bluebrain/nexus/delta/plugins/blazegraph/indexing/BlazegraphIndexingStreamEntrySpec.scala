@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataPredicates
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import org.scalatest.EitherValues
 import org.scalatest.matchers.should.Matchers
@@ -38,7 +39,11 @@ class BlazegraphIndexingStreamEntrySpec extends AnyWordSpecLike with Matchers wi
     val nQuads = NQuads(contentOf("resource.nq"), id)
 
     "filter metadata correctly" in {
-      val entry = BlazegraphIndexingStreamEntry.fromNQuads(id, nQuads, metadataPredicates).value.resource
+      val entry = BlazegraphIndexingStreamEntry
+        .fromNQuads(id, nQuads, metadataPredicates)
+        .value
+        .data
+        .asInstanceOf[IndexingData]
       entry.id shouldEqual id
       entry.deprecated shouldEqual false
       entry.schema shouldEqual Latest(iri"https://bluebrain.github.io/nexus/schemas/unconstrained.json")

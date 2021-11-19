@@ -69,7 +69,7 @@ services:
       - 9090:8080
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.2
     environment:
       ES_JAVA_OPTS: "-Xmx4G"
       discovery.type: "single-node"

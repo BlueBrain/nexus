@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.withoutConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeDef.noConfig
 import monix.bio.Task

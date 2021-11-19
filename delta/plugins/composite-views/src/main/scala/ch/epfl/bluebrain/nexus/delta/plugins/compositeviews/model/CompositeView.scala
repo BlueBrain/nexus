@@ -74,7 +74,7 @@ object CompositeView {
     */
   final case class Interval private[model] (value: FiniteDuration) extends RebuildStrategy
   object Interval {
-    def apply(value: FiniteDuration)(implicit config: CompositeViewsConfig): Option[Interval] =
+    def apply(value: FiniteDuration, config: CompositeViewsConfig): Option[Interval] =
       Option.when(value gteq config.minIntervalRebuild)(new Interval(value))
   }
 
@@ -82,7 +82,7 @@ object CompositeView {
 
   object RebuildStrategy {
     @nowarn("cat=unused")
-    implicit final val rebuildStrategyEncoder: Encoder[RebuildStrategy] = {
+    implicit final val rebuildStrategyEncoder: Encoder.AsObject[RebuildStrategy] = {
       implicit val config: Configuration                          = Configuration.default.withDiscriminator(keywords.tpe)
       implicit val finiteDurationEncoder: Encoder[FiniteDuration] = Encoder.encodeString.contramap(_.toString())
       deriveConfiguredEncoder[RebuildStrategy]

@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.headers.{`Accept-Encoding`, Accept, Authorization, HttpEncodings}
-import akka.http.scaladsl.model.{HttpResponse, _}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.stream.Materializer
@@ -29,7 +29,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit materializer: Materializer)
+class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSystem, materializer: Materializer)
     extends Matchers
     with AppendedClues {
 
@@ -318,5 +318,5 @@ object HttpClient {
   val gzipHeaders: Seq[HttpHeader] = Seq(Accept(MediaRanges.`*/*`), `Accept-Encoding`(HttpEncodings.gzip))
 
   def apply(baseUrl: Uri)(implicit as: ActorSystem, materializer: Materializer) =
-    new HttpClient(baseUrl, Http())(materializer)
+    new HttpClient(baseUrl, Http())
 }
