@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: StaticAnalysis
         run: sbt -Dsbt.color=always -Dsbt.supershell=false "project storage" clean scalafmtCheck Test/scalafmtCheck scalafmtSbtCheck scapegoat
       - name: Tests
@@ -30,6 +32,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Build image
         run: docker build ./storage/permissions-fixer --tag=nexus/fixer
       - name: Compile and run tests

@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Publish To Sonatype
         run: sbt -Dsbt.color=always -Dsbt.supershell=false ci-release
       - name: Publish To Dockerhub
