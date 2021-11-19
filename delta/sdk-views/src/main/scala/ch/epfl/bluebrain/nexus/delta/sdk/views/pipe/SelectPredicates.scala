@@ -15,20 +15,22 @@ import org.apache.jena.graph.Node
   */
 object SelectPredicates {
 
-  // TODO make this configurable
-  private val defaultLabelPredicates = Set(skos.prefLabel, rdf.tpe, rdfs.label, schema.name)
-
-  final private case class Config(predicates: Set[Iri]) {
+  final case class SelectPredicatesConfig(predicates: Set[Iri]) {
     lazy val graphPredicates: Set[Node] = predicates.map(predicate)
+  }
+
+  object SelectPredicatesConfig {
+    implicit val selectPredicatesConfigDecoder: JsonLdDecoder[SelectPredicatesConfig] =
+      deriveJsonLdDecoder[SelectPredicatesConfig]
   }
 
   val name = "selectPredicates"
 
   val pipe: Pipe = {
-    implicit val configDecoder: JsonLdDecoder[Config] = deriveJsonLdDecoder[Config]
+
     Pipe.withConfig(
       name,
-      (config: Config, data: IndexingData) =>
+      (config: SelectPredicatesConfig, data: IndexingData) =>
         Task.some {
           val id       = subject(data.id)
           val newGraph = data.graph.filter { case (s, p, _) => s == id && config.graphPredicates.contains(p) }
@@ -49,6 +51,4 @@ object SelectPredicates {
       init.addAll(predicatesKey, include)
     )
   }
-
-  val defaultLabels: PipeDef = apply(defaultLabelPredicates)
 }

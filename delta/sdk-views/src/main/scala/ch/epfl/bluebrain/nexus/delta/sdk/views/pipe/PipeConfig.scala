@@ -32,6 +32,7 @@ object PipeConfig {
       FilterBySchema.pipe,
       FilterByType.pipe,
       FilterDeprecated.pipe,
+      DefaultLabelPredicates.pipe,
       SelectPredicates.pipe,
       SourceAsText.pipe
     )

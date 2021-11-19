@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, PipeDef, SelectPredicates, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -143,7 +143,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
         i.resourceTypes.nonEmpty   -> FilterByType(i.resourceTypes),
         !i.includeDeprecated       -> FilterDeprecated(),
         !i.includeMetadata         -> DiscardMetadata(),
-        true                       -> SelectPredicates.defaultLabels,
+        true                       -> DefaultLabelPredicates(),
         i.sourceAsText             -> SourceAsText()
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 

@@ -111,6 +111,17 @@ These pipes are provided by default by Delta.
 }
 ```
 
+### Default label predicates
+
+* Only default labels defined as `skos:prefLabel`, `rdf:tpe`, `rdfs:label`, `schema:name` will be kept in the resource
+* No configuration is needed
+
+```json
+{
+  "name" : "defaultLabelPredicates"
+}
+```
+
 ## Add custom pipes through plugins
 
 @@@ note { .warning }

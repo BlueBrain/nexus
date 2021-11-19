@@ -14,8 +14,7 @@ class SelectPredicatesSpec extends PipeBaseSpec {
     }
 
     "keep only matching predicates" in {
-      val result =
-        SelectPredicates.pipe.parseAndRun(SelectPredicates.defaultLabels, sampleData).accepted.value
+      val result = DefaultLabelPredicates.pipe.parseAndRun(None, sampleData).accepted.value
 
       val expectedGraph = Graph
         .empty(sampleData.id)
