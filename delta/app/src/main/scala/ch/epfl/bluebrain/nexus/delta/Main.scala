@@ -11,6 +11,7 @@ import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.Migration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
@@ -132,6 +133,11 @@ object Main extends BIOApp {
       implicit val cfg: AppConfig         = locator.get[AppConfig]
       val logger                          = locator.get[Logger]
       val cluster                         = Cluster(as)
+
+      sys.env.get("MIGRATION_1_7").foreach { _ =>
+        locator.get[Migration].run.runSyncUnsafe()
+        RepairTagViews.repair
+      }
 
       sys.env.get("DELETE_PERSISTENCE_IDS").foreach { persistenceIds =>
         DeletePersistenceIds.delete(persistenceIds.split(",").toSeq)
