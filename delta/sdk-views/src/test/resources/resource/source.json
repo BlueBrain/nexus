@@ -1,10 +1,15 @@
 {
   "@context": {
-    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/"
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "http://schema.org/",
+    "skos": "http://www.w3.org/2004/02/skos/core#"
   },
   "@id": "test",
   "@type": "Custom",
-  "name": "Alex",
+  "schema:name": "Alex",
+  "rdfs:label": "Alex C.",
+  "skos:prefLabel": "Alex Campbell",
   "number": 24,
   "bool": false
 }

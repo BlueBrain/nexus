@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -15,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -78,19 +80,11 @@ object ElasticSearchView {
     *   a reference to the parent project
     * @param uuid
     *   the unique view identifier
-    * @param resourceSchemas
-    *   the set of schemas considered that constrains resources; empty implies all
-    * @param resourceTypes
-    *   the set of resource types considered for indexing; empty implies all
+    * @param pipeline
+    *   the list of operations to apply on a resource before indexing it
     * @param resourceTag
     *   an optional tag to consider for indexing; when set, all resources that are tagged with the value of the field
     *   are indexed with the corresponding revision
-    * @param sourceAsText
-    *   whether to include the source of the resource as a text field in the document
-    * @param includeMetadata
-    *   whether to include the metadata of the resource as individual fields in the document
-    * @param includeDeprecated
-    *   whether to consider deprecated resources for indexing
     * @param mapping
     *   the elasticsearch mapping to be used in order to create the index
     * @param settings
@@ -106,14 +100,11 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       uuid: UUID,
-      resourceSchemas: Set[Iri],
-      resourceTypes: Set[Iri],
       resourceTag: Option[TagLabel],
-      sourceAsText: Boolean,
-      includeMetadata: Boolean,
-      includeDeprecated: Boolean,
+      pipeline: List[PipeDef],
       mapping: JsonObject,
       settings: JsonObject,
+      context: Option[ContextObject],
       permission: Permission,
       tags: Map[TagLabel, Long],
       source: Json
@@ -186,11 +177,44 @@ object ElasticSearchView {
     implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
     implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
 
+    // To keep retro-compatibility, we compute legacy fields from the view pipeline
+    def encodeLegacyFields(v: ElasticSearchView) =
+      v match {
+        case _: AggregateElasticSearchView => JsonObject.empty
+        case i: IndexingElasticSearchView  =>
+          // Default legacy values
+          JsonObject(
+            "resourceSchemas"   -> Json.arr(),
+            "resourceTypes"     -> Json.arr(),
+            "sourceAsText"      -> Json.False,
+            "includeMetadata"   -> Json.True,
+            "includeDeprecated" -> Json.True
+          ).deepMerge(
+            i.pipeline
+              .foldLeft(JsonObject.empty) {
+                case (obj, pipeDef) if pipeDef.name == FilterBySchema.name   =>
+                  obj.add("resourceSchemas", FilterBySchema.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
+                case (obj, pipeDef) if pipeDef.name == FilterByType.name     =>
+                  obj.add("resourceTypes", FilterByType.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
+                case (obj, pipeDef) if pipeDef.name == SourceAsText.name     =>
+                  obj.add("sourceAsText", Json.True)
+                case (obj, pipeDef) if pipeDef.name == DiscardMetadata.name  =>
+                  obj.add("includeMetadata", Json.False)
+                case (obj, pipeDef) if pipeDef.name == FilterDeprecated.name =>
+                  obj.add("includeDeprecated", Json.False)
+                case (obj, _)                                                =>
+                  obj
+              }
+          )
+      }
+
     Encoder.encodeJsonObject.contramapObject[ElasticSearchView] { e =>
       deriveConfiguredEncoder[ElasticSearchView]
         .encodeObject(e)
+        .deepMerge(encodeLegacyFields(e))
         .add(keywords.tpe, e.tpe.types.asJson)
         .remove("tags")
+        .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)
         .remove("source")
@@ -211,6 +235,7 @@ object ElasticSearchView {
 
       private def stringToJson(obj: JsonObject) =
         obj
+          .mapAllKeys("context", parseJson)
           .mapAllKeys("mapping", parseJson)
           .mapAllKeys("settings", parseJson)
 

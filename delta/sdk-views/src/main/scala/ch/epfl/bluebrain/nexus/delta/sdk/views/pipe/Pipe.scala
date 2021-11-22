@@ -1,13 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeDefinitionMismatch, PipeNotFound}
 import monix.bio.{IO, Task}
 
 /**
@@ -45,6 +42,19 @@ trait Pipe {
   def parseAndRun(config: Option[ExpandedJsonLd], data: IndexingData): Task[Option[IndexingData]] =
     Task.fromEither(parse(config)).flatMap(run(_, data))
 
+  /**
+    * Check definition name, parse its config and run the resulting config with the provided data
+    * @param definition
+    *   the config to parse
+    * @param data
+    *   the data to apply the pipe on
+    */
+  def parseAndRun(definition: PipeDef, data: IndexingData): Task[Option[IndexingData]] =
+    Task.raiseWhen(name != definition.name)(PipeDefinitionMismatch(name, definition.name)) >> parseAndRun(
+      definition.config,
+      data
+    )
+
 }
 
 object Pipe {
@@ -55,12 +65,12 @@ object Pipe {
     * Validate the definitions against the available pipes
     * @param definitions
     *   the definitions to validate
-    * @param availablePipes
-    *   the available pipes
+    * @param pipeConfig
+    *   the pipe configuration
     */
-  def validate(definitions: List[PipeDef], availablePipes: Map[String, Pipe]): Either[PipeError, Unit] =
+  def validate(definitions: List[PipeDef], pipeConfig: PipeConfig): Either[PipeError, Unit] =
     definitions.traverse { d =>
-      availablePipes.get(d.name) match {
+      pipeConfig.availablePipes.get(d.name) match {
         case None    => Left(PipeNotFound(d.name))
         case Some(t) => t.parse(d.config)
       }
@@ -70,17 +80,17 @@ object Pipe {
     * Parse and fold the provided definitions to create the pipeline function
     * @param definitions
     *   the definitions to run
-    * @param availablePipes
-    *   the available pipes
+    * @param pipeConfig
+    *   the pipe configuration
     * @return
     */
   def run(
       definitions: List[PipeDef],
-      availablePipes: Map[String, Pipe]
+      pipeConfig: PipeConfig
   ): IO[PipeError, IndexingData => PipeResult] = {
     definitions
       .traverse { d =>
-        availablePipes.get(d.name) match {
+        pipeConfig.availablePipes.get(d.name) match {
           case None    => IO.raiseError(PipeNotFound(d.name))
           case Some(t) =>
             IO.fromEither(t.parse(d.config))
@@ -145,36 +155,4 @@ object Pipe {
 
     override def run(config: Config, data: IndexingData): PipeResult = f(config, data)
   }
-
-  /**
-    * Excludes metadata from being indexed
-    */
-  val excludeMetadata: Pipe =
-    withoutConfig(
-      "excludeMetadata",
-      (data: IndexingData) => Task.some(data.copy(metadataGraph = Graph.empty))
-    )
-
-  /**
-    * Filters out deprecated resources
-    */
-  val excludeDeprecated: Pipe =
-    withoutConfig(
-      "excludeDeprecated",
-      (data: IndexingData) => Task.pure(Option.when(!data.deprecated)(data))
-    )
-
-  /**
-    * Add source as text
-    */
-  val sourceAsText: Pipe =
-    withoutConfig(
-      "sourceAsText",
-      (data: IndexingData) =>
-        Task.some(
-          data.copy(
-            graph = data.graph.add(nxv.originalSource.iri, data.source.noSpaces)
-          )
-        )
-    )
 }

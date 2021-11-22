@@ -1,21 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
 
-import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.Pipe.PipeResult
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import fs2.Stream
+import io.circe.Json
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
 
@@ -26,6 +31,7 @@ final class ElasticSearchIndexingStream(
     client: ElasticSearchClient,
     indexingSource: IndexingSource,
     cache: ProgressesCache,
+    pipeConfig: PipeConfig,
     config: ElasticSearchViewsConfig,
     projection: Projection[Unit]
 )(implicit cr: RemoteContextResolution, baseUri: BaseUri, sc: Scheduler)
@@ -34,40 +40,45 @@ final class ElasticSearchIndexingStream(
   override def apply(
       view: ViewIndex[IndexingElasticSearchView],
       strategy: IndexingStream.ProgressStrategy
-  ): Stream[Task, Unit] = {
+  ): Task[Stream[Task, Unit]] = {
     implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, view.value.tpe.tpe)
     val index                                      = idx(view)
-    Stream
-      .eval {
-        // Evaluates strategy and set/get the appropriate progress
-        client.createIndex(index, Some(view.value.mapping), Some(view.value.settings)) >>
-          handleProgress(strategy, view.projectionId)
-      }
-      .flatMap { progress =>
-        indexingSource(view.projectRef, progress.offset, view.resourceTag)
-          .evalMapValue { eventExchangeValue =>
-            // Creates a resource graph and metadata from the event exchange response
-            ElasticSearchIndexingStreamEntry.fromEventExchange(eventExchangeValue)
-          }
-          .evalMapFilterValue(_.writeOrNone(index, view.value))
-          .runAsyncUnit { bulk =>
-            // Pushes INDEX/DELETE Elasticsearch bulk operations
-            IO.when(bulk.nonEmpty)(client.bulk(bulk))
-          }
-          .flatMap(Stream.chunk)
-          .map(_.void)
-          // Persist progress in cache and in primary store
-          .persistProgressWithCache(
-            progress,
-            view.projectionId,
-            projection,
-            cache.put(view.projectionId, _),
-            config.indexing.projection,
-            config.indexing.cache
-          )
-          .enableMetrics
-          .map(_.value)
-      }
+
+    def encoder = DataEncoder.defaultEncoder(view.value.context)
+    Pipe.run(view.value.pipeline, pipeConfig).map { pipeline =>
+      Stream
+        .eval {
+          // Evaluates strategy and set/get the appropriate progress
+          client.createIndex(index, Some(view.value.mapping), Some(view.value.settings)) >>
+            handleProgress(strategy, view.projectionId)
+        }
+        .flatMap { progress =>
+          indexingSource(view.projectRef, progress.offset, view.resourceTag)
+            .evalMapFilterValue(ElasticSearchIndexingStream.process(_, index, pipeline, encoder))
+            .runAsyncUnit { bulk =>
+              // Pushes INDEX/DELETE Elasticsearch bulk operations
+              IO.when(bulk.nonEmpty)(client.bulk(bulk))
+            }
+            .flatMap(Stream.chunk)
+            .collectSomeValue {
+              // Delete operation count as discarded in the projection progress
+              case _: ElasticSearchBulk.Delete => None
+              case _                           => Some(())
+            }
+            // Persist progress in cache and in primary store
+            .persistProgressWithCache(
+              progress,
+              view.projectionId,
+              projection,
+              cache.put(view.projectionId, _),
+              config.indexing.projection,
+              config.indexing.cache
+            )
+            .enableMetrics
+            .map(_.value)
+        }
+    }
+
   }
 
   private def handleProgress(
@@ -88,4 +99,38 @@ final class ElasticSearchIndexingStream(
 
   private def idx(view: ViewIndex[_]): IndexLabel =
     IndexLabel.unsafe(view.index)
+}
+
+object ElasticSearchIndexingStream {
+
+  /**
+    * Process the event exchange value to get a Elasticsearch bulk entry
+    */
+  def process(
+      eventExchangeResult: EventExchangeResult,
+      index: IndexLabel,
+      pipeline: IndexingData => PipeResult,
+      dataEncoder: IndexingData => Task[Json]
+  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[Option[ElasticSearchBulk]] =
+    eventExchangeResult match {
+      case EventExchange.TagNotFound(id)            => Task.some(ElasticSearchBulk.Delete(index, id.toString))
+      case exchangedValue: EventExchangeValue[_, _] =>
+        for {
+          data   <- IndexingData(exchangedValue)
+          result <- pipeline(data)
+          bulk   <- result match {
+                      case None    =>
+                        Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
+                      case Some(r) =>
+                        dataEncoder(r).flatMap {
+                          case json if json.isEmpty() => Task.some(ElasticSearchBulk.Delete(index, data.id.toString))
+                          case json                   =>
+                            Task.some(
+                              ElasticSearchBulk.Index(index, data.id.toString, json)
+                            )
+                        }
+                    }
+        } yield bulk
+    }
+
 }

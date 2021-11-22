@@ -19,7 +19,7 @@ final class ElasticSearchViewsDsl(deltaClient: HttpClient)
     */
   def aggregate(id: String, projectRef: String, identity: Identity, views: (String, String)*): Task[Assertion] = {
     val payload = jsonContentOf(
-      "/kg/views/agg-elastic-view.json",
+      "/kg/views/elasticsearch/aggregate.json",
       "views" -> views.zipWithIndex.map { case ((project, view), index) =>
         Map(
           "project"    -> project,

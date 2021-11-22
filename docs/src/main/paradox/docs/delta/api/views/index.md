@@ -1,6 +1,7 @@
 @@@ index
 
 * @ref:[Elastic search view](elasticsearch-view-api.md)
+* @ref:[Pipes](pipes.md)
 * @ref:[Aggregated Elastic search view](aggregated-es-view-api.md)
 * @ref:[Sparql view](sparql-view-api.md)
 * @ref:[Aggregated Sparql view](aggregated-sparql-view-api.md)

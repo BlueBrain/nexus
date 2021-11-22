@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -48,56 +49,19 @@ class ElasticSearchViewDecodingSpec
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   implicit private val caller: Caller = Caller.Anonymous
-  val decoder                         = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
+  private val decoder                 = ElasticSearchViewJsonLdSourceDecoder(uuidF, resolverContext)
 
   "An IndexingElasticSearchViewValue" should {
-    val mapping =
-      json"""{
-               "dynamic": false,
-               "properties": {
-                 "@id": {
-                   "type": "keyword"
-                 },
-                 "@type": {
-                   "type": "keyword"
-                 },
-                 "name": {
-                   "type": "keyword"
-                 },
-                 "number": {
-                   "type": "long"
-                 },
-                 "bool": {
-                   "type": "boolean"
-                 }
-               }
-             }""".asObject.value
-
-    val settings =
-      json"""{
-        "analysis": {
-          "analyzer": {
-            "nexus": {
-              "type": "custom",
-              "tokenizer": "classic",
-              "filter": [
-                "my_multiplexer"
-              ]
-            }
-          }
-        }
-      }""".asObject.value
+    val mapping  = json"""{ "dynamic": false }""".asObject.value
+    val settings = json"""{ "analysis": { } }""".asObject.value
 
     val indexingView = IndexingElasticSearchViewValue(
-      resourceSchemas = Set.empty,
-      resourceTypes = Set.empty,
       resourceTag = None,
+      pipeline = IndexingElasticSearchViewValue.defaultPipeline,
       mapping = Some(mapping),
       settings = None,
-      includeMetadata = false,
-      includeDeprecated = false,
-      sourceAsText = false,
-      permission = permissions.query
+      permission = permissions.query,
+      context = None
     )
 
     "be decoded correctly from json-ld" when {
@@ -109,7 +73,7 @@ class ElasticSearchViewDecodingSpec
         value shouldEqual expected
         id.toString should startWith(project.base.iri.toString)
       }
-      "all fields are specified" in {
+      "all legacy fields are specified" in {
         val source      =
           json"""{
                   "@id": "http://localhost/id",
@@ -125,20 +89,94 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
-          resourceSchemas = Set(project.vocab / "Person"),
-          resourceTypes = Set(project.vocab / "Person"),
           resourceTag = Some(TagLabel.unsafe("release")),
-          sourceAsText = false,
-          includeMetadata = false,
-          includeDeprecated = false,
+          pipeline = List(
+            FilterBySchema(Set(project.vocab / "Person")),
+            FilterByType(Set(project.vocab / "Person")),
+            FilterDeprecated(),
+            DiscardMetadata(),
+            DefaultLabelPredicates()
+          ),
           mapping = Some(mapping),
           settings = Some(settings),
-          permission = Permission.unsafe("custom/permission")
+          permission = Permission.unsafe("custom/permission"),
+          context = None
         )
         val (id, value) = decoder(project, source).accepted
         value shouldEqual expected
         id shouldEqual iri"http://localhost/id"
       }
+
+      "a pipeline is defined by skipping legacy fields" in {
+        val source      =
+          json"""{
+                  "@id": "http://localhost/id",
+                  "@type": "ElasticSearchView",
+                  "pipeline": [],
+                  "resourceSchemas": [ ${(project.vocab / "Person").toString} ],
+                  "resourceTypes": [ ${(project.vocab / "Person").toString} ],
+                  "resourceTag": "release",
+                  "sourceAsText": false,
+                  "includeMetadata": false,
+                  "includeDeprecated": false,
+                  "mapping": $mapping,
+                  "settings": $settings,
+                  "permission": "custom/permission"
+                }"""
+        val expected    = IndexingElasticSearchViewValue(
+          resourceTag = Some(TagLabel.unsafe("release")),
+          pipeline = List(),
+          mapping = Some(mapping),
+          settings = Some(settings),
+          permission = Permission.unsafe("custom/permission"),
+          context = None
+        )
+        val (id, value) = decoder(project, source).accepted
+        value shouldEqual expected
+        id shouldEqual iri"http://localhost/id"
+      }
+
+      "a pipeline is defined" in {
+        val source      =
+          json"""{
+                  "@id": "http://localhost/id",
+                  "@type": "ElasticSearchView",
+                  "pipeline": [
+                    {
+                      "name": "filterDeprecated"
+                    },
+                    {
+                      "name": "filterByType",
+                      "description": "Keep only person type",
+                      "config": {
+                        "types": [ ${(project.vocab / "Person").toString} ]
+                      }
+                    }
+                  ],
+                  "resourceSchemas": [ ${(project.vocab / "Schena").toString} ],
+                  "resourceTypes": [ ${(project.vocab / "Custom").toString} ],
+                  "resourceTag": "release",
+                  "sourceAsText": false,
+                  "includeMetadata": false,
+                  "includeDeprecated": false,
+                  "mapping": $mapping,
+                  "settings": $settings,
+                  "permission": "custom/permission"
+                }"""
+        val expected    = IndexingElasticSearchViewValue(
+          resourceTag = Some(TagLabel.unsafe("release")),
+          pipeline =
+            List(FilterDeprecated(), FilterByType(Set(project.vocab / "Person")).description("Keep only person type")),
+          mapping = Some(mapping),
+          settings = Some(settings),
+          permission = Permission.unsafe("custom/permission"),
+          context = None
+        )
+        val (id, value) = decoder(project, source).accepted
+        value shouldEqual expected
+        id shouldEqual iri"http://localhost/id"
+      }
+
       "the id matches the expected id" in {
         val id       = iri"http://localhost/id"
         val source   = json"""{"@id": "http://localhost/id", "@type": "ElasticSearchView", "mapping": $mapping}"""
@@ -169,18 +207,27 @@ class ElasticSearchViewDecodingSpec
         decoder(project, source).rejectedWith[DecodingFailed]
       }
       "a default field has the wrong type" in {
-        json"""{"@type": "ElasticSearchView", "mapping": $mapping, "sourceAsText": 1}"""
+        val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping, "sourceAsText": 1}"""
+        decoder(project, source).rejectedWith[DecodingFailed]
       }
+
+      "a pipe name is missing" in {
+        val source =
+          json"""{"@type": "ElasticSearchView", "pipeline": [{ "config": "my-config" }], "mapping": $mapping}"""
+        decoder(project, source).rejectedWith[DecodingFailed]
+      }
+
       "the provided id did not match the expected one" in {
         val id     = iri"http://localhost/expected"
         val source = json"""{"@id": "http://localhost/provided", "@type": "ElasticSearchView", "mapping": $mapping}"""
         decoder(project, id, source).rejectedWith[UnexpectedElasticSearchViewId]
       }
-      "there's no known type discriminator" in {
+      "there's no known type discriminator or both are present" in {
         val sources = List(
           json"""{"mapping": $mapping}""",
           json"""{"@type": "UnknownElasticSearchView", "mapping": $mapping}""",
-          json"""{"@type": "IndexingElasticSearchView", "mapping": $mapping}"""
+          json"""{"@type": "IndexingElasticSearchView", "mapping": $mapping}""",
+          json"""{"@type": ["ElasticSearchView", "AggregateElasticSearchView"], "mapping": $mapping}"""
         )
         forAll(sources) { source =>
           decoder(project, source).rejectedWith[DecodingFailed]
@@ -283,11 +330,12 @@ class ElasticSearchViewDecodingSpec
         decoder(project, iri"http://localhost/id", source)
           .rejectedWith[InvalidJsonLdFormat]
       }
-      "there's no known type discriminator" in {
+      "there's no known type discriminator or both are present" in {
         val sources = List(
           json"""{"views": [ $viewRef1Json ]}""",
           json"""{"@type": "UnknownElasticSearchView", "views": [ $viewRef1Json ]}""",
-          json"""{"@type": "IndexingElasticSearchView", "views": [ $viewRef1Json ]}"""
+          json"""{"@type": "IndexingElasticSearchView", "views": [ $viewRef1Json ]}""",
+          json"""{"@type": ["ElasticSearchView", "AggregateElasticSearchView"], "views": [ $viewRef1Json ]}"""
         )
         forAll(sources) { source =>
           decoder(project, source).rejectedWith[DecodingFailed]

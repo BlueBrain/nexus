@@ -1,38 +1,23 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStreamEntry._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
-import ch.epfl.bluebrain.nexus.delta.rdf.Triple.predicate
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdf, rdfs, skos}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.{IndexingData, TagNotFound}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.Task
-import org.apache.jena.graph.Node
 
-final case class ElasticSearchIndexingStreamEntry(
+final case class CompositeIndexingStreamEntry(
     data: ViewData
 )(implicit cr: RemoteContextResolution) {
-
-  def writeOrNone(index: IndexLabel, view: IndexingElasticSearchView): Task[Option[ElasticSearchBulk]] = writeOrNone(
-    index,
-    view.resourceSchemas,
-    view.resourceTypes,
-    view.includeMetadata,
-    view.includeDeprecated,
-    view.sourceAsText
-  )
 
   def writeOrNone(
       index: IndexLabel,
@@ -142,19 +127,8 @@ final case class ElasticSearchIndexingStreamEntry(
 
 }
 
-object ElasticSearchIndexingStreamEntry {
+object CompositeIndexingStreamEntry {
 
   implicit private[indexing] val api: JsonLdApi = JsonLdJavaApi.lenient
 
-  private val graphPredicates: Set[Node] =
-    Set(skos.prefLabel, rdf.tpe, rdfs.label, Vocabulary.schema.name).map(predicate)
-
-  /**
-    * Converts the resource retrieved from an event exchange to [[ElasticSearchIndexingStreamEntry]]. It generates an
-    * [[IndexingData]] out of the relevant parts of the resource for elasticsearch indexing
-    */
-  def fromEventExchange(
-      exchangeResult: EventExchangeResult
-  )(implicit cr: RemoteContextResolution, baseUri: BaseUri): Task[ElasticSearchIndexingStreamEntry] =
-    ViewData(exchangeResult, graphPredicates).map(ElasticSearchIndexingStreamEntry(_))
 }

@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.{ContextObject, ContextRemoteIri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, JsonObject}
@@ -160,6 +161,9 @@ object ContextValue {
   object ContextObject {
     implicit val contextObjectEncoder: Encoder.AsObject[ContextObject] = Encoder.encodeJsonObject.contramapObject(_.obj)
     implicit val contextObjectDecoder: Decoder[ContextObject]          = Decoder.decodeJsonObject.map(ContextObject.apply)
+
+    implicit val contextObjectJsonLdDecoder: JsonLdDecoder[ContextObject] =
+      JsonLdDecoder.jsonObjectJsonLdDecoder.map(ContextObject.apply)
   }
 
   /**

@@ -34,7 +34,7 @@ final class BlazegraphIndexingStream(
   override def apply(
       view: ViewIndex[IndexingBlazegraphView],
       strategy: IndexingStream.ProgressStrategy
-  ): Stream[Task, Unit] = {
+  ): Task[Stream[Task, Unit]] = Task.delay {
     implicit val metricsConfig: KamonMetricsConfig = ViewIndex.metricsConfig(view, view.value.tpe.tpe)
     Stream
       .eval {
