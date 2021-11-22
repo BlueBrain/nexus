@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.{Restart, Stop}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamCoordinatorSpec._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.PipeNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
@@ -59,6 +60,8 @@ class IndexingStreamCoordinatorSpec
   private val view3          = iri"view3"
   // View already deprecated
   private val deprecatedView = iri"deprecatedView"
+  // Invalid view
+  private val invalidView    = iri"invalidView"
   // Unknown view
   private val unknownView    = iri"unknownView"
 
@@ -99,6 +102,7 @@ class IndexingStreamCoordinatorSpec
         case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true, view2Uuid)
         case (`view3`, _)                     => viewIndex(id, 1L, deprecated = false, view3Uuid)
         case (`deprecatedView`, Some(rev))    => viewIndex(id, rev, deprecated = true)
+        case (`invalidView`, _)               => viewIndex(id, 1L, deprecated = false)
         case (_, _)                           => None
       }
     } <* UIO.pure(probe.ref ! InitView(id))
@@ -106,31 +110,35 @@ class IndexingStreamCoordinatorSpec
   private val never      = RetryStrategy.alwaysGiveUp[Throwable]((_, _) => Task.unit)
   private val projection = Projection.inMemory(()).accepted
 
-  private val buildStream: IndexingStream[Unit] = new IndexingStream[Unit] {
-    override def apply(view: ViewIndex[Unit], strategy: IndexingStream.ProgressStrategy): Stream[Task, Unit] =
-      Stream
-        .eval {
-          UIO.pure(probe.ref ! BuildStream(view.id, view.rev, strategy)) >>
-            projection.recordProgress(view.projectionId, NoProgress)
-        }
-        .flatMap { _ =>
-          Stream
-            .repeatEval {
-              for {
-                savedProgress <- projection.progress(view.projectionId)
-                _             <- projection.recordProgress(
-                                   view.projectionId,
-                                   savedProgress.copy(processed = savedProgress.processed + 1L)
-                                 )
-              } yield ()
-            }
-            .metered(10.millis)
-            .onFinalize(
-              UIO(probe.ref ! StreamStopped(view.id, view.rev))
-            )
-        }
-
-  }
+  private val buildStream: IndexingStream[Unit] =
+    (view: ViewIndex[Unit], strategy: IndexingStream.ProgressStrategy) =>
+      view.id match {
+        case `invalidView` => Task.raiseError(PipeNotFound("xxx"))
+        case _             =>
+          Task.delay {
+            Stream
+              .eval {
+                UIO.pure(probe.ref ! BuildStream(view.id, view.rev, strategy)) >>
+                  projection.recordProgress(view.projectionId, NoProgress)
+              }
+              .flatMap { _ =>
+                Stream
+                  .repeatEval {
+                    for {
+                      savedProgress <- projection.progress(view.projectionId)
+                      _             <- projection.recordProgress(
+                                         view.projectionId,
+                                         savedProgress.copy(processed = savedProgress.processed + 1L)
+                                       )
+                    } yield ()
+                  }
+                  .metered(10.millis)
+                  .onFinalize(
+                    UIO(probe.ref ! StreamStopped(view.id, view.rev))
+                  )
+              }
+          }
+      }
   private val indexingCleanupValues             = MutableSet.empty[ViewIndex[Unit]]
   private val indexingCleanup                   = new IndexingCleanup[Unit] {
     override def apply(view: ViewIndex[Unit]): UIO[Unit] = UIO.delay(indexingCleanupValues.add(view)).void
@@ -239,6 +247,13 @@ class IndexingStreamCoordinatorSpec
       coordinator.run(deprecatedView, project, 1L).accepted
 
       probe.expectMessage(InitView(deprecatedView))
+      probe.expectNoMessage()
+    }
+
+    "do nothing with an invalid view" in {
+      coordinator.run(invalidView, project, 1L).accepted
+
+      probe.expectMessage(InitView(invalidView))
       probe.expectNoMessage()
     }
 

@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure.KeyMissingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
-import io.circe.{Json, JsonObject}
 import io.circe.parser.parse
+import io.circe.{Json, JsonObject}
 
 import java.time.Instant
 import java.util.UUID
@@ -108,8 +108,9 @@ object JsonLdDecoder {
 
   implicit def optionJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Option[A]] =
     cursor =>
-      if (cursor.succeeded) dec(cursor).map(Some.apply).recover { case _: KeyMissingFailure =>
-        None
+      if (cursor.succeeded) dec(cursor).map(Some.apply).recover {
+        case k: KeyMissingFailure if k.path.isEmpty =>
+          None
       }
       else Right(None)
 

@@ -23,9 +23,5 @@ curl -XPOST \
         }
       }
     },
-    "includeMetadata": true,
-    "includeDeprecated": true,
-    "sourceAsText": true,
-    "resourceSchemas": [],
-    "resourceTypes": []
+    "pipeline": []
 }'

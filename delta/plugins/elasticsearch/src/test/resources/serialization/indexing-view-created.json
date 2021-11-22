@@ -1,62 +1,106 @@
 {
-  "id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
-  "project" : "myorg/myproj",
-  "uuid" : "f8468909-a797-4b10-8b5f-000cba337bfa",
-  "value" : {
-    "resourceSchemas" : [
-      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+  "id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view",
+  "project": "myorg/myproj",
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "value": {
+    "resourceTag": "some.tag",
+    "pipeline": [
+      {
+        "name": "filterBySchema",
+        "description": "Only keeping a specific schema",
+        "config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "filterByType",
+        "config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "sourceAsText"
+      }
     ],
-    "resourceTypes" : [
-      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
-    ],
-    "resourceTag" : "some.tag",
-    "sourceAsText" : true,
-    "includeMetadata" : false,
-    "includeDeprecated" : false,
-    "mapping" : {
-      "properties" : {
-
+    "mapping": {
+      "properties": {
       }
     },
-    "settings" : {
-      "analysis" : {
-
+    "settings": {
+      "analysis": {
       }
     },
-    "permission" : "my/permission",
-    "@type" : "IndexingElasticSearchViewValue"
+    "context": {
+      "@vocab": "http://schema.org/"
+    },
+    "permission": "my/permission",
+    "@type": "IndexingElasticSearchViewValue"
   },
-  "source" : {
-    "resourceSchemas" : [
-      "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+  "source": {
+    "resourceTag": "some.tag",
+    "pipeline": [
+      {
+        "name": "filterBySchema",
+        "description": "Only keeping a specific schema",
+        "config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/some-schema"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "filterByType",
+        "config": [
+          {
+            "https://bluebrain.github.io/nexus/vocabulary/types": [
+              {
+                "@id": "https://bluebrain.github.io/nexus/vocabulary/SomeType"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "sourceAsText"
+      }
     ],
-    "resourceTypes" : [
-      "https://bluebrain.github.io/nexus/vocabulary/SomeType"
-    ],
-    "resourceTag" : "some.tag",
-    "sourceAsText" : true,
-    "includeMetadata" : false,
-    "includeDeprecated" : false,
-    "mapping" : {
-      "properties" : {
-
+    "mapping": {
+      "properties": {
       }
     },
-    "settings" : {
-      "analysis" : {
-
+    "settings": {
+      "analysis": {
       }
     },
-    "permission" : "my/permission",
-    "@type" : "ElasticSearchView",
-    "@id" : "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
+    "context": {
+      "@vocab": "http://schema.org/"
+    },
+    "permission": "my/permission",
+    "@type": "ElasticSearchView",
+    "@id": "https://bluebrain.github.io/nexus/vocabulary/indexing-view"
   },
-  "rev" : 1,
-  "instant" : "1970-01-01T00:00:00Z",
-  "subject" : {
-    "subject" : "username",
-    "realm" : "myrealm",
-    "@type" : "User"
+  "rev": 1,
+  "instant": "1970-01-01T00:00:00Z",
+  "subject": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
   },
-  "@type" : "ElasticSearchViewCreated"
+  "@type": "ElasticSearchViewCreated"
 }

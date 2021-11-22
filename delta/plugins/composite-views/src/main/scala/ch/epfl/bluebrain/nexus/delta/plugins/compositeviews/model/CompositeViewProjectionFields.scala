@@ -170,9 +170,6 @@ object CompositeViewProjectionFields {
   @nowarn("cat=unused")
   implicit final val projectionLdDecoder: JsonLdDecoder[CompositeViewProjectionFields] = {
 
-    implicit val contextObjectJsonLdDecoder: JsonLdDecoder[ContextObject] =
-      JsonLdDecoder.jsonObjectJsonLdDecoder.map(ContextObject.apply)
-
     val ctx = Configuration.default.context
       .addAliasIdType("ElasticSearchProjectionFields", ElasticSearchProjectionType.tpe)
       .addAliasIdType("SparqlProjectionFields", SparqlProjectionType.tpe)

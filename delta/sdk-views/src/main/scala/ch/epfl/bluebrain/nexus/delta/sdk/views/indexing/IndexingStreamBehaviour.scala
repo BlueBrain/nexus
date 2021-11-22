@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.{CancelableStream, StreamSwitch}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{Task, UIO}
@@ -89,22 +90,24 @@ object IndexingStreamBehaviour {
           }
 
           context.pipeToSelf(io.runToFuture) {
-            case Success(value) => value
-            case Failure(cause) => IndexingError(cause)
+            case Success(value)        => value
+            case Failure(_: PipeError) => ViewIsInvalid
+            case Failure(cause)        => IndexingError(cause)
           }
         }
 
         // Starts a new stream from the offset defined in progressStrategy
         def startStream(view: ViewIndex[V], progressStrategy: IndexingStream.ProgressStrategy): Task[StreamSwitch[StoppedReason]] = {
-          val stream = buildStream(view, progressStrategy)
-          CancelableStream[Unit, StoppedReason](streamName(view.rev), stream, StoppedReason.StreamStoppedUnexpected)
-            .map { stream =>
-              val runnableStream = idleDuration(view.value) match {
-                case duration: FiniteDuration => stream.idleTimeout(duration, StoppedReason.StreamPassivated)
-                case _                        => stream
+          buildStream(view, progressStrategy).flatMap { stream =>
+            CancelableStream[Unit, StoppedReason](streamName(view.rev), stream, StoppedReason.StreamStoppedUnexpected)
+              .map { stream =>
+                val runnableStream = idleDuration(view.value) match {
+                  case duration: FiniteDuration => stream.idleTimeout(duration, StoppedReason.StreamPassivated)
+                  case _                        => stream
+                }
+                runnableStream.run(retryStrategy, onCancel = onFinalize, onFinalize = onFinalize)
               }
-              runnableStream.run(retryStrategy, onCancel = onFinalize, onFinalize = onFinalize)
-            }
+          }
         }
 
         // Starts the indexing, attempts to fetch the view and to start a stream
@@ -117,10 +120,10 @@ object IndexingStreamBehaviour {
         // Behaviour after starting a new stream has been requested
         def balancing(): Behavior[IndexingViewCommand[V]] =
           Behaviors.receiveMessage[IndexingViewCommand[V]] {
-            case Started(v, s)                   =>
+            case Started(v, s)                                   =>
               // The stream has been successfully started, we stop stashing and switch to the running behaviour
               buffer.unstashAll(running(v, s))
-            case ViewIsDeprecated | ViewNotFound =>
+            case ViewIsDeprecated | ViewNotFound | ViewIsInvalid =>
               // We passivate the entity
               shard ! ClusterSharding.Passivate(self)
               passivating()
@@ -158,8 +161,9 @@ object IndexingStreamBehaviour {
                 logger.debug("'Restart' event has been received for view {} in project {} with progress strategy {}", id, project, progressStrategy)
                 val restart = switch.stop(StoppedReason.StreamStopped) >> startStream(viewIndex, progressStrategy)
                 context.pipeToSelf(restart.runToFuture) {
-                  case Success(switch) => Started(viewIndex, switch)
-                  case Failure(cause)  => IndexingError(cause)
+                  case Success(switch)       => Started(viewIndex, switch)
+                  case Failure(_: PipeError) => ViewIsInvalid
+                  case Failure(cause)        => IndexingError(cause)
                 }
                 balancing()
               case _: Started[V] =>
@@ -170,6 +174,9 @@ object IndexingStreamBehaviour {
                 Behaviors.unhandled
               case ViewIsDeprecated =>
                 logger.warn("'ViewDeprecated' should not happen in 'balancing' behaviour")
+                Behaviors.unhandled
+              case ViewIsInvalid =>
+                logger.warn("'ViewIsInvalid' should not happen in 'balancing' behaviour")
                 Behaviors.unhandled
               case IndexingError(cause) =>
                 throw cause
@@ -243,6 +250,10 @@ object IndexingStreamBehaviour {
   /** Internal command when the underlying view is deprecated and that the entity should be passivated
     */
   private case object ViewIsDeprecated extends IndexingViewCommand[Nothing]
+
+  /** Internal command when the underlying view is invalid and that the entity should be passivated
+    */
+  private case object ViewIsInvalid extends IndexingViewCommand[Nothing]
 
   /** Internal command when the underlying view is deprecated and that the entity should be passivated
     */

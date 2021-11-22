@@ -93,13 +93,21 @@ final case class ExpandedJsonLd private (rootId: IriOrBNode, obj: JsonObject) ex
   /**
     * Adds the passed ''key'' and ''iri'' @id to the current document main entry
     */
-  def add(key: Iri, iri: Iri): ExpandedJsonLd =
+  def add(key: Iri, iri: Iri): ExpandedJsonLd          =
     add(key.toString, Json.obj(keywords.id -> iri.asJson))
+
+  /**
+    * Adds the passed ''key'' and the set of ''iris'' @id to the current document main entry
+    */
+  def addAll(key: Iri, iris: Set[Iri]): ExpandedJsonLd =
+    iris.foldLeft(self) { case (expanded, tpe) =>
+      expanded.add(key, tpe)
+    }
 
   /**
     * Adds the passed ''iri'' @type to the current document main entry
     */
-  def addType(iri: Iri): ExpandedJsonLd       =
+  def addType(iri: Iri): ExpandedJsonLd =
     cursor.getTypes match {
       case Right(types) if types.contains(iri) => self
       case _                                   => add(keywords.tpe, iri.asJson)

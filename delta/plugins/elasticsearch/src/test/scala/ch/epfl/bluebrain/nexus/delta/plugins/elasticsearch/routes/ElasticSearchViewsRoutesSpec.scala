@@ -10,10 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchSettings, permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -36,15 +38,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, Proje
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
-import io.circe.{Json, JsonObject}
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 
 import java.time.Instant
 import java.util.UUID
@@ -69,7 +69,7 @@ class ElasticSearchViewsRoutesSpec
   implicit val typedSystem = system.toTyped
 
   override protected def createActorSystem(): ActorSystem =
-    ActorSystem("StoragesRoutersSpec", AbstractDBSpec.config)
+    ActorSystem("ElasticSearchRoutersSpec", AbstractDBSpec.config)
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -108,12 +108,17 @@ class ElasticSearchViewsRoutesSpec
   )
   private val projectRef = project.value.ref
 
-  private val myId           = nxv + "myid"
-  private val myIdEncoded    = UrlUtils.encode(myId.toString)
-  private val myId2          = nxv + "myid2"
-  private val myId2Encoded   = UrlUtils.encode(myId2.toString)
-  private val mapping        = jsonContentOf("mapping.json")
-  private val payload        = json"""{"@id": "$myId", "@type": "ElasticSearchView", "mapping": $mapping}"""
+  private val myId         = nxv + "myid"
+  private val myIdEncoded  = UrlUtils.encode(myId.toString)
+  private val myId2        = nxv + "myid2"
+  private val myId2Encoded = UrlUtils.encode(myId2.toString)
+  private val myId3        = nxv + "myid3"
+
+  private val mapping  = json"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }"""
+  private val settings = json"""{"analysis": {"analyzer": {"nexus": {} } } }"""
+
+  private val payload        =
+    json"""{"@id": "$myId", "@type": "ElasticSearchView", "mapping": $mapping, "settings": $settings  }"""
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
@@ -215,11 +220,33 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
+    "create a view with the given pipeline" in {
+      Put(
+        "/v1/views/myorg/myproject/myid3",
+        payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "filterDeprecated" } ]}""").toEntity
+      ) ~> asAlice ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        response.asJson shouldEqual
+          elasticSearchViewMetadata(myId3, createdBy = alice, updatedBy = alice)
+      }
+    }
+
     "reject the creation of a view which already exists" in {
       Put("/v1/views/myorg/myproject/myid", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
           jsonContentOf("/routes/errors/already-exists.json", "id" -> myId, "project" -> "myorg/myproject")
+      }
+    }
+
+    "reject the creation of a view with an unknown pipe" in {
+      Put(
+        "/v1/views/myorg/myproject/unknown-pipe",
+        payloadNoId.deepMerge(json"""{ "pipeline": [ { "name": "xxx" } ]}""").toEntity
+      ) ~> routes ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        response.asJson shouldEqual
+          jsonContentOf("/routes/errors/pipe-not-found.json", "id" -> myId, "project" -> "myorg/myproject")
       }
     }
 
@@ -609,8 +636,6 @@ class ElasticSearchViewsRoutesSpec
       "label"      -> lastSegment(id)
     )
 
-  private val defaultEsSettings = defaultElasticsearchSettings.accepted.asJson
-
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
@@ -630,7 +655,7 @@ class ElasticSearchViewsRoutesSpec
       "updatedBy"         -> updatedBy.id,
       "includeDeprecated" -> includeDeprecated,
       "label"             -> lastSegment(id)
-    ).mapObject(_.add("settings", defaultEsSettings))
+    ).mapObject(_.add("settings", settings))
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)

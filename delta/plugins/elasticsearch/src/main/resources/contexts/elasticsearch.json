@@ -1,18 +1,24 @@
 {
-  "@context": {
-    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "resourceTypes": {
-      "@type": "@id",
-      "@container": "@set"
+  "@context": [
+    {
+      "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+      "pipeline": {
+        "@container": "@list"
+      },
+      "resourceTypes": {
+        "@type": "@id",
+        "@container": "@set"
+      },
+      "resourceSchemas": {
+        "@type": "@id",
+        "@container": "@set"
+      },
+      "viewId": {
+        "@type": "@id"
+      },
+      "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
     },
-    "resourceSchemas": {
-      "@type": "@id",
-      "@container": "@set"
-    },
-    "viewId": {
-      "@type": "@id"
-    },
-    "_uuid": "https://bluebrain.github.io/nexus/vocabulary/uuid"
-  },
+    "https://bluebrain.github.io/nexus/contexts/pipeline.json"
+  ],
   "@id": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json"
 }

@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewP
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{compositeViewType, CompositeView, CompositeViewProjection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -103,7 +102,7 @@ final class CompositeIndexingStream(
   override def apply(
       view: ViewIndex[CompositeView],
       strategy: IndexingStream.ProgressStrategy
-  ): Stream[Task, Unit] = {
+  ): Task[Stream[Task, Unit]] = Task.delay {
     val stream = Stream
       .eval {
         // evaluates strategy and set/get the appropriate progress
@@ -238,7 +237,7 @@ final class CompositeIndexingStream(
       projection: ElasticSearchProjection
   ): Pipe[Task, Chunk[Message[(BlazegraphIndexingStreamEntry, Boolean)]], Chunk[Message[Unit]]] =
     _.evalMapFilterValue { case (BlazegraphIndexingStreamEntry(resource), deleteCandidate) =>
-      val esRes = ElasticSearchIndexingStreamEntry(resource.discardSource)
+      val esRes = CompositeIndexingStreamEntry(resource.discardSource)
       val index = idx(projection, view)
       if (deleteCandidate) esRes.delete(resource.id, index).map(Some.apply)
       else

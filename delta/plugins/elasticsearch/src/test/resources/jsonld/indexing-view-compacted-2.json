@@ -5,17 +5,24 @@
     "ElasticSearchView",
     "View"
   ],
-  "includeDeprecated": true,
-  "includeMetadata": true,
+  "context": {
+    "@vocab": "http://schema.org/"
+  },
+  "includeDeprecated": false,
+  "includeMetadata": false,
   "permission": "views/query",
-  "resourceSchemas": [
-    "https://bluebrain.github.io/nexus/vocabulary/Schema"
+  "pipeline": [
+    {
+      "name": "filterDeprecated"
+    },
+    {
+      "name": "discardMetadata"
+    }
   ],
+  "resourceSchemas": [],
   "resourceTag": "mytag",
-  "resourceTypes": [
-    "https://bluebrain.github.io/nexus/vocabulary/Morphology"
-  ],
-  "sourceAsText": true,
+  "resourceTypes": [],
+  "sourceAsText": false,
   "_uuid": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981",
   "mapping": {
     "properties": {

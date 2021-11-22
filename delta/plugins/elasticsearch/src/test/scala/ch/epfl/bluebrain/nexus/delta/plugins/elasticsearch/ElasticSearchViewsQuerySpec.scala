@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, Proj
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.{Json, JsonObject}
@@ -99,15 +100,12 @@ class ElasticSearchViewsQuerySpec
       id,
       project,
       IndexingElasticSearchViewValue(
-        resourceSchemas = Set.empty,
-        resourceTypes = Set.empty,
         resourceTag = None,
+        pipeline = List(FilterDeprecated(), DiscardMetadata()),
         mapping = None,
         settings = None,
-        includeMetadata = false,
-        includeDeprecated = false,
-        sourceAsText = false,
-        permission = permissions.query
+        permission = permissions.query,
+        context = None
       )
     )
       .asInstanceOf[IndexingViewResource]

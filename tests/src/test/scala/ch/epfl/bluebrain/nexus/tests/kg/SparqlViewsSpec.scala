@@ -9,10 +9,9 @@ import ch.epfl.bluebrain.nexus.tests.Identity.views.ScoobyDoo
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Views}
 import io.circe.Json
-import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
 
-class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
+class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
   private val orgId  = genId()
   private val projId = genId()
@@ -38,6 +37,15 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- adminDsl.createProject(orgId, projId2, kgDsl.projectJson(name = fullId2), ScoobyDoo)
       } yield succeed
     }
+
+    "wait until in project resolver is created" in {
+      eventually {
+        deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
+          response.status shouldEqual StatusCodes.OK
+          _total.getOption(json).value shouldEqual 1L
+        }
+      }
+    }
   }
 
   "creating the view" should {
@@ -48,25 +56,6 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         deltaClient.put[Json](s"/resources/$project/resource/test-resource:context", payload, ScoobyDoo) {
           (_, response) =>
             response.status shouldEqual StatusCodes.Created
-        }
-      }
-    }
-
-    "wait until in project resolver is created" in {
-      eventually {
-        deltaClient.get[Json](s"/resolvers/$fullId", ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          _total.getOption(json).value shouldEqual 1L
-        }
-      }
-    }
-
-    "create an ElasticSearch view" in {
-      val payload = jsonContentOf("/kg/views/elastic-view.json")
-
-      projects.parTraverse { project =>
-        deltaClient.put[Json](s"/views/$project/test-resource:testView", payload, ScoobyDoo) { (_, response) =>
-          response.status shouldEqual StatusCodes.Created
         }
       }
     }
@@ -101,36 +90,6 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
       deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggView", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
-      }
-    }
-
-    "create an AggregateElasticSearchView" in {
-      elasticsearchViewsDsl.aggregate(
-        "test-resource:testAggEsView",
-        fullId2,
-        ScoobyDoo,
-        fullId  -> "https://dev.nexus.test.com/simplified-resource/testView",
-        fullId2 -> "https://dev.nexus.test.com/simplified-resource/testView"
-      )
-    }
-
-    "get the created AggregateElasticSearchView" in {
-      deltaClient.get[Json](s"/views/$fullId2/test-resource:testAggEsView", ScoobyDoo) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-
-        val expected = jsonContentOf(
-          "/kg/views/agg-elastic-view-response.json",
-          replacements(
-            ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/testAggEsView",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:testAggEsView",
-            "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
-            "project1"       -> fullId,
-            "project2"       -> fullId2
-          ): _*
-        )
-
-        filterMetadataKeys(json) should equalIgnoreArrayOrder(expected)
       }
     }
 
@@ -172,7 +131,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "wait until in project view is indexed" in eventually {
       deltaClient.get[Json](s"/views/$fullId", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 5
+        _total.getOption(json).value shouldEqual 4
         response.status shouldEqual StatusCodes.OK
       }
     }
@@ -182,94 +141,6 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         response.status shouldEqual StatusCodes.OK
         _total.getOption(json).value shouldEqual 4
       }
-    }
-
-    "return 400 with bad query instances" in {
-      val query = Json.obj("query" -> Json.obj("other" -> Json.obj()))
-      deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", query, ScoobyDoo) { (json, response) =>
-        response.status shouldEqual StatusCodes.BadRequest
-        json shouldEqual jsonContentOf("/kg/views/elastic-error.json")
-      }
-    }
-
-    val sort = Json.obj("sort" -> Json.arr(Json.obj("name.raw" -> Json.obj("order" -> Json.fromString("asc")))))
-
-    val sortedMatchCells =
-      Json.obj("query" -> Json.obj("term" -> Json.obj("@type" -> Json.fromString("Cell")))) deepMerge sort
-
-    val matchAll         = Json.obj("query" -> Json.obj("match_all" -> Json.obj())) deepMerge sort
-
-    "search instances on project 1" in eventually {
-      deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/es-search-response.json", "index" -> index)
-
-          deltaClient
-            .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
-              filterKey("took")(json2) shouldEqual filterKey("took")(json)
-            }
-            .runSyncUnsafe()
-      }
-    }
-
-    "search instances on project 2" in eventually {
-      deltaClient.post[Json](s"/views/$fullId2/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/es-search-response-2.json", "index" -> index)
-
-          deltaClient
-            .post[Json](s"/views/$fullId2/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
-              filterKey("took")(json2) shouldEqual filterKey("took")(json)
-            }
-            .runSyncUnsafe()
-      }
-    }
-
-    "search instances on project AggregatedElasticSearchView when logged" in eventually {
-      deltaClient.post[Json](
-        s"/views/$fullId2/test-resource:testAggEsView/_search",
-        sortedMatchCells,
-        ScoobyDoo
-      ) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        val indexes   = hits.each._index.string.getAll(json)
-        val toReplace = indexes.zipWithIndex.map { case (value, i) => s"index${i + 1}" -> value }
-        filterKey("took")(json) shouldEqual
-          jsonContentOf("/kg/views/es-search-response-aggregated.json", toReplace: _*)
-      }
-    }
-
-    "search instances on project AggregatedElasticSearchView as anonymous" in eventually {
-      deltaClient.post[Json](s"/views/$fullId2/test-resource:testAggEsView/_search", sortedMatchCells, Anonymous) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/es-search-response-2.json", "index" -> index)
-      }
-    }
-
-    "fetch statistics for testView" in {
-      import scala.concurrent.duration._
-      Task.sleep(3.seconds) >> // allow indexing to complete for postgres
-        deltaClient.get[Json](s"/views/$fullId/test-resource:testView/statistics", ScoobyDoo) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          val expected = jsonContentOf(
-            "/kg/views/statistics.json",
-            "total"     -> "14",
-            "processed" -> "14",
-            "evaluated" -> "6",
-            "discarded" -> "8",
-            "remaining" -> "0"
-          )
-          filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
-        }
     }
 
     val query =
@@ -282,7 +153,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         |order by ?s
       """.stripMargin
 
-    "search instances in SPARQL endpoint in project 1" in {
+    "search instances in SPARQL endpoint in project 1" in eventually {
       deltaClient.sparqlQuery[Json](s"/views/$fullId/nxv:defaultSparqlIndex/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
@@ -314,14 +185,14 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "fetch statistics for defaultSparqlIndex" in {
+    "fetch statistics for defaultSparqlIndex" in eventually {
       deltaClient.get[Json](s"/views/$fullId/nxv:defaultSparqlIndex/statistics", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/statistics.json",
-          "total"     -> "14",
-          "processed" -> "14",
-          "evaluated" -> "14",
+          "total"     -> "13",
+          "processed" -> "13",
+          "evaluated" -> "13",
           "discarded" -> "0",
           "remaining" -> "0"
         )
@@ -344,7 +215,7 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.post[Json](
           s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags?rev=1",
-          Json.obj("rev" -> Json.fromLong(1L), "tag" -> Json.fromString("one")),
+          json"""{ "rev": 1, "tag": "one"}""",
           ScoobyDoo
         ) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
@@ -398,44 +269,12 @@ class ViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances on project 1 after removed @type" in eventually {
-      deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
-        (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/es-search-response-no-type.json", "index" -> index)
-
-          deltaClient
-            .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
-              filterKey("took")(json2) shouldEqual filterKey("took")(json)
-            }
-            .runSyncUnsafe()
-      }
-    }
-
     "deprecate a resource" in {
       val payload      = filterKey("@type")(jsonContentOf("/kg/views/instances/instance2.json"))
       val id           = payload.asObject.value("@id").value.asString.value
       val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
       deltaClient.delete[Json](s"/resources/$fullId/_/patchedcell:$unprefixedId?rev=3", ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.OK
-      }
-    }
-
-    "search instances on project 1 after deprecated" in eventually {
-      deltaClient.post[Json](s"/views/$fullId/test-resource:testView/_search", sortedMatchCells, ScoobyDoo) {
-        (json, result) =>
-          result.status shouldEqual StatusCodes.OK
-          val index = hits(0)._index.string.getOption(json).value
-          filterKey("took")(json) shouldEqual
-            jsonContentOf("/kg/views/es-search-response-no-deprecated.json", "index" -> index)
-
-          deltaClient
-            .post[Json](s"/views/$fullId/test-resource:testView/_search", matchAll, ScoobyDoo) { (json2, _) =>
-              filterKey("took")(json2) shouldEqual filterKey("took")(json)
-            }
-            .runSyncUnsafe()
       }
     }
 

@@ -42,6 +42,7 @@ trait Fixtures extends IOValues {
     Vocabulary.contexts.shacl      -> ContextValue.fromFile("contexts/shacl.json").accepted,
     Vocabulary.contexts.statistics -> ContextValue.fromFile("/contexts/statistics.json").accepted,
     Vocabulary.contexts.offset     -> ContextValue.fromFile("/contexts/offset.json").accepted,
+    Vocabulary.contexts.pipeline   -> ContextValue.fromFile("contexts/pipeline.json").accepted,
     Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json").accepted,
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json").accepted
   )
