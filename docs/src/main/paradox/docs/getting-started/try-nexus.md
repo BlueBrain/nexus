@@ -771,6 +771,31 @@ It's your turn now to add a dashboard to list your Neuron Electrophysiology data
 
 Congratulations! You've created your very first studio, which completes this tutorial step.
 
+### 4.5. (Optional) Nexus Fusion Search
+
+Instead of going to the project view and write a custom SPARQL query to retrieve the relevant information for your use case, you can also use the Nexus Fusion search bar.
+
+The search bar is located at the top of the application (in the header) and will search across all available datasets (i.e. the ones you have access to).
+
+@@@ div { .center }
+![Studio Search Bar](../assets/fusion-search-bar.png)
+@@@
+
+For this tutorial, you should be able to browse all the morphologies and electrophysiologies that have been registered in the previous steps.
+
+@@@ div { .center }
+![Studio Global Search](../assets/fusion-global-search.png)
+@@@
+
+The search interface allows you to:
+
+- perform a full-test search on available columns,
+- filter and sort columns through the column dropdozn menu,
+- re-order columns,
+- hide or show relevant columns.
+
+Configuring Search is outside the scope of this tutorial.
+
 ## Step 5: Finding Similar Datasets using Recommendations
 
 In this section, you will first learn about recommendation systems, then reuse the data you have integrated in Nexus in previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or electrophysiology recording. 
