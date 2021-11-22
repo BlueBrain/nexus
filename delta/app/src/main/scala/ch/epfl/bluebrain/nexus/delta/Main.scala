@@ -134,7 +134,7 @@ object Main extends BIOApp {
       val logger                          = locator.get[Logger]
       val cluster                         = Cluster(as)
 
-      sys.env.get("MIGRATION_1_7").foreach { _ =>
+      if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
         locator.get[Migration].run.runSyncUnsafe()
         RepairTagViews.repair
       }

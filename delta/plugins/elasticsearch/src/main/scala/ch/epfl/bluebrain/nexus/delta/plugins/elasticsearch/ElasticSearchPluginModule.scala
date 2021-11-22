@@ -392,7 +392,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 
-  if (sys.env.contains("MIGRATION_1_7")) {
+  if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
     make[Migration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfig) =>
       MigrationV16ToV17(as, databaseConfig.cassandra)
     )
