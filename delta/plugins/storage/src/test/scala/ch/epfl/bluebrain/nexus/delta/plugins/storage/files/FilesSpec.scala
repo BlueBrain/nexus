@@ -655,14 +655,13 @@ class FilesSpec
     "deprecating a file" should {
 
       "succeed" in {
-        files.deprecate(file1, projectRef, 4).accepted shouldEqual
+        files.deprecate(file1, projectRef, 5).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
             attributes(size = 20),
-            rev = 5,
-            tags = Map(tag -> 1),
+            rev = 6,
             deprecated = true,
             createdBy = bob,
             updatedBy = bob
@@ -675,7 +674,7 @@ class FilesSpec
 
       "reject if the revision passed is incorrect" in {
         files.deprecate(file1, projectRef, 3).rejected shouldEqual
-          IncorrectRev(provided = 3, expected = 5)
+          IncorrectRev(provided = 3, expected = 6)
       }
 
       "reject if project does not exist" in {
@@ -696,13 +695,13 @@ class FilesSpec
       }
 
       "allow tagging after deprecation" in {
-        files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 4, 6).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
             attributes(size = 20),
-            rev = 6,
+            rev = 7,
             tags = Map(tag -> 4),
             createdBy = bob,
             updatedBy = bob,
@@ -732,7 +731,7 @@ class FilesSpec
         projectRef,
         diskRev,
         attributes(size = 20),
-        rev = 6,
+        rev = 7,
         tags = Map(tag -> 4),
         deprecated = true,
         createdBy = bob,
@@ -748,7 +747,7 @@ class FilesSpec
       }
 
       "succeed by rev" in {
-        files.fetch(IdSegmentRef(file1, 6), projectRef).accepted shouldEqual resourceRev6
+        files.fetch(IdSegmentRef(file1, 7), projectRef).accepted shouldEqual resourceRev6
         files.fetch(IdSegmentRef(file1, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
@@ -758,8 +757,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetch(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 7, current = 6)
+        files.fetch(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 8, current = 7)
       }
 
       "fail if it doesn't exist" in {
@@ -806,8 +805,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetchContent(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 7, current = 6)
+        files.fetchContent(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 8, current = 7)
       }
 
       "fail if it doesn't exist" in {
@@ -836,6 +835,7 @@ class FilesSpec
           file2       -> FileUpdated,
           file1       -> FileAttributesUpdated,
           file1       -> FileTagAdded,
+          file1       -> FileTagDeleted,
           file1       -> FileDeprecated
         )
         .map { case (iri, tpe, seq) => (iri, tpe, Sequence(seq.value + 2)) } // the first 2 entries are for storages
