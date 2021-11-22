@@ -102,6 +102,25 @@ trait Schemas {
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
   /**
+    * Delete a tag on an existing schema.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the schema
+    * @param projectRef
+    *   the project reference where the schema belongs
+    * @param tag
+    *   the tag name
+    * @param rev
+    *   the current revision of the schema
+    */
+  def deleteTag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      rev: Long
+  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
+
+  /**
     * Deprecates an existing schema.
     *
     * @param id
@@ -268,6 +287,11 @@ object Schemas {
       case Initial    => Initial
       case s: Current => s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
+
+    def tagDeleted(e: SchemaTagDeleted): SchemaState = state match {
+      case Initial    => Initial
+      case s: Current => s.copy(rev = e.rev, tags = s.tags.removed(e.tag), updatedAt = e.instant, updatedBy = e.subject)
+    }
     // format: on
 
     def deprecated(e: SchemaDeprecated): SchemaState = state match {
@@ -278,6 +302,7 @@ object Schemas {
       case e: SchemaCreated    => created(e)
       case e: SchemaUpdated    => updated(e)
       case e: SchemaTagAdded   => tagAdded(e)
+      case e: SchemaTagDeleted => tagDeleted(e)
       case e: SchemaDeprecated => deprecated(e)
     }
   }
@@ -355,10 +380,22 @@ object Schemas {
           IOUtils.instant.map(SchemaDeprecated(c.id, c.project, s.rev + 1, _, c.subject))
       }
 
+    def deleteTag(c: DeleteSchemaTag) =
+      state match {
+        case Initial                               =>
+          IO.raiseError(SchemaNotFound(c.id, c.project))
+        case s: Current if s.rev != c.rev          =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
+        case s: Current                            =>
+          IOUtils.instant.map(SchemaTagDeleted(c.id, c.project, c.tag, s.rev + 1, _, c.subject))
+      }
+
     cmd match {
       case c: CreateSchema    => create(c)
       case c: UpdateSchema    => update(c)
       case c: TagSchema       => tag(c)
+      case c: DeleteSchemaTag => deleteTag(c)
       case c: DeprecateSchema => deprecate(c)
     }
   }

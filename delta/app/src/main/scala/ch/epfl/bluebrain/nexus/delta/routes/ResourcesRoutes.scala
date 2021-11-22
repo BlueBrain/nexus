@@ -241,7 +241,12 @@ final class ResourcesRoutes(
                                 ref,
                                 Write
                               )) { (tag, rev) =>
-                                emit(resources.deleteTag(id, ref, schemaOpt, tag, rev).map(_.void))
+                                emit(
+                                  resources
+                                    .deleteTag(id, ref, schemaOpt, tag, rev)
+                                    .tapEval(index(ref, _, mode))
+                                    .map(_.void)
+                                )
                               }
                             )
                           }
