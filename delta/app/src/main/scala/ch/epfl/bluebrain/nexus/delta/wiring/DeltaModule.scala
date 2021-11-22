@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.wiring.ViewsModule
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
@@ -72,6 +73,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       errorCtx    <- ContextValue.fromFile("contexts/error.json")
       metadataCtx <- ContextValue.fromFile("contexts/metadata.json")
       searchCtx   <- ContextValue.fromFile("contexts/search.json")
+      pipelineCtx <- ContextValue.fromFile("contexts/pipeline.json")
       tagsCtx     <- ContextValue.fromFile("contexts/tags.json")
       versionCtx  <- ContextValue.fromFile("contexts/version.json")
     } yield RemoteContextResolution
@@ -79,6 +81,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
         contexts.error    -> errorCtx,
         contexts.metadata -> metadataCtx,
         contexts.search   -> searchCtx,
+        contexts.pipeline -> pipelineCtx,
         contexts.tags     -> tagsCtx,
         contexts.version  -> versionCtx
       )
@@ -182,6 +185,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(VersionModule)
   include(QuotasModule)
   include(EventsModule)
+  include(ViewsModule)
 }
 
 object DeltaModule {

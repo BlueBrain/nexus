@@ -19,6 +19,13 @@ import scala.util.Try
 final class ExpandedJsonLdCursor private (value: ACursor) {
 
   /**
+    */
+  def focus: Either[DecodingFailure, ExpandedJsonLd] =
+    Either.fromOption(value.focus, ParsingFailure("ExpandedJsonLd", history)).flatMap { json =>
+      ExpandedJsonLd.expanded(json).leftMap { e => ParsingFailure(e.getMessage) }
+    }
+
+  /**
     * Indicate whether this cursor represents the result of a successful operation.
     */
   def succeeded: Boolean = value.succeeded

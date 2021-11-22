@@ -42,6 +42,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
@@ -555,6 +556,7 @@ object ElasticSearchViews {
     }
 
   def aggregate(
+      pipeConfig: PipeConfig,
       config: ElasticSearchViewsConfig,
       permissions: Permissions,
       client: ElasticSearchClient,
@@ -580,10 +582,11 @@ object ElasticSearchViews {
                                .void
         } yield ()
 
-    aggregate(config, permissions, validateIndex, deferred, resourceIdCheck)
+    aggregate(pipeConfig, config, permissions, validateIndex, deferred, resourceIdCheck)
   }
 
   private[elasticsearch] def aggregate(
+      pipeConfig: PipeConfig,
       config: ElasticSearchViewsConfig,
       permissions: Permissions,
       validateIndex: ValidateIndex,
@@ -617,10 +620,11 @@ object ElasticSearchViews {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
 
-    aggregate(config, validatePermission, validateIndex, viewResolution, validateRef, idAvailability)
+    aggregate(pipeConfig, config, validatePermission, validateIndex, viewResolution, validateRef, idAvailability)
   }
 
   private def aggregate(
+      pipeConfig: PipeConfig,
       config: ElasticSearchViewsConfig,
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
@@ -633,6 +637,7 @@ object ElasticSearchViews {
       initialState = Initial,
       next = next,
       evaluate = evaluate(
+        pipeConfig,
         validatePermission,
         validateIndex,
         validateRef,
@@ -692,6 +697,7 @@ object ElasticSearchViews {
   type ValidateRef        = ViewRef => IO[InvalidViewReference, Unit]
 
   private[elasticsearch] def evaluate(
+      pipeConfig: PipeConfig,
       validatePermission: ValidatePermission,
       validateIndex: ValidateIndex,
       validateRef: ValidateRef,
@@ -717,6 +723,7 @@ object ElasticSearchViews {
           for {
             _ <- validateIndex(IndexLabel.fromView(indexingPrefix, uuid, rev), v)
             _ <- validatePermission(v.permission)
+            _ <- IO.fromEither(Pipe.validate(v.pipeline, pipeConfig)).mapError(InvalidPipeline)
           } yield ()
       }
 

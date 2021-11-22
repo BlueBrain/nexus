@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -157,6 +158,9 @@ object ElasticSearchViewRejection {
     */
   final case class InvalidElasticSearchIndexPayload(details: Option[Json])
       extends ElasticSearchViewRejection("The provided ElasticSearch mapping value is invalid.")
+
+  final case class InvalidPipeline(error: PipeError)
+      extends ElasticSearchViewRejection("The provided pipeline is invalid.")
 
   /**
     * Rejection returned when one of the provided view references for an AggregateElasticSearchView does not exist or is
@@ -300,6 +304,7 @@ object ElasticSearchViewRejection {
         case InvalidJsonLdFormat(_, rdf)                                    => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                               => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case InvalidElasticSearchIndexPayload(details)                      => obj.addIfExists("details", details)
+        case InvalidPipeline(error)                                         => obj.add("details", error.asJson)
         case _: ViewNotFound                                                => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                              => obj
       }

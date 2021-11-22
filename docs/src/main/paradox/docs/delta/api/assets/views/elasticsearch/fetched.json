@@ -33,6 +33,7 @@
   "permission": "views/query",
   "resourceSchemas": [],
   "resourceTypes": [],
+  "pipeline": [],
   "settings": {
     "analysis": {
       "analyzer": {
@@ -57,7 +58,7 @@
       "number_of_shards": 1
     }
   },
-  "sourceAsText": true,
+  "sourceAsText": false,
   "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
   "_createdAt": "2021-05-12T09:54:28.171Z",
   "_createdBy": "http://localhost:8080/v1/anonymous",

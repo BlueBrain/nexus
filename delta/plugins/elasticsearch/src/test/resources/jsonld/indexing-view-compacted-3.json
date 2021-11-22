@@ -1,0 +1,38 @@
+{
+  "@context": "https://bluebrain.github.io/nexus/contexts/elasticsearch.json",
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
+  "@type": [
+    "ElasticSearchView",
+    "View"
+  ],
+  "context": {
+    "@vocab": "http://schema.org/"
+  },
+  "includeDeprecated": true,
+  "includeMetadata": true,
+  "permission": "views/query",
+  "pipeline": [],
+  "resourceSchemas": [],
+  "resourceTag": "mytag",
+  "resourceTypes": [],
+  "sourceAsText": false,
+  "_uuid": "f85d862a-9ec0-4b9a-8aed-2938d7ca9981",
+  "mapping": {
+    "properties": {
+      "@type": {
+        "type": "keyword"
+      },
+      "@id": {
+        "type": "keyword"
+      }
+    }
+  },
+  "settings": {
+    "analysis": {
+      "analyzer": {
+        "nexus": {
+        }
+      }
+    }
+  }
+}

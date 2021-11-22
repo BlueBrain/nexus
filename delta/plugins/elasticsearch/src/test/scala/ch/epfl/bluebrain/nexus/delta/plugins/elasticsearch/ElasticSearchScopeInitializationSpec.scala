@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, SourceAsText}
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -62,12 +63,8 @@ class ElasticSearchScopeInitializationSpec
       val resource = views.fetch(defaultViewId, project.ref).accepted
       resource.value match {
         case v: IndexingElasticSearchView  =>
-          v.resourceSchemas shouldBe empty
-          v.resourceTypes shouldBe empty
           v.resourceTag shouldEqual None
-          v.sourceAsText shouldEqual true
-          v.includeMetadata shouldEqual true
-          v.includeDeprecated shouldEqual true
+          v.pipeline shouldEqual List(DefaultLabelPredicates(), SourceAsText())
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions

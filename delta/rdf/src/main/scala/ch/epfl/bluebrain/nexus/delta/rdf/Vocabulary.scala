@@ -224,6 +224,7 @@ object Vocabulary {
     val organizationsMetadata = contexts + "organizations-metadata.json"
     val permissions           = contexts + "permissions.json"
     val permissionsMetadata   = contexts + "permissions-metadata.json"
+    val pipeline              = contexts + "pipeline.json"
     val projects              = contexts + "projects.json"
     val projectsMetadata      = contexts + "projects-metadata.json"
     val quotas                = contexts + "quotas.json"
