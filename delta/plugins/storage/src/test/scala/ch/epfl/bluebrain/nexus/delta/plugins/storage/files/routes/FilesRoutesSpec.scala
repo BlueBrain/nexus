@@ -404,6 +404,28 @@ class FilesRoutesSpec
       }
     }
 
+    "delete a tag on file" in {
+      Delete("/v1/files/org/proj/file1/tags/mytag?rev=4") ~> routes ~> check {
+        val attr = attributes("file-idx-1.txt")
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual fileMetadata(projectRef, file1, attr, diskIdRev, rev = 5, createdBy = alice)
+      }
+    }
+
+    "not return the deleted tag" in {
+      Get("/v1/files/org/proj/file1/tags") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      }
+    }
+
+    "fail to fetch file by the deleted tag" in {
+      Get("/v1/files/org/proj/file1?tag=mytag") ~> Accept(`application/ld+json`) ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+      }
+    }
+
     "fail to get the events stream without events/read permission" in {
       forAll(List("/v1/files/events", "/v1/files/myorg/events", "/v1/files/org/proj/events")) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {

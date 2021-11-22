@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
@@ -114,6 +114,13 @@ class FilesSpec
           FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
       }
 
+      "create a new event from a DeleteFileTag command" in {
+        val current =
+          FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2).copy(tags = Map(myTag -> 2L))
+        eval(current, DeleteFileTag(id, projectRef, myTag, 2, alice)).accepted shouldEqual
+          FileTagDeleted(id, projectRef, myTag, 3, epoch, alice)
+      }
+
       "create a new event from a TagFile command when deprecated" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
         eval(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
@@ -132,6 +139,7 @@ class FilesSpec
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
+          DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -156,6 +164,7 @@ class FilesSpec
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
+          DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -616,6 +625,30 @@ class FilesSpec
       "reject if organization is deprecated" in {
         files.tag(rdId, projectWithDeprecatedOrg.ref, tag, tagRev = 2, 4).rejected shouldEqual
           WrappedOrganizationRejection(OrganizationIsDeprecated(orgDeprecated))
+      }
+    }
+
+    "deleting a tag" should {
+      "succeed" in {
+        files.deleteTag(file1, projectRef, tag, 4).accepted shouldEqual
+          FileGen.resourceFor(
+            file1,
+            projectRef,
+            diskRev,
+            attributes(size = 20),
+            rev = 5,
+            createdBy = bob,
+            updatedBy = bob
+          )
+      }
+      "reject if the file doesn't exist" in {
+        files.deleteTag(nxv + "other", projectRef, tag, 1L).rejectedWith[FileNotFound]
+      }
+      "reject if the revision passed is incorrect" in {
+        files.deleteTag(file1, projectRef, tag, 4).rejected shouldEqual IncorrectRev(expected = 5, provided = 4)
+      }
+      "reject if the tag doesn't exist" in {
+        files.deleteTag(file1, projectRef, TagLabel.unsafe("unknown"), 5).rejected
       }
     }
 

@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -18,8 +18,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup}
-import io.circe.{Json, JsonObject}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, Permissions}
 import io.circe.syntax.EncoderOps
+import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -100,17 +101,25 @@ class FileEventExchangeSpec
     val deprecatedEvent = FileDeprecated(id, project.ref, 1, Instant.EPOCH, subject)
 
     "return the latest resource state from the event" in {
-      val result = exchange.toResource(deprecatedEvent, None).accepted.value
+      val result = exchange.toResource(deprecatedEvent, None).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual resRev2.value
     }
 
     "return the latest resource state from the event at a particular tag" in {
-      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
+      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual resRev1.value
+    }
+    "return TagNotFound when the file is not found by tag" in {
+      exchange
+        .toResource(deprecatedEvent, Some(TagLabel.unsafe("unknown")))
+        .accepted
+        .value
+        .asInstanceOf[EventExchange.TagNotFound]
+        .id shouldEqual deprecatedEvent.id
     }
 
     "return the matching metric for a create event with a digest" in {
