@@ -256,7 +256,7 @@ class ElasticSearchIndexingSpec
     "cache projection for view" in {
       val projectionId =
         ElasticSearchViews.projectionId(views.fetch(viewId, project1.ref).accepted.asInstanceOf[IndexingViewResource])
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 5, 2, 0, 0)
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 4, 2, 0, 0)
     }
     "index resources with type" in {
       val indexVal =

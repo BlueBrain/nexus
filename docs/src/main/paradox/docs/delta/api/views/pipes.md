@@ -135,7 +135,7 @@ index resources as the pipeline will be broken. They will have to be updated wit
 
 Besides these core pipes, it is possible to define custom pipes through plugins.
 
-Please visit @link:[IndexingData source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk-views/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/model/IndexingData.scala){ open=new } for documentation about this class.
+Please visit @link:[IndexingData source](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/sdk-views/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/model/ViewData.scala){ open=new } for documentation about this class.
 
 Please visit  @ref:[Plugins](../../plugins/index.md) to learn about how to create/package/deploy a plugin.
 
