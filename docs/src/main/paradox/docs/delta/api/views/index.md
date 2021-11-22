@@ -79,6 +79,17 @@ synchronously or in the background. This behaviour is controlled using `indexing
 - `async` - (default value) the view will be indexed asynchronously
 - `sync` - the view will be indexed synchronously and the API call won't return until the indexing is finished
 
+## Passivation
+
+Views are now stopped if no event has been detected for a given period (by default 30 minutes).
+
+This value can be updated by updating the configuration keys:
+- `plugins.blazegraph.idle-timeout`
+- `plugins.composite-views.idle-timeout`
+- `plugins.elasticsearch.idle-timeout`
+
+Setting an infinite time (`Inf`) will disable this feature.
+
 ## List views
 
 There are three available endpoints to list views in different scopes.
@@ -180,7 +191,7 @@ The event type for views SSEs have been changed so that it is easier to distingu
 **Example**
 
 Request
-:   @@snip [resolvers-sse.sh](../assets/views/sse.sh)
+:   @@snip [views-sse.sh](../assets/views/sse.sh)
 
 Response
-:   @@snip [resolvers-sse.json](../assets/views/sse.json)
+:   @@snip [views-sse.json](../assets/views/sse.json)

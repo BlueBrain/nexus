@@ -64,6 +64,7 @@ This release contains bugfixes and minor improvements:
  - Introduced quotas on projects
  - Project deletion (on demand and automatic)
  - Tagging resources after deprecation
+ - View passivation
             
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).  
 
