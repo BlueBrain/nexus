@@ -339,6 +339,31 @@ final class Files(
   }.named("tagFile", moduleType)
 
   /**
+    * Delete a tag on an existing file.
+    *
+    * @param id
+    *   the identifier that will be expanded to the Iri of the file
+    * @param projectRef
+    *   the project reference where the file belongs
+    * @param tag
+    *   the tag name
+    * @param rev
+    *   the current revision of the file
+    */
+  def deleteTag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      rev: Long
+  )(implicit subject: Subject): IO[FileRejection, FileResource] = {
+    for {
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
+      iri     <- expandIri(id, project)
+      res     <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject), project)
+    } yield res
+  }.named("deleteFileTag", moduleType)
+
+  /**
     * Deprecate an existing file
     *
     * @param id
@@ -708,6 +733,11 @@ object Files {
       case Initial    => Initial
       case s: Current => s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
+    
+    def tagDeleted(e: FileTagDeleted): FileState = state match {
+      case Initial    => Initial
+      case s: Current => s.copy(rev = e.rev, tags = s.tags.removed(e.tag), updatedAt = e.instant, updatedBy = e.subject)
+    }
     // format: on
 
     def deprecated(e: FileDeprecated): FileState = state match {
@@ -720,6 +750,7 @@ object Files {
       case e: FileUpdated           => updated(e)
       case e: FileAttributesUpdated => updatedAttributes(e)
       case e: FileTagAdded          => tagAdded(e)
+      case e: FileTagDeleted        => tagDeleted(e)
       case e: FileDeprecated        => deprecated(e)
     }
   }
@@ -766,6 +797,17 @@ object Files {
         IOUtils.instant.map(FileTagAdded(c.id, c.project, c.targetRev, c.tag, s.rev + 1L, _, c.subject))
     }
 
+    def deleteTag(c: DeleteFileTag) =
+      state match {
+        case Initial                               =>
+          IO.raiseError(FileNotFound(c.id, c.project))
+        case s: Current if s.rev != c.rev          =>
+          IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case s: Current if !s.tags.contains(c.tag) => IO.raiseError(TagNotFound(c.tag))
+        case s: Current                            =>
+          IOUtils.instant.map(FileTagDeleted(c.id, c.project, c.tag, s.rev + 1, _, c.subject))
+      }
+
     def deprecate(c: DeprecateFile) = state match {
       case Initial                      => IO.raiseError(FileNotFound(c.id, c.project))
       case s: Current if s.rev != c.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
@@ -778,6 +820,7 @@ object Files {
       case c: UpdateFile           => update(c)
       case c: UpdateFileAttributes => updateAttributes(c)
       case c: TagFile              => tag(c)
+      case c: DeleteFileTag        => deleteTag(c)
       case c: DeprecateFile        => deprecate(c)
     }
   }

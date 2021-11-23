@@ -340,6 +340,28 @@ trait SchemasBehaviors {
 
     }
 
+    "deleting a schema tag" should {
+      "succeed" in {
+        val sourceWithId = source deepMerge json"""{"@id": "$mySchema2"}"""
+        val schema       = SchemaGen.schema(mySchema2, project.ref, sourceWithId)
+        schemas.deleteTag(mySchema2, projectRef, tag, 2L).accepted shouldEqual
+          SchemaGen.resourceFor(schema, subject = subject, rev = 3L, am = am, base = projBase)
+      }
+      "reject if the schema doesn't exist" in {
+        schemas.deleteTag(nxv + "other", projectRef, tag, 1L).rejectedWith[SchemaNotFound]
+      }
+      "reject if the revision passed is incorrect" in {
+        schemas.deleteTag(mySchema2, projectRef, tag, 2L).rejected shouldEqual IncorrectRev(
+          provided = 2L,
+          expected = 3L
+        )
+      }
+
+      "reject if the tag doesn't exist" in {
+        schemas.deleteTag(mySchema2, projectRef, tag, 3L).rejectedWith[TagNotFound]
+      }
+    }
+
     "fetching SSE" should {
       val allEvents = SSEUtils.list(
         mySchema  -> SchemaCreated,

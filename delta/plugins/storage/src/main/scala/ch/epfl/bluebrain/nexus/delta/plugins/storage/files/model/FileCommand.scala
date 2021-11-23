@@ -132,6 +132,23 @@ object FileCommand {
       extends FileCommand
 
   /**
+    * Command to delete a tag from a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param tag
+    *   the tag to delete
+    * @param rev
+    *   the last known revision of the file
+    * @param subject
+    *   the identity associated to this command
+    */
+  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: TagLabel, rev: Long, subject: Subject)
+      extends FileCommand
+
+  /**
     * Command to deprecate a file
     *
     * @param id

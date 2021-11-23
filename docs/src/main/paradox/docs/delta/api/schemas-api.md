@@ -144,6 +144,28 @@ Payload
 Response
 :   @@snip [tagged.json](assets/schemas/tagged.json)
 
+## Remove tag
+
+Removes a given tag.
+
+Removing a tag is considered to be an update as well.
+
+```
+DELETE /v1/schemas/{org_label}/{project_label}/{schema_id}/tags/{tag_name}?rev={previous_rev}
+```
+... where
+
+- `{previous_rev}`: is the last known revision number for the resource.
+- `{tag_name}`: String - label of the tag to remove.
+
+**Example**
+
+Request
+:   @@snip [tag.sh](assets/schemas/delete-tag.sh)
+
+Response
+:   @@snip [tagged.json](assets/schemas/tagged.json)
+
 ## Deprecate
 
 Locks the schema, so no further operations can be performed. It also deletes the schema from listing/querying results.

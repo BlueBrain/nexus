@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList, TagLabel}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -124,6 +124,31 @@ object SchemaEvent {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
+      tag: TagLabel,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends SchemaEvent
+
+  /**
+    * Event representing a tag deletion from a schema.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param tag
+    *   the tag that was deleted
+    * @param rev
+    *   the schema revision
+    * @param instant
+    *   the instant when this event was created
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class SchemaTagDeleted(
+      id: Iri,
+      project: ProjectRef,
       tag: TagLabel,
       rev: Long,
       instant: Instant,

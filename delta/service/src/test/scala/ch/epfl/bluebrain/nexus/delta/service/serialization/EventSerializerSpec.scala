@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEven
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
@@ -291,6 +291,14 @@ class EventSerializerSpec
       instant,
       subject
     ) -> jsonContentOf("/serialization/schema-tagged.json"),
+    SchemaTagDeleted(
+      myId,
+      projectRef,
+      TagLabel.unsafe("mytag"),
+      3L,
+      instant,
+      subject
+    ) -> jsonContentOf("/serialization/schema-tag-deleted.json"),
     SchemaDeprecated(
       myId,
       projectRef,

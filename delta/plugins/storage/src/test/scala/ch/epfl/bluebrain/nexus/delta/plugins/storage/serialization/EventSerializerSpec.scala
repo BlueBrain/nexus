@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileTagDeleted, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageEvent.{StorageCreated, StorageDeprecated, StorageTagAdded, StorageUpdated}
@@ -75,8 +75,9 @@ class EventSerializerSpec
   val filesMapping: Map[FileEvent, Json] = VectorMap(
     FileCreated(fileId, projectRef, storageRef, DiskStorageType, attributes.copy(digest = NotComputedDigest), 1, instant, subject) -> jsonContentOf("/file/serialization/file-created.json"),
     FileUpdated(fileId, projectRef, storageRef, DiskStorageType, attributes, 2, instant, subject)                                  -> jsonContentOf("/file/serialization/file-updated.json"),
-    FileAttributesUpdated(fileId, projectRef, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)                                -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
+    FileAttributesUpdated(fileId, projectRef, Some(`text/plain(UTF-8)`), 12, digest, 3, instant, subject)                           -> jsonContentOf("/file/serialization/file-attributes-created-updated.json"),
     FileTagAdded(fileId, projectRef, targetRev = 1, tag, 4, instant, subject)                                                      -> jsonContentOf("/file/serialization/file-tag-added.json"),
+    FileTagDeleted(fileId, projectRef, tag, 4, instant, subject)                                                                   -> jsonContentOf("/file/serialization/file-tag-deleted.json"),
     FileDeprecated(fileId, projectRef, 5, instant, subject)                                                                        -> jsonContentOf("/file/serialization/file-deprecated.json")
   )
   // format: on

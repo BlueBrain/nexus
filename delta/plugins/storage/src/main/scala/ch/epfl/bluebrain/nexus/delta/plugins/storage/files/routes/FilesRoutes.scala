@@ -190,20 +190,27 @@ final class FilesRoutes(
                         )
                       }
                     },
-                    (pathPrefix("tags") & pathEndOrSingleSlash) {
+                    (pathPrefix("tags")) {
                       operationName(s"$prefixSegment/files/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a file tags
-                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                          (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                             emit(fetchMetadata(id, ref).map(res => Tags(res.value.tags)).rejectOn[FileNotFound])
                           },
                           // Tag a file
-                          (post & parameter("rev".as[Long])) { rev =>
+                          (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
                               }
                             }
+                          },
+                          // Delete a tag
+                          (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                            ref,
+                            Write
+                          )) { (tag, rev) =>
+                            emit(files.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)))
                           }
                         )
                       }

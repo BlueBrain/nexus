@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema => sc
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -16,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.SchemaDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.literal._
@@ -91,18 +92,27 @@ class SchemaEventExchangeSpec
     val exchange        = new SchemaEventExchange(schemas)
     val deprecatedEvent = SchemaDeprecated(schema.id, project.ref, 1, Instant.EPOCH, subject)
 
-    "return the latest resource state from the event" in {
-      val result = exchange.toResource(deprecatedEvent, None).accepted.value
+    "return the latest schema state from the event" in {
+      val result = exchange.toResource(deprecatedEvent, None).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual schema.source
       result.value.resource shouldEqual resRev2
       result.metadata.value shouldEqual ()
     }
 
-    "return the latest resource state from the event at a particular tag" in {
-      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value
+    "return the latest schema state from the event at a particular tag" in {
+      val result = exchange.toResource(deprecatedEvent, Some(tag)).accepted.value.asInstanceOf[EventExchangeValue[_, _]]
       result.value.source shouldEqual schema.source
       result.value.resource shouldEqual resRev1
       result.metadata.value shouldEqual ()
+    }
+
+    "return TagNotFound when the schema is not found by tag" in {
+      exchange
+        .toResource(deprecatedEvent, Some(TagLabel.unsafe("unknown")))
+        .accepted
+        .value
+        .asInstanceOf[EventExchange.TagNotFound]
+        .id shouldEqual deprecatedEvent.id
     }
 
     "return the metric" in {

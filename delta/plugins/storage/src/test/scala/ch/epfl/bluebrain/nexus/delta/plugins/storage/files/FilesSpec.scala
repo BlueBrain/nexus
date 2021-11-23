@@ -12,13 +12,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileState._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.{ConfigFixtures, RemoteContextResolutionFixture}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
@@ -114,6 +114,13 @@ class FilesSpec
           FileTagAdded(id, projectRef, targetRev = 2, myTag, 3, epoch, alice)
       }
 
+      "create a new event from a DeleteFileTag command" in {
+        val current =
+          FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2).copy(tags = Map(myTag -> 2L))
+        eval(current, DeleteFileTag(id, projectRef, myTag, 2, alice)).accepted shouldEqual
+          FileTagDeleted(id, projectRef, myTag, 3, epoch, alice)
+      }
+
       "create a new event from a TagFile command when deprecated" in {
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, rev = 2, deprecated = true)
         eval(current, TagFile(id, projectRef, targetRev = 2, myTag, 2, alice)).accepted shouldEqual
@@ -132,6 +139,7 @@ class FilesSpec
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
+          DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -156,6 +164,7 @@ class FilesSpec
           UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 2, alice),
           UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 2, alice),
           TagFile(id, projectRef, targetRev = 1, myTag, 2, alice),
+          DeleteFileTag(id, projectRef, myTag, 2, alice),
           DeprecateFile(id, projectRef, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -619,17 +628,40 @@ class FilesSpec
       }
     }
 
-    "deprecating a file" should {
-
+    "deleting a tag" should {
       "succeed" in {
-        files.deprecate(file1, projectRef, 4).accepted shouldEqual
+        files.deleteTag(file1, projectRef, tag, 4).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
             attributes(size = 20),
             rev = 5,
-            tags = Map(tag -> 1),
+            createdBy = bob,
+            updatedBy = bob
+          )
+      }
+      "reject if the file doesn't exist" in {
+        files.deleteTag(nxv + "other", projectRef, tag, 1L).rejectedWith[FileNotFound]
+      }
+      "reject if the revision passed is incorrect" in {
+        files.deleteTag(file1, projectRef, tag, 4).rejected shouldEqual IncorrectRev(expected = 5, provided = 4)
+      }
+      "reject if the tag doesn't exist" in {
+        files.deleteTag(file1, projectRef, TagLabel.unsafe("unknown"), 5).rejected
+      }
+    }
+
+    "deprecating a file" should {
+
+      "succeed" in {
+        files.deprecate(file1, projectRef, 5).accepted shouldEqual
+          FileGen.resourceFor(
+            file1,
+            projectRef,
+            diskRev,
+            attributes(size = 20),
+            rev = 6,
             deprecated = true,
             createdBy = bob,
             updatedBy = bob
@@ -642,7 +674,7 @@ class FilesSpec
 
       "reject if the revision passed is incorrect" in {
         files.deprecate(file1, projectRef, 3).rejected shouldEqual
-          IncorrectRev(provided = 3, expected = 5)
+          IncorrectRev(provided = 3, expected = 6)
       }
 
       "reject if project does not exist" in {
@@ -663,13 +695,13 @@ class FilesSpec
       }
 
       "allow tagging after deprecation" in {
-        files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 4, 6).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
             attributes(size = 20),
-            rev = 6,
+            rev = 7,
             tags = Map(tag -> 4),
             createdBy = bob,
             updatedBy = bob,
@@ -699,7 +731,7 @@ class FilesSpec
         projectRef,
         diskRev,
         attributes(size = 20),
-        rev = 6,
+        rev = 7,
         tags = Map(tag -> 4),
         deprecated = true,
         createdBy = bob,
@@ -715,7 +747,7 @@ class FilesSpec
       }
 
       "succeed by rev" in {
-        files.fetch(IdSegmentRef(file1, 6), projectRef).accepted shouldEqual resourceRev6
+        files.fetch(IdSegmentRef(file1, 7), projectRef).accepted shouldEqual resourceRev6
         files.fetch(IdSegmentRef(file1, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
@@ -725,8 +757,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetch(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 7, current = 6)
+        files.fetch(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 8, current = 7)
       }
 
       "fail if it doesn't exist" in {
@@ -773,8 +805,8 @@ class FilesSpec
       }
 
       "reject if revision does not exist" in {
-        files.fetchContent(IdSegmentRef(file1, 7), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 7, current = 6)
+        files.fetchContent(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
+          RevisionNotFound(provided = 8, current = 7)
       }
 
       "fail if it doesn't exist" in {
@@ -803,6 +835,7 @@ class FilesSpec
           file2       -> FileUpdated,
           file1       -> FileAttributesUpdated,
           file1       -> FileTagAdded,
+          file1       -> FileTagDeleted,
           file1       -> FileDeprecated
         )
         .map { case (iri, tpe, seq) => (iri, tpe, Sequence(seq.value + 2)) } // the first 2 entries are for storages

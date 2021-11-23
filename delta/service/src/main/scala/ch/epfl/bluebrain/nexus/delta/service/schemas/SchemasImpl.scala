@@ -96,6 +96,18 @@ final class SchemasImpl private (
       res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
     } yield res).named("tagSchema", moduleType)
 
+  override def deleteTag(
+      id: IdSegment,
+      projectRef: ProjectRef,
+      tag: TagLabel,
+      rev: Long
+  )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
+    (for {
+      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
+      iri     <- expandIri(id, project)
+      res     <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller), project)
+    } yield res).named("deleteSchemaTag", moduleType)
+
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
