@@ -104,6 +104,7 @@ lazy val circeGenericExtras   = "io.circe"                     %% "circe-generic
 lazy val circeLiteral         = "io.circe"                     %% "circe-literal"                   % circeVersion
 lazy val circeOptics          = "io.circe"                     %% "circe-optics"                    % circeVersion
 lazy val circeParser          = "io.circe"                     %% "circe-parser"                    % circeVersion
+lazy val circeYaml            = "io.circe"                     %% "circe-yaml"                      % circeVersion
 lazy val classgraph           = "io.github.classgraph"          % "classgraph"                      % classgraphVersion
 lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"                    % distageVersion
 lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"                 % doobieVersion
@@ -781,8 +782,23 @@ lazy val plugins = project
     graphAnalyticsPlugin
   )
 
+lazy val tools = project
+  .in(file("delta/tools"))
+  .settings(shared, compilation, noPublish)
+  .enablePlugins(UniversalPlugin, JavaAppPackaging)
+  .dependsOn(
+    sdk
+  )
+  .settings(
+    name                 := "delta-tools",
+    moduleName           := "delta-tools",
+    libraryDependencies ++= Seq(circeYaml),
+    trapExit             := false
+  )
+
 lazy val delta = project
   .in(file("delta"))
+  .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, noPublish)
   .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
 
