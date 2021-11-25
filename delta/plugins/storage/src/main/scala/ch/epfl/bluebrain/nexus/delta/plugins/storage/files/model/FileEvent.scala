@@ -167,6 +167,31 @@ object FileEvent {
   ) extends FileEvent
 
   /**
+    * Event for to delete a tag from a file
+    *
+    * @param id
+    *   the file identifier
+    * @param project
+    *   the project the file belongs to
+    * @param tag
+    *   the tag that was deleted
+    * @param rev
+    *   the last known revision of the file
+    * @param instant
+    *   the instant this event was created
+    * @param subject
+    *   the subject creating this event
+    */
+  final case class FileTagDeleted(
+      id: Iri,
+      project: ProjectRef,
+      tag: TagLabel,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends FileEvent
+
+  /**
     * Event for the deprecation of a file
     * @param id
     *   the file identifier

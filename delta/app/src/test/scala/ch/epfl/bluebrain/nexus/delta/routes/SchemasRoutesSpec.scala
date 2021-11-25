@@ -325,6 +325,27 @@ class SchemasRoutesSpec
       }
     }
 
+    "delete a tag on schema" in {
+      Delete("/v1/schemas/myorg/myproject/myid2/tags/mytag?rev=2") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual schemaMetadata(projectRef, myId2, rev = 3, createdBy = alice)
+      }
+    }
+
+    "not return the deleted tag" in {
+      Get("/v1/schemas/myorg/myproject/myid2/tags") ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
+      }
+    }
+
+    "fail to fetch resource by the deleted tag" in {
+      Get("/v1/schemas/myorg/myproject/myid2?tag=mytag") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
+      }
+    }
+
     "return not found if tag not found" in {
       Get("/v1/schemas/myorg/myproject/myid2?tag=myother") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound

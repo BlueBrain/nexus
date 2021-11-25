@@ -165,16 +165,16 @@ final class SchemasRoutes(
                         }
                       }
                     },
-                    (pathPrefix("tags") & pathEndOrSingleSlash) {
+                    (pathPrefix("tags")) {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a schema tags
-                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                          (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
                             val tagsIO = schemas.fetch(id, ref).map(res => Tags(res.value.tags))
                             emit(tagsIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                           },
                           // Tag a schema
-                          (post & parameter("rev".as[Long])) { rev =>
+                          (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
@@ -183,6 +183,13 @@ final class SchemasRoutes(
                                 )
                               }
                             }
+                          },
+                          // Delete a tag
+                          (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                            ref,
+                            Write
+                          )) { (tag, rev) =>
+                            emit(schemas.deleteTag(id, ref, tag, rev).tapEval(index(ref, _, mode)).map(_.void))
                           }
                         )
                       }

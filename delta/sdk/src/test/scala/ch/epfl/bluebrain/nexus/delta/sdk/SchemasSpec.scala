@@ -78,6 +78,15 @@ class SchemasSpec
           SchemaTagAdded(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
       }
 
+      "create a new event from a DeleteSchemaTag command" in {
+        val tag = TagLabel.unsafe("myTag")
+        eval(
+          SchemaGen.currentState(schema, rev = 2L).copy(tags = Map(tag -> 1)),
+          DeleteSchemaTag(myId, project.value.ref, tag, 2L, subject)
+        ).accepted shouldEqual
+          SchemaTagDeleted(myId, project.value.ref, tag, 3L, epoch, subject)
+      }
+
       "create a new event from a DeprecateSchema command" in {
 
         val current = SchemaGen.currentState(schema, rev = 2L)
@@ -91,6 +100,7 @@ class SchemasSpec
         val list    = List(
           current -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 2L, subject),
           current -> TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("tag"), 2L, subject),
+          current -> DeleteSchemaTag(myId, project.value.ref, TagLabel.unsafe("tag"), 2L, subject),
           current -> DeprecateSchema(myId, project.value.ref, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -131,6 +141,7 @@ class SchemasSpec
         val list = List(
           Initial -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 1L, subject),
           Initial -> TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 1L, subject),
+          Initial -> DeleteSchemaTag(myId, project.value.ref, TagLabel.unsafe("myTag"), 1L, subject),
           Initial -> DeprecateSchema(myId, project.value.ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>

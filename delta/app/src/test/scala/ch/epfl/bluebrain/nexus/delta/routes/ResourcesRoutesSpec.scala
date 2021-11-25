@@ -384,7 +384,7 @@ class ResourcesRoutesSpec
     }
 
     "not return the deleted tag" in {
-      Get("/v1/resources/myorg/myproject/_/myid2/tags", payload.toEntity) ~> routes ~> check {
+      Get("/v1/resources/myorg/myproject/_/myid2/tags") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"tags": []}""".addContext(contexts.tags)
       }
