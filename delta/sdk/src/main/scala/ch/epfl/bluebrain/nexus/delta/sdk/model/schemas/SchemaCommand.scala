@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
 import io.circe.Json
 
 /**
@@ -107,6 +107,28 @@ object SchemaCommand {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
+      tag: TagLabel,
+      rev: Long,
+      subject: Subject
+  ) extends SchemaCommand
+
+  /**
+    * Command that signals the intent to delete a tag from an existing schema.
+    *
+    * @param id
+    *   the schema identifier
+    * @param project
+    *   the project where the schema belongs
+    * @param tag
+    *   the tag of to delete
+    * @param rev
+    *   the last known revision of the schema
+    * @param subject
+    *   the subject which created this event
+    */
+  final case class DeleteSchemaTag(
+      id: Iri,
+      project: ProjectRef,
       tag: TagLabel,
       rev: Long,
       subject: Subject

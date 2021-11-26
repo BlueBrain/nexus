@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.http.scaladsl.model.ContentType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FileEventExchange.{AttributesUpdated, FileExtraFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileTagDeleted, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileEvent, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
@@ -90,6 +90,10 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
               fetchFile(fta.id, fta.project).map { f =>
                 EventMetric.Tagged -> FileExtraFields(f.value.storage.iri, None, None, None)
               }
+            case fta: FileTagDeleted                            =>
+              fetchFile(fta.id, fta.project).map { f =>
+                EventMetric.TagDeleted -> FileExtraFields(f.value.storage.iri, None, None, None)
+              }
             case fd: FileDeprecated                             =>
               fetchFile(fd.id, fd.project).map { f =>
                 EventMetric.Deprecated -> FileExtraFields(f.value.storage.iri, None, None, None)
@@ -110,14 +114,14 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
     }
   }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]] =
     event match {
-      case ev: FileEvent => resourceToValue(files.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
+      case ev: FileEvent => resourceToValue(files.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project), ev.id)
       case _             => UIO.none
     }
 
-  private def resourceToValue(resourceIO: IO[FileRejection, FileResource])(implicit enc: JsonLdEncoder[A]) =
-    resourceIO.map(Files.eventExchangeValue).redeem(_ => None, Some(_))
+  private def resourceToValue(resourceIO: IO[FileRejection, FileResource], id: Iri)(implicit enc: JsonLdEncoder[A]) =
+    resourceIO.map(Files.eventExchangeValue).redeem(_ => Some(TagNotFound(id)), Some(_))
 }
 
 object FileEventExchange {
