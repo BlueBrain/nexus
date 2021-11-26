@@ -18,9 +18,9 @@ import io.circe.{yaml, Decoder, Json}
 import monix.bio.{BIOApp, IO, Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.LoggerFactory
+import scopt.OParser
 
 import java.io.{BufferedInputStream, FileInputStream, InputStreamReader}
-import scala.io.StdIn.readLine
 
 object SearchConfigUpdate extends BIOApp {
 
@@ -39,20 +39,24 @@ object SearchConfigUpdate extends BIOApp {
 
     val httpClient = HttpClient()
 
-    val token = ""
-
     (for {
       _            <- IO.delay(println("Starting update."))
-      endpoint     <- IO.delay(Uri.parseAbsolute(readLine("Nexus endpoint: ")))
-      configFile   <- IO.delay(readLine("Config file: "))
+      config       <- IO.delay(
+                        OParser
+                          .parse(argParser, args, Config())
+                          .getOrElse(throw new IllegalArgumentException("Missing command line parameters."))
+                      )
       configJson    =
-        yaml.parser.parse(new InputStreamReader(new BufferedInputStream(new FileInputStream(configFile)))).toOption.get
+        yaml.parser
+          .parse(new InputStreamReader(new BufferedInputStream(new FileInputStream(config.configFile))))
+          .toOption
+          .get
       payload       = viewPayload(configJson)
-      projects     <- listProjects(endpoint, token, httpClient)
+      projects     <- listProjects(config.endpoint, config.token, httpClient)
       _             = printlnGreen(s"Found ${projects.size} projects.")
-      views        <- fetchViews(endpoint, token, httpClient, projects)
+      views        <- fetchViews(config.endpoint, config.token, httpClient, projects)
       _             = printlnGreen(s"Found ${views.size} views.")
-      updatedViews <- updateViews(httpClient, token, payload, views)
+      updatedViews <- updateViews(httpClient, config.token, payload, views)
       _             = printlnGreen(s"Successfully updated ${updatedViews.size}")
     } yield ()).redeem(
       { e =>
@@ -176,6 +180,20 @@ object SearchConfigUpdate extends BIOApp {
   final case class ProjectsListing(_total: Int, _results: List[Project], _next: Option[Uri]) {
     def +(other: ProjectsListing) =
       copy(_total = other._total, _results = _results ++ other._results, _next = other._next)
+  }
+  final case class Config(endpoint: Uri = Uri.Empty, token: String = "", configFile: String = "")
+  implicit val configRead: scopt.Read[Uri] =
+    scopt.Read.reads(Uri.parseAbsolute(_))
+  val builder = OParser.builder[Config]
+  val argParser = {
+    import builder._
+    OParser.sequence(
+      programName("updateSearchConfig"),
+      opt[Uri]("endpoint").required().action((e, c) => c.copy(endpoint = e)),
+      opt[String]("token").required().action((t, c) => c.copy(token = t)),
+      opt[String]("config-file").required().action((f, c) => c.copy(configFile = f))
+    )
+
   }
 
 }
