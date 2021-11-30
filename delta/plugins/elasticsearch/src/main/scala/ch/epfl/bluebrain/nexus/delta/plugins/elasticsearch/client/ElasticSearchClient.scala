@@ -46,6 +46,7 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
   private val docPath                                               = "_doc"
   private val allIndexPath                                          = "_all"
   private val bulkPath                                              = "_bulk"
+  private val mget                                                  = "_mget"
   private val tasksPath                                             = "_tasks"
   private val waitForCompletion                                     = "wait_for_completion"
   private val refreshParam                                          = "refresh"
@@ -243,6 +244,43 @@ class ElasticSearchClient(client: HttpClient, endpoint: Uri, maxIndexPathLength:
                     updateByQueryStrategy.onError
                   )
     } yield ()
+  }
+
+  /**
+    * Perform a multi-get from the given index and attempts to extract the provided field from the document
+    * @param index
+    *   the index to use
+    * @param ids
+    *   the ids to
+    * @param field
+    *   the field to extract
+    */
+  def multiGet[R: Decoder](index: IndexLabel, ids: Set[String], field: String): HttpResult[Map[String, Option[R]]] = {
+    if (ids.isEmpty) UIO.pure(Map.empty)
+    else {
+      val multiGetEndpoint = (endpoint / index.value / mget).withQuery(Uri.Query(Map("_source" -> field)))
+      val req              = Get(multiGetEndpoint, Json.obj("ids" -> ids.asJson)).withHttpCredentials
+
+      client
+        .toJson(req)
+        .flatMap { json =>
+          IO.fromOption(
+            json.hcursor.downField("docs").focus.flatMap(_.asArray).map {
+              _.mapFilter { r =>
+                if (r.hcursor.get[Boolean]("found").contains(true))
+                  r.hcursor
+                    .get[String]("_id")
+                    .map { id =>
+                      id -> r.hcursor.downField("_source").get[R](field).toOption
+                    }
+                    .toOption
+                else None
+              }.toMap
+            },
+            HttpClientStatusError(req, BadRequest, json.noSpaces)
+          )
+        }
+    }
   }
 
   /**

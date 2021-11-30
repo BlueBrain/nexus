@@ -1,6 +1,6 @@
-if(ctx._source.relationshipCandidates != null) {
+if(ctx._source.references != null) {
     Set existingRelationships = new HashSet();
-    for (prop in ctx._source.relationshipCandidates) {
+    for (prop in ctx._source.references) {
         String id = prop['@id'];
         def types = params.resources.get(id);
         if(types != null) {

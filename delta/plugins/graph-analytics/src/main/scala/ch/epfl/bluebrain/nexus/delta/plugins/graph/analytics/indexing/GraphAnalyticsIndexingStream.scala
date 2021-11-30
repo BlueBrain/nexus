@@ -1,35 +1,35 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
-import cats.syntax.functor._
+import akka.persistence.query.Offset
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.RelationshipResolution
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.GraphDocument
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValue.Metadata
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.JsonLdPathValueCollection.{JsonLdProperties, JsonLdRelationships}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{JsonLdPathValue, JsonLdPathValueCollection}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.ResourceParser
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.EventStream
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.GraphElement.{NewFileElement, ResourceElement}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileCreated
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeValue, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStream}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress, SuccessMessage}
 import fs2.Stream
+import io.circe.JsonObject
 import io.circe.literal._
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
@@ -38,12 +38,12 @@ import monix.execution.Scheduler
   */
 final class GraphAnalyticsIndexingStream(
     client: ElasticSearchClient,
-    indexingSource: IndexingSource,
+    buildStream: (ProjectRef, Offset) => UIO[EventStream],
+    resourceParser: ResourceParser,
     cache: ProgressesCache,
     config: ExternalIndexingConfig,
-    projection: Projection[Unit],
-    relationshipResolution: RelationshipResolution
-)(implicit api: JsonLdApi, cr: RemoteContextResolution, sc: Scheduler)
+    projection: Projection[Unit]
+)(implicit sc: Scheduler)
     extends IndexingStream[GraphAnalyticsView] {
 
   @SuppressWarnings(Array("OptionGet"))
@@ -55,7 +55,7 @@ final class GraphAnalyticsIndexingStream(
         "bool": {
           "filter": {
             "terms": {
-              "relationshipCandidates.@id": $terms
+              "references.@id": $terms
             }
           }
         }
@@ -66,7 +66,7 @@ final class GraphAnalyticsIndexingStream(
           "resources": $resources
         }
       }
-    }          
+    }
     """.asObject.get
   }
 
@@ -79,28 +79,77 @@ final class GraphAnalyticsIndexingStream(
     Stream
       .eval {
         // Evaluates strategy and set/get the appropriate progress
-        client.createIndex(index, Some(view.value.mapping), None) >> handleProgress(strategy, view.projectionId)
+        for {
+          _        <- client.createIndex(index, Some(view.value.mapping), None)
+          progress <- handleProgress(strategy, view.projectionId)
+          stream   <- buildStream(view.projectRef, progress.offset)
+        } yield (progress, stream)
       }
-      .flatMap { progress =>
-        indexingSource(view.projectRef, progress.offset, view.resourceTag)
-          .evalMapFilterValue {
-            case TagNotFound(_)                               => Task.none
-            case eventExchangeValue: EventExchangeValue[_, _] =>
-              // Creates a JsonLdPathValueCollection from the event exchange response
-              fromEventExchange(view.projectRef, eventExchangeValue).map(Some(_))
+      .flatMap { case (progress, stream) =>
+        stream
+          .map(_.toMessage)
+          .collectSomeValue {
+            // To update potential relationships pointing to this file
+            case f: FileCreated     => Some(NewFileElement(f.id))
+            // To create / update the resource in the graph and update potential relationships pointing to it
+            case c: ResourceCreated => Some(ResourceElement(c.id, c.rev))
+            case u: ResourceUpdated => Some(ResourceElement(u.id, u.rev))
+            // We don't care about other events
+            case _                  => None
+          }
+          .groupWithin(config.maxBatchSize, config.maxTimeWindow)
+          .evalMap { chunk =>
+            val resourceById = chunk.foldLeft(Map.empty[String, Long]) {
+              case (acc, SuccessMessage(_, _, _, _, ResourceElement(id, rev), _, _)) => acc.updated(id.toString, rev)
+              case (acc, _)                                                          => acc
+            }
+            client.multiGet[Long](index, resourceById.keySet, "_rev").map { indexedRevisions =>
+              // We discard if there is already a up-to-date version in Elasticsearch
+              // Or there is already the same id with a greater rev in the current chunk
+              def discardCond(resourceId: Iri, rev: Long) = {
+                indexedRevisions.exists { case (id, maxRev) =>
+                  id == resourceId.toString && maxRev.exists(_ >= rev)
+                } ||
+                resourceById.exists { case (id, maxRev) =>
+                  id == resourceId.toString && maxRev > rev
+                }
+              }
+              chunk.map { m =>
+                m.mapFilter {
+                  case r: ResourceElement if discardCond(r.id, r.rev) =>
+                    None
+                  case other                                          => Some(other)
+                }
+              }
+            }
           }
           .runAsyncUnit { list =>
             IO.when(list.nonEmpty) {
-              val (idTypesMap, bulkOps) = list.foldLeft((Map.empty[Iri, Set[Iri]], List.empty[ElasticSearchBulk])) {
-                case ((typesMap, bulkList), doc) =>
-                  (
-                    typesMap + (doc.id -> doc.types),
-                    ElasticSearchBulk.Index(index, doc.id.toString, doc.value) :: bulkList
-                  )
-              }
-              // Pushes INDEX/DELETE Elasticsearch bulk operations & performs an update by query
-              client.bulk(bulkOps, Refresh.WaitFor) >>
-                client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
+              list
+                .foldLeftM((Map.empty[Iri, Set[Iri]], List.empty[ElasticSearchBulk])) {
+                  case ((typesMap, bulkList), file: NewFileElement)      =>
+                    // If it is a file, we just isse a update by query
+                    UIO.pure((typesMap + (file.id -> Set(nxvFile)), bulkList))
+                  case ((typesMap, bulkList), resource: ResourceElement) =>
+                    resourceParser(resource.id, view.projectRef).map {
+                      case Some(result) =>
+                        // If it is a resource, we both index and issue an update by query
+                        (
+                          typesMap + (result.id -> result.types),
+                          ElasticSearchBulk.Index(
+                            index,
+                            resource.id.toString,
+                            result.asJson
+                          ) :: bulkList
+                        )
+                      case None         => (typesMap, bulkList)
+                    }
+                }
+                .flatMap { case (idTypesMap, bulkOps) =>
+                  // Pushes INDEX Elasticsearch bulk operations & performs an update by query
+                  client.bulk(bulkOps, Refresh.True) >>
+                    client.updateByQuery(relationshipsQuery(idTypesMap), Set(index.value))
+                }
             }
           }
           .flatMap(Stream.chunk)
@@ -138,36 +187,39 @@ final class GraphAnalyticsIndexingStream(
   private def idx(view: ViewIndex[_]): IndexLabel =
     IndexLabel.unsafe(view.index)
 
-  private def fromEventExchange[A, M](
-      project: ProjectRef,
-      exchangedValue: EventExchangeValue[A, M]
-  )(implicit cr: RemoteContextResolution): IO[RdfError, GraphDocument] = {
-    val res     = exchangedValue.value.resource
-    val encoder = exchangedValue.value.encoder
-    for {
-      expanded          <- encoder.expand(res.value)
-      pathProperties     = JsonLdProperties.fromExpanded(expanded)
-      pathRelationships <- relationships(pathProperties.relationshipCandidates, project)
-      paths              = JsonLdPathValueCollection(pathProperties, pathRelationships)
-      types              = Json.obj(keywords.id -> res.id.asJson).addIfNonEmpty(keywords.tpe, res.types)
-    } yield GraphDocument(res.id, res.types, paths.asJson deepMerge types)
-  }
-
-  private def relationships(candidates: Map[Iri, JsonLdPathValue], projectRef: ProjectRef): UIO[JsonLdRelationships] = {
-    UIO
-      .parTraverseN(parallelism = 10)(candidates.toSeq) { case (id, pathValue) =>
-        relationshipResolution(projectRef, id).map { relationshipsOpt =>
-          relationshipsOpt.map(relationship => pathValue.withMeta(Metadata(Some(relationship.id), relationship.types)))
-        }
-      }
-      .map(list => JsonLdRelationships(list.flatten))
-
-  }
-
 }
 
 object GraphAnalyticsIndexingStream {
 
-  final case class GraphDocument(id: Iri, types: Set[Iri], value: Json)
+  type EventStream = Stream[Task, Envelope[Event]]
+
+  sealed trait GraphElement extends Product with Serializable
+
+  object GraphElement {
+    final case class NewFileElement(id: Iri) extends GraphElement
+
+    final case class ResourceElement(id: Iri, rev: Long) extends GraphElement
+  }
+
+  def apply(
+      client: ElasticSearchClient,
+      projects: Projects,
+      eventLog: EventLog[Envelope[Event]],
+      resourceParser: ResourceParser,
+      cache: ProgressesCache,
+      config: ExternalIndexingConfig,
+      projection: Projection[Unit]
+  )(implicit sc: Scheduler) =
+    new GraphAnalyticsIndexingStream(
+      client,
+      (project: ProjectRef, offset: Offset) =>
+        eventLog
+          .projectEvents(projects, project, offset)
+          .hideErrorsWith(r => new IllegalStateException(r.reason)),
+      resourceParser,
+      cache,
+      config,
+      projection
+    )
 
 }

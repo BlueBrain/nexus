@@ -112,7 +112,6 @@ object ResourcesModule extends ModuleDef {
   make[ResourceEventExchange]
   many[EventExchange].ref[ResourceEventExchange]
   many[EventExchange].named("resources").ref[ResourceEventExchange]
-  many[EventExchange].named("data-resources").ref[ResourceEventExchange]
   many[EntityType].add(EntityType(Resources.moduleType))
 
 }

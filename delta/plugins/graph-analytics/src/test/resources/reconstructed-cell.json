@@ -28,7 +28,7 @@
       ],
       "http://schema.org/contentUrl": [
         {
-          "@id": "http://localhost/nexus/v1/files/public/test/f49e1a8b-e668-416f-963a-cae526fd0527"
+          "@id": "http://localhost/nexus/v1/files/my-file"
         }
       ],
       "http://schema.org/encodingFormat": [

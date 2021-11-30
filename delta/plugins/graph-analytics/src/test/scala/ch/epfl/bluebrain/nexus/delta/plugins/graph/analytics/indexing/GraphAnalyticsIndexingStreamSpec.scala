@@ -1,42 +1,42 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
-import akka.persistence.query.Sequence
+import akka.persistence.query.{Offset, Sequence}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.RelationshipResolution
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.RelationshipResolution.Relationship
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStreamSpec.Value
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.ResourceParser
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.EventStream
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStreamSpec.OtherEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileCreated, FileUpdated}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingSourceDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker._
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import io.circe.syntax._
-import io.circe.{Encoder, JsonObject}
-import monix.bio.{IO, UIO}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
+import fs2.Stream
+import io.circe.{Json, JsonObject}
+import monix.bio.UIO
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
@@ -51,6 +51,8 @@ import scala.concurrent.duration._
 class GraphAnalyticsIndexingStreamSpec
     extends TestKit(ActorSystem("GraphAnalyticsIndexingStreamSpec"))
     with AnyWordSpecLike
+    with EitherValuable
+    with ElasticSearchClientSetup
     with Matchers
     with TestHelpers
     with IOValues
@@ -58,91 +60,82 @@ class GraphAnalyticsIndexingStreamSpec
     with ConfigFixtures
     with Eventually {
 
-  implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
+  implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.seconds, Span(10, Millis))
 
   "GraphAnalyticsIndexingStream" should {
+    val project = ProjectRef.unsafe("myorg", "myproject")
 
-    implicit val caller: Caller        = Caller.Anonymous
-    implicit val sc: Scheduler         = Scheduler.global
-    implicit val cfg: HttpClientConfig =
-      HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-    implicit val jsonLdApi: JsonLdApi  = JsonLdJavaApi.lenient
+    val resource1 = iri"http://localhost/resource1"
+    val resource2 = iri"http://localhost/resource2"
+    val resource3 = iri"http://localhost/resource3"
+    val file1     = iri"http://localhost/file1"
 
-    val endpoint = elasticsearchHost.endpoint
-    val client   = new ElasticSearchClient(HttpClient(), endpoint, 2000)
-    val project  = ProjectRef.unsafe("myorg", "myproject")
-    def exchangeValue(value: Value)(implicit caller: Caller): EventExchangeValue[Value, Unit] = {
-      val resource = ResourceF(
-        value.id,
-        ResourceUris.apply("resources", project, value.id)(
-          Resources.mappings,
-          ProjectBase.unsafe(iri"http://example.com/")
-        ),
-        1L,
-        Set(schema.Person),
-        deprecated = false,
-        Instant.EPOCH,
-        caller.subject,
-        Instant.EPOCH,
-        caller.subject,
-        Latest(schemas.resources),
-        value
-      )
-      EventExchangeValue(
-        ReferenceExchangeValue(resource, resource.value.asJson, Value.jsonLdEncoderValue),
-        JsonLdValue(())
-      )
+    val stream: EventStream =
+      Stream
+        .iterable(
+          List(
+            resourceEvent(resource1, project, 1L),
+            resourceEvent(resource1, project, 2L),
+            otherEvent,
+            resourceEvent(resource2, project, 1L),
+            fileEvent(file1, project, 1L),
+            otherEvent,
+            resourceEvent(resource1, project, 4L),
+            resourceEvent(resource2, project, 3L)
+          )
+        )
+        .zipWithIndex
+        .map { case (event, index) =>
+          Envelope(event, Sequence(index), s"event-$index", index)
+        }
+
+    val fetchResource: (Iri, ProjectRef) => UIO[Option[DataResource]] = {
+      case (`resource1`, `project`) =>
+        UIO.some(
+          resourceF(resource1, project, 4L, jsonContentOf("expanded/resource1.json"))
+        )
+      case (`resource2`, `project`) =>
+        UIO.some(
+          resourceF(resource2, project, 4L, jsonContentOf("expanded/resource2.json"))
+        )
+      case _                        => UIO.none
     }
 
-    val robert = exchangeValue(Value(iri"http://example.com/Robert", iri"http://example.com/Sam", "Rue 1"))
-    val anna   = exchangeValue(Value(iri"http://example.com/Anna", iri"http://example.com/Robert", "Rue 2"))
-    val sam    = exchangeValue(Value(iri"http://example.com/Sam", iri"http://example.com/Pedro", "Rue 3"))
+    val findRelationship: (Iri, ProjectRef) => UIO[Option[Set[Iri]]] = {
+      case (`resource1`, `project`) =>
+        fetchResource(resource1, project).map(_.map(_.types))
+      case (`resource2`, `project`) =>
+        fetchResource(resource2, project).map(_.map(_.types))
+      case (`resource3`, `project`) =>
+        UIO.some(Set(iri"https://neuroshapes.org/Trace"))
+      case (`file1`, `project`)     =>
+        UIO.some(Set(nxvFile))
+      case _                        => UIO.none
+    }
 
-    val indexingSource = new IndexingSourceDummy(
-      Seq(robert, anna, sam).zipWithIndex
-        .foldLeft(Map.empty[ProjectRef, Seq[Message[EventExchangeValue[_, _]]]]) { case (acc, (res, i)) =>
-          val entry = SuccessMessage(
-            Sequence(i.toLong),
-            Instant.EPOCH,
-            res.value.resource.id.toString,
-            i.toLong,
-            res,
-            Vector.empty
-          )
-          acc.updatedWith(project)(seqOpt => Some(seqOpt.getOrElse(Seq.empty) :+ entry))
-        }
-        .map { case (k, v) => (k, None) -> v }
-    )
+    val resourceParser = ResourceParser(fetchResource, findRelationship)
 
     val projection: Projection[Unit] = Projection.inMemory(()).accepted
     val progressesCache              = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
 
-    val relationshipResolution = new RelationshipResolution {
-      override def apply(projectRef: ProjectRef, id: Iri): UIO[Option[Relationship]] =
-        if (projectRef == project)
-          UIO.pure(Seq(robert, anna, sam).collectFirst {
-            case person if person.value.resource.id == id => Relationship(person.value.resource.id, Set(schema.Person))
-          })
-        else IO.none
-    }
-
-    implicit val rcr = RemoteContextResolution.never
-    val mapping      = jsonObjectContentOf("elasticsearch/mappings.json")
-    val stream       = new GraphAnalyticsIndexingStream(
-      client,
-      indexingSource,
+    val mapping     = jsonObjectContentOf("elasticsearch/mappings.json")
+    val graphStream = new GraphAnalyticsIndexingStream(
+      esClient,
+      (_: ProjectRef, _: Offset) => UIO.pure(stream),
+      resourceParser,
       progressesCache,
       externalIndexing,
-      projection,
-      relationshipResolution
+      projection
     )
+
+    val projectionId = ViewProjectionId("analytics")
 
     "generate graph analytics index with statistics data" in {
       val viewIndex = ViewIndex(
         project,
         iri"",
         UUID.randomUUID(),
-        ViewProjectionId("stats"),
+        projectionId,
         "idx",
         1,
         false,
@@ -150,29 +143,107 @@ class GraphAnalyticsIndexingStreamSpec
         Instant.EPOCH,
         GraphAnalyticsView(mapping)
       )
-      stream(viewIndex, ProgressStrategy.FullRestart).accepted.take(3).compile.toList.accepted
+      graphStream(viewIndex, ProgressStrategy.FullRestart).accepted.compile.toList.accepted
       eventually {
-        client
+        esClient
           .search(JsonObject.empty, Set("idx"), Uri.Query.Empty)()
           .accepted
           .removeKeys("took", "_shards") shouldEqual
-          jsonContentOf("statistics-indexed-documents.json")
+          jsonContentOf("indexed-documents.json")
       }
+    }
+
+    "obtain the adequate progress for the projection" in eventually {
+      projection.progress(projectionId).accepted shouldEqual
+        ProjectionProgress(Sequence(7L), Instant.EPOCH, 8L, 5L, 0L, 0L)
     }
   }
 
+  def resourceEvent(id: Iri, project: ProjectRef, rev: Long): ResourceEvent =
+    if (rev > 1L)
+      ResourceUpdated(
+        id,
+        project,
+        Revision(schemas.resources, 1L),
+        project,
+        Set.empty,
+        Json.obj(),
+        CompactedJsonLd.empty,
+        ExpandedJsonLd.empty,
+        rev,
+        Instant.EPOCH,
+        Anonymous
+      )
+    else
+      ResourceCreated(
+        id,
+        project,
+        Revision(schemas.resources, 1L),
+        project,
+        Set.empty,
+        Json.obj(),
+        CompactedJsonLd.empty,
+        ExpandedJsonLd.empty,
+        rev,
+        Instant.EPOCH,
+        Anonymous
+      )
+
+  def fileEvent(id: Iri, project: ProjectRef, rev: Long): FileEvent = {
+    val fileAttributes = FileAttributes(
+      UUID.randomUUID(),
+      "http://localhost/file.txt",
+      Uri.Path("file.txt"),
+      "file.txt",
+      Some(`text/plain(UTF-8)`),
+      12,
+      Digest.NotComputedDigest,
+      Client
+    )
+    if (rev > 1L)
+      FileUpdated(
+        id,
+        project,
+        Revision(iri"http://localhost/my-storage", 1L),
+        StorageType.DiskStorage,
+        fileAttributes,
+        rev,
+        Instant.EPOCH,
+        Anonymous
+      )
+    else
+      FileCreated(
+        id,
+        project,
+        Revision(iri"http://localhost/my-storage", 1L),
+        StorageType.DiskStorage,
+        fileAttributes,
+        rev,
+        Instant.EPOCH,
+        Anonymous
+      )
+  }
+
+  def otherEvent: OtherEvent = OtherEvent(1L, Instant.EPOCH, Anonymous)
+
+  def resourceF(id: Iri, project: ProjectRef, rev: Long, json: Json): DataResource = {
+    val expanded = ExpandedJsonLd.expanded(json).rightValue
+    ResourceGen.resourceFor(
+      Resource(
+        id,
+        project,
+        Map.empty,
+        Latest(schemas.resources),
+        Json.obj(),
+        CompactedJsonLd.empty,
+        expanded
+      ),
+      expanded.cursor.getTypes.rightValue,
+      rev = rev
+    )
+  }
 }
 
 object GraphAnalyticsIndexingStreamSpec {
-  final case class Value(id: Iri, brother: Iri, street: String)
-  object Value {
-    private val ctx                                       = ContextValue(
-      json"""{"@base": "http://example.com/", "@vocab": "http://schema.org/", "brother": {"@type": "@id"}}"""
-    )
-    implicit val encoderValue: Encoder.AsObject[Value]    = Encoder.encodeJsonObject.contramapObject {
-      case Value(id, brother, street) =>
-        jobj"""{"@id": "$id", "givenName": "${id.lastSegment}", "brother": "$brother", "address": {"street": "$street"}}"""
-    }
-    implicit val jsonLdEncoderValue: JsonLdEncoder[Value] = JsonLdEncoder.computeFromCirce(ctx)
-  }
+  final case class OtherEvent(rev: Long, instant: Instant, subject: Subject) extends UnScopedEvent
 }
