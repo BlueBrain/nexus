@@ -37,8 +37,17 @@
         "@id": {
           "type": "keyword"
         },
-        "found": {
+        "@type": {
+          "type": "keyword"
+        },
+        "isInArray": {
           "type": "boolean"
+        },
+        "path": {
+          "type": "keyword"
+        },
+        "dataType": {
+          "type": "keyword"
         }
       }
     },
@@ -55,6 +64,9 @@
           "type": "boolean"
         },
         "path": {
+          "type": "keyword"
+        },
+        "dataType": {
           "type": "keyword"
         }
       }
