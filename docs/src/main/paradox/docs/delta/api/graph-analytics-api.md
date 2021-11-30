@@ -88,10 +88,12 @@ An example of the ElasticSearch Document looks as follows:
 
 ```json
 {
-  "@type": "http://schema.org/Person",
   "@id": "http://example.com/Anna",
+  "@type": "http://schema.org/Person",
+  "_rev": 4,
   "properties": [
     {
+      "dataType": "object",
       "path": "http://schema.org/address",
       "isInArray": false
     },
@@ -101,11 +103,12 @@ An example of the ElasticSearch Document looks as follows:
       "isInArray": false
     },
     {
-      "dataType": "numeric",
+      "dataType": "number",
       "path": "http://schema.org/address / http://schema.org/zipcode",
       "isInArray": false
     },
     {
+      "dataType": "object",
       "@id": "http://example.com/Robert",
       "path": "http://schema.org/brother",
       "isInArray": false
@@ -116,15 +119,7 @@ An example of the ElasticSearch Document looks as follows:
       "isInArray": false
     },
     {
-      "path": "http://schema.org/studies",
-      "isInArray": true
-    },
-    {
-      "dataType": "string",
-      "path": "http://schema.org/studies / http://schema.org/name",
-      "isInArray": true
-    },
-    {
+      "dataType": "object",
       "path": "http://schema.org/studies",
       "isInArray": true
     },
@@ -134,16 +129,15 @@ An example of the ElasticSearch Document looks as follows:
       "isInArray": true
     }
   ],
-  "relationshipCandidates": [
+  "references": [
     {
       "found": true,
       "@id": "http://example.com/Robert",
-      "path": "http://schema.org/brother",
-      "isInArray": false
     }
   ],
   "relationships": [
     {
+      "dataType": "object",
       "@id": "http://example.com/Robert",
       "@type": "http://schema.org/Person",
       "path": "http://schema.org/brother",
@@ -156,9 +150,9 @@ An example of the ElasticSearch Document looks as follows:
 ... where:
 
 - `properties` - Json Object Array: A flat collection of fields present on a resource.
-- `relationshipCandidates` - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).
-- `relationships` - Json Object Array: A flat collection of @id(s) that have been found in other resources.
+- `references` - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).
+- `relationships` - Json Object Array: A flat collection of @id(s) that have been found in other resources in the same project.
 - `path` - String: The flat expanded path of a field present on a resource. A path of an embedded field will be encoded as follows: `parent / child`.
 - `isInArray` - Boolean: Flag to inform whether the current path (or its parent) is part of an array.
 - `dataType` - String: The type of the value present in the current path. Possible values are: string, numeric and boolean
-- `found` - Boolean: Flag to inform whether a path inside `relationshipCandidates` is now promoted to `relationships`.
+- `found` - Boolean: Flag to inform whether an @id inside `references` has been resolved as a relationship.

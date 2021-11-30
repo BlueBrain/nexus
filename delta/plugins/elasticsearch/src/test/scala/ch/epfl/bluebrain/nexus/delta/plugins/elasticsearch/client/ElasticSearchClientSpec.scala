@@ -120,6 +120,23 @@ class ElasticSearchClientSpec
       }
     }
 
+    "perform the multiget query" in {
+      val index = IndexLabel(genString()).rightValue
+
+      val operations = List(
+        ElasticSearchBulk.Index(index, "1", json"""{ "field1" : 1 }"""),
+        ElasticSearchBulk.Index(index, "2", json"""{ "field1" : 2 }"""),
+        ElasticSearchBulk.Index(index, "3", json"""{ "doc" : {"field2" : 4} }""")
+      )
+      esClient.bulk(operations, Refresh.WaitFor).accepted
+
+      esClient.multiGet[Int](index, Set("1", "2", "3", "4"), "field1").accepted shouldEqual Map(
+        "1" -> Some(1),
+        "2" -> Some(2),
+        "3" -> None
+      )
+    }
+
     "search" in {
       val index = IndexLabel(genString()).rightValue
 

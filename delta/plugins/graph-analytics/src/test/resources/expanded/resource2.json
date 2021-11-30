@@ -1,0 +1,73 @@
+[
+  {
+    "@id": "http://localhost/resource2",
+    "@type": [
+      "http://schema.org/Dataset",
+      "https://neuroshapes.org/ReconstructedCell",
+      "https://neuroshapes.org/NeuronMorphology",
+      "https://neuroshapes.org/ReconstructedWholeBrainCell",
+      "http://www.w3.org/ns/prov#Entity"
+    ],
+    "https://neuroshapes.org/brainLocation": [
+      {
+        "@type": [
+          "https://neuroshapes.org/BrainLocation"
+        ],
+        "https://neuroshapes.org/brainRegion": [
+          {
+            "@id": "http://localhost/my-brain-region",
+            "http://www.w3.org/2000/01/rdf-schema#label": [
+              {
+                "@value": "Dorsal part of the lateral geniculate complex"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "http://schema.org/distribution": [
+      {
+        "@type": [
+          "http://schema.org/DataDownload"
+        ],
+        "http://schema.org/contentUrl": [
+          {
+            "@id": "http://localhost/file2"
+          }
+        ]
+      }
+    ],
+    "https://neuroshapes.org/mType": [
+      {
+        "@id": "http://localhost/my-mtype",
+        "http://www.w3.org/2000/01/rdf-schema#label": [
+          {
+            "@value": "LGN_TC"
+          }
+        ],
+        "http://www.w3.org/2004/02/skos/core#prefLabel": [
+          {
+            "@value": "LGN_TC"
+          }
+        ]
+      }
+    ],
+    "http://schema.org/name": [
+      {
+        "@value": "my-cell-2"
+      }
+    ],
+    "https://neuroshapes.org/objectOfStudy": [
+      {
+        "@type": [
+          "https://neuroshapes.org/ObjectOfStudy"
+        ],
+        "http://www.w3.org/2000/01/rdf-schema#label": [
+          {
+            "@value": "Single Cell"
+          }
+        ]
+      }
+    ]
+  }
+]

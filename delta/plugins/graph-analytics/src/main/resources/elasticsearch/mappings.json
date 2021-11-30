@@ -6,6 +6,9 @@
     "@type": {
       "type": "keyword"
     },
+    "_rev": {
+      "type": "long"
+    },
     "properties": {
       "type": "nested",
       "properties": {
@@ -13,6 +16,9 @@
           "type": "keyword"
         },
         "@type": {
+          "type": "keyword"
+        },
+        "@language": {
           "type": "keyword"
         },
         "isInArray": {
@@ -26,7 +32,7 @@
         }
       }
     },
-    "relationshipCandidates": {
+    "references": {
       "properties": {
         "@id": {
           "type": "keyword"
