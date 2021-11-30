@@ -5,10 +5,11 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{Offset, Sequence}
 import akka.testkit.TestKit
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.ResourceParser
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.EventStream
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStreamSpec.OtherEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, ResourceParser}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileCreated, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes, FileEvent}
@@ -19,19 +20,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import fs2.Stream
@@ -62,8 +64,27 @@ class GraphAnalyticsIndexingStreamSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(20.seconds, Span(10, Millis))
 
+  implicit private val uuidF: UUIDF     = UUIDF.random
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  implicit private val externalConfig   = externalIndexing
+
+  private val project = ProjectRef.unsafe("myorg", "myproject")
+
+  private val (_, projects) = ProjectSetup
+    .init(
+      project.organization :: Nil,
+      ProjectGen.project("myorg", "myproject") :: Nil
+    )
+    .accepted
+
+  private val projection      = Projection.inMemory(()).accepted
+  private val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
+
+  private val projectionId = GraphAnalytics.projectionId(project)
+  private val index        = GraphAnalytics.idx(project)
+
   "GraphAnalyticsIndexingStream" should {
-    val project = ProjectRef.unsafe("myorg", "myproject")
 
     val resource1 = iri"http://localhost/resource1"
     val resource2 = iri"http://localhost/resource2"
@@ -115,9 +136,6 @@ class GraphAnalyticsIndexingStreamSpec
 
     val resourceParser = ResourceParser(fetchResource, findRelationship)
 
-    val projection: Projection[Unit] = Projection.inMemory(()).accepted
-    val progressesCache              = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-
     val mapping     = jsonObjectContentOf("elasticsearch/mappings.json")
     val graphStream = new GraphAnalyticsIndexingStream(
       esClient,
@@ -128,15 +146,13 @@ class GraphAnalyticsIndexingStreamSpec
       projection
     )
 
-    val projectionId = ViewProjectionId("analytics")
-
     "generate graph analytics index with statistics data" in {
       val viewIndex = ViewIndex(
         project,
         iri"",
         UUID.randomUUID(),
         projectionId,
-        "idx",
+        index.value,
         1,
         false,
         None,
@@ -146,7 +162,7 @@ class GraphAnalyticsIndexingStreamSpec
       graphStream(viewIndex, ProgressStrategy.FullRestart).accepted.compile.toList.accepted
       eventually {
         esClient
-          .search(JsonObject.empty, Set("idx"), Uri.Query.Empty)()
+          .search(JsonObject.empty, Set(index.value), Uri.Query.Empty)()
           .accepted
           .removeKeys("took", "_shards") shouldEqual
           jsonContentOf("indexed-documents.json")
@@ -156,6 +172,17 @@ class GraphAnalyticsIndexingStreamSpec
     "obtain the adequate progress for the projection" in eventually {
       projection.progress(projectionId).accepted shouldEqual
         ProjectionProgress(Sequence(7L), Instant.EPOCH, 8L, 5L, 0L, 0L)
+    }
+  }
+
+  "GraphAnalyticsIndexingCoordinator" should {
+    "clean up" in {
+      val indexingCleanup = new GraphAnalyticsIndexingCleanup(esClient, progressesCache, projection)
+      GraphAnalyticsIndexingCoordinator.cleanUp(projects, indexingCleanup).accepted
+
+      esClient.existsIndex(index).accepted shouldEqual false
+      projection.progress(projectionId).accepted shouldEqual NoProgress
+      progressesCache.values.accepted shouldBe empty
     }
   }
 

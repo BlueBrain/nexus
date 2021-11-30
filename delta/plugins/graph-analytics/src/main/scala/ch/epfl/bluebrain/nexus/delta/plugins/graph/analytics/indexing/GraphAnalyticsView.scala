@@ -17,7 +17,7 @@ object GraphAnalyticsView {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json").memoize
+  private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
 
-  val default: IO[ClasspathResourceError, GraphAnalyticsView] = mappings.map(GraphAnalyticsView(_))
+  val default: IO[ClasspathResourceError, GraphAnalyticsView] = mappings.map(GraphAnalyticsView(_)).memoize
 }

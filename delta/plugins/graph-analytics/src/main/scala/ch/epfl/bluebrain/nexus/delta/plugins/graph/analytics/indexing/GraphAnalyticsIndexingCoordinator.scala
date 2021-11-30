@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
 import akka.actor.typed.ActorSystem
-import akka.persistence.query.Offset
+import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
@@ -70,20 +70,22 @@ object GraphAnalyticsIndexingCoordinator {
       scheduler: Scheduler
   ): Task[GraphAnalyticsIndexingCoordinator] = {
     implicit val idxConfig: ExternalIndexingConfig = config.indexing
-    Task
-      .delay {
-        val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "graph analytics indexing")
-
-        IndexingStreamCoordinator[GraphAnalyticsView](
-          indexingController,
-          graphAnalyticsView(projects),
-          _ => config.idleTimeout,
-          indexingStream,
-          indexingCleanup,
-          retryStrategy
-        )
-      }
-      .tapEval(startIndexingStreams(config.indexing.retry, projects, _))
+    Task.when(sys.env.getOrElse("GRAPH_ANALYTICS_CLEANUP", "false").toBoolean) {
+      cleanUp(projects, indexingCleanup)
+    } >>
+      Task
+        .delay {
+          val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "graph analytics indexing")
+          IndexingStreamCoordinator[GraphAnalyticsView](
+            indexingController,
+            graphAnalyticsView(projects),
+            _ => config.idleTimeout,
+            indexingStream,
+            indexingCleanup,
+            retryStrategy
+          )
+        }
+        .tapEval(startIndexingStreams(config.indexing.retry, projects, _))
   }
 
   private def startIndexingStreams(
@@ -102,6 +104,28 @@ object GraphAnalyticsIndexingCoordinator {
       stream = projects.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
       retryStrategy = RetryStrategy.retryOnNonFatal(retry, logger, name)
     )
+  }
+
+  private[indexing] def cleanUp(projects: Projects, indexingCleanup: GraphAnalyticsIndexingCleanup)(implicit
+      config: ExternalIndexingConfig
+  ) = {
+    def getView = graphAnalyticsView(projects)
+    Task.delay(logger.warn("Cleaning up graph-analytics indices and progress to start from the beginning")) >>
+      projects
+        .currentEvents(NoOffset)
+        .evalTap {
+          _.event match {
+            case c: ProjectCreated =>
+              getView(GraphAnalytics.typeStats, c.project).flatMap {
+                _.fold(Task.unit)(indexingCleanup(_))
+              }
+            case _                 => Task.unit
+          }
+        }
+        .compile
+        .toList
+        .void >>
+      Task.delay(logger.info("Cleaning up completed, indexing will now start again."))
   }
 
 }
