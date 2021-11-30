@@ -205,14 +205,15 @@ object JsonLdContext {
   val empty: JsonLdContext = JsonLdContext(ContextValue.empty)
 
   object keywords {
-    val context = "@context"
-    val id      = "@id"
-    val tpe     = "@type"
-    val list    = "@list"
-    val base    = "@base"
-    val vocab   = "@vocab"
-    val graph   = "@graph"
-    val value   = "@value"
+    val context  = "@context"
+    val id       = "@id"
+    val tpe      = "@type"
+    val language = "@language"
+    val list     = "@list"
+    val base     = "@base"
+    val vocab    = "@vocab"
+    val graph    = "@graph"
+    val value    = "@value"
   }
 
   /**

@@ -3,19 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingCoordinator.{GraphAnalyticsIndexingController, GraphAnalyticsIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.{GraphAnalyticsIndexingCleanup, GraphAnalyticsIndexingCoordinator, GraphAnalyticsIndexingStream, GraphAnalyticsOnEventInstant, GraphAnalyticsView}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -38,47 +37,28 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       )(as, cfg.keyValueStore)
   }
 
-  make[RelationshipResolution].from { (exchanges: Set[ReferenceExchange]) => RelationshipResolution(exchanges.toList) }
-
-  make[IndexingSource].named("graph-analytics-source").from {
-    (
-        cfg: ElasticSearchViewsConfig,
-        projects: Projects,
-        eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange] @Id("data-resources")
-    ) =>
-      IndexingSource(
-        projects,
-        eventLog,
-        exchanges,
-        cfg.indexing.maxBatchSize,
-        cfg.indexing.maxTimeWindow,
-        cfg.indexing.retry
-      )
-  }
+  make[ResourceParser].from((resources: Resources, files: Files) => ResourceParser(resources, files))
 
   make[GraphAnalyticsIndexingStream].from {
     (
         client: ElasticSearchClient,
+        projects: Projects,
+        eventLog: EventLog[Envelope[Event]],
+        resourceAnalyzer: ResourceParser,
         projection: Projection[Unit],
-        indexingSource: IndexingSource @Id("graph-analytics-source"),
         cache: ProgressesCache @Id("graph-analytics-progresses"),
         config: GraphAnalyticsConfig,
-        relationshipResolution: RelationshipResolution,
-        scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        api: JsonLdApi
+        scheduler: Scheduler
     ) =>
-      new GraphAnalyticsIndexingStream(
+      GraphAnalyticsIndexingStream(
         client,
-        indexingSource,
+        projects,
+        eventLog,
+        resourceAnalyzer,
         cache,
         config.indexing,
-        projection,
-        relationshipResolution
+        projection
       )(
-        api,
-        cr,
         scheduler
       )
   }

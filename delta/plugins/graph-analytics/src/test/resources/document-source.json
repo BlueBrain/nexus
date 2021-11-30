@@ -8,11 +8,7 @@
       "isInArray" : true
     },
     {
-      "dataType" : "string",
-      "path" : "http://schema.org/phone",
-      "isInArray" : true
-    },
-    {
+      "dataType" : "object",
       "path" : "http://schema.org/address",
       "isInArray" : false
     },
@@ -22,6 +18,7 @@
       "isInArray" : false
     },
     {
+      "dataType" : "object",
       "@id" : "{{brother}}",
       "path" : "http://schema.org/brother",
       "isInArray" : false
@@ -32,8 +29,9 @@
       "isInArray" : false
     }
   ],
-  "relationshipCandidates" : [
+  "references" : [
     {
+      "dataType" : "object",
       "found" : true,
       "@id" : "{{brother}}",
       "path" : "http://schema.org/brother",
@@ -42,6 +40,7 @@
   ],
   "relationships" : [
     {
+      "dataType" : "object",
       "@id" : "{{brother}}",
       "@type" : "http://schema.org/Person",
       "path" : "http://schema.org/brother",

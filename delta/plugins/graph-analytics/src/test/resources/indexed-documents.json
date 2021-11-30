@@ -1,0 +1,246 @@
+{
+  "timed_out": false,
+  "hits": {
+    "total": {
+      "value": 2,
+      "relation": "eq"
+    },
+    "max_score": 1.0,
+    "hits": [
+      {
+        "_index": "idx",
+        "_type": "_doc",
+        "_id": "http://localhost/resource1",
+        "_score": 1.0,
+        "_source": {
+          "@id": "http://localhost/resource1",
+          "@type": [
+            "https://neuroshapes.org/Trace",
+            "http://www.w3.org/ns/prov#Entity",
+            "https://neuroshapes.org/ResponseTrace"
+          ],
+          "_rev": 4,
+          "properties": [
+            {
+              "path": "http://schema.org/distribution",
+              "isInArray": false,
+              "dataType": "object",
+              "@type": [
+                "http://schema.org/DataDownload"
+              ]
+            },
+            {
+              "path": "http://www.w3.org/ns/prov#wasGeneratedBy",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/generatedBy",
+              "@type": [
+                "https://neuroshapes.org/StimulusExperiment"
+              ]
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/unitCode",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "https://neuroshapes.org/channel",
+              "isInArray": false,
+              "dataType": "number"
+            },
+            {
+              "path": "http://schema.org/name",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/file1"
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentSize / http://schema.org/value",
+              "isInArray": false,
+              "dataType": "number"
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentSize",
+              "isInArray": false,
+              "dataType": "object"
+            },
+            {
+              "path": "http://www.w3.org/ns/prov#qualifiedGeneration",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/resource3",
+              "@type": [
+                "https://neuroshapes.org/TraceGeneration"
+              ]
+            }
+          ],
+          "relationships": [
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/file1",
+              "@type": [
+                "https://bluebrain.github.io/nexus/vocabulary/File"
+              ]
+            },
+            {
+              "path": "http://www.w3.org/ns/prov#qualifiedGeneration",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/resource3",
+              "@type": [
+                "https://neuroshapes.org/Trace"
+              ]
+            }
+          ],
+          "references": [
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/file1",
+              "found": true
+            },
+            {
+              "path": "http://www.w3.org/ns/prov#qualifiedGeneration",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/resource3",
+              "@type": [
+                "https://neuroshapes.org/TraceGeneration"
+              ],
+              "found": true
+            },
+            {
+              "path": "http://www.w3.org/ns/prov#wasGeneratedBy",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/generatedBy",
+              "@type": [
+                "https://neuroshapes.org/StimulusExperiment"
+              ],
+              "found": false
+            }
+          ]
+        }
+      },
+      {
+        "_index": "idx",
+        "_type": "_doc",
+        "_id": "http://localhost/resource2",
+        "_score": 1.0,
+        "_source": {
+          "@id": "http://localhost/resource2",
+          "@type": [
+            "https://neuroshapes.org/NeuronMorphology",
+            "https://neuroshapes.org/ReconstructedCell",
+            "https://neuroshapes.org/ReconstructedWholeBrainCell",
+            "http://schema.org/Dataset",
+            "http://www.w3.org/ns/prov#Entity"
+          ],
+          "_rev": 4,
+          "properties": [
+            {
+              "path": "http://schema.org/distribution",
+              "isInArray": false,
+              "dataType": "object",
+              "@type": [
+                "http://schema.org/DataDownload"
+              ]
+            },
+            {
+              "path": "https://neuroshapes.org/mType / http://www.w3.org/2000/01/rdf-schema#label",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "https://neuroshapes.org/objectOfStudy",
+              "isInArray": false,
+              "dataType": "object",
+              "@type": [
+                "https://neuroshapes.org/ObjectOfStudy"
+              ]
+            },
+            {
+              "path": "https://neuroshapes.org/brainLocation",
+              "isInArray": false,
+              "dataType": "object",
+              "@type": [
+                "https://neuroshapes.org/BrainLocation"
+              ]
+            },
+            {
+              "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion / http://www.w3.org/2000/01/rdf-schema#label",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "https://neuroshapes.org/objectOfStudy / http://www.w3.org/2000/01/rdf-schema#label",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "http://schema.org/name",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "https://neuroshapes.org/mType",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/my-mtype"
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/file2"
+            },
+            {
+              "path": "https://neuroshapes.org/mType / http://www.w3.org/2004/02/skos/core#prefLabel",
+              "isInArray": false,
+              "dataType": "string"
+            },
+            {
+              "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/my-brain-region"
+            }
+          ],
+          "relationships": [
+          ],
+          "references": [
+            {
+              "path": "https://neuroshapes.org/brainLocation / https://neuroshapes.org/brainRegion",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/my-brain-region",
+              "found": false
+            },
+            {
+              "path": "http://schema.org/distribution / http://schema.org/contentUrl",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/file2",
+              "found": false
+            },
+            {
+              "path": "https://neuroshapes.org/mType",
+              "isInArray": false,
+              "dataType": "object",
+              "@id": "http://localhost/my-mtype",
+              "found": false
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

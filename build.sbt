@@ -744,7 +744,7 @@ lazy val graphAnalyticsPlugin = project
     storagePlugin       % "provided;test->test",
     sdkViews            % "provided;test->test",
     sdkTestkit          % "test;test->test",
-    elasticsearchPlugin % Provided
+    elasticsearchPlugin % "provided;test->test"
   )
   .settings(
     name                       := "delta-graph-analytics-plugin",

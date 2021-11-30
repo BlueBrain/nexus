@@ -1,0 +1,62 @@
+[
+  {
+    "@id": "http://localhost/resource1",
+    "@type": [
+      "https://neuroshapes.org/Trace",
+      "http://www.w3.org/ns/prov#Entity",
+      "https://neuroshapes.org/ResponseTrace"
+    ],
+    "https://neuroshapes.org/channel": [
+      {
+        "@value": 6
+      }
+    ],
+    "http://schema.org/distribution": [
+      {
+        "@type": [
+          "http://schema.org/DataDownload"
+        ],
+        "http://schema.org/contentSize": [
+          {
+            "http://schema.org/unitCode": [
+              {
+                "@value": "bytes"
+              }
+            ],
+            "http://schema.org/value": [
+              {
+                "@value": 0
+              }
+            ]
+          }
+        ],
+        "http://schema.org/contentUrl": [
+          {
+            "@id": "http://localhost/file1"
+          }
+        ]
+      }
+    ],
+    "http://schema.org/name": [
+      {
+        "@value": "my-trace-1"
+      }
+    ],
+    "http://www.w3.org/ns/prov#qualifiedGeneration": [
+      {
+        "@id": "http://localhost/resource3",
+        "@type": [
+          "https://neuroshapes.org/TraceGeneration"
+        ]
+      }
+    ],
+    "http://www.w3.org/ns/prov#wasGeneratedBy": [
+      {
+        "@id": "http://localhost/generatedBy",
+        "@type": [
+          "https://neuroshapes.org/StimulusExperiment"
+        ]
+      }
+    ]
+  }
+]

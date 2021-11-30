@@ -6,6 +6,9 @@
     "@type": {
       "type": "keyword"
     },
+    "_rev": {
+      "type": "long"
+    },
     "properties": {
       "type": "nested",
       "properties": {
@@ -13,6 +16,9 @@
           "type": "keyword"
         },
         "@type": {
+          "type": "keyword"
+        },
+        "@language": {
           "type": "keyword"
         },
         "isInArray": {
@@ -26,22 +32,13 @@
         }
       }
     },
-    "relationshipCandidates": {
+    "references": {
       "properties": {
         "@id": {
           "type": "keyword"
         },
-        "@type": {
-          "type": "keyword"
-        },
-        "isInArray": {
+        "found": {
           "type": "boolean"
-        },
-        "path": {
-          "type": "keyword"
-        },
-        "dataType": {
-          "type": "keyword"
         }
       }
     },
@@ -58,9 +55,6 @@
           "type": "boolean"
         },
         "path": {
-          "type": "keyword"
-        },
-        "dataType": {
           "type": "keyword"
         }
       }
