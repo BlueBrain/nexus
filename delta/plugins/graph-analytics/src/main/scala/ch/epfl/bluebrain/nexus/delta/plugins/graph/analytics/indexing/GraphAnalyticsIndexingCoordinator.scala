@@ -23,36 +23,24 @@ object GraphAnalyticsIndexingCoordinator {
   type GraphAnalyticsIndexingCoordinator = IndexingStreamCoordinator[GraphAnalyticsView]
   type GraphAnalyticsIndexingController  = IndexingStreamController[GraphAnalyticsView]
 
-  implicit private val logger: Logger = Logger[GraphAnalyticsIndexingCoordinator.type]
+  private val logger: Logger = Logger[GraphAnalyticsIndexingCoordinator.type]
 
-  private def graphAnalyticsView(projects: Projects)(implicit config: ExternalIndexingConfig) =
+  private def graphAnalyticsView(implicit config: ExternalIndexingConfig) =
     (id: Iri, project: ProjectRef) =>
-      {
-        def logError[A](err: A) = {
-          logger.error(
-            s"While attempting to start indexing view $id in project $project, the rejection $err was encountered"
-          )
-          err
-        }
-
-        for {
-          view <- GraphAnalyticsView.default.mapError(logError)
-          res  <- projects.fetch(project).mapError(logError)
-        } yield Some(
+      GraphAnalyticsView.default.map { g =>
+        Some(
           ViewIndex(
             project,
             id,
-            res.value.uuid,
             GraphAnalytics.projectionId(project),
             GraphAnalytics.idx(project).value,
             1,
             deprecated = false,
             None,
-            res.updatedAt,
-            view
+            g
           )
         )
-      }.onErrorHandle(_ => None)
+      }
 
   /**
     * Create a coordinator for indexing documents into ElasticSearch indices triggered and customized by the
@@ -78,7 +66,7 @@ object GraphAnalyticsIndexingCoordinator {
           val retryStrategy = RetryStrategy.retryOnNonFatal(config.indexing.retry, logger, "graph analytics indexing")
           IndexingStreamCoordinator[GraphAnalyticsView](
             indexingController,
-            graphAnalyticsView(projects),
+            graphAnalyticsView,
             _ => config.idleTimeout,
             indexingStream,
             indexingCleanup,
@@ -109,7 +97,7 @@ object GraphAnalyticsIndexingCoordinator {
   private[indexing] def cleanUp(projects: Projects, indexingCleanup: GraphAnalyticsIndexingCleanup)(implicit
       config: ExternalIndexingConfig
   ) = {
-    def getView = graphAnalyticsView(projects)
+    def getView = graphAnalyticsView
     Task.delay(logger.warn("Cleaning up graph-analytics indices and progress to start from the beginning")) >>
       projects
         .currentEvents(NoOffset)

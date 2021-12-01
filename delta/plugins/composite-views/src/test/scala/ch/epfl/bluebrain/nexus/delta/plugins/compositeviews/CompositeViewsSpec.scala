@@ -90,7 +90,17 @@ class CompositeViewsSpec
         updatedAt,
         updatedBy,
         schema,
-        CompositeView(id, projectRef, value.sources, value.projections, value.rebuildStrategy, uuid, tags, source)
+        CompositeView(
+          id,
+          projectRef,
+          value.sources,
+          value.projections,
+          value.rebuildStrategy,
+          uuid,
+          tags,
+          source,
+          Instant.EPOCH
+        )
       )
     }
 

@@ -150,13 +150,11 @@ class GraphAnalyticsIndexingStreamSpec
       val viewIndex = ViewIndex(
         project,
         iri"",
-        UUID.randomUUID(),
         projectionId,
         index.value,
         1,
-        false,
+        deprecated = false,
         None,
-        Instant.EPOCH,
         GraphAnalyticsView(mapping)
       )
       graphStream(viewIndex, ProgressStrategy.FullRestart).accepted.compile.toList.accepted

@@ -367,9 +367,11 @@ final class CompositeIndexingStream(
     }
     .map(_.flatten.toMap)
 
-  private def isOnFirstIntervalRestart(view: ViewIndex[_], duration: FiniteDuration)(time: Instant): Boolean = {
-    val lowerBound = view.updatedAt.plusMillis(duration.toMillis - duration.toMillis / 2)
-    val upperBound = view.updatedAt.plusMillis(duration.toMillis + duration.toMillis / 2)
+  private def isOnFirstIntervalRestart(view: ViewIndex[CompositeView], duration: FiniteDuration)(
+      time: Instant
+  ): Boolean = {
+    val lowerBound = view.value.updatedAt.plusMillis(duration.toMillis - duration.toMillis / 2)
+    val upperBound = view.value.updatedAt.plusMillis(duration.toMillis + duration.toMillis / 2)
     time.isAfter(lowerBound) && time.isBefore(upperBound)
   }
 

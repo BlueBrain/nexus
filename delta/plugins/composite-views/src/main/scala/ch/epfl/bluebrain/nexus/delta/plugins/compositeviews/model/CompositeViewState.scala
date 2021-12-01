@@ -87,7 +87,8 @@ object CompositeViewState {
       value.rebuildStrategy,
       uuid,
       tags,
-      source
+      source,
+      updatedAt
     )
 
     /**

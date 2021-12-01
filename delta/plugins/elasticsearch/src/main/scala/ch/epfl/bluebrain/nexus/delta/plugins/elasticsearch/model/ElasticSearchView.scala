@@ -126,13 +126,11 @@ object ElasticSearchView {
       ViewIndex(
         res.value.project,
         res.id,
-        res.value.uuid,
         ElasticSearchViews.projectionId(res),
         ElasticSearchViews.index(res, config.indexing),
         res.rev,
         res.deprecated,
         res.value.resourceTag,
-        res.updatedAt,
         res.value
       )
   }
