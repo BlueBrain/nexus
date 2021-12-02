@@ -45,7 +45,7 @@ class CompositeViewsSpec extends BaseSpec {
       val projectPayload = jsonContentOf("/kg/views/composite/project.json")
       for {
         _ <- adminDsl.createOrganization(orgId, orgId, Jerry)
-        _ <- Task.parSequence(
+        _ <- Task.sequence(
                List(
                  adminDsl.createProject(orgId, bandsProject, projectPayload, Jerry),
                  adminDsl.createProject(orgId, albumsProject, projectPayload, Jerry),
@@ -80,7 +80,7 @@ class CompositeViewsSpec extends BaseSpec {
   "Uploading data" should {
     "upload context" in {
       val context = jsonContentOf("/kg/views/composite/context.json")
-      List(songsProject, albumsProject, bandsProject).parTraverse { projectId =>
+      List(songsProject, albumsProject, bandsProject).traverse { projectId =>
         deltaClient.post[Json](s"/resources/$orgId/$projectId", context, Jerry) { (_, response) =>
           response.status shouldEqual StatusCodes.Created
         }
@@ -92,7 +92,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/songs1.json")
         )
-        .parTraverse { song =>
+        .traverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -104,7 +104,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/albums.json")
         )
-        .parTraverse { album =>
+        .traverse { album =>
           deltaClient.post[Json](s"/resources/$orgId/$albumsProject", album, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -116,7 +116,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/bands.json")
         )
-        .parTraverse { band =>
+        .traverse { band =>
           deltaClient.post[Json](s"/resources/$orgId/$bandsProject", band, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
@@ -262,7 +262,7 @@ class CompositeViewsSpec extends BaseSpec {
         .getAll(
           jsonContentOf("/kg/views/composite/songs2.json")
         )
-        .parTraverse { song =>
+        .traverse { song =>
           deltaClient.post[Json](s"/resources/$orgId/$songsProject", song, Jerry) { (_, response) =>
             response.status shouldEqual StatusCodes.Created
           }
