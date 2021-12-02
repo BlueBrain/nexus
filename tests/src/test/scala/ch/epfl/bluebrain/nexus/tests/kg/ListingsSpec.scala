@@ -69,7 +69,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
   "Listing resources within a project" should {
 
-    "get default resources" in eventually {
+    "get default resources" in {
       val mapping = replacements(
         Delta,
         "project-label" -> ref11,
@@ -84,8 +84,10 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
 
       endpoints.parTraverse { case (endpoint, expected) =>
         deltaClient.get[Json](endpoint, Rick) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          eventually {
+            response.status shouldEqual StatusCodes.OK
+            filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          }
         }
       }
     }
