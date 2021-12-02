@@ -31,8 +31,9 @@ trait ConfigFixtures extends OptionValues {
   def keyValueStore: KeyValueStoreConfig =
     KeyValueStoreConfig(
       askTimeout = 5.seconds,
+      writeLocal = true,
       consistencyTimeout = 2.seconds,
-      RetryStrategyConfig.ExponentialStrategyConfig(50.millis, 30.seconds, 20)
+      RetryStrategyConfig.AlwaysGiveUp
     )
 
   def cacheIndexing: CacheIndexingConfig =

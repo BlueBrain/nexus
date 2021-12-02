@@ -11,13 +11,16 @@ import scala.concurrent.duration.FiniteDuration
   *
   * @param askTimeout
   *   the maximum duration to wait for the replicator to reply
+  * @param writeLocal
+  *   the value will immediately only be written to the local replica, and later disseminated with gossip
   * @param consistencyTimeout
-  *   the maximum duration to wait for a consistent read or write across the cluster
+  *   the maximum duration to wait for a consistent read or write across all nodes of the cluster
   * @param retry
   *   the retry strategy configuration
   */
 final case class KeyValueStoreConfig(
     askTimeout: FiniteDuration,
+    writeLocal: Boolean,
     consistencyTimeout: FiniteDuration,
     retry: RetryStrategyConfig
 )

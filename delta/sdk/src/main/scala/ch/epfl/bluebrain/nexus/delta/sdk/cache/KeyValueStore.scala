@@ -16,7 +16,6 @@ import monix.bio.{IO, Task, UIO}
 import retry.syntax.all._
 
 import java.time.Duration
-import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 /**
@@ -52,6 +51,14 @@ trait KeyValueStore[K, V] {
     *   the key to be deleted from the store
     */
   def remove(key: K): UIO[Unit]
+
+  /**
+    * Deletes the provided keys from the store.
+    *
+    * @param keys
+    *   the key to be deleted from the store
+    */
+  def removeAll(keys: Set[K]): UIO[Unit]
 
   /**
     * Adds the (key, value) to the store only if the key does not exists. This operation is not atomic.
@@ -223,35 +230,34 @@ object KeyValueStore {
   final def distributed[K, V](
       id: String,
       clock: (Long, V) => Long
-  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] = {
-    val retryStrategy = RetryStrategy[Throwable](
+  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] =
+    new DDataKeyValueStore[K, V](id, clock)
+
+  private class DDataKeyValueStore[K, V](
+      id: String,
+      clock: (Long, V) => Long
+  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig)
+      extends KeyValueStore[K, V] {
+
+    private val retryStrategy = RetryStrategy[Throwable](
       config.retry,
       worthRetryingOnWriteErrors,
       (err, details) =>
         Task {
-          log.warn(s"Retrying on cache with id '$id' on retry details '$details'", err)
+          log.error(s"Retrying on cache with id '$id' on retry details '$details'", err)
         }
     )
-    new DDataKeyValueStore[K, V](id, clock, retryStrategy, config.askTimeout, config.consistencyTimeout)
-  }
 
-  private class DDataKeyValueStore[K, V](
-      id: String,
-      clock: (Long, V) => Long,
-      retryStrategy: RetryStrategy[Throwable],
-      askTimeout: FiniteDuration,
-      consistencyTimeout: FiniteDuration
-  )(implicit as: ActorSystem[Nothing])
-      extends KeyValueStore[K, V] {
+    private val writeConsistency = if (config.writeLocal) WriteLocal else WriteAll(config.consistencyTimeout)
 
     implicit private val node: Cluster           = Cluster(as)
     private val uniqueAddr: SelfUniqueAddress    = SelfUniqueAddress(node.selfMember.uniqueAddress)
     implicit private val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
-    implicit private val timeout: Timeout        = Timeout(askTimeout)
+    implicit private val timeout: Timeout        = Timeout(config.askTimeout)
 
     private val replicator              = DistributedData(as).replicator
     private val mapKey                  = LWWMapKey[K, V](id)
-    private val consistencyTimeoutError = ReadWriteConsistencyTimeout(consistencyTimeout)
+    private val consistencyTimeoutError = ReadWriteConsistencyTimeout(config.consistencyTimeout)
     private val distributeWriteError    = DistributedDataError("The update couldn't be performed")
     private val dataDeletedError        = DistributedDataError(
       "The update couldn't be performed because the entry has been deleted"
@@ -259,7 +265,7 @@ object KeyValueStore {
 
     override def put(key: K, value: V): UIO[Unit] = {
       val msg =
-        Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.put(uniqueAddr, key, value, registerClock))
+        Update(mapKey, LWWMap.empty[K, V], writeConsistency)(_.put(uniqueAddr, key, value, registerClock))
       IO.deferFuture(replicator ? msg)
         .flatMap {
           case _: UpdateSuccess[_]     => IO.unit
@@ -282,8 +288,12 @@ object KeyValueStore {
     override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] =
       entries.map(_.collectFirst(pf))
 
-    override def remove(key: K): UIO[Unit] = {
-      val msg = Update(mapKey, LWWMap.empty[K, V], WriteAll(consistencyTimeout))(_.remove(uniqueAddr, key))
+    override def remove(key: K): UIO[Unit] = removeAll(Set(key))
+
+    override def removeAll(keys: Set[K]): UIO[Unit] = {
+      val msg = Update(mapKey, LWWMap.empty[K, V], writeConsistency) { node =>
+        keys.foldLeft(node) { case (n, k) => n.remove(uniqueAddr, k) }
+      }
       IO.deferFuture(replicator ? msg)
         .flatMap {
           case _: UpdateSuccess[_]     => IO.unit
@@ -340,6 +350,8 @@ object KeyValueStore {
     override def collectFirst[A](pf: PartialFunction[(K, V), A]): UIO[Option[A]] = entries.map(_.collectFirst(pf))
 
     override def remove(key: K): UIO[Unit] = UIO.delay(cache.invalidate(key))
+
+    override def removeAll(keys: Set[K]): UIO[Unit] = UIO.delay(cache.invalidateAll(keys.asJava))
 
     override def entries: UIO[Map[K, V]] = UIO.delay(cache.asMap().asScala.toMap)
 
