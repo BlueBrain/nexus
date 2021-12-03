@@ -5,7 +5,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.cluster.ddata.LWWRegister.Clock
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator._
-import akka.cluster.ddata.{LWWMap, LWWMapKey, SelfUniqueAddress}
+import akka.cluster.ddata.{LWWMap, LWWMapKey, LWWRegister, SelfUniqueAddress}
 import akka.cluster.typed.Cluster
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
@@ -211,8 +211,8 @@ object KeyValueStore {
   }
 
   /**
-    * Constructs a key value store backed by Akka Distributed Data with WriteAll and ReadLocal consistency
-    * configuration. The store is backed by a LWWMap.
+    * Constructs a key value store backed by Akka Distributed Data with ReadLocal consistency configuration. The store
+    * is backed by a LWWMap.
     *
     * @param id
     *   the ddata key
@@ -222,20 +222,35 @@ object KeyValueStore {
     *   the implicitly underlying actor system
     * @param config
     *   the key value store configuration
-    * @tparam K
-    *   the key type
-    * @tparam V
-    *   the value type
     */
   final def distributed[K, V](
       id: String,
       clock: (Long, V) => Long
+  )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] = {
+    val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
+    new DDataKeyValueStore[K, V](id, registerClock)
+  }
+
+  /**
+    * Constructs a key value store backed by Akka Distributed Data with ReadLocal consistency configuration. It relies
+    * on the default clock so it means that either there are synchronized clocks or we have only one writer (e. g. a
+    * Cluster Singleton) The store is backed by a LWWMap.
+    *
+    * @param id
+    *   the ddata key
+    * @param as
+    *   the implicitly underlying actor system
+    * @param config
+    *   the key value store configuration
+    */
+  final def distributedWithDefaultClock[K, V](
+      id: String
   )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): KeyValueStore[K, V] =
-    new DDataKeyValueStore[K, V](id, clock)
+    new DDataKeyValueStore[K, V](id, LWWRegister.defaultClock)
 
   private class DDataKeyValueStore[K, V](
       id: String,
-      clock: (Long, V) => Long
+      registerClock: Clock[V]
   )(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig)
       extends KeyValueStore[K, V] {
 
@@ -248,12 +263,11 @@ object KeyValueStore {
         }
     )
 
-    private val writeConsistency = if (config.writeLocal) WriteLocal else WriteAll(config.consistencyTimeout)
+    private val writeConsistency = WriteAll(config.consistencyTimeout)
 
-    implicit private val node: Cluster           = Cluster(as)
-    private val uniqueAddr: SelfUniqueAddress    = SelfUniqueAddress(node.selfMember.uniqueAddress)
-    implicit private val registerClock: Clock[V] = (currentTimestamp: Long, value: V) => clock(currentTimestamp, value)
-    implicit private val timeout: Timeout        = Timeout(config.askTimeout)
+    implicit private val node: Cluster        = Cluster(as)
+    private val uniqueAddr: SelfUniqueAddress = SelfUniqueAddress(node.selfMember.uniqueAddress)
+    implicit private val timeout: Timeout     = Timeout(config.askTimeout)
 
     private val replicator              = DistributedData(as).replicator
     private val mapKey                  = LWWMapKey[K, V](id)

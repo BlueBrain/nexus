@@ -89,8 +89,7 @@ class ProjectsCountsSpec
 
   private val projection                                   = Projection.inMemory(ProjectCountsCollection.empty).accepted
   implicit private val persistProgress: SaveProgressConfig = SaveProgressConfig(1, 5.millis)
-  implicit private val keyValueStore: KeyValueStoreConfig  =
-    KeyValueStoreConfig(5.seconds, writeLocal = true, 2.seconds, AlwaysGiveUp)
+  implicit private val keyValueStore: KeyValueStoreConfig  = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
 
   "ProjectsCounts" should {
     val counts = ProjectsCounts(projection, stream).accepted

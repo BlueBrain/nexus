@@ -172,10 +172,10 @@ final class ProjectsDummy private (
   }
 
   override def events(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
-    journal.events(offset)
+    journal.eventsByTag(moduleType, offset)
 
   override def currentEvents(offset: Offset): fs2.Stream[Task, Envelope[ProjectEvent]] =
-    journal.currentEvents(offset)
+    journal.currentEventsByTag(moduleType, offset)
 }
 
 object ProjectsDummy {
@@ -211,7 +211,7 @@ object ProjectsDummy {
       creationCooldown: ProjectRef => IO[ProjectCreationCooldown, Unit]
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
-      journal       <- Journal(moduleType, 1L, EventTags.forProjectScopedEvent[ProjectEvent](moduleType))
+      journal       <- Journal(moduleType, 1L, Projects.projectTagger)
       cache         <- ResourceCache[ProjectRef, Project]
       deletionCache <- IORef.of[Map[UUID, ResourcesDeletionStatus]](Map.empty)
       sem           <- IOSemaphore(1L)

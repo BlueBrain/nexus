@@ -45,6 +45,8 @@ trait PermissionsBehaviors {
     */
   def resourceId: Iri
 
+  def isImpl: Boolean
+
   private def retryBackoff[E, A](source: IO[E, A], maxRetries: Int, firstDelay: FiniteDuration): IO[E, A] = {
     source.onErrorHandleWith { ex =>
       if (maxRetries > 0)
@@ -173,38 +175,41 @@ trait PermissionsBehaviors {
       // format: on
     }
 
-    "return a complete non terminating stream of events" in {
-      val envelopes = for {
-        fiber     <- permissions.accepted.events().take(6L).compile.toVector.start
-        _         <- permissions.accepted.append(Set(perm1, perm2), 5L)
-        collected <- fiber.join
-      } yield collected
-      envelopes.accepted.map(_.event) shouldEqual Vector(
-        PermissionsAppended(1L, Set(perm1), Instant.EPOCH, subject),
-        PermissionsSubtracted(2L, Set(perm1), Instant.EPOCH, subject),
-        PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject),
-        PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject),
-        PermissionsDeleted(5L, Instant.EPOCH, subject),
-        PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject)
-      )
+    if (isImpl) {
+      "return a complete non terminating stream of events" in {
+        val envelopes = for {
+          fiber     <- permissions.accepted.events().take(6L).compile.toVector.start
+          _         <- permissions.accepted.append(Set(perm1, perm2), 5L)
+          collected <- fiber.join
+        } yield collected
+        envelopes.accepted.map(_.event) shouldEqual Vector(
+          PermissionsAppended(1L, Set(perm1), Instant.EPOCH, subject),
+          PermissionsSubtracted(2L, Set(perm1), Instant.EPOCH, subject),
+          PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject),
+          PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject),
+          PermissionsDeleted(5L, Instant.EPOCH, subject),
+          PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject)
+        )
+      }
+
+      "return a partial non terminating stream of events" in {
+        val persistenceId = permissions.accepted.persistenceId
+        val envelopes     = for {
+          fiber     <- permissions.accepted.events(Sequence(2L)).take(5L).compile.toVector.start
+          _         <- permissions.accepted.append(Set(perm3), 6L)
+          collected <- fiber.join
+        } yield collected
+        // format: off
+        envelopes.accepted shouldEqual Vector(
+          Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L),
+          Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L),
+          Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L),
+          Envelope(PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(6L), persistenceId, 6L),
+          Envelope(PermissionsAppended(7L, Set(perm3), Instant.EPOCH, subject), Sequence(7L), persistenceId, 7L)
+        )
+        // format: on
+      }
     }
 
-    "return a partial non terminating stream of events" in {
-      val persistenceId = permissions.accepted.persistenceId
-      val envelopes     = for {
-        fiber     <- permissions.accepted.events(Sequence(2L)).take(5L).compile.toVector.start
-        _         <- permissions.accepted.append(Set(perm3), 6L)
-        collected <- fiber.join
-      } yield collected
-      // format: off
-      envelopes.accepted shouldEqual Vector(
-        Envelope(PermissionsAppended(3L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(3L), persistenceId, 3L),
-        Envelope(PermissionsReplaced(4L, Set(perm3, perm4), Instant.EPOCH, subject), Sequence(4L), persistenceId, 4L),
-        Envelope(PermissionsDeleted(5L, Instant.EPOCH, subject), Sequence(5L), persistenceId, 5L),
-        Envelope(PermissionsAppended(6L, Set(perm1, perm2), Instant.EPOCH, subject), Sequence(6L), persistenceId, 6L),
-        Envelope(PermissionsAppended(7L, Set(perm3), Instant.EPOCH, subject), Sequence(7L), persistenceId, 7L)
-      )
-      // format: on
-    }
   }
 }
