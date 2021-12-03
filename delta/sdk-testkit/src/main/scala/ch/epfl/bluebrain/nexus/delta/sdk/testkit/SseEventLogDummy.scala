@@ -16,7 +16,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
     extends SseEventLog {
   override def stream(offset: Offset): Stream[Task, Envelope[JsonValue.Aux[Event]]]                         =
     DummyHelpers
-      .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
+      .eventsFromJournal[Event](envelopes, offset)
       .collect { case env if f.isDefinedAt(env.event) => env.map(f) }
 
   override def stream[R](
@@ -25,7 +25,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   )(implicit mapper: Mapper[OrganizationRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
     UIO.delay(
       DummyHelpers
-        .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
+        .eventsFromJournal[Event](envelopes, offset)
         .filter {
           case Envelope(ev: OrganizationScopedEvent, _, _, _, _, _) => org == ev.organizationLabel
           case _                                                    => false
@@ -39,7 +39,7 @@ final class SseEventLogDummy(envelopes: Seq[Envelope[Event]], f: PartialFunction
   )(implicit mapper: Mapper[ProjectRejection, R]): IO[R, Stream[Task, Envelope[JsonValue.Aux[Event]]]] =
     UIO.delay(
       DummyHelpers
-        .eventsFromJournal[Event](envelopes, offset, Long.MaxValue)
+        .eventsFromJournal[Event](envelopes, offset)
         .filter {
           case Envelope(ev: ProjectScopedEvent, _, _, _, _, _) => project == ev.project
           case _                                               => false

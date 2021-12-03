@@ -4,7 +4,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.cluster.typed.{Cluster, Join}
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{Offset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Storage
@@ -20,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
@@ -32,7 +32,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.util.UUID
-import scala.concurrent.duration._
 
 class StoragesStatisticsSpec
     extends ScalaTestWithActorTestKit(
@@ -40,6 +39,7 @@ class StoragesStatisticsSpec
     )
     with AnyWordSpecLike
     with Matchers
+    with ConfigFixtures
     with IOFixedClock
     with IOValues {
 
@@ -145,8 +145,8 @@ class StoragesStatisticsSpec
 
   implicit private val sc: Scheduler                       = Scheduler.global
   implicit private val uuidF: UUIDF                        = UUIDF.random
-  implicit private val persistProgress: SaveProgressConfig = SaveProgressConfig(1, 5.millis)
-  implicit private val keyValueStore: KeyValueStoreConfig  = KeyValueStoreConfig(5.seconds, 2.seconds, AlwaysGiveUp)
+  implicit private val persistProgress: SaveProgressConfig = persist
+  implicit private val kvStoreConfig: KeyValueStoreConfig  = keyValueStore
 
   "Stream statistics" should {
     val projection = Projection.inMemory(StorageStatsCollection.empty).accepted

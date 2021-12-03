@@ -91,6 +91,7 @@ final class ProjectsImpl private (
       _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
       resource   <- eval(DeleteProject(ref, rev, caller))
       uuid        = uuidFrom(ref, resource.updatedAt)
+      _          <- index.put(ref, resource)
       _          <- deletionCache.put(
                       uuid,
                       ResourcesDeletionStatus(
@@ -256,7 +257,7 @@ object ProjectsImpl {
       initialState = Initial,
       next = Projects.next(defaultApiMappings),
       evaluate = Projects.evaluate(organizations, creationCooldown),
-      tagger = EventTags.forProjectScopedEvent(moduleType),
+      tagger = Projects.projectTagger,
       snapshotStrategy = config.aggregate.snapshotStrategy.strategy,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
     )

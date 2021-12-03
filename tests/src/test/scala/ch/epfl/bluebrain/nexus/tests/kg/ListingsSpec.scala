@@ -1,10 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
 import akka.http.scaladsl.model.StatusCodes
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.resources.{Morty, Rick}
+import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
@@ -28,15 +27,15 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
   "Setting up" should {
     "succeed in setting up orgs, projects and acls" in {
       for {
-        _ <- aclDsl.addPermission("/", Rick, Organizations.Create)
+        _ <- aclDsl.addPermission("/", Bob, Organizations.Create)
         // First org and projects
-        _ <- adminDsl.createOrganization(org1, org1, Rick)
-        _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Rick)
-        _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Rick)
+        _ <- adminDsl.createOrganization(org1, org1, Bob)
+        _ <- adminDsl.createProject(org1, proj11, kgDsl.projectJson(name = proj11), Bob)
+        _ <- adminDsl.createProject(org1, proj12, kgDsl.projectJson(name = proj12), Bob)
         // Second org and projects
-        _ <- adminDsl.createOrganization(org2, org2, Rick)
-        _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Rick)
-        _ <- aclDsl.addPermission(s"/$ref12", Morty, Resources.Read)
+        _ <- adminDsl.createOrganization(org2, org2, Bob)
+        _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
+        _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
       } yield succeed
     }
 
@@ -49,20 +48,20 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val schemaPayload   = jsonContentOf("/kg/schemas/simple-schema.json")
       for {
         // Creation
-        _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Rick)(expectCreated)
-        _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Rick)(expectCreated)
-        _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Rick)(
+        _ <- deltaClient.put[Json](s"/resources/$ref11/_/resource11", resourcePayload, Bob)(expectCreated)
+        _ <- deltaClient.put[Json](s"/schemas/$ref11/test-schema", schemaPayload, Bob)(expectCreated)
+        _ <- deltaClient.put[Json](s"/resources/$ref11/test-schema/resource11_with_schema", resourcePayload, Bob)(
                expectCreated
              )
-        _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Rick)(expectCreated)
-        _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Rick)(expectCreated)
+        _ <- deltaClient.put[Json](s"/resources/$ref12/_/resource12", resourcePayload, Bob)(expectCreated)
+        _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
         _ <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1L), Rick)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1L), Bob)(expectCreated)
         _ <-
-          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1L), Rick)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1L), Bob)(expectCreated)
         // Deprecate
-        _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Rick)(expectOk)
+        _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
       } yield succeed
     }
   }
@@ -82,11 +81,14 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         s"/storages/$ref11"  -> jsonContentOf("/kg/listings/default-storage.json", mapping: _*)
       )
 
-      endpoints.parTraverse { case (endpoint, expected) =>
-        deltaClient.get[Json](endpoint, Rick) { (json, response) =>
-          response.status shouldEqual StatusCodes.OK
-          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+      forAll(endpoints) { case (endpoint, expected) =>
+        deltaClient.get[Json](endpoint, Bob) { (json, response) =>
+          eventually {
+            response.status shouldEqual StatusCodes.OK
+            filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+          }
         }
+        succeed
       }
     }
 
@@ -94,13 +96,13 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val expected = jsonContentOf(
         "/kg/listings/project/resource-by-schema.json",
         replacements(
-          Rick,
+          Bob,
           "org"  -> org1,
           "proj" -> proj11
         ): _*
       )
       eventually {
-        deltaClient.get[Json](s"/resources/$ref11/test-schema", Rick) { (json, response) =>
+        deltaClient.get[Json](s"/resources/$ref11/test-schema", Bob) { (json, response) =>
           response.status shouldEqual StatusCodes.OK
           filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
         }
@@ -108,7 +110,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     }
 
     "get an error if the user has no access" in {
-      deltaClient.get[Json](s"/resources/$ref11", Morty) { (_, response) =>
+      deltaClient.get[Json](s"/resources/$ref11", Alice) { (_, response) =>
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
@@ -132,7 +134,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
           s"/resources/$ref11?type=nxv:TestResource&size=2",
           next,
           lens,
-          Rick
+          Bob
         )
         .compile
         .toList
@@ -142,7 +144,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
           jsonContentOf(
             "/kg/listings/project/resource-by-type.json",
             replacements(
-              Rick,
+              Bob,
               "org"  -> org1,
               "proj" -> proj11
             ): _*
@@ -161,14 +163,14 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val expected = jsonContentOf(
         "/kg/listings/org/filter-project-2.json",
         replacements(
-          Rick,
+          Bob,
           "org"   -> org1,
           "proj1" -> proj11,
           "proj2" -> proj12
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
@@ -178,13 +180,13 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val expected = jsonContentOf(
         "/kg/listings/org/filter-project-1.json",
         replacements(
-          Rick,
+          Bob,
           "org"  -> org1,
           "proj" -> proj12
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Morty) { (json, response) =>
+      deltaClient.get[Json](s"/resources/$org1?type=$projectType", Alice) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
@@ -206,7 +208,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val expected = jsonContentOf(
         "/kg/listings/all/resource-by-type-4.json",
         replacements(
-          Rick,
+          Bob,
           "org1"  -> org1,
           "org2"  -> org2,
           "proj1" -> proj11,
@@ -215,7 +217,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources?type=$testResourceType", Rick) { (json, response) =>
+      deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
@@ -225,13 +227,13 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       val expected = jsonContentOf(
         "/kg/listings/all/resource-by-type-1.json",
         replacements(
-          Rick,
+          Bob,
           "org"  -> org1,
           "proj" -> proj12
         ): _*
       )
 
-      deltaClient.get[Json](s"/resources?type=$testResourceType", Morty) { (json, response) =>
+      deltaClient.get[Json](s"/resources?type=$testResourceType", Alice) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
       }
@@ -253,7 +255,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     "return 400 when using both 'from' and 'after'" in {
       forAll(endpoints) { endpoint =>
         eventually {
-          deltaClient.get[Json](s"$endpoint?from=10&after=%5B%22test%22%5D", Rick) { (json, response) =>
+          deltaClient.get[Json](s"$endpoint?from=10&after=%5B%22test%22%5D", Bob) { (json, response) =>
             response.status shouldEqual StatusCodes.BadRequest
             json shouldEqual jsonContentOf("/kg/listings/from-and-after-error.json")
           }
@@ -264,7 +266,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
     "return 400 if 'from' is bigger than the limit" in {
       forAll(endpoints) { endpoint =>
         eventually {
-          deltaClient.get[Json](s"$endpoint?from=10001", Rick) { (json, response) =>
+          deltaClient.get[Json](s"$endpoint?from=10001", Bob) { (json, response) =>
             response.status shouldEqual StatusCodes.BadRequest
             json shouldEqual jsonContentOf("/kg/listings/from-over-limit-error.json")
           }

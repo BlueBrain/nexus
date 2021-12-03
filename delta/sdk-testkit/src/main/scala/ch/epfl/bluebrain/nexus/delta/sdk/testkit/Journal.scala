@@ -56,21 +56,13 @@ private[testkit] class Journal[Id, E <: Event] private (
     )
   }
 
-  private def maxStreamSize(offset: Offset) =
-    offset match {
-      case NoOffset         => offsetMax.get
-      case Sequence(offset) => offsetMax.get - offset
-      case _                => throw new IllegalStateException("Only sequence offset is supported in this implementation")
-    }
-
   /**
     * Return the events as a stream
     */
   def events(offset: Offset = NoOffset): Stream[Task, Envelope[E]] =
     DummyHelpers.eventsFromJournal(
       events.get,
-      offset,
-      maxStreamSize(offset)
+      offset
     )
 
   /**
@@ -79,8 +71,7 @@ private[testkit] class Journal[Id, E <: Event] private (
   def currentEvents(offset: Offset): Stream[Task, Envelope[E]] =
     DummyHelpers.currentEventsFromJournal(
       events.get,
-      offset,
-      maxStreamSize(offset)
+      offset
     )
 
   /**
@@ -140,15 +131,13 @@ private[testkit] class Journal[Id, E <: Event] private (
 
   override def eventsByTag(tag: String, offset: Offset): Stream[Task, Envelope[E]] = DummyHelpers.eventsFromJournal(
     events.get.map(_.filter(env => tagger(env.event).contains(tag))),
-    offset,
-    maxStreamSize(offset)
+    offset
   )
 
   override def currentEventsByTag(tag: String, offset: Offset): Stream[Task, Envelope[E]] =
     DummyHelpers.currentEventsFromJournal(
       events.get.map(_.filter(env => tagger(env.event).contains(tag))),
-      offset,
-      maxStreamSize(offset)
+      offset
     )
 
   override def config: EventLogConfig = EventLogConfig.postgresql

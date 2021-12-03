@@ -1,13 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.persistence.query.{NoOffset, Offset, Sequence}
+import akka.persistence.query.{Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
 import fs2.Stream
-import fs2.concurrent.Queue
 import monix.bio.{Task, UIO}
-
-import scala.concurrent.duration._
 
 object DummyHelpers {
 
@@ -16,103 +12,31 @@ object DummyHelpers {
     */
   def currentEventsFromJournal[E <: Event](
       envelopes: UIO[Seq[Envelope[E]]],
-      offset: Offset,
-      maxStreamSize: Long
+      offset: Offset
   ): Stream[Task, Envelope[E]] =
     Stream
-      .eval(envelopes)
-      .flatMap(envelopes => Stream.emits(envelopes))
-      .flatMap { envelope =>
+      .evalSeq(envelopes)
+      .filter { envelope =>
         (envelope.offset, offset) match {
-          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-            else Stream(envelope)
-          case (_, NoOffset)                                         => Stream(envelope)
-          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
+          case (Sequence(envelopeOffset), Sequence(requestedOffset)) => envelopeOffset > requestedOffset
+          case _                                                     => true
         }
       }
-      .take(maxStreamSize)
 
   /**
     * Constructs a stream of events from a sequence of envelopes
     */
   def eventsFromJournal[E <: Event](
       envelopes: Seq[Envelope[E]],
-      offset: Offset,
-      maxStreamSize: Long
+      offset: Offset
   ): Stream[Task, Envelope[E]] =
-    eventsFromJournal(UIO.pure(envelopes), offset, maxStreamSize)
+    eventsFromJournal(UIO.pure(envelopes), offset)
 
   /**
     * Constructs a stream of events from a sequence of envelopes
     */
   def eventsFromJournal[E <: Event](
       envelopes: UIO[Seq[Envelope[E]]],
-      offset: Offset,
-      maxStreamSize: Long
-  ): Stream[Task, Envelope[E]] = {
-    def addNotSeen(queue: Queue[Task, Envelope[E]], seenCount: Int): Task[Unit] = {
-      envelopes.flatMap { envelopes =>
-        val delta = envelopes.drop(seenCount)
-        if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
-        else queue.offer1(delta.head) >> addNotSeen(queue, seenCount + 1)
-      }
-    }
-
-    val streamF = for {
-      queue <- Queue.unbounded[Task, Envelope[E]]
-      fiber <- addNotSeen(queue, 0).start
-      stream = queue.dequeue.onFinalize(fiber.cancel)
-    } yield stream
-
-    val stream = Stream.eval(streamF).flatten
-    stream
-      .flatMap { envelope =>
-        (envelope.offset, offset) match {
-          case (Sequence(envelopeOffset), Sequence(requestedOffset)) =>
-            if (envelopeOffset <= requestedOffset) Stream.empty.covary[Task]
-            else Stream(envelope)
-          case (_, NoOffset)                                         => Stream(envelope)
-          case (_, other)                                            => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
-        }
-      }
-      .take(maxStreamSize)
-  }
-
-  /**
-    * Constructs a stream of events from a sequence of messages
-    */
-  def streamFromMessages[T](
-      messages: UIO[Seq[Message[T]]],
-      offset: Offset,
-      maxStreamSize: Long
-  ): Stream[Task, Message[T]] = {
-    def addNotSeen(queue: Queue[Task, Message[T]], seenCount: Int): Task[Unit] = {
-      messages.flatMap { messages =>
-        val delta = messages.drop(seenCount)
-        if (delta.isEmpty) Task.sleep(10.milliseconds) >> addNotSeen(queue, seenCount)
-        else queue.offer1(delta.head) >> addNotSeen(queue, seenCount + 1)
-      }
-    }
-
-    val streamF = for {
-      queue <- Queue.unbounded[Task, Message[T]]
-      fiber <- addNotSeen(queue, 0).start
-      stream = queue.dequeue.onFinalize(fiber.cancel)
-    } yield stream
-
-    val stream = Stream.eval(streamF).flatten
-    stream
-      .flatMap { message =>
-        (message.offset, offset) match {
-          case (Sequence(messageOffset), Sequence(requestedOffset)) =>
-            if (messageOffset <= requestedOffset) Stream.empty.covary[Task]
-            else Stream(message)
-          case (_, NoOffset)                                        => Stream(message)
-          case (_, other)                                           => Stream.raiseError[Task](new IllegalArgumentException(s"Unknown offset type '$other'"))
-        }
-      }
-      .take(maxStreamSize)
-  }
-
+      offset: Offset
+  ): Stream[Task, Envelope[E]] = currentEventsFromJournal(envelopes, offset)
 }

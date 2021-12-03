@@ -24,7 +24,13 @@ final class CompositeKeyValueStore[K1, K2, V] private (
     * Removes the ''key1'' from the cache
     */
   def remove(key1: K1): UIO[Unit] =
-    get(key1).flatMap(entries => UIO.traverse(entries.keys)(k2 => underlying.remove((key1, k2)))).void
+    underlying.entries.flatMap { entries =>
+      val keys = entries.foldLeft(Set.empty[(K1, K2)]) {
+        case (acc, ((k1, k2), _)) if k1 == key1 => acc + (k1 -> k2)
+        case (acc, _)                           => acc
+      }
+      underlying.removeAll(keys)
+    }.void
 
   /**
     * Fetches values for the composite key

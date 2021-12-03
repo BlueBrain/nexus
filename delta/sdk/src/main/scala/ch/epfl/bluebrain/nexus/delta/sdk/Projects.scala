@@ -263,6 +263,16 @@ object Projects {
   final val moduleType: String = "project"
 
   /**
+    * The tag for the [[ProjectMarkedForDeletion]] event
+    */
+  val projectDeletedTag: String = "deleted-project"
+
+  def projectTagger: ProjectEvent => Set[String] = {
+    case _: ProjectMarkedForDeletion => Set(Projects.projectDeletedTag)
+    case p                           => EventTags.forProjectScopedEvent(moduleType)(p)
+  }
+
+  /**
     * Generates a UUID from the ''project'' and an ''instant''
     */
   def uuidFrom(project: ProjectRef, instant: Instant): UUID =

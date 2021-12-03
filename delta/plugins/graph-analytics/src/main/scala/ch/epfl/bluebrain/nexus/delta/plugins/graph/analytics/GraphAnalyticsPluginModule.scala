@@ -12,11 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -31,9 +30,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
 
   make[ProgressesCache].named("graph-analytics-progresses").from {
     (cfg: GraphAnalyticsConfig, as: ActorSystem[Nothing]) =>
-      KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-        "graph-analytics-progresses",
-        (_, v) => v.timestamp.toEpochMilli
+      ProgressesStatistics.cache(
+        "graph-analytics-progresses"
       )(as, cfg.keyValueStore)
   }
 
