@@ -29,8 +29,7 @@ class KeyValueStoreSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit val config: KeyValueStoreConfig =
-    KeyValueStoreConfig(4.seconds, 3.seconds, RetryStrategyConfig.AlwaysGiveUp)
+  implicit val config: KeyValueStoreConfig = KeyValueStoreConfig(4.seconds, 3.seconds, RetryStrategyConfig.AlwaysGiveUp)
 
   private val expectedChanges: Set[RevisionChange] = Set(
     ValueAdded("a", RevisionedValue(1, "a")),

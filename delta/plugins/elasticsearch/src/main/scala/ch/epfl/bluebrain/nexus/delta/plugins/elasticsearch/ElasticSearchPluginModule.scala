@@ -79,9 +79,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ProgressesCache].named("elasticsearch-progresses").from {
     (cfg: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
-      KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-        "elasticsearch-views-progresses",
-        (_, v) => v.timestamp.toEpochMilli
+      KeyValueStore.distributedWithDefaultClock[ProjectionId, ProjectionProgress[Unit]](
+        "elasticsearch-views-progresses"
       )(as, cfg.keyValueStore)
   }
 

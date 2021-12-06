@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectMarkedForDeletion
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{DeletionStatusCache, ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.projects._
@@ -36,6 +37,8 @@ object ProjectsModule extends ModuleDef {
   }
 
   make[EventLog[Envelope[ProjectEvent]]].fromEffect { databaseEventLog[ProjectEvent](_, _) }
+
+  make[EventLog[Envelope[ProjectMarkedForDeletion]]].fromEffect { databaseEventLog[ProjectMarkedForDeletion](_, _) }
 
   make[ApiMappingsCollection].from { (mappings: Set[ApiMappings]) =>
     ApiMappingsCollection(mappings)
@@ -124,6 +127,7 @@ object ProjectsModule extends ModuleDef {
 
   make[ProjectsDeletionStream].fromEffect {
     (
+        eventLog: EventLog[Envelope[ProjectMarkedForDeletion]],
         projects: Projects,
         cache: DeletionStatusCache,
         projection: Projection[ResourcesDeletionStatusCollection],
@@ -136,7 +140,7 @@ object ProjectsModule extends ModuleDef {
     ) =>
       Task
         .delay(
-          new ProjectsDeletionStream(projects, cache, projection, resourcesDeletion)(
+          new ProjectsDeletionStream(eventLog, projects, cache, projection, resourcesDeletion)(
             clock,
             uuidF,
             as,

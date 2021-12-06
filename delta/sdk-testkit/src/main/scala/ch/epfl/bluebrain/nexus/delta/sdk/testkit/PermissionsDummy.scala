@@ -28,8 +28,7 @@ import monix.bio.{IO, Task, UIO}
 final class PermissionsDummy private (
     override val minimum: Set[Permission],
     journal: IORef[Vector[Envelope[PermissionsEvent]]],
-    semaphore: IOSemaphore,
-    maxStreamSize: Long
+    semaphore: IOSemaphore
 )(implicit clock: Clock[UIO])
     extends Permissions {
 
@@ -61,10 +60,10 @@ final class PermissionsDummy private (
     eval(DeletePermissions(rev, caller))
 
   override def events(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
-    DummyHelpers.eventsFromJournal(journal.get, offset, maxStreamSize)
+    DummyHelpers.eventsFromJournal(journal.get, offset)
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[PermissionsEvent]] =
-    DummyHelpers.currentEventsFromJournal(journal.get, offset, maxStreamSize)
+    DummyHelpers.currentEventsFromJournal(journal.get, offset)
 
   private def currentState: UIO[PermissionsState] =
     journal.get.map { envelopes =>
@@ -115,15 +114,12 @@ object PermissionsDummy {
     *
     * @param minimum
     *   the minimum set of permissions
-    * @param maxStreamSize
-    *   truncate event stream after this size
     */
   final def apply(
-      minimum: Set[Permission],
-      maxStreamSize: Long = Long.MaxValue
+      minimum: Set[Permission]
   )(implicit clock: Clock[UIO]): UIO[PermissionsDummy] =
     for {
       ref <- IORef.of(Vector.empty[Envelope[PermissionsEvent]])
       sem <- IOSemaphore(1L)
-    } yield new PermissionsDummy(minimum, ref, sem, maxStreamSize)
+    } yield new PermissionsDummy(minimum, ref, sem)
 }

@@ -22,4 +22,6 @@ class PermissionsImplSpec extends AbstractDBSpec with PermissionsBehaviors with 
     }
 
   override def resourceId: Iri = iri"http://localhost:8080/v1/permissions"
+
+  override def isImpl: Boolean = true
 }

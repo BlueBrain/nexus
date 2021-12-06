@@ -12,6 +12,7 @@ import io.circe.Json
 import io.circe.optics.JsonPath._
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
+import scala.concurrent.duration._
 
 class CompositeViewsSpec extends BaseSpec {
 
@@ -150,8 +151,12 @@ class CompositeViewsSpec extends BaseSpec {
       }
     }
 
-    "wait for data to be indexed after creation" in
+    "wait for data to be indexed after creation" in {
+      Task
+        .sleep(10.seconds)
+        .runSyncUnsafe()
       resetAndWait
+    }
 
     "reject creating a composite view with remote source endpoint with a wrong suffix" in {
       val view = jsonContentOf(
@@ -309,7 +314,6 @@ class CompositeViewsSpec extends BaseSpec {
         response.status shouldEqual StatusCodes.OK
       }
     }
-    import scala.concurrent.duration._
     Task
       .sleep(5.seconds)
       .runSyncUnsafe() // after the view reports completion there's a short window until ES returns the results

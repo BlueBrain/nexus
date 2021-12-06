@@ -21,4 +21,6 @@ class PermissionsDummySpec
     PermissionsDummy(PermissionsGen.minimum)
 
   override def resourceId: Iri = PermissionsDummy.id
+
+  override def isImpl: Boolean = false
 }

@@ -19,8 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
@@ -31,7 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticate
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
@@ -156,15 +157,7 @@ class BlazegraphIndexingSpec
   private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
   private val projection          = Projection.inMemory(()).accepted
 
-  private val cache: KeyValueStore[ProjectionId, ProjectionProgress[Unit]] =
-    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-      "BlazegraphViewsProgress",
-      (_, progress) =>
-        progress.offset match {
-          case Sequence(v) => v
-          case _           => 0L
-        }
-    )
+  private val cache: ProgressesCache = ProgressesStatistics.cache("BlazegraphViewsProgress")
 
   implicit private val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
@@ -235,7 +228,7 @@ class BlazegraphIndexingSpec
 
     "cache projection for view" in {
       val projectionId = BlazegraphViews.projectionId(views.fetchIndexingView(viewId, project1.ref).accepted)
-      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 4, 1, 0, 0)
+      cache.get(projectionId).accepted.value shouldEqual ProjectionProgress(Sequence(7), Instant.EPOCH, 5, 1, 0, 0)
     }
 
     "index resources with type" in {

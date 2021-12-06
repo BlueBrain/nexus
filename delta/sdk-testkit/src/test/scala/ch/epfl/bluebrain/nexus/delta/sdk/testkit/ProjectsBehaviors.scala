@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
@@ -377,8 +377,7 @@ trait ProjectsBehaviors {
       ref        -> ProjectCreated,
       anotherRef -> ProjectCreated,
       ref        -> ProjectUpdated,
-      ref        -> ProjectDeprecated,
-      ref        -> ProjectMarkedForDeletion
+      ref        -> ProjectDeprecated
     )
 
     "get the different events from start" in {
@@ -396,7 +395,7 @@ trait ProjectsBehaviors {
       val events = projects
         .events(Sequence(2L))
         .map { e => (e.event.project, e.eventType, e.offset) }
-        .take(3L)
+        .take(2L)
         .compile
         .toList
 
