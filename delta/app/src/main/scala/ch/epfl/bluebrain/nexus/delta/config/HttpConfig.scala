@@ -17,10 +17,10 @@ import pureconfig.generic.semiauto._
   *   the timeout to transform the request entity to strict entity
   */
 final case class HttpConfig(
-                             interface: String,
-                             port: Int,
-                             baseUri: BaseUri,
-                             strictEntityTimeout: StrictEntity
+    interface: String,
+    port: Int,
+    baseUri: BaseUri,
+    strictEntityTimeout: StrictEntity
 )
 
 object HttpConfig {
