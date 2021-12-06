@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -63,7 +64,8 @@ class BlazegraphViewsRoutes(
     projects: Projects,
     progresses: ProgressesStatistics,
     restartView: RestartView,
-    index: IndexingAction
+    index: IndexingAction,
+    strictEntity: StrictEntity
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -87,7 +89,7 @@ class BlazegraphViewsRoutes(
   implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & strictEntity()) {
       concat(
         pathPrefix("views") {
           extractCaller { implicit caller =>
@@ -312,7 +314,8 @@ object BlazegraphViewsRoutes {
       projects: Projects,
       progresses: ProgressesStatistics,
       restartView: RestartView,
-      index: IndexingAction
+      index: IndexingAction,
+      strictEntity: StrictEntity
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -320,6 +323,16 @@ object BlazegraphViewsRoutes {
       ordering: JsonKeyOrdering,
       pc: PaginationConfig
   ): Route = {
-    new BlazegraphViewsRoutes(views, viewsQuery, identities, acls, projects, progresses, restartView, index).routes
+    new BlazegraphViewsRoutes(
+      views,
+      viewsQuery,
+      identities,
+      acls,
+      projects,
+      progresses,
+      restartView,
+      index,
+      strictEntity
+    ).routes
   }
 }

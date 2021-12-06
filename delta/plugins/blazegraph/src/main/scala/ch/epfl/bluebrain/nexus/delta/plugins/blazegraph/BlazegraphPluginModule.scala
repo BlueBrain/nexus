@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -224,6 +224,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
         indexingController: BlazegraphIndexingController,
         baseUri: BaseUri,
+        strictEntity: StrictEntity,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -237,7 +238,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         projects,
         progresses,
         indexingController.restart,
-        indexingAction
+        indexingAction,
+        strictEntity
       )(
         baseUri,
         s,
