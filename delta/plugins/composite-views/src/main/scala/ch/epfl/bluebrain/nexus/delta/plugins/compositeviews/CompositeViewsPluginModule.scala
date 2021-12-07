@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
@@ -276,6 +276,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         elasticSearchQuery: ElasticSearchQuery,
         deltaClient: DeltaClient,
         baseUri: BaseUri,
+        strictEntity: StrictEntity,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
@@ -290,7 +291,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         progresses,
         blazegraphQuery,
         elasticSearchQuery,
-        deltaClient
+        deltaClient,
+        strictEntity
       )(baseUri, s, cr, ordering)
   }
 

@@ -21,12 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
@@ -49,7 +50,8 @@ class CompositeViewsRoutes(
     progresses: ProgressesStatistics,
     blazegraphQuery: BlazegraphQuery,
     elasticSearchQuery: ElasticSearchQuery,
-    deltaClient: DeltaClient
+    deltaClient: DeltaClient,
+    strictEntity: StrictEntity
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -71,7 +73,7 @@ class CompositeViewsRoutes(
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & strictEntity()) {
       pathPrefix("views") {
         extractCaller { implicit caller =>
           projectRef(projects).apply { implicit ref =>
@@ -432,7 +434,8 @@ object CompositeViewsRoutes {
       progresses: ProgressesStatistics,
       blazegraphQuery: BlazegraphQuery,
       elasticSearchQuery: ElasticSearchQuery,
-      deltaClient: DeltaClient
+      deltaClient: DeltaClient,
+      strictEntity: StrictEntity
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -449,6 +452,7 @@ object CompositeViewsRoutes {
       progresses,
       blazegraphQuery,
       elasticSearchQuery,
-      deltaClient
+      deltaClient,
+      strictEntity
     ).routes
 }

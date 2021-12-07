@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -76,7 +77,8 @@ final class ElasticSearchViewsRoutes(
     restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
     sseEventLog: SseEventLog,
-    index: IndexingAction
+    index: IndexingAction,
+    strictEntity: StrictEntity
 )(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
@@ -102,7 +104,7 @@ final class ElasticSearchViewsRoutes(
   implicit private val fetchProject: FetchProject    = projects
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & strictEntity()) {
       concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
     }
 
@@ -435,7 +437,8 @@ object ElasticSearchViewsRoutes {
       restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
       sseEventLog: SseEventLog,
-      index: IndexingAction
+      index: IndexingAction,
+      strictEntity: StrictEntity
   )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
@@ -454,6 +457,7 @@ object ElasticSearchViewsRoutes {
       restartView,
       resourcesToSchemas,
       sseEventLog,
-      index
+      index,
+      strictEntity
     ).routes
 }
