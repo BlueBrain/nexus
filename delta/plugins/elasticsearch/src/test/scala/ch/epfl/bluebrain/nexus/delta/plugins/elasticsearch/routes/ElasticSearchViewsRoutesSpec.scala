@@ -609,7 +609,7 @@ class ElasticSearchViewsRoutesSpec
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
           mediaType shouldBe `text/event-stream`
-          chunksStream.asString(2).strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
+          response.asString.strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
         }
       }
     }
