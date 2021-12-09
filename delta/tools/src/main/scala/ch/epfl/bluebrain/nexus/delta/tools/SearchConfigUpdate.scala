@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.tools
 
+import akka.actor
 import akka.actor.BootstrapSetup
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
@@ -14,13 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import io.circe.generic.auto._
 import io.circe.literal._
 import io.circe.parser.parse
-import io.circe.{yaml, Decoder, Json}
+import io.circe.{Decoder, Json, yaml}
 import monix.bio.{BIOApp, IO, Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.LoggerFactory
-import scopt.OParser
+import scopt.{OParser, OParserBuilder}
 
 import java.io.{BufferedInputStream, FileInputStream, InputStreamReader}
+import scala.concurrent.duration._
 
 object SearchConfigUpdate extends BIOApp {
 
@@ -29,13 +31,14 @@ object SearchConfigUpdate extends BIOApp {
 
   override def run(args: List[String]): UIO[ExitCode] = {
 
-    implicit val config    = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-    implicit val as        = ActorSystem[Nothing](
+    implicit val config: HttpClientConfig =
+      HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
+    implicit val as: actor.ActorSystem    = ActorSystem[Nothing](
       Behaviors.empty,
       "updateSearchConfig",
       BootstrapSetup()
     ).classicSystem
-    implicit val scheduler = Scheduler.global
+    implicit val scheduler: Scheduler     = Scheduler.global
 
     val httpClient = HttpClient()
 
@@ -58,6 +61,7 @@ object SearchConfigUpdate extends BIOApp {
       _             = printlnGreen(s"Found ${views.size} views.")
       updatedViews <- updateViews(httpClient, config.token, payload, views)
       _             = printlnGreen(s"Successfully updated ${updatedViews.size}")
+      _            <- IO.deferFuture(as.terminate()).timeout(10.seconds)
     } yield ()).redeem(
       { e =>
         printlnRed(e.getMessage)
@@ -75,39 +79,38 @@ object SearchConfigUpdate extends BIOApp {
     val settings: Json      = getJsonFromData(configJson, "settings.json")
     val resourceTypes: Json = getJsonFromData(configJson, "resource-types.json")
     val sparqlQuery         = configJson.hcursor.downField("data").get[String]("construct-query.sparql").toOption.get
-    json"""
-{
-  "@id": $searchViewId,
-  "projections": [
-    {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/searchProjection",
-      "@type": "ElasticSearchProjection",
-      "context": $searchContext,
-      "includeDeprecated": false,
-      "includeMetadata": false,
-      "mapping": $mapping,
-      "permission": "views/query",
-      "query": $sparqlQuery,
-      "resourceSchemas": [],
-      "resourceTypes": $resourceTypes,
-      "settings": $settings
-    }
-  ],
-  "sources": [
-    {
-      "@id": "https://bluebrain.github.io/nexus/vocabulary/searchSource",
-      "@type": "ProjectEventStream",
-      "includeDeprecated": false,
-      "resourceSchemas": [],
-      "resourceTypes": []
-    }
-  ]
-}
-"""
+    json"""{
+             "@id": $searchViewId,
+             "@type": "CompositeView",
+             "projections": [
+               {
+                 "@id": "https://bluebrain.github.io/nexus/vocabulary/searchProjection",
+                 "@type": "ElasticSearchProjection",
+                 "context": $searchContext,
+                 "includeDeprecated": false,
+                 "includeMetadata": false,
+                 "mapping": $mapping,
+                 "permission": "views/query",
+                 "query": $sparqlQuery,
+                 "resourceSchemas": [],
+                 "resourceTypes": $resourceTypes,
+                 "settings": $settings
+               }
+             ],
+             "sources": [
+               {
+                 "@id": "https://bluebrain.github.io/nexus/vocabulary/searchSource",
+                 "@type": "ProjectEventStream",
+                 "includeDeprecated": false,
+                 "resourceSchemas": [],
+                 "resourceTypes": []
+               }
+             ]
+           }"""
   }
 
-  private def printlnRed(str: String)                          = println(Console.RED + str + Console.RESET)
-  private def printlnGreen(str: String)                        = println(Console.GREEN + str + Console.RESET)
+  private def printlnRed(str: String): Unit                    = println(Console.RED + str + Console.RESET)
+  private def printlnGreen(str: String): Unit                  = println(Console.GREEN + str + Console.RESET)
   private def getJsonFromData(json: Json, field: String): Json = (for {
     str       <- json.hcursor.downField("data").get[String](field)
     jsonValue <- parse(str)
@@ -178,14 +181,14 @@ object SearchConfigUpdate extends BIOApp {
   final case class SearchView(_rev: Int, _project: String, _self: Uri)
   final case class Project(_label: String, _organizationLabel: String)
   final case class ProjectsListing(_total: Int, _results: List[Project], _next: Option[Uri]) {
-    def +(other: ProjectsListing) =
+    def +(other: ProjectsListing): ProjectsListing =
       copy(_total = other._total, _results = _results ++ other._results, _next = other._next)
   }
   final case class Config(endpoint: Uri = Uri.Empty, token: String = "", configFile: String = "")
   implicit val configRead: scopt.Read[Uri] =
     scopt.Read.reads(Uri.parseAbsolute(_))
-  val builder = OParser.builder[Config]
-  val argParser = {
+  val builder: OParserBuilder[Config] = OParser.builder[Config]
+  val argParser: OParser[Unit, Config] = {
     import builder._
     OParser.sequence(
       programName("updateSearchConfig"),
