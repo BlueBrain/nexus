@@ -119,7 +119,8 @@ class BlazegraphQuerySpec
     None,
     UUID.randomUUID(),
     Map.empty,
-    Json.obj()
+    Json.obj(),
+    Instant.EPOCH
   )
 
   private val deprecatedCompositeView = CompositeView(
@@ -130,7 +131,8 @@ class BlazegraphQuerySpec
     None,
     UUID.randomUUID(),
     Map.empty,
-    Json.obj()
+    Json.obj(),
+    Instant.EPOCH
   )
 
   private val compositeViewResource: ResourceF[CompositeView] =

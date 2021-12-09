@@ -20,6 +20,7 @@ import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 import monix.bio.IO
 
+import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
@@ -43,6 +44,8 @@ import scala.concurrent.duration.FiniteDuration
   *   the tag -> rev mapping
   * @param source
   *   the original json document provided at creation or update
+  * @param updatedAt
+  *   the instant when the view was last updated
   */
 final case class CompositeView(
     id: Iri,
@@ -52,7 +55,8 @@ final case class CompositeView(
     rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
     tags: Map[TagLabel, Long],
-    source: Json
+    source: Json,
+    updatedAt: Instant
 ) {
 
   /**
@@ -101,6 +105,7 @@ object CompositeView {
         .remove("project")
         .remove("source")
         .remove("id")
+        .remove("updatedAt")
         .mapAllKeys("context", _.noSpaces.asJson)
         .mapAllKeys("mapping", _.noSpaces.asJson)
         .mapAllKeys("settings", _.noSpaces.asJson)

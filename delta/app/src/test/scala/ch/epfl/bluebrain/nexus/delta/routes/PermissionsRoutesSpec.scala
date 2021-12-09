@@ -224,7 +224,7 @@ class PermissionsRoutesSpec
 
     "return the event stream when no offset is provided" in {
       aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
-      val dummy = PermissionsDummy(Set.empty, 5L).accepted
+      val dummy = PermissionsDummy(Set.empty).accepted
       val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
@@ -235,12 +235,12 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString.strip shouldEqual contentOf("/permissions/eventstream-0-5.txt").strip
+        chunksStream.asString(5).strip shouldEqual contentOf("/permissions/eventstream-0-5.txt").strip
       }
     }
 
     "return the event stream when an offset is provided" in {
-      val dummy = PermissionsDummy(Set.empty, 5L).accepted
+      val dummy = PermissionsDummy(Set.empty).accepted
       val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
       dummy.append(Set(acls.read), 0L).accepted
       dummy.subtract(Set(acls.read), 1L).accepted
@@ -251,7 +251,7 @@ class PermissionsRoutesSpec
       dummy.subtract(Set(realms.write), 6L).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> route ~> check {
         mediaType shouldBe `text/event-stream`
-        response.asString.strip shouldEqual contentOf("/permissions/eventstream-2-7.txt").strip
+        chunksStream.asString(5).strip shouldEqual contentOf("/permissions/eventstream-2-7.txt").strip
       }
     }
   }

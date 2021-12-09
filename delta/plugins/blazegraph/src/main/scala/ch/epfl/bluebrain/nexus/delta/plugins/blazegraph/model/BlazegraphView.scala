@@ -119,13 +119,11 @@ object BlazegraphView {
     ): ViewIndex[IndexingBlazegraphView] = ViewIndex(
       res.value.project,
       res.id,
-      res.value.uuid,
       BlazegraphViews.projectionId(res),
       BlazegraphViews.namespace(res, config.indexing),
       res.rev,
       res.deprecated,
       res.value.resourceTag,
-      res.updatedAt,
       res.value
     )
   }

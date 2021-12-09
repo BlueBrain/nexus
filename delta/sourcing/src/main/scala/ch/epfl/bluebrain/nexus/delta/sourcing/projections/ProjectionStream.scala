@@ -179,8 +179,8 @@ object ProjectionStream {
         .groupWithin(cacheConfig.maxNumberOfEntries, cacheConfig.maxTimeWindow)
         .evalTap { chunk =>
           chunk.last match {
-            case Some((progress, _)) => cacheProgress(progress)
-            case None                => Task.unit
+            case Some((progress, _)) if progress != initial => cacheProgress(progress)
+            case _                                          => Task.unit
           }
         }
         .flatMap(Stream.chunk)

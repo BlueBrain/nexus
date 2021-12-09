@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
@@ -85,7 +84,7 @@ class StoragesRoutesSpec
     Permission.unsafe("remote/write")
   )
 
-  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, indexing, persist, config)
+  private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist, config)
 
   private val perms         = PermissionsDummy(allowedPerms.toSet).accepted
   private val acls          = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted

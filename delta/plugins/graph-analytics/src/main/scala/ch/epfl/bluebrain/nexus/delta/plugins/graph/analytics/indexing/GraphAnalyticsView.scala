@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing
 
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceError
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.ioJsonObjectContentOf
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import com.typesafe.scalalogging.Logger
 import io.circe.JsonObject
-import monix.bio.IO
+import monix.bio.UIO
 
 /**
   * A graph analytics view information
@@ -17,7 +18,12 @@ object GraphAnalyticsView {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json").memoize
+  implicit private val logger: Logger = Logger[GraphAnalyticsView]
 
-  val default: IO[ClasspathResourceError, GraphAnalyticsView] = mappings.map(GraphAnalyticsView(_))
+  private val mappings = ioJsonObjectContentOf("elasticsearch/mappings.json")
+
+  val default: UIO[GraphAnalyticsView] = mappings
+    .map(GraphAnalyticsView(_))
+    .logAndDiscardErrors("loading graph analytics mapping")
+    .memoize
 }

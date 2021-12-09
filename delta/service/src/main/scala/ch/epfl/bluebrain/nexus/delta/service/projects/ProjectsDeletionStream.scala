@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourcesDeletionProgr
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourcesDeletion}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.DeletionStatusCache
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CacheProjectionId
@@ -27,6 +28,7 @@ import monix.execution.Scheduler
 import java.util.UUID
 
 class ProjectsDeletionStream(
+    eventLog: EventLog[Envelope[ProjectMarkedForDeletion]],
     projects: Projects,
     cache: DeletionStatusCache,
     projection: Projection[ResourcesDeletionStatusCollection],
@@ -89,11 +91,9 @@ class ProjectsDeletionStream(
         cache.putAll(progress.value.value)
       }
       .flatMap { initialProgress =>
-        projects
-          .events(initialProgress.offset)
-          .collect { case env @ Envelope(_: ProjectMarkedForDeletion, _, _, _, _, _) =>
-            env.toMessage
-          }
+        eventLog
+          .eventsByTag(Projects.projectDeletedTag, initialProgress.offset)
+          .map(_.toMessage)
           .evalMap { msg =>
             val project = msg.value.project
             logger.info(s"Starting deletion of project $project marked at ${msg.timestamp}")

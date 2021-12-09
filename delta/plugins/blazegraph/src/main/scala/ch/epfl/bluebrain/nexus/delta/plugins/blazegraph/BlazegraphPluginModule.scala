@@ -16,14 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, StrictEntity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
@@ -78,10 +77,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ProgressesCache].named("blazegraph-progresses").from { (cfg: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
-    KeyValueStore.distributed[ProjectionId, ProjectionProgress[Unit]](
-      "blazegraph-views-progresses",
-      (_, v) => v.timestamp.toEpochMilli
-    )(as, cfg.keyValueStore)
+    ProgressesStatistics.cache("blazegraph-views-progresses")(as, cfg.keyValueStore)
   }
 
   make[BlazegraphIndexingStream].from {
@@ -224,6 +220,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
         indexingController: BlazegraphIndexingController,
         baseUri: BaseUri,
+        strictEntity: StrictEntity,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -237,7 +234,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         projects,
         progresses,
         indexingController.restart,
-        indexingAction
+        indexingAction,
+        strictEntity
       )(
         baseUri,
         s,

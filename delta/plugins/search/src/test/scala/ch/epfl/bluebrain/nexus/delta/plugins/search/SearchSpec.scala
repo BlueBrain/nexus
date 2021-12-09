@@ -99,7 +99,8 @@ class SearchSpec
     None,
     UUID.randomUUID(),
     Map.empty,
-    Json.obj()
+    Json.obj(),
+    Instant.EPOCH
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
   private val projectionProj1 =

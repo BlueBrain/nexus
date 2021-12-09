@@ -12,7 +12,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param askTimeout
   *   the maximum duration to wait for the replicator to reply
   * @param consistencyTimeout
-  *   the maximum duration to wait for a consistent read or write across the cluster
+  *   the maximum duration to wait for a consistent read or write across all nodes of the cluster
   * @param retry
   *   the retry strategy configuration
   */

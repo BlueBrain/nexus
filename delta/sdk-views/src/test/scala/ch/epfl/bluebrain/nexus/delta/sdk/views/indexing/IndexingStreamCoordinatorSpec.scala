@@ -24,8 +24,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import java.time.Instant
-import java.util.UUID
 import scala.collection.concurrent
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
@@ -70,37 +68,31 @@ class IndexingStreamCoordinatorSpec
   private def viewIndex(
       id: Iri,
       rev: Long,
-      deprecated: Boolean,
-      uuid: UUID = UUID.randomUUID()
+      deprecated: Boolean
   ): Option[ViewIndex[Unit]] = Some(
     ViewIndex(
       project,
       id,
-      uuid,
       projectionId(id, rev),
       s"${id}_$rev",
       rev,
       deprecated = deprecated,
       None,
-      Instant.EPOCH,
       ()
     )
   )
 
   private val probe: TestProbe[ProbeCommand]                               = createTestProbe[ProbeCommand]()
-  private val view1Uuid                                                    = UUID.randomUUID()
-  private val view2Uuid                                                    = UUID.randomUUID()
-  private val view3Uuid                                                    = UUID.randomUUID()
   private val fetchView: (Iri, ProjectRef) => UIO[Option[ViewIndex[Unit]]] = (id: Iri, _: ProjectRef) =>
     UIO.pure {
       val newRevision = revisions.updateWith(id) {
         _.map(_ + 1).orElse(Some(1L))
       }
       (id, newRevision) match {
-        case (`view1`, _)                     => viewIndex(id, 1L, deprecated = false, view1Uuid)
-        case (`view2`, Some(rev)) if rev < 3L => viewIndex(id, rev, deprecated = false, view2Uuid)
-        case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true, view2Uuid)
-        case (`view3`, _)                     => viewIndex(id, 1L, deprecated = false, view3Uuid)
+        case (`view1`, _)                     => viewIndex(id, 1L, deprecated = false)
+        case (`view2`, Some(rev)) if rev < 3L => viewIndex(id, rev, deprecated = false)
+        case (`view2`, Some(rev))             => viewIndex(id, rev, deprecated = true)
+        case (`view3`, _)                     => viewIndex(id, 1L, deprecated = false)
         case (`deprecatedView`, Some(rev))    => viewIndex(id, rev, deprecated = true)
         case (`invalidView`, _)               => viewIndex(id, 1L, deprecated = false)
         case (_, _)                           => None
@@ -221,7 +213,7 @@ class IndexingStreamCoordinatorSpec
       eventually {
         nbProcessed(view2, 1L) shouldEqual processedRev1
         nbProcessed(view2, 2L) should be > 0L
-        indexingCleanupValues.toSet shouldEqual Set(viewIndex(view2, 1L, deprecated = false, view2Uuid).value)
+        indexingCleanupValues.toSet shouldEqual Set(viewIndex(view2, 1L, deprecated = false).value)
       }
     }
 
@@ -236,8 +228,8 @@ class IndexingStreamCoordinatorSpec
       eventually {
         nbProcessed(view2, 2L) shouldEqual processedRev2
         indexingCleanupValues.toSet shouldEqual Set(
-          viewIndex(view2, 1L, deprecated = false, view2Uuid).value,
-          viewIndex(view2, 2L, deprecated = false, view2Uuid).value
+          viewIndex(view2, 1L, deprecated = false).value,
+          viewIndex(view2, 2L, deprecated = false).value
         )
 
       }
@@ -281,7 +273,7 @@ class IndexingStreamCoordinatorSpec
 
       eventually {
         indexingCleanupValues.toSet shouldEqual Set(
-          viewIndex(view3, 1L, deprecated = false, view3Uuid).value
+          viewIndex(view3, 1L, deprecated = false).value
         )
       }
     }
