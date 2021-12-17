@@ -4,7 +4,7 @@
   "dependencies": {
     "blazegraph": "2.1.5",
     "cassandra": "3.11.7",
-    "elasticsearch": "7.15.2",
+    "elasticsearch": "7.16.1",
     "remoteStorage": "1.4.1"
   },
   "plugins": {
