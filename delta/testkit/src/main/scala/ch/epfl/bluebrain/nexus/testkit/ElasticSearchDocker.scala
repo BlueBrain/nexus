@@ -26,7 +26,7 @@ trait ElasticSearchDocker extends DockerKitWithTimeouts {
 
 object ElasticSearchDocker {
 
-  val version: String = "7.16.1"
+  val version: String = "7.16.2"
 
   final case class ElasticSearchHost(host: String, port: Int) {
     def endpoint: String = s"http://$host:$port"

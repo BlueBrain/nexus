@@ -142,7 +142,7 @@ $ curl http://localhost/v1/version | jq
   "dependencies": {
     "blazegraph": "2.1.5",
     "cassandra": "3.11.10",
-    "elasticsearch": "7.16.1"
+    "elasticsearch": "7.16.2"
   },
   "plugins": {
     "archive": "1.5.0",
@@ -459,7 +459,7 @@ $ curl "http://$NEXUS/elasticsearch"
   "cluster_name" : "es-cluster",
   "cluster_uuid" : "qUKv83AiRqC3dRvlzUXepg",
   "version" : {
-    "number" : "7.16.1",
+    "number" : "7.16.2",
     "build_flavor" : "default",
     "build_type" : "docker",
     "build_hash" : "78722783c38caa25a70982b5b042074cde5d3b3a",
@@ -553,7 +553,7 @@ $ curl -s "http://$NEXUS/v1/version" | jq
   "dependencies": {
     "blazegraph": "2.1.5",
     "cassandra": "3.11.10",
-    "elasticsearch": "7.16.1"
+    "elasticsearch": "7.16.2"
   },
   "plugins": {
     "archive": "1.5.0",
