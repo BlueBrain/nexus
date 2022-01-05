@@ -517,14 +517,12 @@ lazy val elasticsearchPlugin = project
     assembly / assemblyJarName := "elasticsearch.jar",
     assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp     % Provided,
-      akkaTestKitTyped  % Test,
-      akkaSlf4j         % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      h2                % Test,
-      logback           % Test,
-      scalaTest         % Test
+      kamonAkkaHttp    % Provided,
+      akkaTestKitTyped % Test,
+      akkaSlf4j        % Test,
+      h2               % Test,
+      logback          % Test,
+      scalaTest        % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
@@ -548,13 +546,11 @@ lazy val blazegraphPlugin = project
     name                       := "delta-blazegraph-plugin",
     moduleName                 := "delta-blazegraph-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp     % Provided,
-      akkaSlf4j         % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      h2                % Test,
-      logback           % Test,
-      scalaTest         % Test
+      kamonAkkaHttp % Provided,
+      akkaSlf4j     % Test,
+      h2            % Test,
+      logback       % Test,
+      scalaTest     % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
@@ -585,13 +581,11 @@ lazy val compositeViewsPlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13"),
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13")
       ),
-      kamonAkkaHttp     % Provided,
-      akkaSlf4j         % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      h2                % Test,
-      logback           % Test,
-      scalaTest         % Test
+      kamonAkkaHttp % Provided,
+      akkaSlf4j     % Test,
+      h2            % Test,
+      logback       % Test,
+      scalaTest     % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.compositeviews",
@@ -620,13 +614,11 @@ lazy val searchPlugin = project
     name                       := "delta-search-plugin",
     moduleName                 := "delta-search-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp     % Provided,
-      akkaSlf4j         % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      h2                % Test,
-      logback           % Test,
-      scalaTest         % Test
+      kamonAkkaHttp % Provided,
+      akkaSlf4j     % Test,
+      h2            % Test,
+      logback       % Test,
+      scalaTest     % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.search",
@@ -656,14 +648,12 @@ lazy val storagePlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
-      kamonAkkaHttp     % Provided,
-      akkaSlf4j         % Test,
-      akkaHttpTestKit   % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      h2                % Test,
-      logback           % Test,
-      scalaTest         % Test
+      kamonAkkaHttp   % Provided,
+      akkaSlf4j       % Test,
+      akkaHttpTestKit % Test,
+      h2              % Test,
+      logback         % Test,
+      scalaTest       % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
@@ -690,15 +680,13 @@ lazy val archivePlugin = project
     name                       := "delta-archive-plugin",
     moduleName                 := "delta-archive-plugin",
     libraryDependencies       ++= Seq(
-      kamonAkkaHttp     % Provided,
+      kamonAkkaHttp % Provided,
       alpakkaFile excludeAll (
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-stream_2.13")
       ),
-      akkaSlf4j         % Test,
-      dockerTestKit     % Test,
-      dockerTestKitImpl % Test,
-      logback           % Test,
-      scalaTest         % Test
+      akkaSlf4j     % Test,
+      logback       % Test,
+      scalaTest     % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     buildInfoKeys              := Seq[BuildInfoKey](version),
@@ -980,6 +968,11 @@ lazy val compilation = {
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
+    ),
+    excludeDependencies                   ++= Seq(
+      ExclusionRule("log4j", "log4j"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-api"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-core")
     ),
     Compile / packageSrc / publishArtifact := !isSnapshot.value,
     Compile / packageDoc / publishArtifact := !isSnapshot.value,
