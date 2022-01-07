@@ -107,6 +107,7 @@ lazy val circeParser          = "io.circe"                     %% "circe-parser"
 lazy val classgraph           = "io.github.classgraph"          % "classgraph"                      % classgraphVersion
 lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"                    % distageVersion
 lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"                 % doobieVersion
+lazy val doobiePostgresCirce  = "org.tpolecat"                 %% "doobie-postgres-circe"           % doobieVersion
 lazy val dockerTestKit        = "com.whisk"                    %% "docker-testkit-scalatest"        % dockerTestKitVersion
 lazy val dockerTestKitImpl    = "com.whisk"                    %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                        % fs2Version
@@ -280,6 +281,39 @@ lazy val sourcing = project
       catsEffectLaws         % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
+    Test / fork          := true
+  )
+
+lazy val sourcing2 = project
+  .in(file("delta/sourcing2"))
+  .dependsOn(kernel, testkit % "test->compile")
+  .settings(
+    name       := "delta-sourcing2",
+    moduleName := "delta-sourcing2"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      akkaActorTyped,
+      akkaClusterTyped,
+      akkaClusterShardingTyped,
+      caffeine,
+      catsCore,
+      circeCore,
+      circeGenericExtras,
+      circeParser,
+      distageCore,
+      doobiePostgres,
+      doobiePostgresCirce,
+      fs2,
+      fs2io,
+      kryo,
+      monixBio,
+      streamz,
+      akkaSlf4j              % Test,
+      catsEffectLaws         % Test,
+      logback                % Test
+    ),
     Test / fork          := true
   )
 
