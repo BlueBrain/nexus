@@ -25,7 +25,7 @@ object SelectedTrack {
     * Fetches events belonging to a single track
     */
   final case class Single(value: Int) extends ValidTrack {
-    override def in: Option[Fragment] = Some(fr"ANY(tracks) = $value")
+    override def in: Option[Fragment] = Some(fr"$value = ANY(tracks)")
   }
 
   sealed trait NotFound extends SelectedTrack

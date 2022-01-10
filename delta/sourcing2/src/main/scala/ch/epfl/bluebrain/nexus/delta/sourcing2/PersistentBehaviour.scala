@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
-import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentEntityDefinition
+import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing2.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing2.Response._
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.SourcingConfig
@@ -20,11 +20,12 @@ import scala.util.{Failure, Success}
   * Event source based processor based on a Akka behavior which accepts and evaluates commands and then applies the
   * resulting events on the current state and finally persists them
   */
-final class PersistentEntityBehaviour(entityStore: EntityStore, config: SourcingConfig) {
+final class PersistentBehaviour(entityStore: EntityStore) {
 
-  def behaviour[State, Command, Event, Rejection](
+  def apply[State, Command, Event, Rejection](
       entityId: EntityId,
-      definition: PersistentEntityDefinition[State, Command, Event, Rejection],
+      definition: PersistentDefinition[State, Command, Event, Rejection],
+      config: SourcingConfig,
       stop: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]
   )(implicit
       State: ClassTag[State],
@@ -84,8 +85,7 @@ final class PersistentEntityBehaviour(entityStore: EntityStore, config: Sourcing
           val newState = eventProcessor.next(state, event)
           Task
             .unless(dryRun)(
-              entityStore
-                .save(eventSerializer, stateSerializer, tracker)(entityType, entityId, event, newState)
+              entityStore.save(definition)(entityType, entityId, event, newState)
             )
             .as(EvaluationSuccess(event, newState))
         }

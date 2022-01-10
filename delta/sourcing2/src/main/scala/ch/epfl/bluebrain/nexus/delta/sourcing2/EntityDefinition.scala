@@ -24,7 +24,7 @@ object EntityDefinition {
   /**
     * Implementation of an [[EntityDefinition]] which persists the result
     */
-  final case class PersistentEntityDefinition[State, Command, Event, Rejection](
+  final case class PersistentDefinition[State, Command, Event, Rejection](
       entityType: EntityType,
       eventProcessor: EventProcessor[Command, Event, State, Rejection],
       eventSerializer: EventSerializer[Event],
@@ -35,6 +35,30 @@ object EntityDefinition {
       tagState: Event => Option[(String, Long)],
       untagState: Event => Option[String]
   ) extends EntityDefinition[State, Command, Event, Rejection]
+
+  object PersistentDefinition {
+
+    def untagged[State, Command, Event, Rejection](
+        entityType: EntityType,
+        eventProcessor: EventProcessor[Command, Event, State, Rejection],
+        eventSerializer: EventSerializer[Event],
+        eventDecoder: PayloadDecoder[Event],
+        stateSerializer: StateSerializer[State],
+        stateDecoder: PayloadDecoder[State],
+        tracker: Event => Set[String]
+    ): PersistentDefinition[State, Command, Event, Rejection] = PersistentDefinition(
+      entityType,
+      eventProcessor,
+      eventSerializer,
+      eventDecoder,
+      stateSerializer,
+      stateDecoder,
+      tracker,
+      (_: Event) => None,
+      (_: Event) => None
+    )
+
+  }
 
   /**
     * A transient implementation of an [[EntityDefinition]]
