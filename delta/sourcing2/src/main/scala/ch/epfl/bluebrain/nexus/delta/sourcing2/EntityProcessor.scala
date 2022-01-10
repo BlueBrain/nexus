@@ -9,24 +9,24 @@ sealed trait StateReplay[Event, State] {
   def next(s: Option[State], e: Event): State
 }
 
-sealed trait EventProcessor[Command, Event, State, Rejection] extends StateReplay[Event, State] {
+sealed trait EntityProcessor[Command, Event, State, Rejection] extends StateReplay[Event, State] {
 
   def evaluate(s: Option[State], c: Command): IO[Rejection, Event]
 
 }
 
-object EventProcessor {
+object EntityProcessor {
 
   def apply[Command, Event, State, Rejection](
       e: (Option[State], Command) => IO[Rejection, Event],
       n: (Option[State], Event) => State
-  ): EventProcessor[Command, Event, State, Rejection] = apply(None, e, n)
+  ): EntityProcessor[Command, Event, State, Rejection] = apply(None, e, n)
 
   def apply[Command, Event, State, Rejection](
       i: Option[State],
       e: (Option[State], Command) => IO[Rejection, Event],
       n: (Option[State], Event) => State
-  ): EventProcessor[Command, Event, State, Rejection] = new EventProcessor[Command, Event, State, Rejection] {
+  ): EntityProcessor[Command, Event, State, Rejection] = new EntityProcessor[Command, Event, State, Rejection] {
 
     override def initialState: Option[State] = i
 

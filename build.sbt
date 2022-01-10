@@ -107,7 +107,11 @@ lazy val circeParser          = "io.circe"                     %% "circe-parser"
 lazy val classgraph           = "io.github.classgraph"          % "classgraph"                      % classgraphVersion
 lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"                    % distageVersion
 lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"                 % doobieVersion
-lazy val doobiePostgresCirce  = "org.tpolecat"                 %% "doobie-postgres-circe"           % doobieVersion
+lazy val doobie               = Seq(
+  doobiePostgres,
+  "org.tpolecat"                 %% "doobie-hikari"           % doobieVersion,
+  "org.tpolecat"                 %% "doobie-postgres-circe"           % doobieVersion
+)
 lazy val dockerTestKit        = "com.whisk"                    %% "docker-testkit-scalatest"        % dockerTestKitVersion
 lazy val dockerTestKitImpl    = "com.whisk"                    %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                        % fs2Version
@@ -303,8 +307,6 @@ lazy val sourcing2 = project
       circeGenericExtras,
       circeParser,
       distageCore,
-      doobiePostgres,
-      doobiePostgresCirce,
       fs2,
       fs2io,
       kryo,
@@ -313,7 +315,7 @@ lazy val sourcing2 = project
       akkaSlf4j              % Test,
       catsEffectLaws         % Test,
       logback                % Test
-    ),
+    ) ++ doobie,
     Test / fork          := true
   )
 

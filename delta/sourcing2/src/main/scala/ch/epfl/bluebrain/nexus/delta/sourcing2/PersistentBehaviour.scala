@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing2.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing2.Response._
-import ch.epfl.bluebrain.nexus.delta.sourcing2.config.SourcingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing2.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.model.EntityId
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
@@ -25,7 +25,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
   def apply[State, Command, Event, Rejection](
       entityId: EntityId,
       definition: PersistentDefinition[State, Command, Event, Rejection],
-      config: SourcingConfig,
+      config: AggregateConfig,
       stop: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]
   )(implicit
       State: ClassTag[State],
@@ -49,6 +49,11 @@ final class PersistentBehaviour(entityStore: EntityStore) {
             onSuccess(command)
         }
 
+      def stopAfterRecovery() =
+        stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
+          context.scheduleOnce(duration, context.self, Idle)
+        }
+
       // When evaluating Evaluate or DryRun commands, we stash incoming messages
       Behaviors.withStash(config.stashSize) { buffer =>
         def start() = {
@@ -61,8 +66,10 @@ final class PersistentBehaviour(entityStore: EntityStore) {
           }
           checkEntityId {
             case InitialState                 =>
-              buffer.unstashAll(active(eventProcessor.initialState))
+              stopAfterRecovery()
+              buffer.unstashAll(active(processor.initialState))
             case RecoveredState(State(state)) =>
+              stopAfterRecovery()
               buffer.unstashAll(active(Some(state)))
             case RecoveredState(_)            =>
               Behaviors.unhandled
@@ -82,7 +89,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
         }
 
         def newState(event: Event, state: Option[State], dryRun: Boolean): Task[EvaluationSuccess[Event, State]] = {
-          val newState = eventProcessor.next(state, event)
+          val newState = processor.next(state, event)
           Task
             .unless(dryRun)(
               entityStore.save(definition)(entityType, entityId, event, newState)
@@ -94,7 +101,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
           val scope      = if (dryRun) "testing" else "evaluating"
           val evalResult = for {
             _      <- IO.shift(config.evaluationExecutionContext)
-            result <- eventProcessor
+            result <- processor
                         .evaluate(state, cmd)
                         .redeemWith(
                           rejection => UIO.pure(EvaluationRejection(rejection)),
@@ -174,6 +181,12 @@ final class PersistentBehaviour(entityStore: EntityStore) {
             case _                            =>
               Behaviors.unhandled
           }
+
+        // The actor will be stopped if it doesn't receive any message
+        // during the given duration
+        definition.stopStrategy.lapsedSinceLastInteraction.foreach { duration =>
+          context.setReceiveTimeout(duration, Idle)
+        }
 
         start()
       }

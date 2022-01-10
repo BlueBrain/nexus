@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.scaladsl.{ClusterSharding, Entity, EntityContext, EntityTypeKey}
 import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
+import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sourcing2.Aggregate.EvaluationIO
 import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing2.ProcessorCommand.Request
 import ch.epfl.bluebrain.nexus.delta.sourcing2.ProcessorCommand.Request.{DryRun, Evaluate}
-import ch.epfl.bluebrain.nexus.delta.sourcing2.Response.{EvaluationError, EvaluationRejection, EvaluationResult, EvaluationSuccess, StateResponse, StopResponse}
-import ch.epfl.bluebrain.nexus.delta.sourcing2.config.SourcingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing2.Response._
+import ch.epfl.bluebrain.nexus.delta.sourcing2.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.model.EntityId
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
@@ -215,7 +215,7 @@ object ShardedAggregate {
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentDefinition[State, Command, Event, Rejection],
-      config: SourcingConfig,
+      config: AggregateConfig,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit
       persistentBehaviour: PersistentBehaviour,
