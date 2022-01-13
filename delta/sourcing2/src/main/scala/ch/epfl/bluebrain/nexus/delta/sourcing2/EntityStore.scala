@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing2
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.SourcingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing2.event.EventStore
@@ -19,7 +18,8 @@ trait EntityStore {
   def latestState[State](tpe: EntityType, id: EntityId)(implicit decoder: PayloadDecoder[State]): Task[Option[State]]
 
   def save[Event, State](
-      definition: PersistentDefinition[State, _, Event, _]
+      entitySerializer: EntitySerializer[Event, State],
+      tracker: Event => Set[String]
   )(tpe: EntityType, id: EntityId, event: Event, state: State): Task[Unit]
 }
 
@@ -39,9 +39,10 @@ object EntityStore {
       stateStore.latestState(tpe, id)
 
     override def save[Event, State](
-        definition: PersistentDefinition[State, _, Event, _]
+        entitySerializer: EntitySerializer[Event, State],
+        tracker: Event => Set[String]
     )(tpe: EntityType, id: EntityId, event: Event, state: State): Task[Unit] = {
-      import definition._
+      import entitySerializer._
       for {
         now    <- instant
         tracks <- trackStore.getOrCreate(tracker(event)).map(_.values)

@@ -1,17 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2.state
 
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing2.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.TrackQueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sourcing2.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing2.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing2.track.{SelectedTrack, Track, TrackStore}
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
 import doobie._
 import doobie.implicits._
-import doobie.postgres.implicits._
 import doobie.postgres.circe.jsonb.implicits._
-import doobie.util.transactor.Transactor
+import doobie.postgres.implicits._
 import fs2.{Chunk, Stream}
 import io.circe.Json
 import monix.bio.Task
@@ -78,8 +78,7 @@ trait StateStore {
 
 object StateStore {
 
-  final class StateStoreImpl(trackStore: TrackStore, config: TrackQueryConfig, xa: Transactor[Task])
-      extends StateStore {
+  final class StateStoreImpl(trackStore: TrackStore, config: TrackQueryConfig, xas: Transactors) extends StateStore {
 
     override def save(row: StateRow): ConnectionIO[Unit] =
       sql"""
@@ -126,9 +125,9 @@ object StateStore {
     private def state[State](tpe: EntityType, id: EntityId, tag: Option[String])(implicit
         decoder: PayloadDecoder[State]
     ): Task[Option[State]] = {
-      val select = fr"select payload from states where event_type = $tpe and entity_id = $id"
-      val byTag  = tag.fold(fr" and tag is null")(t => fr" and tag = $t")
-      (select ++ byTag).query[Json].option.transact(xa).flatMap {
+      val select = fr"SELECT payload FROM states WHERE entity_type = $tpe AND entity_id = $id"
+      val byTag  = tag.fold(fr" AND tag IS NULL")(t => fr"AND tag = $t")
+      (select ++ byTag).query[Json].option.transact(xas.read).flatMap {
         case Some(json) => Task.fromEither(decoder(tpe, json)).map(Some(_))
         case None       => Task.none
       }
@@ -148,7 +147,7 @@ object StateStore {
         offset: Offset,
         strategy: RefreshStrategy
     )(implicit decoder: PayloadDecoder[State]): Stream[Task, Envelope[State]] = {
-      val select = fr"select event_type, entity_id, payload, revision, updated_at, ordering from states"
+      val select = fr"SELECT entity_type, entity_id, payload, revision, updated_at, ordering FROM states"
 
       Stream
         .eval(trackStore.select(track))
@@ -161,32 +160,33 @@ object StateStore {
                   fr"ORDER BY ordering" ++
                   fr"LIMIT ${config.batchSize}"
 
-              query.query[(EntityType, EntityId, Json, Int, Instant, Long)].to[List].transact(xa).flatMap { rows =>
-                Task
-                  .fromEither(
-                    rows
-                      .traverse { case (entityType, entityId, payload, rev, updatedAt, offset) =>
-                        decoder(entityType, payload).map { state =>
-                          Envelope(
-                            entityType,
-                            entityId,
-                            state,
-                            rev,
-                            updatedAt,
-                            Offset.At(offset)
-                          )
+              query.query[(EntityType, EntityId, Json, Int, Instant, Long)].to[List].transact(xas.tracking).flatMap {
+                rows =>
+                  Task
+                    .fromEither(
+                      rows
+                        .traverse { case (entityType, entityId, payload, rev, updatedAt, offset) =>
+                          decoder(entityType, payload).map { state =>
+                            Envelope(
+                              entityType,
+                              entityId,
+                              state,
+                              rev,
+                              updatedAt,
+                              Offset.At(offset)
+                            )
+                          }
                         }
-                      }
-                  )
-                  .flatMap { envelopes =>
-                    if (envelopes.size < config.batchSize) {
-                      strategy match {
-                        case RefreshStrategy.Stop         => Task.none
-                        case RefreshStrategy.Delay(value) =>
-                          Task.sleep(value) >> Task.some((Chunk.seq(envelopes), currentOffset))
-                      }
-                    } else Task.some((Chunk.seq(envelopes), currentOffset))
-                  }
+                    )
+                    .flatMap { envelopes =>
+                      envelopes.lastOption.fold(
+                        strategy match {
+                          case RefreshStrategy.Stop         => Task.none
+                          case RefreshStrategy.Delay(value) =>
+                            Task.sleep(value) >> Task.some((Chunk.empty[Envelope[State]], currentOffset))
+                        }
+                      ) { last => Task.some((Chunk.seq(envelopes), last.offset)) }
+                    }
               }
             }
         }
@@ -202,5 +202,8 @@ object StateStore {
     ): Stream[Task, Envelope[State]] =
       statesByTrack(track, offset, RefreshStrategy.Delay(config.refreshInterval))
   }
+
+  def apply(trackStore: TrackStore, config: TrackQueryConfig, xas: Transactors): StateStore =
+    new StateStoreImpl(trackStore, config, xas)
 
 }

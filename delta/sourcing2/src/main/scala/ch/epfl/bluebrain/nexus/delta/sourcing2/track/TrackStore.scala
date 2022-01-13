@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing2.track
 
 import cats.data.NonEmptySet
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing2.Transactors
 import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import doobie._
 import doobie.implicits._
-import doobie.util.transactor.Transactor
 import monix.bio.{Task, UIO}
 
 import java.util.concurrent.TimeUnit
@@ -30,7 +30,7 @@ trait TrackStore {
 
 object TrackStore {
 
-  final class TrackStoreImpl(config: TrackConfig, xa: Transactor[Task]) extends TrackStore {
+  final private[track] class TrackStoreImpl(config: TrackConfig, rwt: Transactors) extends TrackStore {
 
     private val cache: Cache[String, Int] = Caffeine
       .newBuilder()
@@ -42,7 +42,7 @@ object TrackStore {
       for {
         cached  <- UIO.delay(Option(cache.getIfPresent(track)))
         fetched <-
-          cached.fold(sql"SELECT id FROM tracks where name = $track".query[Int].option.transact(xa))(_ =>
+          cached.fold(sql"SELECT id FROM tracks where name = $track".query[Int].option.transact(rwt.read))(_ =>
             Task.none[Int]
           )
         _       <- fetched.fold(UIO.unit)(id => UIO.delay(cache.put(track, id)))
@@ -59,7 +59,7 @@ object TrackStore {
             .flatMap { _ =>
               selectTracks.query[(String, Int)].toMap
             }
-            .transact(xa)
+            .transact(rwt.write)
         }
       }
 
@@ -70,5 +70,7 @@ object TrackStore {
       } yield cachedTracks ++ loadedTracks
     }
   }
+
+  def apply(config: TrackConfig, xas: Transactors): TrackStore = new TrackStoreImpl(config, xas)
 
 }

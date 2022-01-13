@@ -7,5 +7,6 @@ final case class SourcingConfig(
     readConfig: HikariConfig,
     writeConfig: HikariConfig,
     trackConfig: TrackConfig,
-    deltaVersion: String
+    deltaVersion: String,
+    tablesAutocreate: Boolean
 )

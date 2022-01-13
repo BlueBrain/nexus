@@ -25,6 +25,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
   def apply[State, Command, Event, Rejection](
       entityId: EntityId,
       definition: PersistentDefinition[State, Command, Event, Rejection],
+      serializer: EntitySerializer[Event, State],
       config: AggregateConfig,
       stop: ActorRef[ProcessorCommand] => Behavior[ProcessorCommand]
   )(implicit
@@ -49,15 +50,15 @@ final class PersistentBehaviour(entityStore: EntityStore) {
             onSuccess(command)
         }
 
-      def stopAfterRecovery() =
-        stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
+      def stopAfterRecovery(): Unit =
+        config.stopStrategy.lapsedSinceRecoveryCompleted.foreach { duration =>
           context.scheduleOnce(duration, context.self, Idle)
         }
 
       // When evaluating Evaluate or DryRun commands, we stash incoming messages
       Behaviors.withStash(config.stashSize) { buffer =>
         def start() = {
-          context.pipeToSelf(entityStore.latestState(entityType, entityId)(stateDecoder).runToFuture) {
+          context.pipeToSelf(entityStore.latestState(entityType, entityId)(serializer.stateDecoder).runToFuture) {
             case Success(None)        => InitialState
             case Success(Some(value)) => RecoveredState(value)
             case Failure(th)          =>
@@ -92,7 +93,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
           val newState = processor.next(state, event)
           Task
             .unless(dryRun)(
-              entityStore.save(definition)(entityType, entityId, event, newState)
+              entityStore.save(serializer, tracker)(entityType, entityId, event, newState)
             )
             .as(EvaluationSuccess(event, newState))
         }
@@ -184,7 +185,7 @@ final class PersistentBehaviour(entityStore: EntityStore) {
 
         // The actor will be stopped if it doesn't receive any message
         // during the given duration
-        definition.stopStrategy.lapsedSinceLastInteraction.foreach { duration =>
+        config.stopStrategy.lapsedSinceLastInteraction.foreach { duration =>
           context.setReceiveTimeout(duration, Idle)
         }
 

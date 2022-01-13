@@ -1,10 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2
 
-import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition.StopStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing2.event.EventSerializer
 import ch.epfl.bluebrain.nexus.delta.sourcing2.model.EntityType
-import ch.epfl.bluebrain.nexus.delta.sourcing2.state.StateSerializer
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -30,14 +26,9 @@ object EntityDefinition {
   final case class PersistentDefinition[State, Command, Event, Rejection](
       entityType: EntityType,
       processor: EntityProcessor[Command, Event, State, Rejection],
-      eventSerializer: EventSerializer[Event],
-      eventDecoder: PayloadDecoder[Event],
-      stateSerializer: StateSerializer[State],
-      stateDecoder: PayloadDecoder[State],
       tracker: Event => Set[String],
       tagState: Event => Option[(String, Long)],
-      untagState: Event => Option[String],
-      stopStrategy: StopStrategy
+      untagState: Event => Option[String]
   ) extends EntityDefinition[State, Command, Event, Rejection]
 
   object PersistentDefinition {
@@ -66,24 +57,14 @@ object EntityDefinition {
 
     def untagged[State, Command, Event, Rejection](
         entityType: EntityType,
-        eventProcessor: EntityProcessor[Command, Event, State, Rejection],
-        eventSerializer: EventSerializer[Event],
-        eventDecoder: PayloadDecoder[Event],
-        stateSerializer: StateSerializer[State],
-        stateDecoder: PayloadDecoder[State],
-        tracker: Event => Set[String],
-        stopStrategy: StopStrategy
+        processor: EntityProcessor[Command, Event, State, Rejection],
+        tracker: Event => Set[String]
     ): PersistentDefinition[State, Command, Event, Rejection] = PersistentDefinition(
       entityType,
-      eventProcessor,
-      eventSerializer,
-      eventDecoder,
-      stateSerializer,
-      stateDecoder,
+      processor,
       tracker,
       (_: Event) => None,
-      (_: Event) => None,
-      stopStrategy
+      (_: Event) => None
     )
   }
 

@@ -215,6 +215,7 @@ object ShardedAggregate {
     */
   def persistentSharded[State: ClassTag, Command: ClassTag, Event: ClassTag, Rejection: ClassTag](
       definition: PersistentDefinition[State, Command, Event, Rejection],
+      serializer: EntitySerializer[Event, State],
       config: AggregateConfig,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit
@@ -228,6 +229,7 @@ object ShardedAggregate {
         persistentBehaviour[State, Command, Event, Rejection](
           EntityId.unsafe(entityContext.entityId),
           definition,
+          serializer,
           config,
           passivateAfterInactivity(entityContext.shard)
         ),
