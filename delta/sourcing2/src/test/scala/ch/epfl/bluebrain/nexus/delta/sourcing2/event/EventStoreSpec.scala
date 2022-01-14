@@ -17,6 +17,8 @@ import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import fs2.Stream
+
 import java.time.Instant
 import scala.concurrent.duration._
 
@@ -145,7 +147,7 @@ class EventStoreSpec
           eventStore.save(aliceRow.copy(revision = 3, payload = json"""{ "name": "Alice", "rev": 3 }"""))
       ).transact(xa).accepted
 
-      sql"SELECT count(*) FROM events".query[Long].unique.transact(xa)
+      sql"SELECT count(*) FROM events".query[Long].unique.transact(xa).accepted shouldEqual 5L
     }
   }
 
@@ -267,18 +269,22 @@ class EventStoreSpec
           Track.Single("track1"),
           Offset.Start
         )
+        .map(Some(_))
         .timeout(500.millis)
-        .mask
+        .handleErrorWith(_ => Stream.emit(None))
         .compile
         .toList
         .accepted
-        .map { e =>
-          (e.tpe, e.id, e.rev)
+        .map {
+          _.map { e =>
+            (e.tpe, e.id, e.rev)
+          }
         } shouldEqual List(
-        (person, alice, 1),
-        (person, bob, 1),
-        (person, alice, 2),
-        (person, alice, 3)
+        Some((person, alice, 1)),
+        Some((person, bob, 1)),
+        Some((person, alice, 2)),
+        Some((person, alice, 3)),
+        None
       )
     }
   }

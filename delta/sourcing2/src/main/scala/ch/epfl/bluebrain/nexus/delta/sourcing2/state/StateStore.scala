@@ -111,14 +111,6 @@ object StateStore {
                |  ${row.writtenAt},
                |  ${row.writeVersion}
                | )
-               | ON CONFLICT (entity_type, entity_id, tag) DO UPDATE
-               | SET
-               |  revision      = EXCLUDED.revision,
-               |  payload       = EXCLUDED.payload,
-               |  updated_at    = EXCLUDED.updated_at,
-               |  written_at    = EXCLUDED.written_at,
-               |  write_version = EXCLUDED.write_version,
-               |  ordering      = (select nextval('states_ordering_seq'))
          """.stripMargin.update.run
                   ) { _ =>
                     sql"""
@@ -142,7 +134,7 @@ object StateStore {
     override def deleteTagged(tpe: EntityType, id: EntityId, tag: UserTag): ConnectionIO[Boolean] =
       sql"""
            | DELETE FROM states
-           | WHERE event_type = $tpe
+           | WHERE entity_type = $tpe
            | AND entity_id = $id
            | AND tag = $tag
         """.stripMargin.update.run.map(_ > 0)
@@ -173,7 +165,7 @@ object StateStore {
         strategy: RefreshStrategy
     )(implicit decoder: PayloadDecoder[State]): Stream[Task, Envelope[State]] = {
       val select =
-        fr"SELECT entity_type, entity_id, payload, revision, updated_at, ordering FROM states WHERE tag = $tag"
+        fr"SELECT entity_type, entity_id, payload, revision, updated_at, ordering FROM states"
       Stream
         .eval(trackStore.select(track))
         .flatMap {
@@ -181,7 +173,7 @@ object StateStore {
           case selectedTrack: SelectedTrack.ValidTrack =>
             Stream.unfoldChunkEval[Task, Offset, Envelope[State]](offset) { currentOffset =>
               val query =
-                select ++ Fragments.andOpt(selectedTrack.in, currentOffset.after) ++
+                select ++ Fragments.whereAndOpt(selectedTrack.in, Some(fr"tag = $tag"), currentOffset.after) ++
                   fr"ORDER BY ordering" ++
                   fr"LIMIT ${config.batchSize}"
 
