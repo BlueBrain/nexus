@@ -4,7 +4,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing2.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.TrackQueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sourcing2.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Envelope, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing2.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing2.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing2.track.{SelectedTrack, Track, TrackStore}
@@ -31,12 +32,12 @@ trait StateStore {
   /**
     * Delete the state for the given tag
     */
-  def deleteTagged(tpe: EntityType, id: EntityId, tag: String): ConnectionIO[Boolean]
+  def deleteTagged(tpe: EntityType, id: EntityId, tag: UserTag): ConnectionIO[Boolean]
 
   /**
     * Fetches the state with the given tag
     */
-  def tagged[State](tpe: EntityType, id: EntityId, tag: String)(implicit
+  def tagged[State](tpe: EntityType, id: EntityId, tag: Tag)(implicit
       decoder: PayloadDecoder[State]
   ): Task[Option[State]]
 
@@ -55,7 +56,7 @@ trait StateStore {
     * @param offset
     *   the offset to start from
     */
-  def currentStatesByTrack[State](track: Track, offset: Offset)(implicit
+  def currentStatesByTrack[State](track: Track, tag: Tag, offset: Offset)(implicit
       decoder: PayloadDecoder[State]
   ): Stream[Task, Envelope[State]]
 
@@ -70,7 +71,7 @@ trait StateStore {
     * @param offset
     *   the offset to start from
     */
-  def statesByTrack[State](track: Track, offset: Offset)(implicit
+  def statesByTrack[State](track: Track, tag: Tag, offset: Offset)(implicit
       decoder: PayloadDecoder[State]
   ): Stream[Task, Envelope[State]]
 
@@ -80,41 +81,65 @@ object StateStore {
 
   final class StateStoreImpl(trackStore: TrackStore, config: TrackQueryConfig, xas: Transactors) extends StateStore {
 
-    override def save(row: StateRow): ConnectionIO[Unit] =
-      sql"""
-           | INSERT INTO states (
-           |  event_type,
-           |  entity_id,
-           |  revision,
-           |  payload,
-           |  tracks,
-           |  tag,
-           |  updated_at,
-           |  written_at,
-           |  write_version
-           | )
-           | VALUES (
-           |  ${row.tpe},
-           |  ${row.id},
-           |  ${row.revision},
-           |  ${row.payload},
-           |  ${row.tracks},
-           |  ${row.tag},
-           |  ${row.updatedAt},
-           |  ${row.writtenAt},
-           |  ${row.writeVersion}
-           | )
-           | ON CONFLICT UPDATE
-           | SET
-           |  revision      = EXCLUDED.revision,
-           |  payload       = EXCLUDED.payload,
-           |  updated_at    = EXCLUDED.updated_at,
-           |  written_at    = EXCLUDED.written_at,
-           |  write_version = EXCLUDED.write_version,
-           |  ordering      = select nextval() from states_ordering_seq
-         """.stripMargin.update.run.void
+    override def save(row: StateRow): ConnectionIO[Unit] = {
+      for {
+        exists <-
+          sql"SELECT 1 FROM states WHERE entity_type = ${row.tpe} AND entity_id = ${row.id} AND tag = ${row.tag}"
+            .query[Int]
+            .option
+        _      <- exists.fold(
+                    sql"""
+               | INSERT INTO states (
+               |  entity_type,
+               |  entity_id,
+               |  revision,
+               |  payload,
+               |  tracks,
+               |  tag,
+               |  updated_at,
+               |  written_at,
+               |  write_version
+               | )
+               | VALUES (
+               |  ${row.tpe},
+               |  ${row.id},
+               |  ${row.revision},
+               |  ${row.payload},
+               |  ${row.tracks},
+               |  ${row.tag},
+               |  ${row.updatedAt},
+               |  ${row.writtenAt},
+               |  ${row.writeVersion}
+               | )
+               | ON CONFLICT (entity_type, entity_id, tag) DO UPDATE
+               | SET
+               |  revision      = EXCLUDED.revision,
+               |  payload       = EXCLUDED.payload,
+               |  updated_at    = EXCLUDED.updated_at,
+               |  written_at    = EXCLUDED.written_at,
+               |  write_version = EXCLUDED.write_version,
+               |  ordering      = (select nextval('states_ordering_seq'))
+         """.stripMargin.update.run
+                  ) { _ =>
+                    sql"""
+               | UPDATE states SET
+               |  revision = ${row.revision},
+               |  payload = ${row.payload},
+               |  tracks = ${row.tracks},
+               |  updated_at = ${row.updatedAt},
+               |  written_at = ${row.writtenAt},
+               |  write_version = ${row.writeVersion},
+               |  ordering = (select nextval('states_ordering_seq'))
+               | WHERE
+               |  entity_type = ${row.tpe} AND
+               |  entity_id = ${row.id} AND
+               |  tag = ${row.tag}
+         """.stripMargin.update.run
+                  }
+      } yield ()
+    }
 
-    override def deleteTagged(tpe: EntityType, id: EntityId, tag: String): ConnectionIO[Boolean] =
+    override def deleteTagged(tpe: EntityType, id: EntityId, tag: UserTag): ConnectionIO[Boolean] =
       sql"""
            | DELETE FROM states
            | WHERE event_type = $tpe
@@ -122,33 +147,33 @@ object StateStore {
            | AND tag = $tag
         """.stripMargin.update.run.map(_ > 0)
 
-    private def state[State](tpe: EntityType, id: EntityId, tag: Option[String])(implicit
+    private def state[State](tpe: EntityType, id: EntityId, tag: Tag)(implicit
         decoder: PayloadDecoder[State]
     ): Task[Option[State]] = {
-      val select = fr"SELECT payload FROM states WHERE entity_type = $tpe AND entity_id = $id"
-      val byTag  = tag.fold(fr" AND tag IS NULL")(t => fr"AND tag = $t")
-      (select ++ byTag).query[Json].option.transact(xas.read).flatMap {
+      val select = fr"SELECT payload FROM states WHERE entity_type = $tpe AND entity_id = $id AND tag = $tag"
+      select.query[Json].option.transact(xas.read).flatMap {
         case Some(json) => Task.fromEither(decoder(tpe, json)).map(Some(_))
         case None       => Task.none
       }
     }
 
-    override def tagged[State](tpe: EntityType, id: EntityId, tag: String)(implicit
+    override def tagged[State](tpe: EntityType, id: EntityId, tag: Tag)(implicit
         decoder: PayloadDecoder[State]
     ): Task[Option[State]] =
-      state(tpe, id, Some(tag))
+      state(tpe, id, tag)
 
     override def latestState[State](tpe: EntityType, id: EntityId)(implicit
         decoder: PayloadDecoder[State]
-    ): Task[Option[State]] = state(tpe, id, None)
+    ): Task[Option[State]] = state(tpe, id, Tag.Latest)
 
     private def statesByTrack[State](
         track: Track,
+        tag: Tag,
         offset: Offset,
         strategy: RefreshStrategy
     )(implicit decoder: PayloadDecoder[State]): Stream[Task, Envelope[State]] = {
-      val select = fr"SELECT entity_type, entity_id, payload, revision, updated_at, ordering FROM states"
-
+      val select =
+        fr"SELECT entity_type, entity_id, payload, revision, updated_at, ordering FROM states WHERE tag = $tag"
       Stream
         .eval(trackStore.select(track))
         .flatMap {
@@ -156,7 +181,7 @@ object StateStore {
           case selectedTrack: SelectedTrack.ValidTrack =>
             Stream.unfoldChunkEval[Task, Offset, Envelope[State]](offset) { currentOffset =>
               val query =
-                select ++ Fragments.whereAndOpt(selectedTrack.in, currentOffset.after) ++
+                select ++ Fragments.andOpt(selectedTrack.in, currentOffset.after) ++
                   fr"ORDER BY ordering" ++
                   fr"LIMIT ${config.batchSize}"
 
@@ -192,15 +217,15 @@ object StateStore {
         }
     }
 
-    override def currentStatesByTrack[State](track: Track, offset: Offset)(implicit
+    override def currentStatesByTrack[State](track: Track, tag: Tag, offset: Offset)(implicit
         decoder: PayloadDecoder[State]
     ): Stream[Task, Envelope[State]] =
-      statesByTrack(track, offset, RefreshStrategy.Stop)
+      statesByTrack(track, tag, offset, RefreshStrategy.Stop)
 
-    override def statesByTrack[State](track: Track, offset: Offset)(implicit
+    override def statesByTrack[State](track: Track, tag: Tag, offset: Offset)(implicit
         decoder: PayloadDecoder[State]
     ): Stream[Task, Envelope[State]] =
-      statesByTrack(track, offset, RefreshStrategy.Delay(config.refreshInterval))
+      statesByTrack(track, tag, offset, RefreshStrategy.Delay(config.refreshInterval))
   }
 
   def apply(trackStore: TrackStore, config: TrackQueryConfig, xas: Transactors): StateStore =

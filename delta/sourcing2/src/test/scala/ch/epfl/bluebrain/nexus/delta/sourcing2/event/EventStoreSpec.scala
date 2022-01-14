@@ -91,7 +91,7 @@ class EventStoreSpec
 
   "Saving a row" should {
 
-    "be ok and then fail if we attempt again" in {
+    "be ok" in {
       eventStore.save(aliceRow).transact(xa).accepted
 
       sql"""
@@ -108,23 +108,11 @@ class EventStoreSpec
            |  write_version
            | FROM events
          """.stripMargin
-        .query[(Long, EntityType, EntityId, Int, String, Json, List[Int], Instant, Instant, String)]
+        .query[(Long, EntityType, EntityId, Int, EntityScope, Json, List[Int], Instant, Instant, String)]
         .unique
         .transact(xa)
-        .accepted shouldEqual (
-        (
-          1L,
-          aliceRow.tpe,
-          aliceRow.id,
-          aliceRow.revision,
-          aliceRow.scope.value,
-          aliceRow.payload,
-          aliceRow.tracks,
-          aliceRow.instant,
-          aliceRow.writtenAt,
-          aliceRow.writeVersion
-        )
-      )
+        .accepted shouldEqual
+        EventRow.unapply(aliceRow.copy(ordering = 1L)).value
     }
 
     "fail if we try to insert another event with the same type/id/rev" in {

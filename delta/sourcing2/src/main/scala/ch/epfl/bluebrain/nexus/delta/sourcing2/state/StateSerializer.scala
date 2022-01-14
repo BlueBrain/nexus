@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2.state
 
-import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType}
+import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Tag}
 import io.circe.Encoder
 import io.circe.syntax._
 
@@ -16,7 +16,7 @@ sealed trait StateSerializer[State] {
       entityId: EntityId,
       state: State,
       tracks: Iterable[Int],
-      tag: Option[String],
+      tag: Tag,
       now: Instant,
       writeVersion: String
   ): StateRow
@@ -34,7 +34,7 @@ object StateSerializer {
         entityId: EntityId,
         state: State,
         tracks: Iterable[Int],
-        tag: Option[String],
+        tag: Tag,
         now: Instant,
         writeVersion: String
     ): StateRow =

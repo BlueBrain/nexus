@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2.state
 
-import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType}
+import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Tag}
 import io.circe.Json
 
 import java.time.Instant
@@ -15,7 +15,7 @@ case class StateRow(
     revision: Int,
     payload: Json,
     tracks: List[Int],
-    tag: Option[String],
+    tag: Tag,
     updatedAt: Instant,
     writtenAt: Instant,
     writeVersion: String

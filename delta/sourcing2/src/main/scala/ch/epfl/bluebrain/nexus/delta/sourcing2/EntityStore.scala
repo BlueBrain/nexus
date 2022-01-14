@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.SourcingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.decoder.PayloadDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing2.event.EventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType}
+import ch.epfl.bluebrain.nexus.delta.sourcing2.model.{EntityId, EntityType, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing2.state.StateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing2.track.TrackStore
 import doobie.implicits._
@@ -46,10 +46,11 @@ object EntityStore {
       for {
         now    <- instant
         tracks <- trackStore.getOrCreate(tracker(event)).map(_.values)
-        _      <- (
-                    eventStore.save(eventSerializer.serialize(tpe, id, event, tracks, now, config.deltaVersion)) >>
-                      stateStore.save(stateSerializer.serialize(tpe, id, state, tracks, None, now, config.deltaVersion))
-                  ).transact(xa)
+        _      <-
+          (
+            eventStore.save(eventSerializer.serialize(tpe, id, event, tracks, now, config.deltaVersion)) >>
+              stateStore.save(stateSerializer.serialize(tpe, id, state, tracks, Tag.Latest, now, config.deltaVersion))
+          ).transact(xa)
       } yield ()
     }
   }
