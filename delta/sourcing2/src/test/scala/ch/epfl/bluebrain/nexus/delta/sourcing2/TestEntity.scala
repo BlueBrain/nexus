@@ -118,20 +118,20 @@ object TestEntity {
       case (Some(Current(revS, _, _)), Never(revC)) if revS == revC                          => IO.never
       case (None, Never(rev)) if rev == 0                                        => IO.never
       case (_, Never(rev))                                                          => IO.raiseError(InvalidRevision(rev))
-      case (None, Increment(rev, step)) if rev == 0                              => IO.pure(Incremented(1, step, Instant.now()))
+      case (None, Increment(rev, step)) if rev == 0                              => IO.pure(Incremented(1, step,Instant.EPOCH))
       case (None, Increment(rev, _))                                             => IO.raiseError(InvalidRevision(rev))
       case (None, IncrementAsync(rev, step, duration)) if rev == 0               =>
-        IO.sleep(duration) >> IO.pure(Incremented(1, step, Instant.now()))
+        IO.sleep(duration) >> IO.pure(Incremented(1, step,Instant.EPOCH))
       case (None, IncrementAsync(rev, _, _))                                     => IO.raiseError(InvalidRevision(rev))
-      case (None, Initialize(rev)) if rev == 0                                   => IO.pure(Initialized(1, Instant.now()))
+      case (None, Initialize(rev)) if rev == 0                                   => IO.pure(Initialized(1,Instant.EPOCH))
       case (None, Initialize(rev))                                               => IO.raiseError(InvalidRevision(rev))
-      case (Some(Current(revS, _, _)), Increment(revC, step)) if revS == revC                => IO.pure(Incremented(revS + 1, step, Instant.now()))
+      case (Some(Current(revS, _, _)), Increment(revC, step)) if revS == revC                => IO.pure(Incremented(revS + 1, step,Instant.EPOCH))
       case (Some(Current(_, _, _)), Increment(revC, _))                                      => IO.raiseError(InvalidRevision(revC))
       case (Some(Current(revS, _, _)), IncrementAsync(revC, step, duration)) if revS == revC =>
-        IO.sleep(duration) >> IO.pure(Incremented(revS + 1, step, Instant.now()))
+        IO.sleep(duration) >> IO.pure(Incremented(revS + 1, step,Instant.EPOCH))
       case (Some(Current(_, _, _)), IncrementAsync(revC, _, duration))                       =>
         IO.sleep(duration) >> IO.raiseError(InvalidRevision(revC))
-      case (Some(Current(revS, _, _)), Initialize(revC)) if revS == revC                     => IO.pure(Initialized(revS + 1, Instant.now()))
+      case (Some(Current(revS, _, _)), Initialize(revC)) if revS == revC                     => IO.pure(Initialized(revS + 1,Instant.EPOCH))
       case (Some(Current(_, _, _)), Initialize(rev))                                         => IO.raiseError(InvalidRevision(rev))
     }
 

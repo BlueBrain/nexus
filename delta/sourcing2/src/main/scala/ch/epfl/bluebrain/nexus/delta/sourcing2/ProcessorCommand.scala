@@ -41,7 +41,7 @@ object ProcessorCommand {
 sealed trait Response extends Product with Serializable
 
 object Response {
-  final case class StateResponse[State](value: State) extends Response
+  final case class StateResponse[State](value: Option[State]) extends Response
 
   sealed trait StopResponse      extends Response
   final case object StopResponse extends StopResponse

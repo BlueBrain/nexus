@@ -58,7 +58,7 @@ private[sourcing2] class ShardedAggregate[State, Command, Event, Rejection](
     * @return
     *   the state for the given id
     */
-  override def state(id: EntityId): UIO[State] =
+  override def state(id: EntityId): UIO[Option[State]] =
     send(id, { askTo: ActorRef[StateResponse[State]] => Request.GetState(id, askTo) })
       .map(_.value)
       .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name))

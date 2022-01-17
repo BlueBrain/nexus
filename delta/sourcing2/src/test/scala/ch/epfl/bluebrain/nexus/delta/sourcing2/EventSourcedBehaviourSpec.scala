@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing2
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ActorRef, Behavior}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing2.EntityDefinition.PersistentDefinition.StopStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing2.ProcessorCommand.Request
 import ch.epfl.bluebrain.nexus.delta.sourcing2.config.{AggregateConfig, TrackQueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing2.event.EventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing2.model.EntityId
@@ -44,6 +45,10 @@ class EventSourcedBehaviourSpec
     Behaviors.stopped[ProcessorCommand]
   }
 
+  val sender = testKit.createTestProbe[Response]()
+
+  val entityId = EntityId.unsafe("entity")
+
   val aggregate = testKit.spawn(
     eventSourceBehaviour(
       EntityId.unsafe("entity"),
@@ -53,6 +58,31 @@ class EventSourcedBehaviourSpec
       stop
     )
   )
+
+  "Getting initial state" should {
+    "return None" in {
+      aggregate ! Request.GetState(entityId, sender.ref)
+
+      sender.expectMessage(Response.StateResponse(None))
+    }
+  }
+
+  "Evaluating" should {
+
+    "update its state when accepting commands" in {
+
+    }
+
+    "test without applying and persisting changes" in {
+
+    }
+
+    "not update the state if evaluation fails" in {
+
+    }
+
+  }
+
 
 
 
