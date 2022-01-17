@@ -21,7 +21,7 @@ trait Aggregate[State, Command, Event, Rejection] {
     * @param id
     *   the entity identifier
     */
-  def state(id: EntityId): UIO[Option[State]]
+  def state(id: EntityId): UIO[State]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.

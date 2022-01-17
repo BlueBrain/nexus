@@ -9,7 +9,7 @@ import java.time.Instant
 /**
   * Serializes an event and its metadata into an [[EventRow]]
   */
-sealed trait EventSerializer[Event] {
+sealed trait EventEncoder[Event] {
 
   def serialize(
       entityType: EntityType,
@@ -22,13 +22,13 @@ sealed trait EventSerializer[Event] {
 
 }
 
-object EventSerializer {
+object EventEncoder {
 
   def apply[Event: Encoder.AsObject](
       revision: Event => Int,
       instant: Event => Instant,
       scope: Option[EntityScope]
-  ): EventSerializer[Event] = new EventSerializer[Event] {
+  ): EventEncoder[Event] = new EventEncoder[Event] {
     override def serialize(
         entityType: EntityType,
         entityId: EntityId,

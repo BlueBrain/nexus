@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
   * Event source based processor based on a Akka behavior which accepts and evaluates commands and then applies the
   * resulting events on the current state and finally persists them
   */
-final class PersistentBehaviour(entityStore: EntityStore) {
+final class EventSourcedBehaviour(entityStore: EntityStore) {
 
   def apply[State, Command, Event, Rejection](
       entityId: EntityId,
@@ -89,13 +89,18 @@ final class PersistentBehaviour(entityStore: EntityStore) {
           }
         }
 
-        def newState(event: Event, state: Option[State], dryRun: Boolean): Task[EvaluationSuccess[Event, State]] = {
-          val newState = processor.next(state, event)
-          Task
-            .unless(dryRun)(
-              entityStore.save(serializer, tracker)(entityType, entityId, event, newState)
-            )
-            .as(EvaluationSuccess(event, newState))
+        def newState(event: Event, state: Option[State], dryRun: Boolean): Task[EvaluationResult] = {
+          processor.next(state, event) match {
+            case Some(newState) =>
+              Task
+                .unless(dryRun)(
+                  entityStore.save(serializer, tracker)(entityType, entityId, event, newState)
+                ).as(EvaluationSuccess(event, newState))
+            case None =>
+              Task.pure(InvalidState(event, state))
+          }
+
+
         }
 
         def evaluateCommand(state: Option[State], cmd: Command, dryRun: Boolean): Unit = {

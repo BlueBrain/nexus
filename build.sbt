@@ -313,6 +313,7 @@ lazy val sourcing2 = project
       monixBio,
       streamz,
       akkaSlf4j              % Test,
+      akkaTestKitTyped       % Test,
       catsEffectLaws         % Test,
       logback                % Test
     ) ++ doobie,

@@ -41,7 +41,7 @@ object ProcessorCommand {
 sealed trait Response extends Product with Serializable
 
 object Response {
-  final case class StateResponse[State](value: Option[State]) extends Response
+  final case class StateResponse[State](value: State) extends Response
 
   sealed trait StopResponse      extends Response
   final case object StopResponse extends StopResponse
@@ -52,5 +52,6 @@ object Response {
 
   sealed trait EvaluationError                                                              extends EvaluationResult
   final case class EvaluationTimeout[Command](value: Command, timeoutAfter: FiniteDuration) extends EvaluationError
+  final case class InvalidState[Event, State](event: Event, state: Option[State]) extends EvaluationError
   final case class EvaluationFailure[Command](value: Command, message: Option[String])      extends EvaluationError
 }

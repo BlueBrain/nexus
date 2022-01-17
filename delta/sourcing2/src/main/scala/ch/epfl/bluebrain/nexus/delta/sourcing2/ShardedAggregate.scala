@@ -58,7 +58,7 @@ private[sourcing2] class ShardedAggregate[State, Command, Event, Rejection](
     * @return
     *   the state for the given id
     */
-  override def state(id: EntityId): UIO[Option[State]] =
+  override def state(id: EntityId): UIO[State] =
     send(id, { askTo: ActorRef[StateResponse[State]] => Request.GetState(id, askTo) })
       .map(_.value)
       .named("getCurrentState", component, Map("entity.type" -> entityTypeKey.name))
@@ -219,9 +219,9 @@ object ShardedAggregate {
       config: AggregateConfig,
       shardingSettings: Option[ClusterShardingSettings] = None
   )(implicit
-      persistentBehaviour: PersistentBehaviour,
-      as: ActorSystem[Nothing],
-      mapper: Mapper[EvaluationError, Rejection]
+    persistentBehaviour: EventSourcedBehaviour,
+    as: ActorSystem[Nothing],
+    mapper: Mapper[EvaluationError, Rejection]
   ): UIO[Aggregate[State, Command, Event, Rejection]] = {
     sharded(
       EntityTypeKey[ProcessorCommand](definition.entityType.value),

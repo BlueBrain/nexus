@@ -9,7 +9,7 @@ import java.time.Instant
 /**
   * Serializes a state and its metadata into an [[StateRow]]
   */
-sealed trait StateSerializer[State] {
+sealed trait StateEncoder[State] {
 
   def serialize(
       entityType: EntityType,
@@ -23,12 +23,12 @@ sealed trait StateSerializer[State] {
 
 }
 
-object StateSerializer {
+object StateEncoder {
 
   def apply[State: Encoder.AsObject](
       revision: State => Int,
       instant: State => Instant
-  ): StateSerializer[State] = new StateSerializer[State] {
+  ): StateEncoder[State] = new StateEncoder[State] {
     override def serialize(
         entityType: EntityType,
         entityId: EntityId,
