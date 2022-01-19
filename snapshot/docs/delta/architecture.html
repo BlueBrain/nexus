@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -290,7 +287,6 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>An overview of the Blue Brain Nexus ecosystem is presented in the figure below:</p><div class="half center">
 <p><img src="assets/architecture-ecosystem.png" alt="Ecosystem" /></p></div>
 <p><a href="../fusion/index.html">Nexus Fusion</a> is a web interface that helps scientists with their day-to-day data-driven activities but also facilitates the system administrative tasks. It uses the Nexus.js (a javascript SDK) that provides as set of primitives for building web applications for Nexus Delta.</p>
-<p><a href="../utilities/nexus-python-cli.html">Nexus CLI</a> is a command line interface for scripting and automating the system administrative tasks. It also provides the ability to execute off-process data projections to stores that are not directly supported by Nexus Delta.</p>
 <p><a href="../forge.html">Nexus Forge</a> is a domain-agnostic, generic and extensible Python framework that enables non-expert users to create and manage knowledge graphs using the Python programming language.</p>
 <h2><a href="#clustering" name="clustering" class="anchor"><span class="anchor-link"></span></a>Clustering</h2>
 <p>One of the more important design goals for the system was to be able scale in order to support arbitrary increases in usage and data volume. Nexus Delta can be configured to run as single node or in a cluster configuration where the load on the system is distributed to all members.</p>

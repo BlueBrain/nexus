@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -451,10 +448,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#document-structure" name="document-structure" class="anchor"><span class="anchor-link"></span></a>Document structure</h3>
 <p>An example of the ElasticSearch Document looks as follows:</p>
 <pre class="prettyprint"><code class="language-json">{
-  &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
   &quot;@id&quot;: &quot;http://example.com/Anna&quot;,
+  &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
+  &quot;_rev&quot;: 4,
   &quot;properties&quot;: [
     {
+      &quot;dataType&quot;: &quot;object&quot;,
       &quot;path&quot;: &quot;http://schema.org/address&quot;,
       &quot;isInArray&quot;: false
     },
@@ -464,11 +463,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;isInArray&quot;: false
     },
     {
-      &quot;dataType&quot;: &quot;numeric&quot;,
+      &quot;dataType&quot;: &quot;number&quot;,
       &quot;path&quot;: &quot;http://schema.org/address / http://schema.org/zipcode&quot;,
       &quot;isInArray&quot;: false
     },
     {
+      &quot;dataType&quot;: &quot;object&quot;,
       &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
       &quot;path&quot;: &quot;http://schema.org/brother&quot;,
       &quot;isInArray&quot;: false
@@ -479,15 +479,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;isInArray&quot;: false
     },
     {
-      &quot;path&quot;: &quot;http://schema.org/studies&quot;,
-      &quot;isInArray&quot;: true
-    },
-    {
-      &quot;dataType&quot;: &quot;string&quot;,
-      &quot;path&quot;: &quot;http://schema.org/studies / http://schema.org/name&quot;,
-      &quot;isInArray&quot;: true
-    },
-    {
+      &quot;dataType&quot;: &quot;object&quot;,
       &quot;path&quot;: &quot;http://schema.org/studies&quot;,
       &quot;isInArray&quot;: true
     },
@@ -497,16 +489,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       &quot;isInArray&quot;: true
     }
   ],
-  &quot;relationshipCandidates&quot;: [
+  &quot;references&quot;: [
     {
       &quot;found&quot;: true,
       &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
-      &quot;path&quot;: &quot;http://schema.org/brother&quot;,
-      &quot;isInArray&quot;: false
     }
   ],
   &quot;relationships&quot;: [
     {
+      &quot;dataType&quot;: &quot;object&quot;,
       &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
       &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
       &quot;path&quot;: &quot;http://schema.org/brother&quot;,
@@ -518,12 +509,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>&hellip; where:</p>
 <ul>
   <li><code>properties</code> - Json Object Array: A flat collection of fields present on a resource.</li>
-  <li><code>relationshipCandidates</code> - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).</li>
-  <li><code>relationships</code> - Json Object Array: A flat collection of @id(s) that have been found in other resources.</li>
+  <li><code>references</code> - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).</li>
+  <li><code>relationships</code> - Json Object Array: A flat collection of @id(s) that have been found in other resources in the same project.</li>
   <li><code>path</code> - String: The flat expanded path of a field present on a resource. A path of an embedded field will be encoded as follows: <code>parent / child</code>.</li>
   <li><code>isInArray</code> - Boolean: Flag to inform whether the current path (or its parent) is part of an array.</li>
   <li><code>dataType</code> - String: The type of the value present in the current path. Possible values are: string, numeric and boolean</li>
-  <li><code>found</code> - Boolean: Flag to inform whether a path inside <code>relationshipCandidates</code> is now promoted to <code>relationships</code>.</li>
+  <li><code>found</code> - Boolean: Flag to inform whether an @id inside <code>references</code> has been resolved as a relationship.</li>
 </ul>
 </div>
 <div>

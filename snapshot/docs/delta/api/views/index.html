@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/views/index.html" class="active page">Views</a>
       <ul>
         <li><a href="../../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -238,6 +235,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#passivation" class="header">Passivation</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
@@ -275,6 +273,7 @@ BlueBrain/nexus
     <li><a href="../../../../docs/delta/api/views/index.html#aggregatesparqlview" class="header">AggregateSparqlView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#compositeview" class="header">CompositeView</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#indexing" class="header">Indexing</a></li>
+    <li><a href="../../../../docs/delta/api/views/index.html#passivation" class="header">Passivation</a></li>
     <li><a href="../../../../docs/delta/api/views/index.html#list-views" class="header">List views</a>
     <ul>
       <li><a href="../../../../docs/delta/api/views/index.html#within-a-project" class="header">Within a project</a></li>
@@ -333,6 +332,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>async</code> - (default value) the view will be indexed asynchronously</li>
   <li><code>sync</code> - the view will be indexed synchronously and the API call won&rsquo;t return until the indexing is finished</li>
 </ul>
+<h2><a href="#passivation" name="passivation" class="anchor"><span class="anchor-link"></span></a>Passivation</h2>
+<p>Views are now stopped if no event has been detected for a given period (by default 30 minutes).</p>
+<p>This value can be updated by updating the configuration keys: - <code>plugins.blazegraph.idle-timeout</code> - <code>plugins.composite-views.idle-timeout</code> - <code>plugins.elasticsearch.idle-timeout</code></p>
+<p>Setting an infinite time (<code>Inf</code>) will disable this feature.</p>
 <h2><a href="#list-views" name="list-views" class="anchor"><span class="anchor-link"></span></a>List views</h2>
 <p>There are three available endpoints to list views in different scopes.</p>
 <h3><a href="#within-a-project" name="within-a-project" class="anchor"><span class="anchor-link"></span></a>Within a project</h3>

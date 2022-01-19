@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -455,7 +452,7 @@ Creating service nexus_web
   &quot;dependencies&quot;: {
     &quot;blazegraph&quot;: &quot;2.1.5&quot;,
     &quot;cassandra&quot;: &quot;3.11.10&quot;,
-    &quot;elasticsearch&quot;: &quot;7.12.0&quot;
+    &quot;elasticsearch&quot;: &quot;7.16.2&quot;
   },
   &quot;plugins&quot;: {
     &quot;archive&quot;: &quot;1.5.0&quot;,
@@ -628,7 +625,7 @@ $ curl &quot;http://$NEXUS/elasticsearch&quot;
   &quot;cluster_name&quot; : &quot;es-cluster&quot;,
   &quot;cluster_uuid&quot; : &quot;qUKv83AiRqC3dRvlzUXepg&quot;,
   &quot;version&quot; : {
-    &quot;number&quot; : &quot;7.12.0&quot;,
+    &quot;number&quot; : &quot;7.16.2&quot;,
     &quot;build_flavor&quot; : &quot;default&quot;,
     &quot;build_type&quot; : &quot;docker&quot;,
     &quot;build_hash&quot; : &quot;78722783c38caa25a70982b5b042074cde5d3b3a&quot;,
@@ -697,7 +694,7 @@ $ curl -s &quot;http://$NEXUS/v1/version&quot; | jq
   &quot;dependencies&quot;: {
     &quot;blazegraph&quot;: &quot;2.1.5&quot;,
     &quot;cassandra&quot;: &quot;3.11.10&quot;,
-    &quot;elasticsearch&quot;: &quot;7.12.0&quot;
+    &quot;elasticsearch&quot;: &quot;7.16.2&quot;
   },
   &quot;plugins&quot;: {
     &quot;archive&quot;: &quot;1.5.0&quot;,

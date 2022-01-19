@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -246,6 +243,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.6-release-notes.html#deletion-of-projects" class="header">Deletion of projects</a></li>
       <li><a href="../../docs/releases/v1.6-release-notes.html#quotas" class="header">Quotas</a></li>
       <li><a href="../../docs/releases/v1.6-release-notes.html#tagging-resources-after-deprecation" class="header">Tagging resources after deprecation</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#view-passivation" class="header">View passivation</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
@@ -290,6 +288,7 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.6-release-notes.html#deletion-of-projects" class="header">Deletion of projects</a></li>
       <li><a href="../../docs/releases/v1.6-release-notes.html#quotas" class="header">Quotas</a></li>
       <li><a href="../../docs/releases/v1.6-release-notes.html#tagging-resources-after-deprecation" class="header">Tagging resources after deprecation</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#view-passivation" class="header">View passivation</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
@@ -339,8 +338,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
 <p>These two features are now marked as deprecated and will be removed in an upcoming release:</p>
 <ul>
-  <li><a href="../utilities/index.html#nexus-cli">Nexus client</a></li>
-  <li><a href="../utilities/index.html#indexing-data-in-other-systems">Indexing data in other systems</a></li>
+  <li>Nexus client</li>
+  <li>Indexing data in other systems</li>
   <li><a href="../delta/api/storages-api.html#remote-disk-storage">RemoteDiskStorage</a></li>
 </ul>
 <h3><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h3>
@@ -374,6 +373,8 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>It is now possible to define via static configurations <a href="../delta/api/quotas.html">quotas on projects</a>.</p>
 <h3><a href="#tagging-resources-after-deprecation" name="tagging-resources-after-deprecation" class="anchor"><span class="anchor-link"></span></a>Tagging resources after deprecation</h3>
 <p>The different types of resources can now be tagged after their deprecation.</p>
+<h3><a href="#view-passivation" name="view-passivation" class="anchor"><span class="anchor-link"></span></a>View passivation</h3>
+<p>Views are now stopped if no new event has been processed after a configured period.</p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <h3><a href="#features" name="features" class="anchor"><span class="anchor-link"></span></a>Features</h3>
 <ul>

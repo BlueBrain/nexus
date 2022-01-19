@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -539,7 +536,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>In this section, you will integrate additional data from MouseLight and the Allen Institute for Brain Science.</p>
 <h3><a href="#3-1-mouselight-data" name="3-1-mouselight-data" class="anchor"><span class="anchor-link"></span></a>3.1. MouseLight Data</h3>
 <p>The <a href="https://www.janelia.org/" title="Janelia Research Campus" target="_blank" rel="noopener noreferrer">Janelia Research Campus</a> makes MouseLight available to the scientific community. <a href="http://mouselight.janelia.org/" title="MouseLight" target="_blank" rel="noopener noreferrer">MouseLight</a> generates complete morphological reconstructions of individual neurons from datasets of whole mouse brains imaged at sub-micron resolution.</p>
-<p>You can access the <a href="http://ml-neuronbrowser.janelia.org/" title="MouseLight data" target="_blank" rel="noopener noreferrer">MouseLight data</a> directly in the browser. You can also access it programmatically through different endpoints, such as <a href="http://ml-neuronbrowser.janelia.org/graphql/" title="GraphQL" target="_blank" rel="noopener noreferrer">GraphQL</a>.</p>
+<p>You can access the <a href="http://ml-neuronbrowser.janelia.org/" title="MouseLight data" target="_blank" rel="noopener noreferrer">MouseLight data</a> directly in the browser. You can also access it programmatically through different endpoints, such as GraphQL: <code>http://ml-neuronbrowser.janelia.org/graphql/</code>.</p>
 <p>The example notebooks will use these endpoints to collect and download the datasets and their metadata.</p>
 <h3><a href="#3-2-running-the-notebook" name="3-2-running-the-notebook" class="anchor"><span class="anchor-link"></span></a>3.2. Running the Notebook</h3>
 <ul>

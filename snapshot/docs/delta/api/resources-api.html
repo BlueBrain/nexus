@@ -201,6 +201,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +221,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -237,6 +234,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
@@ -284,6 +282,7 @@ BlueBrain/nexus
     <li><a href="../../../docs/delta/api/resources-api.html#create-using-put" class="header">Create using PUT</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#update" class="header">Update</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#tag" class="header">Tag</a></li>
+    <li><a href="../../../docs/delta/api/resources-api.html#remove-tag" class="header">Remove tag</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#deprecate" class="header">Deprecate</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch" class="header">Fetch</a></li>
     <li><a href="../../../docs/delta/api/resources-api.html#fetch-original-payload" class="header">Fetch original payload</a></li>
@@ -543,6 +542,42 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;tag&quot;: &quot;mytag&quot;,
   &quot;rev&quot;: 1
 }</code></pre></dd>
+  <dt>Response</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/tagged.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/metadata.json&quot;,
+  &quot;@id&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;@type&quot;: &quot;http://localhost:8080/Custom&quot;,
+  &quot;_incoming&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/incoming&quot;,
+  &quot;_outgoing&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/outgoing&quot;,
+  &quot;_self&quot;: &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0&quot;,
+  &quot;_constrainedBy&quot;: &quot;https://bluebrain.github.io/nexus/schemas/resource&quot;,
+  &quot;_project&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_schemaProject&quot;: &quot;http://localhost:8080/v1/projects/myorg/myproj&quot;,
+  &quot;_rev&quot;: 3,
+  &quot;_deprecated&quot;: false,
+  &quot;_createdAt&quot;: &quot;2021-04-17T14:54:42.939Z&quot;,
+  &quot;_createdBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;,
+  &quot;_updatedAt&quot;: &quot;20121-04-17T14:58:42.939Z&quot;,
+  &quot;_updatedBy&quot;: &quot;http://localhost:8080/v1/realms/myrealm/users/john&quot;
+}</code></pre></dd>
+</dl>
+<h2><a href="#remove-tag" name="remove-tag" class="anchor"><span class="anchor-link"></span></a>Remove tag</h2>
+<p>Removes a given tag.</p>
+<p>Removing a tag is considered to be an update as well.</p>
+<pre><code>DELETE /v1/resources/{org_label}/{project_label}/{schema_id}/{resource_id}/tags/{tag_name}?rev={previous_rev}
+</code></pre>
+<p>&hellip; where</p>
+<ul>
+  <li><code>{previous_rev}</code>: is the last known revision number for the resource.</li>
+  <li><code>{tag_name}</code>: String - label of the tag to remove.</li>
+</ul>
+<p><strong>Example</strong></p>
+<dl>
+  <dt>Request</dt>
+  <dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/delete-tag.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X DELETE \
+     &quot;http://localhost:8080/v1/resources/myorg/myproj/myschema/fd8a2b32-170e-44e8-808f-44a8cbbc49b0/tags/mytag?rev=2&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
   <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/resources/tagged.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
