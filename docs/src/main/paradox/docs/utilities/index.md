@@ -1,10 +1,3 @@
-@@@ index
-
-- @ref:[Indexing data in other systems](projections.md)
-- @ref:[MovieLens Tutorial using the Nexus Python CLI](nexus-python-cli.md)
-
-@@@
-
 # Utilities
 
 ## Domains (Schemas, Vocabularies)
@@ -43,16 +36,6 @@ neuroscience data.
 @link:[Source Code](https://github.com/INCF/neuroshapes){ open=new }
 
 ## Nexus Tools
-
-### Nexus CLI
-
-@@@ warning
-The Nexus client is now deprecated and will be removed in an upcoming release.
-@@@
-
-A command line interface (CLI) to perform basic operations on a Nexus deployment.
-
-@link:[Source Code](https://github.com/BlueBrain/nexus-cli){ open=new }
 
 ### Nexus Python SDK
 
@@ -113,11 +96,3 @@ Another utility packages was written to facilitate chained calling behavior, whi
 
 - @link:[nexus-link](https://github.com/BlueBrain/nexus-js/blob/main/packages/nexus-link/README.md#readme){ open=new }
 
-### Indexing data in other systems
-
-@@@ warning
-This feature is now deprecated and will be removed in an upcoming release.
-@@@
-
-Nexus also provides a CLI tool to index data into other systems. PostgreSQL and InfluxDB are currently supported.
-More information about this tool can be found @ref:[here](projections.md).
