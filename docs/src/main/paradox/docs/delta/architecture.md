@@ -25,9 +25,6 @@ An overview of the Blue Brain Nexus ecosystem is presented in the figure below:
 facilitates the system administrative tasks. It uses the Nexus.js (a javascript SDK) that provides as set of primitives
 for building web applications for Nexus Delta.
 
-@ref:[Nexus CLI] is a command line interface for scripting and automating the system administrative tasks. It also
-provides the ability to execute off-process data projections to stores that are not directly supported by Nexus Delta.
-
 @ref:[Nexus Forge] is a domain-agnostic, generic and extensible Python framework that enables non-expert users to create
 and manage knowledge graphs using the Python programming language.
 

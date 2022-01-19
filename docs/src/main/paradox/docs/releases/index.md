@@ -46,8 +46,8 @@ This release contains bugfixes and minor improvements:
 
 ### Deprecations
 
- - @ref:[Nexus client](../utilities/index.md#nexus-cli)
- - @ref:[Indexing data in other systems](../utilities/index.md#indexing-data-in-other-systems)
+ - Nexus client
+ - Indexing data in other systems
  - @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)              
 
 ### New features / enhancements
