@@ -9,8 +9,6 @@ import linkedInLogo from "../../static/img/logos/linkedin.svg"
 import githubLogoSquare from "../../static/img/logos/github-square.svg"
 import twitterLogo from "../../static/img/logos/twitter-square.svg"
 
-
-
 export default function Footer() {
   return (
     <footer className="footer gradient">
