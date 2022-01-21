@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="active page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
@@ -229,6 +231,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-7-0-xx-xx-2022-" class="header">1.7.0 (XX.XX.2022)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
@@ -270,6 +278,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-7-0-xx-xx-2022-" class="header">1.7.0 (XX.XX.2022)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
@@ -307,7 +321,28 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.6.1</strong> released on <strong>29.10.2021</strong>.</p>
+<p>// TODO update release date</p>
+<p>The latest stable release is <strong>v1.7.0</strong> released on <strong>XX.XX.2022</strong>.</p>
+<h2><a href="#1-7-0-xx-xx-2022-" name="1-7-0-xx-xx-2022-" class="anchor"><span class="anchor-link"></span></a>1.7.0 (XX.XX.2022)</h2>
+<h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
+<p>//TODO update links to 1.6.x</p>
+<ul>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli" title="Removal of the Nexus cli">Removal of the Nexus cli</a></li>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems" title="Removal of the docker based client">Removal of the docker based client</a></li>
+</ul>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
+<p>Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.</p>
+<h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
+<ul>
+  <li>New features and better user experience for search in Nexus Fusion</li>
+  <li>Introduced a new extensible model to define Elasticsearch views based on pipes</li>
+  <li>Allow the use of an external configuration file for Delta</li>
+  <li>Allow deleting tags on resources</li>
+  <li>Allow tagging deprecated storages and views</li>
+  <li>Refactor the <code>graph-analytics</code> plugin to make indexing faster</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.7-release-notes.html">release notes</a>.</p>
 <h2><a href="#v1-6-1" name="v1-6-1" class="anchor"><span class="anchor-link"></span></a>v1.6.1</h2>
 <p>This release contains bugfixes and minor improvements:</p>
 <ul>
@@ -557,13 +592,13 @@ Search configuration
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.6-release-notes.html" title="v1.6 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.6 Release Notes
+v1.7 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">
@@ -577,7 +612,8 @@ v1.6 Release Notes
 <div class="md-footer-copyright">
 <div class="md-footer-copyright__highlight">
 Nexus is Open Source and available under the Apache 2 License.<br/>
-© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+© 2017-2022 <a href="https://epfl.ch/">EPFL</a>
+ <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
 
 </div>
 </div>
