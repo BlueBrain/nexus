@@ -9,6 +9,8 @@ import linkedInLogo from "../../static/img/logos/linkedin.svg"
 import githubLogoSquare from "../../static/img/logos/github-square.svg"
 import twitterLogo from "../../static/img/logos/twitter-square.svg"
 
+
+
 export default function Footer() {
   return (
     <footer className="footer gradient">
@@ -55,11 +57,6 @@ export default function Footer() {
                 <p>Chemin des Mines 9</p>
                 <p>1202 Geneva</p>
                 <p>
-                  <a href="mailto:hello@bluebrainnexus.io">
-                    hello@bluebrainnexus.io
-                  </a>
-                </p>
-                <p>
                   <a href="tel:+41 21 69 37 660">+41 21 69 37 660</a>
                 </p>
               </div>
@@ -70,7 +67,7 @@ export default function Footer() {
               Blue Brain Nexus is Open Source and available under the Apache
               License 2.0.
             </p>
-            <p>Blue Brain Project/EPFL 2005 – 2021. All rights reserved.</p>
+            <p>Blue Brain Project/EPFL 2005 – {new Date().getFullYear()}. All rights reserved.</p>
           </div>
         </div>
       </div>
