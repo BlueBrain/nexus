@@ -283,7 +283,7 @@ In this section, you will integrate additional data from MouseLight and the Alle
 
 The @link:[Janelia Research Campus](https://www.janelia.org/){ open=new } makes MouseLight available to the scientific community. @link:[MouseLight](http://mouselight.janelia.org/){ open=new } generates complete morphological reconstructions of individual neurons from datasets of whole mouse brains imaged at sub-micron resolution.
 
-You can access the @link:[MouseLight data](http://ml-neuronbrowser.janelia.org/){ open=new } directly in the browser. You can also access it programmatically through different endpoints, such as @link:[GraphQL](http://ml-neuronbrowser.janelia.org/graphql/){ open=new }.
+You can access the @link:[MouseLight data](http://ml-neuronbrowser.janelia.org/){ open=new } directly in the browser. You can also access it programmatically through different endpoints, such as GraphQL: `http://ml-neuronbrowser.janelia.org/graphql/`.
 
 The example notebooks will use these endpoints to collect and download the datasets and their metadata.
 
