@@ -31,14 +31,13 @@ The latest stable release is **v1.7.0** released on **XX.XX.2022**.
 
 //TODO update links to 1.6.x
 
-- @link:[Deletion of the Nexus cli](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli)
-- @link:[Deletion of the docker based client](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems)
+- @link:[Removal of the Nexus cli](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli)
+- @link:[Removal of the docker based client](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems)
 
 ### Deprecations
 
-In an upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed.
-
-Nexus Delta will only focus on PostgreSQL to achieve this role as it better fits its needs.
+In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. 
+For very large deployments there are commercial options that are wire compatible to PostgreSQL.
 
 Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.
 
@@ -46,7 +45,7 @@ Tools will be provided to enable migration from Cassandra to PostgreSQL for exis
 
 - New features and better user experience for search in Nexus Fusion
 - Introduced a new extensible model to define Elasticsearch views based on pipes
-- Allow to define an external file for Delta configuration
+- Allow the use of an external configuration file for Delta
 - Allow deleting tags on resources
 - Allow tagging deprecated storages and views
 - Refactor the `graph-analytics` plugin to make indexing faster
