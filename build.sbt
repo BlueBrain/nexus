@@ -920,6 +920,11 @@ lazy val compilation = {
       javaSpecificationVersion.value,
       "-Xlint"
     ),
+    excludeDependencies                   ++= Seq(
+      ExclusionRule("log4j", "log4j"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-api"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-core")
+    ),
     Compile / doc / scalacOptions  ++= Seq("-no-link-warnings"),
     Compile / doc / javacOptions    := Seq("-source", javaSpecificationVersion.value),
     autoAPIMappings                 := true,
