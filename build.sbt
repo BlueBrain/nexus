@@ -178,8 +178,9 @@ lazy val docs = project
           uri("https://github.com/BlueBrain/nexus/discussions")
         )
         .withCustomJavaScript("./public/js/gtm.js")
-        .withCopyright("""Nexus is Open Source and available under the Apache 2 License.<br/>
-                         |© 2017-2021 <a href="https://epfl.ch/">EPFL</a> | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+        .withCopyright(s"""Nexus is Open Source and available under the Apache 2 License.<br/>
+                         |© 2017-${java.time.LocalDate.now.getYear()} <a href="https://epfl.ch/">EPFL</a>
+                         | <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
                          |""".stripMargin)
     },
     Compile / paradoxNavigationDepth := 4,
@@ -1016,6 +1017,11 @@ lazy val compilation = {
       "-target",
       javaSpecificationVersion.value,
       "-Xlint"
+    ),
+    excludeDependencies                   ++= Seq(
+      ExclusionRule("log4j", "log4j"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-api"),
+      ExclusionRule("org.apache.logging.log4j ", "log4j-core")
     ),
     Compile / packageSrc / publishArtifact := !isSnapshot.value,
     Compile / packageDoc / publishArtifact := !isSnapshot.value,
