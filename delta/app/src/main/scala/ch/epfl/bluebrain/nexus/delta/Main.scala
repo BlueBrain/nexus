@@ -10,7 +10,9 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, Rou
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
+import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.Migration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -118,7 +120,13 @@ object Main extends BIOApp {
         handleRejections(locator.get[RejectionHandler]) {
           uriPrefix(locator.get[BaseUri].base) {
             encodeResponse {
-              concat(locator.get[Vector[Route]]: _*)
+              val (strict, rest) = locator.get[Set[PriorityRoute]].partition(_.requiresStrictEntity)
+              concat(
+                concat(rest.toVector.sortBy(_.priority).map(_.route): _*),
+                locator.get[StrictEntity].apply() {
+                  concat(strict.toVector.sortBy(_.priority).map(_.route): _*)
+                }
+              )
             }
           }
         }

@@ -41,7 +41,9 @@ object QuotasModule extends ModuleDef {
 
   }
 
-  many[PriorityRoute].add { (route: QuotasRoutes) => PriorityRoute(pluginsMaxPriority + 10, route.routes) }
+  many[PriorityRoute].add { (route: QuotasRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 10, route.routes, requiresStrictEntity = false)
+  }
 
 }
 // $COVERAGE-ON$

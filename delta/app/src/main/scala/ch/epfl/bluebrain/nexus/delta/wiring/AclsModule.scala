@@ -77,7 +77,9 @@ object AclsModule extends ModuleDef {
     } yield RemoteContextResolution.fixed(contexts.acls -> aclsCtx, contexts.aclsMetadata -> aclsMetaCtx)
   )
 
-  many[PriorityRoute].add { (route: AclsRoutes) => PriorityRoute(pluginsMaxPriority + 5, route.routes) }
+  many[PriorityRoute].add { (route: AclsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = false)
+  }
 
   make[AclEventExchange]
   many[EventExchange].ref[AclEventExchange]

@@ -196,7 +196,9 @@ object ProjectsModule extends ModuleDef {
     )
   )
 
-  many[PriorityRoute].add { (route: ProjectsRoutes) => PriorityRoute(pluginsMaxPriority + 7, route.routes) }
+  many[PriorityRoute].add { (route: ProjectsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 7, route.routes, requiresStrictEntity = false)
+  }
 
   make[ProjectEventExchange].from { (projects: Projects, base: BaseUri, mappings: ApiMappingsCollection) =>
     new ProjectEventExchange(projects)(base, mappings.merge)

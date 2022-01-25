@@ -31,7 +31,9 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
     ) => new ProjectDeletionRoutes(config)(baseUri, s, cr, ordering)
   }
 
-  many[PriorityRoute].add { (route: ProjectDeletionRoutes) => PriorityRoute(priority, route.routes) }
+  many[PriorityRoute].add { (route: ProjectDeletionRoutes) =>
+    PriorityRoute(priority, route.routes, requiresStrictEntity = false)
+  }
 
   make[DeleteProject].from {
     (projects: Projects, serviceAccount: ServiceAccount, prf: ProjectReferenceFinder @Id("aggregate")) =>

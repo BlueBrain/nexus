@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, StrictEntity}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.Migration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -288,7 +288,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
         indexingController: ElasticSearchIndexingController,
         baseUri: BaseUri,
-        strictEntity: StrictEntity,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -308,8 +307,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         indexingController.restart,
         resourceToSchema,
         sseEventLog,
-        indexingAction,
-        strictEntity
+        indexingAction
       )(
         baseUri,
         cfg.pagination,
@@ -365,7 +363,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(ElasticSearchViews.mappings)
 
-  many[PriorityRoute].add { (route: ElasticSearchViewsRoutes) => PriorityRoute(priority, route.routes) }
+  many[PriorityRoute].add { (route: ElasticSearchViewsRoutes) =>
+    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
 
   many[ServiceDependency].add { new ElasticSearchServiceDependency(_) }
 

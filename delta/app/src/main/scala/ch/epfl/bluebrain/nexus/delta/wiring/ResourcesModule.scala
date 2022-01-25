@@ -103,7 +103,9 @@ object ResourcesModule extends ModuleDef {
 
   many[ApiMappings].add(Resources.mappings)
 
-  many[PriorityRoute].add { (route: ResourcesRoutes) => PriorityRoute(pluginsMinPriority - 1, route.routes) }
+  many[PriorityRoute].add { (route: ResourcesRoutes) =>
+    PriorityRoute(pluginsMinPriority - 1, route.routes, requiresStrictEntity = false)
+  }
 
   many[ReferenceExchange].add { (resources: Resources) =>
     Resources.referenceExchange(resources)

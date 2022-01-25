@@ -40,7 +40,9 @@ object VersionModule extends ModuleDef {
       VersionRoutes(identities, acls, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)
   }
 
-  many[PriorityRoute].add { (route: VersionRoutes) => PriorityRoute(pluginsMaxPriority + 1, route.routes) }
+  many[PriorityRoute].add { (route: VersionRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 1, route.routes, requiresStrictEntity = false)
+  }
 
 }
 // $COVERAGE-ON$
