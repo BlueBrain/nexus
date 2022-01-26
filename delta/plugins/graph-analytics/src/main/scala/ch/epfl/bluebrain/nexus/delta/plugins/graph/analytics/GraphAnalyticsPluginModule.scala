@@ -141,7 +141,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
     )
   }
 
-  many[PriorityRoute].add { (route: GraphAnalyticsRoutes) => PriorityRoute(priority, route.routes) }
+  many[PriorityRoute].add { (route: GraphAnalyticsRoutes) =>
+    PriorityRoute(priority, route.routes, requiresStrictEntity = false)
+  }
 
   make[GraphAnalyticsOnEventInstant]
   many[OnEventInstant].ref[GraphAnalyticsOnEventInstant]

@@ -68,7 +68,7 @@ object ArchivePluginModule extends ModuleDef {
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>
-    PriorityRoute(cfg.priority, routes.routes)
+    PriorityRoute(cfg.priority, routes.routes, requiresStrictEntity = false)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/archives-metadata.json"))

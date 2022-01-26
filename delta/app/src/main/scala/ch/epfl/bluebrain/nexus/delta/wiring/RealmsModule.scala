@@ -70,7 +70,9 @@ object RealmsModule extends ModuleDef {
     } yield RemoteContextResolution.fixed(contexts.realms -> realmCtx, contexts.realmsMetadata -> realmsMetaCtx)
   )
 
-  many[PriorityRoute].add { (route: RealmsRoutes) => PriorityRoute(pluginsMaxPriority + 4, route.routes) }
+  many[PriorityRoute].add { (route: RealmsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 4, route.routes, requiresStrictEntity = false)
+  }
 
   make[RealmEventExchange]
   many[EventExchange].ref[RealmEventExchange]

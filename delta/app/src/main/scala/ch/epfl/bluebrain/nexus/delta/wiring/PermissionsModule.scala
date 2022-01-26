@@ -60,7 +60,9 @@ object PermissionsModule extends ModuleDef {
     )
   )
 
-  many[PriorityRoute].add { (route: PermissionsRoutes) => PriorityRoute(pluginsMaxPriority + 3, route.routes) }
+  many[PriorityRoute].add { (route: PermissionsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 3, route.routes, requiresStrictEntity = false)
+  }
 
   make[PermissionsEventExchange]
   many[EventExchange].ref[PermissionsEventExchange]

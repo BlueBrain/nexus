@@ -69,7 +69,9 @@ object IdentitiesModule extends ModuleDef {
 
   }
 
-  many[PriorityRoute].add { (route: IdentitiesRoutes) => PriorityRoute(pluginsMaxPriority + 2, route.routes) }
+  many[PriorityRoute].add { (route: IdentitiesRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 2, route.routes, requiresStrictEntity = false)
+  }
 
 }
 // $COVERAGE-ON$

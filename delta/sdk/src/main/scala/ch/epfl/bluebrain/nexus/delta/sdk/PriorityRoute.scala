@@ -10,7 +10,7 @@ import akka.http.scaladsl.server.Route
   * @param route
   *   the route
   */
-final case class PriorityRoute(priority: Int, route: Route)
+final case class PriorityRoute(priority: Int, route: Route, requiresStrictEntity: Boolean)
 
 object PriorityRoute {
   implicit val priorityRouteOrdering: Ordering[PriorityRoute] = Ordering.by(_.priority)

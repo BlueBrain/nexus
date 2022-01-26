@@ -270,7 +270,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
   many[PriorityRoute].add { (storagesRoutes: StoragesRoutes, fileRoutes: FilesRoutes) =>
-    PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes))
+    PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes), requiresStrictEntity = false)
   }
 
   many[ReferenceExchange].add { (storages: Storages, crypto: Crypto) =>

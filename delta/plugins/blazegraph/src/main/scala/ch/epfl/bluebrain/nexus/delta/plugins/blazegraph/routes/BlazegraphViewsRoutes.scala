@@ -19,9 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, IndexingAction, ProgressesStatistics, Projects}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -64,8 +63,7 @@ class BlazegraphViewsRoutes(
     projects: Projects,
     progresses: ProgressesStatistics,
     restartView: RestartView,
-    index: IndexingAction,
-    strictEntity: StrictEntity
+    index: IndexingAction
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -89,7 +87,7 @@ class BlazegraphViewsRoutes(
   implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects) & strictEntity()) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
       concat(
         pathPrefix("views") {
           extractCaller { implicit caller =>
@@ -314,8 +312,7 @@ object BlazegraphViewsRoutes {
       projects: Projects,
       progresses: ProgressesStatistics,
       restartView: RestartView,
-      index: IndexingAction,
-      strictEntity: StrictEntity
+      index: IndexingAction
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -331,8 +328,7 @@ object BlazegraphViewsRoutes {
       projects,
       progresses,
       restartView,
-      index,
-      strictEntity
+      index
     ).routes
   }
 }

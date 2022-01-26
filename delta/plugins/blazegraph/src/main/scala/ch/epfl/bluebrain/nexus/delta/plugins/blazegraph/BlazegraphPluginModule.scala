@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, StrictEntity}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -220,7 +220,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
         indexingController: BlazegraphIndexingController,
         baseUri: BaseUri,
-        strictEntity: StrictEntity,
         cfg: BlazegraphViewsConfig,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -234,8 +233,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         projects,
         progresses,
         indexingController.restart,
-        indexingAction,
-        strictEntity
+        indexingAction
       )(
         baseUri,
         s,
@@ -266,7 +264,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(BlazegraphViews.mappings)
 
-  many[PriorityRoute].add { (route: BlazegraphViewsRoutes) => PriorityRoute(priority, route.routes) }
+  many[PriorityRoute].add { (route: BlazegraphViewsRoutes) =>
+    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
+  }
 
   many[ServiceDependency].add { (client: BlazegraphClient @Id("blazegraph-indexing-client")) =>
     new BlazegraphServiceDependency(client)

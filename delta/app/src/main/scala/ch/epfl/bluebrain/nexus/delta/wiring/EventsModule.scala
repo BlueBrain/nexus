@@ -39,5 +39,7 @@ object EventsModule extends ModuleDef {
       ) => SseEventLog(eventLog, orgs, projects, exchanges)
     )
 
-  many[PriorityRoute].add { (route: EventsRoutes) => PriorityRoute(pluginsMaxPriority + 11, route.routes) }
+  many[PriorityRoute].add { (route: EventsRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 11, route.routes, requiresStrictEntity = false)
+  }
 }

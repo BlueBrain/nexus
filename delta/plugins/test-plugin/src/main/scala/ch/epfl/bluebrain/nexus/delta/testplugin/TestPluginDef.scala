@@ -18,7 +18,9 @@ case class TestPluginDef() extends PluginDef {
         implicit val sc = scheduler
         new TestPluginRoutes(permissions)
       }
-      many[PriorityRoute].add((routes: TestPluginRoutes) => PriorityRoute(1, routes.routes))
+      many[PriorityRoute].add((routes: TestPluginRoutes) =>
+        PriorityRoute(1, routes.routes, requiresStrictEntity = false)
+      )
     }
 
   override val info: PluginDescription = PluginDescription(Name.unsafe("testplugin"), "0.1.0")

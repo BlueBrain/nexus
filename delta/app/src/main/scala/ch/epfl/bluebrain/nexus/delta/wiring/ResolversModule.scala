@@ -130,7 +130,9 @@ object ResolversModule extends ModuleDef {
       contexts.resolversMetadata -> resolversMetaCtx
     )
   )
-  many[PriorityRoute].add { (route: ResolversRoutes) => PriorityRoute(pluginsMaxPriority + 9, route.routes) }
+  many[PriorityRoute].add { (route: ResolversRoutes) =>
+    PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = false)
+  }
 
   many[ReferenceExchange].add { (resolvers: Resolvers, baseUri: BaseUri) =>
     Resolvers.referenceExchange(resolvers)(baseUri)
