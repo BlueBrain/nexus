@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -46,8 +45,6 @@ import monix.bio.{IO, Task, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.duration._
 
 import java.time.Instant
 
@@ -189,8 +186,7 @@ class CompositeViewsRoutesSpec
         statisticsProgress,
         blazegraphQuery,
         elasticSearchQuery,
-        deltaClient,
-        StrictEntity(5.seconds)
+        deltaClient
       )
     )
 

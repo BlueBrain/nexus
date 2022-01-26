@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
@@ -43,8 +42,6 @@ import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.duration._
 
 import java.time.Instant
 import java.util.UUID
@@ -161,8 +158,7 @@ class BlazegraphViewsRoutesSpec
         projs,
         statisticsProgress,
         restart,
-        IndexingActionDummy(),
-        StrictEntity(5.seconds)
+        IndexingActionDummy()
       )
     )
 

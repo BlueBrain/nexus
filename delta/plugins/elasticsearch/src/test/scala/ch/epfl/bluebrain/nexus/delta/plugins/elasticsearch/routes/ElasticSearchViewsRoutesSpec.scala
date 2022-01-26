@@ -23,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -46,8 +45,6 @@ import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
-
-import scala.concurrent.duration._
 
 import java.time.Instant
 import java.util.UUID
@@ -189,8 +186,7 @@ class ElasticSearchViewsRoutesSpec
         restart,
         resourceToSchemaMapping,
         sseEventLog,
-        IndexingActionDummy(),
-        StrictEntity(5.seconds)
+        IndexingActionDummy()
       )
     )
 
