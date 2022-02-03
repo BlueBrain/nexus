@@ -918,8 +918,10 @@ object CompositeViews {
   def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
     index(projection, view.uuid, rev, prefix)
 
-  private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel =
-    IndexLabel.unsafe(s"${prefix}_${uuid}_${projection.uuid}_$rev")
+  private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel = {
+    val completePrefix = projection.indexPrefix.fold(prefix) { i => s"${prefix}_$i" }
+    IndexLabel.unsafe(s"${completePrefix}_${uuid}_${projection.uuid}_$rev")
+  }
 
   /**
     * The Blazegraph namespace for the passed projection

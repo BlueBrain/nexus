@@ -111,6 +111,7 @@ class CompositeViewDecodingSpec
       ElasticSearchProjectionFields(
         Some(iri"http://music.com/bands"),
         query1,
+        Some("cv"),
         mapping,
         context,
         resourceTypes = Set(iri"http://music.com/Band")
@@ -144,6 +145,7 @@ class CompositeViewDecodingSpec
       ElasticSearchProjectionFields(
         None,
         query1,
+        Some("cv"),
         mapping,
         context,
         resourceTypes = Set(iri"http://music.com/Band")

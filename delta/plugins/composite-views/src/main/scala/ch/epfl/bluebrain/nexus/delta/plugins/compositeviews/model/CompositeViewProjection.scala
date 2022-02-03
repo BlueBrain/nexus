@@ -110,6 +110,7 @@ object CompositeViewProjection {
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
+      indexPrefix: Option[String],
       mapping: JsonObject,
       settings: Option[JsonObject] = None,
       context: ContextObject

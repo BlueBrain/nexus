@@ -70,6 +70,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
   val esProjectionFields         = ElasticSearchProjectionFields(
     Some(iri"http://example.com/es-projection"),
     query,
+    None,
     JsonObject(),
     ContextObject(JsonObject.empty),
     Some(JsonObject())
@@ -131,6 +132,7 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     false,
     false,
     permissions.query,
+    None,
     JsonObject(),
     Some(JsonObject()),
     ContextObject(JsonObject.empty)

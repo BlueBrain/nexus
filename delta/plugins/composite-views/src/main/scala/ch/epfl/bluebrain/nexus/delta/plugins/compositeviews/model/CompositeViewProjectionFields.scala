@@ -90,6 +90,7 @@ object CompositeViewProjectionFields {
   final case class ElasticSearchProjectionFields(
       id: Option[Iri] = None,
       query: SparqlConstructQuery,
+      indexGroup: Option[String],
       mapping: JsonObject,
       context: ContextObject,
       settings: Option[JsonObject] = None,
@@ -112,6 +113,7 @@ object CompositeViewProjectionFields {
       includeMetadata,
       includeDeprecated,
       permission,
+      indexGroup,
       mapping,
       settings,
       context

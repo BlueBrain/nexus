@@ -28,6 +28,8 @@ final class SearchScopeInitialization(
   private val logger: Logger          = Logger[SearchScopeInitialization]
   implicit private val caller: Caller = serviceAccount.caller
 
+  private val searchGroup = Some("search")
+
   override def onProjectCreation(
       project: Project,
       subject: Identity.Subject
@@ -43,6 +45,7 @@ final class SearchScopeInitialization(
               id = Some(defaultProjectionId),
               query = config.query,
               mapping = config.mapping,
+              indexGroup = searchGroup,
               context = config.context,
               settings = config.settings,
               resourceTypes = config.resourceTypes

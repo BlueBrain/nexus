@@ -91,6 +91,7 @@ class SearchSpec
         false,
         false,
         permissions.query,
+        Some("search"),
         mappings,
         None,
         ContextObject(JsonObject())
