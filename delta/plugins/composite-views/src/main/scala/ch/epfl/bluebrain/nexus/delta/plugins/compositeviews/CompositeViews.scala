@@ -919,7 +919,7 @@ object CompositeViews {
     index(projection, view.uuid, rev, prefix)
 
   private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel = {
-    val completePrefix = projection.indexPrefix.fold(prefix) { i => s"${prefix}_$i" }
+    val completePrefix = projection.indexGroup.fold(prefix) { i => s"${prefix}_$i" }
     IndexLabel.unsafe(s"${completePrefix}_${uuid}_${projection.uuid}_$rev")
   }
 
