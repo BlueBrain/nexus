@@ -188,6 +188,7 @@ class CompositeIndexingSpec
   private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
     Some(projection1Id),
     query,
+    None,
     jsonObjectContentOf("indexing/mapping.json"),
     context,
     resourceTypes = Set(iri"http://music.com/Band")

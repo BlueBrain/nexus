@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.ElasticSearchProjectionFields
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ViewAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.ProjectSourceFields
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultProjectionId, defaultSourceId, defaultViewId}
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
@@ -28,6 +29,8 @@ final class SearchScopeInitialization(
   private val logger: Logger          = Logger[SearchScopeInitialization]
   implicit private val caller: Caller = serviceAccount.caller
 
+  private val searchGroup = Some(IndexGroup.unsafe("search"))
+
   override def onProjectCreation(
       project: Project,
       subject: Identity.Subject
@@ -43,6 +46,7 @@ final class SearchScopeInitialization(
               id = Some(defaultProjectionId),
               query = config.query,
               mapping = config.mapping,
+              indexGroup = searchGroup,
               context = config.context,
               settings = config.settings,
               resourceTypes = config.resourceTypes

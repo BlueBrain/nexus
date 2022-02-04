@@ -30,6 +30,7 @@
     {
       "@id": "http://music.com/bands",
       "@type": "ElasticSearchProjection",
+      "indexGroup": "cv",
       "mapping": {
         "properties": {
           "@type": {

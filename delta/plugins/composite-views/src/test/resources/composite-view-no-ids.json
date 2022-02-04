@@ -26,6 +26,7 @@
   "projections": [
     {
       "@type": "ElasticSearchProjection",
+      "indexGroup": "cv",
       "mapping": {
         "properties": {
           "@type": {
