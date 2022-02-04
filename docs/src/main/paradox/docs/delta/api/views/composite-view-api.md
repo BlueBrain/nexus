@@ -148,6 +148,7 @@ This projection executes the following steps:
       {
          "@id": "{projectionId}",
          "@type": "ElasticSearchProjection",
+         "indexGroup": {elasticsearchIndexGroup},
          "mapping": _elasticsearch mapping_,
          "settings": _elasticsearch settings_,
          "query": "{query}",
@@ -168,6 +169,8 @@ where...
 
 - `{projectionId}`: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated 
   Iri will be assigned.
+- `{elasticsearchIndexGroup}`: String - Allow to add a prefix to the name of the created index so as to make easier to query all of the indices
+  with a same index group by using a wildcard (ex: `delta_mygroup_*`). This field is optional.
 - `_elasticsearch mapping_`: Json object - Defines the value types for the Json keys, as stated at the 
   @link:[ElasticSearch mapping documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html){ open=new }.
 - `_elasticsearch settings_`: Json object - Defines the indexing configuration, as stated at the 
@@ -292,6 +295,7 @@ The view is restarted every 10 minutes if there are new resources in any of the 
     {
       "@id": "http://music.com/es",
       "@type": "ElasticSearchProjection",
+      "indexGroup": "music",
       "mapping": {
         "properties": {
           "@type": {

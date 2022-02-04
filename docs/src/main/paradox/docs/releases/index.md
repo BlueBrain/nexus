@@ -49,6 +49,7 @@ Tools will be provided to enable migration from Cassandra to PostgreSQL for exis
 - Allow deleting tags on resources
 - Allow tagging deprecated storages and views
 - Refactor the `graph-analytics` plugin to make indexing faster
+- Add a group identifier in Elasticsearch projections of composite views
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.7-release-notes.md).
 

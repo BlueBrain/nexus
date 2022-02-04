@@ -31,6 +31,7 @@ curl -X PUT \
         {
             "@id": "http://music.com/es",
             "@type": "ElasticSearchProjection",
+            "indexGroup": "music",
             "mapping": {
                 "properties": {
                     "@type": {
