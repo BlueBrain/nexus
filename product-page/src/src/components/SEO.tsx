@@ -4,7 +4,7 @@ import { useLocation } from "@reach/router"
 import { useStaticQuery, graphql } from "gatsby"
 
 import favicon from "../../static/favicon.ico"
-import ogImage from "../../static/img/Nexus-v1.4-slate.png"
+import ogImage from "../../static/img/slate.jpeg"
 
 export type SEOProps = {
   title?: string
