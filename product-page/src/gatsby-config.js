@@ -26,7 +26,7 @@ module.exports = {
       "Quickly build, use, and manage Knowledge Graphs, organize your data, and build your own integrations. Nexus leverages the latest web technologies and makes them easily accessible.",
     url: "https://bluebrainnexus.io", // No trailing slash allowed!
     siteURL: "https://bluebrainnexus.io", // No trailing slash allowed!
-    image: "/img/Nexus-v1.4-slate.png", // Path to your image you placed in the 'static' folder
+    image: "/img/slate.jpeg", // Path to your image you placed in the 'static' folder
     twitterUsername: "@bluebrainnexus",
     emailCatchAPI:
       "https://script.google.com/macros/s/AKfycbzG21hsMSsWiPa5fDd6IbPzrfPvZKVf0Xy7eJ4RmxWh38VHJIQ/exec",
