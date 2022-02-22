@@ -227,6 +227,14 @@ BlueBrain/nexus
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+  </ul></li>
+</ul>
 </nav>
 
 </nav>
@@ -237,6 +245,23 @@ BlueBrain/nexus
 </label>
 </li>
 </ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#v1-6-to-v1-7-migration" class="header">v1.6 To v1.7 Migration</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#delta" class="header">Delta</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html#fusion" class="header">Fusion</a></li>
+  </ul></li>
+</ul>
+</nav>
+
 </div>
 </div>
 </div>
@@ -251,9 +276,13 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#v1-6-to-v1-7-migration" name="v1-6-to-v1-7-migration" class="anchor"><span class="anchor-link"></span></a>v1.6 To v1.7 Migration</h1>
+<h2><a href="#delta" name="delta" class="anchor"><span class="anchor-link"></span></a>Delta</h2>
 <p>Migration is executed automatically by Delta by setting the environment variable MIGRATION_1_7=true. </p>
 <p>Additionally, if graph-analytics plugin was enabled, its indices need to be rebuilt. The removal of previous indices and reset of their progress is triggered by setting the environment variable GRAPH_ANALYTICS_CLEANUP=true.</p>
 <p>Check the logs to make sure the migration is doing ok and restart Delta after the migration and the tag repair operation are completed without forgetting to remove the environment variables.</p>
+<h2><a href="#fusion" name="fusion" class="anchor"><span class="anchor-link"></span></a>Fusion</h2>
+<p>The data model for Studios has changed in 1.7.</p>
+<p>//TODO Add Studio migration instructions here</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.6-to-v1.7-migration.md" title="Edit this page" class="md-source-file md-edit">

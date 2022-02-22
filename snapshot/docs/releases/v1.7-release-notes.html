@@ -240,7 +240,22 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.7-release-notes.html#tagging-deprecated-storages-and-views" class="header">Tagging deprecated storages and views</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#studios-elasticsearch-support" class="header">Studios Elasticsearch Support</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#search-enhancements" class="header">Search Enhancements</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#search-configurations" class="header">Search configurations</a></li>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#support-for-numerical-and-date-columns" class="header">Support for Numerical and Date columns</a></li>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#jump-to-studio" class="header">Jump to Studio</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#better-preview-support-for-pdfs" class="header">Better Preview support for PDFs</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#versioned-links" class="header">Versioned Links</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#remove-tag-from-resource" class="header">Remove Tag from Resource</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#ui-enhancements" class="header">UI Enhancements</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#bug-fixes" class="header">Bug fixes</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -273,7 +288,22 @@ BlueBrain/nexus
       <li><a href="../../docs/releases/v1.7-release-notes.html#tagging-deprecated-storages-and-views" class="header">Tagging deprecated storages and views</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
     </ul></li>
-    <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a></li>
+    <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#studios-elasticsearch-support" class="header">Studios Elasticsearch Support</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#search-enhancements" class="header">Search Enhancements</a>
+      <ul>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#search-configurations" class="header">Search configurations</a></li>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#support-for-numerical-and-date-columns" class="header">Support for Numerical and Date columns</a></li>
+        <li><a href="../../docs/releases/v1.7-release-notes.html#jump-to-studio" class="header">Jump to Studio</a></li>
+      </ul></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#better-preview-support-for-pdfs" class="header">Better Preview support for PDFs</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#versioned-links" class="header">Versioned Links</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#remove-tag-from-resource" class="header">Remove Tag from Resource</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#ui-enhancements" class="header">UI Enhancements</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#bug-fixes" class="header">Bug fixes</a></li>
+    </ul></li>
   </ul></li>
 </ul>
 </nav>
@@ -308,6 +338,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li>Allow deleting tags on resources</li>
   <li>Allow tagging deprecated storages and views</li>
   <li>Refactor <code>graph-analytics</code> plugin to make indexing faster</li>
+  <li>Add a group identifier in Elasticsearch projections of composite views</li>
 </ul>
 <p>A series of bugs have also been fixed with this new release.</p>
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
@@ -328,7 +359,34 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Graph analytics indexing is now faster.</p>
 <p>If you enabled this plugin in your 1.6 deployment, <a href="v1.6-to-v1.7-migration.html">there are migration steps to follow</a>.</p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
-<p>//TODO</p>
+<p>//TODO Add links to the documentation</p>
+<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h3>
+<p>Fusion now enables users to inspect properties and relationships of resources in a given project via the new Graph Analytics plugin.</p>
+<h3><a href="#studios-elasticsearch-support" name="studios-elasticsearch-support" class="anchor"><span class="anchor-link"></span></a>Studios Elasticsearch Support</h3>
+<p>Support Elasticsearch and Composite views has been added to Studios. Studios targetting an Elasticsearch view provide the option for more performant Studios compared to those targetting a Sparql view. The Studio data model has changed to support this, see migration notes for migrating existing Studios.</p>
+<h3><a href="#search-enhancements" name="search-enhancements" class="anchor"><span class="anchor-link"></span></a>Search Enhancements</h3>
+<h4><a href="#search-configurations" name="search-configurations" class="anchor"><span class="anchor-link"></span></a>Search configurations</h4>
+<p>Search configurations have been introduced to provide convenient access to apply common search criteria.</p>
+<h4><a href="#support-for-numerical-and-date-columns" name="support-for-numerical-and-date-columns" class="anchor"><span class="anchor-link"></span></a>Support for Numerical and Date columns</h4>
+<p>Numerical and date type column support has been added providing the ability to filter search results appropriately for these data types.</p>
+<h4><a href="#jump-to-studio" name="jump-to-studio" class="anchor"><span class="anchor-link"></span></a>Jump to Studio</h4>
+<p>The Search bar can now be used to search for Studios and navigate to them directly.</p>
+<h3><a href="#better-preview-support-for-pdfs" name="better-preview-support-for-pdfs" class="anchor"><span class="anchor-link"></span></a>Better Preview support for PDFs</h3>
+<p>Enhanced support for previewing PDFs in the resource preview plugin provides the ability to zoom in and pan large PDFs.</p>
+<h3><a href="#versioned-links" name="versioned-links" class="anchor"><span class="anchor-link"></span></a>Versioned Links</h3>
+<p>Resource links to other resources can now be version-specifc.</p>
+<h3><a href="#remove-tag-from-resource" name="remove-tag-from-resource" class="anchor"><span class="anchor-link"></span></a>Remove Tag from Resource</h3>
+<p>Tags can now be removed from a resource directly in Fusion.</p>
+<h3><a href="#ui-enhancements" name="ui-enhancements" class="anchor"><span class="anchor-link"></span></a>UI Enhancements</h3>
+<p>The following UI enhancements have been made in this version:</p>
+<ul>
+  <li>Redesigned Resources panel with quick access to high-level details of resource. Plugin open/closed status is also persisted improving the UX when wanting to view the same plugin(s) for several resources</li>
+  <li>Colour scheme has been updated to better align with our style guide</li>
+  <li>Navigation has moved from the sidebar to the header giving more screen real-estate</li>
+</ul>
+<p>//TODO Update end date </p>
+<h3><a href="#bug-fixes" name="bug-fixes" class="anchor"><span class="anchor-link"></span></a>Bug fixes</h3>
+<p>A <a href="https://github.com/BlueBrain/nexus/issues?page=1&q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-02-01+label%3Abug+label%3Afusion" title="series of bugs" target="_blank" rel="noopener noreferrer">series of bugs</a> have also been fixed.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.7-release-notes.md" title="Edit this page" class="md-source-file md-edit">

@@ -456,6 +456,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       {
          &quot;@id&quot;: &quot;{projectionId}&quot;,
          &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+         &quot;indexGroup&quot;: {elasticsearchIndexGroup},
          &quot;mapping&quot;: _elasticsearch mapping_,
          &quot;settings&quot;: _elasticsearch settings_,
          &quot;query&quot;: &quot;{query}&quot;,
@@ -474,6 +475,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>where&hellip;</p>
 <ul>
   <li><code>{projectionId}</code>: Iri - The identifier of the projection. This field is optional. When missing, a randomly generated  Iri will be assigned.</li>
+  <li><code>{elasticsearchIndexGroup}</code>: String - Allow to add a prefix to the name of the created index so as to make easier to query all of the indices  with a same index group by using a wildcard (ex: <code>delta_mygroup_*</code>). This field is optional.</li>
   <li><code>_elasticsearch mapping_</code>: Json object - Defines the value types for the Json keys, as stated at the  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping.html" title="ElasticSearch mapping documentation" target="_blank" rel="noopener noreferrer">ElasticSearch mapping documentation</a>.</li>
   <li><code>_elasticsearch settings_</code>: Json object - Defines the indexing configuration, as stated at the  <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#index-modules-settings" title="ElasticSearch settings documentation" target="_blank" rel="noopener noreferrer">ElasticSearch settings documentation</a>.</li>
   <li><code>_context_</code>: Json - the JSON-LD context value applied to the query results.</li>
@@ -574,6 +576,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://music.com/es&quot;,
       &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;properties&quot;: {
           &quot;@type&quot;: {
@@ -672,6 +675,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
         {
             &quot;@id&quot;: &quot;http://music.com/es&quot;,
             &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+            &quot;indexGroup&quot;: &quot;music&quot;,
             &quot;mapping&quot;: {
                 &quot;properties&quot;: {
                     &quot;@type&quot;: {
@@ -754,6 +758,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://music.com/es&quot;,
       &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;properties&quot;: {
           &quot;@type&quot;: {
@@ -874,6 +879,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
         {
             &quot;@id&quot;: &quot;http://music.com/es&quot;,
             &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+            &quot;indexGroup&quot;: &quot;music&quot;,
             &quot;mapping&quot;: {
                 &quot;properties&quot;: {
                     &quot;@type&quot;: {
@@ -956,6 +962,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://music.com/es&quot;,
       &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;properties&quot;: {
           &quot;@type&quot;: {
@@ -1078,6 +1085,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
         {
             &quot;@id&quot;: &quot;http://music.com/es&quot;,
             &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+            &quot;indexGroup&quot;: &quot;music&quot;,
             &quot;mapping&quot;: {
                 &quot;properties&quot;: {
                     &quot;@type&quot;: {
@@ -1160,6 +1168,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://music.com/es&quot;,
       &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;properties&quot;: {
           &quot;@type&quot;: {
@@ -1370,6 +1379,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
       },
       &quot;includeDeprecated&quot;: false,
       &quot;includeMetadata&quot;: false,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;dynamic&quot;: false,
         &quot;properties&quot;: {
@@ -1523,6 +1533,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
     {
       &quot;@id&quot;: &quot;http://music.com/es&quot;,
       &quot;@type&quot;: &quot;ElasticSearchProjection&quot;,
+      &quot;indexGroup&quot;: &quot;music&quot;,
       &quot;mapping&quot;: {
         &quot;properties&quot;: {
           &quot;@type&quot;: {
