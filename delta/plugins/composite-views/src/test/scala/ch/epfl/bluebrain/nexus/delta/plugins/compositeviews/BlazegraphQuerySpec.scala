@@ -104,6 +104,7 @@ class BlazegraphQuerySpec
       false,
       false,
       permissions.query,
+      None,
       JsonObject.empty,
       None,
       ContextObject(JsonObject.empty)

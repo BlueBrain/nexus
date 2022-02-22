@@ -30,14 +30,15 @@ object RepairTagViews {
     }
 
   def repair(implicit as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit = {
-    log.info("Repairing dependent tables from messages.")
+    val concurrency    = sys.env.get("REPAIR_FROM_MESSAGES_CONCURRENCY").flatMap(_.toIntOption).getOrElse(1)
+    log.info(s"Repairing dependent tables from messages with concurrency '$concurrency'.")
     val pq             = PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
     val reconciliation = new Reconciliation(as)
     (Task.deferFuture(reconciliation.truncateTagView()) >>
       Task
         .deferFuture {
           pq.currentPersistenceIds()
-            .mapAsync(1) { persistenceId =>
+            .mapAsync(concurrency) { persistenceId =>
               Task
                 .deferFuture(reconciliation.rebuildTagViewForPersistenceIds(persistenceId))
                 .retryingOnSomeErrors(

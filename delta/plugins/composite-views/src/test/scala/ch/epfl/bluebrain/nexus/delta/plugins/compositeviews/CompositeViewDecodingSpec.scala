@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewR
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
@@ -111,6 +112,7 @@ class CompositeViewDecodingSpec
       ElasticSearchProjectionFields(
         Some(iri"http://music.com/bands"),
         query1,
+        Some(IndexGroup.unsafe("cv")),
         mapping,
         context,
         resourceTypes = Set(iri"http://music.com/Band")
@@ -144,6 +146,7 @@ class CompositeViewDecodingSpec
       ElasticSearchProjectionFields(
         None,
         query1,
+        Some(IndexGroup.unsafe("cv")),
         mapping,
         context,
         resourceTypes = Set(iri"http://music.com/Band")
