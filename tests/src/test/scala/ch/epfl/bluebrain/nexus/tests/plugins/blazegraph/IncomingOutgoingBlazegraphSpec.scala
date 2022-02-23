@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.tests.plugins.blazegraph
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
-import ch.epfl.bluebrain.nexus.tests.Identity.{testRealm, UserCredentials}
+import ch.epfl.bluebrain.nexus.tests.Identity.mash.Radar
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
 import ch.epfl.bluebrain.nexus.tests.plugins.blazegraph.IncomingOutgoingBlazegraphSpec.Reference
 import io.circe.generic.semiauto.deriveDecoder
@@ -23,7 +23,6 @@ import java.time.Instant
  */
 class IncomingOutgoingBlazegraphSpec extends BaseSpec with EitherValuable {
 
-  private val Radar     = UserCredentials(genString(), genString(), testRealm)
   private val orgLabel  = genId()
   private val projLabel = genId()
 
