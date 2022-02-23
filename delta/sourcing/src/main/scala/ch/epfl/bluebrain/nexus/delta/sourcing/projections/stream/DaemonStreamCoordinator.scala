@@ -39,19 +39,23 @@ object DaemonStreamCoordinator {
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       scheduler: Scheduler
-  ): Task[Unit] =
-    Task.delay(tasks.put(name, DaemonStream(name, stream, retryStrategy))) >>
-      Task.delay {
-        val settings    = ClusterShardingSettings(as).withRememberEntities(true)
-        val shardingRef = ClusterSharding(as).init(
-          Entity(EntityTypeKey[SupervisorCommand]("daemonStream")) { entityContext =>
-            val daemon = tasks(entityContext.entityId)
-            DaemonStreamBehaviour(entityContext.entityId, daemon.stream, daemon.retryStrategy)
-          }.withStopMessage(Stop()).withSettings(settings)
-        )
+  ): Task[Unit] = {
+    val disableStreams = sys.env.get("DISABLE_STREAMS").flatMap(_.toBooleanOption).getOrElse(false)
+    Task.unless(disableStreams) {
+      Task.delay(tasks.put(name, DaemonStream(name, stream, retryStrategy))) >>
+        Task.delay {
+          val settings    = ClusterShardingSettings(as).withRememberEntities(true)
+          val shardingRef = ClusterSharding(as).init(
+            Entity(EntityTypeKey[SupervisorCommand]("daemonStream")) { entityContext =>
+              val daemon = tasks(entityContext.entityId)
+              DaemonStreamBehaviour(entityContext.entityId, daemon.stream, daemon.retryStrategy)
+            }.withStopMessage(Stop()).withSettings(settings)
+          )
 
-        shardingRef ! StartEntity(name)
-      }
+          shardingRef ! StartEntity(name)
+        }
+    }
+  }
 
   final private case class DaemonStream(
       name: String,
