@@ -78,7 +78,7 @@ object AclsModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: AclsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 5, route.routes, requiresStrictEntity = true)
   }
 
   make[AclEventExchange]

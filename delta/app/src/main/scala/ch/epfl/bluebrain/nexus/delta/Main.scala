@@ -122,10 +122,10 @@ object Main extends BIOApp {
             encodeResponse {
               val (strict, rest) = locator.get[Set[PriorityRoute]].partition(_.requiresStrictEntity)
               concat(
-                concat(rest.toVector.sortBy(_.priority).map(_.route): _*),
                 locator.get[StrictEntity].apply() {
                   concat(strict.toVector.sortBy(_.priority).map(_.route): _*)
-                }
+                },
+                concat(rest.toVector.sortBy(_.priority).map(_.route): _*)
               )
             }
           }

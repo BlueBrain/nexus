@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.server.Directives._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -269,8 +268,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
-  many[PriorityRoute].add { (storagesRoutes: StoragesRoutes, fileRoutes: FilesRoutes) =>
-    PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes), requiresStrictEntity = false)
+  many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
+    PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)
+  }
+
+  many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
+    PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
   }
 
   many[ReferenceExchange].add { (storages: Storages, crypto: Crypto) =>
