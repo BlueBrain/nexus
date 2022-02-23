@@ -31,32 +31,33 @@ object RepairTagViews {
 
   def repair(implicit as: ActorSystem, sc: Scheduler, pm: CanBlock): Unit = {
     val concurrency    = sys.env.get("REPAIR_FROM_MESSAGES_CONCURRENCY").flatMap(_.toIntOption).getOrElse(1)
-    log.info(s"Repairing dependent tables from messages with concurrency '$concurrency'.")
+    val start          = sys.env.get("REPAIR_FROM_MESSAGES_START").flatMap(_.toLongOption).getOrElse(0L)
+    log.info(s"Repairing dependent tables from messages with concurrency '$concurrency' from '$start'.")
     val pq             = PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
     val reconciliation = new Reconciliation(as)
-    (Task.deferFuture(reconciliation.truncateTagView()) >>
-      Task
-        .deferFuture {
-          pq.currentPersistenceIds()
-            .mapAsync(concurrency) { persistenceId =>
-              Task
-                .deferFuture(reconciliation.rebuildTagViewForPersistenceIds(persistenceId))
-                .retryingOnSomeErrors(
-                  {
-                    case NonFatal(_) => true
-                    case _           => false
-                  },
-                  retryPolicy,
-                  logError(s"Unable to rebuild tag_views for persistence id '$persistenceId'")
-                )
-                .runToFuture
-            }
-            .runFold(0L) { case (acc, _) =>
-              if (acc % 1000L == 0L) log.info(s"Processed '$acc' persistence_ids.")
-              acc + 1
-            }
-            .map(persId => log.info(s"Repaired a total of '$persId' persistence_ids."))
-        })
+    val source         = if (start == 0) pq.currentPersistenceIds() else pq.currentPersistenceIds().drop(start)
+    Task
+      .deferFuture {
+        source
+          .mapAsync(concurrency) { persistenceId =>
+            Task
+              .deferFuture(reconciliation.rebuildTagViewForPersistenceIds(persistenceId))
+              .retryingOnSomeErrors(
+                {
+                  case NonFatal(_) => true
+                  case _           => false
+                },
+                retryPolicy,
+                logError(s"Unable to rebuild tag_views for persistence id '$persistenceId'")
+              )
+              .runToFuture
+          }
+          .runFold(start) { case (acc, _) =>
+            if (acc % 1000L == 0L) log.info(s"Processed '$acc' persistence_ids.")
+            acc + 1
+          }
+          .map(persId => log.info(s"Repaired a total of '$persId' persistence_ids."))
+      }
       .runSyncUnsafe()
   }
 
