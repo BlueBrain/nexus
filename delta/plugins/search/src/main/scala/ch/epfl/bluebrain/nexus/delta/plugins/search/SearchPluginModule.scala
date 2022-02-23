@@ -43,7 +43,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = false)
+    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
 }

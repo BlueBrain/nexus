@@ -70,7 +70,7 @@ object IdentitiesModule extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: IdentitiesRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 2, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 2, route.routes, requiresStrictEntity = true)
   }
 
 }

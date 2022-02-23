@@ -32,7 +32,7 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: ProjectDeletionRoutes) =>
-    PriorityRoute(priority, route.routes, requiresStrictEntity = false)
+    PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
 
   make[DeleteProject].from {

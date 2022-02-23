@@ -71,7 +71,7 @@ object RealmsModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: RealmsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 4, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 4, route.routes, requiresStrictEntity = true)
   }
 
   make[RealmEventExchange]
