@@ -31,6 +31,7 @@ object JiraError {
   final case object RequestTokenExpected extends JiraError("A request token was expected for the current user.")
 
   /**
+    * An access token was expected for the current user
     */
   final case object AccessTokenExpected extends JiraError("An access token was expected for the current user.")
 
