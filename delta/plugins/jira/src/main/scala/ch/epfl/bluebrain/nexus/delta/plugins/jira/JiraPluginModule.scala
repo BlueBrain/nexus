@@ -12,7 +12,7 @@ import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
 /**
-  * Graph analytics plugin wiring.
+  * Jira plugin wiring.
   */
 class JiraPluginModule(priority: Int) extends ModuleDef {
 

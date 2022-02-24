@@ -12,6 +12,17 @@ import pureconfig.generic.semiauto.deriveReader
 import scala.annotation.nowarn
 import scala.util.Try
 
+/**
+  * Jira plugin configuration
+  * @param base
+  *   the base url of Jira
+  * @param consumerKey
+  *   the consumer key for the OAuth configuration
+  * @param secret
+  *   the secret for the OAuth configuration
+  * @param privateKey
+  *   the private key to sign messages to Jira
+  */
 final case class JiraConfig(
     base: Uri,
     consumerKey: String,
