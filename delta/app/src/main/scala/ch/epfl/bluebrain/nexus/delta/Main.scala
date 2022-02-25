@@ -144,7 +144,6 @@ object Main extends BIOApp {
 
       if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
         locator.get[Migration].run.runSyncUnsafe()
-        RepairTagViews.repair
       }
 
       sys.env.get("DELETE_PERSISTENCE_IDS").foreach { persistenceIds =>

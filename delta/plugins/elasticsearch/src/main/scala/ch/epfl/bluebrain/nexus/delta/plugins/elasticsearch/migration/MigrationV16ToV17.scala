@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.migration
 
 import akka.actor.typed.ActorSystem
+import akka.persistence.cassandra.reconciler.Reconciliation
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
@@ -28,13 +29,15 @@ import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import scala.annotation.nowarn
+import scala.concurrent.duration.DurationInt
 
 /**
   * Migrate elasticsearch views to new model with pipeline
   */
 final class MigrationV16ToV17 private (
     session: CassandraSession,
-    config: CassandraConfig
+    config: CassandraConfig,
+    as: ActorSystem[Nothing]
 ) extends Migration {
 
   private val selectViewEvents =
@@ -43,15 +46,20 @@ final class MigrationV16ToV17 private (
   private val updateMessage: String =
     s"UPDATE ${config.keyspace}.messages set event = ? where persistence_id = ? and partition_nr = 0 and sequence_nr = ? and timestamp = ?"
 
+  private val deleteTagProgress: String = s"DELETE from ${config.keyspace}.tag_write_progress WHERE persistence_id = ?"
+
   private val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
 
   def run: Task[Unit] = {
 
+    val reconciliation = new Reconciliation(as)
+
     for {
-      _               <- Task.delay(logger.info("Starting elasticsearch views migration"))
-      updateStatement <- Task.deferFuture(session.prepare(updateMessage))
+      _                          <- Task.delay(logger.info("Starting elasticsearch views migration"))
+      updateStatement            <- Task.deferFuture(session.prepare(updateMessage))
+      deleteTagProgressStatement <- Task.deferFuture(session.prepare(deleteTagProgress))
       // It is ok to get them all as we don't have that many views
-      allEsEvents     <-
+      allEsEvents                <-
         Task
           .deferFuture(
             session.selectAll(selectViewEvents, ElasticSearchViews.moduleType)
@@ -66,10 +74,20 @@ final class MigrationV16ToV17 private (
               )
             }
           }
-      _               <- Task.delay(logger.info(s"Migration of ${allEsEvents.size} events"))
-      pIdsAndProjects <- allEsEvents.traverseFilter(process(_, updateStatement))
-      _               <- Task.delay(logger.info(s"${pIdsAndProjects.size} events have been modified."))
-      _               <- Task.delay(logger.info("Migrating views is now completed."))
+      _                          <- Task.delay(logger.info(s"Migration of ${allEsEvents.size} events"))
+      _                          <- Task.delay(logger.info("Updating events"))
+      modifiedPIds               <- allEsEvents.traverseFilter(process(_, updateStatement))
+      _                          <- Task.delay(logger.info("Deleting tag progress"))
+      _                          <- modifiedPIds.traverse { pid =>
+                                      Task.deferFuture(session.executeWrite(deleteTagProgressStatement.bind(pid)))
+                                    }
+      _                          <- Task.sleep(10.seconds)
+      _                          <- Task.delay(logger.info("Rebuild tags"))
+      _                          <- modifiedPIds.traverse { pid =>
+                                      Task.deferFuture(reconciliation.rebuildTagViewForPersistenceIds(pid))
+                                    }
+      _                          <- Task.delay(logger.info(s"${modifiedPIds.size} events have been modified."))
+      _                          <- Task.delay(logger.info("Migrating views is now completed."))
     } yield ()
   }
 
@@ -116,7 +134,8 @@ object MigrationV16ToV17 {
     CassandraUtils.session(as).map { session =>
       new MigrationV16ToV17(
         session,
-        config
+        config,
+        as
       )
     }
 
