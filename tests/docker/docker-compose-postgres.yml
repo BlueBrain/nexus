@@ -174,3 +174,20 @@ services:
       - 9000:9000
     volumes:
       - /tmp/minio:/data
+
+  #########################################################
+  #  Uncomment the following lines to also run Fusion     #
+  #########################################################
+  #  fusion:
+  #    image: bluebrain/nexus-web:latest
+  #    environment:
+  #      BASE_PATH: "/web/"
+  #      HOST_NAME: "http://localhost:8000"
+  #      CLIENT_ID: "nexus-web"
+  #      API_ENDPOINT: "http://localhost:8080/v1"
+  #      SERVICE_ACCOUNTS_REALM: "service-accounts"
+  #      PLUGINS_MANIFEST_PATH: "http://localhost:8000/plugins"
+  #      PLUGINS_CONFIG_PATH: "/opt/nexus/public/plugins/plugins.config.json"
+  #      STUDIO_VIEW: "webapps/nexus-web/nxv:studioList"
+  #    ports:
+  #      - "8000:8000"
