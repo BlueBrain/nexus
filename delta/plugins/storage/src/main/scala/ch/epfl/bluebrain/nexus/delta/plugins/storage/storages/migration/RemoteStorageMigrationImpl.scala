@@ -38,6 +38,7 @@ import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.Try
 
+@SuppressWarnings(Array("TryGet"))
 @nowarn("cat=unused")
 final class RemoteStorageMigrationImpl private (
     session: CassandraSession,
