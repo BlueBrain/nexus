@@ -6,6 +6,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.cluster.Cluster
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.Migration
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.{Migration, RemoteStorageMigration}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
@@ -30,6 +31,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import pureconfig.error.ConfigReaderFailures
 
 import scala.concurrent.duration.DurationInt
+import scala.util.Try
 
 object Main extends BIOApp {
 
@@ -144,6 +146,22 @@ object Main extends BIOApp {
 
       if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
         locator.get[Migration].run.runSyncUnsafe()
+      }
+
+      if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
+        Task
+          .fromEither {
+            for {
+              str     <- sys.env
+                           .get("MIGRATION_REMOTE_STORAGE")
+                           .toRight(new IllegalArgumentException("'MIGRATION_REMOTE_STORAGE' must be defined"))
+              baseUri <- Try(Uri(str)).toEither.flatMap(BaseUri(_))
+            } yield baseUri
+          }
+          .flatMap { baseUri =>
+            locator.get[RemoteStorageMigration].run(baseUri)
+          }
+          .runSyncUnsafe()
       }
 
       sys.env.get("DELETE_PERSISTENCE_IDS").foreach { persistenceIds =>
