@@ -163,13 +163,13 @@ final class RemoteStorageMigrationImpl private (
         case sc: StorageCreated =>
           sc.value match {
             case rd: RemoteDiskStorageValue =>
-              Some(sc.copy(value = rd.copy(endpoint = newBaseUri)))
+              Some(sc.copy(value = rd.copy(endpoint = newBaseUri, credentials = None)))
             case _                          => None
           }
         case su: StorageUpdated =>
           su.value match {
             case rd: RemoteDiskStorageValue =>
-              Some(su.copy(value = rd.copy(endpoint = newBaseUri)))
+              Some(su.copy(value = rd.copy(endpoint = newBaseUri, credentials = None)))
             case _                          => None
           }
         case _                  => None
