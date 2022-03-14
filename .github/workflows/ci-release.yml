@@ -5,7 +5,7 @@ on:
 jobs:
   release:
     if: github.event_name == 'release'
-    runs-on: it
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       CI_RELEASE: publishSigned
