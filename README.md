@@ -1,7 +1,7 @@
 <p align="center"><img src="docs/src/main/paradox/assets/img/Blue-Brain-Nexus-Delta-Github-Banner.jpg"/></p>
 
 [![View our technology page](https://img.shields.io/badge/technology-Nexus-03ABE9.svg)](https://bluebrainnexus.io/)
-[![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)]()
+[![GitHub release](https://img.shields.io/github/release/BlueBrain/nexus.svg)](https://github.com/BlueBrain/nexus/releases/tag/v1.7.0)
 
 # Blue Brain Nexus
 
@@ -84,5 +84,5 @@ Please refer to the [CONTRIBUTING](CONTRIBUTING.md) page in order to know how to
 The development of this software was supported by funding to the Blue Brain Project, a research center of the École polytechnique fédérale de
 Lausanne (EPFL), from the Swiss government's ETH Board of the Swiss Federal Institutes of Technology.
 
-Copyright © 2015-2021 Blue Brain Project/EPFL
+Copyright © 2015-2022 Blue Brain Project/EPFL
 
