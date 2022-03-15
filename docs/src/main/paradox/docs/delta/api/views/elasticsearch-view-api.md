@@ -67,8 +67,6 @@ Please note that for retro-compatibility purposes, omitting the pipeline will ap
 
 ## Legacy payload
 
-//TODO update to v1.6.x docs when created
-
 Retro-compatibility is ensured with the legacy payload as defined @link:[here](https://bluebrainnexus.io/v1.5.x/docs/delta/api/views/elasticsearch-view-api.html)
 
 The legacy payload is now deprecated and will be removed in an upcoming version.
