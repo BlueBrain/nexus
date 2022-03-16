@@ -8,7 +8,7 @@ rm -rf target/*
 cp -R ./product-page/src/site/* ./target
 
 # Build every version of docs
-current_version=v1.6.x
+current_version=v1.7.x
 
 for i in $(ls -d versions/*/);
 do
