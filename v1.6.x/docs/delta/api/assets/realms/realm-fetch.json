@@ -1,0 +1,32 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/realms.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "http://localhost:8080/v1/realms/realm1",
+  "@type": "Realm",
+  "logo": "http://localhost:8080/logo.png",
+  "name": "BlueBrain",
+  "openIdConfig": "http://localhost:8080/auth/realms/BBP/.well-known/openid-configuration",
+  "_authorizationEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/auth",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/realms.json",
+  "_createdAt": "2021-05-11T09:42:41.313Z",
+  "_createdBy": "http://localhost:8080/v1/anonymous",
+  "_deprecated": true,
+  "_endSessionEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/logout",
+  "_grantTypes": [
+    "password",
+    "clientCredentials",
+    "refreshToken",
+    "authorizationCode",
+    "implicit"
+  ],
+  "_issuer": "http://localhost:8080/auth/realms/BBP",
+  "_label": "realm1",
+  "_rev": 3,
+  "_self": "http://localhost:8080/v1/realms/realm1",
+  "_tokenEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/token",
+  "_updatedAt": "2021-05-11T09:48:57.296Z",
+  "_updatedBy": "http://localhost:8080/v1/anonymous",
+  "_userInfoEndpoint": "http://localhost:8080/auth/realms/BBP/protocol/openid-connect/userinfo"
+}

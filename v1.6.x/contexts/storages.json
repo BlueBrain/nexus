@@ -1,0 +1,15 @@
+{
+  "@context": {
+    "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm",
+    "_storageId": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/storageId",
+      "@type": "@id"
+    },
+    "lastProcessedEventDateTime": {
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/lastProcessedEventDateTime",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    }
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/storages.json"
+}

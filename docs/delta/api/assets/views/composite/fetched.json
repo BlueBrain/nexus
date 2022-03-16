@@ -18,6 +18,7 @@
       },
       "includeDeprecated": false,
       "includeMetadata": false,
+      "indexGroup": "music",
       "mapping": {
         "dynamic": false,
         "properties": {

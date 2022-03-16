@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>v1.6 Release Notes · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+v1.6 Release Notes
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="active page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
+    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
+    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.6-release-notes.html#v1-6-release-notes" class="header">v1.6 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#global-search" class="header">Global search</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#secure-the-delta-elasticsearch-client" class="header">Secure the Delta Elasticsearch client</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#dedicated-blazegraph-client-for-user-defined-queries" class="header">Dedicated Blazegraph client for user-defined queries</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#synchronous-indexing" class="header">Synchronous indexing</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#listings" class="header">Listings</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#configurable-rdf-parser" class="header">Configurable RDF parser</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#deletion-of-projects" class="header">Deletion of projects</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#quotas" class="header">Quotas</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#tagging-resources-after-deprecation" class="header">Tagging resources after deprecation</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#view-passivation" class="header">View passivation</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#features" class="header">Features</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#fixes" class="header">Fixes</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-forge" class="header">Nexus Forge</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.6-release-notes.html#v1-6-release-notes" class="header">v1.6 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#global-search" class="header">Global search</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#secure-the-delta-elasticsearch-client" class="header">Secure the Delta Elasticsearch client</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#dedicated-blazegraph-client-for-user-defined-queries" class="header">Dedicated Blazegraph client for user-defined queries</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#synchronous-indexing" class="header">Synchronous indexing</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#listings" class="header">Listings</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#configurable-rdf-parser" class="header">Configurable RDF parser</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#deletion-of-projects" class="header">Deletion of projects</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#quotas" class="header">Quotas</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#tagging-resources-after-deprecation" class="header">Tagging resources after deprecation</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#view-passivation" class="header">View passivation</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#features" class="header">Features</a></li>
+      <li><a href="../../docs/releases/v1.6-release-notes.html#fixes" class="header">Fixes</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.6-release-notes.html#nexus-forge" class="header">Nexus Forge</a></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.6.x,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#v1-6-release-notes" name="v1-6-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.6 Release Notes</h1>
+<blockquote>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.5.</p>
+</blockquote>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+created%3A2021-05-01..2021-10-13+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.5.</p>
+<p>If you are currently using Nexus Delta from 1.5.x, please visit the <a href="v1.5-to-v1.6-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
+<h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
+<p>The main goal of this release is to allow users to search across multiple projects through <a href="../getting-started/running-nexus/search-configuration.html">global search</a></p>
+<p>Secondary goals include:</p>
+<ul>
+  <li>The possibility for Delta to query a secured Elasticsearch cluster</li>
+  <li>The introduction of a dedicated Blazegraph client for user-defined queries with the possibility to define a timeout to improve Blazegraph stability</li>
+  <li>Synchronous indexing</li>
+  <li>The analysis of properties and relationships of resources within a project through the <a href="../delta/api/graph-analytics-api.html">graph analytics plugin</a></li>
+  <li>The listing of resources within an organization and within all projects</li>
+  <li>The configuration of the RDF parser</li>
+  <li><a href="../delta/api/projects-api.html#delete">The deletion of projects and all its resources</a></li>
+  <li>Automatic project provisioning</li>
+  <li><a href="../delta/api/quotas.html">The introduction of quotas</a></li>
+  <li>Tagging resources after deprecation</li>
+</ul>
+<p>A series of bugs have also been fixed with this new release.</p>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>These two features are now marked as deprecated and will be removed in an upcoming release:</p>
+<ul>
+  <li><a href="../utilities/index.html#nexus-cli">Nexus client</a></li>
+  <li><a href="../utilities/index.html#indexing-data-in-other-systems">Indexing data in other systems</a></li>
+  <li><a href="../delta/api/storages-api.html#remote-disk-storage">RemoteDiskStorage</a></li>
+</ul>
+<h3><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h3>
+<p>Before 1.6, searching across several projects was not available in Nexus. The first version of Global search included in this release aims to fill this blank.</p>
+<p>Global search is composed of 2 parts:</p>
+<ul>
+  <li>A Delta plugin which allows to index and query resources according to a given configuration</li>
+  <li>A matching plugin in Fusion allows to query the endpoints provided by Delta to filter/sort results and customize how these results are displayed to the users</li>
+</ul>
+<p>More details about search and how to configure it is provided <a href="../getting-started/running-nexus/search-configuration.html">here</a></p>
+<p>Please note that this first version is experimental in both Delta and Fusion and that improvements and possibly breaking changes may be introduced in the upcoming releases.</p>
+<h3><a href="#secure-the-delta-elasticsearch-client" name="secure-the-delta-elasticsearch-client" class="anchor"><span class="anchor-link"></span></a>Secure the Delta Elasticsearch client</h3>
+<p>With 1.6, it is now possible to define credentials to query a secured Elasticsearch cluster: <a href="../getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration">Elasticsearch configuration</a>.</p>
+<h3><a href="#dedicated-blazegraph-client-for-user-defined-queries" name="dedicated-blazegraph-client-for-user-defined-queries" class="anchor"><span class="anchor-link"></span></a>Dedicated Blazegraph client for user-defined queries</h3>
+<p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
+<h3><a href="#synchronous-indexing" name="synchronous-indexing" class="anchor"><span class="anchor-link"></span></a>Synchronous indexing</h3>
+<p>From 1.6, the different types of resources can be <a href="../delta/api/resources-api.html#indexing">indexed directly after creation/modification</a> without waiting for the background indexing process to pick it up.</p>
+<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h3>
+<p>This <a href="../delta/api/graph-analytics-api.html">new plugin</a> helps users to inspect the properties and relationships of the different resources in a given project.</p>
+<p>Only the Delta endpoints are available in this release but a Nexus Fusion plugin will be released soon to make use of it.</p>
+<h3><a href="#listings" name="listings" class="anchor"><span class="anchor-link"></span></a>Listings</h3>
+<p>The different types of resources can now be listed at the <a href="../delta/api/resources-api.html#within-an-organization">organization level</a> and <a href="../delta/api/resources-api.html#within-all-projects">within all the projects</a> the current user has access to.</p>
+<h3><a href="#configurable-rdf-parser" name="configurable-rdf-parser" class="anchor"><span class="anchor-link"></span></a>Configurable RDF parser</h3>
+<p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
+<h3><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h3>
+<p>When enabled, a dedicated project is created for the current user on its first access to the Nexus platform.</p>
+<p>How to enable and configure it is detailed <a href="../getting-started/running-nexus/configuration/index.html#automatic-project-provisioning">here</a></p>
+<h3><a href="#deletion-of-projects" name="deletion-of-projects" class="anchor"><span class="anchor-link"></span></a>Deletion of projects</h3>
+<p>The deletion of projects and all its enclosed resources is now possible by enabling a configuration flag via a <a href="../delta/api/projects-api.html#delete">dedicated endpoint</a>.</p>
+<h3><a href="#quotas" name="quotas" class="anchor"><span class="anchor-link"></span></a>Quotas</h3>
+<p>It is now possible to define via static configurations <a href="../delta/api/quotas.html">quotas on projects</a>.</p>
+<h3><a href="#tagging-resources-after-deprecation" name="tagging-resources-after-deprecation" class="anchor"><span class="anchor-link"></span></a>Tagging resources after deprecation</h3>
+<p>The different types of resources can now be tagged after their deprecation.</p>
+<h3><a href="#view-passivation" name="view-passivation" class="anchor"><span class="anchor-link"></span></a>View passivation</h3>
+<p>Views are now stopped if no new event has been processed after a configured period.</p>
+<h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
+<h3><a href="#features" name="features" class="anchor"><span class="anchor-link"></span></a>Features</h3>
+<ul>
+  <li>Revamped <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/docs/src/main/paradox/docs/fusion/search.md">Fusion search</a>. Fusion search will now use delta search end point and will provide a improved UI with sorting, filtering, pagination etc.</li>
+  <li>Real-time updates. Fusion now uses &lsquo;indexing=sync&rsquo; option in delta API. This means all the updates made through fusion will be indexed in delta synchronously.</li>
+  <li>Sub apps other than studio will be hidden in sidebar for anonymous users.</li>
+  <li>Fusion will show a warning message when projects are due for deletion.</li>
+</ul>
+<h3><a href="#fixes" name="fixes" class="anchor"><span class="anchor-link"></span></a>Fixes</h3>
+<ul>
+  <li>Fixes on video player plugin.</li>
+</ul>
+<h2><a href="#nexus-forge" name="nexus-forge" class="anchor"><span class="anchor-link"></span></a>Nexus Forge</h2>
+<p>See <a href="https://nexus-forge.readthedocs.io/en/latest/index.html" title="Nexus Forge" target="_blank" rel="noopener noreferrer">Nexus Forge</a> documentation for release notes.</p>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.6-release-notes.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+v1.6.x
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+Releases
+</span>
+</div>
+</a>
+<a href="../../docs/releases/v1.5-to-v1.6-migration.html" title="v1.5 To v1.6 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+v1.5 To v1.6 Migration
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2022 <a href="https://epfl.ch/">EPFL</a>
+ <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="active page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
@@ -201,6 +203,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +223,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -232,6 +231,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-7-0-14-03-2022-" class="header">1.7.0 (14.03.2022)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
@@ -258,7 +263,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.6.x
+<i class="md-icon" title="Version">label_outline</i> v1.7.x
 </label>
 </li>
 </ul>
@@ -273,6 +278,12 @@ BlueBrain/nexus
 <ul>
   <li><a href="../../docs/releases/index.html#releases" class="header">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/index.html#1-7-0-14-03-2022-" class="header">1.7.0 (14.03.2022)</a>
+    <ul>
+      <li><a href="../../docs/releases/index.html#breaking-changes" class="header">Breaking changes</a></li>
+      <li><a href="../../docs/releases/index.html#deprecations" class="header">Deprecations</a></li>
+      <li><a href="../../docs/releases/index.html#new-features-enhancements" class="header">New features / enhancements</a></li>
+    </ul></li>
     <li><a href="../../docs/releases/index.html#v1-6-1" class="header">v1.6.1</a></li>
     <li><a href="../../docs/releases/index.html#v1-6-0-13-10-2021-" class="header">v1.6.0 (13.10.2021)</a>
     <ul>
@@ -303,7 +314,27 @@ BlueBrain/nexus
 <div class="md-content__searchable">
 <h1><a href="#releases" name="releases" class="anchor"><span class="anchor-link"></span></a>Releases</h1>
 <p>This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.</p>
-<p>The latest stable release is <strong>v1.6.1</strong> released on <strong>29.10.2021</strong>.</p>
+<p>The latest stable release is <strong>v1.7.0</strong> released on <strong>14.03.2022</strong>.</p>
+<h2><a href="#1-7-0-14-03-2022-" name="1-7-0-14-03-2022-" class="anchor"><span class="anchor-link"></span></a>1.7.0 (14.03.2022)</h2>
+<h3><a href="#breaking-changes" name="breaking-changes" class="anchor"><span class="anchor-link"></span></a>Breaking changes</h3>
+<ul>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli" title="Removal of the Nexus cli">Removal of the Nexus cli</a></li>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems" title="Removal of the docker based client">Removal of the docker based client</a></li>
+</ul>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
+<p>Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.</p>
+<h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
+<ul>
+  <li>New features and better user experience for search in Nexus Fusion</li>
+  <li>Introduced a new extensible model to define Elasticsearch views based on pipes</li>
+  <li>Allow the use of an external configuration file for Delta</li>
+  <li>Allow deleting tags on resources</li>
+  <li>Allow tagging deprecated storages and views</li>
+  <li>Refactor the <code>graph-analytics</code> plugin to make indexing faster</li>
+  <li>Add a group identifier in Elasticsearch projections of composite views</li>
+</ul>
+<p>A detailed list of changes included in the release can be found in the <a href="v1.7-release-notes.html">release notes</a>.</p>
 <h2><a href="#v1-6-1" name="v1-6-1" class="anchor"><span class="anchor-link"></span></a>v1.6.1</h2>
 <p>This release contains bugfixes and minor improvements:</p>
 <ul>
@@ -327,8 +358,8 @@ BlueBrain/nexus
 <h2><a href="#v1-6-0-13-10-2021-" name="v1-6-0-13-10-2021-" class="anchor"><span class="anchor-link"></span></a>v1.6.0 (13.10.2021)</h2>
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
 <ul>
-  <li><a href="../utilities/index.html#nexus-cli">Nexus client</a></li>
-  <li><a href="../utilities/index.html#indexing-data-in-other-systems">Indexing data in other systems</a></li>
+  <li>Nexus client</li>
+  <li>Indexing data in other systems</li>
   <li><a href="../delta/api/storages-api.html#remote-disk-storage">RemoteDiskStorage</a></li>
 </ul>
 <h3><a href="#new-features-enhancements" name="new-features-enhancements" class="anchor"><span class="anchor-link"></span></a>New features / enhancements</h3>
@@ -530,7 +561,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.6.x
+v1.7.x
 </span>
 </div>
 </article>
@@ -553,13 +584,13 @@ Search configuration
 </span>
 </div>
 </a>
-<a href="../../docs/releases/v1.6-release-notes.html" title="v1.6 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../docs/releases/v1.7-release-notes.html" title="v1.7 Release Notes" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-v1.6 Release Notes
+v1.7 Release Notes
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -1,0 +1,23 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/sparql-metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/metadata.json"
+  ],
+  "@id": "https://bluebrain.github.io/nexus/vocabulary/myview",
+  "@type": [
+    "SparqlView",
+    "View"
+  ],
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_createdAt": "2021-04-18T17:10:22.748Z",
+  "_createdBy": "http://localhost:8080/v1/realms/myrealm/users/Bob",
+  "_uuid": "9c632570-cdaa-4a35-a6f9-1e95bd3a930e",
+  "_deprecated": false,
+  "_self": "http://localhost:8080/v1/views/org/proj/myview",
+  "_incoming": "http://localhost:8080/v1/views/org/proj/myview/incoming",
+  "_outgoing": "http://localhost:8080/v1/views/org/proj/myview/outgoing",
+  "_project": "http://localhost:8080/v1/projects/org/proj",
+  "_rev": 3,
+  "_updatedAt": "2021-04-22T13:03:50.978Z",
+  "_updatedBy": "http://localhost:8080/v1/realms/myrealm/users/Bob"
+}

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="description" content="docs">
+<meta name="generator" content="Paradox, paradox-material-theme=0.5.1, mkdocs-material=3.0.3">
+
+<meta name="lang:clipboard.copy" content="Copy to clipboard">
+<meta name="lang:clipboard.copied" content="Copied to clipboard">
+<meta name="lang:search.language" content="">
+<meta name="lang:search.pipeline.stopwords" content="true">
+<meta name="lang:search.pipeline.trimmer" content="true">
+<meta name="lang:search.result.none" content="No matching documents">
+<meta name="lang:search.result.one" content="1 matching document">
+<meta name="lang:search.result.other" content="# matching documents">
+<meta name="lang:search.tokenizer" content="[\s\-]+">
+
+
+<meta name="description" content="docs">
+<link rel="shortcut icon" href="../.././assets/img/favicon-32x32.png">
+<title>v1.0 Release Notes · Blue Brain Nexus</title>
+<link rel="stylesheet" href="../../assets/stylesheets/application.451f80e5.css">
+<link rel="stylesheet" href="../../assets/stylesheets/application-palette.22915126.css">
+<meta name="theme-color" content="#03a9f4" />
+<link rel="stylesheet" href="../../lib/material__tabs/dist/mdc.tabs.min.css">
+<link rel="stylesheet" href="../../lib/prettify/prettify.css">
+<script src="../../assets/javascripts/modernizr.1aa3b519.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,700|Roboto+Mono">
+<style>
+body,input{font-family:"Roboto","Helvetica Neue",Helvetica,Arial,sans-serif}
+code,kbd,pre{font-family:"Roboto Mono","Courier New",Courier,monospace}
+</style>
+<link rel="stylesheet" href="../../assets/fonts/font-awesome.css">
+<link rel="stylesheet" href="../../assets/fonts/material-icons.css">
+<link rel="stylesheet" href="../../assets/stylesheets/paradox-material-theme.css">
+<link rel="stylesheet" href="../.././assets/css/docs.css">
+</head>
+<body
+data-md-color-primary="light-blue"
+data-md-color-accent="cyan"
+>
+<input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+<input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+<label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
+<header class="md-header" data-md-component="header">
+<nav class="md-header-nav md-grid">
+<div class="md-flex">
+<div class="md-flex__cell md-flex__cell--shrink">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-header-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--menu md-header-nav__button" for="__drawer"></label>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch">
+<div class="md-flex__ellipsis md-header-nav__title" data-md-component="title">
+<span class="md-header-nav__topic">
+Blue Brain Nexus
+</span>
+<span class="md-header-nav__topic">
+v1.0 Release Notes
+</span>
+</div>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<label class="md-icon md-icon--search md-header-nav__button" for="__search"></label>
+<div class="md-search" data-md-component="search" role="dialog">
+<label class="md-search__overlay" for="__search"></label>
+<div class="md-search__inner" role="search">
+<form class="md-search__form" name="search">
+<input type="text" class="md-search__input" name="query" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="query" data-md-state="active">
+<label class="md-icon md-search__icon" for="__search"></label>
+<button type="reset" class="md-icon md-search__icon" data-md-component="reset" tabindex="-1">&#xE5CD;</button>
+</form>
+<div class="md-search__output">
+<div class="md-search__scrollwrap" data-md-scrollfix>
+<div class="md-search-result" data-md-component="result">
+<div class="md-search-result__meta">
+Type to start searching
+</div>
+<ol class="md-search-result__list"></ol>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<div class="md-header-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+</div>
+</div>
+</nav>
+</header>
+
+<div class="md-container">
+<main class="md-main">
+<div class="md-main__inner md-grid" data-md-component="container">
+<div class="md-sidebar md-sidebar--primary" data-md-component="navigation">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--primary" data-md-level="0" style="visibility: hidden">
+<label class="md-nav__title md-nav__title--site" for="drawer">
+<a href="../../docs/index.html" title="Blue Brain Nexus" class="md-nav__button md-logo">
+<span class="md-nav__button md-logo">
+<img src="../.././assets/img/logo.png" width="24" height="24">
+</a>
+<a href="../../docs/index.html" title="Blue Brain Nexus">
+Blue Brain Nexus
+</a>
+</label>
+<div class="md-nav__source">
+<a href="https://github.com/BlueBrain/nexus"
+title="Go to repository"
+class="md-source"
+data-md-source="github">
+<div class="md-source__icon">
+<i class="fa fa-github"></i>
+</div>
+<div class="md-source__repository">
+BlueBrain/nexus
+</div>
+</a>
+
+</div>
+<ul>
+  <li><a href="../../docs/versions.html" class="page">Versions</a></li>
+  <li><a href="../../docs/getting-started/index.html" class="page">Getting Started</a>
+  <ul>
+    <li><a href="../../docs/getting-started/understanding-knowledge-graphs.html" class="page">Understanding Knowledge Graphs</a></li>
+    <li><a href="../../docs/getting-started/try-nexus.html" class="page">Try Nexus with Neuroscience Datasets</a></li>
+    <li><a href="../../docs/getting-started/try-nexus-movielens.html" class="page">Try Nexus with the MovieLens Dataset</a></li>
+    <li><a href="../../docs/getting-started/running-nexus/index.html" class="page">Running Nexus</a>
+    <ul>
+      <li><a href="../../docs/getting-started/running-nexus/configuration/index.html" class="page">Nexus configuration</a></li>
+      <li><a href="../../docs/getting-started/running-nexus/search-configuration.html" class="page">Search configuration</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/releases/index.html" class="page">Releases</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
+    <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.4-to-v1.5-migration.html" class="page">v1.4 To v1.5 Migration</a></li>
+    <li><a href="../../docs/releases/v1.4-release-notes.html" class="page">v1.4 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.3-to-v1.4-migration.html" class="page">v1.3 To v1.4 Migration</a></li>
+    <li><a href="../../docs/releases/v1.3-release-notes.html" class="page">v1.3 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.2-to-v1.3-migration.html" class="page">v1.2 To v1.3 Migration</a></li>
+    <li><a href="../../docs/releases/v1.2-release-notes.html" class="page">v1.2 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.1-release-notes.html" class="page">v1.1 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.0-to-v1.1-migration.html" class="page">v1.0 To v1.1 Migration</a></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html" class="active page">v1.0 Release Notes</a></li>
+  </ul></li>
+  <li><a href="../../docs/roadmap.html" class="page">Roadmap</a></li>
+  <li><a href="../../docs/fusion/index.html" class="page">Nexus Fusion</a>
+  <ul>
+    <li><a href="../../docs/fusion/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/fusion/plugins.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/fusion/studio.html" class="page">Studios</a></li>
+    <li><a href="../../docs/fusion/search.html" class="page">Search</a></li>
+    <li><a href="../../docs/fusion/admin.html" class="page">Admin</a></li>
+    <li><a href="../../docs/fusion/workflow.html" class="page">Workflow (alpha)</a></li>
+    <li><a href="../../docs/fusion/add-your-own-app.html" class="page">Add your own App</a></li>
+  </ul></li>
+  <li><a href="../../docs/forge.html" class="page">Nexus Forge</a></li>
+  <li><a href="../../docs/delta/index.html" class="page">Nexus Delta</a>
+  <ul>
+    <li><a href="../../docs/delta/architecture.html" class="page">Architecture</a></li>
+    <li><a href="../../docs/delta/api/index.html" class="page">API Reference</a>
+    <ul>
+      <li><a href="../../docs/delta/api/content-negotiation.html" class="page">Content Negotiation</a></li>
+      <li><a href="../../docs/delta/api/error-signaling.html" class="page">Error Signaling</a></li>
+      <li><a href="../../docs/delta/api/version.html" class="page">Version</a></li>
+      <li><a href="../../docs/delta/api/authentication.html" class="page">Authentication &amp; Authorization</a></li>
+      <li><a href="../../docs/delta/api/identities.html" class="page">Identities</a></li>
+      <li><a href="../../docs/delta/api/permissions-api.html" class="page">Permissions</a></li>
+      <li><a href="../../docs/delta/api/realms-api.html" class="page">Realms</a></li>
+      <li><a href="../../docs/delta/api/acls-api.html" class="page">Access Control Lists</a></li>
+      <li><a href="../../docs/delta/api/orgs-api.html" class="page">Organizations</a></li>
+      <li><a href="../../docs/delta/api/projects-api.html" class="page">Projects</a></li>
+      <li><a href="../../docs/delta/api/quotas.html" class="page">Quotas</a></li>
+      <li><a href="../../docs/delta/api/schemas-api.html" class="page">Schemas</a></li>
+      <li><a href="../../docs/delta/api/resources-api.html" class="page">Resources</a></li>
+      <li><a href="../../docs/delta/api/resolvers-api.html" class="page">Resolvers</a></li>
+      <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
+      <ul>
+        <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
+        <li><a href="../../docs/delta/api/views/composite-view-api.html" class="page">CompositeView</a></li>
+      </ul></li>
+      <li><a href="../../docs/delta/api/storages-api.html" class="page">Storages</a></li>
+      <li><a href="../../docs/delta/api/files-api.html" class="page">Files</a></li>
+      <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
+      <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
+      <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
+    </ul></li>
+    <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
+    <li><a href="../../docs/delta/benchmarks/index.html" class="page">Benchmarks</a>
+    <ul>
+      <li><a href="../../docs/delta/benchmarks/v1.4.2.html" class="page">Benchmarks v1.4.2</a></li>
+      <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
+    </ul></li>
+  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
+  <ul>
+    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
+    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
+  </ul></li>
+  <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
+</ul>
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.0-release-notes.html#v1-0-release-notes" class="header">v1.0 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.0-release-notes.html#functionality-behaviour" class="header">Functionality &amp; Behaviour</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#nexus-web-interface" class="header">Nexus web interface</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#isolated-data-scopes" class="header">Isolated data scopes</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-defined-identifiers" class="header">Client defined identifiers</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#resolution-mechanisms-for-shared-resources" class="header">Resolution mechanisms for shared resources</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#improved-handling-of-binary-resources" class="header">Improved handling of binary resources</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#new-mechanism-for-stable-resource-references" class="header">New mechanism for stable resource references</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-configurable-indexing-process" class="header">Client configurable indexing process</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-provided-information-vs-nexus-metadata-and-vocabulary" class="header">Client provided information vs Nexus metadata and vocabulary</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html#technical-notes" class="header">Technical Notes</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#iam-service-updates" class="header">IAM service updates</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-a-new-service-admin" class="header">Introduced a new service: Admin</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-javascript-sdk-for-nexus" class="header">Introduced Javascript SDK for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-python-sdk-for-nexus" class="header">Introduced Python SDK for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-a-command-line-interface-cli-for-nexus" class="header">Introduced a Command Line Interface (CLI) for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#migration-from-v0-y-z-series" class="header">Migration from v0.y.z series</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#removed-of-dependency-on-kafka" class="header">Removed of dependency on Kafka</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#in-memory-indices" class="header">In memory indices</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</nav>
+<ul style="display: none">
+<li class="md-nav__item md-version" id="project.version">
+<label class="md-nav__link" for="__version">
+<i class="md-icon" title="Version">label_outline</i> v1.6.x
+</label>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="md-sidebar md-sidebar--secondary" data-md-component="toc">
+<div class="md-sidebar__scrollwrap">
+<div class="md-sidebar__inner">
+<nav class="md-nav md-nav--secondary">
+<label class="md-nav__title" for="__toc">Table of contents</label>
+<ul>
+  <li><a href="../../docs/releases/v1.0-release-notes.html#v1-0-release-notes" class="header">v1.0 Release Notes</a>
+  <ul>
+    <li><a href="../../docs/releases/v1.0-release-notes.html#functionality-behaviour" class="header">Functionality &amp; Behaviour</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#nexus-web-interface" class="header">Nexus web interface</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#isolated-data-scopes" class="header">Isolated data scopes</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-defined-identifiers" class="header">Client defined identifiers</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#resolution-mechanisms-for-shared-resources" class="header">Resolution mechanisms for shared resources</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#improved-handling-of-binary-resources" class="header">Improved handling of binary resources</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#new-mechanism-for-stable-resource-references" class="header">New mechanism for stable resource references</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-configurable-indexing-process" class="header">Client configurable indexing process</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#client-provided-information-vs-nexus-metadata-and-vocabulary" class="header">Client provided information vs Nexus metadata and vocabulary</a></li>
+    </ul></li>
+    <li><a href="../../docs/releases/v1.0-release-notes.html#technical-notes" class="header">Technical Notes</a>
+    <ul>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#iam-service-updates" class="header">IAM service updates</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-a-new-service-admin" class="header">Introduced a new service: Admin</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-javascript-sdk-for-nexus" class="header">Introduced Javascript SDK for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-python-sdk-for-nexus" class="header">Introduced Python SDK for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#introduced-a-command-line-interface-cli-for-nexus" class="header">Introduced a Command Line Interface (CLI) for Nexus</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#migration-from-v0-y-z-series" class="header">Migration from v0.y.z series</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#removed-of-dependency-on-kafka" class="header">Removed of dependency on Kafka</a></li>
+      <li><a href="../../docs/releases/v1.0-release-notes.html#in-memory-indices" class="header">In memory indices</a></li>
+    </ul></li>
+  </ul></li>
+</ul>
+</nav>
+
+</div>
+</div>
+</div>
+<div class="md-content">
+<article class="md-content__inner md-typeset">
+<div class="callout note warning admonition" style="visibility: visible; margin-top: 0px">
+<div class="callout-title admonition-title">Outdated version</div>
+<p>
+You are browsing the docs for Nexus v1.6.x,
+the latest release is available <a href="https://bluebrainnexus.io/docs/" title="here">here</a>
+</p>
+</div>
+<div class="md-content__searchable">
+<h1><a href="#v1-0-release-notes" name="v1-0-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.0 Release Notes</h1>
+<blockquote>
+  <p>This is the first major release of Blue Brain Nexus after almost two years of development.</p>
+</blockquote>
+<p>Also referred to as &ldquo;<em>Nexus V1</em>&rdquo;, this initial release is our first big milestone in our quest to build a Knowledge Graph platform uniquely combining flexible graph database, powerful search engine and scalable data store to enable:</p>
+<ul>
+  <li>Easy unification and integration of fragmented and disparate data from heterogeneous domains to break data and metadata silos</li>
+  <li>Better data governance with the ability to specify and enforce organization’s best practices for data collection, storage and description through high quality metadata</li>
+  <li>Data lineage and provenance recording and description</li>
+  <li>FAIR (Findable, Accessible, Interoperable, Re-usable) data and metadata management</li>
+</ul>
+<p>We&rsquo;ve been running this software in production for more than a year getting good feedback on its design and we are confident that the current API meets our current and longer term goals.</p>
+<p>This release represents a commitment to backwards compatibility in all future releases of the <code>v1.y.z</code> series.</p><div class="callout note "><div class="callout-title">Versioning</div>
+<p>Nexus artifacts are versioned using <a href="https://semver.org/" title="semantic versioning" target="_blank" rel="noopener noreferrer">semantic versioning</a> and while services and web applications that make up Nexus are versioned independently to address specific improvements or bugfixes, their versions are synchronized across minor releases. This means, for example, that services and applications are compatible with each other if their <em>major</em> and <em>minor</em> numbers match regardless of the value of the <em>patch</em> numbers.</p></div>
+<p>The behaviour of the system is described across the documentation, but here are some notable changes from the previous <code>v0.y.z</code> series.</p>
+<h3><a href="#functionality-behaviour" name="functionality-behaviour" class="anchor"><span class="anchor-link"></span></a>Functionality &amp; Behaviour</h3>
+<h4><a href="#nexus-web-interface" name="nexus-web-interface" class="anchor"><span class="anchor-link"></span></a>Nexus web interface</h4>
+<p><img src="assets/img/nexus-web.png" alt="Nexus Web" /></p>
+<p>Previously, the web interface was dubbed <em>Nexus Explorer</em>, and could only be used to browse the data stored in your Nexus instance. For the <em>Nexus V1</em> release, we decided to build a new web application, called <a href="https://github.com/bluebrain/nexus-web" title="Nexus Web" target="_blank" rel="noopener noreferrer">Nexus Web</a>, that also enables operational management, data management and search capabilities on the system. At this stage of development, this application is likely to be most useful to technical users who work on integrating their data into Nexus.</p>
+<p>The web application is set to offer most of the features you can get with the raw API, as well as additional conveniences for Nexus users.</p>
+<p>At the time of the <em>Nexus V1</em> release, you can use it to:</p>
+<ul>
+  <li>Login into Nexus</li>
+  <li>Browse and search organizations, projects and resources you have access to</li>
+  <li>See the raw JSON-LD payload of a resources</li>
+  <li>Make advanced ElasticSearch and SPARQL queries</li>
+  <li>Create, edit and deprecate organizations and projects</li>
+  <li>Make a project publicly accessible</li>
+  <li>Create resources through an interactive JSON editor</li>
+</ul>
+<h4><a href="#isolated-data-scopes" name="isolated-data-scopes" class="anchor"><span class="anchor-link"></span></a>Isolated data scopes</h4>
+<p>The <code>v0.y.z</code> series handled data within one single space and while it did provide some benefits with respect to the ability to query the entire system, it also provided severe limitations with respect to data evolution, scalability and future developments. We move on from this monolithic approach towards a multi scoped system, where data is bucketed and managed independently in projects.</p>
+<p>What we previously referred to as <em>domains</em> are now called <em>projects</em> and represent data and configuration boundaries within the system (we decided to change the naming as we have found that the term &ldquo;domain&rdquo; was understood to imply a certain data organization scheme centered around business or scientific domains; this was not intended).</p>
+<p>Introducing these boundaries has opened the door to make several performance and functional improvements to the system as follows:</p>
+<ul>
+  <li>data indexing can now be configured at the project level without impacting the overall system; we&rsquo;ve introduced a new resource type <em>View</em> that controls how and where the data is being indexed. They can be managed at runtime by the clients with &ldquo;administrative&rdquo; privileges enabling the development of applications specific to the area of interest. An example of that is the <a href="https://github.com/bluebrain/nexus-search-webapp" title="BBP Nexus Search" target="_blank" rel="noopener noreferrer">BBP Nexus Search</a> application designed specifically to address the needs of the BlueBrain Project.</li>
+  <li>indexing processes are now created for each individual project increasing the indexing throughput and allowing the use of distinct indexing targets.</li>
+  <li>the uniqueness of a resource within the system was determined by the resource id which comprised of the &ldquo;organization&rdquo;, &ldquo;domain&rdquo;, &ldquo;schema&rdquo; name and version and the resource id. Introducing these data boundaries allowed us to relax this constraint and allow multiple resources to share the same id if they are scoped in different projects.</li>
+  <li>access control lists are now restricted to either root (<code>/</code>), organization (<code>/{org}</code>) or project (<code>/{org}/{project}</code>) removing the need to index these definitions along with the data.</li>
+</ul>
+<h4><a href="#client-defined-identifiers" name="client-defined-identifiers" class="anchor"><span class="anchor-link"></span></a>Client defined identifiers</h4>
+<p>The <code>v0.y.z</code> series was very opinionated on how resource ids are defined and prohibited client provided identifiers. The choice at the time was that a resource id needs to be resolvable (the resource id needed to match the url to access it). This strong constraint tied the resource ids to the Nexus deployment where they were managed. While this was probably fine for most data within the system, it was nearly impossible to manage data from external sources that came with its own identification scheme (e.g. ontologies).</p>
+<p>The decision was made to remove this constraint and allow clients to specify their own identifiers. In order to maintain the same API simplicity with respect to accessing resources we came up with a aliasing and curie scheme configurable at the project level (_apiMappings_) that handles bidirectional compaction and expansion of resource identifiers.</p>
+<p>A simple http proxying configuration with URL rewriting deployed in front of the Nexus API allows resources to continue to be resolvable.</p>
+<h4><a href="#resolution-mechanisms-for-shared-resources" name="resolution-mechanisms-for-shared-resources" class="anchor"><span class="anchor-link"></span></a>Resolution mechanisms for shared resources</h4>
+<p>During the past year of production use of Nexus we have noticed that users tend to develop schemas and contexts as reusable components. An example of that is the <a href="https://incf.github.io/neuroshapes/" title="Neuroshapes" target="_blank" rel="noopener noreferrer">Neuroshapes</a> initiative, a community effort for a shared vocabulary and collection of constraints for neuroscience.</p>
+<p>The use of schemas and contexts in the <code>v0.y.z</code> series applied a restriction on the locality of constrained resources, specifically resources could only be created in the same <em>domain</em> with schemas.</p>
+<p>In the new iteration we&rsquo;ve introduced a configurable resolution mechanism that allows users to make use of schemas and contexts that reside in other projects. The resources that control this behaviour are called <em>Resolvers</em> and they behave like dependency management systems in programming language ecosystems.</p>
+<p><em>Resolvers</em> can now be created and configured to look up schemas and contexts in arbitrary locations, scoped within projects. The resolution mechanism takes into account all the resolvers defined in a project using the priorities of each resolver and attempts to resolve the referenced resource based on its <code>@id</code> value. Current supported resolvers are:</p>
+<ul>
+  <li><em>InProject</em>: a default project resource created along with a project that looks up referenced resources in the same project.</li>
+  <li><em>CrossProject</em>: a type of resolver that can be created by clients to look up referenced resources in projects other than the current one.</li>
+</ul>
+<p>Future developments will include additional resolver types that are capable of resolving resources in other Nexus deployments or shared repositories (e.g.: a git repository).</p>
+<p>Schema imports through the <code>owl:imports</code> clause works recursively as before, but it applies the resolution mechanism at each iteration. Context references work recursively as before applying the resolution mechanism at each iteration.</p>
+<p><em>Note:</em> Contexts are no longer handled differently, as special kind of resources. Any resource id can be used as a context reference; the system will resolve the referenced resource and apply <em>only</em> the <code>@context</code> value from its representation to the resource that references it.</p>
+<h4><a href="#improved-handling-of-binary-resources" name="improved-handling-of-binary-resources" class="anchor"><span class="anchor-link"></span></a>Improved handling of binary resources</h4>
+<p>The <code>v0.y.z</code> series handled binary resources as sub-resources, called <em>attachments</em>, following the model pioneered by <a href="https://docs.couchdb.org/en/stable/api/document/common.html#attachments" title="CouchDB" target="_blank" rel="noopener noreferrer">CouchDB</a>. While it provided a guarantee that every binary resource is properly described with metadata, the model did not work well in the following situations:</p>
+<ul>
+  <li>uploading binaries for later organization: the parent resource required creation before a binary could be attached to it, which in the cases where users were just interested in storing binaries in Nexus it required two API calls instead of one.</li>
+  <li>conflicting vocabulary definitions: a lot of the data modeling effort relied on the Nexus metadata for the uploaded binaries which forced the use of a certain vocabulary and metadata structure in Nexus</li>
+</ul>
+<p>This model of handling binaries has been superseded by full class support for binaries through <em>files</em>, a new kind of resource managed just like the other types of resources within the system. <em>Files</em> have their own lifecycle and can be independently updated. Description of <em>files</em>, for example in the case of <em>datasets</em>, can now be done external to the file resource within a separate resource. This model allows for many-to-many relationships between files and other resources.</p>
+<h4><a href="#new-mechanism-for-stable-resource-references" name="new-mechanism-for-stable-resource-references" class="anchor"><span class="anchor-link"></span></a>New mechanism for stable resource references</h4>
+<p>The <code>v0.y.z</code> series was quite opinionated on the use of stable references ensuring the structural and semantic immutability of a resource revision. Schemas and Contexts had to be published before they could be used and once published their lifecycle would finish, preventing further updates.</p>
+<p>This behaviour was replaced by giving the client the control on the immutability guarantees through the use of revisions and tags. The schema versions are no longer present in the API and the mechanism for unpacking schema references are aware of possible tag and revision references provided as query parameters. A <em>tag</em> is a new type of sub-resource that represents a pointer to a resource revision.</p>
+<p>Assuming the following entry in the project <code>apiMappings</code>:</p>
+<pre><code>{
+  &quot;prefix&quot;: &quot;persons&quot;,
+  &quot;namespace&quot;: &quot;http://nexus.example.com/schemas/person?tag=v1.0.0&quot;
+}
+</code></pre>
+<p>&hellip; would ensure that resources are constrained with a stable version of a schema:</p>
+<pre><code>curl -XPOST http://nexus.example.com/resources/{org}/{proj}/persons -d &#39;{}&#39;
+</code></pre>
+<p>Additionally, the use of curies is also available, leaving the door open to providing schema versions per resource. Considering the following entry in the project <code>apiMappings</code>:</p>
+<pre><code>{
+  &quot;prefix&quot;: &quot;persons&quot;,
+  &quot;namespace&quot;: &quot;http://nexus.example.com/schemas/person?tag=&quot;
+}
+</code></pre>
+<p>&hellip; resources can be constrained with a dynamic version of a schema provided at the time of resource creation:</p>
+<pre><code>curl -XPOST http://nexus.example.com/resources/{org}/{proj}/persons:v1.0.0 -d &#39;{}&#39;
+</code></pre>
+<p>Revision query params can be used in the exact same manner as tag params. When omitting <code>rev</code> or <code>tag</code> query params when referring to schema, it is implied that the latest version should be used every time that schema is resolved.</p>
+<p>Context references follow the very same behaviour. Context <code>iri</code> values can be augmented with a <code>tag</code> or <code>rev</code> query parameter to point to a specific immutable reference of the resource.</p>
+<p><em>Note</em>: the behaviour depends on the new resource reference resolution process; a change in the resolver resources (a different resolution process configuration) can not provide an immutability guarantee of the references.</p>
+<h4><a href="#client-configurable-indexing-process" name="client-configurable-indexing-process" class="anchor"><span class="anchor-link"></span></a>Client configurable indexing process</h4>
+<p>As mentioned previously, the indexing processes are now applied at the level of each project and can be customized by the client. Each index process is represented by a newly introduced resource <em>View</em> which has the following classification:</p>
+<ul>
+  <li><em>ElasticSearchView</em>: the process replays the project event log, filters out undesired resources based on configuration, applies minimal data transformation and updates an ElasticSearch index.</li>
+  <li><em>AggregateElasticSearchView</em>: this view does not directly manage an indexing process, but rather represents a collection of referenced _ElasticSearchView_s that would be proxied (queried at the same time) when querying this view.
+</li>
+  <li><em>SparqlView</em>: the process replays the project event log applies minimal data transformation and updates an RDF store (currently BlazeGraph).</li>
+</ul>
+<p>A default <em>ElasticSearchView</em> and a default <em>SparqlView</em> are automatically created along with a project. The default <em>ElasticSearchView</em> is used by Nexus internally to power resource listing.</p>
+<p>Since access control lists are now limited to nesting up to the level of a project, these views do not require indexing the acl configuration and can be proxied by the system supporting their native APIs.</p>
+<p>_ElasticSearchView_s expose a <code>/_search</code> sub-resource that represents the native API for interacting with ElasticSearch. Client HTTP requests are checked for authentication and authorization and then forwarded to their respective backends. In the case of an <em>AggregateElasticSearchView</em> the requests executed on all the referenced indices.</p>
+<p>_SparqlView_s expose a <code>/sparql</code> sub-resource that represents the native API for interacting with the SPARQL endpoint of the RDF store. Client HTTP requests are checked for authentication and authorization and then forwarded to the respective backend.</p>
+<p>The previously supported query DSL has been dropped in favour of the direct interaction with the indices via their native APIs. The attempt to provide a general query interface on top of both indices was very ambitious but production use has proven it unsatisfactory. The change gives clients a lot more power in terms of function, flexibility, expressiveness and query optimization. It also opens the door to support additional index backends without having to reconcile them with the query DSL.</p>
+<h4><a href="#client-provided-information-vs-nexus-metadata-and-vocabulary" name="client-provided-information-vs-nexus-metadata-and-vocabulary" class="anchor"><span class="anchor-link"></span></a>Client provided information vs Nexus metadata and vocabulary</h4>
+<p>Since it was often unclear which information was user provided and which was generated by the system as new rule has been introduced such that:</p>
+<ul>
+  <li>all user provided information predicates are kept unchanged</li>
+  <li>all Nexus metadata is now presented with a leading <code>_</code>, example: <code>&quot;_deprecated&quot;: true</code> or <code>&quot;_rev&quot;: 4&quot;</code>.</li>
+  <li>the Nexus metadata vocabulary is now namespaced to <code>https://bluebrain.github.io/nexus/vocabulary/</code></li>
+</ul>
+<h3><a href="#technical-notes" name="technical-notes" class="anchor"><span class="anchor-link"></span></a>Technical Notes</h3>
+<h4><a href="#iam-service-updates" name="iam-service-updates" class="anchor"><span class="anchor-link"></span></a>IAM service updates</h4>
+<p>IAM has been redesigned such that it no longer attempts to proxy calls to the configured OIDC provider. Instead, it introduces a new resource type (_Realm_) that represent runtime configuration for the accepted OIDC providers. Based on the well known configuration document of the realm it finds and extracts some of the important provider addresses (e.g. the authorization and token endpoints), the signature keys and the issuer description. This allows for token identification and validation without the need to contact the provider and there&rsquo;s no need to mediate the interaction with the provider. We therefore dropped the iam integration services as they were not needed anymore.</p>
+<p>Now it also expects that <code>group</code> information is present in the <em>access token</em> as a claim, either as an array or a comma separated list of group values.</p>
+<p>The service also introduces another resource (_permissions_) as a singleton resource that manages (or enumerates) the permissions that are allowed to be set as values in the ACL definitions.</p>
+<p>All IAM resources are now protected from <em>blind writes</em> (also known as <em>lost update problem</em>) by means of the <code>rev</code> query parameter, similar to the other services.</p>
+<h4><a href="#introduced-a-new-service-admin" name="introduced-a-new-service-admin" class="anchor"><span class="anchor-link"></span></a>Introduced a new service: Admin</h4>
+<p>A new service has been introduced, named <em>Admin</em> that manages the scoping (and its configuration) within the Nexus ecosystem. Organizations and Projects (previously named <em>domains</em>) are now managed by this service, allowing other future services to take advantage of the functionality provided without a direct dependency on the KG service. The service dependency tree is now as follows:</p>
+<pre><code>  +-----------+         +-----------+         +-----------+
+  |           |         |           |         |           |
+  |    IAM    &lt;---------+   Admin   &lt;---------+    KG     |
+  |           |         |           |         |           |
+  +-----+-----+         +-----------+         +-+---------+
+        ^                                       |
+        |                                       |
+        +---------------------------------------+
+</code></pre>
+<p>Access control lists are now restricted to either root (<code>/</code>), organization (<code>/{org}</code>) or project (<code>/{org}/{project}</code>) removing the need to index these definitions along with the data in their respective service boundaries.</p>
+<h4><a href="#introduced-javascript-sdk-for-nexus" name="introduced-javascript-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced Javascript SDK for Nexus</h4>
+<p><img src="assets/img/nexus-js-logo.png" alt="Logo of JS SDK for Nexus" /></p>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-js" title="Javascript SDK for Nexus" target="_blank" rel="noopener noreferrer">Javascript SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Javascript and Typescript code. It aims at giving easy access to all the features offered by the API. It also offers Typescript declarations.</p>
+<p>This is the library of top of which the Nexus Web interface is built, but it remains framework-agnostic.</p>
+<h4><a href="#introduced-python-sdk-for-nexus" name="introduced-python-sdk-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced Python SDK for Nexus</h4>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-python-sdk" title="Python SDK for Nexus" target="_blank" rel="noopener noreferrer">Python SDK for Nexus</a> that helps integrating with the Blue Brain Nexus API from Python. It aims at giving easy access to all the features offered by the API.</p>
+<h4><a href="#introduced-a-command-line-interface-cli-for-nexus" name="introduced-a-command-line-interface-cli-for-nexus" class="anchor"><span class="anchor-link"></span></a>Introduced a Command Line Interface (CLI) for Nexus</h4>
+<p>We released a <a href="https://github.com/BlueBrain/nexus-cli" title="Nexus CLI" target="_blank" rel="noopener noreferrer">Nexus CLI</a> that helps interaction with Nexus from the command line. This tool is built on top of the <a href="https://github.com/BlueBrain/nexus-python-sdk" title="Python SDK for Nexus" target="_blank" rel="noopener noreferrer">Python SDK for Nexus</a>. It aims at giving easy access to all the features offered by the API and facilitate your data management with Nexus. The use of the CLI is extensively demonstrated in our [Nexus Tutorial].</p>
+<h4><a href="#migration-from-v0-y-z-series" name="migration-from-v0-y-z-series" class="anchor"><span class="anchor-link"></span></a>Migration from v0.y.z series</h4>
+<p>The semantics of the API and managed resources in between the <code>v0.y.z</code> and <code>v1.y.z</code> series has changed considerably making an automatic migration almost impossible without understanding the structure of the data stored in Nexus. We recommend building a tailored migration script. Please find us on <a href="https://github.com/BlueBrain/nexus/discussions" title="Github Discussions" target="_blank" rel="noopener noreferrer">Github Discussions</a> for help and advice on how to do this effectively depending on your use of Nexus.</p>
+<h4><a href="#removed-of-dependency-on-kafka" name="removed-of-dependency-on-kafka" class="anchor"><span class="anchor-link"></span></a>Removed of dependency on Kafka</h4>
+<p>Services have been updated to expose their event logs or subsets via HTTP through <a href="https://html.spec.whatwg.org/multipage/server-sent-events.html" title="Server Sent Events" target="_blank" rel="noopener noreferrer">Server Sent Events</a>, removing the need to use Kafka as means of service to service communication. It uses the same authentication and authorization mechanism as with the rest of the API, thus ensuring that the information exchanged in guarded by the ACLs defined.</p>
+<p>The change reduces the additional operational burden of maintaining a Kafka cluster and also opens up the system for extension as the event logs can be consumed by third party applications in an efficient manner without the need of direct access to the message broker.</p>
+<h4><a href="#in-memory-indices" name="in-memory-indices" class="anchor"><span class="anchor-link"></span></a>In memory indices</h4>
+<p>Versions <code>v0.y.z</code> of <em>iam</em> and later on <em>admin</em> services depended on ElasticSearch and BlazeGraph to maintain indices of the resources managed. Since these resources easily fit in memory on a single node, the dependency on these external systems has been removed in favour of in memory indices to provide a consistent view on the data and increase the general availability. In between nodes, when services are deployed as a cluster, the indices are replicated by using <a href="https://en.wikipedia.org/wiki/Conflict-free_replicated_data_type" title="CRDTs" target="_blank" rel="noopener noreferrer">CRDTs</a> which are natively supported by <a href="https://doc.akka.io/docs/akka/2.5/distributed-data.html" title="Akka Distributed Data" target="_blank" rel="noopener noreferrer">Akka Distributed Data</a>.</p>
+</div>
+<div>
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.0-release-notes.md" title="Edit this page" class="md-source-file md-edit">
+Edit this page
+</a>
+</div>
+<div class="print-only">
+<span class="md-source-file md-version">
+v1.6.x
+</span>
+</div>
+</article>
+</div>
+</div>
+</main>
+<footer class="md-footer">
+<div class="md-footer-nav">
+<nav class="md-footer-nav__inner md-grid">
+<a href="../../docs/releases/v1.0-to-v1.1-migration.html" title="v1.0 To v1.1 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
+</div>
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Previous
+</span>
+v1.0 To v1.1 Migration
+</span>
+</div>
+</a>
+<a href="../../docs/roadmap.html" title="Roadmap" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
+<span class="md-flex__ellipsis">
+<span class="md-footer-nav__direction">
+Next
+</span>
+Roadmap
+</span>
+</div>
+<div class="md-flex__cell md-flex__cell--shrink">
+<i class="md-icon md-icon--arrow-forward md-footer-nav__button"></i>
+</div>
+</a>
+</nav>
+</div>
+<div class="md-footer-meta md-typeset">
+<div class="md-footer-meta__inner md-grid">
+<div class="md-footer-copyright">
+<div class="md-footer-copyright__highlight">
+Nexus is Open Source and available under the Apache 2 License.<br/>
+© 2017-2022 <a href="https://epfl.ch/">EPFL</a>
+ <a href="https://bluebrain.epfl.ch/">The Blue Brain Project</a>
+
+</div>
+</div>
+<div class="md-footer-social">
+<a href="https://github.com/BlueBrain" class="md-footer-social__link fa fa-github"></a><a href="https://github.com/BlueBrain/nexus/discussions" class="md-footer-social__link fa fa-github"></a>
+</div>
+
+</div>
+</div>
+</footer>
+
+</div>
+<script src="../../assets/javascripts/application.583bbe55.js"></script>
+<script src="../../assets/javascripts/paradox-material-theme.js"></script>
+<script>app.initialize({version:"0.17",url:{base:"../../."}})</script>
+<script type="text/javascript" src="../../lib/prettify/prettify.js"></script>
+<script type="text/javascript" src="../../lib/prettify/lang-scala.js"></script>
+<script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function(event) {
+window.prettyPrint && prettyPrint();
+});
+</script>
+<script src="../.././public/js/gtm.js"></script>
+</body>
+</html>

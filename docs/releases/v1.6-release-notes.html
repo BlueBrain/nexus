@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
+    <li><a href="../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../docs/releases/v1.6-release-notes.html" class="active page">v1.6 Release Notes</a></li>
     <li><a href="../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
@@ -201,6 +203,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +223,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -262,7 +261,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.6.x
+<i class="md-icon" title="Version">label_outline</i> v1.7.x
 </label>
 </li>
 </ul>
@@ -334,8 +333,8 @@ BlueBrain/nexus
 <h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
 <p>These two features are now marked as deprecated and will be removed in an upcoming release:</p>
 <ul>
-  <li><a href="../utilities/index.html#nexus-cli">Nexus client</a></li>
-  <li><a href="../utilities/index.html#indexing-data-in-other-systems">Indexing data in other systems</a></li>
+  <li>Nexus client</li>
+  <li>Indexing data in other systems</li>
   <li><a href="../delta/api/storages-api.html#remote-disk-storage">RemoteDiskStorage</a></li>
 </ul>
 <h3><a href="#global-search" name="global-search" class="anchor"><span class="anchor-link"></span></a>Global search</h3>
@@ -350,7 +349,7 @@ BlueBrain/nexus
 <h3><a href="#secure-the-delta-elasticsearch-client" name="secure-the-delta-elasticsearch-client" class="anchor"><span class="anchor-link"></span></a>Secure the Delta Elasticsearch client</h3>
 <p>With 1.6, it is now possible to define credentials to query a secured Elasticsearch cluster: <a href="../getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration">Elasticsearch configuration</a>.</p>
 <h3><a href="#dedicated-blazegraph-client-for-user-defined-queries" name="dedicated-blazegraph-client-for-user-defined-queries" class="anchor"><span class="anchor-link"></span></a>Dedicated Blazegraph client for user-defined queries</h3>
-<p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
+<p>User-defined queries could bring instability to Blazegraph because of their complexity. In 1.6, a <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/plugins/blazegraph/src/main/resources/blazegraph.conf#L34" title="dedicated client with a timeout">dedicated client with a timeout</a> which triggers a circuit breaker in Blazegraph has been introduced in order to solve that problem.</p>
 <h3><a href="#synchronous-indexing" name="synchronous-indexing" class="anchor"><span class="anchor-link"></span></a>Synchronous indexing</h3>
 <p>From 1.6, the different types of resources can be <a href="../delta/api/resources-api.html#indexing">indexed directly after creation/modification</a> without waiting for the background indexing process to pick it up.</p>
 <h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h3>
@@ -359,7 +358,7 @@ BlueBrain/nexus
 <h3><a href="#listings" name="listings" class="anchor"><span class="anchor-link"></span></a>Listings</h3>
 <p>The different types of resources can now be listed at the <a href="../delta/api/resources-api.html#within-an-organization">organization level</a> and <a href="../delta/api/resources-api.html#within-all-projects">within all the projects</a> the current user has access to.</p>
 <h3><a href="#configurable-rdf-parser" name="configurable-rdf-parser" class="anchor"><span class="anchor-link"></span></a>Configurable RDF parser</h3>
-<p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
+<p>The RDF parser allowing to validate incoming data can now be <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/app/src/main/resources/app.conf#L83" title="configured">configured</a> in order to be more or less strict.</p>
 <h3><a href="#automatic-project-provisioning" name="automatic-project-provisioning" class="anchor"><span class="anchor-link"></span></a>Automatic project provisioning</h3>
 <p>When enabled, a dedicated project is created for the current user on its first access to the Nexus platform.</p>
 <p>How to enable and configure it is detailed <a href="../getting-started/running-nexus/configuration/index.html#automatic-project-provisioning">here</a></p>
@@ -374,7 +373,7 @@ BlueBrain/nexus
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <h3><a href="#features" name="features" class="anchor"><span class="anchor-link"></span></a>Features</h3>
 <ul>
-  <li>Revamped <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/docs/src/main/paradox/docs/fusion/search.md">Fusion search</a>. Fusion search will now use delta search end point and will provide a improved UI with sorting, filtering, pagination etc.</li>
+  <li>Revamped <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/docs/src/main/paradox/docs/fusion/search.md">Fusion search</a>. Fusion search will now use delta search end point and will provide a improved UI with sorting, filtering, pagination etc.</li>
   <li>Real-time updates. Fusion now uses &lsquo;indexing=sync&rsquo; option in delta API. This means all the updates made through fusion will be indexed in delta synchronously.</li>
   <li>Sub apps other than studio will be hidden in sidebar for anonymous users.</li>
   <li>Fusion will show a warning message when projects are due for deletion.</li>
@@ -393,7 +392,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.6.x
+v1.7.x
 </span>
 </div>
 </article>
@@ -403,7 +402,7 @@ v1.6.x
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../docs/releases/index.html" title="Releases" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../docs/releases/v1.6-to-v1.7-migration.html" title="v1.6 To v1.7 Migration" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -412,7 +411,7 @@ v1.6.x
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Releases
+v1.6 To v1.7 Migration
 </span>
 </div>
 </a>

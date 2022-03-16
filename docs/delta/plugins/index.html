@@ -154,6 +154,8 @@ BlueBrain/nexus
   </ul></li>
   <li><a href="../../../docs/releases/index.html" class="page">Releases</a>
   <ul>
+    <li><a href="../../../docs/releases/v1.7-release-notes.html" class="page">v1.7 Release Notes</a></li>
+    <li><a href="../../../docs/releases/v1.6-to-v1.7-migration.html" class="page">v1.6 To v1.7 Migration</a></li>
     <li><a href="../../../docs/releases/v1.6-release-notes.html" class="page">v1.6 Release Notes</a></li>
     <li><a href="../../../docs/releases/v1.5-to-v1.6-migration.html" class="page">v1.5 To v1.6 Migration</a></li>
     <li><a href="../../../docs/releases/v1.5-release-notes.html" class="page">v1.5 Release Notes</a></li>
@@ -201,6 +203,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/views/index.html" class="page">Views</a>
       <ul>
         <li><a href="../../../docs/delta/api/views/elasticsearch-view-api.html" class="page">ElasticSearchView</a></li>
+        <li><a href="../../../docs/delta/api/views/pipes.html" class="page">Elasticsearch Pipes</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-es-view-api.html" class="page">AggregateElasticSearchView</a></li>
         <li><a href="../../../docs/delta/api/views/sparql-view-api.html" class="page">SparqlView</a></li>
         <li><a href="../../../docs/delta/api/views/aggregated-sparql-view-api.html" class="page">AggregateSparqlView</a></li>
@@ -220,11 +223,7 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/benchmarks/v1.2.1.html" class="page">Benchmarks v1.2.1</a></li>
     </ul></li>
   </ul></li>
-  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a>
-  <ul>
-    <li><a href="../../../docs/utilities/projections.html" class="page">Indexing data in other systems</a></li>
-    <li><a href="../../../docs/utilities/nexus-python-cli.html" class="page">MovieLens Tutorial using the Nexus Python CLI</a></li>
-  </ul></li>
+  <li><a href="../../../docs/utilities/index.html" class="page">Utilities</a></li>
   <li><a href="../../../docs/faq.html" class="page">FAQ</a></li>
 </ul>
 <nav class="md-nav md-nav--secondary">
@@ -250,7 +249,7 @@ BlueBrain/nexus
 <ul style="display: none">
 <li class="md-nav__item md-version" id="project.version">
 <label class="md-nav__link" for="__version">
-<i class="md-icon" title="Version">label_outline</i> v1.6.x
+<i class="md-icon" title="Version">label_outline</i> v1.7.x
 </label>
 </li>
 </ul>
@@ -290,11 +289,11 @@ BlueBrain/nexus
 <p>Plugins are still an experimental feature and Delta SDKs and dependent modules(rdf, sourcing) provide no binary compatibility guarantees.</p></div>
 <h2><a href="#plugin-development" name="plugin-development" class="anchor"><span class="anchor-link"></span></a>Plugin development</h2>
 <p>Plugins used by Delta need to be packaged as a <code>.jar</code> file containing the plugin code with all its dependencies. Delta loads plugins from <code>.jar</code> files located in a directory specified by <code>DELTA_PLUGINS</code> environment variable.</p>
-<p>Plugins must define exactly one class which extends <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/plugin/PluginDef.scala" title="PluginDef" target="_blank" rel="noopener noreferrer">PluginDef</a> trait.</p>
+<p>Plugins must define exactly one class which extends <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/plugin/PluginDef.scala" title="PluginDef" target="_blank" rel="noopener noreferrer">PluginDef</a> trait.</p>
 <p>The class must define following methods:</p>
 <pre class="prettyprint"><code class="language-scala">def info: PluginDescription
 </code></pre>
-<p>this method returns instance of <a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ComponentDescription.scala#L50" title="PluginDescription" target="_blank" rel="noopener noreferrer">PluginDescription</a> which defines the plugin name and version.</p>
+<p>this method returns instance of <a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ComponentDescription.scala#L50" title="PluginDescription" target="_blank" rel="noopener noreferrer">PluginDescription</a> which defines the plugin name and version.</p>
 <pre class="prettyprint"><code class="language-scala">def initialize(locator: Locator): Task[Plugin]
 </code></pre>
 <p>this method can be used to initialize the plugin and returns an instance of a <code>Plugin</code>, which can additionally define logic to stop the plugin gracefully.</p>
@@ -348,7 +347,9 @@ case class TestPluginDef() extends PluginDef {
         implicit val sc = scheduler
         new TestPluginRoutes(permissions)
       }
-      many[PriorityRoute].add((routes: TestPluginRoutes) =&gt; PriorityRoute(1, routes.routes))
+      many[PriorityRoute].add((routes: TestPluginRoutes) =&gt;
+        PriorityRoute(1, routes.routes, requiresStrictEntity = true)
+      )
     }
 
   override val info: PluginDescription = PluginDescription(Name.unsafe(&quot;testplugin&quot;), &quot;0.1.0&quot;)
@@ -368,19 +369,19 @@ case class TestPluginDef() extends PluginDef {
 libraryDependencies += &quot;ch.epfl.bluebrain.nexus&quot; %% &quot;delta-sdk-views&quot; % deltaVersion % Provided
 </code></pre>
 <h3><a href="#dependency-injection" name="dependency-injection" class="anchor"><span class="anchor-link"></span></a>Dependency injection</h3>
-<p>Delta uses <a href="https://izumi.7mind.io/distage/basics.html#quick-start" title="distage library" target="_blank" rel="noopener noreferrer">distage library</a> for dependency injection. Each plugin must define <code>ModuleDef</code> to create instances of its own classes. All the dependencies provided by <code>ModuleDef</code>s defined in <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring" title="Delta modules" target="_blank" rel="noopener noreferrer">Delta modules</a>, as well as other plugins can be used here.</p>
+<p>Delta uses <a href="https://izumi.7mind.io/distage/basics.html#quick-start" title="distage library" target="_blank" rel="noopener noreferrer">distage library</a> for dependency injection. Each plugin must define <code>ModuleDef</code> to create instances of its own classes. All the dependencies provided by <code>ModuleDef</code>s defined in <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/app/src/main/scala/ch/epfl/bluebrain/nexus/delta/wiring" title="Delta modules" target="_blank" rel="noopener noreferrer">Delta modules</a>, as well as other plugins can be used here.</p>
 <p>The plugin can also define instances of following traits/classes, which will be used in Delta:</p>
 <ul>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala" title="PriorityRoute" target="_blank" rel="noopener noreferrer">PriorityRoute</a> - allows the plugin to define <a href="https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html" title="Akka HTTP Route" target="_blank" rel="noopener noreferrer">Akka HTTP Route</a> with priority. The priority is used by Delta to prioritize route evaluation</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala" title="ScopeInitialization" target="_blank" rel="noopener noreferrer">ScopeInitialization</a> - allows the plugin to define hooks which will be run on organization and project creation.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/EventExchange.scala" title="EventExchange" target="_blank" rel="noopener noreferrer">EventExchange</a> - enables Delta to exchange plugin events for their different representation. Needs to be defined by the plugin in order for resources created by the plugin to be indexed or available via SSE endpoints.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ReferenceExchange.scala" title="ReferenceExchange" target="_blank" rel="noopener noreferrer">ReferenceExchange</a> - enables Delta to exchange a resource reference for a JSON-LD value allowing Delta to handle multiple resources in a uniform way</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala" title="MetadataContextValue" target="_blank" rel="noopener noreferrer">MetadataContextValue</a> - registers metadata context of this plugin into global metadata context</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala" title="RemoteContextResolution" target="_blank" rel="noopener noreferrer">RemoteContextResolution</a> - enables Delta to resolve static contexts defined by the plugin</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala" title="ServiceDependency" target="_blank" rel="noopener noreferrer">ServiceDependency</a> - allows the plugin to define dependencies which will be displayed in <code>/version</code> endpoint.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/projects/ApiMappings.scala" title="ApiMappings" target="_blank" rel="noopener noreferrer">ApiMappings</a> - allows the plugin to define default API mappings used to shorten URLs</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala" title="ResourceToSchemaMappings" target="_blank" rel="noopener noreferrer">ResourceToSchemaMappings</a> - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through <code>/resources</code> endpoints.</li>
-  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.6.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/EntityType.scala" title="EntityType" target="_blank" rel="noopener noreferrer">EntityType</a> - allows plugin to define its entity type in order to create Akka Persistence <code>persistence_id</code>s.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/PriorityRoute.scala" title="PriorityRoute" target="_blank" rel="noopener noreferrer">PriorityRoute</a> - allows the plugin to define <a href="https://doc.akka.io/docs/akka-http/current/routing-dsl/index.html" title="Akka HTTP Route" target="_blank" rel="noopener noreferrer">Akka HTTP Route</a> with priority. The priority is used by Delta to prioritize route evaluation</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ScopeInitialization.scala" title="ScopeInitialization" target="_blank" rel="noopener noreferrer">ScopeInitialization</a> - allows the plugin to define hooks which will be run on organization and project creation.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/EventExchange.scala" title="EventExchange" target="_blank" rel="noopener noreferrer">EventExchange</a> - enables Delta to exchange plugin events for their different representation. Needs to be defined by the plugin in order for resources created by the plugin to be indexed or available via SSE endpoints.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ReferenceExchange.scala" title="ReferenceExchange" target="_blank" rel="noopener noreferrer">ReferenceExchange</a> - enables Delta to exchange a resource reference for a JSON-LD value allowing Delta to handle multiple resources in a uniform way</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/MetadataContextValue.scala" title="MetadataContextValue" target="_blank" rel="noopener noreferrer">MetadataContextValue</a> - registers metadata context of this plugin into global metadata context</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/rdf/src/main/scala/ch/epfl/bluebrain/nexus/delta/rdf/jsonld/context/RemoteContextResolution.scala" title="RemoteContextResolution" target="_blank" rel="noopener noreferrer">RemoteContextResolution</a> - enables Delta to resolve static contexts defined by the plugin</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/ServiceDependency.scala" title="ServiceDependency" target="_blank" rel="noopener noreferrer">ServiceDependency</a> - allows the plugin to define dependencies which will be displayed in <code>/version</code> endpoint.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/projects/ApiMappings.scala" title="ApiMappings" target="_blank" rel="noopener noreferrer">ApiMappings</a> - allows the plugin to define default API mappings used to shorten URLs</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/ResourceToSchemaMappings.scala" title="ResourceToSchemaMappings" target="_blank" rel="noopener noreferrer">ResourceToSchemaMappings</a> - allows the plugin to define mapping from the resource type to schema, which can be used to interact with resources created by the plugin through <code>/resources</code> endpoints.</li>
+  <li><a href="https://github.com/BlueBrain/nexus/blob/v1.7.x/delta/sdk/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/model/EntityType.scala" title="EntityType" target="_blank" rel="noopener noreferrer">EntityType</a> - allows plugin to define its entity type in order to create Akka Persistence <code>persistence_id</code>s.</li>
 </ul>
 <h3><a href="#class-loading" name="class-loading" class="anchor"><span class="anchor-link"></span></a>Class loading</h3>
 <p>In order to avoid clashes between different plugins, Delta uses custom classloader to load plugin classes, which will load classes from the plugin first, then using application classloader and other plugins after that. It is therefore recommended to not include in the plugin jar any dependencies which are also provided by SDK. Libraries can be easily excluded from dependencies in <code>sbt</code>:</p>
@@ -399,13 +400,13 @@ libraryDependencies += &quot;ch.epfl.bluebrain.nexus&quot; %% &quot;delta-sdk-vi
 <h2><a href="#existing-plugins" name="existing-plugins" class="anchor"><span class="anchor-link"></span></a>Existing plugins</h2>
 <p>Currently, following Delta functionality is provided by plugins:</p>
 <ul>
-  <li>archives <a href="../api/archives-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/archive/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>SPARQL views <a href="../api/views/sparql-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/blazegraph/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>Elasticsearch views <a href="../api/views/elasticsearch-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/elasticsearch/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>composite views <a href="../api/views/composite-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/composite-views/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>files and storages <a href="../api/files-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/storage/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>global search <a href="../api/search-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/search/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
-  <li>graph analytics <a href="../api/graph-analytics-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.6.x/delta/plugins/graph-analytics/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>archives <a href="../api/archives-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/archive/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>SPARQL views <a href="../api/views/sparql-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/blazegraph/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>Elasticsearch views <a href="../api/views/elasticsearch-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/elasticsearch/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>composite views <a href="../api/views/composite-view-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/composite-views/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>files and storages <a href="../api/files-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/storage/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>global search <a href="../api/search-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/search/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
+  <li>graph analytics <a href="../api/graph-analytics-api.html">API Reference</a> | <a href="https://github.com/BlueBrain/nexus/tree/v1.7.x/delta/plugins/graph-analytics/src" title="code" target="_blank" rel="noopener noreferrer">code</a></li>
 </ul>
 <p>Elasticsearch plugin is required in order to provide listings in the API, other plugins can be excluded if their functionality is not needed. All the above plugins are included in the Delta <a href="https://hub.docker.com/r/bluebrain/nexus-delta/" title="Docker image" target="_blank" rel="noopener noreferrer">Docker image</a>. </p>
 </div>
@@ -416,7 +417,7 @@ Edit this page
 </div>
 <div class="print-only">
 <span class="md-source-file md-version">
-v1.6.x
+v1.7.x
 </span>
 </div>
 </article>

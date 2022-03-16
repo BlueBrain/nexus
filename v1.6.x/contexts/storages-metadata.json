@@ -1,0 +1,10 @@
+{
+  "@context": {
+    "Storage": "https://bluebrain.github.io/nexus/vocabulary/Storage",
+    "DiskStorage": "https://bluebrain.github.io/nexus/vocabulary/DiskStorage",
+    "S3Storage": "https://bluebrain.github.io/nexus/vocabulary/S3Storage",
+    "RemoteDiskStorage": "https://bluebrain.github.io/nexus/vocabulary/RemoteDiskStorage",
+    "_algorithm": "https://bluebrain.github.io/nexus/vocabulary/algorithm"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/storages-metadata.json"
+}

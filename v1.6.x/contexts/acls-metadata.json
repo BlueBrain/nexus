@@ -1,0 +1,7 @@
+{
+  "@context": {
+    "_path": "https://bluebrain.github.io/nexus/vocabulary/path",
+    "AccessControlList": "https://bluebrain.github.io/nexus/vocabulary/AccessControlList"
+  },
+  "@id": "https://bluebrain.github.io/nexus/contexts/acls-metadata.json"
+}

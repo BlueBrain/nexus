@@ -233,12 +233,13 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
     <ul>
-      <li><a href="../../docs/releases/v1.7-release-notes.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#elasticsearch-pipes" class="header">Elasticsearch pipes</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#allow-the-use-of-an-external-configuration-file-for-delta" class="header">Allow the use of an external configuration file for Delta</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#deleting-tags-on-resources" class="header">Deleting tags on resources</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#tagging-deprecated-storages-and-views" class="header">Tagging deprecated storages and views</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#kg-dashboard-update" class="header">KG Dashboard update</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#deprecations" class="header">Deprecations</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
@@ -281,12 +282,13 @@ BlueBrain/nexus
   <ul>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-delta" class="header">Nexus Delta</a>
     <ul>
-      <li><a href="../../docs/releases/v1.7-release-notes.html#deprecations" class="header">Deprecations</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#elasticsearch-pipes" class="header">Elasticsearch pipes</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#allow-the-use-of-an-external-configuration-file-for-delta" class="header">Allow the use of an external configuration file for Delta</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#deleting-tags-on-resources" class="header">Deleting tags on resources</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#tagging-deprecated-storages-and-views" class="header">Tagging deprecated storages and views</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#kg-dashboard-update" class="header">KG Dashboard update</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#deprecations" class="header">Deprecations</a></li>
     </ul></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
@@ -325,27 +327,23 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <blockquote>
   <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.6.</p>
 </blockquote>
-<p>For the detailed list of updates in this release, see the //TODO Update end date <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-02-01+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.6.</p>
+<p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-03-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.6.</p>
 <p>If you are currently using Nexus Delta from 1.6.x, please visit the <a href="v1.6-to-v1.7-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#nexus-delta" name="nexus-delta" class="anchor"><span class="anchor-link"></span></a>Nexus Delta</h2>
 <p>The main goal of this release is to provide support for an enhanced search experience in Fusion as well as to introduce a new extensible model to define Elasticsearch views based on pipes.</p>
 <p>Secondary goals include:</p>
-<p>//TODO update the links to 1.6.x</p>
 <ul>
-  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli" title="Removal of the Nexus cli">Removal of the Nexus cli</a></li>
-  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/projections.html" title="Removal of the docker based client">Removal of the docker based client</a></li>
-  <li>Allow the use of an external configuration file for Delta</li>
-  <li>Allow deleting tags on resources</li>
-  <li>Allow tagging deprecated storages and views</li>
-  <li>Refactor <code>graph-analytics</code> plugin to make indexing faster</li>
-  <li>Add a group identifier in Elasticsearch projections of composite views</li>
+  <li>Allow the use of an external configuration file for Delta.</li>
+  <li>Allow deleting tags on resources.</li>
+  <li>Allow tagging deprecated storages and views.</li>
+  <li>Refactor <code>graph-analytics</code> plugin to make indexing faster.</li>
+  <li>Add a group identifier in Elasticsearch projections of composite views.</li>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli" title="Terminate support of the Nexus CLI">Terminate support of the Nexus CLI</a>. At this stage, no replacement is provided but due to the backward compatibility of the Delta API, the CLI should still work. We will announce when a new CLI is made available.</li>
+  <li><a href="https://bluebrainnexus.io/v1.5.x/docs/utilities/projections.html" title="Removal of the docker based client">Removal of the docker based client</a>.</li>
 </ul>
-<p>A series of bugs have also been fixed with this new release.</p>
-<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
-<p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
-<p>Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.</p>
+<p>A <a href="https://github.com/BlueBrain/nexus/issues?page=1&q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-03-08+label%3Abug+label%3Adelta" title="series of bugs">series of bugs</a>{ open=new} have also been fixed with this new release.</p>
 <h3><a href="#elasticsearch-pipes" name="elasticsearch-pipes" class="anchor"><span class="anchor-link"></span></a>Elasticsearch pipes</h3>
-<p>With 1.7, Elasticsearch views now rely on pipes to filter and transform data before indexing.</p>
+<p>With 1.7, Elasticsearch views now rely on pipes to filter and transform data before indexing. This feature was primarily motivated by user requests of our partners at SWITCH, <a href="https://github.com/BlueBrain/nexus/issues/2549">some usage examples are detailed here</a>.</p>
 <p>More details <a href="../delta/api/views/elasticsearch-view-api.html">here</a></p>
 <p>This change implies a <a href="v1.6-to-v1.7-migration.html">migration when updating Nexus Delta to 1.7</a>.</p>
 <h3><a href="#allow-the-use-of-an-external-configuration-file-for-delta" name="allow-the-use-of-an-external-configuration-file-for-delta" class="anchor"><span class="anchor-link"></span></a>Allow the use of an external configuration file for Delta</h3>
@@ -358,6 +356,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h3>
 <p>Graph analytics indexing is now faster.</p>
 <p>If you enabled this plugin in your 1.6 deployment, <a href="v1.6-to-v1.7-migration.html">there are migration steps to follow</a>.</p>
+<h3><a href="#kg-dashboard-update" name="kg-dashboard-update" class="anchor"><span class="anchor-link"></span></a>KG Dashboard update</h3>
+<p>In order to reduce the dependencies to third party systems (InfluxDB and Grafana) and further invest in those we already support (ElasticSearch), we have redesigned our Knowledge Graph Dashboard to support the usecase of monitoring the data ingested into Nexus.</p>
+<p>A default configuration for this dashboard will <a href="https://github.com/BlueBrain/nexus/issues/3145">soon be provided</a> so that everyone can give it a try with minimal efforts.</p>
+<h3><a href="#deprecations" name="deprecations" class="anchor"><span class="anchor-link"></span></a>Deprecations</h3>
+<p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
+<p>Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.</p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
 <p>//TODO Add links to the documentation</p>
 <h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h3>
@@ -374,19 +378,18 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h3><a href="#better-preview-support-for-pdfs" name="better-preview-support-for-pdfs" class="anchor"><span class="anchor-link"></span></a>Better Preview support for PDFs</h3>
 <p>Enhanced support for previewing PDFs in the resource preview plugin provides the ability to zoom in and pan large PDFs.</p>
 <h3><a href="#versioned-links" name="versioned-links" class="anchor"><span class="anchor-link"></span></a>Versioned Links</h3>
-<p>Resource links to other resources can now be version-specifc.</p>
+<p>Resource links to other resources can now be version-specific.</p>
 <h3><a href="#remove-tag-from-resource" name="remove-tag-from-resource" class="anchor"><span class="anchor-link"></span></a>Remove Tag from Resource</h3>
 <p>Tags can now be removed from a resource directly in Fusion.</p>
 <h3><a href="#ui-enhancements" name="ui-enhancements" class="anchor"><span class="anchor-link"></span></a>UI Enhancements</h3>
 <p>The following UI enhancements have been made in this version:</p>
 <ul>
-  <li>Redesigned Resources panel with quick access to high-level details of resource. Plugin open/closed status is also persisted improving the UX when wanting to view the same plugin(s) for several resources</li>
-  <li>Colour scheme has been updated to better align with our style guide</li>
-  <li>Navigation has moved from the sidebar to the header giving more screen real-estate</li>
+  <li>Redesigned Resources panel with quick access to high-level details of resource. Plugin opened/closed status is also persisted improving the UX when wanting to view the same plugin(s) for several resources.</li>
+  <li>Colour scheme has been updated to better align with our style guide.</li>
+  <li>Navigation has moved from the sidebar to the header giving more screen real-estate.</li>
 </ul>
-<p>//TODO Update end date </p>
 <h3><a href="#bug-fixes" name="bug-fixes" class="anchor"><span class="anchor-link"></span></a>Bug fixes</h3>
-<p>A <a href="https://github.com/BlueBrain/nexus/issues?page=1&q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-02-01+label%3Abug+label%3Afusion" title="series of bugs" target="_blank" rel="noopener noreferrer">series of bugs</a> have also been fixed.</p>
+<p>A <a href="https://github.com/BlueBrain/nexus/issues?page=1&q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-03-14+label%3Abug+label%3Afusion" title="series of bugs" target="_blank" rel="noopener noreferrer">series of bugs</a> have also been fixed.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/releases/v1.7-release-notes.md" title="Edit this page" class="md-source-file md-edit">
