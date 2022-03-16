@@ -49,7 +49,7 @@ Tools will be provided to enable migration from Cassandra to PostgreSQL for exis
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.7-release-notes.md).
 
-## v1.6.1
+## v1.6.1 (29.10.2021)
 
 This release contains bugfixes and minor improvements:
 
