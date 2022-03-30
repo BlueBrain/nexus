@@ -260,7 +260,7 @@ cd docs/src/main/paradox/docs/getting-started/notebooks
 jupyter notebook one_cell_minds.ipynb
 ```
 
-## 2.7 Check Resources in the Sandbox
+## 2.7. Check Resources in the Sandbox
 
 Once you have registered resources through Nexus Forge (in the notebook), you can check that they are effectively present in Nexus. You now have two options to do so.
 
@@ -335,7 +335,7 @@ jupyter notebook dataset_from_different_sources.ipynb
 
 ### 3.3. Check Resources in the Sandbox
 
-Go back to @ref:[section 2.7](try-nexus.md#27-check-resources-in-the-sandbox) to learn how to check resources in the Sandbox.
+Go back to @ref:[section 2.7](try-nexus.md#271-using-search-across-all-projects) to learn how to check resources in the Sandbox.
 
 ## Step 4: Organize and Visualize Cells in Nexus Fusion
 
