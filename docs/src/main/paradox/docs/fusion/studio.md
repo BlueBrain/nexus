@@ -2,10 +2,6 @@
 
 Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with JavaScript, data curators can format the presentation of the query results any way they like.
 
-@@@ note
-To configure the Studios space index for your Nexus instance, see at the @ref:[bottom of the page](studio.md#configuring-the-studios-index-page).
-@@@
-
 ## What is a Studio
 
 A `Studio` is a collection of persistent queries organized in a table layout for users to quickly access relevant data in a customizable way. `Studio` authors can create a studio to match a specific topic, and create organization schemes called @ref:[Workspaces](studio.md#workspaces) and @ref:[Dashboards](studio.md#dashboards) to access various aspects of that data.
@@ -133,7 +129,7 @@ The `Dashboard`, once configured, will present the results of your SPARQL query 
 ### Studio Creation
 
 To create a new `Studio`, go to the Admin space, and select an organization and a project.
-In the Project View, you will see the `Manage Studios for this project` button. It will bring you to the list of `Studios`.
+In the Project View, you will see the `studio tab`. It will bring you to the list of `Studios`.
 
 Click the `Create Studio` button.
 
@@ -221,6 +217,8 @@ Fill in a form providing the following:
 - `Description`: an optional description for your `Dashboard`
 - `Sparql Query`: a valid @link:[SPARQL](https://www.w3.org/TR/rdf-sparql-query/){ open=new } query that conforms to the `dataQuery` field in the configuration.
 
+#### Sparql Dashboards
+
 @@@ div { .half .center }
 ![Create Dashboard form](../assets/fusion-studio-create-dashboard-form.png)
 @@@
@@ -232,6 +230,11 @@ Fill in a form providing the following:
 Click `Save` and the `Dashboard` and its query results should show up!
 
 You can now also add this `Dashboard` to other `Workspaces` across the project.
+
+#### Elastic Search Dashboard
+
+In the create dashboard form, you can select a elastic serach view from the view drop down. And then use an elastic search query targeting that view to populate your dashboard.
+It will work same as the sparql dashboard, except for the query and the view.
 
 #### Updating a Dashboard
 
