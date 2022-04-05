@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.{Migration, RemoteStorageMigration}
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
@@ -143,10 +143,6 @@ object Main extends BIOApp {
       implicit val cfg: AppConfig         = locator.get[AppConfig]
       val logger                          = locator.get[Logger]
       val cluster                         = Cluster(as)
-
-      if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
-        locator.get[Migration].run.runSyncUnsafe()
-      }
 
       if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
         Task

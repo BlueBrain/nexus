@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.migration.MigrationV16ToV17
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -24,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.Migration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
@@ -392,11 +390,5 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
-
-  if (sys.env.getOrElse("MIGRATION_1_7", "false").toBoolean) {
-    make[Migration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfig) =>
-      MigrationV16ToV17(as, databaseConfig.cassandra)
-    )
-  }
 
 }
