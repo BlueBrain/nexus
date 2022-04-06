@@ -42,7 +42,7 @@ object QuotasModule extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: QuotasRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 10, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 10, route.routes, requiresStrictEntity = true)
   }
 
 }

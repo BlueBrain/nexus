@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.server.Directives._
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -14,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, F
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{StoragesAggregate, StoragesCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.migration.RemoteStorageMigrationImpl
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -269,8 +270,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   many[ApiMappings].add(Storages.mappings + Files.mappings)
 
-  many[PriorityRoute].add { (storagesRoutes: StoragesRoutes, fileRoutes: FilesRoutes) =>
-    PriorityRoute(priority, concat(storagesRoutes.routes, fileRoutes.routes), requiresStrictEntity = false)
+  many[PriorityRoute].add { (storagesRoutes: StoragesRoutes) =>
+    PriorityRoute(priority, storagesRoutes.routes, requiresStrictEntity = true)
+  }
+
+  many[PriorityRoute].add { (fileRoutes: FilesRoutes) =>
+    PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
   }
 
   many[ReferenceExchange].add { (storages: Storages, crypto: Crypto) =>
@@ -286,4 +291,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
   many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
   many[EntityType].addSet(Set(EntityType(Storages.moduleType), EntityType(Files.moduleType)))
+
+  if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
+    make[RemoteStorageMigration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfig) =>
+      RemoteStorageMigrationImpl(as, databaseConfig.cassandra)
+    )
+  }
 }

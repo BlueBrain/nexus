@@ -21,15 +21,11 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-// TODO update release date
+The latest stable release is **v1.7.0** released on **14.03.2022**.
 
-The latest stable release is **v1.7.0** released on **XX.XX.2022**.
-
-## 1.7.0 (XX.XX.2022)
+## 1.7.0 (14.03.2022)
 
 ### Breaking changes
-
-//TODO update links to 1.6.x
 
 - @link:[Removal of the Nexus cli](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#nexus-cli)
 - @link:[Removal of the docker based client](https://bluebrainnexus.io/v1.5.x/docs/utilities/index.html#indexing-data-in-other-systems)
@@ -53,7 +49,7 @@ Tools will be provided to enable migration from Cassandra to PostgreSQL for exis
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.7-release-notes.md).
 
-## v1.6.1
+## v1.6.1 (29.10.2021)
 
 This release contains bugfixes and minor improvements:
 

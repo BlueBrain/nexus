@@ -19,7 +19,7 @@ case class TestPluginDef() extends PluginDef {
         new TestPluginRoutes(permissions)
       }
       many[PriorityRoute].add((routes: TestPluginRoutes) =>
-        PriorityRoute(1, routes.routes, requiresStrictEntity = false)
+        PriorityRoute(1, routes.routes, requiresStrictEntity = true)
       )
     }
 

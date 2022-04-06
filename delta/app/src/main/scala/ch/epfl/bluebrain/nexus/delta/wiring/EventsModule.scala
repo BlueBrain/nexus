@@ -40,6 +40,6 @@ object EventsModule extends ModuleDef {
     )
 
   many[PriorityRoute].add { (route: EventsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 11, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 11, route.routes, requiresStrictEntity = true)
   }
 }

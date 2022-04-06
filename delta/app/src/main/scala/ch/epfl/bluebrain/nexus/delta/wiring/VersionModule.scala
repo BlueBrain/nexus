@@ -41,7 +41,7 @@ object VersionModule extends ModuleDef {
   }
 
   many[PriorityRoute].add { (route: VersionRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 1, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 1, route.routes, requiresStrictEntity = true)
   }
 
 }

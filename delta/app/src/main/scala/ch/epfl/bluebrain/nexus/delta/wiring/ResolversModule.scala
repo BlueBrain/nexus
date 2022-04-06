@@ -131,7 +131,7 @@ object ResolversModule extends ModuleDef {
     )
   )
   many[PriorityRoute].add { (route: ResolversRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
 
   many[ReferenceExchange].add { (resolvers: Resolvers, baseUri: BaseUri) =>

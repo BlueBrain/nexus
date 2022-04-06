@@ -189,4 +189,4 @@ object MyPluginModule extends ModuleDef {
 }
 ```
 
-// TODO add link to core pipes source + tests when PR is merged
+The source code for the core pipes is available @link:[here](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sdk-views/src/main/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/pipe) and the associated unit tests @link:[here](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/sdk-views/src/test/scala/ch/epfl/bluebrain/nexus/delta/sdk/views/pipe).

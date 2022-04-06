@@ -77,7 +77,7 @@ object OrganizationsModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: OrganizationsRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 6, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 6, route.routes, requiresStrictEntity = true)
   }
 
   make[OrganizationEventExchange].from { (projects: Organizations, base: BaseUri) =>

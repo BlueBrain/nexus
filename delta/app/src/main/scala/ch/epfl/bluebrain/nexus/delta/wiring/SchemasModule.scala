@@ -107,7 +107,7 @@ object SchemasModule extends ModuleDef {
   )
 
   many[PriorityRoute].add { (route: SchemasRoutes) =>
-    PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = false)
+    PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
 
   many[ReferenceExchange].add { (schemas: Schemas) =>
