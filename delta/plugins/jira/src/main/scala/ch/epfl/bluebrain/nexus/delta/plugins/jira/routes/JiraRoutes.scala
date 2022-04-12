@@ -59,10 +59,33 @@ class JiraRoutes(
                 emit(jiraClient.accessToken(verifier).map(_.asJson))
               }
             },
+            // Issues
+            pathPrefix("issue") {
+              concat(
+                // Create an issue
+                (post & entity(as[JsonObject])) { payload =>
+                  emit(jiraClient.createIssue(payload).map(_.response))
+                },
+                // Edit an issue
+                (put & pathPrefix(Segment)) { issueId =>
+                  entity(as[JsonObject]) { payload =>
+                    emit(jiraClient.editIssue(issueId, payload).map(_.response))
+                  }
+                },
+                // Get an issue
+                (get & pathPrefix(Segment)) { issueId =>
+                  emit(jiraClient.getIssue(issueId).map(_.response))
+                }
+              )
+            },
+            // List projects
+            (get & pathPrefix("project") & get & parameter("recent".as[Int].?)) { recent =>
+              emit(jiraClient.listProjects(recent).map(_.response))
+            },
             // Search issues
-            (pathPrefix("search") & post & pathEndOrSingleSlash) {
+            (post & pathPrefix("search") & pathEndOrSingleSlash) {
               entity(as[JsonObject]) { payload =>
-                emit(jiraClient.search(payload).map(_.asJson))
+                emit(jiraClient.search(payload).map(_.response))
               }
             }
           )
