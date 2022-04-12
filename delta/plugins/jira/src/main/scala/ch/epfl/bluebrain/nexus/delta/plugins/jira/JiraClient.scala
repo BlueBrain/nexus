@@ -38,7 +38,7 @@ trait JiraClient {
   def search(payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse]
 
 }
-//m?(&NxrFpNxS@)8V
+
 object JiraClient {
 
   private val logger: Logger   = Logger[JiraClient]
