@@ -238,6 +238,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/search.html#sorting" class="header">Sorting</a></li>
     <li><a href="../../docs/fusion/search.html#filtering" class="header">Filtering</a></li>
+    <li><a href="../../docs/fusion/search.html#numerical-filters" class="header">Numerical Filters</a></li>
     <li><a href="../../docs/fusion/search.html#hidden-columns-and-ordering" class="header">Hidden Columns and Ordering</a>
     <ul>
       <li><a href="../../docs/fusion/search.html#column-ordering" class="header">Column ordering</a></li>
@@ -245,6 +246,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/search.html#pagination" class="header">Pagination</a></li>
     <li><a href="../../docs/fusion/search.html#reset-search-customisations" class="header">Reset Search Customisations</a></li>
+    <li><a href="../../docs/fusion/search.html#search-configurations" class="header">Search Configurations</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -275,6 +277,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/search.html#sorting" class="header">Sorting</a></li>
     <li><a href="../../docs/fusion/search.html#filtering" class="header">Filtering</a></li>
+    <li><a href="../../docs/fusion/search.html#numerical-filters" class="header">Numerical Filters</a></li>
     <li><a href="../../docs/fusion/search.html#hidden-columns-and-ordering" class="header">Hidden Columns and Ordering</a>
     <ul>
       <li><a href="../../docs/fusion/search.html#column-ordering" class="header">Column ordering</a></li>
@@ -282,6 +285,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/search.html#pagination" class="header">Pagination</a></li>
     <li><a href="../../docs/fusion/search.html#reset-search-customisations" class="header">Reset Search Customisations</a></li>
+    <li><a href="../../docs/fusion/search.html#search-configurations" class="header">Search Configurations</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -311,15 +315,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>Projects matching the search criteria are listed below the search text from which you can instantly jump to the given project.</p>
 <h2><a href="#sorting" name="sorting" class="anchor"><span class="anchor-link"></span></a>Sorting</h2>
 <p>Where no explicit sort criteria has been applied, search results are ordered by their ElasticSearch relevance score. Sort criteria can be applied to one or more fields to customise the ordering of results in the table.</p>
-<p>In order to sort on a specific field, open the field’s dropdown menu and select one of <code>Sort Ascending</code> or <code>Sort Descending</code> (highlighted below). </p>
+<p>In order to sort on a specific field, open the field’s dropdown menu and select one of <code>Sort Ascending</code> or <code>Sort Descending</code> (highlighted below).</p>
 <p><img src="assets/fusion-search-field-sort.png" alt="Field Sort" /></p>
-<p>Upon selecting a sort direction the sorting criteria will be applied and the results updated immediately. Click the <code>Clear</code> button to remove the sorting criteria for the field. Sort criteria can be applied to several fields. </p><div class="callout note "><div class="callout-title">Note</div>
-<p>If a field doesn’t support sorting then the sorting option will not be displayed.</p></div>
-<p>A summary of the status of sorted columns is displayed at the top of the search results table (highlighted below).</p>
-<p><img src="assets/fusion-search-sort-summary.png" alt="Sort Summary" /></p>
-<p>The Sort dialog shows all sort criteria currently applied to the search results (shown below).</p>
-<p><img src="assets/fusion-search-sort-summary-dialog.png" alt="Sort Summary Dialog" /></p>
-<p>The sort direction can be changed here as well as removed entirely.</p>
+<p>Upon selecting a sort direction the sorting criteria will be applied and the results updated immediately. Click the <code>Clear</code> button to remove the sorting criteria for the field. Sort criteria can be applied to several fields.</p><div class="callout note "><div class="callout-title">Note</div>
+<p>If a field does not support sorting then the sorting option will not be displayed.</p></div>
+<p>A summary of the status of sorted columns is displayed at the top of the search results table. @@@ div { .center } <img src="assets/fusion-search-sort-summary.png" alt="Sort Summary" /> @@@</p>
+<p>The Sort dialog shows all sort criteria currently applied to the search results (shown below). @@@ div { .center } <img src="assets/fusion-search-sort-summary-dialog.png" alt="Sort Summary Dialog" /> @@@ The sort direction can be changed here as well as removed entirely.</p>
 <h2><a href="#filtering" name="filtering" class="anchor"><span class="anchor-link"></span></a>Filtering</h2>
 <p>Filters allow you to filter the search results further. The field’s dropdown menu provides access to the filter options. In the example below, the filter options for the Brain Region field are highlighted.</p>
 <p><img src="assets/fusion-search-field-filter.png" alt="Field Filtering" /></p>
@@ -334,6 +335,10 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>A summary showing the number of filters applied is displayed above the search results table. Clicking on it reveals the filter dialog (see below).</p>
 <p><img src="assets/fusion-search-filter-summary-dialog.png" alt="Filter Summary Dialog" /></p>
 <p>The filter dialog lists all currently applied filters and provides the ability to remove a filter.</p>
+<h2><a href="#numerical-filters" name="numerical-filters" class="anchor"><span class="anchor-link"></span></a>Numerical Filters</h2>
+<p>Columns with numerical values have some additional filters. The first is range selector which will allow you to limit the search to a range of values available in the column. Below the range selector, you can choose to see only &ldquo;missing values&rdquo; by checking the missing values check box.</p>
+<p>In order to understand the data better, you can also the minimum, maximum, average and sum of the values in the column. At the very bottom, you can see a histogram of the values. Histogram can be viewed in bar or line graph using a radio button.</p>
+<p><img src="assets/fusion-search-numerical-filters.png" alt="Numerical Filters" /></p>
 <h2><a href="#hidden-columns-and-ordering" name="hidden-columns-and-ordering" class="anchor"><span class="anchor-link"></span></a>Hidden Columns and Ordering</h2>
 <p>The search results table can be customised to display only the columns that you are interested in. The summary displaying the number of hidden columns is displayed at the top-left of the search results table (highlighted below).</p>
 <p><img src="assets/fusion-search-hidden-column-summary.png" alt="Hidden Columns Summary" /></p>
@@ -352,6 +357,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#reset-search-customisations" name="reset-search-customisations" class="anchor"><span class="anchor-link"></span></a>Reset Search Customisations</h2>
 <p>All customisations to the search results can be removed using the <code>Reset</code> option displayed above the search results table (highlighted in the screenshot below).</p>
 <p><img src="assets/fusion-search-reset.png" alt="Paging" /></p>
+<h2><a href="#search-configurations" name="search-configurations" class="anchor"><span class="anchor-link"></span></a>Search Configurations</h2>
+<p>A search configuration is a predefined, named combination of columns, sort options and filters. You can find these configurations in the Search Config dropdown on the left top of the table. Choosing a search config from the dropdown will apply the combination of that config to the search table.</p>
+<p><img src="assets/fusion-search-searchconfig-options.png" alt="Search Configurations" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/search.md" title="Edit this page" class="md-source-file md-edit">

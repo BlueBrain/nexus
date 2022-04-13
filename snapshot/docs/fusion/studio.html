@@ -251,6 +251,8 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/fusion/studio.html#dashboard-creation" class="header">Dashboard Creation</a>
       <ul>
+        <li><a href="../../docs/fusion/studio.html#sparql-dashboards" class="header">Sparql Dashboards</a></li>
+        <li><a href="../../docs/fusion/studio.html#elasticsearch-dashboard" class="header">Elasticsearch Dashboard</a></li>
         <li><a href="../../docs/fusion/studio.html#updating-a-dashboard" class="header">Updating a Dashboard</a></li>
         <li><a href="../../docs/fusion/studio.html#removing-a-dashboard" class="header">Removing a Dashboard</a></li>
       </ul></li>
@@ -307,6 +309,8 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/fusion/studio.html#dashboard-creation" class="header">Dashboard Creation</a>
       <ul>
+        <li><a href="../../docs/fusion/studio.html#sparql-dashboards" class="header">Sparql Dashboards</a></li>
+        <li><a href="../../docs/fusion/studio.html#elasticsearch-dashboard" class="header">Elasticsearch Dashboard</a></li>
         <li><a href="../../docs/fusion/studio.html#updating-a-dashboard" class="header">Updating a Dashboard</a></li>
         <li><a href="../../docs/fusion/studio.html#removing-a-dashboard" class="header">Removing a Dashboard</a></li>
       </ul></li>
@@ -338,8 +342,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#studios" name="studios" class="anchor"><span class="anchor-link"></span></a>Studios</h1>
-<p>Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with JavaScript, data curators can format the presentation of the query results any way they like.</p><div class="callout note "><div class="callout-title">Note</div>
-<p>To configure the Studios space index for your Nexus instance, see at the <a href="studio.html#configuring-the-studios-index-page">bottom of the page</a>.</p></div>
+<p>Studios space allows data curators to display their data using customisable, persistent queries. Using custom plugins developed with JavaScript, data curators can format the presentation of the query results any way they like.</p>
 <h2><a href="#what-is-a-studio" name="what-is-a-studio" class="anchor"><span class="anchor-link"></span></a>What is a Studio</h2>
 <p>A <code>Studio</code> is a collection of persistent queries organized in a table layout for users to quickly access relevant data in a customizable way. <code>Studio</code> authors can create a studio to match a specific topic, and create organization schemes called <a href="studio.html#workspaces">Workspaces</a> and <a href="studio.html#dashboards">Dashboards</a> to access various aspects of that data.</p><div class="callout note "><div class="callout-title">Note</div>
 <p>Want to <a href="studio.html#how-to-configure-a-studio">configure a studio</a> straightaway?</p></div>
@@ -434,7 +437,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>The <code>Dashboard</code>, once configured, will present the results of your SPARQL query in a table. Each item in the row will be clickable and lead to a details page showing the <code>Resource</code>, in this case, a list of scientists that have contributed data to the project.</p>
 <h2><a href="#how-to-configure-a-studio" name="how-to-configure-a-studio" class="anchor"><span class="anchor-link"></span></a>How to Configure a Studio</h2>
 <h3><a href="#studio-creation" name="studio-creation" class="anchor"><span class="anchor-link"></span></a>Studio Creation</h3>
-<p>To create a new <code>Studio</code>, go to the Admin space, and select an organization and a project. In the Project View, you will see the <code>Manage Studios for this project</code> button. It will bring you to the list of <code>Studios</code>.</p>
+<p>To create a new <code>Studio</code>, go to the Admin space, and select an organization and a project. In the Project View, you will see the <code>studio tab</code>. It will bring you to the list of <code>Studios</code>.</p>
 <p>Click the <code>Create Studio</code> button.</p><div class="half center">
 <p><img src="../assets/fusion-studio-create-studio-pane.png" alt="Create a studio" /></p></div>
 <p>Fill in a form providing the following:</p>
@@ -468,7 +471,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h4><a href="#updating-a-workspace" name="updating-a-workspace" class="anchor"><span class="anchor-link"></span></a>Updating a Workspace</h4>
 <p>Inside any <code>Studio</code>, under a <code>Workspace</code> tab label, click on the <code>Edit</code> link. Then you&rsquo;ll be provided with a dialog where you can review and edit the <code>Workspace</code> configuration.</p>
 <ul>
-  <li><code>Select View</code>: The view of which to pair with <em>each <code>Dashboard</code> inside the follow transfer list</em>. The <code>Dashboard</code> queries will be run against the <code>View</code> listed inside this box. For now, using this Edit form, you can only pair one <code>View</code> for all <code>Dashboards</code>. If you were to create the configurations manually, you can pair each <code>Dashboard</code> with a different <code>View</code>.</li>
+  <li><code>Select View</code>: The view of which to pair with <em>each <code>Dashboard</code> inside the follow transfer list</em>. The <code>Dashboard</code></li>
+  <li>queries will be run against the <code>View</code> listed inside this box. For now, using this Edit form, you can only pair one</li>
+  <li><code>View</code> for all <code>Dashboards</code>. If you were to create the configurations manually, you can pair each <code>Dashboard</code> with a different <code>View</code>.</li>
   <li><code>Add or Remove Dashboards</code>: Add or remove a <code>Dashboard</code> to the collection in your <code>Workspace</code> configuration. The <code>Dashboards</code> listed are all the available non-deprecated ones in the project.</li>
   <li><code>Name</code>: the name of your new <code>Workspace</code> (required field).</li>
   <li><code>Description</code> for your <code>Workspace</code>.</li>
@@ -484,21 +489,24 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   <li><code>Label</code>: the name of your new <code>Dashboard</code> (required field)</li>
   <li><code>Description</code>: an optional description for your <code>Dashboard</code></li>
   <li><code>Sparql Query</code>: a valid <a href="https://www.w3.org/TR/rdf-sparql-query/" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a> query that conforms to the <code>dataQuery</code> field in the configuration.</li>
-</ul><div class="half center">
+</ul>
+<h4><a href="#sparql-dashboards" name="sparql-dashboards" class="anchor"><span class="anchor-link"></span></a>Sparql Dashboards</h4><div class="half center">
 <p><img src="../assets/fusion-studio-create-dashboard-form.png" alt="Create Dashboard form" /></p></div>
 <blockquote>
-  <p>You can click on the <code>View query in Sparql Editor</code> to open the <code>Sparql Editor</code> in a new tab to work on your query while querying it against a <code>Sparql View</code> in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.</p>
+  <p>You can click on the <code>View query in Sparql Editor</code> to open the <code>Sparql Editor</code> in a new tab to work on your query  while querying it against a <code>Sparql View</code> in your project, so you can make sure it works and provides the fields you want. Then, you can copy and past that back in the form.</p>
   <p>To understand more about the SPARQL queries requirements, <a href="studio.html#sparql-query-requirements">check below</a>.</p>
 </blockquote>
 <p>Click <code>Save</code> and the <code>Dashboard</code> and its query results should show up!</p>
 <p>You can now also add this <code>Dashboard</code> to other <code>Workspaces</code> across the project.</p>
+<h4><a href="#elasticsearch-dashboard" name="elasticsearch-dashboard" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Dashboard</h4>
+<p>In the create dashboard form, you can select a elastic search view from the view dropdown. And then use an elastic search query targeting that view to populate your dashboard. It will work same as the sparql dashboard, except for the query and the view.</p>
 <h4><a href="#updating-a-dashboard" name="updating-a-dashboard" class="anchor"><span class="anchor-link"></span></a>Updating a Dashboard</h4>
 <p>You&rsquo;ll find the edit <code>Dashboard</code> under the dashboard label. After your form has been edited, simple click <code>Save</code> to submit your changes.</p>
 <h4><a href="#removing-a-dashboard" name="removing-a-dashboard" class="anchor"><span class="anchor-link"></span></a>Removing a Dashboard</h4>
 <p>You can remove a <code>Dashboard</code> by deprecating it from the <code>Resource View</code>.</p>
 <h3><a href="#sparql-query-requirements" name="sparql-query-requirements" class="anchor"><span class="anchor-link"></span></a>Sparql Query Requirements</h3>
 <h4><a href="#the-self-variable" name="the-self-variable" class="anchor"><span class="anchor-link"></span></a>The <code>?self</code> variable</h4>
-<p>In order for the UI to function as intended, you must provide a unique ID variable inside your SPARQL statement, labeled as <code>?self</code>. This will be used to generate the table and fetch resources when navigating to the details page of a row item. Ideally, this <code>?self</code> variable should correspond with the <code>_self</code> of a target <code>Resource</code> of which to center your query against as a subject. The <code>?self</code> variable will never be shown in the table, so you need some other variable in addition to view the results properly, or you&rsquo;ll end up with a table without any rows.</p>
+<p>In order for the UI to function as intended, you must provide a unique ID variable inside your SPARQL statement, labeled as <code>?self</code>. This will be used to generate the table and fetch resources when navigating to the Resource Panel of a row item. Ideally, this <code>?self</code> variable should correspond with the <code>_self</code> of a target <code>Resource</code> of which to center your query against as a subject. The <code>?self</code> variable will never be shown in the table, so you need some other variable in addition to view the results properly, or you&rsquo;ll end up with a table without any rows.</p>
 <h4><a href="#making-queries-visible" name="making-queries-visible" class="anchor"><span class="anchor-link"></span></a>Making queries visible</h4>
 <p>In addition to the <code>?self</code> variable, you need to have at minimum one other variable defined, which will be displayed on each row. The variable name will label the header of the table column, capitalized.</p>
 <h4><a href="#the-minimum-functioning-query-with-the-self-variable-defined" name="the-minimum-functioning-query-with-the-self-variable-defined" class="anchor"><span class="anchor-link"></span></a>The minimum functioning query with the <code>?self</code> variable defined</h4>
@@ -531,7 +539,7 @@ LIMIT 20
   <li>
   <p>If you don&rsquo;t have a project to store the application data, create one.</p></li>
   <li>
-  <p>Create an <code>Aggregated Elastic Search View</code> inside this project, and add all of the projects that contain Studio resources to the list. For example:</p></li>
+  <p>Create an <code>Aggregated Elastic Search View</code> inside this project, and add all projects that contain Studio resources to the list. For example:</p></li>
 </ol>
 <pre class="prettyprint"><code class="language-json">{
   &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/view.json&quot;,
