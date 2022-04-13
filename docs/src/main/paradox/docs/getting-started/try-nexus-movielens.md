@@ -1,6 +1,7 @@
 # Try Nexus with the MovieLens Dataset
 
-In this tutorial, you will use the core features of the Nexus ecosystem through our sandbox. This requires minimal technical knowledge but the ability to install a Python library and run a jupyter notebook.
+In this tutorial, you will use the core features of the Nexus ecosystem through our sandbox. 
+This requires minimal technical knowledge but the ability to install a Python library and run a jupyter notebook.
 
 In the @ref:[first step](try-nexus-movielens.md#configuring-your-project-in-nexus-fusion), you'll learn:
 
@@ -26,7 +27,8 @@ Finally, check our @ref:[Learn More](try-nexus-movielens.md#learn-more) section 
 ## Configuring your Project in Nexus Fusion
 
 The @link:[Nexus Sandbox](https://sandbox.bluebrainnexus.io/){ open=new } is a deployment of Nexus Delta and Fusion
-publicly available to anybody.
+publicly available to anybody. Please note that you should not store any sensitive data in this environment. Also,
+we do not offer guaranty as to how long the data will be kept, this is only for learning and testing purposes.
 
 Nexus Fusion is the web interface that you will use in order to interact with Nexus Delta (the web services that manages
 the underlying knowledge graph).
@@ -44,38 +46,17 @@ The first step is to login, by clicking in the upper right corner of the screen.
 ![1-sandbox-login](../assets/try-nexus-sandbox-log-in-github-realm.png)
 @@@
 
-Once logged in, you can navigate to the @ref:[Admin](../fusion/admin.md) interface through the left navigation sidebar,
-in order to create the correct organizations and projects for your data to live.
-
-For this tutorial, you can use an existing organization called `nexustutorial` (by clicking on the so-named
-organization), or you can create your own organization (by clicking the `Create Organization` button at the top).
+The Sandbox environment automatically provisions a project for you so you don't have to.
+Navigate to the Admin page and you will see the list of organisations in Nexus.
+A project is contained in an organisation. The organisation where your project is created depends on your identity provider.
+If you logged in with GitHub for example, your project was created under the `github-users` organisation.
 
 @@@ div { .center }
 ![2-sandbox-admin](../assets/try-nexus-sandbox-admin-logged-in.png)
 @@@
 
-In an organization, you will find the list of existing projects, and you can create your own. Projects (as well as
-organizations) support permissions, which means that you cannot edit any organizations or projects.
-
-For this tutorial, you will need to create your own project.
-
-@@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-organization.png)
-@@@
-
-Choose a name and a description for your project. For more information about advanced settings, see
-@ref:[here](../fusion/admin.md#organizations-and-projects-indexes).
-
-@@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-create-project-form.png)
-@@@
-
+Now open the `github-users` organisation and find your own project, which is named after your login.
 Once the project is created, you'll land on the project view. There is no resources at first. Wait for it.
-
-@@@ div { .center }
-![](../assets/try-nexus-sandbox-admin-project.png)
-@@@
-
 You will quickly see that the project has finished indexing (top right corner).
 
 @@@ div { .half .center }
@@ -88,7 +69,7 @@ Which means that the system has created default indices and storage for you.
 ![](../assets/try-nexus-sandbox-admin-project-indexed.png)
 @@@
 
-We're all set! We now have a project to host our ressources and datasets. Let's move on to the second part of this turotial.
+We're all set! We now have a project to host our resources and datasets. Let's move on to the second part of this tutorial.
 
 ## Working with Data in Nexus Forge
 
@@ -114,7 +95,7 @@ The next step is to use this query to create a Studio view in Nexus Fusion.
 
 ## Exploring the Graph in Nexus Fusion
 
-Login the Sandbox and navigate your your previously created project.
+Login the Sandbox and navigate your previously created project.
 
 Click on the `studio tab`.
 
