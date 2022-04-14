@@ -232,11 +232,12 @@ You can remove a `Workspace` by deprecating it from the `Resource View`.
 
 Inside any `Studio View`, under a selected `Workspace`, click the `Add Dashboard` button.
 
-Fill in a form providing the following:
+Fill in the Create Dashboard form providing the following:
 
-- `Label`: the name of your new `Dashboard` (required field)
+- `Name`: the name of your new `Dashboard` (required field)
 - `Description`: an optional description for your `Dashboard`
-- `Sparql Query`: a valid @link:[SPARQL](https://www.w3.org/TR/rdf-sparql-query/){ open=new } query that conforms to the `dataQuery` field in the configuration.
+- `View`: specify the *view* in the project that the dashboard should use as its data source. The view can be of any of the supported Nexus view types including be Sparql, ElasticSearch, and CompositeView. When specifying a composite view, you will also specify whether to query all projections or a specific projection.
+- `Query`: a valid query must also be specified: a SPARQL query for SPARQL views (a @link:[SPARQL](https://www.w3.org/TR/rdf-sparql-query/){ open=new } query that conforms to the `dataQuery` field in the configuration) or an ElasticSearch query for ElasticSearch views.
 
 #### Sparql Dashboards
 
@@ -255,9 +256,9 @@ You can now also add this `Dashboard` to other `Workspaces` across the project.
 
 #### Elasticsearch Dashboard
 
-In the create dashboard form, you can select a elastic search view from the view dropdown. And then use an elastic search 
+In the create dashboard form, you can select a ElasticSearch view from the view dropdown. And then use an ElasticSearch 
 query targeting that view to populate your dashboard.
-It will work same as the sparql dashboard, except for the query and the view.
+It will work same as the SPARQL dashboard, except for the query and the view.
 
 #### Updating a Dashboard
 
