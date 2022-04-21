@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -69,7 +70,8 @@ class BlazegraphViewsRoutes(
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
-    pc: PaginationConfig
+    pc: PaginationConfig,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with DeltaDirectives
@@ -150,8 +152,14 @@ class BlazegraphViewsRoutes(
                           }
                         },
                         // Fetch a view
-                        (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                          emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                        (get & idSegmentRef(id)) { id =>
+                          emitOrFusionRedirect(
+                            ref,
+                            id,
+                            authorizeFor(ref, Read).apply {
+                              emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                            }
+                          )
                         }
                       )
                     },
@@ -318,7 +326,8 @@ object BlazegraphViewsRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      pc: PaginationConfig
+      pc: PaginationConfig,
+      fusionConfig: FusionConfig
   ): Route = {
     new BlazegraphViewsRoutes(
       views,

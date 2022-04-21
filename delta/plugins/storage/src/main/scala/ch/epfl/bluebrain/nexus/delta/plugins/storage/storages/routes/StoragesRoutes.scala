@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -63,7 +64,8 @@ final class StoragesRoutes(
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -200,8 +202,14 @@ final class StoragesRoutes(
                             }
                           },
                           // Fetch a storage
-                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                            emit(storages.fetch(id, ref).leftWiden[StorageRejection].rejectOn[StorageNotFound])
+                          (get & idSegmentRef(id)) { id =>
+                            emitOrFusionRedirect(
+                              ref,
+                              id,
+                              authorizeFor(ref, Read).apply {
+                                emit(storages.fetch(id, ref).leftWiden[StorageRejection].rejectOn[StorageNotFound])
+                              }
+                            )
                           }
                         )
                       }
@@ -277,7 +285,8 @@ object StoragesRoutes {
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
-      crypto: Crypto
+      crypto: Crypto,
+      fusionConfig: FusionConfig
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
     new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, index).routes

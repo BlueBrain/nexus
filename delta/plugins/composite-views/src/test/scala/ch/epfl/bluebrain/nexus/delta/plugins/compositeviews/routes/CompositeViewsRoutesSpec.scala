@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.{NoOffset, Offset, Sequence}
 import akka.util.ByteString
@@ -23,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
@@ -74,6 +76,7 @@ class CompositeViewsRoutesSpec
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
+  implicit private val f: FusionConfig            = fusionConfig
 
   val realm                   = Label.unsafe("myrealm")
   val bob                     = User("Bob", realm)
@@ -534,6 +537,15 @@ class CompositeViewsRoutesSpec
             "id" -> nxv.base / uuid.toString
           )
         }
+      }
+    }
+
+    "redirect to fusion for the latest version if the Accept header is set to text/html" in {
+      Get(s"/v1/views/myorg/myproj/$uuid") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          s"https://bbp.epfl.ch/nexus/web/myorg/myproj/resources/$uuid"
+        )
       }
     }
   }

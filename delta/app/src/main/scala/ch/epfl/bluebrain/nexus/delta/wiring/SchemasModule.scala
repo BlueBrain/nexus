@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -85,9 +86,16 @@ object SchemasModule extends ModuleDef {
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        fusionConfig: FusionConfig
     ) =>
-      new SchemasRoutes(identities, acls, organizations, projects, schemas, indexingAction)(baseUri, s, cr, ordering)
+      new SchemasRoutes(identities, acls, organizations, projects, schemas, indexingAction)(
+        baseUri,
+        s,
+        cr,
+        ordering,
+        fusionConfig
+      )
   }
 
   many[ApiMappings].add(Schemas.mappings)

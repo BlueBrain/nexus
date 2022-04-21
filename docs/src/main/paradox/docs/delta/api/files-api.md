@@ -254,6 +254,9 @@ Request (metadata)
 Response  (metadata)
 :   @@snip [fetched-metadata.json](assets/files/fetched-metadata.json)
 
+If the @ref:[redirect to Fusion feature](../../getting-started/running-nexus/configuration/index.md#fusion-configuration) is enabled and
+if the `Accept` header is set to `text/html`, a redirection to the fusion representation of the resource will be returned.
+
 ## Fetch tags
 
 Retrieves all the tags available for the `{file_id}`.
