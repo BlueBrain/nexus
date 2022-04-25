@@ -16,7 +16,7 @@ services:
     entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--",
                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
                  "./bin/delta-app",
-                 "-Xmx512m",
+                 "-Xmx1024m",
                  "-Dapp.cluster.remote-interface=delta" ]
     ports:
       - 8080:8080
@@ -26,7 +26,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 2048M
 
 #########################################################
 #  Uncomment the following lines to run a local cluster #

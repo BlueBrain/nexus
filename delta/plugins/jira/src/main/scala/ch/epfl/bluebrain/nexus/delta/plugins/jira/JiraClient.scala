@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, Reque
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.model.{AuthenticationRequest, JiraResponse, Verifier}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import com.google.api.client.auth.oauth.{OAuthAuthorizeTemporaryTokenUrl, OAuthGetAccessToken, OAuthGetTemporaryToken, OAuthRsaSigner}
 import com.google.api.client.http.javanet.NetHttpTransport
@@ -21,20 +20,55 @@ import java.nio.charset.StandardCharsets
 import java.security.KeyFactory
 import java.security.spec.PKCS8EncodedKeySpec
 
+/**
+  * Client that allows to authorize Delta to query Jira on behalf on the users by handling the Oauth authorization flow
+  * and passing by the queries to Jira
+  */
 trait JiraClient {
 
+  /**
+    * Creates an authorization request for the current user
+    */
   def requestToken()(implicit caller: User): IO[JiraError, AuthenticationRequest]
 
+  /**
+    * Generates an access token for the current user by providing the verifier code provided by the user
+    */
   def accessToken(verifier: Verifier)(implicit caller: User): IO[JiraError, Unit]
 
+  /**
+    * Create an issue on behalf of the user in Jira
+    * @param payload
+    *   the issue payload
+    */
   def createIssue(payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse]
 
+  /**
+    * Edits an issue on behalf of the user in Jira
+    * @param payload
+    *   the issue payload
+    */
   def editIssue(issueId: String, payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse]
 
+  /**
+    * Get the issue matching the provided identifier
+    * @param issueId
+    *   the identifier
+    */
   def getIssue(issueId: String)(implicit caller: User): IO[JiraError, JiraResponse]
 
+  /**
+    * List the projects the current user has access to
+    * @param recent
+    *   when provided, return the n most recent projects the user was active in
+    */
   def listProjects(recent: Option[Int])(implicit caller: User): IO[JiraError, JiraResponse]
 
+  /**
+    * Search issues in Jira the user has access to according to the provided search payload
+    * @param payload
+    *   the search payload
+    */
   def search(payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse]
 
 }
@@ -60,9 +94,17 @@ object JiraClient {
     this.usePost = true
   }
 
-  def apply(cache: KeyValueStore[User, OAuthToken], jiraConfig: JiraConfig): Task[JiraClient] = {
+  /**
+    * Creates the Jira client
+    * @param store
+    *   the token store
+    * @param jiraConfig
+    *   the jira configuration
+    */
+  def apply(store: TokenStore, jiraConfig: JiraConfig): Task[JiraClient] = {
     Task
       .delay {
+        // Create the RSA signer according to the PKCS8 key provided by the configuration
         val privateBytes = Base64.decodeBase64(jiraConfig.privateKey.value)
         val keySpec      = new PKCS8EncodedKeySpec(privateBytes)
         val kf           = KeyFactory.getInstance("RSA")
@@ -88,7 +130,7 @@ object JiraClient {
                 response.token
               }
               .flatMap { token =>
-                cache.put(caller, RequestToken(token)).as {
+                store.save(caller, RequestToken(token)).as {
                   val authorizationURL =
                     new OAuthAuthorizeTemporaryTokenUrl((jiraConfig.base / authorizationUrl).toString())
                   authorizationURL.temporaryToken = token
@@ -98,26 +140,28 @@ object JiraClient {
               .mapError { e => UnknownError(e.getMessage) }
 
           override def accessToken(verifier: Verifier)(implicit caller: User): IO[JiraError, Unit] =
-            cache.get(caller).flatMap {
-              case None                      => IO.raiseError(NoTokenError)
-              case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
-              case Some(RequestToken(value)) =>
-                Task
-                  .delay {
-                    val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
-                    accessToken.consumerKey = jiraConfig.consumerKey
-                    accessToken.signer = signer
-                    accessToken.transport = netHttpTransport
-                    accessToken.verifier = verifier.value
-                    accessToken.temporaryToken = value
-                    accessToken.execute().token
-                  }
-                  .flatMap { token =>
-                    logger.debug("Access Token:" + token)
-                    cache.put(caller, AccessToken(token))
-                  }
-                  .mapError { e => UnknownError(e.getMessage) }
-            }
+            store
+              .get(caller)
+              .flatMap {
+                case None                      => IO.raiseError(NoTokenError)
+                case Some(_: AccessToken)      => IO.raiseError(RequestTokenExpected)
+                case Some(RequestToken(value)) =>
+                  Task
+                    .delay {
+                      val accessToken = new JiraOAuthGetAccessToken(jiraConfig.base)
+                      accessToken.consumerKey = jiraConfig.consumerKey
+                      accessToken.signer = signer
+                      accessToken.transport = netHttpTransport
+                      accessToken.verifier = verifier.value
+                      accessToken.temporaryToken = value
+                      accessToken.execute().token
+                    }
+                    .flatMap { token =>
+                      logger.debug("Access Token:" + token)
+                      store.save(caller, AccessToken(token))
+                    }
+              }
+              .mapError { e => UnknownError(e.getMessage) }
 
           override def createIssue(payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse] =
             requestFactory(caller).flatMap { factory =>
@@ -175,7 +219,7 @@ object JiraClient {
               )
             }
 
-          private def requestFactory(caller: User) = cache.get(caller).flatMap {
+          private def requestFactory(caller: User) = store.get(caller).hideErrors.flatMap {
             case None                     => IO.raiseError(NoTokenError)
             case Some(_: RequestToken)    => IO.raiseError(AccessTokenExpected)
             case Some(AccessToken(token)) =>
