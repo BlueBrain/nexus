@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
@@ -53,8 +54,13 @@ final class ResourcesRoutes(
     resources: Resources,
     sseEventLog: SseEventLog,
     index: IndexingAction
-)(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+)(implicit
+    baseUri: BaseUri,
+    s: Scheduler,
+    cr: RemoteContextResolution,
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
+) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with RdfMarshalling {
 
@@ -192,12 +198,18 @@ final class ResourcesRoutes(
                                 }
                               },
                               // Fetch a resource
-                              (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                                emit(
-                                  resources
-                                    .fetch(id, ref, schemaOpt)
-                                    .leftWiden[ResourceRejection]
-                                    .rejectWhen(wrongJsonOrNotFound)
+                              (get & idSegmentRef(id)) { id =>
+                                emitOrFusionRedirect(
+                                  ref,
+                                  id,
+                                  authorizeFor(ref, Read).apply {
+                                    emit(
+                                      resources
+                                        .fetch(id, ref, schemaOpt)
+                                        .leftWiden[ResourceRejection]
+                                        .rejectWhen(wrongJsonOrNotFound)
+                                    )
+                                  }
                                 )
                               }
                             )
@@ -286,7 +298,8 @@ object ResourcesRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route = new ResourcesRoutes(identities, acls, orgs, projects, resources, sseEventLog, index).routes
 
 }

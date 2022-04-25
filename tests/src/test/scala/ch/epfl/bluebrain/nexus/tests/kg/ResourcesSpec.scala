@@ -1,6 +1,9 @@
 package ch.epfl.bluebrain.nexus.tests.kg
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location}
+import akka.http.scaladsl.model.{MediaRange, StatusCodes}
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, EitherValuable}
 import ch.epfl.bluebrain.nexus.tests.BaseSpec
@@ -444,6 +447,22 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
     deltaClient.post[Json](s"/resources/$id1/", payload, Rick) { (_, response) =>
       response.status shouldEqual StatusCodes.Created
     }
+  }
+
+  "get a redirect to fusion if a `text/html` header is provided" in {
+
+    deltaClient.get[String](
+      s"/resources/$id1/_/test-resource:1",
+      Rick,
+      extraHeaders = List(Accept(MediaRange.One(`text/html`, 1f)))
+    ) { (_, response) =>
+      response.status shouldEqual StatusCodes.SeeOther
+      response
+        .header[Location]
+        .value
+        .uri
+        .toString() shouldEqual s"https://bbp.epfl.ch/nexus/web/$id1/resources/test-resource:1"
+    }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
   }
 
 }

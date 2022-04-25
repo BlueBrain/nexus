@@ -204,6 +204,9 @@ Request
 Response
 :   @@snip [fetched.json](assets/resources/fetched.json)
 
+If the @ref:[redirect to Fusion feature](../../getting-started/running-nexus/configuration/index.md#fusion-configuration) is enabled and
+if the `Accept` header is set to `text/html`, a redirection to the fusion representation of the resource will be returned.
+
 ## Fetch original payload
 
 ```

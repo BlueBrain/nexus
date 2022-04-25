@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
@@ -63,7 +64,8 @@ final class ResolversRoutes(
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with RdfMarshalling {
@@ -194,8 +196,14 @@ final class ResolversRoutes(
                             }
                           },
                           // Fetches a resolver
-                          (get & idSegmentRef(id) & authorizeRead) { id =>
-                            emit(resolvers.fetch(id, ref).rejectOn[ResolverNotFound])
+                          (get & idSegmentRef(id)) { id =>
+                            emitOrFusionRedirect(
+                              ref,
+                              id,
+                              authorizeRead {
+                                emit(resolvers.fetch(id, ref).rejectOn[ResolverNotFound])
+                              }
+                            )
                           }
                         )
                       }
@@ -281,7 +289,8 @@ object ResolversRoutes {
       s: Scheduler,
       paginationConfig: PaginationConfig,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route = new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, index).routes
 
 }
