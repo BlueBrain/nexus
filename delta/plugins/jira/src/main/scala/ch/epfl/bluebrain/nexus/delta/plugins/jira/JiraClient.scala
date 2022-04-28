@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraError.{AccessTokenExpected, NoTokenError, RequestTokenExpected, UnknownError}
+import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraError.{AccessTokenExpected, NoTokenError, RequestTokenExpected}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, RequestToken}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.model.{AuthenticationRequest, JiraResponse, Verifier}
@@ -137,7 +137,7 @@ object JiraClient {
                   AuthenticationRequest(Uri(authorizationURL.toString))
                 }
               }
-              .mapError { e => UnknownError(e.getMessage) }
+              .mapError { JiraError.from }
 
           override def accessToken(verifier: Verifier)(implicit caller: User): IO[JiraError, Unit] =
             store
@@ -161,7 +161,7 @@ object JiraClient {
                       store.save(caller, AccessToken(token))
                     }
               }
-              .mapError { e => UnknownError(e.getMessage) }
+              .mapError { JiraError.from }
 
           override def createIssue(payload: JsonObject)(implicit caller: User): IO[JiraError, JiraResponse] =
             requestFactory(caller).flatMap { factory =>

@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import com.google.api.client.http.HttpResponseException
 import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, JsonObject}
+import io.circe.{parser, Encoder, Json, JsonObject}
 
 /**
   * OAuth related errors when exchanging with Jira
@@ -36,21 +37,46 @@ object JiraError {
   final case object AccessTokenExpected extends JiraError("An access token was expected for the current user.")
 
   /**
-    * Unknown error
+    * An error when interacting with Jira after the authentication process
     */
-  final case class UnknownError(reason: String, details: Option[String] = None) extends JiraError(reason, details)
+  final case class JiraResponseError(statusCode: Int, content: Json)
+      extends JiraError(s"Jira responded with an error with status code $statusCode")
+
+  /**
+    * Unexpected error
+    */
+  final case class UnexpectedError(reason: String, details: Option[String] = None) extends JiraError(reason, details)
+
+  /**
+    * Create a Jira error from the given exception
+    */
+  def from(e: Throwable): JiraError =
+    e match {
+      case httpException: HttpResponseException =>
+        JiraResponseError(
+          httpException.getStatusCode,
+          parser.parse(httpException.getContent).getOrElse(Json.fromString(httpException.getContent))
+        )
+      case _                                    =>
+        UnexpectedError(e.getMessage)
+    }
 
   implicit val jiraErrorEncoder: Encoder.AsObject[JiraError] =
     Encoder.AsObject.instance { e =>
-      val tpe = ClassUtils.simpleName(e)
-      JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", e.getMessage.asJson)
+      val tpe     = ClassUtils.simpleName(e)
+      val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", e.getMessage.asJson)
+      e match {
+        case JiraResponseError(_, content) => default.add("content", content)
+        case _                             => default
+      }
     }
 
   implicit final val jiraErrorJsonLdEncoder: JsonLdEncoder[JiraError] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
   implicit val jiraErrorHttpResponseFields: HttpResponseFields[JiraError] =
-    HttpResponseFields { _ =>
-      StatusCodes.BadRequest
+    HttpResponseFields {
+      case JiraResponseError(statusCode, _) => StatusCodes.getForKey(statusCode).getOrElse(StatusCodes.BadRequest)
+      case _                                => StatusCodes.BadRequest
     }
 }

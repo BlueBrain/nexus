@@ -1,12 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraError
-import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraError.UnknownError
 import com.google.api.client.http.HttpRequest
 import io.circe.{parser, Json}
 import monix.bio.{IO, Task}
 
-final case class JiraResponse(code: Int, response: Option[Json])
+/**
+  * Jira response
+  */
+final case class JiraResponse(content: Option[Json])
 
 object JiraResponse {
 
@@ -16,16 +18,13 @@ object JiraResponse {
         request.execute()
       )
       .flatMap { response =>
-        val s = response.parseAsString()
-        if (s.nonEmpty) {
-          Task.fromEither(parser.parse(s).map { json =>
-            JiraResponse(response.getStatusCode, Some(json))
-          })
+        val content = response.parseAsString()
+        if (content.nonEmpty) {
+          Task.fromEither(parser.parse(content)).map { r => JiraResponse(Some(r)) }
         } else {
-          Task.pure(JiraResponse(response.getStatusCode, None))
+          Task.pure(JiraResponse(None))
         }
-
       }
-      .mapError { e => UnknownError(e.getMessage) }
+      .mapError { JiraError.from }
   }
 }

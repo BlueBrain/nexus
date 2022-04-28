@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira.routes
 
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.JiraClient
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -64,28 +65,28 @@ class JiraRoutes(
               concat(
                 // Create an issue
                 (post & entity(as[JsonObject])) { payload =>
-                  emit(jiraClient.createIssue(payload).map(_.response))
+                  emit(StatusCodes.Created, jiraClient.createIssue(payload).map(_.content))
                 },
                 // Edit an issue
                 (put & pathPrefix(Segment)) { issueId =>
                   entity(as[JsonObject]) { payload =>
-                    emit(jiraClient.editIssue(issueId, payload).map(_.response))
+                    emit(StatusCodes.NoContent, jiraClient.editIssue(issueId, payload).map(_.content))
                   }
                 },
                 // Get an issue
                 (get & pathPrefix(Segment)) { issueId =>
-                  emit(jiraClient.getIssue(issueId).map(_.response))
+                  emit(jiraClient.getIssue(issueId).map(_.content))
                 }
               )
             },
             // List projects
             (get & pathPrefix("project") & get & parameter("recent".as[Int].?)) { recent =>
-              emit(jiraClient.listProjects(recent).map(_.response))
+              emit(jiraClient.listProjects(recent).map(_.content))
             },
             // Search issues
             (post & pathPrefix("search") & pathEndOrSingleSlash) {
               entity(as[JsonObject]) { payload =>
-                emit(jiraClient.search(payload).map(_.response))
+                emit(jiraClient.search(payload).map(_.content))
               }
             }
           )

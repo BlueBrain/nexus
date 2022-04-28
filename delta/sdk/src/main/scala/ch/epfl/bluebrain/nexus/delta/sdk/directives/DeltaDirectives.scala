@@ -39,13 +39,19 @@ trait DeltaDirectives extends UriDirectives {
       `text/vnd.graphviz`
     )
 
-  val fusionRange = MediaRange.One(`text/html`, 1f)
+  val fusionRange: MediaRange.One = MediaRange.One(`text/html`, 1f)
 
   /**
     * Completes the current Route with the provided conversion to any available entity marshaller
     */
   def emit(response: ResponseToMarshaller): Route =
-    response()
+    response(None)
+
+  /**
+    * Completes the current Route with the provided conversion to any available entity marshaller
+    */
+  def emit(status: StatusCode, response: ResponseToMarshaller): Route =
+    response(Some(status))
 
   /**
     * Completes the current Route with the provided conversion to SSEs
