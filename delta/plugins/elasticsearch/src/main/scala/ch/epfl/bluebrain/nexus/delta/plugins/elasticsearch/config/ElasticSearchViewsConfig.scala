@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -17,7 +16,6 @@ import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
 import scala.concurrent.duration._
-import scala.util.Try
 
 /**
   * Configuration for the ElasticSearchView plugin.
@@ -72,14 +70,6 @@ object ElasticSearchViewsConfig {
       .fromConfig(config)
       .at("plugins.elasticsearch")
       .loadOrThrow[ElasticSearchViewsConfig]
-
-  @nowarn("cat=unused")
-  implicit private val uriConfigReader: ConfigReader[Uri] = ConfigReader.fromString(str =>
-    Try(Uri(str))
-      .filter(_.isAbsolute)
-      .toEither
-      .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
-  )
 
   @nowarn("cat=unused")
   implicit private val refreshConfigReader: ConfigReader[Refresh] = ConfigReader.fromString {

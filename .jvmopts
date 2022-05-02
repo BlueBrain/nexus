@@ -7,4 +7,3 @@
 -XX:+UseG1GC
 -XX:MaxMetaspaceSize=2G
 -XX:-UseGCOverheadLimit
---add-opens java.base/java.lang=ALL-UNNAMED

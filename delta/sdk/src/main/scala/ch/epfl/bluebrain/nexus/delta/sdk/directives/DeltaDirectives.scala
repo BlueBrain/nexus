@@ -1,23 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
-import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.StatusCodes.Redirection
+import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
+import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import io.circe.Encoder
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
@@ -37,11 +39,19 @@ trait DeltaDirectives extends UriDirectives {
       `text/vnd.graphviz`
     )
 
+  val fusionRange: MediaRange.One = MediaRange.One(`text/html`, 1f)
+
   /**
     * Completes the current Route with the provided conversion to any available entity marshaller
     */
   def emit(response: ResponseToMarshaller): Route =
-    response()
+    response(None)
+
+  /**
+    * Completes the current Route with the provided conversion to any available entity marshaller
+    */
+  def emit(status: StatusCode, response: ResponseToMarshaller): Route =
+    response(Some(status))
 
   /**
     * Completes the current Route with the provided conversion to SSEs
@@ -125,25 +135,23 @@ trait DeltaDirectives extends UriDirectives {
     }
 
   /**
-    * Fetches any resource using different functions depending on the ''rev'' or ''tag'' query parameters
-    * @param onRev
-    *   the function to call when the resource is fetched by its revision
-    * @param onTag
-    *   the function to call when the resource is fetched by its tag
-    * @param onDefault
-    *   the function to call when no rev/tag query parameters are present
+    * If the `Accept` header is set to `text/html`, redirect to fusion if the feature is enabled
     */
-  def fetchResource(
-      onRev: Long => Route,
-      onTag: TagLabel => Route,
-      onDefault: => Route
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): Route = {
-    import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler._
-    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)) {
-      case (Some(_), Some(_)) => emit(simultaneousTagAndRevRejection)
-      case (Some(rev), _)     => onRev(rev)
-      case (_, Some(tag))     => onTag(tag)
-      case _                  => onDefault
+  def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emit: Route)(implicit
+      config: FusionConfig,
+      s: Scheduler
+  ): Route =
+    extractRequest { req =>
+      if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
+        val resourceBase =
+          config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
+        val uri          = id match {
+          case _: Latest        => resourceBase
+          case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
+          case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
+        }
+        emitRedirect(SeeOther, UIO.pure(uri))
+      } else
+        emit
     }
-  }
 }

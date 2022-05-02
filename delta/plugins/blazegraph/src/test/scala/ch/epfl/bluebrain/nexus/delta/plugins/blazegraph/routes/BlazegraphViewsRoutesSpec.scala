@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, OAuth2BearerToken}
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import akka.util.ByteString
@@ -19,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, User}
@@ -130,8 +132,9 @@ class BlazegraphViewsRoutesSpec
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
   val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
 
-  implicit val externalIndexingConfig = externalIndexing
-  implicit val paginationConfig       = pagination
+  implicit val externalIndexingConfig  = externalIndexing
+  implicit val paginationConfig        = pagination
+  implicit private val f: FusionConfig = fusionConfig
 
   private val selectQuery    = SparqlQuery("SELECT * {?s ?p ?o}")
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}").rightValue
@@ -477,6 +480,15 @@ class BlazegraphViewsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.asJson shouldEqual json"""{"@context": "${Vocabulary.contexts.offset}", "@type": "NoOffset"}"""
         restartedView shouldEqual Some(projectRef -> indexingViewId)
+      }
+    }
+
+    "redirect to fusion for the latest version if the Accept header is set to text/html" in {
+      Get("/v1/views/org/proj/indexing-view") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          "https://bbp.epfl.ch/nexus/web/org/proj/resources/indexing-view"
+        )
       }
     }
   }

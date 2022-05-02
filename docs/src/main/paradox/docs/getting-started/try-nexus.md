@@ -128,13 +128,14 @@ We offer for the moment one identity providers (IdP):
 
 You will need an account on either one to be able to continue this tutorial.
 
-Click on the IdP of your choice and allow Nexus to have access. You are now logged in.
+Click on the Identity Provider of your choice and allow Nexus to have access. You are now logged in.
 
 Once logged in, you can get your token. The token is your secure, private, code that you will use in the rest of this tutorial to interact with Nexus.
 
-Additionally, the Sandbox environment automatically provisions a project for you so you don't have to. Navigate to the Admin page and you will see the list of organisations in Nexus.
+Additionally, the Sandbox environment automatically provisions a project for you so you don't have to. 
+Navigate to the Admin page and you will see the list of organisations in Nexus.
 A project is contained in an organisation. The organisation where your project is created depends on your identity provider.
-If you logged in with GitHub for example, your project was create under the `github-users` organisation.
+If you logged in with GitHub for example, your project was created under the `github-users` organisation.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-orgs.png)

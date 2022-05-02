@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -291,7 +292,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
-        sseEventLog: SseEventLog @Id("view-sse")
+        sseEventLog: SseEventLog @Id("view-sse"),
+        fusionConfig: FusionConfig
     ) =>
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
@@ -311,7 +313,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cfg.pagination,
         s,
         cr,
-        ordering
+        ordering,
+        fusionConfig
       )
   }
 

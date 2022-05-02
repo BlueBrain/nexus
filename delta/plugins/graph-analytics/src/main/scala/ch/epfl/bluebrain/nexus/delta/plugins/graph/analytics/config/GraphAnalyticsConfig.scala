@@ -1,18 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config
 
-import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig.TermAggregationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import com.typesafe.config.Config
-import pureconfig.error.{CannotConvert, FailureReason}
+import pureconfig.error.FailureReason
 import pureconfig.generic.semiauto.deriveReader
 import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.annotation.nowarn
 import scala.concurrent.duration._
-import scala.util.Try
 
 /**
   * Configuration for the graph analytics plugin.
@@ -55,14 +53,6 @@ object GraphAnalyticsConfig {
       .fromConfig(config)
       .at("plugins.graph-analytics")
       .loadOrThrow[GraphAnalyticsConfig]
-
-  @nowarn("cat=unused")
-  implicit private val uriConfigReader: ConfigReader[Uri] = ConfigReader.fromString(str =>
-    Try(Uri(str))
-      .filter(_.isAbsolute)
-      .toEither
-      .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
-  )
 
   @nowarn("cat=unused")
   implicit final private val termAggregationsConfigReader: ConfigReader[TermAggregationsConfig] =

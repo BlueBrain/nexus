@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -434,6 +434,15 @@ class ResourcesRoutesSpec
     "check access to SSEs" in {
       Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "redirect to fusion with a given tag if the Accept header is set to text/html" in {
+      Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid2"
+        ).withQuery(Uri.Query("tag" -> "mytag"))
       }
     }
   }

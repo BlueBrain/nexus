@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.utils
 
+import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
@@ -58,6 +60,7 @@ trait RouteFixtures extends TestHelpers with IOValues {
 
   implicit val baseUri: BaseUri                   = BaseUri("http://localhost", Label.unsafe("v1"))
   implicit val paginationConfig: PaginationConfig = PaginationConfig(5, 10, 5)
+  implicit val f: FusionConfig                    = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
   implicit val s: Scheduler                       = Scheduler.global
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply

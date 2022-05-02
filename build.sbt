@@ -36,6 +36,7 @@ val distageVersion                  = "1.0.8"
 val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.13.4"
 val fs2Version                      = "2.5.10"
+val googleAuthClientVersion         = "1.33.1"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "4.2.0"
 val jsonldjavaVersion               = "0.13.3"
@@ -111,6 +112,7 @@ lazy val dockerTestKit        = "com.whisk"                    %% "docker-testki
 lazy val dockerTestKitImpl    = "com.whisk"                    %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                        % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                          % fs2Version
+lazy val googleAuthClient     = "com.google.oauth-client"       % "google-oauth-client"             % googleAuthClientVersion
 lazy val h2                   = "com.h2database"                % "h2"                              % h2Version
 lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                        % jenaVersion
 lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"                     % jsonldjavaVersion
@@ -441,6 +443,7 @@ lazy val app = project
       val compositeViewsFile  = (compositeViewsPlugin / assembly).value
       val searchFile          = (searchPlugin / assembly).value
       val projectDeletionFile = (projectDeletionPlugin / assembly).value
+      val jiraFile            = (jiraPlugin / assembly).value
       val pluginsTarget       = target.value / "plugins"
       IO.createDirectory(pluginsTarget)
       IO.copy(
@@ -452,7 +455,8 @@ lazy val app = project
           archiveFile         -> (pluginsTarget / archiveFile.getName),
           compositeViewsFile  -> (pluginsTarget / compositeViewsFile.getName),
           searchFile          -> (pluginsTarget / searchFile.getName),
-          projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName)
+          projectDeletionFile -> (pluginsTarget / projectDeletionFile.getName),
+          jiraFile            -> (pluginsTarget / jiraFile.getName)
         )
       )
     },
@@ -478,6 +482,7 @@ lazy val app = project
       val compositeViewsFile  = (compositeViewsPlugin / assembly).value
       val searchFile          = (searchPlugin / assembly).value
       val projectDeletionFile = (projectDeletionPlugin / assembly).value
+      val jiraFile            = (jiraPlugin / assembly).value
       Seq(
         (esFile, "plugins/" + esFile.getName),
         (bgFile, "plugins/" + bgFile.getName),
@@ -486,6 +491,7 @@ lazy val app = project
         (archiveFile, "plugins/" + archiveFile.getName),
         (compositeViewsFile, "plugins/" + compositeViewsFile.getName),
         (searchFile, "plugins/" + searchFile.getName),
+        (jiraFile, "plugins/" + jiraFile.getName),
         (projectDeletionFile, "plugins/disabled/" + projectDeletionFile.getName)
       )
     }
@@ -755,6 +761,33 @@ lazy val graphAnalyticsPlugin = project
     coverageFailOnMinimum      := false
   )
 
+lazy val jiraPlugin = project
+  .in(file("delta/plugins/jira"))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
+  .dependsOn(
+    sdk        % "provided;test->test",
+    sdkTestkit % "test->compile;test->test"
+  )
+  .settings(
+    name                       := "delta-jira-plugin",
+    moduleName                 := "delta-jira-plugin",
+    libraryDependencies       ++= Seq(
+      googleAuthClient,
+      kamonAkkaHttp % Provided,
+      scalaTest     % Test
+    ),
+    buildInfoKeys              := Seq[BuildInfoKey](version),
+    buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.jira",
+    addCompilerPlugin(betterMonadicFor),
+    assembly / assemblyJarName := "jira.jar",
+    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / test            := {},
+    addArtifact(Artifact("jira", "plugin"), assembly),
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
+  )
+
 lazy val plugins = project
   .in(file("delta/plugins"))
   .settings(shared, compilation, noPublish)
@@ -767,7 +800,8 @@ lazy val plugins = project
     archivePlugin,
     projectDeletionPlugin,
     testPlugin,
-    graphAnalyticsPlugin
+    graphAnalyticsPlugin,
+    jiraPlugin
   )
 
 lazy val delta = project

@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -65,7 +66,8 @@ final class FilesRoutes(
     storageConfig: StorageTypeConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling {
 
@@ -184,8 +186,12 @@ final class FilesRoutes(
                             }
                           },
                           // Fetch a file
-                          get {
-                            fetch(id, ref)
+                          (get & idSegmentRef(id)) { id =>
+                            emitOrFusionRedirect(
+                              ref,
+                              id,
+                              fetch(id, ref)
+                            )
                           }
                         )
                       }
@@ -224,11 +230,11 @@ final class FilesRoutes(
       }
     }
 
-  def fetch(id: IdSegment, ref: ProjectRef)(implicit caller: Caller): Route =
-    (headerValueByType(Accept) & idSegmentRef(id)) {
-      case (accept, id) if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
+  def fetch(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): Route =
+    headerValueByType(Accept) {
+      case accept if accept.mediaRanges.exists(metadataMediaRanges.contains) =>
         emit(fetchMetadata(id, ref).rejectOn[FileNotFound])
-      case (_, id)                                                                 =>
+      case _                                                                 =>
         emit(files.fetchContent(id, ref).rejectOn[FileNotFound])
     }
 
@@ -258,7 +264,8 @@ object FilesRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
     new FilesRoutes(identities, acls, organizations, projects, files, index).routes

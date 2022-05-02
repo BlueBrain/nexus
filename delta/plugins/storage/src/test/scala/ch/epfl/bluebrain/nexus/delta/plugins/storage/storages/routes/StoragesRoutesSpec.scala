@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
@@ -11,6 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, St
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
@@ -86,10 +89,12 @@ class StoragesRoutesSpec
 
   private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist, config)
 
-  private val perms         = PermissionsDummy(allowedPerms.toSet).accepted
-  private val acls          = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
-  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
-  implicit private val c    = crypto
+  private val perms              = PermissionsDummy(allowedPerms.toSet).accepted
+  private val acls               = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
+  private val (orgs, projs)      = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  implicit private val c: Crypto = crypto
+
+  implicit private val f: FusionConfig = fusionConfig
 
   private val storageStatistics = StoragesStatisticsSetup.init(
     Map(
@@ -387,6 +392,15 @@ class StoragesRoutesSpec
       Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+      }
+    }
+
+    "redirect to fusion for the latest version if the Accept header is set to text/html" in {
+      Get("/v1/storages/myorg/myproject/remote-disk-storage") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/remote-disk-storage"
+        )
       }
     }
 
