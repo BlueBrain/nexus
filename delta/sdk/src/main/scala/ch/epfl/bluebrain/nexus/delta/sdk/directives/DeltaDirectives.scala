@@ -135,23 +135,44 @@ trait DeltaDirectives extends UriDirectives {
     }
 
   /**
-    * If the `Accept` header is set to `text/html`, redirect to fusion if the feature is enabled
+    * If the `Accept` header is set to `text/html`, redirect to the matching resource page in fusion if the feature is
+    * enabled
     */
-  def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emit: Route)(implicit
+  def emitOrFusionRedirect(projectRef: ProjectRef, id: IdSegmentRef, emitDelta: Route)(implicit
       config: FusionConfig,
       s: Scheduler
   ): Route =
-    extractRequest { req =>
-      if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
+    emitOrFusionRedirect(
+      UIO.pure {
         val resourceBase =
           config.base / projectRef.organization.value / projectRef.project.value / "resources" / id.value.asString
-        val uri          = id match {
+        id match {
           case _: Latest        => resourceBase
           case Revision(_, rev) => resourceBase.withQuery(Uri.Query("rev" -> rev.toString))
           case Tag(_, tag)      => resourceBase.withQuery(Uri.Query("tag" -> tag.value))
         }
-        emitRedirect(SeeOther, UIO.pure(uri))
+      },
+      emitDelta
+    )
+
+  /**
+    * If the `Accept` header is set to `text/html`, redirect to the matching project page in fusion if the feature is
+    * enabled
+    */
+  def emitOrFusionRedirect(projectRef: ProjectRef, emitDelta: Route)(implicit
+      config: FusionConfig,
+      s: Scheduler
+  ): Route =
+    emitOrFusionRedirect(
+      UIO.pure(config.base / "admin" / projectRef.organization.value / projectRef.project.value),
+      emitDelta
+    )
+
+  private def emitOrFusionRedirect(fusionUri: UIO[Uri], emitDelta: Route)(implicit config: FusionConfig, s: Scheduler) =
+    extractRequest { req =>
+      if (config.enableRedirects && req.header[Accept].exists(_.mediaRanges.contains(fusionRange))) {
+        emitRedirect(SeeOther, fusionUri)
       } else
-        emit
+        emitDelta
     }
 }

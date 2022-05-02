@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectMarkedForDeletion
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
@@ -169,7 +170,8 @@ object ProjectsModule extends ModuleDef {
         mappings: ApiMappingsCollection,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        fusionConfig: FusionConfig
     ) =>
       new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning)(
         baseUri,
@@ -178,7 +180,8 @@ object ProjectsModule extends ModuleDef {
         referenceFinder,
         s,
         cr,
-        ordering
+        ordering,
+        fusionConfig
       )
   }
 

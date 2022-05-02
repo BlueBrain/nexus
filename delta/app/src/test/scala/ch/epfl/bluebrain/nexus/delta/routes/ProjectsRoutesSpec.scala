@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, projects => projectsPermissions, resources}
@@ -638,6 +638,13 @@ class ProjectsRoutesSpec
     "return error when failed to provision project" in {
       Get("/v1/projects/users-org") ~> asInvalid ~> routes ~> check {
         status shouldEqual StatusCodes.InternalServerError
+      }
+    }
+
+    "redirect to fusion for the latest version if the Accept header is set to text/html" in {
+      Get("/v1/projects/users-org/user1") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/admin/users-org/user1")
       }
     }
   }

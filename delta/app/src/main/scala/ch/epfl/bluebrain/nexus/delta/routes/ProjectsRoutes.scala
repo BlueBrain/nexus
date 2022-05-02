@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
@@ -55,7 +56,8 @@ final class ProjectsRoutes(
     referenceFinder: ProjectReferenceFinder,
     s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling {
 
@@ -145,13 +147,18 @@ final class ProjectsRoutes(
                       }
                     },
                     (get & pathEndOrSingleSlash) {
-                      authorizeFor(ref, projectsPermissions.read).apply {
-                        parameter("rev".as[Long].?) {
-                          case Some(rev) => // Fetch project at specific revision
+                      parameter("rev".as[Long].?) {
+                        case Some(rev) => // Fetch project at specific revision
+                          authorizeFor(ref, projectsPermissions.read).apply {
                             emit(projects.fetchAt(ref, rev).leftWiden[ProjectRejection])
-                          case None      => // Fetch project
-                            emit(projects.fetch(ref).leftWiden[ProjectRejection])
-                        }
+                          }
+                        case None      => // Fetch project
+                          emitOrFusionRedirect(
+                            ref,
+                            authorizeFor(ref, projectsPermissions.read).apply {
+                              emit(projects.fetch(ref).leftWiden[ProjectRejection])
+                            }
+                          )
                       }
                     },
                     // Deprecate/delete project
@@ -224,7 +231,8 @@ object ProjectsRoutes {
       referenceFinder: ProjectReferenceFinder,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route = new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning).routes
 
 }
