@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -42,6 +43,7 @@ class DeltaDirectivesSpec
     extends RouteHelpers
     with Matchers
     with OptionValues
+    with CirceMarshalling
     with CirceLiteral
     with IOValues
     with TestMatchers
@@ -59,9 +61,9 @@ class DeltaDirectivesSpec
 
   implicit private val s: Scheduler = Scheduler.global
 
-  private val id        = nxv + "myresource"
-  private val resource  = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
-  private val fusionUri = Uri(
+  private val id                = nxv + "myresource"
+  private val resource          = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resourceFusionUri = Uri(
     "https://bbp.epfl.ch/nexus/web/org/proj/resources/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fid"
   )
 
@@ -85,7 +87,9 @@ class DeltaDirectivesSpec
   val ioRedirect: IO[SimpleRejection, Uri]          = uioRedirect
   val ioRedirectRejection: IO[SimpleRejection, Uri] = IO.raiseError(badRequestRejection)
 
-  private val ref: ProjectRef = ProjectRef.unsafe("org", "proj")
+  private val ref: ProjectRef  = ProjectRef.unsafe("org", "proj")
+  private val ioProject        = UIO.pure(ref.asJson)
+  private val projectFusionUri = Uri("https://bbp.epfl.ch/nexus/web/admin/org/proj")
 
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
@@ -125,17 +129,34 @@ class DeltaDirectivesSpec
         path("redirectUIO") {
           emitRedirect(StatusCodes.SeeOther, uioRedirect)
         },
-        path("redirectFusionDisabled") {
-          emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+        pathPrefix("resources") {
+          concat(
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+            },
+            path("redirectFusionLatest") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
+            },
+            path("redirectFusionRev") {
+              emitOrFusionRedirect(ref, Revision(nxv + "id", 7L), emit(resource))
+            },
+            path("redirectFusionTag") {
+              emitOrFusionRedirect(ref, Tag(nxv + "id", TagLabel.unsafe("my-tag")), emit(resource))
+            },
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+            }
+          )
         },
-        path("redirectFusionLatest") {
-          emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
-        },
-        path("redirectFusionRev") {
-          emitOrFusionRedirect(ref, Revision(nxv + "id", 7L), emit(resource))
-        },
-        path("redirectFusionTag") {
-          emitOrFusionRedirect(ref, Tag(nxv + "id", TagLabel.unsafe("my-tag")), emit(resource))
+        pathPrefix("projects") {
+          concat(
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false), s)
+            },
+            path("redirectFusion") {
+              emitOrFusionRedirect(ref, emit(ioProject))
+            }
+          )
         },
         path("redirectFail") {
           emitRedirect(StatusCodes.SeeOther, ioRedirectRejection)
@@ -439,39 +460,57 @@ class DeltaDirectivesSpec
       }
     }
 
-    "not redirect to fusion if the feature is disabled" in {
-      Get("/redirectFusionDisabled") ~> Accept(`text/html`) ~> route ~> check {
+    "not redirect to the resource fusion page if the feature is disabled" in {
+      Get("/resources/redirectFusionDisabled") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.NotAcceptable
       }
     }
 
-    "not redirect to fusion if the Accept header is not set to text/html" in {
-      Get("/redirectFusionLatest") ~> Accept(`application/json`) ~> route ~> check {
+    "not redirect to the resource fusion page if the Accept header is not set to text/html" in {
+      Get("/resources/redirectFusionLatest") ~> Accept(`application/json`) ~> route ~> check {
         response.asJson shouldEqual compacted.json
         response.status shouldEqual Accepted
       }
     }
 
-    "redirect to fusion with the latest version if the Accept header is set to text/html" in {
-      Get("/redirectFusionLatest") ~> Accept(`text/html`) ~> route ~> check {
+    "redirect to the resource fusion page with the latest version if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionLatest") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual fusionUri
+        response.header[Location].value.uri shouldEqual resourceFusionUri
       }
     }
 
-    "redirect to fusion with a fixed rev if the Accept header is set to text/html" in {
-      Get("/redirectFusionRev") ~> Accept(`text/html`) ~> route ~> check {
+    "redirect to the resource fusion page with a fixed rev if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionRev") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual fusionUri.withQuery(Uri.Query("rev" -> "7"))
+        response.header[Location].value.uri shouldEqual resourceFusionUri.withQuery(Uri.Query("rev" -> "7"))
       }
     }
 
-    "redirect to fusion with a given tag if the Accept header is set to text/html" in {
-      Get("/redirectFusionTag") ~> Accept(`text/html`) ~> route ~> check {
+    "redirect to the resource fusion page with a given tag if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionTag") ~> Accept(`text/html`) ~> route ~> check {
         response.status shouldEqual StatusCodes.SeeOther
-        response.header[Location].value.uri shouldEqual fusionUri.withQuery(Uri.Query("tag" -> "my-tag"))
+        response.header[Location].value.uri shouldEqual resourceFusionUri.withQuery(Uri.Query("tag" -> "my-tag"))
       }
     }
+
+    "not redirect to the project fusion page if the feature is disabled" in
+      Get("/projects/redirectFusionDisabled") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.NotAcceptable
+      }
+
+    "not redirect to the project fusion page if the Accept header is not set to text/html" in
+      Get("/projects/redirectFusion") ~> Accept(`application/json`) ~> route ~> check {
+        response.asJson shouldEqual ref.asJson
+        response.status shouldEqual OK
+      }
+
+    "redirect to the project fusion page with the latest version if the Accept header is set to text/html" in
+      Get("/projects/redirectFusion") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual projectFusionUri
+      }
+
   }
 
 }
