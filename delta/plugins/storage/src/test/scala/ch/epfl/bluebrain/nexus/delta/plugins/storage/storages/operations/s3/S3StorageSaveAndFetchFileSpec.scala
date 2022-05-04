@@ -17,13 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{ResourceAlreadyExists, UnexpectedSaveError}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
@@ -34,7 +35,7 @@ import software.amazon.awssdk.regions.Region
 import java.util.UUID
 
 @DoNotDiscover
-class S3StorageSaveAndFetchFileSpec
+class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageSaveAndFetchFileSpec"))
     with AnyWordSpecLike
     with AkkaSourceHelpers
@@ -45,41 +46,36 @@ class S3StorageSaveAndFetchFileSpec
 
   implicit private val sc: Scheduler = Scheduler.global
 
-  private val storageValue = S3StorageValue(
-    default = false,
-    algorithm = DigestAlgorithm.default,
-    bucket = "bucket2",
-    endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
-    accessKey = Some(Secret(AccessKey)),
-    secretKey = Some(Secret(SecretKey)),
-    region = Some(Region.EU_CENTRAL_1),
-    readPermission = read,
-    writePermission = write,
-    maxFileSize = 20
-  )
+  private val iri      = iri"http://localhost/s3"
+  private val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
+  private val project  = ProjectRef.unsafe("org", "project")
+  private val filename = "myfile.txt"
+  private val digest   =
+    ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
 
-  override protected def beforeAll(): Unit =
+  private var storageValue: S3StorageValue = _
+  private var storage: S3Storage           = _
+  private var attributes: FileAttributes   = _
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    storageValue = S3StorageValue(
+      default = false,
+      algorithm = DigestAlgorithm.default,
+      bucket = "bucket2",
+      endpoint = Some(docker.hostConfig.endpoint),
+      accessKey = Some(Secret(AccessKey)),
+      secretKey = Some(Secret(SecretKey)),
+      region = Some(Region.EU_CENTRAL_1),
+      readPermission = read,
+      writePermission = write,
+      maxFileSize = 20
+    )
     createBucket(storageValue).hideErrors.accepted
-
-  override protected def afterAll(): Unit =
-    deleteBucket(storageValue).hideErrors.accepted
-
-  "S3Storage operations" should {
-    val iri = iri"http://localhost/s3"
-
-    val uuid     = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
-    val project  = ProjectRef.unsafe("org", "project")
-    val filename = "myfile.txt"
-
-    val storage = S3Storage(iri, project, storageValue, Map.empty, Secret(Json.obj()))
-    val content = "file content"
-    val source  = Source(content.map(c => ByteString(c.toString)))
-
-    val digest     =
-      ComputedDigest(DigestAlgorithm.default, "e0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c")
-    val attributes = FileAttributes(
+    storage = S3Storage(iri, project, storageValue, Map.empty, Secret(Json.obj()))
+    attributes = FileAttributes(
       uuid,
-      s"http://bucket2.$VirtualHost:$MinioServicePort/org/project/8/0/4/9/b/a/9/0/myfile.txt",
+      s"http://bucket2.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",
       Uri.Path("org/project/8/0/4/9/b/a/9/0/myfile.txt"),
       "myfile.txt",
       Some(`text/plain(UTF-8)`),
@@ -87,6 +83,16 @@ class S3StorageSaveAndFetchFileSpec
       digest,
       Client
     )
+  }
+
+  override protected def afterAll(): Unit = {
+    deleteBucket(storageValue).hideErrors.accepted
+    super.afterAll()
+  }
+
+  "S3Storage operations" should {
+    val content = "file content"
+    val source  = Source(content.map(c => ByteString(c.toString)))
 
     "fail saving a file to a bucket on wrong credentials" in {
       val description  = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))

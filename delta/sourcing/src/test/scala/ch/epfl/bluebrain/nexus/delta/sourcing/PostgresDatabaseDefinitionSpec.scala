@@ -13,7 +13,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class PostgresDatabaseDefinitionSpec
+class PostgresDatabaseDefinitionSpec(docker: PostgresSpecs)
     extends AnyWordSpecLike
     with Matchers
     with IOValues
@@ -23,14 +23,6 @@ class PostgresDatabaseDefinitionSpec
 
   implicit private val actorSystem: ActorSystem[Nothing] = null
 
-  private val dbConfig       = DatabaseConfig(
-    DatabaseFlavour.Postgres,
-    PostgresSpecs.postgresConfig,
-    null,
-    verifyIdUniqueness = false,
-    denyCleanup = true
-  )
-  private val definition     = DatabaseDefinitions(dbConfig).accepted
   private val postgresTables = Set(
     "snapshot",
     "event_journal",
@@ -47,9 +39,19 @@ class PostgresDatabaseDefinitionSpec
 
   "A Postgres Database definition" should {
     "be initialized" in {
+      val dbConfig = DatabaseConfig(
+        DatabaseFlavour.Postgres,
+        docker.postgresConfig,
+        null,
+        verifyIdUniqueness = false,
+        denyCleanup = true
+      )
+
+      val definition = DatabaseDefinitions(dbConfig).accepted
+
       definition.initialize.accepted
       eventually {
-        val xa = PostgresSpecs.postgresConfig.transactor
+        val xa = docker.postgresConfig.transactor
         fetchTables.to[List].transact(xa).accepted.toSet shouldEqual postgresTables
       }
     }

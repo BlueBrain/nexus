@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.tests.config.ConfigLoader._
 import ch.epfl.bluebrain.nexus.tests.config.StorageConfig
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.Organizations
-import com.google.common.io.BaseEncoding
 import com.typesafe.config.ConfigFactory
 import io.circe.Json
 import monix.bio.Task
@@ -20,6 +19,7 @@ import monix.execution.Scheduler.Implicits.global
 import org.apache.commons.codec.Charsets
 import org.scalatest.Assertion
 
+import java.util.Base64
 import scala.collection.immutable.Seq
 
 abstract class StorageSpec extends BaseSpec with CirceEq {
@@ -308,7 +308,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   }
 
   private def attachmentString(filename: String): String = {
-    val encodedFilename = BaseEncoding.base64().encode(filename.getBytes(Charsets.UTF_8))
+    val encodedFilename = Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8))
     s"=?UTF-8?B?$encodedFilename?="
   }
 

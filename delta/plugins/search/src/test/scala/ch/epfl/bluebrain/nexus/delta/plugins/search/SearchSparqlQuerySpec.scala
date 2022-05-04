@@ -2,8 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
@@ -16,8 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
-import com.whisk.docker.scalatest.DockerTestKit
 import io.circe.Json
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -41,8 +39,7 @@ class SearchSparqlQuerySpec
     with Inspectors
     with TestMatchers
     with IOValues
-    with BlazegraphDocker
-    with DockerTestKit {
+    with BlazegraphDocker {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
@@ -55,8 +52,8 @@ class SearchSparqlQuerySpec
     searchDocument -> jsonContentOf("contexts/search-document.json").topContextValueOrEmpty
   )
 
-  private val endpoint = blazegraphHostConfig.endpoint
-  private val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val endpoint = hostConfig.endpoint
+  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
 
   private def toNTriples(json: Json): NTriples = {
     for {

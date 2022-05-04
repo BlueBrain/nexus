@@ -4,15 +4,13 @@ import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.{TokenStore, TokenStoreSpec}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.CassandraConfig
-import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.{cassandraHostConfig, CassandraSpec}
-import com.typesafe.config.{Config, ConfigFactory}
-import com.whisk.docker.scalatest.DockerTestKit
-import akka.actor.typed.scaladsl.adapter._
+import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class CassandraTokenStoreSpec extends CassandraSpec with DockerTestKit with TokenStoreSpec {
+class CassandraTokenStoreSpec extends AnyWordSpecLike with CassandraDocker with TokenStoreSpec {
 
-  val cassandraConfig: CassandraConfig = CassandraConfig(
-    Set(s"${cassandraHostConfig.host}:${cassandraHostConfig.port}"),
+  lazy val cassandraConfig: CassandraConfig = CassandraConfig(
+    Set(s"${hostConfig.host}:${hostConfig.port}"),
     "delta",
     "delta_snapshot",
     "cassandra",
@@ -21,17 +19,8 @@ class CassandraTokenStoreSpec extends CassandraSpec with DockerTestKit with Toke
     tablesAutocreate = true
   )
 
-  lazy val actorSystemConfig: Config = {
-    val cassandra = cassandraHostConfig
-    ConfigFactory
-      .parseString(s"""datastax-java-driver.basic.contact-points = ["${cassandra.host}:${cassandra.port}"]""")
-      .withFallback(ConfigFactory.parseResources("cassandra-test.conf"))
-      .withFallback(ConfigFactory.load())
-      .resolve()
+  override def tokenStore: TokenStore = {
+    implicit val as: ActorSystem[Nothing] = actorSystem
+    CassandraTokenStore(cassandraConfig).accepted
   }
-
-  implicit lazy val actorSystem: ActorSystem[Nothing] =
-    akka.actor.ActorSystem("CassandraTokenStoreSpec", actorSystemConfig).toTyped
-
-  override def tokenStore: TokenStore = CassandraTokenStore(cassandraConfig).accepted
 }

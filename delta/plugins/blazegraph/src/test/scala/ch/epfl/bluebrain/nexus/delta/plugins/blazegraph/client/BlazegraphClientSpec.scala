@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.PatchStrategy._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError.WrappedHttpClientError
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse.SparqlResultsResponse
@@ -22,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers, TestMatchers}
 import io.circe.Json
 import monix.execution.Scheduler
@@ -34,7 +34,7 @@ import scala.concurrent.duration._
 import scala.xml.Elem
 
 @DoNotDiscover
-class BlazegraphClientSpec
+class BlazegraphClientSpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphClientSpec"))
     with Suite
     with AnyWordSpecLike
@@ -53,9 +53,9 @@ class BlazegraphClientSpec
   implicit private val api: JsonLdApi               = JsonLdJavaApi.strict
   implicit private val rcr: RemoteContextResolution = RemoteContextResolution.never
 
-  private val endpoint = blazegraphHostConfig.endpoint
-  private val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
-  private val graphId  = endpoint / "graphs" / "myid"
+  private lazy val endpoint = docker.hostConfig.endpoint
+  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val graphId  = endpoint / "graphs" / "myid"
 
   private def nTriples(id: String = genString(), label: String = genString(), value: String = genString()) = {
     val json = jsonContentOf("/sparql/example.jsonld", "id" -> id, "label" -> label, "value" -> value)
@@ -123,7 +123,7 @@ class BlazegraphClientSpec
   "A Blazegraph Client" should {
 
     "fetch the service description" in {
-      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.5")
+      client.serviceDescription.accepted shouldEqual ServiceDescription(Name.unsafe("blazegraph"), "2.1.6-SNAPSHOT")
     }
 
     "verify a namespace does not exist" in {
