@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
+import io.circe.Printer
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -122,7 +123,7 @@ class ResourcesRoutesSpec
   private val routes =
     Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
 
-  val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
+  val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 
@@ -204,7 +205,7 @@ class ResourcesRoutesSpec
         s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4L
       )
       forAll(endpoints) { case (endpoint, rev) =>
-        Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity) ~> routes ~> check {
+        Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
@@ -290,7 +291,7 @@ class ResourcesRoutesSpec
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L)
-        response.asJson shouldEqual payloadUpdated.deepMerge(meta).deepMerge(resourceCtx)
+        response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
 
@@ -434,6 +435,15 @@ class ResourcesRoutesSpec
     "check access to SSEs" in {
       Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "redirect to fusion with a given tag if the Accept header is set to text/html" in {
+      Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid2"
+        ).withQuery(Uri.Query("tag" -> "mytag"))
       }
     }
   }

@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -384,6 +384,15 @@ class SchemasRoutesSpec
           mediaType shouldBe `text/event-stream`
           response.asString.strip shouldEqual contentOf("/schemas/eventstream-2-6.txt", "uuid" -> uuid).strip
         }
+      }
+    }
+
+    "redirect to fusion with a given rev if the Accept header is set to text/html" in {
+      Get("/v1/schemas/myorg/myproject/myid2?rev=5") ~> Accept(`text/html`) ~> routes ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual Uri(
+          "https://bbp.epfl.ch/nexus/web/myorg/myproject/resources/myid2"
+        ).withQuery(Uri.Query("rev" -> "5"))
       }
     }
   }

@@ -1,9 +1,13 @@
 package ch.epfl.bluebrain.nexus.tests.admin
 
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location}
+import akka.http.scaladsl.model.{MediaRange, StatusCodes}
+import akka.http.scaladsl.unmarshalling.PredefinedFromEntityUnmarshallers
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.tests.Identity.Authenticated
 import ch.epfl.bluebrain.nexus.tests.Identity.projects.{Bojack, PrincessCarolyn}
+import ch.epfl.bluebrain.nexus.tests.Identity.resources.Rick
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.{BaseSpec, ExpectedResponse, Identity}
 import io.circe.Json
@@ -253,6 +257,20 @@ class ProjectsSpec extends BaseSpec {
              }
       } yield succeed
     }
+
+    "get a redirect to fusion if a `text/html` header is provided" in
+      deltaClient.get[String](
+        s"/projects/$id",
+        Rick,
+        extraHeaders = List(Accept(MediaRange.One(`text/html`, 1f)))
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.SeeOther
+        response
+          .header[Location]
+          .value
+          .uri
+          .toString() shouldEqual s"https://bbp.epfl.ch/nexus/web/admin/$id"
+      }(PredefinedFromEntityUnmarshallers.stringUnmarshaller)
   }
 
   "listing projects" should {

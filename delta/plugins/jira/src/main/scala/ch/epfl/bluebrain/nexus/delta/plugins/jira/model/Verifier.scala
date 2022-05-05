@@ -6,6 +6,9 @@ import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
 import scala.annotation.nowarn
 
+/**
+  * The verifier code provided by the user allowing Delta to retrieve an access token for this user
+  */
 final case class Verifier(value: String)
 
 object Verifier {

@@ -35,6 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import fs2.Stream
 import io.circe.{Json, JsonObject}
@@ -50,7 +51,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class GraphAnalyticsIndexingStreamSpec
+class GraphAnalyticsIndexingStreamSpec(val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("GraphAnalyticsIndexingStreamSpec"))
     with AnyWordSpecLike
     with EitherValuable
@@ -136,8 +137,8 @@ class GraphAnalyticsIndexingStreamSpec
 
     val resourceParser = ResourceParser(fetchResource, findRelationship)
 
-    val mapping     = jsonObjectContentOf("elasticsearch/mappings.json")
-    val graphStream = new GraphAnalyticsIndexingStream(
+    val mapping          = jsonObjectContentOf("elasticsearch/mappings.json")
+    lazy val graphStream = new GraphAnalyticsIndexingStream(
       esClient,
       (_: ProjectRef, _: Offset) => UIO.pure(stream),
       resourceParser,

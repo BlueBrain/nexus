@@ -5,17 +5,20 @@ import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.alpakka.s3.{BucketAccess, S3Attributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
-import com.whisk.docker.scalatest.DockerTestKit
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import monix.bio.{IO, Task}
-import org.scalatest.Suites
+import org.scalatest.{Suite, Suites}
 
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets.UTF_8
 
-class MinioSpec
-    extends Suites(new S3StorageAccessSpec, new S3StorageSaveAndFetchFileSpec, new S3StorageLinkFileSpec)
-    with DockerTestKit
-    with MinioDocker
+class MinioSpec extends Suites with MinioDocker {
+  override val nestedSuites: IndexedSeq[Suite] = Vector(
+    new S3StorageAccessSpec(this),
+    new S3StorageSaveAndFetchFileSpec(this),
+    new S3StorageLinkFileSpec(this)
+  )
+}
 
 object MinioSpec {
   def createBucket(value: S3StorageValue)(implicit config: StorageTypeConfig, system: ActorSystem): Task[Unit] = {

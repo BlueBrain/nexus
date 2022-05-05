@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker._
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
@@ -29,7 +30,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class GraphAnalyticsSpec
+class GraphAnalyticsSpec(docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("GraphAnalyticsSpec"))
     with AnyWordSpecLike
     with Matchers
@@ -54,8 +55,8 @@ class GraphAnalyticsSpec
   private val project       = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
   private val (_, projects) = ProjectSetup.init(org :: Nil, project :: Nil).accepted
 
-  private val endpoint                       = elasticsearchHost.endpoint
-  private val client                         = new ElasticSearchClient(HttpClient(), endpoint, 2000)
+  private lazy val endpoint                  = docker.esHostConfig.endpoint
+  private lazy val client                    = new ElasticSearchClient(HttpClient(), endpoint, 2000)
   private var graphAnalytics: GraphAnalytics = null
 
   "GraphAnalytics" should {

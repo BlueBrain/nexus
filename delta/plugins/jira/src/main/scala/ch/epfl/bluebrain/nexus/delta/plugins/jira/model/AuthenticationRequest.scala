@@ -8,6 +8,11 @@ import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 
 import scala.annotation.nowarn
 
+/**
+  * The request sent back to the user so that he can authorize the client
+  * @param value
+  *   the Jira uri so that the user can approve
+  */
 final case class AuthenticationRequest(value: Uri)
 
 object AuthenticationRequest {

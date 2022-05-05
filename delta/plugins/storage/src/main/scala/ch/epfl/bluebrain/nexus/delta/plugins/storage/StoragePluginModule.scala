@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -141,7 +142,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        fusionConfig: FusionConfig
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
@@ -151,7 +153,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           paginationConfig,
           s,
           cr,
-          ordering
+          ordering,
+          fusionConfig
         )
       }
   }
@@ -223,7 +226,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
       new FilesRoutes(identities, acls, organizations, projects, files, indexingAction)(
@@ -231,7 +235,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         storageConfig,
         s,
         cr,
-        ordering
+        ordering,
+        fusionConfig
       )
   }
 

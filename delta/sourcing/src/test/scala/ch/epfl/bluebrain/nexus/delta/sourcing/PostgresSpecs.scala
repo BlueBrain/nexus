@@ -4,24 +4,24 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.PostgresProjectionSpec
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{postgresHostConfig, PostgresPassword, PostgresUser}
-import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.Suites
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{PostgresPassword, PostgresUser}
+import org.scalatest.{Suite, Suites}
 
-class PostgresSpecs
-    extends Suites(new PostgresDatabaseDefinitionSpec, new PostgresProjectionSpec)
-    with PostgresDocker
-    with DockerTestKit
+class PostgresSpecs extends Suites() with PostgresDocker {
 
-object PostgresSpecs {
-  val postgresConfig =
+  override val nestedSuites: IndexedSeq[Suite] = Vector(
+    new PostgresDatabaseDefinitionSpec(this),
+    new PostgresProjectionSpec(this)
+  )
+
+  def postgresConfig: PostgresConfig =
     PostgresConfig(
-      postgresHostConfig.host,
-      postgresHostConfig.port,
+      hostConfig.host,
+      hostConfig.port,
       "postgres",
       PostgresUser,
       Secret(PostgresPassword),
-      s"jdbc:postgresql://${postgresHostConfig.host}:${postgresHostConfig.port}/postgres?stringtype=unspecified",
+      s"jdbc:postgresql://${hostConfig.host}:${hostConfig.port}/postgres?stringtype=unspecified",
       tablesAutocreate = true
     )
 }

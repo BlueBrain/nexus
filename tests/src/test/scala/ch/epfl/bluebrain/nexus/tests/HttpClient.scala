@@ -36,6 +36,11 @@ class HttpClient private (baseUrl: Uri, httpExt: HttpExt)(implicit as: ActorSyst
   def apply(req: HttpRequest): Task[HttpResponse] =
     Task.deferFuture(httpExt.singleRequest(req))
 
+  def run[A](req: HttpRequest)(implicit um: FromEntityUnmarshaller[A]): Task[(A, HttpResponse)] =
+    Task.deferFuture(httpExt.singleRequest(req)).flatMap { res =>
+      Task.deferFuture(um.apply(res.entity)).map(a => (a, res))
+    }
+
   def post[A](url: String, body: Json, identity: Identity, extraHeaders: Seq[HttpHeader] = jsonHeaders)(
       assertResponse: (A, HttpResponse) => Assertion
   )(implicit um: FromEntityUnmarshaller[A]): Task[Assertion] =

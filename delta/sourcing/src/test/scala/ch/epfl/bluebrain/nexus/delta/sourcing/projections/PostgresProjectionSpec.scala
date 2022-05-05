@@ -7,10 +7,10 @@ import org.scalatest.DoNotDiscover
 import scala.util.Random
 
 @DoNotDiscover
-class PostgresProjectionSpec extends ProjectionSpec {
+class PostgresProjectionSpec(docker: PostgresSpecs) extends ProjectionSpec {
 
   override lazy val projections: Projection[SomeEvent] =
-    Projection.postgres(PostgresSpecs.postgresConfig, SomeEvent.empty, throwableToString).accepted
+    Projection.postgres(docker.postgresConfig, SomeEvent.empty, throwableToString).accepted
 
   override def generateOffset: Offset = Sequence(Random.nextLong())
 }

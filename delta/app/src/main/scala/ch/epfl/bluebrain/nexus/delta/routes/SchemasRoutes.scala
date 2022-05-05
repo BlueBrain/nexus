@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
@@ -24,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.Json
+import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -51,8 +52,13 @@ final class SchemasRoutes(
     projects: Projects,
     schemas: Schemas,
     index: IndexingAction
-)(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+)(implicit
+    baseUri: BaseUri,
+    s: Scheduler,
+    cr: RemoteContextResolution,
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
+) extends AuthDirectives(identities, acls)
     with CirceUnmarshalling
     with RdfMarshalling {
 
@@ -150,8 +156,14 @@ final class SchemasRoutes(
                             }
                           },
                           // Fetch a schema
-                          (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                            emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                          (get & idSegmentRef(id)) { id =>
+                            emitOrFusionRedirect(
+                              ref,
+                              id,
+                              authorizeFor(ref, Read).apply {
+                                emit(schemas.fetch(id, ref).leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
+                              }
+                            )
                           }
                         )
                       }
@@ -160,7 +172,8 @@ final class SchemasRoutes(
                     (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
                         authorizeFor(ref, Read).apply {
-                          val sourceIO = schemas.fetch(id, ref).map(_.value.source)
+                          implicit val source: Printer = sourcePrinter
+                          val sourceIO                 = schemas.fetch(id, ref).map(_.value.source)
                           emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                         }
                       }
@@ -221,7 +234,8 @@ object SchemasRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route = new SchemasRoutes(identities, acls, orgs, projects, schemas, index).routes
 
 }

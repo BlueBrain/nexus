@@ -1,14 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
+import akka.actor.typed.ActorSystem
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.config.JiraConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.routes.JiraRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import izumi.distage.model.definition.{Id, ModuleDef}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -18,11 +20,11 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
 
   make[JiraConfig].from { JiraConfig.load(_) }
 
-  make[JiraClient].fromEffect { (jiraConfig: JiraConfig) =>
-    //TODO persist tokens between restarts
-    KeyValueStore.localLRU[User, OAuthToken](500).flatMap { cache =>
-      JiraClient(cache, jiraConfig)
-    }
+  make[JiraClient].fromEffect {
+    (databaseConfig: DatabaseConfig, jiraConfig: JiraConfig, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      TokenStore(databaseConfig, as, clock).flatMap { cache =>
+        JiraClient(cache, jiraConfig)
+      }
   }
 
   make[JiraRoutes].from {

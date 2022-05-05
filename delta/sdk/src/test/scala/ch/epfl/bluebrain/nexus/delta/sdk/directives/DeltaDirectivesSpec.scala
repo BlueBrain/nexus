@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.HttpMethods.GET
 import akka.http.scaladsl.model.MediaRange._
 import akka.http.scaladsl.model.MediaRanges.{`*/*`, `application/*`, `audio/*`, `text/*`}
-import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/plain`}
+import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`, `text/plain`}
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Allow, Location}
@@ -18,10 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.SimpleResource.rawHeader
+import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectivesSpec.SimpleResource2
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{SimpleRejection, SimpleResource}
@@ -39,6 +43,7 @@ class DeltaDirectivesSpec
     extends RouteHelpers
     with Matchers
     with OptionValues
+    with CirceMarshalling
     with CirceLiteral
     with IOValues
     with TestMatchers
@@ -50,12 +55,17 @@ class DeltaDirectivesSpec
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
+  implicit private val f: FusionConfig = FusionConfig(Uri("https://bbp.epfl.ch/nexus/web/"), enableRedirects = true)
+
   implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   implicit private val s: Scheduler = Scheduler.global
 
-  private val id       = nxv + "myresource"
-  private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val id                = nxv + "myresource"
+  private val resource          = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resourceFusionUri = Uri(
+    "https://bbp.epfl.ch/nexus/web/org/proj/resources/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fid"
+  )
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
@@ -66,6 +76,8 @@ class DeltaDirectivesSpec
       contexts.error             -> jsonContentOf("/contexts/error.json").topContextValueOrEmpty
     )
 
+  private val compacted = resource.toCompactedJsonLd.accepted
+
   val ioResource: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Right(resource))
   val ioBadRequest: IO[SimpleRejection, SimpleResource] = IO.fromEither(Left(badRequestRejection))
   val ioConflict: IO[SimpleRejection, SimpleResource]   = IO.fromEither(Left(conflictRejection))
@@ -74,6 +86,10 @@ class DeltaDirectivesSpec
   val uioRedirect: UIO[Uri]                         = IO.pure(redirectTarget)
   val ioRedirect: IO[SimpleRejection, Uri]          = uioRedirect
   val ioRedirectRejection: IO[SimpleRejection, Uri] = IO.raiseError(badRequestRejection)
+
+  private val ref: ProjectRef  = ProjectRef.unsafe("org", "proj")
+  private val ioProject        = UIO.pure(ref.asJson)
+  private val projectFusionUri = Uri("https://bbp.epfl.ch/nexus/web/admin/org/proj")
 
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
@@ -112,6 +128,35 @@ class DeltaDirectivesSpec
         },
         path("redirectUIO") {
           emitRedirect(StatusCodes.SeeOther, uioRedirect)
+        },
+        pathPrefix("resources") {
+          concat(
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+            },
+            path("redirectFusionLatest") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
+            },
+            path("redirectFusionRev") {
+              emitOrFusionRedirect(ref, Revision(nxv + "id", 7L), emit(resource))
+            },
+            path("redirectFusionTag") {
+              emitOrFusionRedirect(ref, Tag(nxv + "id", TagLabel.unsafe("my-tag")), emit(resource))
+            },
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))(f.copy(enableRedirects = false), s)
+            }
+          )
+        },
+        pathPrefix("projects") {
+          concat(
+            path("redirectFusionDisabled") {
+              emitOrFusionRedirect(ref, emit(ioProject))(f.copy(enableRedirects = false), s)
+            },
+            path("redirectFusion") {
+              emitOrFusionRedirect(ref, emit(ioProject))
+            }
+          )
         },
         path("redirectFail") {
           emitRedirect(StatusCodes.SeeOther, ioRedirectRejection)
@@ -167,7 +212,6 @@ class DeltaDirectivesSpec
     }
 
     "return payload in compacted JSON-LD format" in {
-      val compacted = resource.toCompactedJsonLd.accepted
 
       forAll(List("/uio?format=compacted", "/uio")) { endpoint =>
         forAll(List(Accept(`*/*`), Accept(`application/*`, `application/ld+json`))) { accept =>
@@ -415,6 +459,58 @@ class DeltaDirectivesSpec
         response.asJson shouldEqual badRequestCompacted.json
       }
     }
+
+    "not redirect to the resource fusion page if the feature is disabled" in {
+      Get("/resources/redirectFusionDisabled") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.NotAcceptable
+      }
+    }
+
+    "not redirect to the resource fusion page if the Accept header is not set to text/html" in {
+      Get("/resources/redirectFusionLatest") ~> Accept(`application/json`) ~> route ~> check {
+        response.asJson shouldEqual compacted.json
+        response.status shouldEqual Accepted
+      }
+    }
+
+    "redirect to the resource fusion page with the latest version if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionLatest") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual resourceFusionUri
+      }
+    }
+
+    "redirect to the resource fusion page with a fixed rev if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionRev") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual resourceFusionUri.withQuery(Uri.Query("rev" -> "7"))
+      }
+    }
+
+    "redirect to the resource fusion page with a given tag if the Accept header is set to text/html" in {
+      Get("/resources/redirectFusionTag") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual resourceFusionUri.withQuery(Uri.Query("tag" -> "my-tag"))
+      }
+    }
+
+    "not redirect to the project fusion page if the feature is disabled" in
+      Get("/projects/redirectFusionDisabled") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.NotAcceptable
+      }
+
+    "not redirect to the project fusion page if the Accept header is not set to text/html" in
+      Get("/projects/redirectFusion") ~> Accept(`application/json`) ~> route ~> check {
+        response.asJson shouldEqual ref.asJson
+        response.status shouldEqual OK
+      }
+
+    "redirect to the project fusion page with the latest version if the Accept header is set to text/html" in
+      Get("/projects/redirectFusion") ~> Accept(`text/html`) ~> route ~> check {
+        response.status shouldEqual StatusCodes.SeeOther
+        response.header[Location].value.uri shouldEqual projectFusionUri
+      }
+
   }
 
 }

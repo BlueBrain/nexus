@@ -125,6 +125,7 @@ Currently, following Delta functionality is provided by plugins:
 - files and storages @ref:[API Reference](../api/files-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/storage/src){ open=new }
 - global search @ref:[API Reference](../api/search-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/search/src){ open=new }
 - graph analytics @ref:[API Reference](../api/graph-analytics-api.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/graph-analytics/src){ open=new }
+- Jira @ref:[API Reference](../api/jira.md) | @link:[code](https://github.com/BlueBrain/nexus/tree/$git.branch$/delta/plugins/jira/src){ open=new }
 
 Elasticsearch plugin is required in order to provide listings in the API, other plugins can be excluded if their functionality is not needed.
 All the above plugins are included in the Delta @link:[Docker image](https://hub.docker.com/r/bluebrain/nexus-delta/){ open=new }.    

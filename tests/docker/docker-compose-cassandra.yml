@@ -16,7 +16,7 @@ services:
     entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--",
                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
                  "./bin/delta-app",
-                 "-Xmx512m",
+                 "-Xmx1024m",
                  "-Dapp.cluster.remote-interface=delta" ]
     ports:
       - 8080:8080
@@ -26,7 +26,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 2048M
 
 #########################################################
 #  Uncomment the following lines to run a local cluster #
@@ -75,19 +75,23 @@ services:
 #          memory: 768M
 
   keycloak:
-    image: jboss/keycloak:15.0.0
+    image: quay.io/keycloak/keycloak:18.0.0
     environment:
       JAVA_OPTS: "-Xms64m -Xmx256m"
-      KEYCLOAK_USER: "admin"
-      KEYCLOAK_PASSWORD: "admin"
-      KEYCLOAK_FRONTEND_URL: "http://keycloak:8080/auth"
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
       DB_VENDOR: H2
+    command:
+      - start-dev
+      - --hostname=keycloak
+      - --hostname-port=8080
+      - --hostname-strict-backchannel=true
     ports:
       - 9090:8080
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
@@ -97,7 +101,7 @@ services:
       bootstrap.memory_lock: "true"
       ELASTIC_PASSWORD: "password"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
       interval: 30s
       timeout: 20s
       retries: 3
@@ -109,7 +113,7 @@ services:
           memory: 384M
 
   blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.5
+    image: bluebrain/blazegraph-nexus:2.1.6-RC
     environment:
       JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
     ports:
@@ -117,7 +121,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   cassandra:
     image: cassandra:3.11.11
@@ -158,7 +162,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
 
   minio:
     image: minio/minio:RELEASE.2021-07-30T00-02-00Z
@@ -184,3 +188,20 @@ services:
       - 9000:9000
     volumes:
       - /tmp/minio:/data
+
+  #########################################################
+  #  Uncomment the following lines to also run Fusion     #
+  #########################################################
+  #  fusion:
+  #    image: bluebrain/nexus-web:latest
+  #    environment:
+  #      BASE_PATH: "/web/"
+  #      HOST_NAME: "http://localhost:8000"
+  #      CLIENT_ID: "nexus-web"
+  #      API_ENDPOINT: "http://localhost:8080/v1"
+  #      SERVICE_ACCOUNTS_REALM: "service-accounts"
+  #      PLUGINS_MANIFEST_PATH: "http://localhost:8000/plugins"
+  #      PLUGINS_CONFIG_PATH: "/opt/nexus/public/plugins/plugins.config.json"
+  #      STUDIO_VIEW: "webapps/nexus-web/nxv:studioList"
+  #    ports:
+  #      - "8000:8000"

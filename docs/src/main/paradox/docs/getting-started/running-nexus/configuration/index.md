@@ -77,6 +77,12 @@ Nexus Delta uses symmetric encryption to secure sensitive data information (toke
 
 @link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L298){ open=new } of the configuration defines the encryption configuration.
 
+## Fusion configuration
+
+When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing `text/html` in the `Accept` header.
+
+@link:[This section](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/app/src/main/resources/app.conf#L85){ open=new } of the configuration defines the fusion configuration.
+
 ## Plugins configuration
 
 Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local directory defined by the `DELTA_PLUGINS` environment variable are loaded as plugins into the Delta service. 
@@ -87,7 +93,7 @@ Each plugin configuration is rooted under `plugins.{plugin_name}`. All plugins h
 
 The elasticsearch plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf){ open=new }. 
 
-The most important flag are:
+The most important flags are:
 * `plugins.elasticsearch.base` which defines the endpoint where the Elasticsearch service is running.
 * `plugins.elasticsearch.credentials.username` and `plugins.elasticsearch.credentials.password` to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.
 
@@ -115,10 +121,16 @@ Nexus Delta supports 3 types of storages: 'disk', 'amazon' (s3 compatible) and '
 - For S3 compatible storages the most relevant configuration flags are the ones related to the S3 settings: `plugins.storage.storages.amazon.default-endpoint`, `plugins.storage.storages.amazon.default-access-key` and `plugins.storage.storages.amazon.default-secret-key`.
 - For remote disk storages the most relevant configuration flags are `plugins.storage.storages.remote-disk.default-endpoint` (the endpoint where the remote storage service is running) and `plugins.storage.storages.remote-disk.default-credentials` (the Bearer token to authenticate to the remote storage service).
 
-
 ### Archive plugin configuration
 
 The archive plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/archive/src/main/resources/archive.conf){ open=new }.
+
+### Jira plugin configuration
+
+The Jira plugin configuration can be found @link:[here](https://github.com/BlueBrain/nexus/blob/$git.branch$/delta/plugins/jira/src/main/resources/jira.conf){ open=new }.
+
+Setting up the Jira plugin needs to set up the endpoint of the Jira instance but also the consumer key, the consumer secret 
+and the private key required to interact with Jira (more details including the configuration steps in Jira @link:[here](https://developer.atlassian.com/server/jira/platform/oauth/#step-1--configure-jira)).
 
 ## Monitoring
 

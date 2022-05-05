@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.directives
 
 import akka.http.scaladsl.marshalling.ToEntityMarshaller
+import akka.http.scaladsl.model.StatusCode
 import akka.http.scaladsl.model.StatusCodes.OK
 import akka.http.scaladsl.server.Directives.{complete, onSuccess, reject}
 import akka.http.scaladsl.server.Route
@@ -15,7 +16,7 @@ import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 trait ResponseToMarshaller {
-  def apply(): Route
+  def apply(statusOverride: Option[StatusCode]): Route
 }
 
 object ResponseToMarshaller extends RdfMarshalling {
@@ -26,14 +27,18 @@ object ResponseToMarshaller extends RdfMarshalling {
 
   private[directives] def apply[E: JsonLdEncoder, A: ToEntityMarshaller](
       uio: UIO[Either[Response[E], Complete[A]]]
-  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller = () => {
-    val ioRoute = uio.flatMap {
-      case Left(r: Reject[E])    => UIO.pure(reject(r))
-      case Left(e: Complete[E])  => e.value.toCompactedJsonLd.map(r => complete(e.status, e.headers, r.json))
-      case Right(v: Complete[A]) => UIO.pure(complete(v.status, v.headers, v.value))
+  )(implicit s: Scheduler, cr: RemoteContextResolution, jo: JsonKeyOrdering): ResponseToMarshaller =
+    (statusOverride: Option[StatusCode]) => {
+
+      val uioFinal = uio.map(_.map(value => value.copy(status = statusOverride.getOrElse(value.status))))
+
+      val ioRoute = uioFinal.flatMap {
+        case Left(r: Reject[E])    => UIO.pure(reject(r))
+        case Left(e: Complete[E])  => e.value.toCompactedJsonLd.map(r => complete(e.status, e.headers, r.json))
+        case Right(v: Complete[A]) => UIO.pure(complete(v.status, v.headers, v.value))
+      }
+      onSuccess(ioRoute.runToFuture)(identity)
     }
-    onSuccess(ioRoute.runToFuture)(identity)
-  }
 
   private[directives] type UseRight[A] = Either[Response[Unit], Complete[A]]
 

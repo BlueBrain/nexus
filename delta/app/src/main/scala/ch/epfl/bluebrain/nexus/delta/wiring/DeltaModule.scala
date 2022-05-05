@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
@@ -55,6 +56,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
     definition.initialize.as(appCfg.database)
   }
+  make[FusionConfig].from { appCfg.fusion }
   make[ProjectsConfig].from { appCfg.projects }
   make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }

@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -54,7 +55,8 @@ class CompositeViewsRoutes(
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
-    ordering: JsonKeyOrdering
+    ordering: JsonKeyOrdering,
+    fusionConfig: FusionConfig
 ) extends AuthDirectives(identities, acls)
     with DeltaDirectives
     with CirceUnmarshalling
@@ -121,8 +123,14 @@ class CompositeViewsRoutes(
                         }
                       },
                       // Fetch a view
-                      (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                        emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(
+                          ref,
+                          id,
+                          authorizeFor(ref, Read).apply {
+                            emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                          }
+                        )
                       }
                     )
                   },
@@ -437,7 +445,8 @@ object CompositeViewsRoutes {
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
-      ordering: JsonKeyOrdering
+      ordering: JsonKeyOrdering,
+      fusionConfig: FusionConfig
   ): Route =
     new CompositeViewsRoutes(
       identities,

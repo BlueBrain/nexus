@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -845,6 +845,17 @@ class ResolversRoutesSpec
         Get(s"/v1/resolvers/${project.ref}/in-project-post/$idSchemaEncoded") ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
+        }
+      }
+    }
+
+    "redirect to Fusion" should {
+      "be returned for the latest version if the Accept header is set to text/html" in {
+        Get(s"/v1/resolvers/${project.ref}/myid2") ~> Accept(`text/html`) ~> routes ~> check {
+          response.status shouldEqual StatusCodes.SeeOther
+          response.header[Location].value.uri shouldEqual Uri(
+            s"https://bbp.epfl.ch/nexus/web/${project.ref}/resources/myid2"
+          )
         }
       }
     }

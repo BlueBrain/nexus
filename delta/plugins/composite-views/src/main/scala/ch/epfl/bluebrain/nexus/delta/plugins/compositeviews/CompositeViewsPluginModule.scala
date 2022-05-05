@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
@@ -278,7 +279,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
-        ordering: JsonKeyOrdering
+        ordering: JsonKeyOrdering,
+        fusionConfig: FusionConfig
     ) =>
       new CompositeViewsRoutes(
         identities,
@@ -291,7 +293,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         blazegraphQuery,
         elasticSearchQuery,
         deltaClient
-      )(baseUri, s, cr, ordering)
+      )(baseUri, s, cr, ordering, fusionConfig)
   }
 
   many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
