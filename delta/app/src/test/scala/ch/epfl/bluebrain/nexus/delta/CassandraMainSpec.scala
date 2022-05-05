@@ -19,10 +19,12 @@ class CassandraMainSpec
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    System.setProperty("datastax-java-driver.basic.contact-points.0", s"${hostConfig.host}:${hostConfig.port}")
     commonBeforeAll()
   }
 
   override def afterAll(): Unit = {
+    System.clearProperty("datastax-java-driver.basic.contact-points.0")
     commonAfterAll()
     super.afterAll()
   }

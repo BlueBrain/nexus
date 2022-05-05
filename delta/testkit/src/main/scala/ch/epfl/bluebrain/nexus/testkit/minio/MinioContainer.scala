@@ -16,7 +16,7 @@ class MinioContainer(
   addEnv("MINIO_SECRET_KEY", secretKey)
   addEnv("MINIO_DOMAIN", virtualHost)
   addEnv("MINIO_REGION_NAME", region)
-  setCommand("server", sys.props.get("java.io.tmpdir").getOrElse("/tmp"))
+  setCommand("server", sys.props.getOrElse("java.io.tmpdir", "/tmp"))
   addExposedPort(9000)
   setWaitStrategy(Wait.forHttp("/").forStatusCode(403))
 }
