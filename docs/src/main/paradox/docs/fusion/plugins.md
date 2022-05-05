@@ -1,5 +1,5 @@
 # Plugins
-A resource returned by the Nexus Delta API is usually a JSON-LD document. By default Nexus Fusion displays JSON-LD in a 
+A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a 
 code editor. If the user has edit access to the document, they can update the resource in the editor.
 
 Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology, 
@@ -67,7 +67,7 @@ Plugins should follow this folder naming convention:
 
 ## Plugin Manifest
 
-The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus Fusion can find 
+The plugin manifest should be available at the same remote endpoint as the plugins, this is so that Nexus Fusion can find 
 the plugins and apply them dynamically.
 
 The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a 
