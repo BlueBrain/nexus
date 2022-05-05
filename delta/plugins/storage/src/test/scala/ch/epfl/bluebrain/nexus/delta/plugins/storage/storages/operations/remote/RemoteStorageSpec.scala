@@ -2,16 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.FilesSpec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteStorageClientSpec
-import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.Suites
+import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
+import org.scalatest.Suite
 
-class RemoteStorageSpec
-    extends Suites(
-      new RemoteStorageClientSpec,
-      new RemoteDiskStorageAccessSpec,
-      new RemoteStorageSaveAndFetchFileSpec,
-      new RemoteStorageLinkFileSpec,
-      new FilesSpec
-    )
-    with DockerTestKit
-    with RemoteStorageDocker
+class RemoteStorageSpec extends Suite with RemoteStorageDocker {
+  override def nestedSuites: IndexedSeq[Suite] = Vector(
+    new RemoteStorageClientSpec(this),
+    new RemoteDiskStorageAccessSpec(this),
+    new RemoteStorageSaveAndFetchFileSpec(this),
+    new RemoteStorageLinkFileSpec(this),
+    new FilesSpec(this)
+  )
+}

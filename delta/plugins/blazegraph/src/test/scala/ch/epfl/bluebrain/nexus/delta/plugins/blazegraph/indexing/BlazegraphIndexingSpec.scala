@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingSpec.Value
@@ -36,6 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import io.circe.Encoder
 import io.circe.syntax._
 import monix.execution.Scheduler
@@ -53,7 +53,7 @@ scalafmt: {
 }
  */
 @DoNotDiscover
-class BlazegraphIndexingSpec
+class BlazegraphIndexingSpec(docker: BlazegraphDocker)
     extends AbstractDBSpec
     with EitherValues
     with Inspectors
@@ -152,10 +152,10 @@ class BlazegraphIndexingSpec
 
   private val indexingSource = new IndexingSourceDummy(messages)
 
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  private val httpClient          = HttpClient()
-  private val blazegraphClient    = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
-  private val projection          = Projection.inMemory(()).accepted
+  implicit private val httpConfig   = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
+  private val httpClient            = HttpClient()
+  private lazy val blazegraphClient = BlazegraphClient(httpClient, docker.hostConfig.endpoint, None, 10.seconds)
+  private val projection            = Projection.inMemory(()).accepted
 
   private val cache: ProgressesCache = ProgressesStatistics.cache("BlazegraphViewsProgress")
 
@@ -172,12 +172,11 @@ class BlazegraphIndexingSpec
 
   private val config = BlazegraphViewsSetup.config
 
-  private val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
+  private lazy val indexingStream = new BlazegraphIndexingStream(blazegraphClient, indexingSource, cache, config, projection)
 
-  private val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
-  private val indexingCleanup        = new BlazegraphIndexingCleanup(blazegraphClient, cache, projection)
-  private val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
-  BlazegraphIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
+  private lazy val views: BlazegraphViews = BlazegraphViewsSetup.init(orgs, projs, permissions.query)
+  private lazy val indexingCleanup        = new BlazegraphIndexingCleanup(blazegraphClient, cache, projection)
+  private lazy val controller             = new IndexingStreamController[IndexingBlazegraphView](BlazegraphViews.moduleType)
 
   "BlazegraphIndexing" should {
 
@@ -247,6 +246,11 @@ class BlazegraphIndexingSpec
       )
     }
 
+  }
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    val _ = BlazegraphIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
   }
 
   private def checkBlazegraphTriples(view: IndexingViewResource, expected: NTriples*) = {

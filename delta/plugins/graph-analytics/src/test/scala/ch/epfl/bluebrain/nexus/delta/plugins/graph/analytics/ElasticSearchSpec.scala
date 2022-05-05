@@ -1,14 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStreamSpec
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker
-import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.Suites
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import org.scalatest.{Suite, Suites}
 
-class ElasticSearchSpec
-    extends Suites(
-      new GraphAnalyticsIndexingStreamSpec,
-      new GraphAnalyticsSpec
-    )
-    with ElasticSearchDocker
-    with DockerTestKit
+class ElasticSearchSpec extends Suites with ElasticSearchDocker {
+  override val nestedSuites: IndexedSeq[Suite] = Vector(
+    new GraphAnalyticsIndexingStreamSpec(this),
+    new GraphAnalyticsSpec(this)
+  )
+}

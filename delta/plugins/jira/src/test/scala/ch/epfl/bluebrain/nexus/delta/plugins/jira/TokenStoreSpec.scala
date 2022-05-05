@@ -7,13 +7,8 @@ import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, ShouldMatchers, 
 import org.scalatest.OptionValues
 import org.scalatest.wordspec.AnyWordSpecLike
 
-trait TokenStoreSpec
-    extends AnyWordSpecLike
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestHelpers
-    with ShouldMatchers {
+trait TokenStoreSpec extends IOFixedClock with IOValues with OptionValues with TestHelpers with ShouldMatchers {
+  this: AnyWordSpecLike =>
 
   def tokenStore: TokenStore
 

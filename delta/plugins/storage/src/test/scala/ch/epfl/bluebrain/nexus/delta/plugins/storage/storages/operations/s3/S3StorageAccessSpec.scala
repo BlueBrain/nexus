@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioDocker._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
+import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
@@ -18,7 +19,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import software.amazon.awssdk.regions.Region
 
 @DoNotDiscover
-class S3StorageAccessSpec
+class S3StorageAccessSpec(docker: MinioDocker)
     extends TestKit(ActorSystem("S3StorageAccessSpec"))
     with AnyWordSpecLike
     with Matchers
@@ -27,21 +28,23 @@ class S3StorageAccessSpec
     with StorageFixtures
     with BeforeAndAfterAll {
 
-  private val storage = S3StorageValue(
-    default = false,
-    algorithm = DigestAlgorithm.default,
-    bucket = "bucket",
-    endpoint = Some(s"http://$VirtualHost:$MinioServicePort"),
-    accessKey = Some(Secret(AccessKey)),
-    secretKey = Some(Secret(SecretKey)),
-    region = Some(Region.EU_CENTRAL_1),
-    readPermission = read,
-    writePermission = write,
-    maxFileSize = 20
-  )
+  private var storage: S3StorageValue = _
 
-  override protected def beforeAll(): Unit =
+  override protected def beforeAll(): Unit = {
+    storage = S3StorageValue(
+      default = false,
+      algorithm = DigestAlgorithm.default,
+      bucket = "bucket",
+      endpoint = Some(docker.hostConfig.endpoint),
+      accessKey = Some(Secret(AccessKey)),
+      secretKey = Some(Secret(SecretKey)),
+      region = Some(Region.EU_CENTRAL_1),
+      readPermission = read,
+      writePermission = write,
+      maxFileSize = 20
+    )
     createBucket(storage).hideErrors.accepted
+  }
 
   override protected def afterAll(): Unit =
     deleteBucket(storage).hideErrors.accepted

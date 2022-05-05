@@ -6,8 +6,6 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.persistence.query.{Offset, Sequence}
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
@@ -55,7 +53,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Pro
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
-import com.whisk.docker.scalatest.DockerTestKit
+import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import fs2.Stream
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -76,7 +75,6 @@ class CompositeIndexingSpec
     extends AbstractDBSpec
     with BlazegraphDocker
     with ElasticSearchDocker
-    with DockerTestKit
     with Inspectors
     with IOFixedClock
     with IOValues
@@ -90,6 +88,8 @@ class CompositeIndexingSpec
     with ElasticSearchClientSetup
     with ConfigFixtures
     with BeforeAndAfterEach {
+
+  override val docker: ElasticSearchDocker = this
 
   implicit private val patience: PatienceConfig =
     PatienceConfig(30.seconds, Span(1000, Millis))
@@ -121,7 +121,7 @@ class CompositeIndexingSpec
 
   implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
   private val httpClient          = HttpClient()
-  private val blazeClient         = BlazegraphClient(httpClient, blazegraphHostConfig.endpoint, None, 10.seconds)
+  private lazy val blazeClient    = BlazegraphClient(httpClient, hostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
   private val museUuid            = UUID.randomUUID()
@@ -254,7 +254,7 @@ class CompositeIndexingSpec
   private val remoteIndexingSource =
     RemoteIndexingSource.apply(remoteProjectStream, remoteResourceNQuads, config.remoteSourceClient, metadataPredicates)
 
-  private val indexingCleanup =
+  private lazy val indexingCleanup =
     new CompositeIndexingCleanup(
       config.elasticSearchIndexing,
       esClient,
@@ -263,7 +263,7 @@ class CompositeIndexingSpec
       cache,
       projection
     )
-  private val indexingStream  = new CompositeIndexingStream(
+  private lazy val indexingStream  = new CompositeIndexingStream(
     config.elasticSearchIndexing,
     esClient,
     config.blazegraphIndexing,
@@ -277,9 +277,9 @@ class CompositeIndexingSpec
     remoteIndexingSource
   )
 
-  private val (orgs, projects)      = projectSetup.accepted
-  private val indexingController    = new IndexingStreamController[CompositeView](CompositeViews.moduleType)
-  private val views: CompositeViews =
+  private val (orgs, projects)           = projectSetup.accepted
+  private lazy val indexingController    = new IndexingStreamController[CompositeView](CompositeViews.moduleType)
+  private lazy val views: CompositeViews =
     initViews(
       orgs,
       projects,
@@ -289,13 +289,17 @@ class CompositeIndexingSpec
       Crypto("password", "salt"),
       config.copy(minIntervalRebuild = 900.millis)
     ).accepted
-  CompositeIndexingCoordinator(
-    views,
-    indexingController,
-    indexingStream,
-    indexingCleanup,
-    config
-  ).runAsyncAndForget
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    CompositeIndexingCoordinator(
+      views,
+      indexingController,
+      indexingStream,
+      indexingCleanup,
+      config
+    ).runAsyncAndForget
+  }
 
   private def exchangeValue[A <: Music: Encoder](
       project: ProjectRef,

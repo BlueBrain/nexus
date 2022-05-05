@@ -1,35 +1,45 @@
 package ch.epfl.bluebrain.nexus.testkit.cassandra
 
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
-import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.DefaultCqlPort
-import com.whisk.docker.scalatest.DockerTestKit
-import com.whisk.docker.{DockerContainer, DockerReadyChecker}
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+import ch.epfl.bluebrain.nexus.testkit.cassandra.CassandraDocker.CassandraHostConfig
+import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
-trait CassandraDocker extends DockerKitWithTimeouts {
+import scala.concurrent.duration.DurationInt
+import scala.jdk.DurationConverters.ScalaDurationOps
 
-  val cassandraContainer: DockerContainer = DockerContainer("cassandra:3.11.11")
-    .withPorts(DefaultCqlPort -> Some(DefaultCqlPort))
-    .withEnv(
-      "JVM_OPTS=-Xms512m -Xmx512m -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0",
-      "MAX_HEAP_SIZE=512m",
-      "HEAP_NEWSIZE=100m"
-    )
-    .withNetworkMode("bridge")
-    .withReadyChecker(
-      DockerReadyChecker.LogLineContains("Starting listening for CQL clients on")
-    )
+trait CassandraDocker extends BeforeAndAfterAll { this: Suite =>
 
-  override def dockerContainers: List[DockerContainer] =
-    cassandraContainer :: super.dockerContainers
+  protected val container: CassandraContainer =
+    new CassandraContainer()
+      .withReuse(false)
+      .withStartupTimeout(60.seconds.toJava)
+
+  def hostConfig: CassandraHostConfig =
+    CassandraHostConfig(container.getHost, container.getMappedPort(9042))
+
+  def actorSystemConfig: Config =
+    ConfigFactory
+      .parseString(s"""datastax-java-driver.basic.contact-points = ["${hostConfig.host}:${hostConfig.port}"]""")
+      .withFallback(ConfigFactory.parseResources("cassandra-test.conf"))
+      .withFallback(ConfigFactory.load())
+      .resolve()
+
+  def actorSystem: ActorSystem[Nothing] =
+    akka.actor.ActorSystem("AkkaPersistenceCassandraSpec", actorSystemConfig).toTyped
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    container.start()
+  }
+
+  override def afterAll(): Unit = {
+    container.stop()
+    super.afterAll()
+  }
 }
 
 object CassandraDocker {
-
-  val DefaultCqlPort                           = 9042
-  val cassandraHostConfig: CassandraHostConfig = CassandraHostConfig("127.0.0.1", DefaultCqlPort)
-
   final case class CassandraHostConfig(host: String, port: Int)
-
-  trait CassandraSpec extends AnyWordSpecLike with CassandraDocker with DockerTestKit
 }

@@ -4,6 +4,7 @@ services:
     depends_on:
       - keycloak
       - elasticsearch
+      - blazegraph
       - postgres
       - storage-service
       - minio
@@ -25,7 +26,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 768M
+          memory: 1024M
 
   #########################################################
   #  Uncomment the following lines to run a local cluster #
@@ -74,19 +75,23 @@ services:
   #          memory: 768M
 
   keycloak:
-    image: jboss/keycloak:15.0.0
+    image: quay.io/keycloak/keycloak:18.0.0
     environment:
       JAVA_OPTS: "-Xms64m -Xmx256m"
-      KEYCLOAK_USER: "admin"
-      KEYCLOAK_PASSWORD: "admin"
-      KEYCLOAK_FRONTEND_URL: "http://keycloak:8080/auth"
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
       DB_VENDOR: H2
+    command:
+      - start-dev
+      - --hostname=keycloak
+      - --hostname-port=8080
+      - --hostname-strict-backchannel=true
     ports:
       - 9090:8080
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
@@ -108,7 +113,7 @@ services:
           memory: 384M
 
   blazegraph:
-    image: bluebrain/blazegraph-nexus:2.1.5
+    image: bluebrain/blazegraph-nexus:2.1.6-RC
     environment:
       JAVA_OPTS: "-Djava.awt.headless=true -XX:MaxDirectMemorySize=64m -Xmx256m -XX:+UseG1GC"
     ports:
@@ -116,7 +121,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 384M
+          memory: 512M
 
   postgres:
     image: library/postgres:12.2
@@ -148,7 +153,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          memory: 512M
 
   minio:
     image: minio/minio:RELEASE.2021-07-30T00-02-00Z
