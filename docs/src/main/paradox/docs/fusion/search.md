@@ -136,6 +136,6 @@ All customisations to the search results can be removed using the `Reset` option
 
 A search configuration is a predefined, named combination of columns, sort options and filters. You can find these 
 configurations in the Search Config dropdown on the left top of the table. Choosing a search config from the dropdown 
-will apply the combination of that config to the search table.
+will apply the config to the search table.
 
 ![Search Configurations](assets/fusion-search-searchconfig-options.png)

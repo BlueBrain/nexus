@@ -66,11 +66,11 @@ status of your project.
 Navigate to the project where you want to create a resource. Click on the “Create Resource” button in the right sidebar.
 Build the JSON payload with the help of the interactive editor, then hit “Save”.
 
-## Resource View
+## Resource Panel
 
-In resource view, you can see various visual representations of a Nexus Resource. Based on the resource type, you will
-see a set of plugins, each displayed on its own expandable section. By default, there will only be an admin plugin.
-You can read more about admin plugin @ref:[here](plugins.md#default-plugins).
+The resource panel displays data about an individual resource. Standard resource data is displayed at the top of the resource panel. Based on the resource type, you will
+also see a set of plugins, each displayed in its own expandable section. By default, there will only be an admin plugin.
+You can read more about the admin plugin @ref:[here](plugins.md#default-plugins).
 
 ## Resource Descriptions
 
