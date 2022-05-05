@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
+import io.circe.Printer
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
@@ -122,7 +123,7 @@ class ResourcesRoutesSpec
   private val routes =
     Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
 
-  val payloadUpdated = payload deepMerge json"""{"name": "Alice"}"""
+  val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 
@@ -204,7 +205,7 @@ class ResourcesRoutesSpec
         s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4L
       )
       forAll(endpoints) { case (endpoint, rev) =>
-        Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity) ~> routes ~> check {
+        Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
             resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, rev = rev + 1)
@@ -290,7 +291,7 @@ class ResourcesRoutesSpec
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L)
-        response.asJson shouldEqual payloadUpdated.deepMerge(meta).deepMerge(resourceCtx)
+        response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
 
