@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit._
-import com.whisk.docker.scalatest.DockerTestKit
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}
 import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
@@ -53,8 +53,10 @@ class SearchSpec
     with IOValues
     with Eventually
     with Fixtures
-    with ElasticSearchDocker
-    with DockerTestKit {
+    with ElasticSearchDocker {
+
+  override val docker: ElasticSearchDocker = this
+
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
@@ -140,7 +142,7 @@ class SearchSpec
   }
 
   "Search" should {
-    val search = Search(listViews, acls, esClient, externalConfig)
+    lazy val search = Search(listViews, acls, esClient, externalConfig)
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>

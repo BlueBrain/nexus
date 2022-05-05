@@ -4,19 +4,19 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.{TokenStore, TokenStoreSpec}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
-import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{postgresHostConfig, PostgresPassword, PostgresUser}
-import com.whisk.docker.scalatest.DockerTestKit
+import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{PostgresPassword, PostgresUser}
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class PostgresTokenStoreSpec extends TokenStoreSpec with PostgresDocker with DockerTestKit {
+class PostgresTokenStoreSpec extends AnyWordSpecLike with TokenStoreSpec with PostgresDocker {
 
-  val config =
+  lazy val config: PostgresConfig =
     PostgresConfig(
-      postgresHostConfig.host,
-      postgresHostConfig.port,
+      hostConfig.host,
+      hostConfig.port,
       "postgres",
       PostgresUser,
       Secret(PostgresPassword),
-      s"jdbc:postgresql://${postgresHostConfig.host}:${postgresHostConfig.port}/postgres?stringtype=unspecified",
+      s"jdbc:postgresql://${hostConfig.host}:${hostConfig.port}/postgres?stringtype=unspecified",
       tablesAutocreate = true
     )
 

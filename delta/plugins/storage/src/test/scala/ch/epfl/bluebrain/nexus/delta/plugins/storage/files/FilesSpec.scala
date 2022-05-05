@@ -18,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.RemoteStorageDocker.{BucketName, RemoteStorageEndpoint}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
@@ -32,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -42,7 +42,7 @@ import org.scalatest.{DoNotDiscover, Inspectors}
 import java.time.Instant
 
 @DoNotDiscover
-class FilesSpec
+class FilesSpec(docker: RemoteStorageDocker)
     extends AbstractDBSpec
     with Matchers
     with IOValues
@@ -294,7 +294,7 @@ class FilesSpec
         storages.create(diskId, projectRef, payload).accepted
 
         val payload2 =
-          json"""{"@type": "RemoteDiskStorage", "endpoint": "$RemoteStorageEndpoint", "folder": "$BucketName", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
+          json"""{"@type": "RemoteDiskStorage", "endpoint": "${docker.hostConfig.endpoint}", "folder": "${RemoteStorageDocker.BucketName}", "readPermission": "$otherRead", "writePermission": "$otherWrite", "maxFileSize": 300, "default": false}"""
         storages.create(remoteId, projectRef, Secret(payload2)).accepted
       }
 

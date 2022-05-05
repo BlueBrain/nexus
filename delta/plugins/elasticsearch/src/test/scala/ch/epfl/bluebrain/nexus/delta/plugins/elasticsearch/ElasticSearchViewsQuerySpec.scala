@@ -38,6 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{Aggre
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -51,7 +52,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class ElasticSearchViewsQuerySpec
+class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchViewsQuerySpec"))
     with AnyWordSpecLike
     with Matchers
@@ -215,7 +216,7 @@ class ElasticSearchViewsQuerySpec
       }
     })
 
-    val views = new ElasticSearchViewsQueryImpl(
+    lazy val views = new ElasticSearchViewsQueryImpl(
       () => UIO.pure(List(defaultView, defaultView2)),
       fetchDefault,
       fetch,

@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label, TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import fs2.Stream
 import io.circe.JsonObject
 import monix.bio.{Task, UIO}
@@ -32,7 +33,7 @@ import java.time.{Duration, Instant}
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class ProjectEventMetricsStreamSpec
+class ProjectEventMetricsStreamSpec(override val docker: ElasticSearchDocker)
     extends AbstractDBSpec
     with AnyWordSpecLike
     with Matchers
@@ -113,7 +114,6 @@ class ProjectEventMetricsStreamSpec
   private val projection = Projection.inMemory(()).accepted
 
   "Metrics" should {
-    ProjectEventMetricsStream(stream, Set(SimpleEventExchange), esClient, projection, externalIndexing).accepted
 
     "retrieve its offset" in eventually {
       val currentProgress = projection.progress(ProjectEventMetricsStream.projectionId).accepted
@@ -138,6 +138,10 @@ class ProjectEventMetricsStreamSpec
 
   }
 
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    val _ = ProjectEventMetricsStream(stream, Set(SimpleEventExchange), esClient, projection, externalIndexing).accepted
+  }
 }
 
 object ProjectEventMetricsStreamSpec {
