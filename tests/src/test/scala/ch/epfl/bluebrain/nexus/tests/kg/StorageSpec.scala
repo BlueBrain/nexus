@@ -308,7 +308,7 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   }
 
   private def attachmentString(filename: String): String = {
-    val encodedFilename = Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8))
+    val encodedFilename = new String(Base64.getEncoder.encode(filename.getBytes(Charsets.UTF_8)))
     s"=?UTF-8?B?$encodedFilename?="
   }
 

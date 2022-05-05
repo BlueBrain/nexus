@@ -236,6 +236,7 @@ lazy val testkit = project
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     javaSpecificationVersion := "1.8",
+    coverageMinimum          := 0,
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
