@@ -1,12 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
-import ch.epfl.bluebrain.nexus.testkit.ElasticSearchDocker
-import com.whisk.docker.scalatest.DockerTestKit
-import org.scalatest.Suites
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import org.scalatest.{Suite, Suites}
 
-class MainSpec
-    extends Suites(new PostgresMainSpec, new CassandraMainSpec)
-    with ElasticSearchDocker
-    with DockerTestKit
-    with DockerKitWithTimeouts
+class MainSpec extends Suites with ElasticSearchDocker {
+  override val nestedSuites: IndexedSeq[Suite] = Vector(
+    new PostgresMainSpec,
+    new CassandraMainSpec
+  )
+}

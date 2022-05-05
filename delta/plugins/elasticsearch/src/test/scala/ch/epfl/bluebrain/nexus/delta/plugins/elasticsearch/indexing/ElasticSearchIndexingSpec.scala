@@ -37,6 +37,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Res
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -49,7 +50,7 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class ElasticSearchIndexingSpec
+class ElasticSearchIndexingSpec(override val docker: ElasticSearchDocker)
     extends AbstractDBSpec
     with Inspectors
     with IOFixedClock
@@ -178,7 +179,7 @@ class ElasticSearchIndexingSpec
   implicit private val patience: PatienceConfig =
     PatienceConfig(15.seconds, Span(1000, Millis))
 
-  private val indexingStream = new ElasticSearchIndexingStream(
+  private lazy val indexingStream = new ElasticSearchIndexingStream(
     esClient,
     indexingSource,
     cache,
@@ -187,11 +188,10 @@ class ElasticSearchIndexingSpec
     projection
   )
 
-  private val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
-  private val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache, projection)
-  private val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
-  private val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
-  ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
+  private lazy val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
+  private lazy val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache, projection)
+  private lazy val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
+  private lazy val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
 
   private def listAll(index: IndexLabel) =
     esClient.search(QueryBuilder.empty.withPage(page), Set(index.value), Query.Empty).accepted
@@ -284,6 +284,11 @@ class ElasticSearchIndexingSpec
         documentFor(res3Proj1, value3Proj1)
       )
     }
+  }
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    val _ = ElasticSearchIndexingCoordinator(views, controller, indexingStream, indexingCleanup, config).accepted
   }
 
   private def checkElasticSearchDocuments(view: IndexingViewResource, expected: JsonObject*) = {

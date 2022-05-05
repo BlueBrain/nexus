@@ -1,10 +1,10 @@
 <rdf:RDF xmlns:bds="http://www.bigdata.com/rdf/search#" xmlns:bd="http://www.bigdata.com/rdf#" xmlns:hint="http://www.bigdata.com/queryHints#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:fn="http://www.w3.org/2005/xpath-functions#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:sesame="http://www.openrdf.org/schema/sesame#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
     <rdf:Description rdf:about="http://localhost/myid-0">
-        <value xmlns="http://schema.org/">b-0</value>
-        <rdfs:label>a-0</rdfs:label>
+        <value rdf:datatype="http://www.w3.org/2001/XMLSchema#string" xmlns="http://schema.org/">b-0</value>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">a-0</rdfs:label>
     </rdf:Description>
     <rdf:Description rdf:about="http://localhost/myid-1">
-        <value xmlns="http://schema.org/">b-1</value>
-        <rdfs:label>a-1</rdfs:label>
+        <value rdf:datatype="http://www.w3.org/2001/XMLSchema#string" xmlns="http://schema.org/">b-1</value>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">a-1</rdfs:label>
     </rdf:Description>
 </rdf:RDF>

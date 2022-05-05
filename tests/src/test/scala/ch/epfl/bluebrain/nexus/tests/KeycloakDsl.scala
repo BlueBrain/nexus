@@ -21,7 +21,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
 
   private val logger = Logger[this.type]
 
-  private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}/auth")
+  private val keycloakUrl    = Uri(s"http://${sys.props.getOrElse("keycloak-url", "localhost:9090")}")
   private val keycloakClient = HttpClient(keycloakUrl)
   // Defined in docker-compose file
   private val adminRealm     = Realm("master")
@@ -54,7 +54,7 @@ class KeycloakDsl(implicit as: ActorSystem, materializer: Materializer, um: From
       status     <- keycloakClient(
                       HttpRequest(
                         method = POST,
-                        uri = s"$keycloakUrl/admin/realms",
+                        uri = s"$keycloakUrl/admin/realms/",
                         headers = Authorization(HttpCredentials.createOAuth2BearerToken(adminToken)) :: Nil,
                         entity = HttpEntity(ContentTypes.`application/json`, json.noSpaces)
                       )

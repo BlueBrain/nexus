@@ -20,6 +20,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import java.io.File
 import java.nio.file.{Files, Path, Paths}
 import java.util.UUID
+import scala.concurrent.duration.DurationInt
 import scala.reflect.io.Directory
 
 trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with OptionValues =>
@@ -110,13 +111,14 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
       ConfigImpl.reloadSystemPropertiesConfig()
       val ref: IORef[Option[Locator]] = IORef.unsafe(None)
       try {
-        Main.start(locator => ref.set(Some(locator)), pluginLoaderConfig).accepted
+        Main.start(locator => ref.set(Some(locator)), pluginLoaderConfig).acceptedWithTimeout(1.minute)
         val locator = ref.get.accepted.value
         // test wiring correctness
         val _       = locator.get[Vector[Route]]
       } finally {
-        val locator = ref.get.accepted.value
-        locator.get[ActorSystem[Nothing]].terminate()
+        val system = ref.get.accepted.value.get[ActorSystem[Nothing]]
+        system.terminate()
+        Task.fromFuture(system.whenTerminated).as(()).acceptedWithTimeout(20.seconds)
       }
     }
   }

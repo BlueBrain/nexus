@@ -33,7 +33,6 @@ val catsVersion                     = "2.6.1"
 val circeVersion                    = "0.14.1"
 val classgraphVersion               = "4.8.129"
 val distageVersion                  = "1.0.8"
-val dockerTestKitVersion            = "0.9.9"
 val doobieVersion                   = "0.13.4"
 val fs2Version                      = "2.5.10"
 val h2Version                       = "1.4.200"
@@ -56,6 +55,7 @@ val scalaTestVersion                = "3.2.10"
 val slickVersion                    = "3.3.3"
 val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2" // 1.4.1 fails to validate some test schemas
+val testContainersVersion           = "1.17.1"
 val uuidGeneratorVersion            = "4.0.1"
 
 lazy val akkaActorTyped           = "com.typesafe.akka" %% "akka-actor-typed"            % akkaVersion
@@ -81,57 +81,56 @@ lazy val akkaPersistenceJdbc = Seq(
   "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
 )
 
-lazy val akkaPersistenceQuery = "com.typesafe.akka"            %% "akka-persistence-query"          % akkaVersion
-lazy val akkaSlf4j            = "com.typesafe.akka"            %% "akka-slf4j"                      % akkaVersion
-lazy val akkaStream           = "com.typesafe.akka"            %% "akka-stream"                     % akkaVersion
-lazy val akkaTestKit          = "com.typesafe.akka"            %% "akka-testkit"                    % akkaVersion
-lazy val akkaTestKitTyped     = "com.typesafe.akka"            %% "akka-actor-testkit-typed"        % akkaVersion
-lazy val alpakkaFile          = "com.lightbend.akka"           %% "akka-stream-alpakka-file"        % alpakkaVersion
-lazy val alpakkaSse           = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"         % alpakkaVersion
-lazy val alpakkaS3            = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"          % alpakkaVersion
-lazy val apacheCompress       = "org.apache.commons"            % "commons-compress"                % apacheCompressVersion
-lazy val awsSdk               = "software.amazon.awssdk"        % "s3"                              % awsSdkVersion
-lazy val betterMonadicFor     = "com.olegpy"                   %% "better-monadic-for"              % betterMonadicForVersion
-lazy val byteBuddyAgent       = "net.bytebuddy"                 % "byte-buddy-agent"                % byteBuddyAgentVersion
-lazy val caffeine             = "com.github.ben-manes.caffeine" % "caffeine"                        % caffeineVersion
-lazy val catsCore             = "org.typelevel"                %% "cats-core"                       % catsVersion
-lazy val catsEffect           = "org.typelevel"                %% "cats-effect"                     % catsEffectVersion
-lazy val catsEffectLaws       = "org.typelevel"                %% "cats-effect-laws"                % catsEffectVersion
-lazy val catsRetry            = "com.github.cb372"             %% "cats-retry"                      % catsRetryVersion
-lazy val circeCore            = "io.circe"                     %% "circe-core"                      % circeVersion
-lazy val circeGeneric         = "io.circe"                     %% "circe-generic"                   % circeVersion
-lazy val circeGenericExtras   = "io.circe"                     %% "circe-generic-extras"            % circeVersion
-lazy val circeLiteral         = "io.circe"                     %% "circe-literal"                   % circeVersion
-lazy val circeOptics          = "io.circe"                     %% "circe-optics"                    % circeVersion
-lazy val circeParser          = "io.circe"                     %% "circe-parser"                    % circeVersion
-lazy val classgraph           = "io.github.classgraph"          % "classgraph"                      % classgraphVersion
-lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"                    % distageVersion
-lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"                 % doobieVersion
-lazy val dockerTestKit        = "com.whisk"                    %% "docker-testkit-scalatest"        % dockerTestKitVersion
-lazy val dockerTestKitImpl    = "com.whisk"                    %% "docker-testkit-impl-docker-java" % dockerTestKitVersion
-lazy val fs2                  = "co.fs2"                       %% "fs2-core"                        % fs2Version
-lazy val fs2io                = "co.fs2"                       %% "fs2-io"                          % fs2Version
-lazy val h2                   = "com.h2database"                % "h2"                              % h2Version
-lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                        % jenaVersion
-lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"                     % jsonldjavaVersion
-lazy val kamonAkkaHttp        = "io.kamon"                     %% "kamon-akka-http"                 % kamonVersion
-lazy val kamonCore            = "io.kamon"                     %% "kamon-core"                      % kamonVersion
-lazy val kanelaAgent          = "io.kamon"                      % "kanela-agent"                    % kanelaAgentVersion
-lazy val kindProjector        = "org.typelevel"                %% "kind-projector"                  % kindProjectorVersion cross CrossVersion.full
-lazy val kryo                 = "io.altoo"                     %% "akka-kryo-serialization"         % kryoVersion
-lazy val logback              = "ch.qos.logback"                % "logback-classic"                 % logbackVersion
-lazy val magnolia             = "com.propensive"               %% "magnolia"                        % magnoliaVersion
-lazy val mockito              = "org.mockito"                  %% "mockito-scala"                   % mockitoVersion
-lazy val monixBio             = "io.monix"                     %% "monix-bio"                       % monixBioVersion
-lazy val monixEval            = "io.monix"                     %% "monix-eval"                      % monixVersion
-lazy val nimbusJoseJwt        = "com.nimbusds"                  % "nimbus-jose-jwt"                 % nimbusJoseJwtVersion
-lazy val pureconfig           = "com.github.pureconfig"        %% "pureconfig"                      % pureconfigVersion
-lazy val scalaLogging         = "com.typesafe.scala-logging"   %% "scala-logging"                   % scalaLoggingVersion
-lazy val scalate              = "org.scalatra.scalate"         %% "scalate-core"                    % scalateVersion
-lazy val scalaTest            = "org.scalatest"                %% "scalatest"                       % scalaTestVersion
-lazy val streamz              = "com.github.krasserm"          %% "streamz-converter"               % streamzVersion
-lazy val topBraidShacl        = "org.topbraid"                  % "shacl"                           % topBraidVersion
-lazy val uuidGenerator        = "com.fasterxml.uuid"            % "java-uuid-generator"             % uuidGeneratorVersion
+lazy val akkaPersistenceQuery = "com.typesafe.akka"            %% "akka-persistence-query"   % akkaVersion
+lazy val akkaSlf4j            = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
+lazy val akkaStream           = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
+lazy val akkaTestKit          = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
+lazy val akkaTestKitTyped     = "com.typesafe.akka"            %% "akka-actor-testkit-typed" % akkaVersion
+lazy val alpakkaFile          = "com.lightbend.akka"           %% "akka-stream-alpakka-file" % alpakkaVersion
+lazy val alpakkaSse           = "com.lightbend.akka"           %% "akka-stream-alpakka-sse"  % alpakkaVersion
+lazy val alpakkaS3            = "com.lightbend.akka"           %% "akka-stream-alpakka-s3"   % alpakkaVersion
+lazy val apacheCompress       = "org.apache.commons"            % "commons-compress"         % apacheCompressVersion
+lazy val awsSdk               = "software.amazon.awssdk"        % "s3"                       % awsSdkVersion
+lazy val betterMonadicFor     = "com.olegpy"                   %% "better-monadic-for"       % betterMonadicForVersion
+lazy val byteBuddyAgent       = "net.bytebuddy"                 % "byte-buddy-agent"         % byteBuddyAgentVersion
+lazy val caffeine             = "com.github.ben-manes.caffeine" % "caffeine"                 % caffeineVersion
+lazy val catsCore             = "org.typelevel"                %% "cats-core"                % catsVersion
+lazy val catsEffect           = "org.typelevel"                %% "cats-effect"              % catsEffectVersion
+lazy val catsEffectLaws       = "org.typelevel"                %% "cats-effect-laws"         % catsEffectVersion
+lazy val catsRetry            = "com.github.cb372"             %% "cats-retry"               % catsRetryVersion
+lazy val circeCore            = "io.circe"                     %% "circe-core"               % circeVersion
+lazy val circeGeneric         = "io.circe"                     %% "circe-generic"            % circeVersion
+lazy val circeGenericExtras   = "io.circe"                     %% "circe-generic-extras"     % circeVersion
+lazy val circeLiteral         = "io.circe"                     %% "circe-literal"            % circeVersion
+lazy val circeOptics          = "io.circe"                     %% "circe-optics"             % circeVersion
+lazy val circeParser          = "io.circe"                     %% "circe-parser"             % circeVersion
+lazy val classgraph           = "io.github.classgraph"          % "classgraph"               % classgraphVersion
+lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"             % distageVersion
+lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
+lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
+lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version
+lazy val h2                   = "com.h2database"                % "h2"                       % h2Version
+lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                 % jenaVersion
+lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"              % jsonldjavaVersion
+lazy val kamonAkkaHttp        = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
+lazy val kamonCore            = "io.kamon"                     %% "kamon-core"               % kamonVersion
+lazy val kanelaAgent          = "io.kamon"                      % "kanela-agent"             % kanelaAgentVersion
+lazy val kindProjector        = "org.typelevel"                %% "kind-projector"           % kindProjectorVersion cross CrossVersion.full
+lazy val kryo                 = "io.altoo"                     %% "akka-kryo-serialization"  % kryoVersion
+lazy val logback              = "ch.qos.logback"                % "logback-classic"          % logbackVersion
+lazy val magnolia             = "com.propensive"               %% "magnolia"                 % magnoliaVersion
+lazy val mockito              = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
+lazy val monixBio             = "io.monix"                     %% "monix-bio"                % monixBioVersion
+lazy val monixEval            = "io.monix"                     %% "monix-eval"               % monixVersion
+lazy val nimbusJoseJwt        = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
+lazy val pureconfig           = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
+lazy val scalaLogging         = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
+lazy val scalate              = "org.scalatra.scalate"         %% "scalate-core"             % scalateVersion
+lazy val scalaTest            = "org.scalatest"                %% "scalatest"                % scalaTestVersion
+lazy val streamz              = "com.github.krasserm"          %% "streamz-converter"        % streamzVersion
+lazy val topBraidShacl        = "org.topbraid"                  % "shacl"                    % topBraidVersion
+lazy val testContainers       = "org.testcontainers"            % "testcontainers"           % testContainersVersion
+lazy val uuidGenerator        = "com.fasterxml.uuid"            % "java-uuid-generator"      % uuidGeneratorVersion
 
 val javaSpecificationVersion = SettingKey[String](
   "java-specification-version",
@@ -233,15 +232,15 @@ lazy val testkit = project
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     javaSpecificationVersion := "1.8",
+    coverageMinimum          := 0,
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
       catsRetry,
-      dockerTestKit,
-      dockerTestKitImpl,
       doobiePostgres,
       monixBio,
-      scalaTest
+      scalaTest,
+      testContainers
     ),
     addCompilerPlugin(kindProjector)
   )

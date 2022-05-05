@@ -4,7 +4,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphDocker.blazegraphHostConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespace
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
@@ -40,6 +39,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{Aggre
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
@@ -51,7 +51,7 @@ import java.time.Instant
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class BlazegraphViewsQuerySpec
+class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
     with AnyWordSpecLike
     with Matchers
@@ -71,8 +71,8 @@ class BlazegraphViewsQuerySpec
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
   implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  private val endpoint = blazegraphHostConfig.endpoint
-  private val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
+  private lazy val endpoint = docker.hostConfig.endpoint
+  private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -197,14 +197,14 @@ class BlazegraphViewsQuerySpec
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue
 
   "A BlazegraphViewsQuery" should {
-    val visitor = new ViewRefVisitor(fetchView(_, _).map { view =>
+    val visitor    = new ViewRefVisitor(fetchView(_, _).map { view =>
       view.value match {
         case v: IndexingBlazegraphView  =>
           IndexedVisitedView(ViewRef(v.project, v.id), v.permission, namespace(v.uuid, view.rev, externalConfig))
         case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
       }
     })
-    val views   = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
+    lazy val views = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
 
     "index triples" in {
       forAll(indexingViews) { v =>

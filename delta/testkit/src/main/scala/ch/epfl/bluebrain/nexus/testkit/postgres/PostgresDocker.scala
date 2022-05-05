@@ -1,54 +1,36 @@
 package ch.epfl.bluebrain.nexus.testkit.postgres
 
-import ch.epfl.bluebrain.nexus.testkit.DockerSupport.DockerKitWithTimeouts
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
-import com.whisk.docker.scalatest.DockerTestKit
-import com.whisk.docker.{DockerCommandExecutor, DockerContainer, DockerContainerState, DockerReadyChecker}
-import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, Suite}
 
-import java.sql.DriverManager
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
+import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
-trait PostgresDocker extends DockerKitWithTimeouts {
-  import scala.concurrent.duration._
+trait PostgresDocker extends BeforeAndAfterAll { this: Suite =>
 
-  val postgresContainer: DockerContainer = DockerContainer("library/postgres:12.2")
-    .withPorts((PostgresAdvertisedPort, Some(PostgresExposedPort)))
-    .withEnv(s"POSTGRES_USER=$PostgresUser", s"POSTGRES_PASSWORD=$PostgresPassword")
-    .withReadyChecker(
-      new PostgresReadyChecker(PostgresUser, PostgresPassword, postgresHostConfig)
-        .looped(20, 1.second)
-    )
+  protected val container: PostgresContainer =
+    new PostgresContainer(PostgresUser, PostgresPassword)
+      .withReuse(false)
+      .withStartupTimeout(60.seconds.toJava)
 
-  abstract override def dockerContainers: List[DockerContainer] =
-    postgresContainer :: super.dockerContainers
-}
+  def hostConfig: PostgresHostConfig =
+    PostgresHostConfig(container.getHost, container.getMappedPort(5432))
 
-class PostgresReadyChecker(user: String, password: String, config: PostgresHostConfig) extends DockerReadyChecker {
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    container.start()
+  }
 
-  override def apply(
-      container: DockerContainerState
-  )(implicit docker: DockerCommandExecutor, ec: ExecutionContext): Future[Boolean] =
-    Future {
-      Try {
-        Class.forName("org.postgresql.Driver")
-        val url = s"jdbc:postgresql://${config.host}:${config.port}/"
-        Option(DriverManager.getConnection(url, user, password)).map(_.close).isDefined
-      }.getOrElse(false)
-    }
+  override def afterAll(): Unit = {
+    container.stop()
+    super.afterAll()
+  }
+
 }
 
 object PostgresDocker {
-  val PostgresExposedPort    = 44444
-  val PostgresAdvertisedPort = 5432
-  val PostgresUser           = "postgres"
-  val PostgresPassword       = "postgres"
-
-  val postgresHostConfig: PostgresHostConfig = PostgresHostConfig("127.0.0.1", PostgresExposedPort)
+  val PostgresUser     = "postgres"
+  val PostgresPassword = "postgres"
 
   final case class PostgresHostConfig(host: String, port: Int)
-
-  trait PostgresSpec extends AnyWordSpecLike with DockerTestKit with PostgresDocker
-
 }

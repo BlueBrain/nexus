@@ -14,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, ElasticSearchDocker, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.JsonObject
 import org.scalatest.DoNotDiscover
 import org.scalatest.concurrent.Eventually
@@ -24,7 +25,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
 
 @DoNotDiscover
-class ElasticSearchClientSpec
+class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
     with AnyWordSpecLike
     with Matchers
@@ -48,7 +49,7 @@ class ElasticSearchClientSpec
     "fetch the service description" in {
       esClient.serviceDescription.accepted shouldEqual ServiceDescription(
         Name.unsafe("elasticsearch"),
-        ElasticSearchDocker.version
+        docker.version
       )
     }
 
