@@ -173,7 +173,7 @@ final class SchemasRoutes(
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
                         authorizeFor(ref, Read).apply {
                           implicit val source: Printer = sourcePrinter
-                          val sourceIO = schemas.fetch(id, ref).map(_.value.source)
+                          val sourceIO                 = schemas.fetch(id, ref).map(_.value.source)
                           emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                         }
                       }

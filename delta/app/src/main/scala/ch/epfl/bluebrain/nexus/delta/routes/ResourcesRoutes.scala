@@ -220,7 +220,7 @@ final class ResourcesRoutes(
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/source") {
                             authorizeFor(ref, Read).apply {
                               implicit val source: Printer = sourcePrinter
-                              val sourceIO = resources.fetch(id, ref, schemaOpt).map(_.value.source)
+                              val sourceIO                 = resources.fetch(id, ref, schemaOpt).map(_.value.source)
                               emit(sourceIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                             }
                           }
