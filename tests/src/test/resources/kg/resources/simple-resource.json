@@ -11,5 +11,6 @@
   "other:projects": [
     "testProject",
     "testProject2"
-  ]
+  ],
+  "nullValue": null
 }

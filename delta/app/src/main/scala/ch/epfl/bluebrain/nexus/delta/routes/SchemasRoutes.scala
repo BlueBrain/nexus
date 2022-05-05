@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import io.circe.Json
+import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -160,7 +160,8 @@ final class SchemasRoutes(
                     (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/source") {
                         authorizeFor(ref, Read).apply {
-                          val sourceIO = schemas.fetch(id, ref).map(_.value.source)
+                          implicit val source: Printer = sourcePrinter
+                          val sourceIO                 = schemas.fetch(id, ref).map(_.value.source)
                           emit(sourceIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                         }
                       }
