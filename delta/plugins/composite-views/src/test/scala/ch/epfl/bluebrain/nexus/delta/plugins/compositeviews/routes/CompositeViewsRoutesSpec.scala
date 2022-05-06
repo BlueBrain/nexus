@@ -162,6 +162,7 @@ class CompositeViewsRoutesSpec
         case seq if seq.toSet == Set("queryCommonNs")    => responseCommonNs
         case seq if seq.toSet == Set("queryProjection")  => responseQueryProjection
         case seq if seq.toSet == Set("queryProjections") => responseQueryProjections
+        case _                                           => NTriples.empty
       }
     ),
     views

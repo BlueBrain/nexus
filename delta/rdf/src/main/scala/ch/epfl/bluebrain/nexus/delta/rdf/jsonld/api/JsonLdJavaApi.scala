@@ -136,8 +136,11 @@ final class JsonLdJavaApi(config: JsonLdApiConfig) extends JsonLdApi {
     opts
   }
 
-  private def getIri(ctx: Context, key: String): Option[Iri]                  =
-    Option(ctx.get(key)).collectFirstSome { case str: String => str.toIri.toOption }
+  private def getIri(ctx: Context, key: String): Option[Iri] =
+    Option(ctx.get(key)).collectFirstSome {
+      case str: String => str.toIri.toOption
+      case _           => None
+    }
 
   private def toJsonObjectOrErr(string: String): Either[RdfError, JsonObject] =
     for {

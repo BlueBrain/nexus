@@ -12,44 +12,44 @@ scalafmt: {
 }
  */
 
-val scalacScapegoatVersion = "1.4.10"
-val scalaCompilerVersion   = "2.13.6"
+val scalacScapegoatVersion = "1.4.13"
+val scalaCompilerVersion   = "2.13.8"
 
-val akkaHttpVersion                 = "10.2.6"
-val akkaHttpCirceVersion            = "1.38.2"
-val akkaCorsVersion                 = "1.1.2"
+val akkaHttpVersion                 = "10.2.9"
+val akkaHttpCirceVersion            = "1.39.2"
+val akkaCorsVersion                 = "1.1.3"
 val akkaPersistenceCassandraVersion = "1.0.5"
 val akkaPersistenceJdbcVersion      = "5.0.4"
-val akkaVersion                     = "2.6.17"
-val alpakkaVersion                  = "3.0.3"
+val akkaVersion                     = "2.6.19"
+val alpakkaVersion                  = "3.0.4"
 val apacheCompressVersion           = "1.21"
-val awsSdkVersion                   = "2.17.71"
+val awsSdkVersion                   = "2.17.184"
 val byteBuddyAgentVersion           = "1.10.17"
 val betterMonadicForVersion         = "0.3.1"
-val caffeineVersion                 = "3.0.4"
+val caffeineVersion                 = "3.1.0"
 val catsEffectVersion               = "2.5.4"
 val catsRetryVersion                = "2.1.1"
-val catsVersion                     = "2.6.1"
+val catsVersion                     = "2.7.0"
 val circeVersion                    = "0.14.1"
-val classgraphVersion               = "4.8.129"
-val distageVersion                  = "1.0.8"
+val classgraphVersion               = "4.8.146"
+val distageVersion                  = "1.0.10"
 val doobieVersion                   = "0.13.4"
-val fs2Version                      = "2.5.10"
-val googleAuthClientVersion         = "1.33.1"
+val fs2Version                      = "2.5.11"
+val googleAuthClientVersion         = "1.33.3"
 val h2Version                       = "1.4.200"
 val jenaVersion                     = "4.2.0"
-val jsonldjavaVersion               = "0.13.3"
-val kamonVersion                    = "2.3.1"
+val jsonldjavaVersion               = "0.13.4"
+val kamonVersion                    = "2.5.1"
 val kanelaAgentVersion              = "1.0.13"
 val kindProjectorVersion            = "0.13.2"
-val kryoVersion                     = "2.3.0"
-val logbackVersion                  = "1.2.6"
+val kryoVersion                     = "2.4.3"
+val logbackVersion                  = "1.2.11"
 val magnoliaVersion                 = "0.17.0"
-val mockitoVersion                  = "1.16.46"
+val mockitoVersion                  = "1.17.5"
 val monixVersion                    = "3.4.0"
 val monixBioVersion                 = "1.2.0"
-val nimbusJoseJwtVersion            = "9.15.2"
-val pureconfigVersion               = "0.17.0"
+val nimbusJoseJwtVersion            = "9.22"
+val pureconfigVersion               = "0.17.1"
 val scalaLoggingVersion             = "3.9.4"
 val scalateVersion                  = "1.9.6" // scala-parser-combinators_2.13:2.0.0 ... is selected over 1.1.2
 val scalaTestVersion                = "3.2.10"
@@ -236,7 +236,7 @@ lazy val testkit = project
   .settings(shared, compilation, coverage, release, assertJavaVersion)
   .settings(
     javaSpecificationVersion := "1.8",
-    coverageMinimum          := 0,
+    coverageMinimumStmtTotal := 0,
     libraryDependencies     ++= Seq(
       akkaActorTyped, // Needed to create Uri
       akkaHttpCore,
@@ -258,8 +258,8 @@ lazy val sourcing = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
-    coverageMinimum      := 64,
-    libraryDependencies ++= Seq(
+    coverageMinimumStmtTotal := 64,
+    libraryDependencies     ++= Seq(
       akkaActorTyped,
       akkaClusterTyped,
       akkaClusterShardingTyped,
@@ -282,7 +282,7 @@ lazy val sourcing = project
       catsEffectLaws         % Test,
       logback                % Test
     ) ++ akkaPersistenceJdbc,
-    Test / fork          := true
+    Test / fork              := true
   )
 
 lazy val rdf = project
@@ -504,7 +504,7 @@ lazy val testPlugin = project
     name                          := "delta-test-plugin",
     moduleName                    := "delta-test-plugin",
     assembly / assemblyOutputPath := target.value / "delta-test-plugin.jar",
-    assembly / assemblyOption     := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption     := (assembly / assemblyOption).value.withIncludeScala(false),
     Test / fork                   := true
   )
 
@@ -521,7 +521,7 @@ lazy val elasticsearchPlugin = project
     name                       := "delta-elasticsearch-plugin",
     moduleName                 := "delta-elasticsearch-plugin",
     assembly / assemblyJarName := "elasticsearch.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     libraryDependencies       ++= Seq(
       kamonAkkaHttp    % Provided,
       akkaTestKitTyped % Test,
@@ -533,7 +533,7 @@ lazy val elasticsearchPlugin = project
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch",
     addCompilerPlugin(betterMonadicFor),
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-elasticsearch-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -562,7 +562,7 @@ lazy val blazegraphPlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.blazegraph",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "blazegraph.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-blazegraph-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -598,7 +598,7 @@ lazy val compositeViewsPlugin = project
     addCompilerPlugin(betterMonadicFor),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "composite-views.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-composite-views-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -631,7 +631,7 @@ lazy val searchPlugin = project
     addCompilerPlugin(betterMonadicFor),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "search.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-search-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -667,7 +667,7 @@ lazy val storagePlugin = project
     addCompilerPlugin(kindProjector),
     coverageFailOnMinimum      := false, // TODO: Remove this line when coverage increases
     assembly / assemblyJarName := "storage.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-storage-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -698,7 +698,7 @@ lazy val archivePlugin = project
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.archive",
     assembly / assemblyJarName := "archive.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-archive-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -723,7 +723,7 @@ lazy val projectDeletionPlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "project-deletion.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
     Test / fork                := true
@@ -753,7 +753,7 @@ lazy val graphAnalyticsPlugin = project
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics",
     assembly / assemblyJarName := "graph-analytics.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-graph-analytics-plugin", "plugin"), assembly),
     Test / fork                := true,
@@ -780,7 +780,7 @@ lazy val jiraPlugin = project
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.jira",
     addCompilerPlugin(betterMonadicFor),
     assembly / assemblyJarName := "jira.jar",
-    assembly / assemblyOption  := (assembly / assemblyOption).value.copy(includeScala = false),
+    assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("jira", "plugin"), assembly),
     Test / fork                := true,
@@ -1022,8 +1022,8 @@ lazy val compilation = {
 }
 
 lazy val coverage = Seq(
-  coverageMinimum       := 80,
-  coverageFailOnMinimum := true
+  coverageMinimumStmtTotal := 80,
+  coverageFailOnMinimum    := true
 )
 
 lazy val release = Seq(

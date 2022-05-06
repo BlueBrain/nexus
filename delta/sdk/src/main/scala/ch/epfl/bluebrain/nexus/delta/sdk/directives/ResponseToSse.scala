@@ -54,6 +54,7 @@ object ResponseToSse {
             case TimeBasedUUID(value) => Some(value.toString)
             case Sequence(value)      => Some(value.toString)
             case NoOffset             => None
+            case _                    => None
           }
           ServerSentEvent(defaultPrinter.print(json.asJson.sort), Some(envelope.eventType), id)
         }

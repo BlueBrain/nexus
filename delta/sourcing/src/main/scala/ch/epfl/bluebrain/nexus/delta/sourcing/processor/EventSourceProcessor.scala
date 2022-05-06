@@ -5,17 +5,17 @@ import akka.actor.typed.{ActorRef, Behavior, PostStop}
 import akka.persistence.typed._
 import akka.persistence.typed.scaladsl.{Effect, EventSourcedBehavior, RetentionCriteria, SnapshotCountRetentionCriteria}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotCombined, SnapshotEvery, SnapshotPredicate}
+import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.{NoSnapshot, SnapshotEvery}
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.StopResponse
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ProcessorCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EventDefinition, PersistentEventDefinition, SnapshotStrategy, TransientEventDefinition}
+import com.datastax.oss.driver.api.core.DriverTimeoutException
 import monix.bio.IO
 import monix.execution.Scheduler
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
-import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.StopResponse
-import com.datastax.oss.driver.api.core.DriverTimeoutException
 
 import scala.concurrent.TimeoutException
 import scala.reflect.ClassTag
@@ -464,15 +464,9 @@ object EventSourceProcessor {
 
     def snapshotStrategy(strategy: SnapshotStrategy): EventSourcedBehavior[C, E, State] =
       strategy match {
-        case NoSnapshot                     => eventSourcedBehavior
-        case s: SnapshotPredicate[State, E] =>
-          eventSourcedBehavior.snapshotWhen(s.predicate)
-        case s: SnapshotEvery               =>
+        case NoSnapshot       => eventSourcedBehavior
+        case s: SnapshotEvery =>
           eventSourcedBehavior.withRetention(toSnapshotCriteria(s))
-        case s: SnapshotCombined[State, E]  =>
-          eventSourcedBehavior
-            .snapshotWhen(s.predicate.predicate)
-            .withRetention(toSnapshotCriteria(s.snapshotEvery))
       }
   }
 

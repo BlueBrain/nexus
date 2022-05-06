@@ -61,7 +61,7 @@ final case class ProjectionProgress[A](
 
   private def timestampOrCurrent(message: ErrorMessage): Instant =
     message match {
-      case m: FailureMessage[_] => m.timestamp
+      case m: FailureMessage    => m.timestamp
       case _: CastFailedMessage => timestamp
     }
 }
