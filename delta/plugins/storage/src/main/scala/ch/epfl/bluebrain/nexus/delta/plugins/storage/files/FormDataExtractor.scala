@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{EntityStreamSizeException, ExceptionWithErrorInfo, HttpEntity, Multipart}
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.unmarshalling.Unmarshaller.UnsupportedContentTypeException
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshaller}
@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{FileTooLarge, InvalidMultipartFieldName, WrappedAkkaRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileDescription, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import monix.bio.IO
 import monix.execution.Scheduler
 
@@ -29,14 +28,14 @@ sealed trait FormDataExtractor {
     * @param storageAvailableSpace
     *   the remaining available space on the storage
     * @return
-    *   the file description plus the stream of [[ByteString]] with the file content
+    *   the file description plus the entity with the file content
     */
   def apply(
       id: Iri,
       entity: HttpEntity,
       maxFileSize: Long,
       storageAvailableSpace: Option[Long]
-  ): IO[FileRejection, (FileDescription, AkkaSource)]
+  ): IO[FileRejection, (FileDescription, BodyPartEntity)]
 }
 object FormDataExtractor {
 
@@ -53,7 +52,7 @@ object FormDataExtractor {
         entity: HttpEntity,
         maxFileSize: Long,
         storageAvailableSpace: Option[Long]
-    ): IO[FileRejection, (FileDescription, AkkaSource)] = {
+    ): IO[FileRejection, (FileDescription, BodyPartEntity)] = {
       val sizeLimit = Math.min(storageAvailableSpace.getOrElse(Long.MaxValue), maxFileSize)
       IO.deferFuture(um(entity.withSizeLimit(sizeLimit)))
         .mapError {
@@ -76,7 +75,7 @@ object FormDataExtractor {
               .mapAsync(parallelism = 1) {
                 case part if part.name == fieldName =>
                   FileDescription(part.filename.getOrElse("file"), part.entity.contentType).runToFuture.map { desc =>
-                    Some(desc -> part.entity.dataBytes)
+                    Some(desc -> part.entity)
                   }
                 case part                           =>
                   part.entity.discardBytes().future.as(None)

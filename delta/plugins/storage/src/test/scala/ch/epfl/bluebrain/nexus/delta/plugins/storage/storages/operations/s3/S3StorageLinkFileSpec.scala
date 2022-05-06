@@ -2,10 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin
@@ -88,12 +86,12 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
 
   "S3Storage linking operations" should {
     val content = "file content"
-    val source  = Source(content.map(c => ByteString(c.toString)))
+    val entity  = HttpEntity(content)
 
     val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
 
     "succeed" in {
-      storage.saveFile.apply(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
 
       val linkAttributes = attributes.copy(origin = FileAttributesOrigin.Storage)
       storage.linkFile.apply(attributes.path, description).accepted shouldEqual linkAttributes

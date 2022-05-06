@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding._
-import akka.http.scaladsl.model.ContentTypes.`application/octet-stream`
-import akka.http.scaladsl.model.HttpEntity
+import akka.http.scaladsl.model.BodyPartEntity
 import akka.http.scaladsl.model.Multipart.FormData
 import akka.http.scaladsl.model.Multipart.FormData.BodyPart
 import akka.http.scaladsl.model.StatusCodes._
@@ -26,6 +25,7 @@ import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, UIO}
+
 import scala.concurrent.duration._
 
 /**
@@ -72,13 +72,12 @@ final class RemoteDiskStorageClient(baseUri: BaseUri)(implicit client: HttpClien
     * @param source
     *   the file content
     */
-  def createFile(bucket: Label, relativePath: Path, source: AkkaSource)(implicit
+  def createFile(bucket: Label, relativePath: Path, entity: BodyPartEntity)(implicit
       cred: Option[AuthToken]
   ): IO[SaveFileRejection, RemoteDiskStorageFileAttributes] = {
-    val endpoint       = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
-    val bodyPartEntity = HttpEntity.IndefiniteLength(`application/octet-stream`, source)
-    val filename       = relativePath.lastSegment.getOrElse("filename")
-    val multipartForm  = FormData(BodyPart("file", bodyPartEntity, Map("filename" -> filename))).toEntity()
+    val endpoint      = baseUri.endpoint / "buckets" / bucket.value / "files" / relativePath
+    val filename      = relativePath.lastSegment.getOrElse("filename")
+    val multipartForm = FormData(BodyPart("file", entity, Map("filename" -> filename))).toEntity()
     client.fromJsonTo[RemoteDiskStorageFileAttributes](Put(endpoint, multipartForm).withCredentials).mapError {
       case HttpClientStatusError(_, `Conflict`, _) =>
         SaveFileRejection.ResourceAlreadyExists(relativePath.toString)
