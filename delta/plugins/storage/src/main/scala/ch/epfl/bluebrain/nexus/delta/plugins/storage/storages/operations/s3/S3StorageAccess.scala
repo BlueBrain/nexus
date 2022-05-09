@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
-import akka.stream.alpakka.s3.S3Attributes
+import akka.http.scaladsl.model.StatusCodes
+import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.alpakka.s3.scaladsl.S3
 import akka.stream.scaladsl.Sink
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
@@ -27,7 +28,9 @@ final class S3StorageAccess(implicit config: StorageTypeConfig, as: ActorSystem)
     ).redeemCauseWith(
       {
         case Error(_: NoSuchElementException) | Termination(_: NoSuchElementException) => IO.unit // // bucket is empty
-        case err                                                                       => IO.raiseError(StorageNotAccessible(id, err.toThrowable.getMessage))
+        case Error(s: S3Exception) if s.statusCode == StatusCodes.NotFound             => IO.unit // // bucket is empty
+        case err                                                                       =>
+          IO.raiseError(StorageNotAccessible(id, err.toThrowable.getMessage))
       },
       _ => IO.unit
     )

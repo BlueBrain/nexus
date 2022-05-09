@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
+import akka.stream.IOOperationIncompleteException
 import akka.stream.scaladsl.FileIO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -47,8 +48,10 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
             Future.failed(new IllegalArgumentException("File was not written"))
         })
       ).mapError {
-        case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
-        case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
+        case _: FileAlreadyExistsException                                                            => ResourceAlreadyExists(fullPath.toString)
+        case i: IOOperationIncompleteException if i.getCause.isInstanceOf[FileAlreadyExistsException] =>
+          ResourceAlreadyExists(fullPath.toString)
+        case err                                                                                      => UnexpectedSaveError(fullPath.toString, err.getMessage)
       }
     }
 
