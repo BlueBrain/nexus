@@ -78,6 +78,29 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
 
   s"uploading an attachment against the $storageName storage" should {
 
+    "upload empty file" in {
+      deltaClient.putAttachment[Json](
+        s"/files/$fullId/empty?storage=nxv:$storageId",
+        contentOf("/kg/files/empty"),
+        ContentTypes.`text/plain(UTF-8)`,
+        "empty",
+        Coyote
+      ) { (_, response) =>
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "fetch empty file" in {
+      deltaClient.get[ByteString](s"/files/$fullId/attachment:empty", Coyote, acceptAll) { (content, response) =>
+        assertFetchAttachment(
+          response,
+          "empty",
+          ContentTypes.`text/plain(UTF-8)`
+        )
+        content.utf8String shouldEqual contentOf("/kg/files/empty")
+      }
+    }
+
     "upload attachment with JSON" in {
       deltaClient.putAttachment[Json](
         s"/files/$fullId/attachment.json?storage=nxv:$storageId",
