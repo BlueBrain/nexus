@@ -2,10 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.{StatusCodes, Uri}
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.testkit.TestKit
-import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
@@ -56,7 +54,7 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
 
     implicit val cred: Option[AuthToken] = None
     val content                          = RemoteStorageDocker.Content
-    val source                           = Source(content.map(c => ByteString(c.toString)))
+    val entity                           = HttpEntity(content)
     val attributes                       = RemoteDiskStorageFileAttributes(
       location = s"file:///app/$BucketName/nexus/my/file.txt",
       bytes = 12,
@@ -75,7 +73,7 @@ class RemoteStorageClientSpec(docker: RemoteStorageDocker)
     }
 
     "create a file" in {
-      client.createFile(bucket, Uri.Path("my/file.txt"), source).accepted shouldEqual attributes
+      client.createFile(bucket, Uri.Path("my/file.txt"), entity).accepted shouldEqual attributes
     }
 
     "get a file" in {

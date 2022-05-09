@@ -2,23 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import akka.util.ByteString
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.S3StorageValue
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.{FileNotFound, UnexpectedFetchError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.{ResourceAlreadyExists, UnexpectedSaveError}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -27,9 +24,9 @@ import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import io.circe.Json
 import monix.execution.Scheduler
-import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import software.amazon.awssdk.regions.Region
 
 import java.util.UUID
@@ -92,17 +89,17 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
 
   "S3Storage operations" should {
     val content = "file content"
-    val source  = Source(content.map(c => ByteString(c.toString)))
+    val entity  = HttpEntity(content)
 
     "fail saving a file to a bucket on wrong credentials" in {
       val description  = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
       val otherStorage = storage.copy(value = storage.value.copy(accessKey = Some(Secret("wrong"))))
-      otherStorage.saveFile.apply(description, source).rejectedWith[UnexpectedSaveError]
+      otherStorage.saveFile.apply(description, entity).rejectedWith[UnexpectedSaveError]
     }
 
     "save a file to a bucket" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
     }
 
     "fetch a file from a bucket" in {
@@ -121,7 +118,7 @@ class S3StorageSaveAndFetchFileSpec(docker: MinioDocker)
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }

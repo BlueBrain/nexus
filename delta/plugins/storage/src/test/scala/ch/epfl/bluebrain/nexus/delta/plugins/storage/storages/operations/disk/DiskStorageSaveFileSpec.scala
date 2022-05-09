@@ -2,10 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -51,12 +49,12 @@ class DiskStorageSaveFileSpec
     val storage = DiskStorage(iri, project, value, Map.empty, Secret(Json.obj()))
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val content = "file content"
-    val source  = Source(content.map(c => ByteString(c.toString)))
+    val entity  = HttpEntity(content)
 
     "save a file to a volume" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
 
-      val attributes = storage.saveFile.apply(description, source).accepted
+      val attributes = storage.saveFile.apply(description, entity).accepted
 
       Files.readString(file.value) shouldEqual content
 
@@ -78,7 +76,7 @@ class DiskStorageSaveFileSpec
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 

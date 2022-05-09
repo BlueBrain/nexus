@@ -2,10 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
-import akka.http.scaladsl.model.Uri
-import akka.stream.scaladsl.Source
+import akka.http.scaladsl.model.{HttpEntity, Uri}
 import akka.testkit.TestKit
-import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
@@ -77,7 +75,7 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
 
   "RemoteDiskStorage operations" should {
     val content = "file content"
-    val source  = Source(content.map(c => ByteString(c.toString)))
+    val entity  = HttpEntity(content)
 
     val attributes = FileAttributes(
       uuid,
@@ -92,7 +90,7 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
 
     "save a file to a folder" in {
       val description = FileDescription(uuid, filename, Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).accepted shouldEqual attributes
+      storage.saveFile.apply(description, entity).accepted shouldEqual attributes
     }
 
     "fetch a file from a folder" in {
@@ -113,7 +111,7 @@ class RemoteStorageSaveAndFetchFileSpec(docker: RemoteStorageDocker)
 
     "fail attempting to save the same file again" in {
       val description = FileDescription(uuid, "myfile.txt", Some(`text/plain(UTF-8)`))
-      storage.saveFile.apply(description, source).rejectedWith[ResourceAlreadyExists]
+      storage.saveFile.apply(description, entity).rejectedWith[ResourceAlreadyExists]
     }
   }
 }
