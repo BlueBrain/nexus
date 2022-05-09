@@ -26,7 +26,8 @@ final case class CompositeIndexingStreamEntry(
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue = ctx
+      context: ContextValue = ctx,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] = data match {
     case TagNotFound(id)        => delete(id, index).map(Some(_))
     case resource: IndexingData =>
@@ -37,7 +38,8 @@ final case class CompositeIndexingStreamEntry(
           includeMetadata,
           includeDeprecated,
           sourceAsText,
-          context
+          context,
+          includeContext
         )
       else if (containsSchema(resource, resourceSchemas))
         delete(resource.id, index).map(Some.apply)
@@ -57,10 +59,11 @@ final case class CompositeIndexingStreamEntry(
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue
+      context: ContextValue,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] = {
     if (resource.deprecated && !includeDeprecated) delete(resource.id, idx).map(Some.apply)
-    else index(resource, idx, includeMetadata, sourceAsText, context)
+    else index(resource, idx, includeMetadata, sourceAsText, context, includeContext)
   }
 
   /**
@@ -77,9 +80,10 @@ final case class CompositeIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue = ctx
+      context: ContextValue = ctx,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] =
-    toDocument(resource, includeMetadata, sourceAsText, context).map { doc =>
+    toDocument(resource, includeMetadata, sourceAsText, context, includeContext).map { doc =>
       Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
     }
 
@@ -99,14 +103,15 @@ final case class CompositeIndexingStreamEntry(
       resource: IndexingData,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue
+      context: ContextValue,
+      includeContext: Boolean
   ): Task[Json] = {
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
 
     // TODO: check if composte view's context object (arg context) is to be included
-
+    if (includeContext) print("include")
     if (sourceAsText)
       graph
         .add(nxv.originalSource.iri, resource.source.noSpaces)
