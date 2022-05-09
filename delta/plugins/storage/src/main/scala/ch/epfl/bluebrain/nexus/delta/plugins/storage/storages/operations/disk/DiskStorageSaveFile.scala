@@ -26,6 +26,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
+  @SuppressWarnings(Array("IsInstanceOf"))
   override def apply(description: FileDescription, entity: BodyPartEntity): IO[SaveFileRejection, FileAttributes] =
     initLocation(description.uuid, description.filename).flatMap { case (fullPath, relativePath) =>
       IO.deferFuture(
