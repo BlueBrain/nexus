@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.scaladsl.Sink
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgorithm, Storage}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -24,10 +23,10 @@ trait SaveFile {
     *
     * @param description
     *   the file description
-    * @param source
-    *   the file stream
+    * @param entity
+    *   the entity with the file content
     */
-  def apply(description: FileDescription, source: AkkaSource): IO[SaveFileRejection, FileAttributes]
+  def apply(description: FileDescription, entity: BodyPartEntity): IO[SaveFileRejection, FileAttributes]
 }
 
 object SaveFile {

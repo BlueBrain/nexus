@@ -42,10 +42,10 @@ class FormDataExtractorSpec
           )
           .toEntity()
 
-      val expectedDescription   = FileDescription(uuid, "file.txt", Some(`text/plain(UTF-8)`))
-      val (description, source) = extractor(iri, entity, 179, None).accepted
+      val expectedDescription         = FileDescription(uuid, "file.txt", Some(`text/plain(UTF-8)`))
+      val (description, resultEntity) = extractor(iri, entity, 179, None).accepted
       description shouldEqual expectedDescription
-      consume(source) shouldEqual content
+      consume(resultEntity.dataBytes) shouldEqual content
     }
 
     "fail to be extracted if no file part exists found" in {

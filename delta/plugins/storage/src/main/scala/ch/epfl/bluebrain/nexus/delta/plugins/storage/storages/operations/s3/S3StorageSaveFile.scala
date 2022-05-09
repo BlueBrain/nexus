@@ -1,15 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path.Slash
-import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
+import akka.http.scaladsl.model.{BodyPartEntity, Uri}
 import akka.stream.alpakka.s3.scaladsl.S3
+import akka.stream.alpakka.s3.{S3Attributes, S3Exception}
 import akka.stream.scaladsl.Sink
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage.S3Storage
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.SaveFile.{digestSink, intermediateFolders, sizeSink}
@@ -27,7 +26,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit config: StorageTypeCo
 
   override def apply(
       description: FileDescription,
-      source: AkkaSource
+      entity: BodyPartEntity
   ): IO[SaveFileRejection, FileAttributes] = {
     val attributes = S3Attributes.settings(storage.value.alpakkaSettings(config))
     val path       = intermediateFolders(storage.project, description.uuid, description.filename)
@@ -39,7 +38,7 @@ final class S3StorageSaveFile(storage: S3Storage)(implicit config: StorageTypeCo
         .runWith(Sink.last)
         .flatMap {
           case None    =>
-            source.runWith(SinkUtils.combineMat(digestSink(storage.value.algorithm), sizeSink, s3Sink) {
+            entity.dataBytes.runWith(SinkUtils.combineMat(digestSink(storage.value.algorithm), sizeSink, s3Sink) {
               case (digest, bytes, s3Result) =>
                 Future.successful(
                   FileAttributes(
