@@ -106,7 +106,12 @@ class ProjectsDeletionStream(
                   resourcesDeletion.deleteRegistry(project)
                 )
               )(deletionAction(msg.value, uuid, _))
-              .map(statuses => msg.as(initialProgress.value + (uuid -> statuses.last)))
+              .map { statuses =>
+                val progress = statuses.lastOption.fold(initialProgress.value) { s =>
+                  initialProgress.value + (uuid -> s)
+                }
+                msg.as(progress)
+              }
           }
           .persistProgress(initialProgress, projectionId, projection, persistProgressConfig)
           .enableMetrics

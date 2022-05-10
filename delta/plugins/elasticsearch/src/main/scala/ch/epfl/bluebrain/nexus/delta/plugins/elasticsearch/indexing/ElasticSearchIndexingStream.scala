@@ -95,6 +95,12 @@ final class ElasticSearchIndexingStream(
         cache.remove(projectionId) >>
           cache.put(projectionId, NoProgress) >>
           projection.recordProgress(projectionId, NoProgress).as(NoProgress)
+      case _                            =>
+        Task.raiseError(
+          new IllegalArgumentException(
+            "Only `Continue` and `FullRestart` are valid progress strategies for elasticsearch views."
+          )
+        )
     }
 
   private def idx(view: ViewIndex[_]): IndexLabel =

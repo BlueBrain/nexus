@@ -101,6 +101,7 @@ object DeltaClient {
         case NoOffset             => None
         case Sequence(value)      => Some(value.toString)
         case TimeBasedUUID(value) => Some(value.toString)
+        case _                    => None
       }
 
       implicit val cred: Option[AuthToken] = token(source)

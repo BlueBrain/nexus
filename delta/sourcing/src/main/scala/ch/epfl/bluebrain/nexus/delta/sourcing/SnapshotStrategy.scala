@@ -14,13 +14,6 @@ object SnapshotStrategy {
   case object NoSnapshot extends SnapshotStrategy
 
   /**
-    * Snapshot will occur when the predicate with the State, Event and sequence is satisfied
-    * @param predicate
-    *   when the snapshot should be triggered
-    */
-  final case class SnapshotPredicate[State, Event](predicate: (State, Event, Long) => Boolean) extends SnapshotStrategy
-
-  /**
     * A Snapshot will be made every numberOfEvents and keepNSnapshots will be kept deleteEventsOnSnapshot allows to
     * delete events prior which are older than the older snapshot
     *
@@ -33,16 +26,4 @@ object SnapshotStrategy {
     */
   final case class SnapshotEvery(numberOfEvents: Int, keepNSnapshots: Int, deleteEventsOnSnapshot: Boolean)
       extends SnapshotStrategy
-
-  /**
-    * Combine the [[SnapshotPredicate]] and the [[SnapshotEvery]] strategies
-    * @param predicate
-    *   see [[SnapshotPredicate]]
-    * @param snapshotEvery
-    *   see [[SnapshotEvery]]
-    */
-  final case class SnapshotCombined[State, Event](
-      predicate: SnapshotPredicate[State, Event],
-      snapshotEvery: SnapshotEvery
-  ) extends SnapshotStrategy
 }

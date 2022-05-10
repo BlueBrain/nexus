@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.disk
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.{BodyPartEntity, Uri}
+import akka.stream.IOOperationIncompleteException
 import akka.stream.scaladsl.FileIO
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileDescription}
@@ -25,6 +26,7 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
 
   private val openOpts: Set[OpenOption] = Set(CREATE_NEW, WRITE)
 
+  @SuppressWarnings(Array("IsInstanceOf"))
   override def apply(description: FileDescription, entity: BodyPartEntity): IO[SaveFileRejection, FileAttributes] =
     initLocation(description.uuid, description.filename).flatMap { case (fullPath, relativePath) =>
       IO.deferFuture(
@@ -48,8 +50,10 @@ final class DiskStorageSaveFile(storage: DiskStorage)(implicit as: ActorSystem) 
           }
         )
       ).mapError {
-        case _: FileAlreadyExistsException => ResourceAlreadyExists(fullPath.toString)
-        case err                           => UnexpectedSaveError(fullPath.toString, err.getMessage)
+        case _: FileAlreadyExistsException                                                            => ResourceAlreadyExists(fullPath.toString)
+        case i: IOOperationIncompleteException if i.getCause.isInstanceOf[FileAlreadyExistsException] =>
+          ResourceAlreadyExists(fullPath.toString)
+        case err                                                                                      => UnexpectedSaveError(fullPath.toString, err.getMessage)
       }
     }
 

@@ -7,13 +7,13 @@ import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Reject
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import io.circe.syntax._
 import io.circe.{DecodingFailure, Encoder, JsonObject}
 import monix.execution.Scheduler
@@ -55,6 +55,7 @@ object RdfRejectionHandler {
       .handleAll[Reject[_]] {
         case Seq(head)                   => head.forceComplete
         case multiple @ Seq(head, _ @_*) => discardEntityAndForceEmit(head.status, multiple)
+        case _                           => discardEntityAndForceEmit(StatusCodes.InternalServerError, RejectionExpected)
       }
       .handleAll[AuthenticationFailedRejection] { rejections => discardEntityAndForceEmit(rejections) }
       .handleAll[UnacceptedResponseContentTypeRejection] { discardEntityAndForceEmit(_) }
@@ -446,6 +447,20 @@ object RdfRejectionHandler {
       Encoder.AsObject.instance(_ => resourceNotFoundJson)
 
     implicit val notFoundResourceRejectionJsonLdEncoder: JsonLdEncoder[ResourceNotFound] =
+      JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
+  }
+
+  final case object RejectionExpected extends Rejection {
+
+    type RejectionExpected = RejectionExpected.type
+
+    private[marshalling] val rejectionRejectedJson                                                  =
+      JsonObject(keywords.tpe -> "RejectionExpected".asJson, "reason" -> "At least one rejection was expected.".asJson)
+
+    implicit private[marshalling] val resourceRejectionEncoder: Encoder.AsObject[RejectionExpected] =
+      Encoder.AsObject.instance(_ => rejectionRejectedJson)
+
+    implicit val rejectionRejectedJsonLdEncoder: JsonLdEncoder[RejectionExpected] =
       JsonLdEncoder.computeFromCirce(id = BNode.random, ctx = ContextValue(contexts.error))
   }
 

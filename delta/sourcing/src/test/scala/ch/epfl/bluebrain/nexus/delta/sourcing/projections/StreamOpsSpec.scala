@@ -426,7 +426,7 @@ object StreamOpsSpec {
         Vector.empty
       )
 
-    def failed: FailureMessage[A] =
+    def failed: FailureMessage =
       FailureMessage(
         Sequence(tuple._1.toLong),
         now.plusSeconds(tuple._1.toLong),
@@ -448,7 +448,7 @@ object StreamOpsSpec {
         Vector.empty
       )
 
-    def failed: FailureMessage[A] =
+    def failed: FailureMessage =
       FailureMessage(
         Sequence(tuple._1.toLong),
         now.plusSeconds(tuple._1.toLong),

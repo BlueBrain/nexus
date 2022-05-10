@@ -27,7 +27,8 @@ final class S3StorageAccess(implicit config: StorageTypeConfig, as: ActorSystem)
     ).redeemCauseWith(
       {
         case Error(_: NoSuchElementException) | Termination(_: NoSuchElementException) => IO.unit // // bucket is empty
-        case err                                                                       => IO.raiseError(StorageNotAccessible(id, err.toThrowable.getMessage))
+        case err                                                                       =>
+          IO.raiseError(StorageNotAccessible(id, err.toThrowable.getMessage))
       },
       _ => IO.unit
     )

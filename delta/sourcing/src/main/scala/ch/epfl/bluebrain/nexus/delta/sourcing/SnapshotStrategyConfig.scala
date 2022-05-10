@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.SnapshotPredicate
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
 
@@ -25,13 +24,6 @@ final case class SnapshotStrategyConfig private (
     (numberOfEvents, keepNSnapshots, deleteEventsOnSnapshot) match {
       case (Some(nEv), Some(keepN), Some(deleteEvents)) =>
         SnapshotStrategy.SnapshotEvery(nEv, keepN, deleteEvents)
-      case _                                            => SnapshotStrategy.NoSnapshot
-    }
-
-  def combinedStrategy[State, Event](predicate: SnapshotPredicate[State, Event]): SnapshotStrategy =
-    (numberOfEvents, keepNSnapshots, deleteEventsOnSnapshot) match {
-      case (Some(nEv), Some(keepN), Some(deleteEvents)) =>
-        SnapshotStrategy.SnapshotCombined(predicate, SnapshotStrategy.SnapshotEvery(nEv, keepN, deleteEvents))
       case _                                            => SnapshotStrategy.NoSnapshot
     }
 }

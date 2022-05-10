@@ -103,7 +103,7 @@ private[projections] class PostgresProjection[A: Encoder: Decoder] private (
             c.errorMessage
           )
         )
-      case f: FailureMessage[A]                        =>
+      case f: FailureMessage                           =>
         Some(
           ErrorParams(
             id,
