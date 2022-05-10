@@ -96,7 +96,8 @@ class ElasticSearchQuerySpec
       None,
       JsonObject.empty,
       None,
-      ContextObject(JsonObject.empty)
+      ContextObject(JsonObject.empty),
+      false
     )
 
   private val esProjection1 = esProjection(nxv + "es1", permissions.query)

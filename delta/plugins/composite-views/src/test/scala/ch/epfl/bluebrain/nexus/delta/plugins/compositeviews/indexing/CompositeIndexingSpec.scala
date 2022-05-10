@@ -191,7 +191,8 @@ class CompositeIndexingSpec
     None,
     jsonObjectContentOf("indexing/mapping.json"),
     context,
-    resourceTypes = Set(iri"http://music.com/Band")
+    resourceTypes = Set(iri"http://music.com/Band"),
+    includeContext = true
   )
   private val blazegraphProjection                                      = SparqlProjectionFields(
     Some(projection2Id),

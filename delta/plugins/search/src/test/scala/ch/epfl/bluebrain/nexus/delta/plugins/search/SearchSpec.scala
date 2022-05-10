@@ -97,7 +97,8 @@ class SearchSpec
         Some(IndexGroup.unsafe("search")),
         mappings,
         None,
-        ContextObject(JsonObject())
+        ContextObject(JsonObject()),
+        false
       )
     ),
     None,

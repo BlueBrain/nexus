@@ -107,7 +107,8 @@ class BlazegraphQuerySpec
       None,
       JsonObject.empty,
       None,
-      ContextObject(JsonObject.empty)
+      ContextObject(JsonObject.empty),
+      false
     )
 
   private val projectSource = ProjectSource(nxv + "source1", UUID.randomUUID(), Set.empty, Set.empty, None, false)

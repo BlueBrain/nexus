@@ -100,7 +100,8 @@ object CompositeViewProjectionFields {
       resourceTag: Option[TagLabel] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
-      permission: Permission = permissions.query
+      permission: Permission = permissions.query,
+      includeContext: Boolean = false
   ) extends CompositeViewProjectionFields {
     override def tpe: ProjectionType = ElasticSearchProjectionType
 
@@ -117,7 +118,8 @@ object CompositeViewProjectionFields {
       indexGroup,
       mapping,
       settings,
-      context
+      context,
+      includeContext
     )
   }
 

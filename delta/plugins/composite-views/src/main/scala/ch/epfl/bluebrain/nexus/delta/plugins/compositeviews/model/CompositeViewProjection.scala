@@ -115,7 +115,7 @@ object CompositeViewProjection {
       mapping: JsonObject,
       settings: Option[JsonObject] = None,
       context: ContextObject,
-      includeContext: Boolean = false
+      includeContext: Boolean
   ) extends CompositeViewProjection {
 
     override def tpe: ProjectionType                              = ElasticSearchProjectionType

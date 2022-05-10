@@ -111,7 +111,7 @@ final case class CompositeIndexingStreamEntry(
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
 
     // TODO: check if composte view's context object (arg context) is to be included
-    if (includeContext) print("include")
+    if (includeContext) print("include++++")
     if (sourceAsText)
       graph
         .add(nxv.originalSource.iri, resource.source.noSpaces)
