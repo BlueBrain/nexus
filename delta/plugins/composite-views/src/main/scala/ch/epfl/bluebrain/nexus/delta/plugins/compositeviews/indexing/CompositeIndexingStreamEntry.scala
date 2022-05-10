@@ -110,9 +110,6 @@ final case class CompositeIndexingStreamEntry(
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
 
-    print(graph
-      .toCompactedJsonLd(context))
-
     if (sourceAsText)
       graph
         .add(nxv.originalSource.iri, resource.source.noSpaces)
