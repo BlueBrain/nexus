@@ -110,18 +110,28 @@ final case class CompositeIndexingStreamEntry(
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
 
-    // TODO: check if composte view's context object (arg context) is to be included
-    if (includeContext) print("include++++")
+    print(graph
+      .toCompactedJsonLd(context))
+
     if (sourceAsText)
       graph
         .add(nxv.originalSource.iri, resource.source.noSpaces)
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
-    else if (resource.source.isEmpty())
-      graph
+    else if (resource.source.isEmpty()) {
+      if (!includeContext) graph
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
-    else
+      else {
+       val compacted = graph
+          .toCompactedJsonLd(context)
+
+        // TODO: do not exclude context object from document
+        //val ctx = compacted.map(_.ctx.asJson)
+        val obj = compacted.map(_.obj.asJson)
+        obj
+      }
+    } else
       (graph -- graph.rootTypesGraph)
         .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
         .toCompactedJsonLd(context)
