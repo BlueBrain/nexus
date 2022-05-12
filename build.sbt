@@ -108,6 +108,11 @@ lazy val circeParser          = "io.circe"                     %% "circe-parser"
 lazy val classgraph           = "io.github.classgraph"          % "classgraph"               % classgraphVersion
 lazy val distageCore          = "io.7mind.izumi"               %% "distage-core"             % distageVersion
 lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgres"          % doobieVersion
+lazy val doobie               = Seq(
+  doobiePostgres,
+  "org.tpolecat" %% "doobie-hikari"         % doobieVersion,
+  "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion
+)
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version
 lazy val googleAuthClient     = "com.google.oauth-client"       % "google-oauth-client"      % googleAuthClientVersion
@@ -283,6 +288,30 @@ lazy val sourcing = project
       logback                % Test
     ) ++ akkaPersistenceJdbc,
     Test / fork              := true
+  )
+
+lazy val sourcingPsql = project
+  .in(file("delta/sourcing-psql"))
+  .dependsOn(rdf, testkit % "test->compile")
+  .settings(
+    name       := "delta-sourcing-psql",
+    moduleName := "delta-sourcing-psql"
+  )
+  .settings(shared, compilation, assertJavaVersion, coverage, release)
+  .settings(
+    libraryDependencies ++= Seq(
+      catsCore,
+      circeCore,
+      circeGenericExtras,
+      circeParser,
+      distageCore,
+      fs2,
+      fs2io,
+      monixBio,
+      catsEffectLaws % Test,
+      logback        % Test
+    ) ++ doobie,
+    Test / fork          := true
   )
 
 lazy val rdf = project
