@@ -114,7 +114,7 @@ We run the latest version of Nexus publicly for education. You can also use the 
 
 ### 1.1. Using the Sandbox
 
-The @link:[Sandbox](https://sandbox.bluebrainnexus.io/web/){ open=new } is a deployment of Nexus for educational purposes.
+The @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new } is a deployment of Nexus for educational purposes.
 
 Once on the Sandbox homepage, click on the top right corner on the login button.
 
@@ -279,7 +279,8 @@ You will now be presented with all the data that has been indexed across all pro
 ![Sandbox Home](../assets/tutorial-sandbox-search.png)
 @@@
 
-Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any rows in this table to open the corresponding dataset and look into its details:
+Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any row in this table to open the corresponding dataset and look into its details.
+
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-search-resource.png)
 @@@
@@ -563,7 +564,7 @@ You can learn more about SPARQL in the @link:[official documentation](https://ww
 
 As you saw in the example above, we can use SPARQL to query the cells in our Nexus project.
 
-Let's start by accessing your Nexus instance or the @link:[Sandbox](https://sandbox.bluebrainnexus.io/web/){ open=new }. Go to Admin page (from the left hand side menu), and navigate to your organization and project.
+Let's start by accessing your Nexus instance or the @link:[Sandbox](https://sandbox.bluebrainnexus.io){ open=new }. Go to Admin page (from the left hand side menu), and navigate to your organization and project.
 
 > In the Sandbox, the organization corresponds to the identity provider used, and the project to your username. For example, if you used GitHub, the organization will be `github-users` and your project will be your GitHub username.
 
@@ -585,7 +586,7 @@ Depending on the resource data type, you might see one or more "plugins". Plugin
 ![Morphology Plugin](../assets/tutorial-morphology-plugin.png)
 @@@
 
-More importantly, you will find the Admin plugin at the bottom of the view. Expand it and you will see the actual resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.
+More importantly, you will find the Advanced view plugin at the bottom of the view. Expand it and you will see the actual resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.
 
 @@@ div { .center }
 ![Admin Plugin](../assets/tutorial-admin-plugin.png)
@@ -763,7 +764,7 @@ Start by creating a Workspace.
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png)
 @@@
 
-Then create a Dashboard, using the SPARQL query above.
+Then create a Dashboard. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The 'Preview' button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png)
