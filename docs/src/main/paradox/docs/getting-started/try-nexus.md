@@ -754,17 +754,13 @@ You will land on:
 
 On this page you can create a new studio. A Studio is a dedicated web page in your project that you can organise into pages (workspaces, as horizontal tabs at the top) and sections (dashboards, as vertical tabs on the left side) and list your data in a logical way. The tables are powered by SPARQL queries and the data present in your project.
 
-@@@ div { .center }
-![Sandbox Home](../assets/tutorial-sandbox-studio-empty.png)
-@@@
-
-Start by creating a Workspace.
+Start by creating a Workspace. To create a workspace, click the Workspace button and in the menu that appears click Add Workspace. You will be presented with a dialog requesting the label of the workspace and optionally a description. Enter a label of your choosing and click Save.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png)
 @@@
 
-Then create a Dashboard. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The 'Preview' button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.
+Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The 'Preview' button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.
 
 @@@ div { .center }
 ![Sandbox Home](../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png)
@@ -772,11 +768,7 @@ Then create a Dashboard. In the Dashboard creation dialog, specify the default S
 
 Because we are using the self, clicking on a row of the newly created table will open the resource view.
 
-It's your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above. The results should look like this:
-
-@@@ div { .center }
-![Studio Traces](../assets/tutorial-sandbox-studio-one-workspace-two-dashboards.png)
-@@@
+It's your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above.
 
 Congratulations! You've created your very first studio, which completes this tutorial step.
 
