@@ -1,6 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.model
+package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 
 import java.time.Instant
 
@@ -60,7 +61,7 @@ object State {
 
   trait GlobalState extends State
 
-  trait ProjectScopedState extends State {
+  trait ScopedState extends State {
 
     /**
       * @return
@@ -72,9 +73,7 @@ object State {
       * @return
       *   the parent organization label
       */
-    def organizationLabel: Label = project.organization
-
-    def tag: Tag
+    def organization: Label = project.organization
 
   }
 

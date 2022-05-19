@@ -11,7 +11,9 @@ sealed trait Tag extends Product with Serializable {
 
 object Tag {
 
-  final case object Latest extends Tag {
+  sealed trait Latest extends Tag
+
+  final case object Latest extends Latest {
     override def value: String = "latest"
   }
 

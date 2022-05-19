@@ -9,7 +9,7 @@ import monix.bio.Task
 final case class Transactors(
     read: Transactor.Aux[Task, Unit],
     write: Transactor.Aux[Task, Unit],
-    tracking: Transactor.Aux[Task, Unit]
+    streaming: Transactor.Aux[Task, Unit]
 )
 
 object Transactors {
