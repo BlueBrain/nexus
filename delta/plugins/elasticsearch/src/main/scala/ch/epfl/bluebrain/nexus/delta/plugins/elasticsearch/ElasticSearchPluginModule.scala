@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.{ElasticSearchViewAggregate, ElasticSearchViewCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.fix.ElasticsearchIndexing3266
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingCoordinator.{ElasticSearchIndexingController, ElasticSearchIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
@@ -117,6 +118,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchIndexingCoordinator].fromEffect {
     (
+        log: EventLog[Envelope[ElasticSearchViewEvent]],
         views: ElasticSearchViews,
         indexingController: ElasticSearchIndexingController,
         indexingCleanup: ElasticSearchIndexingCleanup,
@@ -126,11 +128,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
-        uuidF,
-        as,
-        scheduler
-      )
+      Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
+        new ElasticsearchIndexing3266(log, views, indexingCleanup, config).run()
+      } >>
+        ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+          uuidF,
+          as,
+          scheduler
+        )
   }
 
   make[ElasticSearchViewCache].fromEffect { (config: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>

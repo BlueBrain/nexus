@@ -1,5 +1,8 @@
 {
   "@type": "ElasticSearchView",
+  {{#withTag}}
+  "resourceTag": "one",
+  {{/withTag}}
   "resourceSchemas": [
     "https://bluebrain.github.io/nexus/schemas/unconstrained.json"
   ],

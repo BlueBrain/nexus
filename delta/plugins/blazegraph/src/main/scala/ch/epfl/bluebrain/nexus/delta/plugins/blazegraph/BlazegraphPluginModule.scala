@@ -6,6 +6,7 @@ import cats.effect.concurrent.Deferred
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{BlazegraphViewsAggregate, BlazegraphViewsCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.fix.BlazegraphIndexing3266
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream, BlazegraphOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
@@ -110,6 +111,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphIndexingCoordinator].fromEffect {
     (
+        log: EventLog[Envelope[BlazegraphViewEvent]],
         views: BlazegraphViews,
         indexingStream: BlazegraphIndexingStream,
         indexingCleanup: BlazegraphIndexingCleanup,
@@ -119,11 +121,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
-        uuidF,
-        as,
-        scheduler
-      )
+      Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
+        new BlazegraphIndexing3266(log, views, indexingCleanup, config).run()
+      } >>
+        BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
+          uuidF,
+          as,
+          scheduler
+        )
   }
 
   make[BlazegraphViewsCache].from { (config: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
