@@ -32,10 +32,9 @@ final class BlazegraphIndexing3266(
                   new IllegalStateException(s"Failed fetching view with error ${r.reason}")
                 }
                 .flatMap { v =>
-                  Task.unless(v.deprecated) {
+                  Task.unless(v.value.resourceTag.isEmpty || v.deprecated) {
                     logger.info(s"Reindexing view ${v.id} in project ${v.value.project}")
-                    val viewIndex = IndexingBlazegraphView.resourceToViewIndex(v, config)
-                    cleanup(viewIndex)
+                    cleanup(IndexingBlazegraphView.resourceToViewIndex(v, config))
                   }
                 }
             case _                                                                                    => Task.unit

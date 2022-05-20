@@ -33,10 +33,9 @@ final class ElasticsearchIndexing3266(
                   new IllegalStateException(s"Failed fetching view with error ${r.reason}")
                 }
                 .flatMap { v =>
-                  Task.unless(v.deprecated) {
+                  Task.unless(v.value.resourceTag.isEmpty || v.deprecated) {
                     logger.info(s"Reindexing view ${v.id} in project ${v.value.project}")
-                    val viewIndex = IndexingElasticSearchView.resourceToViewIndex(v, config)
-                    cleanup(viewIndex)
+                    cleanup(IndexingElasticSearchView.resourceToViewIndex(v, config))
                   }
                 }
             case _                                                                                 => Task.unit
