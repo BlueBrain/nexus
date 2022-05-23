@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{DataEncoder, ElasticSearchIndexingStream}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewType, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
@@ -25,9 +25,13 @@ class ElasticSearchIndexingAction(
     extends IndexingAction {
   override protected def execute(project: ProjectRef, res: EventExchangeValue[_, _]): IO[IndexingActionFailed, Unit] =
     (for {
-      projectViews <- cache.values(project).map { vs =>
-                        vs.filter(v => v.value.tpe == ElasticSearchViewType.ElasticSearch && !v.deprecated)
-                          .map(_.map(_.asInstanceOf[IndexingElasticSearchView]))
+      projectViews <- cache.values(project).map {
+                        _.mapFilter {
+                          case v: ViewResource if v.value.tpe == ElasticSearchViewType.ElasticSearch && !v.deprecated =>
+                            val indexing = v.map(_.asInstanceOf[IndexingElasticSearchView])
+                            Option.when(indexing.value.resourceTag.isEmpty)(indexing)
+                          case _                                                                                      => None
+                        }
                       }
       queries      <- projectViews
                         .traverseFilter { v =>
