@@ -38,21 +38,23 @@ object BlazegraphViewsIndexing {
   def startIndexingStreams(
       retry: RetryStrategyConfig,
       views: BlazegraphViews,
-      coordinator: BlazegraphIndexingCoordinator
+      coordinator: BlazegraphIndexingCoordinator,
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] = {
     def onEvent(event: BlazegraphViewEvent) = coordinator.run(event.id, event.project, event.rev)
-    apply("BlazegraphIndexingCoordinatorScan", retry, views, onEvent)
+    apply("BlazegraphIndexingCoordinatorScan", retry, views, onEvent, beforeRunning)
   }
 
   private def apply(
       name: String,
       retry: RetryStrategyConfig,
       views: BlazegraphViews,
-      onEvent: BlazegraphViewEvent => Task[Unit]
+      onEvent: BlazegraphViewEvent => Task[Unit],
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] =
     DaemonStreamCoordinator.run(
       name,
-      stream = views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
+      stream = fs2.Stream.eval(beforeRunning) >> views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
       retryStrategy = RetryStrategy.retryOnNonFatal(retry, logger, name)
     )
 
