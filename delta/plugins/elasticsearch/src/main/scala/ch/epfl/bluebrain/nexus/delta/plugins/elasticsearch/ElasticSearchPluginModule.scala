@@ -128,14 +128,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
+      val fix = Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
         new ElasticsearchIndexing3266(log, views, indexingCleanup, config).run()
-      } >>
-        ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
-          uuidF,
-          as,
-          scheduler
-        )
+      }
+      ElasticSearchIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config, fix)(
+        uuidF,
+        as,
+        scheduler
+      )
   }
 
   make[ElasticSearchViewCache].fromEffect { (config: ElasticSearchViewsConfig, as: ActorSystem[Nothing]) =>
