@@ -121,14 +121,14 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         scheduler: Scheduler,
         uuidF: UUIDF
     ) =>
-      Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
+      val fix = Task.when(sys.env.getOrElse("FIX_3266", "false").toBoolean) {
         new BlazegraphIndexing3266(log, views, indexingCleanup, config).run()
-      } >>
-        BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
-          uuidF,
-          as,
-          scheduler
-        )
+      }
+      BlazegraphIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config, fix)(
+        uuidF,
+        as,
+        scheduler
+      )
   }
 
   make[BlazegraphViewsCache].from { (config: BlazegraphViewsConfig, as: ActorSystem[Nothing]) =>
