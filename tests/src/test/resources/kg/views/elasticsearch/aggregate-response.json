@@ -11,11 +11,11 @@
   "views": [
     {
       "project": "{{project1}}",
-      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+      "viewId": "https://dev.nexus.test.com/simplified-resource/cell-view"
     },
     {
       "project": "{{project2}}",
-      "viewId": "https://dev.nexus.test.com/simplified-resource/testView"
+      "viewId": "https://dev.nexus.test.com/simplified-resource/cell-view"
     }
   ],
   "_incoming": "{{resources}}/incoming",
