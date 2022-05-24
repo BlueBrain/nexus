@@ -339,6 +339,12 @@ final class CompositeIndexingStream(
               .getOrElse(sProgress.as(skipIndexingUntil))
             acc + (pProgress.value -> pProgress.as(noSkipIndexing)) + (sId -> sourceProgress)
         })
+      case _                            =>
+        Task.raiseError(
+          new IllegalArgumentException(
+            "Only `Continue`, `FullRestart` and `PartialRestart` are valid progress strategies for composite views."
+          )
+        )
     }
   }
 

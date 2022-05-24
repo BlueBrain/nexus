@@ -62,21 +62,21 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "create an Sparql view that index tags" in {
       val payload = jsonContentOf("/kg/views/sparql-view.json")
-      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
 
     "get the created SparqlView" in {
-      deltaClient.get[Json](s"/views/$fullId/test-resource:testSparqlView", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
 
         val expected = jsonContentOf(
           "/kg/views/sparql-view-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/testSparqlView",
-            "resources"      -> s"${config.deltaUri}/views/$fullId/test-resource:testSparqlView",
+            "id"             -> "https://dev.nexus.test.com/simplified-resource/cell-view",
+            "resources"      -> s"${config.deltaUri}/views/$fullId/test-resource:cell-view",
             "project-parent" -> s"${config.deltaUri}/projects/$fullId"
           ): _*
         )
@@ -88,20 +88,20 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     "create an AggregateSparqlView" in {
       val payload = jsonContentOf("/kg/views/agg-sparql-view.json", "project1" -> fullId, "project2" -> fullId2)
 
-      deltaClient.put[Json](s"/views/$fullId2/test-resource:testAggView", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$fullId2/test-resource:agg-cell-view", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
 
     "get an AggregateSparqlView" in {
-      deltaClient.get[Json](s"/views/$fullId2/test-resource:testAggView", ScoobyDoo) { (json, response) =>
+      deltaClient.get[Json](s"/views/$fullId2/test-resource:agg-cell-view", ScoobyDoo) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         val expected = jsonContentOf(
           "/kg/views/agg-sparql-view-response.json",
           replacements(
             ScoobyDoo,
-            "id"             -> "https://dev.nexus.test.com/simplified-resource/testAggView",
-            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:testAggView",
+            "id"             -> "https://dev.nexus.test.com/simplified-resource/agg-cell-view",
+            "resources"      -> s"${config.deltaUri}/views/$fullId2/test-resource:agg-cell-view",
             "project-parent" -> s"${config.deltaUri}/projects/$fullId2",
             "project1"       -> fullId,
             "project2"       -> fullId2
@@ -118,9 +118,10 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val id           = `@id`.getOption(payload).value
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         val projectId    = if (i > 5) fullId2 else fullId
+        val indexingMode = if (i % 2 == 0) "sync" else "async"
 
         deltaClient.put[Json](
-          s"/resources/$projectId/resource/patchedcell:$unprefixedId",
+          s"/resources/$projectId/resource/patchedcell:$unprefixedId?indexing=$indexingMode",
           payload,
           ScoobyDoo
         ) { (_, response) =>
@@ -170,7 +171,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "search instances in AggregateSparqlView when logged" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:testAggView/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:agg-cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json should equalIgnoreArrayOrder(jsonContentOf("/kg/views/sparql-search-response-aggregated.json"))
@@ -178,10 +179,26 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "search instances in AggregateSparqlView as anonymous" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:testAggView/sparql", query, Anonymous) {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId2/test-resource:agg-cell-view/sparql", query, Anonymous) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json should equalIgnoreArrayOrder(jsonContentOf("/kg/views/sparql-search-response-2.json"))
+      }
+    }
+
+    //TODO: Fix issue #32688 on Blazegraph views statistics
+    "fetch statistics for cell-view" ignore {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val expected = jsonContentOf(
+          "/kg/views/statistics.json",
+          "total"     -> "13",
+          "processed" -> "13",
+          "evaluated" -> "0",
+          "discarded" -> "13",
+          "remaining" -> "0"
+        )
+        filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
       }
     }
 
@@ -200,8 +217,8 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
-    "search instances in SPARQL endpoint in project 1 with custom SparqlView" in {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
+    "get no instances in SPARQL endpoint in project 1 with cell-view" in {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("/kg/views/sparql-search-response-empty.json")
@@ -223,9 +240,24 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       }
     }
 
+    "fetch updated statistics for cell-view" in eventually {
+      deltaClient.get[Json](s"/views/$fullId/test-resource:cell-view/statistics", ScoobyDoo) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        val expected = jsonContentOf(
+          "/kg/views/statistics.json",
+          "total"     -> "18",
+          "processed" -> "18",
+          "evaluated" -> "11",
+          "discarded" -> "7",
+          "remaining" -> "0"
+        )
+        filterNestedKeys("lastEventDateTime", "lastProcessedEventDateTime")(json) shouldEqual expected
+      }
+    }
+
     "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags added" in {
       eventually {
-        deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
+        deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
           (json, response) =>
             response.status shouldEqual StatusCodes.OK
             json shouldEqual jsonContentOf("/kg/views/sparql-search-response.json")
@@ -248,7 +280,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "search instances in SPARQL endpoint in project 1 with custom SparqlView after tags are deleted" in eventually {
-      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:testSparqlView/sparql", query, ScoobyDoo) {
+      deltaClient.sparqlQuery[Json](s"/views/$fullId/test-resource:cell-view/sparql", query, ScoobyDoo) {
         (json, response) =>
           response.status shouldEqual StatusCodes.OK
           json shouldEqual jsonContentOf("/kg/views/sparql-search-response-empty.json")
@@ -280,7 +312,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
 
     "create a another SPARQL view" in {
       val payload = jsonContentOf("/kg/views/sparql-view.json")
-      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2", payload, ScoobyDoo) { (_, response) =>
+      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view2", payload, ScoobyDoo) { (_, response) =>
         response.status shouldEqual StatusCodes.Created
       }
     }
@@ -289,7 +321,7 @@ class SparqlViewsSpec extends BaseSpec with EitherValuable with CirceEq {
       val payload = jsonContentOf("/kg/views/sparql-view.json").mapObject(
         _.remove("resourceTag").remove("resourceTypes").remove("resourceSchemas")
       )
-      deltaClient.put[Json](s"/views/$fullId/test-resource:testSparqlView2?rev=1&indexing=sync", payload, ScoobyDoo) {
+      deltaClient.put[Json](s"/views/$fullId/test-resource:cell-view2?rev=1&indexing=sync", payload, ScoobyDoo) {
         (_, response) =>
           response.status shouldEqual StatusCodes.OK
       }

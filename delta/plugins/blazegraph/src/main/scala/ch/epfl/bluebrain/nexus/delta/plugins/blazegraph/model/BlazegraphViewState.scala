@@ -15,7 +15,7 @@ import java.util.UUID
 /**
   * Enumeration of BlazegraphView states.
   */
-trait BlazegraphViewState extends Product with Serializable {
+sealed trait BlazegraphViewState extends Product with Serializable {
 
   /**
     * Converts the state into a resource representation.

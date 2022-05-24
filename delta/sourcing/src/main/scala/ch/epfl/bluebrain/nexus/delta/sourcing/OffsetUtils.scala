@@ -76,6 +76,7 @@ trait OffsetUtils {
       case TimeBasedUUID(value) =>
         val time = LocalDateTime.ofInstant(Instant.ofEpochMilli(Uuids.unixTimestamp(value)), ZoneOffset.UTC)
         s"$value (${timestampFormatter.format(time)})"
+      case _                    => "Unknown offset"
     }
 
 }

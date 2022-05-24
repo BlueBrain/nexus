@@ -188,6 +188,7 @@ class BlazegraphQuerySpec
         case seq if seq.toSet == Set(blazeCommonNs)        => responseCommonNs
         case seq if seq.toSet == Set(blazeP1Ns)            => responseBlazeP1Ns
         case seq if seq.toSet == Set(blazeP1Ns, blazeP2Ns) => responseBlazeP12Ns
+        case _                                             => NTriples.empty
       })
     )
 

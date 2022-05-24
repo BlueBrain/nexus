@@ -49,7 +49,8 @@ object ElasticSearchIndexingCoordinator {
       indexingController: ElasticSearchIndexingController,
       indexingStream: ElasticSearchIndexingStream,
       indexingCleanup: ElasticSearchIndexingCleanup,
-      config: ElasticSearchViewsConfig
+      config: ElasticSearchViewsConfig,
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
@@ -67,6 +68,6 @@ object ElasticSearchIndexingCoordinator {
         retryStrategy
       )
     }
-    .tapEval(ElasticSearchViewsIndexing.startIndexingStreams(config.indexing.retry, views, _))
+    .tapEval(ElasticSearchViewsIndexing.startIndexingStreams(config.indexing.retry, views, _, beforeRunning))
 
 }

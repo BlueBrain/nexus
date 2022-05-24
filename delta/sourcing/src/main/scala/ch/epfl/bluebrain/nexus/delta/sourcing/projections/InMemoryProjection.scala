@@ -43,7 +43,7 @@ class InMemoryProjection[A](
             "ClassCastException"
           )
         )
-      case f: FailureMessage[A] =>
+      case f: FailureMessage    =>
         Some(
           ProjectionFailure[A](
             f.offset,

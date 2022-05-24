@@ -47,7 +47,8 @@ object BlazegraphIndexingCoordinator {
       indexingController: BlazegraphIndexingController,
       indexingStream: BlazegraphIndexingStream,
       indexingCleanup: BlazegraphIndexingCleanup,
-      config: BlazegraphViewsConfig
+      config: BlazegraphViewsConfig,
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
@@ -65,6 +66,6 @@ object BlazegraphIndexingCoordinator {
           retryStrategy
         )
       }
-      .tapEval(BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, _))
+      .tapEval(BlazegraphViewsIndexing.startIndexingStreams(config.indexing.retry, views, _, beforeRunning))
   }
 }

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker
 import ch.epfl.bluebrain.nexus.testkit.minio.MinioDocker._
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -24,6 +25,7 @@ class S3StorageAccessSpec(docker: MinioDocker)
     with AnyWordSpecLike
     with Matchers
     with IOValues
+    with Eventually
     with TestHelpers
     with StorageFixtures
     with BeforeAndAfterAll {
@@ -54,7 +56,7 @@ class S3StorageAccessSpec(docker: MinioDocker)
 
     val access = new S3StorageAccess()
 
-    "succeed verifying the bucket" in {
+    "succeed verifying the bucket" in eventually {
       access(iri, storage).accepted
     }
 
