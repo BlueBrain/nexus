@@ -99,6 +99,13 @@ final case class CompositeIndexingStreamEntry(
   def containsTypes[A](resource: IndexingData, resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
+  /**
+    * Controls whether the JSON-LD context is preserved in the document that is indexed by ES.
+    */
+  private def handleCtxInclusion(json: Json, ctx: ContextValue, includeCtx: Boolean): Json =
+    if(includeCtx) json.removeAllKeys(keywords.context).deepMerge(ctx.contextObj.asJson) // remove any existing context before setting the context
+    else json.removeAllKeys(keywords.context)
+
   private def toDocument(
       resource: IndexingData,
       includeMetadata: Boolean,
@@ -106,6 +113,7 @@ final case class CompositeIndexingStreamEntry(
       context: ContextValue,
       includeContext: Boolean
   ): Task[Json] = {
+
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
@@ -115,24 +123,18 @@ final case class CompositeIndexingStreamEntry(
         .add(nxv.originalSource.iri, resource.source.noSpaces)
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
+        .map(json => handleCtxInclusion(json, context, includeContext))
     else if (resource.source.isEmpty()) {
-      if (!includeContext) graph
+      graph
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
-      else {
-       val compacted = graph
-          .toCompactedJsonLd(context)
-
-        // TODO: do not exclude context object from document
-        //val ctx = compacted.map(_.ctx.asJson)
-        val obj = compacted.map(_.obj.asJson)
-        obj
-      }
+        .map(json => handleCtxInclusion(json, context, includeContext))
     } else
       (graph -- graph.rootTypesGraph)
         .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
         .toCompactedJsonLd(context)
-        .map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
+        .map(ld => mergeJsonLd(resource.source, ld.json))
+        .map(json => handleCtxInclusion(json, context, includeContext))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =
