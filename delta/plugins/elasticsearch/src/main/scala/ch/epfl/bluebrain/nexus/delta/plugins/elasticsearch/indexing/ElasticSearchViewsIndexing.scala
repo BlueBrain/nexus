@@ -38,21 +38,23 @@ object ElasticSearchViewsIndexing {
   def startIndexingStreams(
       retry: RetryStrategyConfig,
       views: ElasticSearchViews,
-      coordinator: ElasticSearchIndexingCoordinator
+      coordinator: ElasticSearchIndexingCoordinator,
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] = {
     def onEvent(event: ElasticSearchViewEvent) = coordinator.run(event.id, event.project, event.rev)
-    apply("ElasticSearchIndexingCoordinatorScan", retry, views, onEvent)
+    apply("ElasticSearchIndexingCoordinatorScan", retry, views, onEvent, beforeRunning)
   }
 
   private def apply(
       name: String,
       retry: RetryStrategyConfig,
       views: ElasticSearchViews,
-      onEvent: ElasticSearchViewEvent => Task[Unit]
+      onEvent: ElasticSearchViewEvent => Task[Unit],
+      beforeRunning: Task[Unit] = Task.unit
   )(implicit uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[Unit] =
     DaemonStreamCoordinator.run(
       name,
-      stream = views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
+      stream = fs2.Stream.eval(beforeRunning) >> views.events(Offset.noOffset).evalMap { e => onEvent(e.event) },
       retryStrategy = RetryStrategy.retryOnNonFatal(retry, logger, name)
     )
 
