@@ -191,8 +191,7 @@ class CompositeIndexingSpec
     None,
     jsonObjectContentOf("indexing/mapping.json"),
     context,
-    resourceTypes = Set(iri"http://music.com/Band"),
-    includeContext = true
+    resourceTypes = Set(iri"http://music.com/Band")
   )
   private val blazegraphProjection                                      = SparqlProjectionFields(
     Some(projection2Id),
@@ -429,6 +428,21 @@ class CompositeIndexingSpec
         result,
         jsonContentOf("indexing/result_muse.json"),
         jsonContentOf("indexing/result_red_hot.json")
+      )
+      checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
+    }
+
+    "index resources with included JSON-LD context" in {
+      val view   = CompositeViewFields(
+        NonEmptySet.of(projectSource, crossProjectSource, remoteProjectSource),
+        NonEmptySet.of(elasticSearchProjection.copy(includeContext = true), blazegraphProjection),
+        None
+      )
+      val result = views.create(viewId, project1.ref, view).accepted
+      checkElasticSearchDocuments(
+        result,
+        jsonContentOf("indexing/result_muse.json").removeAllKeys(keywords.context).deepMerge(jsonContentOf("indexing/music-context.json").removeKeys(keywords.id)),
+        jsonContentOf("indexing/result_red_hot.json").removeAllKeys(keywords.context).deepMerge(jsonContentOf("indexing/music-context.json").removeKeys(keywords.id))
       )
       checkBlazegraphTriples(result, contentOf("indexing/result.nt"))
     }
