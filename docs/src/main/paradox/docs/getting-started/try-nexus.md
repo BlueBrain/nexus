@@ -1,4 +1,4 @@
-# Try Nexus with Neuroscience Datasets
+	# Try Nexus with Neuroscience Datasets
 
 Welcome to our Nexus tutorial! Nexus is an open-source data and metadata management suite. With Nexus, your data is catalogued and indexed as a knowledge graph, all interconnected.
 
@@ -60,40 +60,12 @@ In the terminal, type:
 conda activate kgforge
 ```
 
-### Install @link:[Nexus Forge](https://github.com/BlueBrain/nexus-forge){ open=new }
-
-In the terminal, with the environment active, type:
-
-```bash
-pip install nexusforge
-```
-
-You can also install the development version directly from GitHub:
-
-```bash
-pip install git+https://github.com/BlueBrain/nexus-forge.git@<branch-name>
-```
-
 #### Install Additional Packages
 
 To avoid any issues, install @link:[Jupyter](https://jupyter.org/){ open=new } in your environment.
 
 ```bash
-pip install jupyterlab
-```
-
-You will need the @link:[Allen SDK](https://allensdk.readthedocs.io/en/latest/index.html){ open=new } to get data from their database.
-
-```bash
-pip install allensdk
-```
-
-> The Allen SDK is rated for Python 3.6 and 3.7. You can try installing a more recent version of Python but it might not work. Nexus Forge works with Python 3.6 and above.
-
-To work with morphologies, you will need @link:[Blue Brain's NeuroM](https://neurom.readthedocs.io/en/stable/index.html){ open=new } package. This will install Blue Brain's MorphIO as well.
-
-```bash
-pip install neurom
+pip install jupyter
 ```
 
 #### Clone the Nexus Repository
