@@ -1,4 +1,4 @@
-	# Try Nexus with Neuroscience Datasets
+# Try Nexus with Neuroscience Datasets
 
 Welcome to our Nexus tutorial! Nexus is an open-source data and metadata management suite. With Nexus, your data is catalogued and indexed as a knowledge graph, all interconnected.
 
