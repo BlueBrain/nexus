@@ -184,7 +184,7 @@ To remove an unwanted `Studio`, deprecate it in the Resource View of your projec
 
 ### Workspace Creation
 
-Inside any `Studio`, click the `Add Workspace` button.
+Inside any `Studio`, click the `Workspace` button followed by `Add` to add a new workspace.
 
 Fill in a form providing the following:
 
@@ -208,14 +208,10 @@ You can also find your `Workspaces` as raw `JSON` configurations in the `Resourc
 
 #### Updating a Workspace
 
-Inside any `Studio`, under a `Workspace` tab label, click on the `Edit` link. Then you'll be provided with a dialog where 
-you can review and edit the `Workspace` configuration.
+Inside any `Studio`, with the desired `Workspace` selected from the menu, click on `Workspace`, then the `Edit` button. Then you'll be provided with a dialog where you can review and edit the `Workspace` configuration.
 
-- `Select View`: The view of which to pair with _each `Dashboard` inside the follow transfer list_. The `Dashboard` 
-- queries will be run against the `View` listed inside this box. For now, using this Edit form, you can only pair one 
-- `View` for all `Dashboards`. If you were to create the configurations manually, you can pair each `Dashboard` with a different `View`.
 - `Add or Remove Dashboards`: Add or remove a `Dashboard` to the collection in your `Workspace` configuration. The `Dashboards` listed are all the available non-deprecated ones in the project.
-- `Name`: the name of your new `Workspace` (required field).
+- `Label`: the name of your new `Workspace` (required field).
 - `Description` for your `Workspace`.
 
 @@@ div { .half .center }
@@ -226,11 +222,11 @@ After your forms have been edited, simple click `Save` to submit your changes.
 
 #### Removing a Workspace
 
-You can remove a `Workspace` by deprecating it from the `Resource View`.
+You can remove a `Workspace` by navigating to the workspace and then clicking the `Workspace` button followed by `Remove`. Click `OK` in the dialog to confirm removal.
 
 ### Dashboard Creation
 
-Inside any `Studio View`, under a selected `Workspace`, click the `Add Dashboard` button.
+Inside any `Studio View`, under a selected `Workspace`, click the `Dashboard` button followed by `Add`.
 
 Fill in the Create Dashboard form providing the following:
 
@@ -311,55 +307,6 @@ WHERE {
 }
 LIMIT 20
 ```
-
-## Configuring the Studios index page
-
-The Studios space lists all the `Studios` you have permissions to view or edit.
-
-@@@ div { .half .center }
-![Studios Index Page](../assets/fusion-studio-index-page.png)
-@@@
-
-To enable this feature, the following should be done:
-
-1. If you don't have a project to store the application data, create one.
-
-2. Create an `Aggregated Elastic Search View` inside this project, and add all projects that contain Studio resources to the list. For example:
-
-```json
-{
-  "@context": "https://bluebrain.github.io/nexus/contexts/view.json",
-  "@id": "nxv:studioList",
-  "@type": ["View", "AggregateElasticSearchView"],
-  "views": [
-    {
-      "project": "c7d70552-4305-111a-trtr-75d757ed9a49",
-      "viewId": "nxv:defaultElasticSearchIndex"
-    },
-    {
-      "project": "86b0ee1e-a6a5-111b-rtrt-938b3c38dfc0",
-      "viewId": "nxv:defaultElasticSearchIndex"
-    },
-    {
-      "project": "a7d693345-8d1d-rtrt-111a-90b6b6ab94ee",
-      "viewId": "nxv:defaultElasticSearchIndex"
-    }
-  ]
-}
-```
-
-@@@ note
-
-Ask a developer to add an ENV variable with the location of the 'AggregateElasticSearchView' as following:
-
-`STUDIO_VIEW=[yourOrgLabel]/[yourProjectLabel]/[viewId]`
-
-In our example, it would be:
-
-`STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList`
-
-Every time when you create a new `Studio`, the `AggregateElasticSearchView` needs to be updated.
-@@@
 
 ## Studio Description
 
