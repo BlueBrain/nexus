@@ -20,6 +20,11 @@ class RemoteDiskStorageAccess(implicit config: StorageTypeConfig, httpClient: Ht
     val client: RemoteDiskStorageClient  = new RemoteDiskStorageClient(storage.endpoint)
     client
       .exists(storage.folder)
-      .mapError(err => StorageNotAccessible(id, err.details.getOrElse(s"Folder '${storage.folder}' does not exist")))
+      .mapError(err =>
+        StorageNotAccessible(
+          id,
+          err.details.fold(s"Folder '${storage.folder}' does not exist")(d => s"${err.reason}: $d")
+        )
+      )
   }
 }
