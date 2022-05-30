@@ -6,12 +6,21 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationCo
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
+/**
+  * Defines the state machine for an entity
+  * @param initialState the initial state
+  * @param evaluate the function attempting to create a new event and state from an incoming command
+  * @param next the function allowing to replay a state from a list of events
+  */
 final class StateMachine[State, Command, Event, Rejection] private (
     initialState: Option[State],
     evaluate: (Option[State], Command) => IO[Rejection, Event],
     next: (Option[State], Event) => Option[State]
 ) {
 
+  /**
+    * Fetches the current state and attempt to apply an incoming command on it
+    */
   def evaluate(
       getCurrent: UIO[Option[State]],
       command: Command,
@@ -27,6 +36,9 @@ final class StateMachine[State, Command, Event, Rejection] private (
     } yield event -> newState
   }
 
+  /**
+    * Compute the state from a stream of events
+    */
   def computeState(events: Stream[Task, Event]): UIO[Option[State]] = {
     val initial: Either[InvalidState[State, Event], Option[State]] = Right(initialState)
     events

@@ -16,6 +16,9 @@ import monix.bio.{Task, UIO}
 
 import scala.annotation.nowarn
 
+/**
+  * Allows to save/fetch [[ScopeState]] from the database
+  */
 trait ScopedStateStore[Id, S <: ScopedState] {
 
   /**

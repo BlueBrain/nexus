@@ -21,6 +21,9 @@ import monix.bio.Task
 import java.time.Instant
 import scala.annotation.nowarn
 
+/**
+  * Allows to save and fetch [[GlobalEvent]]s from the database
+  */
 trait GlobalEventStore[Id, E <: GlobalEvent] {
 
   /**

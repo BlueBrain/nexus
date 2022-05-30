@@ -12,7 +12,7 @@ sealed trait Offset extends Product with Serializable {
 object Offset {
 
   /**
-    * To fetch all rows
+    * To fetch all rows from the beginning
     */
   final case object Start extends Offset {
     override def after: Option[Fragment] = None

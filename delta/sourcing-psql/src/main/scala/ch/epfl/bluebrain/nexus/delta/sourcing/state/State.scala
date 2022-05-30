@@ -6,6 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Resource
 
 import java.time.Instant
 
+/**
+  * Super type for all states
+  */
 sealed trait State extends Product with Serializable {
 
   /**

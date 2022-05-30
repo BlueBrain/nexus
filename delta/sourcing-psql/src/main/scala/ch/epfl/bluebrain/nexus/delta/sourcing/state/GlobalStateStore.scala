@@ -15,6 +15,9 @@ import monix.bio.{Task, UIO}
 
 import scala.annotation.nowarn
 
+/**
+  * Allow to save and fetch [[GlobalState]]s from the database
+  */
 trait GlobalStateStore[Id, S <: GlobalState] {
 
   /**

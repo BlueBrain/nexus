@@ -32,8 +32,14 @@ sealed trait Event extends Product with Serializable {
 
 object Event {
 
+  /**
+    * Event for entities that are transversal to all projects
+    */
   trait GlobalEvent extends Event
 
+  /**
+    * Event for entities living inside a project
+    */
   trait ScopedEvent extends Event {
 
     /**

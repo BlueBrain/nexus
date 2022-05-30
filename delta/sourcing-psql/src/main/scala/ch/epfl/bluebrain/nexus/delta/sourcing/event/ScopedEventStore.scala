@@ -17,6 +17,9 @@ import monix.bio.Task
 
 import scala.annotation.nowarn
 
+/**
+  * A
+  */
 trait ScopedEventStore[Id, E <: ScopedEvent] {
 
   /**
