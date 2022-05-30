@@ -103,7 +103,10 @@ final case class CompositeIndexingStreamEntry(
     * Controls whether the JSON-LD context is preserved in the document that is indexed by ES.
     */
   private def handleCtxInclusion(json: Json, ctx: ContextValue, includeCtx: Boolean): Json =
-    if(includeCtx) json.removeAllKeys(keywords.context).deepMerge(ctx.contextObj.asJson) // remove any existing context before setting the context
+    if (includeCtx)
+      json
+        .removeAllKeys(keywords.context)
+        .deepMerge(ctx.contextObj.asJson) // remove any existing context before setting the context
     else json.removeAllKeys(keywords.context)
 
   private def toDocument(
