@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.{StateMachine, Tagger}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore

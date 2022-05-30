@@ -59,7 +59,7 @@ object GlobalStateStore {
               |  id,
               |  rev,
               |  value,
-              |  instant,
+              |  instant
               | )
               | VALUES (
               |  $tpe,
@@ -71,9 +71,9 @@ object GlobalStateStore {
             """.stripMargin) { _ =>
             sql"""
                | UPDATE global_states SET
-               |  revision = ${state.rev},
+               |  rev = ${state.rev},
                |  value = ${state.asJson},
-               |  instant = ${state.updatedAt}
+               |  instant = ${state.updatedAt},
                |  ordering = (select nextval('global_states_ordering_seq'))
                | WHERE
                |  type = $tpe AND

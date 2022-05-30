@@ -48,7 +48,6 @@ object ScopedEventStore {
       put: Put[Id]
   ): ScopedEventStore[Id, E] =
     new ScopedEventStore[Id, E] {
-
       import serializer._
 
       override def save(event: E): doobie.ConnectionIO[Unit] =
@@ -60,7 +59,7 @@ object ScopedEventStore {
            |  id,
            |  rev,
            |  value,
-           |  instant,
+           |  instant
            | )
            | VALUES (
            |  $tpe,
@@ -75,8 +74,14 @@ object ScopedEventStore {
 
       override def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E] = {
         val select =
-          fr"SELECT value FROM scoped_events WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id" ++
-            Fragments.andOpt(to.map { t => fr"rev <= $t" }) ++
+          fr"SELECT value FROM scoped_events" ++
+            Fragments.whereAndOpt(
+              Some(fr"type = $tpe"),
+              Some(fr"org = ${ref.organization}"),
+              Some(fr"project = ${ref.project}"),
+              Some(fr"id = $id"),
+              to.map { t => fr" rev <= $t" }
+            ) ++
             fr"ORDER BY rev"
 
         select.query[Json].streamWithChunkSize(config.batchSize).transact(xas.read).flatMap { json =>

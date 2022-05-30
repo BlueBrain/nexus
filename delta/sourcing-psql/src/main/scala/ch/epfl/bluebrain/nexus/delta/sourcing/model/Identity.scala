@@ -1,10 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import io.circe.Decoder.Result
 import io.circe._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+
+import scala.annotation.nowarn
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the
@@ -69,10 +72,6 @@ object Identity {
     */
   final case class Authenticated(realm: Label) extends IdentityRealm
 
-  implicit private[Identity] val config: Configuration = Configuration.default.withDiscriminator("@type")
-
-  val persistIdentityDecoder: Encoder.AsObject[Identity] = deriveConfiguredEncoder[Identity]
-
   private def decodeAnonymous(hc: HCursor): Result[Subject] =
     hc.get[String]("@type").flatMap {
       case "Anonymous" => Right(Anonymous)
@@ -110,5 +109,14 @@ object Identity {
       case (acc @ Right(_), _) => acc
       case (_, f)              => f(hc)
     }
+  }
+
+  object Database {
+    @nowarn("cat=unused")
+    implicit final private val configuration: Configuration =
+      Configuration.default.withDiscriminator(keywords.tpe)
+
+    implicit val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
+    implicit val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
   }
 }

@@ -14,8 +14,8 @@ import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import doobie.util.Put
 import fs2.{Chunk, Stream}
-import io.circe.syntax.EncoderOps
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import monix.bio.Task
 
 import java.time.Instant
@@ -80,7 +80,7 @@ object GlobalEventStore {
            |  id,
            |  rev,
            |  value,
-           |  instant,
+           |  instant
            | )
            | VALUES (
            |  $tpe,
@@ -93,8 +93,8 @@ object GlobalEventStore {
 
       override def history(id: Id, to: Option[Int]): Stream[Task, E] = {
         val select =
-          fr"SELECT value FROM public.global_events WHERE type = $tpe AND id = $id" ++
-            Fragments.andOpt(to.map { t => fr"rev <= $t" }) ++
+          fr"SELECT value FROM public.global_events" ++
+            Fragments.whereAndOpt(Some(fr"type = $tpe"), Some(fr"id = $id"), to.map { t => fr" rev <= $t" }) ++
             fr"ORDER BY rev"
 
         select.query[Json].streamWithChunkSize(config.batchSize).transact(xas.read).flatMap { json =>

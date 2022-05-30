@@ -19,12 +19,18 @@ object Tag {
 
   final case class UserTag private (value: String) extends Tag
 
-  def apply(value: String): Either[String, Tag] =
-    Either.cond(value == "latest", UserTag(value), "'latest' is a reserved tag")
+  object UserTag {
+
+    def unsafe(value: String) = new UserTag(value)
+
+    def apply(value: String): Either[String, UserTag] =
+      Either.cond(value == "latest", new UserTag(value), "'latest' is a reserved tag")
+  }
 
   implicit val tagGet: Get[Tag] = Get[String].map {
     case "latest" => Latest
-    case s        => UserTag(s)
+    case s        => UserTag.unsafe(s)
   }
+
   implicit val tagPut: Put[Tag] = Put[String].contramap(_.value)
 }

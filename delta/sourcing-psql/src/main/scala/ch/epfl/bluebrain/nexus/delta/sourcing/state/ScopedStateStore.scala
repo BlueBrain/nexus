@@ -68,7 +68,7 @@ object ScopedStateStore {
                       |  tag,
                       |  rev,
                       |  value,
-                      |  instant,
+                      |  instant
                       | )
                       | VALUES (
                       |  $tpe,
@@ -83,9 +83,9 @@ object ScopedStateStore {
             """.stripMargin) { _ =>
             sql"""
                  | UPDATE scoped_states SET
-                 |  revision = ${state.rev},
+                 |  rev = ${state.rev},
                  |  value = ${state.asJson},
-                 |  instant = ${state.updatedAt}
+                 |  instant = ${state.updatedAt},
                  |  ordering = (select nextval('scoped_states_ordering_seq'))
                  | WHERE
                  |  type = $tpe AND
@@ -102,7 +102,7 @@ object ScopedStateStore {
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
 
     override def get(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]] =
-      sql"""SELECT value FROM global_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag"""
+      sql"""SELECT value FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag"""
         .query[Json]
         .option
         .transact(xas.read)

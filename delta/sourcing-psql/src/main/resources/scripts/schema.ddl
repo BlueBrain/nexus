@@ -10,8 +10,7 @@ CREATE TABLE IF NOT EXISTS public.global_events(
     rev      integer      NOT NULL,
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
-    PRIMARY KEY(type, id, rev),
-    UNIQUE (type, id)
+    PRIMARY KEY(type, id, rev)
 );
 CREATE INDEX IF NOT EXISTS global_events_ordering_idx ON public.global_events USING BRIN (ordering);
 
@@ -49,7 +48,7 @@ CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events US
 --
 -- Table for scoped states that belongs to a project
 --
-CREATE TABLE IF NOT EXISTS public.project_states(
+CREATE TABLE IF NOT EXISTS public.scoped_states(
     ordering BIGSERIAL,
     type     text         NOT NULL,
     org      text         NOT NULL,
@@ -62,4 +61,4 @@ CREATE TABLE IF NOT EXISTS public.project_states(
     PRIMARY KEY(type, org, project, id, tag),
     UNIQUE (org, project, id, tag)
 );
-CREATE INDEX IF NOT EXISTS project_states_ordering_idx ON public.project_states USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);

@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 
 import java.time.Instant
 
@@ -47,13 +48,13 @@ sealed trait State extends Product with Serializable {
     * @return
     *   the schema reference that the state conforms to
     */
-  def schema: String
+  def schema: ResourceRef
 
   /**
     * @return
     *   the collection of known types
     */
-  def types: Set[String]
+  def types: Set[Iri]
 
 }
 

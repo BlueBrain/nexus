@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.StateMachine
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie.implicits._
+import doobie.postgres.sqlstate
 import monix.bio.{IO, UIO}
 
 /**
@@ -72,6 +72,7 @@ object GlobalEventLog {
       eventStore: GlobalEventStore[Id, E],
       stateStore: GlobalStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E, Rejection],
+      onUniqueViolation: (Id, Command) => Rejection,
       evaluationConfig: EvaluationConfig,
       xas: Transactors
   ): GlobalEventLog[Id, S, Command, E, Rejection] = new GlobalEventLog[Id, S, Command, E, Rejection] {
@@ -83,7 +84,13 @@ object GlobalEventLog {
 
     override def evaluate(id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(id), command, evaluationConfig).tapEval { case (event, state) =>
-        (eventStore.save(event) >> stateStore.save(state)).transact(xas.write).hideErrors
+        (eventStore.save(event) >> stateStore.save(state))
+          .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+            onUniqueViolation(id, command)
+          }
+          .transact(xas.write)
+          .hideErrors
+          .flatMap(IO.fromEither)
       }
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
