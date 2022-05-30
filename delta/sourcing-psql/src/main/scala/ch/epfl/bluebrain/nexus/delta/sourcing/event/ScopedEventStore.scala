@@ -30,6 +30,11 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
   def history(ref: ProjectRef, id: Id, to: Option[Int]): Stream[Task, E]
 
   /**
+    * Fetches the history for the event up to the provided revision
+    */
+  def history(ref: ProjectRef, id: Id, to: Int): Stream[Task, E] = history(ref, id, Some(to))
+
+  /**
     * Fetches the history for the global event up to the last existing revision
     */
   def history(ref: ProjectRef, id: Id): Stream[Task, E] = history(ref, id, None)

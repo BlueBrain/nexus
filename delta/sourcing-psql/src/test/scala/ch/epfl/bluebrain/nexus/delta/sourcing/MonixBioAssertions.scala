@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
-import munit.Assertions
+import munit.{Assertions, Location}
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.duration.FiniteDuration
@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
 
 trait MonixBioAssertions { self: Assertions =>
 
-  def assertIO[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: munit.Location): UIO[Unit] =
+  def assertIO[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
     io.attempt.map {
       case Left(NonFatal(err)) =>
         val baos  = new ByteArrayOutputStream()
@@ -32,19 +32,19 @@ trait MonixBioAssertions { self: Assertions =>
       case Right(a)            => assertEquals(a, expected)
     }
 
-  def assertIOSome[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: munit.Location): UIO[Unit] =
+  def assertIOSome[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
     assertIO(io, Some(expected))
 
-  def assertIONone[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: munit.Location): UIO[Unit] =
+  def assertIONone[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
     assertIO(io, None)
 
   def assertIO[E, A](io: IO[E, A], expected: A, timeout: FiniteDuration)(implicit
       E: ClassTag[E],
-      loc: munit.Location
+      loc: Location
   ): UIO[Unit] =
     assertIO(io.timeout(timeout), expected)
 
-  def assertError[E, A](io: IO[E, A], expected: E)(implicit E: ClassTag[E], loc: munit.Location): UIO[Unit] =
+  def assertError[E, A](io: IO[E, A], expected: E)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
     io.attempt.map {
       case Left(E(err)) => assertEquals(err, expected)
       case Left(err)    =>
@@ -59,7 +59,7 @@ trait MonixBioAssertions { self: Assertions =>
 
   def assertTerminal[T <: Throwable](io: IO[_, _], expectedMessage: String)(implicit
       T: ClassTag[T],
-      loc: munit.Location
+      loc: Location
   ): UIO[Unit] =
     io.redeemCause(
       {
@@ -81,7 +81,7 @@ trait MonixBioAssertions { self: Assertions =>
 
   def assertTerminal[T <: Throwable](io: IO[_, _], expected: T)(implicit
       T: ClassTag[T],
-      loc: munit.Location
+      loc: Location
   ): UIO[Unit] =
     io.redeemCause(
       {
@@ -101,6 +101,28 @@ trait MonixBioAssertions { self: Assertions =>
         )
     )
 
+  implicit class MonixBioAsertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
+
+    def assert(expected: A)(implicit loc: Location): UIO[Unit] = assertIO(io, expected)
+
+    def assert(expected: A, timeout: FiniteDuration)(implicit loc: Location): UIO[Unit] =
+      assertIO(io, expected, timeout)
+
+    def error(expected: E)(implicit loc: Location): UIO[Unit] = assertError(io, expected)
+
+    def terminated[T <: Throwable](expectedMessage: String)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
+      assertTerminal[T](io, expectedMessage)
+
+    def terminated[T <: Throwable](expected: T)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
+      assertTerminal[T](io, expected)
+  }
+
+  implicit class MonixBioAsertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E]) {
+    def assertSome(expected: A)(implicit loc: Location): UIO[Unit] = assertIO(io, Some(expected))
+
+    def assertNone(implicit loc: Location): UIO[Unit] = assertIONone(io)
+  }
+
 }
 
-object MonixBioAssertions extends Assertions with MonixBioAssertions
+object MonixBioAssertions extends Assertions with MonixBioAssertions {}

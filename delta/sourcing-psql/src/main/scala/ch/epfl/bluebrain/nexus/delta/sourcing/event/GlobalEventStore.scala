@@ -34,6 +34,11 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
   def history(id: Id, to: Option[Int]): Stream[Task, E]
 
   /**
+    * Fetches the history for the global event up to the provided revision
+    */
+  def history(id: Id, to: Int): Stream[Task, E] = history(id, Some(to))
+
+  /**
     * Fetches the history for the global event up to the last existing revision
     */
   def history(id: Id): Stream[Task, E] = history(id, None)

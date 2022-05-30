@@ -33,7 +33,7 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val event3 = Plus("id", 3, 4, Instant.EPOCH, alice)
   private val event4 = Minus("id2", 1, 4, Instant.EPOCH, Anonymous)
 
-  private def assertCount = assertIO(sql"select count(*) from global_events".query[Int].unique.transact(xas.read), 4)
+  private def assertCount = sql"select count(*) from global_events".query[Int].unique.transact(xas.read).assert(4)
 
   test("Save events successfully") {
     for {
@@ -44,31 +44,21 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
 
   test("Fail when the PK already exists") {
     for {
-      _ <- expectUniqueViolation(
-             store.save(Plus("id", 2, 5, Instant.EPOCH, Anonymous)).transact(xas.write)
-           )
+      _ <- store.save(Plus("id", 2, 5, Instant.EPOCH, Anonymous)).transact(xas.write).expectUniqueViolation
       _ <- assertCount
     } yield ()
   }
 
   test("Fetch all events for a given id") {
-    assertStream(
-      store.history("id"),
-      List(event1, event2, event3)
-    )
+    store.history("id").assert(List(event1, event2, event3))
   }
 
   test("Fetch all events for a given id up to revision 2") {
-    assertStream(
-      store.history("id", Some(2)),
-      List(event1, event2)
-    )
+    store.history("id", 2).assert(List(event1, event2))
   }
 
   test("Get an empty stream for a unknown id") {
-    assertEmptyStream(
-      store.history("xxx", Some(2))
-    )
+    store.history("xxx", 2).assertEmpty
   }
 
 }

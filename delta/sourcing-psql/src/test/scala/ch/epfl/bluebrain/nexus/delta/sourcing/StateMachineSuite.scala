@@ -25,10 +25,7 @@ class StateMachineSuite extends MonixBioSuite {
     (Some(current), Subtract(2)) -> (Minus(2, 2), Total(2, 2))
   ).foreach { case ((original, command), (event, newState)) =>
     test(s"Evaluate successfully state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      assertIO(
-        stm.evaluate(UIO.pure(original), command, config),
-        (event, newState)
-      )
+      stm.evaluate(UIO.pure(original), command, config).assert((event, newState))
     }
   }
 
@@ -37,49 +34,36 @@ class StateMachineSuite extends MonixBioSuite {
     (Some(current), Subtract(5)) -> NegativeTotal(-1)
   ).foreach { case ((original, command), rejection) =>
     test(s"Evaluate and reject state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      assertError(
-        stm.evaluate(UIO.pure(original), command, config),
-        rejection
-      )
+      stm.evaluate(UIO.pure(original), command, config).error(rejection)
     }
   }
 
   test("Evaluate and get an RuntimeException with the expected message") {
-    assertTerminal[RuntimeException](
-      stm.evaluate(UIO.pure(None), Boom("Game over"), config),
-      "Game over"
-    )
+    stm.evaluate(UIO.pure(None), Boom("Game over"), config).terminated[RuntimeException]("Game over")
   }
 
   test("Evaluate and get a timeout error") {
-    assertTerminal(
-      stm.evaluate(UIO.pure(None), Never, config),
-      EvaluationTimeout(Never, config.maxDuration)
-    )
+    stm.evaluate(UIO.pure(None), Never, config).terminated(EvaluationTimeout(Never, config.maxDuration))
   }
 
   test("Compute state and get back the initial state from an empty stream of events") {
-    assertIONone(
-      stm.computeState(Stream.empty)
-    )
+    stm.computeState(Stream.empty).assertNone
   }
 
   test("Compute state from a stream of events") {
-    assertIOSome(
-      stm.computeState(
+    stm
+      .computeState(
         Stream(Plus(1, 2), Plus(2, 8), Minus(3, 6))
-      ),
-      Total(3, 4)
-    )
+      )
+      .assertSome(Total(3, 4))
   }
 
   test("Get an error from an invalid stream of events") {
-    assertTerminal(
-      stm.computeState(
+    stm
+      .computeState(
         Stream(Plus(1, 2), Minus(2, 6))
-      ),
-      InvalidState(Some(Total(1, 2)), Minus(2, 6))
-    )
+      )
+      .terminated(InvalidState(Some(Total(1, 2)), Minus(2, 6)))
   }
 
 }

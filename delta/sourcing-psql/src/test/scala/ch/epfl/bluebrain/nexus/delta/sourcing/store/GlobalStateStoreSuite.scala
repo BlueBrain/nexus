@@ -29,7 +29,7 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val updatedState1 = Total("id1", 2, 42, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
   private def assertCount(expected: Int) =
-    assertIO(sql"select count(*) from global_states".query[Int].unique.transact(xas.read), expected)
+    sql"select count(*) from global_states".query[Int].unique.transact(xas.read).assert(expected)
 
   test("Save state 1 and state 2 successfully") {
     for {
@@ -39,17 +39,14 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("get state 1") {
-    assertIOSome(
-      store.get("id1"),
-      state1
-    )
+    store.get("id1").assertSome(state1)
   }
 
   test("Update state 1 successfully") {
     for {
       _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(2)
-      _ <- assertIOSome(store.get("id1"), updatedState1)
+      _ <- store.get("id1").assertSome(updatedState1)
     } yield ()
   }
 
@@ -57,7 +54,7 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.delete("id2").transact(xas.write)
       _ <- assertCount(1)
-      _ <- assertIONone(store.get("id2"))
+      _ <- store.get("id2").assertNone
     } yield ()
   }
 

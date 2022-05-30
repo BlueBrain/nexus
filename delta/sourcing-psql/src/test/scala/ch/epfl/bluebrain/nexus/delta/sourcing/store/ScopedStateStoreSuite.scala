@@ -41,7 +41,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val state3 = PullRequestOpen(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
   private def assertCount(expected: Int) =
-    assertIO(sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read), expected)
+    sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assert(expected)
 
   test("Save state 1, state 2 and state 3 successfully") {
     for {
@@ -51,10 +51,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("get state 1") {
-    assertIOSome(
-      store.get(project1, id1),
-      state1
-    )
+    store.get(project1, id1).assertSome(state1)
   }
 
   test("Save state 1 and state 3 with user tag successfully") {
@@ -68,7 +65,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(5)
-      _ <- assertIOSome(store.get(project1, id1), updatedState1)
+      _ <- store.get(project1, id1).assertSome(updatedState1)
     } yield ()
   }
 
@@ -76,7 +73,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.delete(project2, id1, customTag).transact(xas.write)
       _ <- assertCount(4)
-      _ <- assertIONone(store.get(project2, id1, customTag))
+      _ <- store.get(project2, id1, customTag).assertNone
     } yield ()
   }
 
@@ -84,7 +81,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.delete(project1, id2, Latest).transact(xas.write)
       _ <- assertCount(3)
-      _ <- assertIONone(store.get(project1, id2))
+      _ <- store.get(project1, id2).assertNone
     } yield ()
   }
 

@@ -52,31 +52,24 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
 
   test("Fail when the PK already exists") {
     for {
-      _ <- expectUniqueViolation(
-             store.save(PullRequestClosed(id1, project1, 2, Instant.EPOCH, Anonymous)).transact(xas.write)
-           )
+      _ <- store
+             .save(PullRequestClosed(id1, project1, 2, Instant.EPOCH, Anonymous))
+             .transact(xas.write)
+             .expectUniqueViolation
       _ <- assertCount
     } yield ()
   }
 
   test("Fetch all events for a given id") {
-    assertStream(
-      store.history(project1, id1),
-      List(event1, event2, event3)
-    )
+    store.history(project1, id1).assert(List(event1, event2, event3))
   }
 
   test("Fetch all events for a given id up to revision 2") {
-    assertStream(
-      store.history(project1, id1, Some(2)),
-      List(event1, event2)
-    )
+    store.history(project1, id1, 2).assert(List(event1, event2))
   }
 
   test("Get an empty stream for an unknown (project, id)") {
-    assertEmptyStream(
-      store.history(project2, id2, Some(2))
-    )
+    store.history(project2, id2, 2).assertEmpty
   }
 
 }
