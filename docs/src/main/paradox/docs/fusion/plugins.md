@@ -148,39 +148,3 @@ The Advanced View Plugin displays JSON-LD in a code editor. If the user has edit
 resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit 
 history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the 
 incoming and outgoing links of the resource in Links tab.
-
-### Jira
-
-The Jira plugin enables integration with an instance of Jira to facilitate discussions about resources. The Jira plugin must be enabled in Nexus Delta and configured in the Fusion Deployment. Links between a Jira issue and a Nexus resource  (or project) are stored in custom fields in  Jira which are required to be configured before usage. It is the Nexus URL that is used to link to the resource. Issues created with the Jira plugin have a discussion label applied to them in Jira.
-
-#### Configuration
-
-See the accompanying Delta Jira documentation for configuration of the Jira plugin in Delta and linking it with a Jira instance. In Fusion, there are several environment variables related to Jira that must be specified in order to configure its usage.
-
-* JIRA_URL - URL of jira instance
-* JIRA_RESOURCE_FIELD_NAME - the name of the custom field in Jira to use for storing the link to the Nexus resource
-* JIRA_RESOURCE_FIELD_LABEL (defaults to `Nexus Resource`) - the label of the custom field in Jira being used for storing the link to the Nexus resource
-* JIRA_PROJECT_FIELD_NAME - the name of the custom field in Jira to use for storing the link to the Nexus project
-* JIRA_PROJECT_FIELD_LABEL (defaults to `Nexus Project`) - the label of the custom field in Jira being used for storing the link to the Nexus project
-
-The custom fields in Jira should be created as `URL` type field and should be added to the required Jira screens and projects that you want to use with Nexus.
-
-#### Authorization
-
-The user will be required to authorize access to Jira prior to being able to use the Jira plugin in Fusion. From the Jira plugin the user is instructed to click the link to authorize access in Jira and then will be required to enter the provided verification code in Fusion to complete the authorization.
-
-![Jira Authorization](../assets/jira-resource-plugin-authenticate.png)
-
-#### Usage
-
-The Jira plugin is displayed for all resources, given that it's enabled. A resource can be linked to an issue in Jira from within the Jira plugin in Fusion by either choosing to create a new issue or by linking to an existing Jira issue.
-
-Multiple issues can be associated with a resource and they will display in the table of linked resources in the Jira plugin. Issues can be removed from here also.
-
-![Nexus Resource with linked Jira issue](../assets/jira-resource-plugin-with-issue.png)
-
-#### Project view
-
-Besides the Jira plugin displaying in the Resource view, there is also a Jira plugin at the level of the project. It can be accessed via the Jira tab in the project view. In the Jira project view, all issues linked to resources within the project are listed along with their associated resource. Similar functionality to the Jira plugin on the resource is available here with the option to add/remove issues. Note that issues created within the Jira plugin at the project level are associated with the project only.
-
-![Jira Project plugin](../assets/jira-project-plugin.png)
