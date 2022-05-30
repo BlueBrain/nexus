@@ -26,16 +26,20 @@ object Label {
 
   private[model] val regex: Regex = s"[$allowedChars]{1,64}".r
 
+  final case class IllegalFormat(value: String) {
+    def message = s"'$value' did not match the expected label format '${Label.regex.regex}'."
+  }
+
   /**
     * Attempts to construct a label from its string representation.
     *
     * @param value
     *   the string representation of the Label
     */
-  def apply(value: String): Either[String, Label] =
+  def apply(value: String): Either[IllegalFormat, Label] =
     value match {
       case regex() => Right(new Label(value))
-      case _       => Left(value)
+      case _       => Left(IllegalFormat(value))
     }
 
   /**
@@ -49,24 +53,24 @@ object Label {
 
   /**
     * Attempts to construct a label from its string representation. It will remove all invalid characters and truncate
-    * to max length of 64 characters. It will return [[FormatError]] when `value` contains only invalid characters.
+    * to max length of 64 characters. It will return [[IllegalFormat]] when `value` contains only invalid characters.
     *
     * @param value
     *   the string representation of the Label
     */
-  def sanitized(value: String): Either[String, Label] =
+  def sanitized(value: String): Either[IllegalFormat, Label] =
     apply(value.replaceAll(s"[^$allowedChars]", "").take(64))
 
-  implicit val labelGet: Get[Label] = Get[String].temap(Label(_))
+  implicit val labelGet: Get[Label] = Get[String].temap(Label(_).leftMap(_.message))
   implicit val labelPut: Put[Label] = Put[String].contramap(_.value)
 
   implicit final val labelEncoder: Encoder[Label] =
     Encoder.encodeString.contramap(_.value)
 
   implicit final val labelDecoder: Decoder[Label] =
-    Decoder.decodeString.emap(str => Label(str))
+    Decoder.decodeString.emap(str => Label(str).leftMap(_.message))
 
   implicit val labelJsonLdDecoder: JsonLdDecoder[Label] =
-    (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e) } }
+    (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.message) } }
 
 }

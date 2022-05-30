@@ -8,9 +8,12 @@ import monix.bio.{IO, Task, UIO}
 
 /**
   * Defines the state machine for an entity
-  * @param initialState the initial state
-  * @param evaluate the function attempting to create a new event and state from an incoming command
-  * @param next the function allowing to replay a state from a list of events
+  * @param initialState
+  *   the initial state
+  * @param evaluate
+  *   the function attempting to create a new event and state from an incoming command
+  * @param next
+  *   the function allowing to replay a state from a list of events
   */
 final class StateMachine[State, Command, Event, Rejection] private (
     initialState: Option[State],

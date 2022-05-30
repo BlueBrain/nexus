@@ -20,8 +20,10 @@ object StateMachineError {
 
   /**
     * Error occurring when the evaluation of a command exceeds the defined timeout
-    * @param command the command that failed
-    * @param timeoutAfter the timeout that was applied
+    * @param command
+    *   the command that failed
+    * @param timeoutAfter
+    *   the timeout that was applied
     */
   final case class EvaluationTimeout[Command](command: Command, timeoutAfter: FiniteDuration) extends StateMachineError
 
