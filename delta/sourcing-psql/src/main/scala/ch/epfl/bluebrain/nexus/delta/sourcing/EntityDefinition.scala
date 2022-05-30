@@ -35,6 +35,18 @@ final case class EntityDefinition[Id, S <: State, Command, E <: Event, Rejection
 object EntityDefinition {
 
   /**
+    * Creates an entity definition which is not meant to be tagged
+    */
+  def untagged[Id, S <: State, Command, E <: Event, Rejection](
+      tpe: EntityType,
+      stateMachine: StateMachine[S, Command, E, Rejection],
+      eventSerializer: Serializer[Id, E],
+      stateSerializer: Serializer[Id, S],
+      onUniqueViolation: (Id, Command) => Rejection
+  )(implicit get: Get[Id], put: Put[Id]): EntityDefinition[Id, S, Command, E, Rejection] =
+    EntityDefinition(tpe, stateMachine, eventSerializer, stateSerializer, Tagger(_ => None, _ => None), onUniqueViolation)
+
+  /**
     * Defines how to extract an id from an event/state and how to serialize and deserialize it
     * @param extractId
     *   to extract an identifier from an event
