@@ -38,6 +38,15 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
   def state(id: Id, rev: Option[Int]): UIO[Option[S]]
 
   /**
+    * Get the current state for the entity with the given __id__ at the given __revision__
+    * @param id
+    *   the entity identifier
+    * @param rev
+    *   the revision
+    */
+  def state(id: Id, rev: Int): UIO[Option[S]] = state(id, Some(rev))
+
+  /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
     *
     * @param id

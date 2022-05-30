@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestClosed, PullRequestCreated, PullRequestMerged, PullRequestUpdated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -39,13 +39,12 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val event4 = PullRequestCreated(id2, project1, Instant.EPOCH, Anonymous)
 
   private val event5 = PullRequestCreated(id1, project2, Instant.EPOCH, Anonymous)
-  private val event6 = PullRequestClosed(id1, project2, 2, Instant.EPOCH, User("Alice", Label.unsafe("Wonderland")))
 
-  private def assertCount = assertIO(sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read), 6)
+  private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assert(5)
 
   test("Save events") {
     for {
-      _ <- List(event1, event2, event3, event4, event5, event6).traverse(store.save).transact(xas.write)
+      _ <- List(event1, event2, event3, event4, event5).traverse(store.save).transact(xas.write)
       _ <- assertCount
     } yield ()
   }
@@ -53,7 +52,7 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   test("Fail when the PK already exists") {
     for {
       _ <- store
-             .save(PullRequestClosed(id1, project1, 2, Instant.EPOCH, Anonymous))
+             .save(PullRequestMerged(id1, project1, 2, Instant.EPOCH, Anonymous))
              .transact(xas.write)
              .expectUniqueViolation
       _ <- assertCount
@@ -61,11 +60,11 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("Fetch all events for a given id") {
-    store.history(project1, id1).assert(List(event1, event2, event3))
+    store.history(project1, id1).assert(event1, event2, event3)
   }
 
   test("Fetch all events for a given id up to revision 2") {
-    store.history(project1, id1, 2).assert(List(event1, event2))
+    store.history(project1, id1, 2).assert(event1, event2)
   }
 
   test("Get an empty stream for an unknown (project, id)") {

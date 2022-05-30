@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.ConnectionIO
 import doobie.implicits._
+import doobie.postgres.sqlstate
 import monix.bio.{IO, UIO}
 
 /**
@@ -57,6 +58,17 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
   def state(ref: ProjectRef, id: Id, rev: Option[Int]): UIO[Option[S]]
 
   /**
+    * Get the current state for the entity with the given __id__ at the given __revision__ in the given project
+    * @param ref
+    *   the project the entity belongs in
+    * @param id
+    *   the entity identifier
+    * @param rev
+    *   the revision
+    */
+  def state(ref: ProjectRef, id: Id, rev: Int): UIO[Option[S]] = state(ref, id, Some(rev))
+
+  /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
     * @param ref
     *   the project the entity belongs in
@@ -96,6 +108,7 @@ object ScopedEventLog {
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E, Rejection],
+      onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
       evaluationConfig: EvaluationConfig,
       xas: Transactors
@@ -108,11 +121,15 @@ object ScopedEventLog {
 
     override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] = {
 
-      def saveTag(event: E): UIO[ConnectionIO[Unit]] = tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
-        stateMachine
-          .computeState(eventStore.history(ref, id, Some(rev)))
-          .map(_.fold(noop) { s => stateStore.save(s, tag) })
-      }
+      def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
+        tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
+          if (rev == state.rev)
+            UIO.pure(stateStore.save(state, tag))
+          else
+            stateMachine
+              .computeState(eventStore.history(ref, id, Some(rev)))
+              .map(_.fold(noop) { s => stateStore.save(s, tag) })
+        }
 
       def deleteTag(event: E): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
         stateStore.delete(ref, id, tag)
@@ -120,13 +137,16 @@ object ScopedEventLog {
 
       stateMachine.evaluate(stateStore.get(ref, id), command, evaluationConfig).tapEval { case (event, state) =>
         for {
-          tagQuery      <- saveTag(event)
+          tagQuery      <- saveTag(event, state)
           deleteTagQuery = deleteTag(event)
           _             <- (
                              eventStore.save(event) >>
                                stateStore.save(state) >>
                                tagQuery >> deleteTagQuery
-                           ).transact(xas.write).hideErrors
+                           ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                             onUniqueViolation(id, command)
+                           }.transact(xas.write)
+                             .hideErrors
         } yield ()
       }
     }

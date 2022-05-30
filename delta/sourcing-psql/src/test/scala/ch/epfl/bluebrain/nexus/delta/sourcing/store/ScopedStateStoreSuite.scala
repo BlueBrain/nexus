@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.store
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestClose, PullRequestOpen}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -34,11 +34,11 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
 
   private val customTag = UserTag.unsafe("v0.1")
 
-  private val state1        = PullRequestOpen(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val state2        = PullRequestOpen(id2, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
-  private val updatedState1 = PullRequestClose(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val state1        = PullRequestActive(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val state2        = PullRequestActive(id2, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val updatedState1 = PullRequestClosed(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
-  private val state3 = PullRequestOpen(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
+  private val state3 = PullRequestActive(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
   private def assertCount(expected: Int) =
     sql"select count(*) from scoped_states".query[Int].unique.transact(xas.read).assert(expected)

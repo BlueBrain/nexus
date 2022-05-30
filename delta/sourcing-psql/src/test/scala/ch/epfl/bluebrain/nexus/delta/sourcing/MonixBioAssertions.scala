@@ -11,8 +11,9 @@ import scala.util.control.NonFatal
 
 trait MonixBioAssertions { self: Assertions =>
 
-  def assertIO[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
-    io.attempt.map {
+  implicit class MonixBioAsertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
+
+    def assert(expected: A)(implicit loc: Location): UIO[Unit] = io.attempt.map {
       case Left(NonFatal(err)) =>
         val baos  = new ByteArrayOutputStream()
         err.printStackTrace(new PrintStream(baos))
@@ -32,20 +33,10 @@ trait MonixBioAssertions { self: Assertions =>
       case Right(a)            => assertEquals(a, expected)
     }
 
-  def assertIOSome[E, A](io: IO[E, A], expected: A)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
-    assertIO(io, Some(expected))
+    def assert(expected: A, timeout: FiniteDuration)(implicit loc: Location): UIO[Unit] =
+      io.timeout(timeout).assertSome(expected)
 
-  def assertIONone[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
-    assertIO(io, None)
-
-  def assertIO[E, A](io: IO[E, A], expected: A, timeout: FiniteDuration)(implicit
-      E: ClassTag[E],
-      loc: Location
-  ): UIO[Unit] =
-    assertIO(io.timeout(timeout), expected)
-
-  def assertError[E, A](io: IO[E, A], expected: E)(implicit E: ClassTag[E], loc: Location): UIO[Unit] =
-    io.attempt.map {
+    def error(expected: E)(implicit loc: Location): UIO[Unit] = io.attempt.map {
       case Left(E(err)) => assertEquals(err, expected)
       case Left(err)    =>
         fail(
@@ -57,70 +48,49 @@ trait MonixBioAssertions { self: Assertions =>
         )
     }
 
-  def assertTerminal[T <: Throwable](io: IO[_, _], expectedMessage: String)(implicit
-      T: ClassTag[T],
-      loc: Location
-  ): UIO[Unit] =
-    io.redeemCause(
-      {
-        case Error(err)        =>
-          fail(
-            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
-          )
-        case Termination(T(t)) => assertEquals(t.getMessage, expectedMessage)
-        case Termination(t)    =>
-          fail(
-            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
-          )
-      },
-      a =>
-        fail(
-          s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
-        )
-    )
-
-  def assertTerminal[T <: Throwable](io: IO[_, _], expected: T)(implicit
-      T: ClassTag[T],
-      loc: Location
-  ): UIO[Unit] =
-    io.redeemCause(
-      {
-        case Error(err)        =>
-          fail(
-            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
-          )
-        case Termination(T(t)) => assertEquals(t, expected)
-        case Termination(t)    =>
-          fail(
-            s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
-          )
-      },
-      a =>
-        fail(
-          s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
-        )
-    )
-
-  implicit class MonixBioAsertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
-
-    def assert(expected: A)(implicit loc: Location): UIO[Unit] = assertIO(io, expected)
-
-    def assert(expected: A, timeout: FiniteDuration)(implicit loc: Location): UIO[Unit] =
-      assertIO(io, expected, timeout)
-
-    def error(expected: E)(implicit loc: Location): UIO[Unit] = assertError(io, expected)
-
     def terminated[T <: Throwable](expectedMessage: String)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
-      assertTerminal[T](io, expectedMessage)
+      io.redeemCause(
+        {
+          case Error(err)        =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
+            )
+          case Termination(T(t)) => assertEquals(t.getMessage, expectedMessage)
+          case Termination(t)    =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
+            )
+        },
+        a =>
+          fail(
+            s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
+          )
+      )
 
     def terminated[T <: Throwable](expected: T)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
-      assertTerminal[T](io, expected)
+      io.redeemCause(
+        {
+          case Error(err)        =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual typed: '${err.getClass.getName}'"
+            )
+          case Termination(T(t)) => assertEquals(t, expected)
+          case Termination(t)    =>
+            fail(
+              s"Wrong raised error type caught, expected terminal: '${T.runtimeClass.getName}', actual terminal: '${t.getClass.getName}'"
+            )
+        },
+        a =>
+          fail(
+            s"Expected raising error, but returned successful response with type '${a.getClass.getName}'"
+          )
+      )
   }
 
   implicit class MonixBioAsertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E]) {
-    def assertSome(expected: A)(implicit loc: Location): UIO[Unit] = assertIO(io, Some(expected))
+    def assertSome(expected: A)(implicit loc: Location): UIO[Unit] = io.assert(Some(expected))
 
-    def assertNone(implicit loc: Location): UIO[Unit] = assertIONone(io)
+    def assertNone(implicit loc: Location): UIO[Unit] = io.assert(None)
   }
 
 }

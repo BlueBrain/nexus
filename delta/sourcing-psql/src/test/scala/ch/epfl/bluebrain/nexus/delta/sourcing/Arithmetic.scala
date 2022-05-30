@@ -26,19 +26,18 @@ object Arithmetic {
     None,
     (state: Option[Total], command: ArithmeticCommand) =>
       (state, command) match {
-        case (None, Add(value))         => IO.pure(Plus("id", 1, value, Instant.EPOCH, Anonymous))
-        case (Some(r), Add(value))      => IO.pure(Plus("id", r.rev + 1, value, Instant.EPOCH, Anonymous))
+        case (None, Add(value))         => IO.pure(Plus(1, value))
+        case (Some(r), Add(value))      => IO.pure(Plus(r.rev + 1, value))
         case (None, Subtract(value))    => IO.raiseError(NegativeTotal(value * -1))
         case (Some(r), Subtract(value)) =>
           val newValue = r.value - value
-          IO.raiseWhen(newValue < 0)(NegativeTotal(newValue))
-            .as(Minus("id", r.rev + 1, value, Instant.EPOCH, Anonymous))
+          IO.raiseWhen(newValue < 0)(NegativeTotal(newValue)).as(Minus(r.rev + 1, value))
         case (_, Boom(message))         => IO.terminate(new RuntimeException(message))
         case (_, Never)                 => IO.never
       },
     (state: Option[Total], event: ArithmeticEvent) =>
       (state, event) match {
-        case (None, p: Plus)     => Some(Total("id", 1, p.value, Instant.EPOCH, Anonymous, Instant.EPOCH, Anonymous))
+        case (None, p: Plus)     => Some(Total(1, p.value))
         case (None, _: Minus)    => None
         case (Some(r), p: Plus)  => Some(r.copy(value = r.value + p.value, rev = p.rev))
         case (Some(r), s: Minus) =>
@@ -91,7 +90,8 @@ object Arithmetic {
   sealed trait ArithmeticRejection extends Product with Serializable
 
   object ArithmeticRejection {
-    final case class NegativeTotal(invalidValue: Int) extends ArithmeticRejection
+    final case class AlreadyExists(id: String, command: ArithmeticCommand) extends ArithmeticRejection
+    final case class NegativeTotal(invalidValue: Int)                      extends ArithmeticRejection
   }
 
   final case class Total(

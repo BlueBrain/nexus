@@ -50,11 +50,11 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("Fetch all events for a given id") {
-    store.history("id").assert(List(event1, event2, event3))
+    store.history("id").assert(event1, event2, event3)
   }
 
   test("Fetch all events for a given id up to revision 2") {
-    store.history("id", 2).assert(List(event1, event2))
+    store.history("id", 2).assert(event1, event2)
   }
 
   test("Get an empty stream for a unknown id") {
