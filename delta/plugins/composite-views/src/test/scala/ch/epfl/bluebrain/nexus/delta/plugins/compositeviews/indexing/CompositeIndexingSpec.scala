@@ -173,6 +173,7 @@ class CompositeIndexingSpec
   private val cache: ProgressesCache = ProgressesStatistics.cache("CompositeViewsProgress")
 
   private val viewId              = iri"https://example.com"
+  private val viewWithContextId   = iri"https://context.example.com"
   private val context             = jsonContentOf("indexing/music-context.json").topContextValueOrEmpty.asInstanceOf[ContextObject]
   private val source1Id           = iri"https://example.com/source1"
   private val source2Id           = iri"https://example.com/source2"
@@ -438,7 +439,7 @@ class CompositeIndexingSpec
         NonEmptySet.of(elasticSearchProjection.copy(includeContext = true), blazegraphProjection),
         None
       )
-      val result = views.create(viewId, project1.ref, view).accepted
+      val result = views.create(viewWithContextId, project1.ref, view).accepted
       checkElasticSearchDocuments(
         result,
         jsonContentOf("indexing/result_muse.json")
