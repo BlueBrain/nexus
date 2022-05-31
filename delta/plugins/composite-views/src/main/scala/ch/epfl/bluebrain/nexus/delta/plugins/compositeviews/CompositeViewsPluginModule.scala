@@ -308,6 +308,4 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].named("view").ref[CompositeViewEventExchange]
   many[EventExchange].named("resources").ref[CompositeViewEventExchange]
   many[EventExchange].ref[CompositeViewEventExchange]
-  many[EntityType].add(EntityType(CompositeViews.moduleType))
-
 }

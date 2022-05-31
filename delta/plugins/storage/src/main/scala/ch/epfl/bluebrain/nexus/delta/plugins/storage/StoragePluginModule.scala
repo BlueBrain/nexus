@@ -295,7 +295,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[FileEventExchange]
   many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
   many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
-  many[EntityType].addSet(Set(EntityType(Storages.moduleType), EntityType(Files.moduleType)))
 
   if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
     make[RemoteStorageMigration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfig) =>
