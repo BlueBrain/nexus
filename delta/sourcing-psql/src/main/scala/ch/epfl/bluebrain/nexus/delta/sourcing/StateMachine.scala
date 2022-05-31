@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.StateMachineError.{EvaluationTimeout, InvalidState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

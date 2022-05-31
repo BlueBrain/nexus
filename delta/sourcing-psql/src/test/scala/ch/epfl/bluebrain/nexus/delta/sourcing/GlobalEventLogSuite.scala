@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Subtract}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.{EvaluationConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
@@ -68,6 +69,23 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
   test("Reject a command and persist nothing") {
     for {
       _ <- eventLog.evaluate("id", Subtract(8)).error(NegativeTotal(-3))
+      _ <- eventStore.history("id").assert(plus2, plus3)
+      _ <- eventLog.state("id").assertSome(total2)
+    } yield ()
+  }
+
+  test("Raise an error and persist nothing") {
+    val boom = Boom("fail")
+    for {
+      _ <- eventLog.evaluate("id", boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventStore.history("id").assert(plus2, plus3)
+      _ <- eventLog.state("id").assertSome(total2)
+    } yield ()
+  }
+
+  test("Get a timeout and persist nothing") {
+    for {
+      _ <- eventLog.evaluate("id", Never).terminated(EvaluationTimeout(Never, config.maxDuration))
       _ <- eventStore.history("id").assert(plus2, plus3)
       _ <- eventLog.state("id").assertSome(total2)
     } yield ()

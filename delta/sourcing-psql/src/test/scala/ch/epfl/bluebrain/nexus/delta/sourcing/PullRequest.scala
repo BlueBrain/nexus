@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Serializer
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Create, Merge, Tag, Update}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, Tag, Update}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -42,6 +42,8 @@ object PullRequest {
               IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
             case (_: PullRequestActive, Merge(id, project, rev))          =>
               IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
+            case (_, Boom(_, _,message))         => IO.terminate(new RuntimeException(message))
+            case (_, _:Never)                 => IO.never
             case (_: PullRequestClosed, _)                                => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
           }
         },
@@ -76,6 +78,9 @@ object PullRequest {
     final case class Update(id: Label, project: ProjectRef, rev: Int)              extends PullRequestCommand
     final case class Tag(id: Label, project: ProjectRef, rev: Int, targetRev: Int) extends PullRequestCommand
     final case class Merge(id: Label, project: ProjectRef, rev: Int)               extends PullRequestCommand
+
+    final case class Boom(id: Label, project: ProjectRef, message: String) extends PullRequestCommand
+    final case class Never(id: Label, project: ProjectRef) extends PullRequestCommand
   }
 
   sealed trait PullRequestEvent extends ScopedEvent {

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
@@ -8,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 
 /**
@@ -100,7 +102,14 @@ object GlobalEventLog {
           .transact(xas.write)
           .hideErrors
           .flatMap(IO.fromEither)
-      }
+      }.redeemCauseWith(
+        {
+          case Error(rejection) => IO.raiseError(rejection)
+          case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+          case Termination(e) => IO.terminate(EvaluationFailure(command, e))
+        },
+        r => IO.pure(r)
+      )
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(id), command, evaluationConfig)

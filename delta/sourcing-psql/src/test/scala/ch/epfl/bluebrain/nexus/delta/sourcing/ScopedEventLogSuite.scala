@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Create, Merge, Tag, Update}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -110,6 +111,24 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   test("Reject a command and persist nothing") {
     for {
       _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).error(PullRequestAlreadyClosed(id, proj))
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventLog.state(proj, id).assertSome(state3)
+    } yield ()
+  }
+
+  test("Raise an error and persist nothing") {
+    val boom = Boom(id, proj, "fail")
+    for {
+      _ <- eventLog.evaluate(proj, id,  boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
+      _ <- eventLog.state(proj, id).assertSome(state3)
+    } yield ()
+  }
+
+  test("Get a timeout and persist nothing") {
+    val never = Never(id, proj)
+    for {
+      _ <- eventLog.evaluate(proj, id, never).terminated(EvaluationTimeout(never, config.maxDuration))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.state(proj, id).assertSome(state3)
     } yield ()

@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
-import ch.epfl.bluebrain.nexus.delta.sourcing.StateMachineError.{EvaluationTimeout, InvalidState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import monix.bio.UIO
 import fs2.Stream

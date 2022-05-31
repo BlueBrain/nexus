@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
@@ -12,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 
 /**
@@ -148,7 +150,14 @@ object ScopedEventLog {
                            }.transact(xas.write)
                              .hideErrors
         } yield ()
-      }
+      }.redeemCauseWith(
+        {
+          case Error(rejection) => IO.raiseError(rejection)
+          case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+          case Termination(e) => IO.terminate(EvaluationFailure(command, e))
+        },
+        r => IO.pure(r)
+      )
     }
 
     /**
