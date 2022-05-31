@@ -5,7 +5,7 @@ import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 
 class PostgresContainer(user: String, password: String)
-    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:12.2")) {
+    extends GenericContainer[PostgresContainer](DockerImageName.parse("library/postgres:14.3")) {
   addEnv("POSTGRES_USER", user)
   addEnv("POSTGRES_PASSWORD", password)
   addExposedPort(5432)

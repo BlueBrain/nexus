@@ -48,6 +48,7 @@ val magnoliaVersion                 = "0.17.0"
 val mockitoVersion                  = "1.17.5"
 val monixVersion                    = "3.4.0"
 val monixBioVersion                 = "1.2.0"
+val munitVersion                    = "0.7.29"
 val nimbusJoseJwtVersion            = "9.22"
 val pureconfigVersion               = "0.17.1"
 val scalaLoggingVersion             = "3.9.4"
@@ -129,6 +130,7 @@ lazy val magnolia             = "com.propensive"               %% "magnolia"    
 lazy val mockito              = "org.mockito"                  %% "mockito-scala"            % mockitoVersion
 lazy val monixBio             = "io.monix"                     %% "monix-bio"                % monixBioVersion
 lazy val monixEval            = "io.monix"                     %% "monix-eval"               % monixVersion
+lazy val munit                = "org.scalameta"                %% "munit"                    % munitVersion
 lazy val nimbusJoseJwt        = "com.nimbusds"                  % "nimbus-jose-jwt"          % nimbusJoseJwtVersion
 lazy val pureconfig           = "com.github.pureconfig"        %% "pureconfig"               % pureconfigVersion
 lazy val scalaLogging         = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
@@ -308,6 +310,7 @@ lazy val sourcingPsql = project
       fs2,
       fs2io,
       monixBio,
+      munit % Test,
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
