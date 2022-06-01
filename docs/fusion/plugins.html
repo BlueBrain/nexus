@@ -244,7 +244,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/plugins.html#default-plugins" class="header">Default Plugins</a>
     <ul>
-      <li><a href="../../docs/fusion/plugins.html#admin-plugin" class="header">Admin Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#advanced-view-plugin" class="header">Advanced View Plugin</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -282,7 +282,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/plugins.html#default-plugins" class="header">Default Plugins</a>
     <ul>
-      <li><a href="../../docs/fusion/plugins.html#admin-plugin" class="header">Admin Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#advanced-view-plugin" class="header">Advanced View Plugin</a></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -295,7 +295,7 @@ BlueBrain/nexus
 <article class="md-content__inner md-typeset">
 <div class="md-content__searchable">
 <h1><a href="#plugins" name="plugins" class="anchor"><span class="anchor-link"></span></a>Plugins</h1>
-<p>A resource returned by the Nexus Delta API is usually a JSON-LD document. By default Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.</p>
+<p>A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.</p>
 <p>Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology, a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.</p>
 <h2><a href="#what-are-plugins" name="what-are-plugins" class="anchor"><span class="anchor-link"></span></a>What are Plugins</h2>
 <p>A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.</p>
@@ -333,7 +333,7 @@ BlueBrain/nexus
 │   ...
 </code></pre>
 <h2><a href="#plugin-manifest" name="plugin-manifest" class="anchor"><span class="anchor-link"></span></a>Plugin Manifest</h2>
-<p>The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus Fusion can find the plugins and apply them dynamically.</p>
+<p>The plugin manifest should be available at the same remote endpoint as the plugins, this is so that Nexus Fusion can find the plugins and apply them dynamically.</p>
 <p>The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a descriptive payload of where to find the manifest, as well as some information about it&rsquo;s development. It&rsquo;s similar to a package.json file.</p>
 <pre class="prettyprint"><code class="language-json">{
     &quot;circuit&quot;: {
@@ -386,9 +386,9 @@ BlueBrain/nexus
 }
 </code></pre>
 <h2><a href="#default-plugins" name="default-plugins" class="anchor"><span class="anchor-link"></span></a>Default Plugins</h2>
-<p>Default plugins are part of Fusion. They define the default presentation of resources.</p>
-<h3><a href="#admin-plugin" name="admin-plugin" class="anchor"><span class="anchor-link"></span></a>Admin Plugin</h3>
-<p>Admin Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the incoming and out going links of the resource in Links tab.</p>
+<p>Default plugins are part of Fusion.</p>
+<h3><a href="#advanced-view-plugin" name="advanced-view-plugin" class="anchor"><span class="anchor-link"></span></a>Advanced View Plugin</h3>
+<p>The Advanced View Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the incoming and outgoing links of the resource in Links tab.</p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/plugins.md" title="Edit this page" class="md-source-file md-edit">

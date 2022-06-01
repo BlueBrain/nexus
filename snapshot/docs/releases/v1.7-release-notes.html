@@ -214,6 +214,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -251,7 +252,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
-      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics-plugin" class="header">Graph Analytics Plugin</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#studios-elasticsearch-support" class="header">Studios Elasticsearch Support</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#search-enhancements" class="header">Search Enhancements</a>
       <ul>
@@ -308,7 +309,7 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/releases/v1.7-release-notes.html#nexus-fusion" class="header">Nexus Fusion</a>
     <ul>
-      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics" class="header">Graph Analytics</a></li>
+      <li><a href="../../docs/releases/v1.7-release-notes.html#graph-analytics-plugin" class="header">Graph Analytics Plugin</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#studios-elasticsearch-support" class="header">Studios Elasticsearch Support</a></li>
       <li><a href="../../docs/releases/v1.7-release-notes.html#search-enhancements" class="header">Search Enhancements</a>
       <ul>
@@ -341,25 +342,25 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <div class="md-content__searchable">
 <h1><a href="#v1-7-release-notes" name="v1-7-release-notes" class="anchor"><span class="anchor-link"></span></a>v1.7 Release Notes</h1>
 <blockquote>
-  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible to v1.6.</p>
+  <p>This is an incremental software release that adds several improvements across the board. The API is backwards compatible with v1.6.</p>
 </blockquote>
 <p>For the detailed list of updates in this release, see the <a href="https://github.com/BlueBrain/nexus/issues?q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-03-14+" title="list of addressed issues" target="_blank" rel="noopener noreferrer">list of addressed issues</a> since v1.6.</p>
 <p>If you are currently using Nexus Delta from 1.6.x, please visit the <a href="v1.6-to-v1.7-migration.html">migration instructions</a> for the necessary steps to successfully upgrade.</p>
 <h2><a href="#highlights" name="highlights" class="anchor"><span class="anchor-link"></span></a>Highlights</h2>
 <p><img src="../assets/v1.7.x/BBP_Nexus-v1.7-Banner.jpg" alt="Banner" /></p>
-<p>As you grow your Knowledge Graph every day, it is becoming more and more challenging to find relevant data to fuel your data driven activities. In October 2021, We introduced a powerful new feature: Global Search. It allows you to make all Nexus Projects searchable and the data within discoverable. We have received a lot of feedbacks and recently focused on improving further its usability. We are delighted to announce the public release of Nexus 1.7 and here are the highlights.</p>
+<p>As you grow your Knowledge Graph every day, it is becoming more and more challenging to find relevant data to fuel your data driven activities. In October 2021, we introduced a powerful new feature: <em>Global Search</em>. It allows you to make all Nexus Projects searchable and the data within discoverable. We have received a lot of feedback and recently focused on improving further its usability. We are delighted to announce the public release of Nexus 1.7 and here are the highlights.</p>
 <h3><a href="#preconfigured-searches" name="preconfigured-searches" class="anchor"><span class="anchor-link"></span></a>Preconfigured Searches</h3>
 <p>In order to allow you to jump quickly and easily to the relevant data, you can now use the preconfigured searches. More can be added and relevant columns preselected.</p>
 <p><img src="../assets/v1.7.x/1.preconfigured-searches.png" alt="Preconfigured Searches" /></p>
 <h3><a href="#specialised-filters" name="specialised-filters" class="anchor"><span class="anchor-link"></span></a>Specialised Filters</h3>
-<p>We now support filtering for additional columns types. With the new Numeric column support, you can plot an overview of your selection and easily narrow it down to what is really useful to you. Similarly, you can now filter using Date columns.</p>
+<p>We now support filtering for additional columns types. With the new <em>Numeric</em> column support, you can plot an overview of your selection and easily narrow it down to what is really useful to you. Similarly, you can now filter using <em>Date</em> columns.</p>
 <p><img src="../assets/v1.7.x/2a.numerical-filter-small.png" alt="Numerical Filter" /></p>
 <p><img src="../assets/v1.7.x/2b.date-filter-small.png" alt="Date Filter" /></p>
 <h3><a href="#resource-panel" name="resource-panel" class="anchor"><span class="anchor-link"></span></a>Resource Panel</h3>
-<p>When clicking on search results, you can view more details. The resource panel was improved to highlight important information and actions at the top. Plugins are continuously improved using your feedbacks.</p>
+<p>When clicking on search results, you can view more details. The <a href="../fusion/admin.html#resource-panel">resource panel</a> was improved to highlight important information and actions at the top. Plugins are continuously improved using your feedback.</p>
 <p><img src="../assets/v1.7.x/3.resource-panel.png" alt="Banner" /></p>
 <h3><a href="#search-bar" name="search-bar" class="anchor"><span class="anchor-link"></span></a>Search Bar</h3>
-<p>The search bar now allows you to find and open Studios or Projects from anywhere in Fusion.</p>
+<p>The search bar now allows you to find and open <em>Studios</em> or <em>Projects</em> from anywhere in Fusion.</p>
 <p><img src="../assets/v1.7.x/4.search-bar.png" alt="Banner" /></p>
 <h3><a href="#for-power-users-and-admins" name="for-power-users-and-admins" class="anchor"><span class="anchor-link"></span></a>For Power Users and Admins</h3>
 <p>As you add more of your scientific data into Nexus, you can review the structure of your Knowledge Graph. You can see how resources are connected together and what properties are used to describe them.</p>
@@ -379,12 +380,12 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <p>A <a href="https://github.com/BlueBrain/nexus/issues?page=1&q=is%3Aissue+is%3Aclosed+closed%3A2021-10-14..2022-03-08+label%3Abug+label%3Adelta" title="series of bugs" target="_blank" rel="noopener noreferrer">series of bugs</a> have also been fixed with this new release.</p>
 <h3><a href="#elasticsearch-pipes" name="elasticsearch-pipes" class="anchor"><span class="anchor-link"></span></a>Elasticsearch pipes</h3>
-<p>With 1.7, Elasticsearch views now rely on pipes to filter and transform data before indexing. This feature was primarily motivated by user requests of our partners at SWITCH, <a href="https://github.com/BlueBrain/nexus/issues/2549">some usage examples are detailed here</a>.</p>
-<p>More details <a href="../delta/api/views/elasticsearch-view-api.html">here</a></p>
+<p>With 1.7, Elasticsearch views now rely on pipes to filter and transform data before indexing. This feature was primarily motivated by user requests of our partners at SWITCH, <a href="https://github.com/BlueBrain/nexus/issues/2549">some usage examples of Elasticsearch pipes are detailed here</a>.</p>
+<p><a href="../delta/api/views/elasticsearch-view-api.html">Read More about Elasticsearch pipes</a></p>
 <p>This change implies a <a href="v1.6-to-v1.7-migration.html">migration when updating Nexus Delta to 1.7</a>.</p>
 <h3><a href="#allow-the-use-of-an-external-configuration-file-for-delta" name="allow-the-use-of-an-external-configuration-file-for-delta" class="anchor"><span class="anchor-link"></span></a>Allow the use of an external configuration file for Delta</h3>
 <p>Besides JVM properties and environment variables, Delta configuration can now be defined via a external file.</p>
-<p>More details <a href="../getting-started/running-nexus/configuration/index.html">here</a></p>
+<p><a href="../getting-started/running-nexus/configuration/index.html">Read More about Delta configuration</a></p>
 <h3><a href="#deleting-tags-on-resources" name="deleting-tags-on-resources" class="anchor"><span class="anchor-link"></span></a>Deleting tags on resources</h3>
 <p>From 1.7, it is now possible to delete tags on resources, files and schemas.</p>
 <h3><a href="#tagging-deprecated-storages-and-views" name="tagging-deprecated-storages-and-views" class="anchor"><span class="anchor-link"></span></a>Tagging deprecated storages and views</h3>
@@ -399,7 +400,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <p>In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. For very large deployments there are commercial options that are wire compatible to PostgreSQL.</p>
 <p>Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.</p>
 <h2><a href="#nexus-fusion" name="nexus-fusion" class="anchor"><span class="anchor-link"></span></a>Nexus Fusion</h2>
-<h3><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph Analytics</h3>
+<h3><a href="#graph-analytics-plugin" name="graph-analytics-plugin" class="anchor"><span class="anchor-link"></span></a>Graph Analytics Plugin</h3>
 <p>Fusion now enables users to inspect properties and relationships of resources in a given project via the new Graph Analytics plugin.</p>
 <h3><a href="#studios-elasticsearch-support" name="studios-elasticsearch-support" class="anchor"><span class="anchor-link"></span></a>Studios Elasticsearch Support</h3>
 <p>Support Elasticsearch and Composite views has been added to <a href="../fusion/studio.html">Studios</a>. Studios targeting an Elasticsearch view provide the option for more performant Studios compared to those targeting a Sparql view. The Studio data model has changed to support this, see migration notes for migrating existing Studios.</p>

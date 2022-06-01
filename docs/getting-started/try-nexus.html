@@ -445,7 +445,7 @@ BlueBrain/nexus
 <h2><a href="#step-1-nexus-setup" name="step-1-nexus-setup" class="anchor"><span class="anchor-link"></span></a>Step 1: Nexus Setup</h2>
 <p>We run the latest version of Nexus publicly for education. You can also use the instance in your organization (if any), or setup Nexus from scratch.</p>
 <h3><a href="#1-1-using-the-sandbox" name="1-1-using-the-sandbox" class="anchor"><span class="anchor-link"></span></a>1.1. Using the Sandbox</h3>
-<p>The <a href="https://sandbox.bluebrainnexus.io/web/" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> is a deployment of Nexus for educational purposes.</p>
+<p>The <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a> is a deployment of Nexus for educational purposes.</p>
 <p>Once on the Sandbox homepage, click on the top right corner on the login button.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-login.png" alt="Sandbox Home" /></p></div>
 <p>We offer for the moment one identity providers (IdP):</p>
@@ -533,7 +533,8 @@ BlueBrain/nexus
 <p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
 <p>You will now be presented with all the data that has been indexed across all projects you have the right to read from. In the case of this tutorial, you are likely to have access to your own project only. Please note that each instance of Nexus will have its own Search configuration, the BBP Sandbox has been configured to show NeuronMorphology and Trace datasets for the purpose of this tutorial.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-search.png" alt="Sandbox Home" /></p></div>
-<p>Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any rows in this table to open the corresponding dataset and look into its details: @@@ div { .center } <img src="../assets/tutorial-sandbox-search-resource.png" alt="Sandbox Home" /> @@@</p>
+<p>Each of the rows of this table represent Knowledge Graph entities that we have decided to expose, including some specific metadata describing them (the columns). You can now click on any row in this table to open the corresponding dataset and look into its details.</p><div class="center">
+<p><img src="../assets/tutorial-sandbox-search-resource.png" alt="Sandbox Home" /></p></div>
 <p>You can find more documentation on how to use Search <a href="../fusion/search.html">here</a>.</p>
 <h2><a href="#2-7-2-by-browsing-your-personal-project" name="2-7-2-by-browsing-your-personal-project" class="anchor"><span class="anchor-link"></span></a>2.7.2 By browsing your personal Project</h2>
 <p>Navigate to the Sandbox then to the correct organisation and project. In the project page, you will have the list of all resources present in your project (Default Query), including the ones that you just integrated. Depending on how you ran the notebook, you should find at least one NeuronMorphology and one Trace resource.</p><div class="center">
@@ -755,7 +756,7 @@ WHERE {
 <p>You can learn more about SPARQL in the <a href="https://www.w3.org/TR/sparql11-query/" title="official documentation">official documentation</a>.</p>
 <h3><a href="#4-2-project-and-resource-views" name="4-2-project-and-resource-views" class="anchor"><span class="anchor-link"></span></a>4.2. Project and Resource Views</h3>
 <p>As you saw in the example above, we can use SPARQL to query the cells in our Nexus project.</p>
-<p>Let&rsquo;s start by accessing your Nexus instance or the <a href="https://sandbox.bluebrainnexus.io/web/" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a>. Go to Admin page (from the left hand side menu), and navigate to your organization and project.</p>
+<p>Let&rsquo;s start by accessing your Nexus instance or the <a href="https://sandbox.bluebrainnexus.io" title="Sandbox" target="_blank" rel="noopener noreferrer">Sandbox</a>. Go to Admin page (from the left hand side menu), and navigate to your organization and project.</p>
 <blockquote>
   <p>In the Sandbox, the organization corresponds to the identity provider used, and the project to your username. For example, if you used GitHub, the organization will be <code>github-users</code> and your project will be your GitHub username.</p>
 </blockquote>
@@ -765,7 +766,7 @@ WHERE {
 <p><img src="../assets/tutorial-resource-view-with-plugins.png" alt="Resource View with Plugins" /></p></div>
 <p>Depending on the resource data type, you might see one or more &ldquo;plugins&rdquo;. Plugins are components that will show up for specific resources or properties. For example, if you registered a neuron morphology and the data is properly attached through the distribution, you will be able to see a 3D morphology browser plugin.</p><div class="center">
 <p><img src="../assets/tutorial-morphology-plugin.png" alt="Morphology Plugin" /></p></div>
-<p>More importantly, you will find the Admin plugin at the bottom of the view. Expand it and you will see the actual resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.</p><div class="center">
+<p>More importantly, you will find the Advanced view plugin at the bottom of the view. Expand it and you will see the actual resource payload stored by Nexus, and navigate the graph through links, or visualize the surrounding graph in the graph tab.</p><div class="center">
 <p><img src="../assets/tutorial-admin-plugin.png" alt="Admin Plugin" /></p></div>
 <p>Here&rsquo;s an example of the JSON payload of the neuron morphology resource previously registered (context left out for clarity):</p>
 <pre class="prettyprint"><code class="language-json">{
@@ -926,15 +927,13 @@ LIMIT 1000
 <p><img src="../assets/tutorial-sandbox-project.png" alt="Sandbox Home" /></p></div>
 <p>You will land on:</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studios-admin.png" alt="Sandbox Home" /></p></div>
-<p>On this page you can create a new studio. A Studio is a dedicated web page in your project that you can organise into pages (workspaces, as horizontal tabs at the top) and sections (dashboards, as vertical tabs on the left side) and list your data in a logical way. The tables are powered by SPARQL queries and the data present in your project.</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-studio-empty.png" alt="Sandbox Home" /></p></div>
-<p>Start by creating a Workspace.</p><div class="center">
+<p>On this page you can create a new studio. A Studio is a dedicated web page in your project that you can organise into pages (workspaces, as horizontal tabs at the top) and sections (dashboards, as vertical tabs on the left side) and list your data in a logical way. The tables are powered by SPARQL queries and the data present in your project.</p>
+<p>Start by creating a Workspace. To create a workspace, click the Workspace button and in the menu that appears click Add Workspace. You will be presented with a dialog requesting the label of the workspace and optionally a description. Enter a label of your choosing and click Save.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studio-one-workspace-no-dashboard.png" alt="Sandbox Home" /></p></div>
-<p>Then create a Dashboard, using the SPARQL query above.</p><div class="center">
+<p>Next, create a Dashboard. Click the Dashboard button and choose Add from the pop-up menu. In the Dashboard creation dialog, specify the default Sparql Index view and specify the SPARQL query above. The &lsquo;Preview&rsquo; button will list the columns to be returned by the query and support specifying options on the columns such as enabling searching or sorting.</p><div class="center">
 <p><img src="../assets/tutorial-sandbox-studio-one-workspace-one-dashboard.png" alt="Sandbox Home" /></p></div>
 <p>Because we are using the self, clicking on a row of the newly created table will open the resource view.</p>
-<p>It&rsquo;s your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above. The results should look like this:</p><div class="center">
-<p><img src="../assets/tutorial-sandbox-studio-one-workspace-two-dashboards.png" alt="Studio Traces" /></p></div>
+<p>It&rsquo;s your turn now to add a dashboard to list your Neuron Electrophysiology data. Create the dashboard and modify the SPARQL query above.</p>
 <p>Congratulations! You&rsquo;ve created your very first studio, which completes this tutorial step.</p>
 <h2><a href="#step-5-finding-similar-datasets-using-recommendations" name="step-5-finding-similar-datasets-using-recommendations" class="anchor"><span class="anchor-link"></span></a>Step 5: Finding Similar Datasets using Recommendations</h2>
 <p>In this section, you will first learn about recommendation systems, then reuse the data you have integrated in Nexus in previous steps and build a recommendation system to find datasets that are similar to a chosen neuron morphology or electrophysiology recording.</p>

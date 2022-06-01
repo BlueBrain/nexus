@@ -214,6 +214,7 @@ BlueBrain/nexus
       <li><a href="../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -244,7 +245,14 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/plugins.html#default-plugins" class="header">Default Plugins</a>
     <ul>
-      <li><a href="../../docs/fusion/plugins.html#admin-plugin" class="header">Admin Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#advanced-view-plugin" class="header">Advanced View Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#jira" class="header">Jira</a>
+      <ul>
+        <li><a href="../../docs/fusion/plugins.html#configuration" class="header">Configuration</a></li>
+        <li><a href="../../docs/fusion/plugins.html#authorization" class="header">Authorization</a></li>
+        <li><a href="../../docs/fusion/plugins.html#usage" class="header">Usage</a></li>
+        <li><a href="../../docs/fusion/plugins.html#project-view" class="header">Project view</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -282,7 +290,14 @@ BlueBrain/nexus
     </ul></li>
     <li><a href="../../docs/fusion/plugins.html#default-plugins" class="header">Default Plugins</a>
     <ul>
-      <li><a href="../../docs/fusion/plugins.html#admin-plugin" class="header">Admin Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#advanced-view-plugin" class="header">Advanced View Plugin</a></li>
+      <li><a href="../../docs/fusion/plugins.html#jira" class="header">Jira</a>
+      <ul>
+        <li><a href="../../docs/fusion/plugins.html#configuration" class="header">Configuration</a></li>
+        <li><a href="../../docs/fusion/plugins.html#authorization" class="header">Authorization</a></li>
+        <li><a href="../../docs/fusion/plugins.html#usage" class="header">Usage</a></li>
+        <li><a href="../../docs/fusion/plugins.html#project-view" class="header">Project view</a></li>
+      </ul></li>
     </ul></li>
   </ul></li>
 </ul>
@@ -302,7 +317,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </div>
 <div class="md-content__searchable">
 <h1><a href="#plugins" name="plugins" class="anchor"><span class="anchor-link"></span></a>Plugins</h1>
-<p>A resource returned by the Nexus Delta API is usually a JSON-LD document. By default Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.</p>
+<p>A resource returned by the Nexus Delta API is usually a JSON-LD document. By default, Nexus Fusion displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor.</p>
 <p>Resources can represent a wide variety of scientific artifacts. It can be a neuron morphology, neuron electrophysiology, a set of files to download, a set of images and so on. So a user may want to extend Nexus Fusion to allow them to visualize or otherwise extend the presentation layer with logic specific to their resource type. Plugins are a way to accomplish this.</p>
 <h2><a href="#what-are-plugins" name="what-are-plugins" class="anchor"><span class="anchor-link"></span></a>What are Plugins</h2>
 <p>A core component of Studio is the ability for data curators to develop a domain-specific presentation layer for their resources in Nexus Fusion. This allows data consumers to visualize their datasets using graphs, charts, or 3D visualizations, and to present the relevant metadata to the user.</p>
@@ -340,7 +355,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 │   ...
 </code></pre>
 <h2><a href="#plugin-manifest" name="plugin-manifest" class="anchor"><span class="anchor-link"></span></a>Plugin Manifest</h2>
-<p>The plugin manifest should be available at the same remote endpoint as the plugins. This is so Nexus Fusion can find the plugins and apply them dynamically.</p>
+<p>The plugin manifest should be available at the same remote endpoint as the plugins, this is so that Nexus Fusion can find the plugins and apply them dynamically.</p>
 <p>The plugin manifest is a JSON object with keys that correspond to the plugin name with a value that corresponds to a descriptive payload of where to find the manifest, as well as some information about it&rsquo;s development. It&rsquo;s similar to a package.json file.</p>
 <pre class="prettyprint"><code class="language-json">{
     &quot;circuit&quot;: {
@@ -393,9 +408,31 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 }
 </code></pre>
 <h2><a href="#default-plugins" name="default-plugins" class="anchor"><span class="anchor-link"></span></a>Default Plugins</h2>
-<p>Default plugins are part of Fusion. They define the default presentation of resources.</p>
-<h3><a href="#admin-plugin" name="admin-plugin" class="anchor"><span class="anchor-link"></span></a>Admin Plugin</h3>
-<p>Admin Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the incoming and out going links of the resource in Links tab.</p>
+<p>Default plugins are part of Fusion.</p>
+<h3><a href="#advanced-view-plugin" name="advanced-view-plugin" class="anchor"><span class="anchor-link"></span></a>Advanced View Plugin</h3>
+<p>The Advanced View Plugin displays JSON-LD in a code editor. If the user has edit access to the document, they can update the resource in the editor. It also has few additional tabs. History, Links and Graph. History tab displays the edit history of the resource. A user can explore the graph view of the resource in Graph tab. They can also view the incoming and outgoing links of the resource in Links tab.</p>
+<h3><a href="#jira" name="jira" class="anchor"><span class="anchor-link"></span></a>Jira</h3>
+<p>The Jira plugin enables integration with an instance of Jira to facilitate discussions about resources. The Jira plugin must be enabled in Nexus Delta and configured in the Fusion Deployment. Links between a Jira issue and a Nexus resource (or project) are stored in custom fields in Jira which are required to be configured before usage. It is the Nexus URL that is used to link to the resource. Issues created with the Jira plugin have a discussion label applied to them in Jira.</p>
+<h4><a href="#configuration" name="configuration" class="anchor"><span class="anchor-link"></span></a>Configuration</h4>
+<p>See the accompanying Delta Jira documentation for configuration of the Jira plugin in Delta and linking it with a Jira instance. In Fusion, there are several environment variables related to Jira that must be specified in order to configure its usage.</p>
+<ul>
+  <li>JIRA_URL - URL of jira instance</li>
+  <li>JIRA_RESOURCE_FIELD_NAME - the name of the custom field in Jira to use for storing the link to the Nexus resource</li>
+  <li>JIRA_RESOURCE_FIELD_LABEL (defaults to <code>Nexus Resource</code>) - the label of the custom field in Jira being used for storing the link to the Nexus resource</li>
+  <li>JIRA_PROJECT_FIELD_NAME - the name of the custom field in Jira to use for storing the link to the Nexus project</li>
+  <li>JIRA_PROJECT_FIELD_LABEL (defaults to <code>Nexus Project</code>) - the label of the custom field in Jira being used for storing the link to the Nexus project</li>
+</ul>
+<p>The custom fields in Jira should be created as <code>URL</code> type field and should be added to the required Jira screens and projects that you want to use with Nexus.</p>
+<h4><a href="#authorization" name="authorization" class="anchor"><span class="anchor-link"></span></a>Authorization</h4>
+<p>The user will be required to authorize access to Jira prior to being able to use the Jira plugin in Fusion. From the Jira plugin the user is instructed to click the link to authorize access in Jira and then will be required to enter the provided verification code in Fusion to complete the authorization.</p>
+<p><img src="../assets/jira-resource-plugin-authenticate.png" alt="Jira Authorization" /></p>
+<h4><a href="#usage" name="usage" class="anchor"><span class="anchor-link"></span></a>Usage</h4>
+<p>The Jira plugin is displayed for all resources, given that it&rsquo;s enabled. A resource can be linked to an issue in Jira from within the Jira plugin in Fusion by either choosing to create a new issue or by linking to an existing Jira issue.</p>
+<p>Multiple issues can be associated with a resource and they will display in the table of linked resources in the Jira plugin. Issues can be removed from here also.</p>
+<p><img src="../assets/jira-resource-plugin-with-issue.png" alt="Nexus Resource with linked Jira issue" /></p>
+<h4><a href="#project-view" name="project-view" class="anchor"><span class="anchor-link"></span></a>Project view</h4>
+<p>Besides the Jira plugin displaying in the Resource view, there is also a Jira plugin at the level of the project. It can be accessed via the Jira tab in the project view. In the Jira project view, all issues linked to resources within the project are listed along with their associated resource. Similar functionality to the Jira plugin on the resource is available here with the option to add/remove issues. Note that issues created within the Jira plugin at the project level are associated with the project only.</p>
+<p><img src="../assets/jira-project-plugin.png" alt="Jira Project plugin" /></p>
 </div>
 <div>
 <a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/fusion/plugins.md" title="Edit this page" class="md-source-file md-edit">

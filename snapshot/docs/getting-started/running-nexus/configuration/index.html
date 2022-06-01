@@ -214,6 +214,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -242,6 +243,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
       <ul>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration" class="header">Elasticsearch views plugin configuration</a></li>
@@ -249,6 +251,7 @@ BlueBrain/nexus
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration" class="header">Composite views plugin configuration</a></li>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#storage-plugin-configuration" class="header">Storage plugin configuration</a></li>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#archive-plugin-configuration" class="header">Archive plugin configuration</a></li>
+        <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#jira-plugin-configuration" class="header">Jira plugin configuration</a></li>
       </ul></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
       <ul>
@@ -290,6 +293,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#service-account-configuration" class="header">Service account configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#automatic-project-provisioning" class="header">Automatic project provisioning</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#encryption-configuration" class="header">Encryption configuration</a></li>
+      <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#fusion-configuration" class="header">Fusion configuration</a></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#plugins-configuration" class="header">Plugins configuration</a>
       <ul>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#elasticsearch-views-plugin-configuration" class="header">Elasticsearch views plugin configuration</a></li>
@@ -297,6 +301,7 @@ BlueBrain/nexus
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#composite-views-plugin-configuration" class="header">Composite views plugin configuration</a></li>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#storage-plugin-configuration" class="header">Storage plugin configuration</a></li>
         <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#archive-plugin-configuration" class="header">Archive plugin configuration</a></li>
+        <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#jira-plugin-configuration" class="header">Jira plugin configuration</a></li>
       </ul></li>
       <li><a href="../../../../docs/getting-started/running-nexus/configuration/index.html#monitoring" class="header">Monitoring</a>
       <ul>
@@ -365,12 +370,15 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 <h2><a href="#encryption-configuration" name="encryption-configuration" class="anchor"><span class="anchor-link"></span></a>Encryption configuration</h2>
 <p>Nexus Delta uses symmetric encryption to secure sensitive data information (tokens and passwords).</p>
 <p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L298" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the encryption configuration.</p>
+<h2><a href="#fusion-configuration" name="fusion-configuration" class="anchor"><span class="anchor-link"></span></a>Fusion configuration</h2>
+<p>When fetching a resource, Nexus Delta allows to return a redirection to its representation in Fusion by providing <code>text/html</code> in the <code>Accept</code> header.</p>
+<p><a href="https://github.com/BlueBrain/nexus/blob/master/delta/app/src/main/resources/app.conf#L85" title="This section" target="_blank" rel="noopener noreferrer">This section</a> of the configuration defines the fusion configuration.</p>
 <h2><a href="#plugins-configuration" name="plugins-configuration" class="anchor"><span class="anchor-link"></span></a>Plugins configuration</h2>
 <p>Since 1.5.0, Nexus Delta supports plugins. Jar files present inside the local directory defined by the <code>DELTA_PLUGINS</code> environment variable are loaded as plugins into the Delta service. </p>
 <p>Each plugin configuration is rooted under <code>plugins.{plugin_name}</code>. All plugins have a <code>plugins.{plugin_name}.priority</code> configuration flag used to determine the order in which the routes are handled in case of collisions. </p>
 <h3><a href="#elasticsearch-views-plugin-configuration" name="elasticsearch-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Elasticsearch views plugin configuration</h3>
 <p>The elasticsearch plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/elasticsearch/src/main/resources/elasticsearch.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
-<p>The most important flag are: * <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running. * <code>plugins.elasticsearch.credentials.username</code> and <code>plugins.elasticsearch.credentials.password</code> to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.</p>
+<p>The most important flags are: * <code>plugins.elasticsearch.base</code> which defines the endpoint where the Elasticsearch service is running. * <code>plugins.elasticsearch.credentials.username</code> and <code>plugins.elasticsearch.credentials.password</code> to allow to access to a secured Elasticsearch cluster. The user provided should have the privileges to create/delete indices and read/index from them.</p>
 <p>Please refer to the <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/secure-cluster.html" title="Elasticsearch configuration">Elasticsearch configuration</a> which describes the different steps to achieve this.</p>
 <h3><a href="#blazegraph-views-plugin-configuration" name="blazegraph-views-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Blazegraph views plugin configuration</h3>
 <p>The blazegraph plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/blazegraph/src/main/resources/blazegraph.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>. </p>
@@ -388,6 +396,9 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </ul>
 <h3><a href="#archive-plugin-configuration" name="archive-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Archive plugin configuration</h3>
 <p>The archive plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/archive/src/main/resources/archive.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<h3><a href="#jira-plugin-configuration" name="jira-plugin-configuration" class="anchor"><span class="anchor-link"></span></a>Jira plugin configuration</h3>
+<p>The Jira plugin configuration can be found <a href="https://github.com/BlueBrain/nexus/blob/master/delta/plugins/jira/src/main/resources/jira.conf" title="here" target="_blank" rel="noopener noreferrer">here</a>.</p>
+<p>Setting up the Jira plugin needs to set up the endpoint of the Jira instance but also the consumer key, the consumer secret and the private key required to interact with Jira (more details including the configuration steps in Jira <a href="https://developer.atlassian.com/server/jira/platform/oauth/#step-1--configure-jira" title="here">here</a>).</p>
 <h2><a href="#monitoring" name="monitoring" class="anchor"><span class="anchor-link"></span></a>Monitoring</h2>
 <p>For monitoring, Nexus Delta relies on <a href="https://kamon.io/" title="Kamon" target="_blank" rel="noopener noreferrer">Kamon</a>.</p>
 <p>Kamon can be disabled by passing the environment variable <code>KAMON_ENABLED</code> to <code>false</code></p>

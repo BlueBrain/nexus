@@ -214,6 +214,7 @@ BlueBrain/nexus
       <li><a href="../../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
       <li><a href="../../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
       <li><a href="../../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -866,6 +867,7 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
   &quot;_uuid&quot;: &quot;7e737b83-30a0-4ea3-b6c9-cd1ed481d743&quot;
 }</code></pre></dd>
 </dl>
+<p>If the <a href="../../../getting-started/running-nexus/configuration/index.html#fusion-configuration">redirect to Fusion feature</a> is enabled and if the <code>Accept</code> header is set to <code>text/html</code>, a redirection to the fusion representation of the resource will be returned.</p>
 <p>Note that for retro-compatibility purposes, fetching an elasticsearch view returns legacy fields.</p>
 <h2><a href="#fetch-original-payload" name="fetch-original-payload" class="anchor"><span class="anchor-link"></span></a>Fetch original payload</h2>
 <pre><code>GET /v1/views/{org_label}/{project_label}/{view_id}/source?rev={rev}&amp;tag={tag}

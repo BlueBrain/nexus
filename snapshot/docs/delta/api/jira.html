@@ -20,7 +20,7 @@
 
 <meta name="description" content="docs">
 <link rel="shortcut icon" href="../../.././assets/img/favicon-32x32.png">
-<title>Graph analytics · Blue Brain Nexus</title>
+<title>Jira integration · Blue Brain Nexus</title>
 <link rel="stylesheet" href="../../../assets/stylesheets/application.451f80e5.css">
 <link rel="stylesheet" href="../../../assets/stylesheets/application-palette.22915126.css">
 <meta name="theme-color" content="#03a9f4" />
@@ -61,7 +61,7 @@ data-md-color-accent="cyan"
 Blue Brain Nexus
 </span>
 <span class="md-header-nav__topic">
-Graph analytics
+Jira integration
 </span>
 </div>
 </div>
@@ -213,8 +213,8 @@ BlueBrain/nexus
       <li><a href="../../../docs/delta/api/files-api.html" class="page">Files</a></li>
       <li><a href="../../../docs/delta/api/archives-api.html" class="page">Archives</a></li>
       <li><a href="../../../docs/delta/api/search-api.html" class="page">Global search</a></li>
-      <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="active page">Graph analytics</a></li>
-      <li><a href="../../../docs/delta/api/jira.html" class="page">Jira integration</a></li>
+      <li><a href="../../../docs/delta/api/graph-analytics-api.html" class="page">Graph analytics</a></li>
+      <li><a href="../../../docs/delta/api/jira.html" class="active page">Jira integration</a></li>
       <li><a href="../../../docs/delta/api/events-api.html" class="page">Global events</a></li>
     </ul></li>
     <li><a href="../../../docs/delta/plugins/index.html" class="page">Plugins</a></li>
@@ -230,15 +230,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/graph-analytics-api.html#graph-analytics" class="header">Graph analytics</a>
+  <li><a href="../../../docs/delta/api/jira.html#jira-integration" class="header">Jira integration</a>
   <ul>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-relationships" class="header">Fetch relationships</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-properties" class="header">Fetch properties</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-progress" class="header">Fetch progress</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#internals" class="header">Internals</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/graph-analytics-api.html#document-structure" class="header">Document structure</a></li>
-    </ul></li>
+    <li><a href="../../../docs/delta/api/jira.html#request-token" class="header">Request token</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#access-token" class="header">Access token</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#create-an-issue" class="header">Create an issue</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#edit-an-issue" class="header">Edit an issue</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#list-available-projects" class="header">List available projects</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#search-issues" class="header">Search issues</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -260,15 +259,14 @@ BlueBrain/nexus
 <nav class="md-nav md-nav--secondary">
 <label class="md-nav__title" for="__toc">Table of contents</label>
 <ul>
-  <li><a href="../../../docs/delta/api/graph-analytics-api.html#graph-analytics" class="header">Graph analytics</a>
+  <li><a href="../../../docs/delta/api/jira.html#jira-integration" class="header">Jira integration</a>
   <ul>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-relationships" class="header">Fetch relationships</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-properties" class="header">Fetch properties</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#fetch-progress" class="header">Fetch progress</a></li>
-    <li><a href="../../../docs/delta/api/graph-analytics-api.html#internals" class="header">Internals</a>
-    <ul>
-      <li><a href="../../../docs/delta/api/graph-analytics-api.html#document-structure" class="header">Document structure</a></li>
-    </ul></li>
+    <li><a href="../../../docs/delta/api/jira.html#request-token" class="header">Request token</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#access-token" class="header">Access token</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#create-an-issue" class="header">Create an issue</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#edit-an-issue" class="header">Edit an issue</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#list-available-projects" class="header">List available projects</a></li>
+    <li><a href="../../../docs/delta/api/jira.html#search-issues" class="header">Search issues</a></li>
   </ul></li>
 </ul>
 </nav>
@@ -286,242 +284,62 @@ the latest release is available <a href="https://bluebrainnexus.io/docs/" title=
 </p>
 </div>
 <div class="md-content__searchable">
-<h1><a href="#graph-analytics" name="graph-analytics" class="anchor"><span class="anchor-link"></span></a>Graph analytics</h1>
-<p>Graph analytics are a functionality introduced by the <code>graph-analytics</code> plugin and rooted in the <code>/v1/graph-analytics/{org_label}/{project_label}</code> collection. They provide ways to get insights about the data and their relationships in terms of types (@type field).</p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
-<p>When reading graph analytics, the caller must have <code>resources/read</code> permissions on the current path of the project or the ancestor paths.</p>
-<p>Please visit <a href="authentication.html">Authentication &amp; authorization</a> section to learn more about it.</p></div><div class="callout note warning"><div class="callout-title">Note</div>
-<p>The described endpoints are experimental and the responses structure might change in the future.</p></div>
-<h2><a href="#fetch-relationships" name="fetch-relationships" class="anchor"><span class="anchor-link"></span></a>Fetch relationships</h2>
-<p>Obtains all the @type relationships and their counts - defined by nodes and edges - existing on a project.</p>
-<p>The edges are the properties linking different nodes, and the nodes are the resources containing a certain @type.</p>
-<pre><code>GET /v1/graph-analytics/{org_label}/{project_label}/relationships
+<h1><a href="#jira-integration" name="jira-integration" class="anchor"><span class="anchor-link"></span></a>Jira integration</h1>
+<p>The Jira integration plugin comes from the need at BBP to have the Nexus platform and Jira to interact by linking Nexus resources and Jira issues.</p>
+<p>The <a href="https://developer.atlassian.com/server/jira/platform/getting-started/" title="Jira server">Jira server</a> API only allows to authenticate clients using the OAuth 1.0a protocol. This implies some set-up on the server-side so a minimal plugin was introduced in Delta to handle the authorization flow and to expose the Jira API operations needed by <a href="../../fusion/index.html">Nexus fusion</a> to link Nexus resources and Jira issues.</p>
+<p>A guide introducing OAuth and how to integrate with Jira using it with more details is available <a href="https://developer.atlassian.com/server/jira/platform/oauth/" title="on the Atlassian website">on the Atlassian website</a></p><div class="callout note tip"><div class="callout-title">Authorization notes</div>
+<p>Like the other endpoints in Delta, clients still have to present a valid token.</p>
+<p>To have access to the different endpoints provided by this plugin, the user must first grant Delta to access to their information and to act on their behalf as defined by the authorization workflow presented <a href="https://developer.atlassian.com/server/jira/platform/oauth/#authorization-flow" title="here">here</a>.</p>
+<p>As Nexus impersonates the user when interacting with Jira, it will do it with the same permissions as the user. Nexus does not perform any additional permission checks, it relies fully on Jira to perform this task.</p></div>
+<h2><a href="#request-token" name="request-token" class="anchor"><span class="anchor-link"></span></a>Request token</h2>
+<p>Starts the authorization process by obtaining a request token from Jira which will return a link so that the user can grant permission to Nexus to access Jira on their behalf.</p>
+<p>Nexus passes along the link to the client.</p>
+<pre><code>POST /v1/jira/request-token
 </code></pre>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetch-relationships.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/graph-analytics/myorg/myproj/relationships&quot;</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/jira/request-token.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST &quot;http://localhost:8080/v1/jira/request-token&quot;</code></pre></dd>
   <dt>Response</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetched-relationships.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/relationships.json&quot;,
-  &quot;_edges&quot;: [
-    {
-      &quot;_count&quot;: 2,
-      &quot;_path&quot;: [
-        {
-          &quot;@id&quot;: &quot;http://schema.org/brother&quot;,
-          &quot;_name&quot;: &quot;brother&quot;
-        }
-      ],
-      &quot;_source&quot;: &quot;http://schema.org/Person&quot;,
-      &quot;_target&quot;: &quot;http://schema.org/Person&quot;
-    }
-  ],
-  &quot;_nodes&quot;: [
-    {
-      &quot;@id&quot;: &quot;http://schema.org/Person&quot;,
-      &quot;_count&quot;: 3,
-      &quot;_name&quot;: &quot;Person&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/View&quot;,
-      &quot;_count&quot;: 2,
-      &quot;_name&quot;: &quot;View&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/DiskStorage&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;DiskStorage&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/ElasticSearchView&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;ElasticSearchView&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/InProject&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;InProject&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Project&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;Project&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Resolver&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;Resolver&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/SparqlView&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;SparqlView&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;https://bluebrain.github.io/nexus/vocabulary/Storage&quot;,
-      &quot;_count&quot;: 1,
-      &quot;_name&quot;: &quot;Storage&quot;
-    }
-  ]
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/jira/request-token-response.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
+  &quot;value&quot;: &quot;https://my-jira-instance/plugins/servlet/oauth/authorize?oauth_token=TEMP_TOKEN&quot;
 }</code></pre></dd>
 </dl>
-<h2><a href="#fetch-properties" name="fetch-properties" class="anchor"><span class="anchor-link"></span></a>Fetch properties</h2>
-<p>Obtains all the @type properties and their counts. </p>
-<p>The different between properties and relationships is that properties are enclosed inside the same resource, while relationships are statements between different resources.</p>
-<pre><code>GET /v1/graph-analytics/{org_label}/{project_label}/properties/{type}
+<h2><a href="#access-token" name="access-token" class="anchor"><span class="anchor-link"></span></a>Access token</h2>
+<p>After granting access to Delta, the user will get an access code that must be passed to this endpoint so that Delta can finalize the authorization flow and get an access token so that it can request and receive data from Jira.</p>
+<pre><code>POST /v1/jira/access-token
 </code></pre>
-<p>&hellip;where <code>{type}</code> is an IRI defining for which @type we want to retrieve the properties.</p>
 <p><strong>Example</strong></p>
 <dl>
   <dt>Request</dt>
   <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetch-properties.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/graph-analytics/myorg/myproj/properties/schema:Person&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetched-properties.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/properties.json&quot;,
-  &quot;@id&quot;: &quot;http://schema.org/Person&quot;,
-  &quot;_count&quot;: 3,
-  &quot;_name&quot;: &quot;Person&quot;,
-  &quot;_properties&quot;: [
-    {
-      &quot;@id&quot;: &quot;http://schema.org/givenName&quot;,
-      &quot;_count&quot;: 3,
-      &quot;_name&quot;: &quot;givenName&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;http://schema.org/brother&quot;,
-      &quot;_count&quot;: 3,
-      &quot;_name&quot;: &quot;brother&quot;
-    },
-    {
-      &quot;@id&quot;: &quot;http://schema.org/address&quot;,
-      &quot;_count&quot;: 3,
-      &quot;_name&quot;: &quot;address&quot;,
-      &quot;_properties&quot;: [
-        {
-          &quot;@id&quot;: &quot;http://schema.org/zipcode&quot;,
-          &quot;_count&quot;: 3,
-          &quot;_name&quot;: &quot;zipcode&quot;
-        },
-        {
-          &quot;@id&quot;: &quot;http://schema.org/street&quot;,
-          &quot;_count&quot;: 3,
-          &quot;_name&quot;: &quot;street&quot;
-        }
-      ]
-    }
-  ]
-}</code></pre></dd>
+  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/jira/access-token.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl -X POST &quot;http://localhost:8080/v1/jira/request-token&quot; -d \
+  &#39;{
+      &quot;value&quot;: &quot;MY_CODE&quot;
+   }&#39;</code></pre></dd>
 </dl>
-<h2><a href="#fetch-progress" name="fetch-progress" class="anchor"><span class="anchor-link"></span></a>Fetch progress</h2>
-<pre><code>GET /v1/graph-analytics/{org_label}/{project_label}/progress
+<p>An empty resource is returned for this endpoint.</p>
+<h2><a href="#create-an-issue" name="create-an-issue" class="anchor"><span class="anchor-link"></span></a>Create an issue</h2>
+<pre><code>POST /v1/jira/issue
 </code></pre>
-<p>It returns:</p>
-<ul>
-  <li>the dateTime of the latest consumed event (<code>lastProcessedEventDateTime</code>).</li>
-  <li>the number of consumed events (<code>eventsCount</code>).</li>
-  <li>the number of consumed resources (<code>resourcesCount</code>). A resource might be made of multiple events (create, update, deprecate), so this number will always be smaller or equal to <code>eventsCount</code>.</li>
-</ul>
-<p><strong>Example</strong></p>
-<dl>
-  <dt>Request</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetch-progress.sh" target="_blank" title="Go to snippet source">source</a><code class="language-sh">curl &quot;http://localhost:8080/v1/graph-analytics/myorg/myproj/progress&quot;</code></pre></dd>
-  <dt>Response</dt>
-  <dd>
-  <pre class="prettyprint"><button class="snippet-button copy-snippet" title="Copy snippet to clipboard">copy</button><a class="snippet-button go-to-source" href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/assets/graph-analytics/fetched-progress.json" target="_blank" title="Go to snippet source">source</a><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/statistics.json&quot;,
-  &quot;delayInSeconds&quot;: 0,
-  &quot;discardedEvents&quot;: 0,
-  &quot;evaluatedEvents&quot;: 8,
-  &quot;failedEvents&quot;: 0,
-  &quot;lastEventDateTime&quot;: &quot;2021-09-21T06:44:24.530Z&quot;,
-  &quot;lastProcessedEventDateTime&quot;: &quot;2021-09-21T06:44:24.530Z&quot;,
-  &quot;processedEvents&quot;: 8,
-  &quot;remainingEvents&quot;: 0,
-  &quot;totalEvents&quot;: 8
-}</code></pre></dd>
-</dl>
-<h2><a href="#internals" name="internals" class="anchor"><span class="anchor-link"></span></a>Internals</h2>
-<p>In order to implement the described endpoints we needed a way to transform our data so that it would answer the desired questions in a performant manner.</p>
-<p>The proposed solution was to stream our data, transform it and push it to a dedicated ElasticSearch index (one index per project). Then at query time we can run <a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html">term aggregations</a> in order to get the desired counts.</p>
-<h3><a href="#document-structure" name="document-structure" class="anchor"><span class="anchor-link"></span></a>Document structure</h3>
-<p>An example of the ElasticSearch Document looks as follows:</p>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;@id&quot;: &quot;http://example.com/Anna&quot;,
-  &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
-  &quot;_rev&quot;: 4,
-  &quot;properties&quot;: [
-    {
-      &quot;dataType&quot;: &quot;object&quot;,
-      &quot;path&quot;: &quot;http://schema.org/address&quot;,
-      &quot;isInArray&quot;: false
-    },
-    {
-      &quot;dataType&quot;: &quot;string&quot;,
-      &quot;path&quot;: &quot;http://schema.org/address / http://schema.org/street&quot;,
-      &quot;isInArray&quot;: false
-    },
-    {
-      &quot;dataType&quot;: &quot;number&quot;,
-      &quot;path&quot;: &quot;http://schema.org/address / http://schema.org/zipcode&quot;,
-      &quot;isInArray&quot;: false
-    },
-    {
-      &quot;dataType&quot;: &quot;object&quot;,
-      &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
-      &quot;path&quot;: &quot;http://schema.org/brother&quot;,
-      &quot;isInArray&quot;: false
-    },
-    {
-      &quot;dataType&quot;: &quot;string&quot;,
-      &quot;path&quot;: &quot;http://schema.org/givenName&quot;,
-      &quot;isInArray&quot;: false
-    },
-    {
-      &quot;dataType&quot;: &quot;object&quot;,
-      &quot;path&quot;: &quot;http://schema.org/studies&quot;,
-      &quot;isInArray&quot;: true
-    },
-    {
-      &quot;dataType&quot;: &quot;string&quot;,
-      &quot;path&quot;: &quot;http://schema.org/studies / http://schema.org/name&quot;,
-      &quot;isInArray&quot;: true
-    }
-  ],
-  &quot;references&quot;: [
-    {
-      &quot;found&quot;: true,
-      &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
-    }
-  ],
-  &quot;relationships&quot;: [
-    {
-      &quot;dataType&quot;: &quot;object&quot;,
-      &quot;@id&quot;: &quot;http://example.com/Robert&quot;,
-      &quot;@type&quot;: &quot;http://schema.org/Person&quot;,
-      &quot;path&quot;: &quot;http://schema.org/brother&quot;,
-      &quot;isInArray&quot;: false
-    }
-  ]
-}
+<p>The request and response are the same as those described for the <a href="https://docs.atlassian.com/software/jira/docs/api/REST/8.22.2/#issue-createIssue" title="create issue endpoint">create issue endpoint</a> in the Jira Reference except for the <code>updateHistory</code> parameter which is not available in the Nexus endpoint.</p>
+<h2><a href="#edit-an-issue" name="edit-an-issue" class="anchor"><span class="anchor-link"></span></a>Edit an issue</h2>
+<pre><code>PUT /v1/jira/issue/{issueId}
 </code></pre>
-<p>&hellip; where:</p>
-<ul>
-  <li><code>properties</code> - Json Object Array: A flat collection of fields present on a resource.</li>
-  <li><code>references</code> - Json Object Array: A flat collection of fields present on a resource that could be potential candidates for relationships (they do have an @id).</li>
-  <li><code>relationships</code> - Json Object Array: A flat collection of @id(s) that have been found in other resources in the same project.</li>
-  <li><code>path</code> - String: The flat expanded path of a field present on a resource. A path of an embedded field will be encoded as follows: <code>parent / child</code>.</li>
-  <li><code>isInArray</code> - Boolean: Flag to inform whether the current path (or its parent) is part of an array.</li>
-  <li><code>dataType</code> - String: The type of the value present in the current path. Possible values are: string, numeric and boolean</li>
-  <li><code>found</code> - Boolean: Flag to inform whether an @id inside <code>references</code> has been resolved as a relationship.</li>
-</ul>
+<p>The request and response are the same as those described for the <a href="https://docs.atlassian.com/software/jira/docs/api/REST/8.22.2/#issue-editIssue" title="edit issue endpoint">edit issue endpoint</a> in the Jira Reference except for the <code>notifyUsers</code> parameter which is not available in the Nexus endpoint</p>
+<h2><a href="#list-available-projects" name="list-available-projects" class="anchor"><span class="anchor-link"></span></a>List available projects</h2>
+<pre><code>GET /v1/jira/project?recent={number}
+</code></pre>
+<p>The request and response are the same as those described for the <a href="https://docs.atlassian.com/software/jira/docs/api/REST/8.22.2/#project-getAllProjects" title="list projects endpoint">list projects endpoint</a> in the Jira Reference except for the <code>expand</code>, <code>includeArchived</code> and <code>browseArchive</code> parameters which are not available in the Nexus endpoint.</p>
+<h2><a href="#search-issues" name="search-issues" class="anchor"><span class="anchor-link"></span></a>Search issues</h2>
+<pre><code>POST /v1/jira/search
+</code></pre>
+<p>The request and response are the same as those described <a href="https://docs.atlassian.com/software/jira/docs/api/REST/8.22.2/#search-searchUsingSearchRequest" title="search endpoint">search endpoint</a> in the Jira Reference.</p>
 </div>
 <div>
-<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/graph-analytics-api.md" title="Edit this page" class="md-source-file md-edit">
+<a href="https://github.com/BlueBrain/nexus/tree/master/docs/src/main/paradox/docs/delta/api/jira.md" title="Edit this page" class="md-source-file md-edit">
 Edit this page
 </a>
 </div>
@@ -537,7 +355,7 @@ Snapshot
 <footer class="md-footer">
 <div class="md-footer-nav">
 <nav class="md-footer-nav__inner md-grid">
-<a href="../../../docs/delta/api/search-api.html" title="Global search" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+<a href="../../../docs/delta/api/graph-analytics-api.html" title="Graph analytics" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
 <div class="md-flex__cell md-flex__cell--shrink">
 <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
 </div>
@@ -546,17 +364,17 @@ Snapshot
 <span class="md-footer-nav__direction">
 Previous
 </span>
-Global search
+Graph analytics
 </span>
 </div>
 </a>
-<a href="../../../docs/delta/api/jira.html" title="Jira integration" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+<a href="../../../docs/delta/api/events-api.html" title="Global events" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
 <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
 <span class="md-flex__ellipsis">
 <span class="md-footer-nav__direction">
 Next
 </span>
-Jira integration
+Global events
 </span>
 </div>
 <div class="md-flex__cell md-flex__cell--shrink">

@@ -264,7 +264,6 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/fusion/studio.html#example-sparql-queries" class="header">Example SPARQL Queries</a></li>
     </ul></li>
-    <li><a href="../../docs/fusion/studio.html#configuring-the-studios-index-page" class="header">Configuring the Studios index page</a></li>
     <li><a href="../../docs/fusion/studio.html#studio-description" class="header">Studio Description</a></li>
   </ul></li>
 </ul>
@@ -322,7 +321,6 @@ BlueBrain/nexus
       </ul></li>
       <li><a href="../../docs/fusion/studio.html#example-sparql-queries" class="header">Example SPARQL Queries</a></li>
     </ul></li>
-    <li><a href="../../docs/fusion/studio.html#configuring-the-studios-index-page" class="header">Configuring the Studios index page</a></li>
     <li><a href="../../docs/fusion/studio.html#studio-description" class="header">Studio Description</a></li>
   </ul></li>
 </ul>
@@ -450,7 +448,7 @@ BlueBrain/nexus
 <h4><a href="#removing-a-studio" name="removing-a-studio" class="anchor"><span class="anchor-link"></span></a>Removing a Studio</h4>
 <p>To remove an unwanted <code>Studio</code>, deprecate it in the Resource View of your project in the Admin space.</p>
 <h3><a href="#workspace-creation" name="workspace-creation" class="anchor"><span class="anchor-link"></span></a>Workspace Creation</h3>
-<p>Inside any <code>Studio</code>, click the <code>Add Workspace</code> button.</p>
+<p>Inside any <code>Studio</code>, click the <code>Workspace</code> button followed by <code>Add</code> to add a new workspace.</p>
 <p>Fill in a form providing the following:</p>
 <ul>
   <li><code>Label</code>: the name of your new <code>Workspace</code> (required field)</li>
@@ -462,26 +460,24 @@ BlueBrain/nexus
 <p>Your <code>Workspace</code> is created, but it will need to have at least one <code>Dashboard</code>/<code>View</code> association for anything to show there.</p>
 <p>You can also find your <code>Workspaces</code> as raw <code>JSON</code> configurations in the <code>Resource</code> list (for example, filter by type <code>StudioWorkspace</code>, or search by id) and view it in the <code>Resource View</code>.</p>
 <h4><a href="#updating-a-workspace" name="updating-a-workspace" class="anchor"><span class="anchor-link"></span></a>Updating a Workspace</h4>
-<p>Inside any <code>Studio</code>, under a <code>Workspace</code> tab label, click on the <code>Edit</code> link. Then you&rsquo;ll be provided with a dialog where you can review and edit the <code>Workspace</code> configuration.</p>
+<p>Inside any <code>Studio</code>, with the desired <code>Workspace</code> selected from the menu, click on <code>Workspace</code>, then the <code>Edit</code> button. Then you&rsquo;ll be provided with a dialog where you can review and edit the <code>Workspace</code> configuration.</p>
 <ul>
-  <li><code>Select View</code>: The view of which to pair with <em>each <code>Dashboard</code> inside the follow transfer list</em>. The <code>Dashboard</code></li>
-  <li>queries will be run against the <code>View</code> listed inside this box. For now, using this Edit form, you can only pair one</li>
-  <li><code>View</code> for all <code>Dashboards</code>. If you were to create the configurations manually, you can pair each <code>Dashboard</code> with a different <code>View</code>.</li>
   <li><code>Add or Remove Dashboards</code>: Add or remove a <code>Dashboard</code> to the collection in your <code>Workspace</code> configuration. The <code>Dashboards</code> listed are all the available non-deprecated ones in the project.</li>
-  <li><code>Name</code>: the name of your new <code>Workspace</code> (required field).</li>
+  <li><code>Label</code>: the name of your new <code>Workspace</code> (required field).</li>
   <li><code>Description</code> for your <code>Workspace</code>.</li>
 </ul><div class="half center">
 <p><img src="../assets/fusion-studio-edit-workspace-form.png" alt="Workspace Updating Form" /></p></div>
 <p>After your forms have been edited, simple click <code>Save</code> to submit your changes.</p>
 <h4><a href="#removing-a-workspace" name="removing-a-workspace" class="anchor"><span class="anchor-link"></span></a>Removing a Workspace</h4>
-<p>You can remove a <code>Workspace</code> by deprecating it from the <code>Resource View</code>.</p>
+<p>You can remove a <code>Workspace</code> by navigating to the workspace and then clicking the <code>Workspace</code> button followed by <code>Remove</code>. Click <code>OK</code> in the dialog to confirm removal.</p>
 <h3><a href="#dashboard-creation" name="dashboard-creation" class="anchor"><span class="anchor-link"></span></a>Dashboard Creation</h3>
-<p>Inside any <code>Studio View</code>, under a selected <code>Workspace</code>, click the <code>Add Dashboard</code> button.</p>
-<p>Fill in a form providing the following:</p>
+<p>Inside any <code>Studio View</code>, under a selected <code>Workspace</code>, click the <code>Dashboard</code> button followed by <code>Add</code>.</p>
+<p>Fill in the Create Dashboard form providing the following:</p>
 <ul>
-  <li><code>Label</code>: the name of your new <code>Dashboard</code> (required field)</li>
+  <li><code>Name</code>: the name of your new <code>Dashboard</code> (required field)</li>
   <li><code>Description</code>: an optional description for your <code>Dashboard</code></li>
-  <li><code>Sparql Query</code>: a valid <a href="https://www.w3.org/TR/rdf-sparql-query/" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a> query that conforms to the <code>dataQuery</code> field in the configuration.</li>
+  <li><code>View</code>: specify the <em>view</em> in the project that the dashboard should use as its data source. The view can be of any of the supported Nexus view types including be Sparql, ElasticSearch, and CompositeView. When specifying a composite view, you will also specify whether to query all projections or a specific projection.</li>
+  <li><code>Query</code>: a valid query must also be specified: a SPARQL query for SPARQL views (a <a href="https://www.w3.org/TR/rdf-sparql-query/" title="SPARQL" target="_blank" rel="noopener noreferrer">SPARQL</a> query that conforms to the <code>dataQuery</code> field in the configuration) or an ElasticSearch query for ElasticSearch views.</li>
 </ul>
 <h4><a href="#sparql-dashboards" name="sparql-dashboards" class="anchor"><span class="anchor-link"></span></a>Sparql Dashboards</h4><div class="half center">
 <p><img src="../assets/fusion-studio-create-dashboard-form.png" alt="Create Dashboard form" /></p></div>
@@ -492,7 +488,7 @@ BlueBrain/nexus
 <p>Click <code>Save</code> and the <code>Dashboard</code> and its query results should show up!</p>
 <p>You can now also add this <code>Dashboard</code> to other <code>Workspaces</code> across the project.</p>
 <h4><a href="#elasticsearch-dashboard" name="elasticsearch-dashboard" class="anchor"><span class="anchor-link"></span></a>Elasticsearch Dashboard</h4>
-<p>In the create dashboard form, you can select a elastic search view from the view dropdown. And then use an elastic search query targeting that view to populate your dashboard. It will work same as the sparql dashboard, except for the query and the view.</p>
+<p>In the create dashboard form, you can select a ElasticSearch view from the view dropdown. And then use an ElasticSearch query targeting that view to populate your dashboard. It will work same as the SPARQL dashboard, except for the query and the view.</p>
 <h4><a href="#updating-a-dashboard" name="updating-a-dashboard" class="anchor"><span class="anchor-link"></span></a>Updating a Dashboard</h4>
 <p>You&rsquo;ll find the edit <code>Dashboard</code> under the dashboard label. After your form has been edited, simple click <code>Save</code> to submit your changes.</p>
 <h4><a href="#removing-a-dashboard" name="removing-a-dashboard" class="anchor"><span class="anchor-link"></span></a>Removing a Dashboard</h4>
@@ -524,41 +520,6 @@ WHERE {
 }
 LIMIT 20
 </code></pre>
-<h2><a href="#configuring-the-studios-index-page" name="configuring-the-studios-index-page" class="anchor"><span class="anchor-link"></span></a>Configuring the Studios index page</h2>
-<p>The Studios space lists all the <code>Studios</code> you have permissions to view or edit.</p><div class="half center">
-<p><img src="../assets/fusion-studio-index-page.png" alt="Studios Index Page" /></p></div>
-<p>To enable this feature, the following should be done:</p>
-<ol>
-  <li>
-  <p>If you don&rsquo;t have a project to store the application data, create one.</p></li>
-  <li>
-  <p>Create an <code>Aggregated Elastic Search View</code> inside this project, and add all projects that contain Studio resources to the list. For example:</p></li>
-</ol>
-<pre class="prettyprint"><code class="language-json">{
-  &quot;@context&quot;: &quot;https://bluebrain.github.io/nexus/contexts/view.json&quot;,
-  &quot;@id&quot;: &quot;nxv:studioList&quot;,
-  &quot;@type&quot;: [&quot;View&quot;, &quot;AggregateElasticSearchView&quot;],
-  &quot;views&quot;: [
-    {
-      &quot;project&quot;: &quot;c7d70552-4305-111a-trtr-75d757ed9a49&quot;,
-      &quot;viewId&quot;: &quot;nxv:defaultElasticSearchIndex&quot;
-    },
-    {
-      &quot;project&quot;: &quot;86b0ee1e-a6a5-111b-rtrt-938b3c38dfc0&quot;,
-      &quot;viewId&quot;: &quot;nxv:defaultElasticSearchIndex&quot;
-    },
-    {
-      &quot;project&quot;: &quot;a7d693345-8d1d-rtrt-111a-90b6b6ab94ee&quot;,
-      &quot;viewId&quot;: &quot;nxv:defaultElasticSearchIndex&quot;
-    }
-  ]
-}
-</code></pre><div class="callout note "><div class="callout-title">Note</div>
-<p>Ask a developer to add an ENV variable with the location of the &lsquo;AggregateElasticSearchView&rsquo; as following:</p>
-<p><code>STUDIO_VIEW=[yourOrgLabel]/[yourProjectLabel]/[viewId]</code></p>
-<p>In our example, it would be:</p>
-<p><code>STUDIO_VIEW=webapps/nexus-fusion/nxv:studioList</code></p>
-<p>Every time when you create a new <code>Studio</code>, the <code>AggregateElasticSearchView</code> needs to be updated.</p></div>
 <h2><a href="#studio-description" name="studio-description" class="anchor"><span class="anchor-link"></span></a>Studio Description</h2>
 <p>Every Studio deserves a beautiful description to highlight its data. We&rsquo;ve included a Description Viewer above the tables so that users can write flavored markdown to give their studios a paragraph of context or show off some images. Edit the description in either the <a href="admin.html">Admin</a> resource editor, or using the edit Studio button located besides the Studio title.</p>
 <p>The description can be rendered using handlebars and markdown, in the same way described in the <a href="admin.html#resource-descriptions">Admin Resource Viewer</a></p>
