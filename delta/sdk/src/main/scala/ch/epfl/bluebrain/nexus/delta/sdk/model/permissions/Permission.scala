@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionFormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalPermissionFormatError
 import io.circe.{Decoder, Encoder}
 
 /**

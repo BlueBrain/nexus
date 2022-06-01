@@ -12,12 +12,12 @@ class ResourceRefSuite extends FunSuite with EitherAssertions {
 
   // format: off
   val list = List(
-    iri"http://ex.com?rev=1&other=value"          -> Revision(iri"http://ex.com?rev=1&other=value", iri"http://ex.com?other=value", 1L),
-    iri"http://ex.com?rev=1"                      -> Revision(iri"http://ex.com?rev=1", iri"http://ex.com", 1L),
-    iri"http://ex.com?tag=this&other=value"       -> Tag(iri"http://ex.com?tag=this&other=value", iri"http://ex.com?other=value", UserTag.unsafe("this")),
-    iri"http://ex.com?rev=1&tag=this&other=value" -> Revision(iri"http://ex.com?rev=1&tag=this&other=value" , iri"http://ex.com?other=value", 1L),
-    iri"http://ex.com?other=value"                -> Latest(iri"http://ex.com?other=value"),
-    iri"http://ex.com#fragment"                   -> Latest(iri"http://ex.com#fragment")
+    iri"https://bbp.epfl.ch?rev=1&other=value"          -> Revision(iri"https://bbp.epfl.ch?rev=1&other=value", iri"https://bbp.epfl.ch?other=value", 1L),
+    iri"https://bbp.epfl.ch?rev=1"                      -> Revision(iri"https://bbp.epfl.ch?rev=1", iri"https://bbp.epfl.ch", 1L),
+    iri"https://bbp.epfl.ch?tag=this&other=value"       -> Tag(iri"https://bbp.epfl.ch?tag=this&other=value", iri"https://bbp.epfl.ch?other=value", UserTag.unsafe("this")),
+    iri"https://bbp.epfl.ch?rev=1&tag=this&other=value" -> Revision(iri"https://bbp.epfl.ch?rev=1&tag=this&other=value" , iri"https://bbp.epfl.ch?other=value", 1L),
+    iri"https://bbp.epfl.ch?other=value"                -> Latest(iri"https://bbp.epfl.ch?other=value"),
+    iri"https://bbp.epfl.ch#fragment"                   -> Latest(iri"https://bbp.epfl.ch#fragment")
   )
   // format: on
 

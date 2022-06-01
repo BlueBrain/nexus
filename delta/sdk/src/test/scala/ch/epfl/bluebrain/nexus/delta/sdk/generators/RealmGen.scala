@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import java.time.Instant
-
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, WellKnown}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import org.scalatest.OptionValues
 
 object RealmGen extends OptionValues {

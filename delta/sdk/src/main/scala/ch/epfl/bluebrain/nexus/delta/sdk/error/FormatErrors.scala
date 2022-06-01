@@ -1,32 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 
-/**
-  * Top level error type that represents illegal formatting of various tokens.
-  *
-  * @param reason
-  *   a general reason for the error
-  * @param details
-  *   possible additional details that may be interesting to provide to the caller
-  */
-abstract class FormatError(reason: String, details: Option[String] = None) extends SDKError {
-  final override def getMessage: String = details.fold(reason)(d => s"$reason\nDetails: $d")
-}
-
-object FormatError {
-
-  /**
-    * Label formatting error, returned in cases where a Label could not be constructed from a String.
-    *
-    * @param details
-    *   possible additional details that may be interesting to provide to the caller
-    */
-  final case class IllegalLabelFormatError(value: String, details: Option[String] = None)
-      extends FormatError(s"'$value' did not match the expected label format '${Label.regex.regex}'.", details)
+object FormatErrors {
 
   /**
     * Name formatting error, returned in cases where a Name could not be constructed from a String.

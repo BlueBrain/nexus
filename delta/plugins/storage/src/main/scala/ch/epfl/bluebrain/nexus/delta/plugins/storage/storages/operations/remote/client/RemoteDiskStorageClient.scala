@@ -19,8 +19,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription.ResolvedServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.syntax._
 import io.circe.{Decoder, Json}

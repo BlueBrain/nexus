@@ -3,11 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalAbsoluteIRIFormatError, IllegalLabelFormatError}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAbsoluteIRIFormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import io.circe.{Decoder, Encoder}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
@@ -91,11 +93,11 @@ object BaseUri {
       Try(Uri(str)).toEither
         .leftMap(err => CannotConvert(str, classOf[Uri].getSimpleName, err.getMessage))
         .flatMap(BaseUri(_).leftMap {
-          case IllegalAbsoluteIRIFormatError(iri)  =>
+          case IllegalAbsoluteIRIFormatError(iri) =>
             CannotConvert(iri, classOf[Uri].getSimpleName, "The value must be an absolute Uri.")
-          case IllegalLabelFormatError(label, err) =>
+          case IllegalLabelFormat(label, err)     =>
             CannotConvert(label, classOf[Label].getSimpleName, err.getOrElse(""))
-          case _                                   =>
+          case _                                  =>
             CannotConvert(str, classOf[Uri].getSimpleName, "Unexpected error")
         })
     )

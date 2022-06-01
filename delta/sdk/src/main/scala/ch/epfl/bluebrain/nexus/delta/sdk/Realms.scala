@@ -14,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 

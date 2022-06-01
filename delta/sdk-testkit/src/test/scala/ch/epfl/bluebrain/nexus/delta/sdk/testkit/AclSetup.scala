@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{IdentityRealm, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import monix.bio.UIO
 

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
 import io.circe.{Decoder, Encoder}
 
 import java.util.UUID

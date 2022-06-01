@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
-import ch.epfl.bluebrain.nexus.delta.sdk.error.{FormatError, SDKError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectAlreadyExists
@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.Automatic
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.ProjectProvisioningRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 /**

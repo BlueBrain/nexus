@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import fs2.Stream
 import io.circe.Json

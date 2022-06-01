@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

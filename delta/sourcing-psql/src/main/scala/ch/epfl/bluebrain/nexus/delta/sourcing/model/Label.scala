@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -24,10 +25,10 @@ object Label {
 
   private val allowedChars: String = "a-zA-Z0-9_-"
 
-  private[model] val regex: Regex = s"[$allowedChars]{1,64}".r
+  val regex: Regex = s"[$allowedChars]{1,64}".r
 
-  final case class IllegalFormat(value: String) {
-    def message = s"'$value' did not match the expected label format '${Label.regex.regex}'."
+  final case class IllegalLabelFormat(reason: String, details: Option[String] = None) extends FormatError(reason) {
+    def message = s"'$reason' did not match the expected label format '${Label.regex.regex}'."
   }
 
   /**
@@ -36,10 +37,10 @@ object Label {
     * @param value
     *   the string representation of the Label
     */
-  def apply(value: String): Either[IllegalFormat, Label] =
+  def apply(value: String): Either[FormatError, Label] =
     value match {
       case regex() => Right(new Label(value))
-      case _       => Left(IllegalFormat(value))
+      case _       => Left(IllegalLabelFormat(value))
     }
 
   /**
@@ -53,24 +54,24 @@ object Label {
 
   /**
     * Attempts to construct a label from its string representation. It will remove all invalid characters and truncate
-    * to max length of 64 characters. It will return [[IllegalFormat]] when `value` contains only invalid characters.
+    * to max length of 64 characters. It will return [[FormatError]] when `value` contains only invalid characters.
     *
     * @param value
     *   the string representation of the Label
     */
-  def sanitized(value: String): Either[IllegalFormat, Label] =
+  def sanitized(value: String): Either[FormatError, Label] =
     apply(value.replaceAll(s"[^$allowedChars]", "").take(64))
 
-  implicit val labelGet: Get[Label] = Get[String].temap(Label(_).leftMap(_.message))
+  implicit val labelGet: Get[Label] = Get[String].temap(Label(_).leftMap(_.getMessage))
   implicit val labelPut: Put[Label] = Put[String].contramap(_.value)
 
   implicit final val labelEncoder: Encoder[Label] =
     Encoder.encodeString.contramap(_.value)
 
   implicit final val labelDecoder: Decoder[Label] =
-    Decoder.decodeString.emap(str => Label(str).leftMap(_.message))
+    Decoder.decodeString.emap(str => Label(str).leftMap(_.getMessage))
 
   implicit val labelJsonLdDecoder: JsonLdDecoder[Label] =
-    (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.message) } }
+    (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
 
 }
