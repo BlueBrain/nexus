@@ -5,8 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEvent, BlazegraphViewType}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.{CurrentEvents, ProjectScopedResourcesDeletion, StopActor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
 
 final class BlazegraphViewsDeletion(

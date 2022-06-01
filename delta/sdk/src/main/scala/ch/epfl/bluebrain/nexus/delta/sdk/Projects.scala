@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearch
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

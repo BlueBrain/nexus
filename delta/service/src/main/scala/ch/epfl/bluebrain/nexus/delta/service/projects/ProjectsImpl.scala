@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

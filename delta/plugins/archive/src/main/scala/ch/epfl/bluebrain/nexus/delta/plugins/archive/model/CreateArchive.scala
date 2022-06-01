@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * Command for the creation of an archive.

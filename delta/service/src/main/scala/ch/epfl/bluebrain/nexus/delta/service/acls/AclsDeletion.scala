@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.service.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.StopActor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted, ResourcesDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, ResourcesDeletion}
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
 
 final class AclsDeletion private (

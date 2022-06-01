@@ -9,11 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyti
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectCreated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectEvent, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, IndexingStreamCoordinator}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import monix.bio.Task
 import monix.execution.Scheduler

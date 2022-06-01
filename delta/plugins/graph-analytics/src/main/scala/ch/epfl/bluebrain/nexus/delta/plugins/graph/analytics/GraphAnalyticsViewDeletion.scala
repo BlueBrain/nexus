@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingCoordinator.GraphAnalyticsIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted, ResourcesDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
 
 class GraphAnalyticsViewDeletion(coordinator: GraphAnalyticsIndexingCoordinator) extends ResourcesDeletion {

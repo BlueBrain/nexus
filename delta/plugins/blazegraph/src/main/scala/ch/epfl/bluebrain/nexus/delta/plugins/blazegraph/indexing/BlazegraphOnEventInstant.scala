@@ -4,10 +4,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.BlazegraphIndexingCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewSearchParams, BlazegraphViewType, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.OnePage
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
 
 import scala.concurrent.duration._

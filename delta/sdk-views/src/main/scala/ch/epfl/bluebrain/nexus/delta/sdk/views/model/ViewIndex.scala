@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 import cats.Functor
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * Case class describing the needed metadata to index a view

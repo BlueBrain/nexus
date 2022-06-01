@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 

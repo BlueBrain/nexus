@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalAclAddressFormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Encoder, Json}
 
 /**

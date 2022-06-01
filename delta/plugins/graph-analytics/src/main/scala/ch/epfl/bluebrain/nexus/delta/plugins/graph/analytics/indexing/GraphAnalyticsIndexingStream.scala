@@ -14,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -26,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress, SuccessMessage}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
 import io.circe.JsonObject
 import io.circe.literal._

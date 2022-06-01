@@ -4,9 +4,9 @@ import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted, ResourcesDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourcesDeletionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
 import monix.bio.Task
 

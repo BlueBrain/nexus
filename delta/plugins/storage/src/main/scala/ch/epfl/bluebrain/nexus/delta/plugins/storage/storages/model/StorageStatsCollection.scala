@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStats
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.semiauto.deriveCodec
 import io.circe.{Codec, Decoder, Encoder}
 

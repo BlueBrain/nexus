@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Decoder, Encoder}
 
 import java.time.Instant

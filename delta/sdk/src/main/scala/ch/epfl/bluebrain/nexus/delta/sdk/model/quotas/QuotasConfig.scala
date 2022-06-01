@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.quotas
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig.QuotaConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import pureconfig.ConfigReader
 import pureconfig.configurable.genericMapReader
 import pureconfig.error.CannotConvert

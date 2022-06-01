@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode.{Async, Sync}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
 trait IndexingAction {

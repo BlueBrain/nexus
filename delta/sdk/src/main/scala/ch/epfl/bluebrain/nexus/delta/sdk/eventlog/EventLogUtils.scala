@@ -5,7 +5,6 @@ import akka.persistence.query.{EventEnvelope, Offset, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
