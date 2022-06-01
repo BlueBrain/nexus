@@ -8,7 +8,6 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls => aclsPermissions, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json

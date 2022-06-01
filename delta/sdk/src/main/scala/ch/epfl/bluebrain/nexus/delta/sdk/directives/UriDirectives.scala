@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, Pr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import monix.execution.Scheduler

@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers

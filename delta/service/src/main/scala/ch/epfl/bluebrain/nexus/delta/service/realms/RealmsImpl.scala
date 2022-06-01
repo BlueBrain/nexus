@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, RealmResource, Realms}
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsImpl._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator

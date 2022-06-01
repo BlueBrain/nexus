@@ -1,15 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Decoder.Result
+import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
-import io.circe._
 
 /**
   * Parent type for unique identities as recognized by the system. A client usually has multiple identities with the

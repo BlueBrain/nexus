@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -21,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler

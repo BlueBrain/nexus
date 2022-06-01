@@ -3,13 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers

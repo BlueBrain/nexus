@@ -13,9 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.RealmsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 

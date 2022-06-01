@@ -38,7 +38,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import monix.bio.IO

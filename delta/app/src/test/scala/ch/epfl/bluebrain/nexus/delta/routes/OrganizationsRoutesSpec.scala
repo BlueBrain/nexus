@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity, ServiceAccount}
@@ -17,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json

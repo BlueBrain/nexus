@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 object RealmSetup {

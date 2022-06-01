@@ -16,10 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import fs2.Stream

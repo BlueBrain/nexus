@@ -10,13 +10,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAcco
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationInitializationFailed, OrganizationNotFound, UnexpectedInitialState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{OrganizationCommand, OrganizationRejection, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

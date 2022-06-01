@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Identity, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OrganizationsDummy, OwnerPermissionsDummy, ProjectsDummy}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.InvalidProjectLabel
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler

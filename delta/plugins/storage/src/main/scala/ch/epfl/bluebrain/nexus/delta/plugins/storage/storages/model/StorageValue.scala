@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.Sto
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder

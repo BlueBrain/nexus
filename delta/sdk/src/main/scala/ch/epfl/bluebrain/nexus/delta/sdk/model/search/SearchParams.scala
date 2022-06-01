@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 
 /**

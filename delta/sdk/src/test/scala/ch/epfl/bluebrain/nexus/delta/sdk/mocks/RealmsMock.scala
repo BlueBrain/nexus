@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.RealmNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.{RealmResource, Realms}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, Task, UIO}
 
 /**

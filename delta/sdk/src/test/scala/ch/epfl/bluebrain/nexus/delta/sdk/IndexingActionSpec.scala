@@ -9,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import monix.bio.{IO, UIO}

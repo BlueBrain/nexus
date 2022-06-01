@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
-import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatError.IllegalPermissionFormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalPermissionFormatError
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._

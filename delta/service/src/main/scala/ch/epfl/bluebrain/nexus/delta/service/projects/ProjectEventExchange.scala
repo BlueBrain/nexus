@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectEventExchange.MarkedForDeletion
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps

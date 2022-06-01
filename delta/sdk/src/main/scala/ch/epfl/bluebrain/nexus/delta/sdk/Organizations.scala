@@ -6,7 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 

@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}

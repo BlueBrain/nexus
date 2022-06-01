@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import fs2.Stream
 import monix.bio.{IO, Task}
 

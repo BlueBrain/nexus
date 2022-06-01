@@ -14,8 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverType}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import monix.bio.{IO, UIO}

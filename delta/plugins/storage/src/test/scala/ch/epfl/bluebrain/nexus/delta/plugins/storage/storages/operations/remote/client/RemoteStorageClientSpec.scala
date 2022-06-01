@@ -13,8 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusEr
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker.BucketName
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}

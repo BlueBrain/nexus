@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator

@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream

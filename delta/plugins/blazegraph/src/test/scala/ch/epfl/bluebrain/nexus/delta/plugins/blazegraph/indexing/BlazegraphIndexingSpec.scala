@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._

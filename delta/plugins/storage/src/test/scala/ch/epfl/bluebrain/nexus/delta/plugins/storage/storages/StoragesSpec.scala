@@ -23,9 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import io.circe.syntax._

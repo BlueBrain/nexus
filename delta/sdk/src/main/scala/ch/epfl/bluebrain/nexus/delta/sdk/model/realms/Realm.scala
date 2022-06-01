@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder

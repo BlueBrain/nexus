@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.WellKnown
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler

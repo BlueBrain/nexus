@@ -16,9 +16,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInP
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.literal._

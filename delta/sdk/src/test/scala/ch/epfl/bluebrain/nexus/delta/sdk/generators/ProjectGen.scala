@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import org.scalatest.OptionValues
 
 object ProjectGen extends OptionValues {

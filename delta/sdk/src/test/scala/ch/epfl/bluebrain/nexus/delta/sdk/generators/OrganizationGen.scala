@@ -4,11 +4,11 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Current
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import org.scalatest.OptionValues
 
 object OrganizationGen extends OptionValues {

@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Label, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}

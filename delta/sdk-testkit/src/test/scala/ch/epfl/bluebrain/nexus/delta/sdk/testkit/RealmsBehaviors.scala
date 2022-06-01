@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler

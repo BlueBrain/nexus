@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, Name}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, PermissionsDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers

@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, S
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{Resource, ResourceEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressStrategy
@@ -35,6 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues, TestHelpers}
 import fs2.Stream

@@ -23,9 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}

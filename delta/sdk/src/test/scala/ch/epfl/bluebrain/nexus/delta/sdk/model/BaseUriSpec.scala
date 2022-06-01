@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Inspectors

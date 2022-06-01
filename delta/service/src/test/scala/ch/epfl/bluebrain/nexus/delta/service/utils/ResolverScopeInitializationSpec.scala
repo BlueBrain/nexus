@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers

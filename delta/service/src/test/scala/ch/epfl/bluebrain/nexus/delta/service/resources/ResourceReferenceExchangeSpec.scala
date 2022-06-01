@@ -14,11 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.{IO, UIO}

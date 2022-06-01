@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, Indexin
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}

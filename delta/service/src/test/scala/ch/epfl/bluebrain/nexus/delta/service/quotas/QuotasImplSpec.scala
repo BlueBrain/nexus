@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.{QuotasDisabled, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig.QuotaConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.{Quota, QuotasConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ServiceAccountConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike

@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import com.typesafe.config.Config

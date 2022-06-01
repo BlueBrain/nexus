@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._

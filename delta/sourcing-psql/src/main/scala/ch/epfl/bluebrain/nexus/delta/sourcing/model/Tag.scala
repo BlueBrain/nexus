@@ -4,7 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalFormat
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import doobie.Put
 import doobie.util.Get
 import io.circe.{Decoder, Encoder}
@@ -35,10 +35,10 @@ object Tag {
 
     def unsafe(value: String) = new UserTag(value)
 
-    def apply(value: String): Either[IllegalFormat, UserTag] =
-      Either.cond(value != "latest", value, IllegalFormat("'latest' is a reserved tag")).flatMap {
+    def apply(value: String): Either[IllegalLabelFormat, UserTag] =
+      Either.cond(value != "latest", value, IllegalLabelFormat("'latest' is a reserved tag")).flatMap {
         case value @ regex() => Right(new UserTag(value))
-        case value           => Left(IllegalFormat(value))
+        case value           => Left(IllegalLabelFormat(value))
       }
 
     implicit final val userTagEncoder: Encoder[UserTag] =

@@ -5,7 +5,6 @@ import org.scalatest.{Suite, Suites}
 
 class MainSpec extends Suites with ElasticSearchDocker {
   override val nestedSuites: IndexedSeq[Suite] = Vector(
-    new PostgresMainSpec,
-    new CassandraMainSpec
+    new PostgresMainSpec
   )
 }

@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.{OrganizationScopedEvent, ProjectScopedEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, Label}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 // $COVERAGE-OFF$

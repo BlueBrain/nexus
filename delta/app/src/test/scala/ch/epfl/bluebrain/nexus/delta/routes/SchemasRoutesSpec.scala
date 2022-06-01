@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
@@ -20,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO

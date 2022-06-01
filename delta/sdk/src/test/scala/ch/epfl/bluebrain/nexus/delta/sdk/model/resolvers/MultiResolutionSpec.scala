@@ -12,10 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Label, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO

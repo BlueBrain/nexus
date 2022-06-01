@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScoped
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration

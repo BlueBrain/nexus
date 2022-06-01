@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.OrganizationScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
