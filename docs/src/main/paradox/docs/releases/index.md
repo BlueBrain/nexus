@@ -23,6 +23,19 @@ This section of the documentation lists the significant BlueBrain Nexus releases
 
 The latest stable release is **v1.7.0** released on **14.03.2022**.
 
+## 1.7.1 (01.06.2022)
+
+This release contains a set of bugfixes and the following Fusion improvements:
+
+- Fusion: Improved layout for studios
+- Fusion: Ability to control plugins at studio level
+- Fusion: Style improvements of search filter panel
+
+**Full Changelogs**:
+
+- Delta: @link:[v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus/compare/v1.7.0...v1.7.1)
+- Fusion: @link:[v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus-web/compare/v1.7.0...v1.7.1)
+
 ## 1.7.0 (14.03.2022)
 
 ### Breaking changes
