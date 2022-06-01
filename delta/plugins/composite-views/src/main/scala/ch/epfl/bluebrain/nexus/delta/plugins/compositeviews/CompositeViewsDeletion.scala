@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIn
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourcesDeletion.{CurrentEvents, ProjectScopedResourcesDeletion, StopActor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.{CachesDeleted, ResourcesDataDeleted}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.DatabaseCleanup
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{Task, UIO}
 
 final class CompositeViewsDeletion(

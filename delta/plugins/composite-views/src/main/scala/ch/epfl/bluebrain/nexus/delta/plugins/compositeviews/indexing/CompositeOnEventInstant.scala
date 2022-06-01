@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIn
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSearchParams
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.OnePage
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.Task
 
 import java.time.Instant

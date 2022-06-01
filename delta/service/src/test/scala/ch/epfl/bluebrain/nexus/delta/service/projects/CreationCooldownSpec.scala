@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.ResourcesDeleted
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionStatus
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectCreationCooldown
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers

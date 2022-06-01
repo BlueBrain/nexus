@@ -4,9 +4,10 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 import java.util.UUID
 
@@ -191,6 +192,11 @@ object ResourceUris {
     */
   def project(ref: ProjectRef): ResourceUris =
     apply(s"projects/$ref")
+
+  /**
+    * Access uri for a project
+    */
+  def projectUri(ref: ProjectRef)(implicit base: BaseUri): Uri = project(ref).accessUriShortForm
 
   /**
     * Resource uris for a project deletions

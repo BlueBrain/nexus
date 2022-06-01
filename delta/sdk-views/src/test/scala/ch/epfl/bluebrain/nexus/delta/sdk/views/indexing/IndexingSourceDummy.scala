@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.indexing
 
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.{Chunk, Stream}
 import monix.bio.Task
 

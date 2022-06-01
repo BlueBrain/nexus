@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import org.scalatest.OptionValues
 
 object ProjectGen extends OptionValues {
