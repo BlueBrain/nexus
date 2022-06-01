@@ -69,8 +69,6 @@ trait BaseSpec
     }
     .runSyncUnsafe()
 
-  lazy val isPostgres: Boolean = !isCassandra
-
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(config.patience, 300.millis)
 
   def eventually(t: Task[Assertion]): Assertion =
