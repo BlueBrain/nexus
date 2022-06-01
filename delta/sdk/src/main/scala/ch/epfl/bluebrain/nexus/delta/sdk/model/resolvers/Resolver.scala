@@ -5,11 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -46,7 +47,7 @@ sealed trait Resolver extends Product with Serializable {
     * @return
     *   the collection of tag aliases
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Map[UserTag, Long]
 
   /**
     * @return
@@ -65,7 +66,7 @@ object Resolver {
       project: ProjectRef,
       value: InProjectValue,
       source: Json,
-      tags: Map[TagLabel, Long]
+      tags: Map[UserTag, Long]
   ) extends Resolver {
     override def priority: Priority = value.priority
   }
@@ -78,7 +79,7 @@ object Resolver {
       project: ProjectRef,
       value: CrossProjectValue,
       source: Json,
-      tags: Map[TagLabel, Long]
+      tags: Map[UserTag, Long]
   ) extends Resolver {
     override def priority: Priority = value.priority
   }

@@ -12,8 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
 import io.circe.syntax._
@@ -36,7 +38,7 @@ class FileEventSpec extends AnyWordSpecLike with Matchers with Inspectors with S
     val project                   = ProjectRef.unsafe("org", "project")
     val epoch                     = Instant.EPOCH
     val subject                   = User("username", Label.unsafe("myrealm"))
-    val tag                       = TagLabel.unsafe("mytag")
+    val tag                       = UserTag.unsafe("mytag")
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     val storageRef                = ResourceRef.Revision(iri"$dId?rev=1", dId, 1)
     val fileId                    = nxv + "file"

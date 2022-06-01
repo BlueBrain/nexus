@@ -9,9 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Encoder
 
 import scala.annotation.nowarn
@@ -96,7 +97,7 @@ object ArchiveReference {
   final private case class ResourceInput(
       resourceId: Iri,
       project: Option[ProjectRef],
-      tag: Option[TagLabel],
+      tag: Option[UserTag],
       rev: Option[Long],
       path: Option[AbsolutePath],
       originalSource: Option[Boolean],
@@ -106,14 +107,14 @@ object ArchiveReference {
   final private case class FileInput(
       resourceId: Iri,
       project: Option[ProjectRef],
-      tag: Option[TagLabel],
+      tag: Option[UserTag],
       rev: Option[Long],
       path: Option[AbsolutePath]
   ) extends ReferenceInput
 
   @nowarn("cat=unused")
   implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
-    def refOf(resourceId: Iri, tag: Option[TagLabel], rev: Option[Long]): ResourceRef =
+    def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Long]): ResourceRef =
       (tag, rev) match {
         case (Some(tagLabel), None) => Tag(resourceId, tagLabel)
         case (None, Some(revision)) => Revision(resourceId, revision)
@@ -127,7 +128,7 @@ object ArchiveReference {
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
     deriveConfigJsonLdDecoder[ReferenceInput].flatMap {
-      case ResourceInput(_, _, Some(_: TagLabel), Some(_: Long), _, _, _)                         =>
+      case ResourceInput(_, _, Some(_: UserTag), Some(_: Long), _, _, _)                          =>
         Left(ParsingFailure("An archive resource reference cannot use both 'rev' and 'tag' fields."))
       case ResourceInput(_, _, _, _, _, Some(_: Boolean), Some(_: ArchiveResourceRepresentation)) =>
         Left(ParsingFailure("An archive resource reference cannot use both 'originalSource' and 'format' fields."))
@@ -140,7 +141,7 @@ object ArchiveReference {
           case _                => None
         }
         Right(ResourceReference(ref, project, path, repr))
-      case FileInput(_, _, Some(_: TagLabel), Some(_: Long), _)                                   =>
+      case FileInput(_, _, Some(_: UserTag), Some(_: Long), _)                                    =>
         Left(ParsingFailure("An archive file reference cannot use both 'rev' and 'tag' fields."))
       case FileInput(resourceId, project, tag, rev, path)                                         =>
         val ref = refOf(resourceId, tag, rev)
@@ -160,7 +161,7 @@ object ArchiveReference {
         case other           => other
       })
 
-    def tagOf(ref: ResourceRef): Option[TagLabel] = ref match {
+    def tagOf(ref: ResourceRef): Option[UserTag] = ref match {
       case Tag(_, _, tag) => Some(tag)
       case _              => None
     }

@@ -6,11 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.Storage
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -49,7 +50,7 @@ class StorageReferenceExchangeSpec
     val id           = iri"http://localhost/${genString()}"
     val sourceSecret = s3FieldsJson
     val source       = Storage.encryptSource(sourceSecret, crypto).success.value
-    val tag          = TagLabel.unsafe("tag")
+    val tag          = UserTag.unsafe("tag")
 
     val exchange = Storages.referenceExchange(storages)(crypto)
 
@@ -83,7 +84,7 @@ class StorageReferenceExchangeSpec
     }
 
     "return None for incorrect tag" in {
-      val label = TagLabel.unsafe("unknown")
+      val label = UserTag.unsafe("unknown")
       exchange.fetch(project.ref, Tag(id, label)).accepted shouldEqual None
     }
   }

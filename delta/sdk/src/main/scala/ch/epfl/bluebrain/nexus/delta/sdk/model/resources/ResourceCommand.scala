@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 /**
@@ -122,7 +123,7 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       targetRev: Long,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long,
       subject: Subject
   ) extends ResourceCommand
@@ -147,7 +148,7 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long,
       subject: Subject
   ) extends ResourceCommand

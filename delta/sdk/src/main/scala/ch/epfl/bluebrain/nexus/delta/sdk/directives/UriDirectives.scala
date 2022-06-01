@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef, Pr
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import monix.execution.Scheduler
 
@@ -190,13 +191,13 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     }
 
   /**
-    * Consumes a path Segment and parse it into a [[TagLabel]]
+    * Consumes a path Segment and parse it into a [[UserTag]]
     */
-  def tagLabel: Directive1[TagLabel] =
+  def tagLabel: Directive1[UserTag] =
     pathPrefix(Segment).flatMap { segment =>
-      TagLabel(segment) match {
+      UserTag(segment) match {
         case Right(tagLabel) => provide(tagLabel)
-        case Left(err)       => reject(validationRejection(err.getMessage))
+        case Left(err)       => reject(validationRejection(err.message))
       }
     }
 
@@ -237,7 +238,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
     */
   def idSegmentRef(id: IdSegment): Directive1[IdSegmentRef] =
-    (parameter("rev".as[Long].?) & parameter("tag".as[TagLabel].?)).tflatMap {
+    (parameter("rev".as[Long].?) & parameter("tag".as[UserTag].?)).tflatMap {
       case (Some(_), Some(_)) => reject(simultaneousTagAndRevRejection)
       case (Some(rev), _)     => provide(IdSegmentRef(id, rev))
       case (_, Some(tag))     => provide(IdSegmentRef(id, tag))

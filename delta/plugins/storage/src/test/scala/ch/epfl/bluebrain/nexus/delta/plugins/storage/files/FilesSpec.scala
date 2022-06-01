@@ -31,6 +31,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
@@ -64,7 +66,7 @@ class FilesSpec(docker: RemoteStorageDocker)
   private val alice = User("Alice", realm)
 
   private val id               = nxv + "file"
-  private val myTag            = TagLabel.unsafe("myTag")
+  private val myTag            = UserTag.unsafe("myTag")
   private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
   private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
   private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1L)
@@ -220,7 +222,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "from a new FileTagAdded event" in {
-        val tag1    = TagLabel.unsafe("tag1")
+        val tag1    = UserTag.unsafe("tag1")
         val event   = FileTagAdded(id, projectRef, targetRev = 1, tag1, 3, time2, alice)
         val current = FileGen.currentState(id, projectRef, storageRef, attributes, tags = Map(myTag -> 2), rev = 2)
 
@@ -245,7 +247,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-    val tag        = TagLabel.unsafe("tag")
+    val tag        = UserTag.unsafe("tag")
     val otherRead  = Permission.unsafe("other/read")
     val otherWrite = Permission.unsafe("other/write")
 
@@ -648,7 +650,7 @@ class FilesSpec(docker: RemoteStorageDocker)
         files.deleteTag(file1, projectRef, tag, 4).rejected shouldEqual IncorrectRev(expected = 5, provided = 4)
       }
       "reject if the tag doesn't exist" in {
-        files.deleteTag(file1, projectRef, TagLabel.unsafe("unknown"), 5).rejected
+        files.deleteTag(file1, projectRef, UserTag.unsafe("unknown"), 5).rejected
       }
     }
 
@@ -752,7 +754,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "reject if tag does not exist" in {
-        val otherTag = TagLabel.unsafe("other")
+        val otherTag = UserTag.unsafe("other")
         files.fetch(IdSegmentRef(file1, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 
@@ -800,7 +802,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "reject if tag does not exist" in {
-        val otherTag = TagLabel.unsafe("other")
+        val otherTag = UserTag.unsafe("other")
         files.fetchContent(IdSegmentRef(file1, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 

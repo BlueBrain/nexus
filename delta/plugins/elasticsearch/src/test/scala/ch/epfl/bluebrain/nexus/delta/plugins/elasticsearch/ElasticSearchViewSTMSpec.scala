@@ -16,11 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeError.{InvalidConfig, PipeNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterByType, PipeConfig, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import io.circe.Json
 import monix.bio.IO
@@ -84,7 +85,7 @@ class ElasticSearchViewSTMSpec
         uuid: UUID = uuid,
         value: ElasticSearchViewValue = indexingValue,
         source: Json = source,
-        tags: Map[TagLabel, Long] = Map.empty,
+        tags: Map[UserTag, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
@@ -225,7 +226,7 @@ class ElasticSearchViewSTMSpec
 
     "evaluating the UpdateElasticSearchView command" should {
       "emit an ElasticSearchViewUpdated for an IndexingElasticSearchViewValue" in {
-        val value    = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("sometag")))
+        val value    = indexingValue.copy(resourceTag = Some(UserTag.unsafe("sometag")))
         val cmd      = UpdateElasticSearchView(id, project, 1L, value, source, subject)
         val expected = ElasticSearchViewUpdated(id, project, uuid, value, source, 2L, epoch, subject)
         eval(current(), cmd).accepted shouldEqual expected
@@ -308,7 +309,7 @@ class ElasticSearchViewSTMSpec
     }
 
     "evaluating the TagElasticSearchView command" should {
-      val tag = TagLabel.unsafe("tag")
+      val tag = UserTag.unsafe("tag")
       "emit an ElasticSearchViewTagAdded" in {
         val cmd      = TagElasticSearchView(id, project, 1L, tag, 1L, subject)
         val expected = ElasticSearchViewTagAdded(id, project, ElasticSearchType, uuid, 1L, tag, 2L, epoch, subject)
@@ -396,7 +397,7 @@ class ElasticSearchViewSTMSpec
     }
 
     "applying an ElasticSearchViewTagAdded event" should {
-      val tag = TagLabel.unsafe("tag")
+      val tag = UserTag.unsafe("tag")
       "discard the event for an Initial state" in {
         next(
           Initial,

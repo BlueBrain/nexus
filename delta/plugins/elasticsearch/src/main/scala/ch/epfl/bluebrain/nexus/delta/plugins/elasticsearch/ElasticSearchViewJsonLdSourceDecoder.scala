@@ -15,13 +15,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -68,7 +69,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
     final case class LegacyIndexingElasticSearchViewFields(
         resourceSchemas: Set[Iri] = Set.empty,
         resourceTypes: Set[Iri] = Set.empty,
-        resourceTag: Option[TagLabel] = None,
+        resourceTag: Option[UserTag] = None,
         sourceAsText: Boolean = false,
         includeMetadata: Boolean = false,
         includeDeprecated: Boolean = false,
@@ -80,7 +81,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
     }
 
     final case class IndexingElasticSearchViewFields(
-        resourceTag: Option[TagLabel] = None,
+        resourceTag: Option[UserTag] = None,
         pipeline: Option[List[PipeDef]] = None,
         mapping: JsonObject,
         settings: Option[JsonObject] = None,

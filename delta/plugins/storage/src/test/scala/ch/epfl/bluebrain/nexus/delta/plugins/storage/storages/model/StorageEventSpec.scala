@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Printer
 import io.circe.syntax._
@@ -36,7 +37,7 @@ class StorageEventSpec
     val project                   = ProjectRef.unsafe("org", "project")
     val epoch                     = Instant.EPOCH
     val subject                   = User("username", Label.unsafe("myrealm"))
-    val tag                       = TagLabel.unsafe("mytag")
+    val tag                       = UserTag.unsafe("mytag")
     implicit val crypto: Crypto   = Crypto("password", "salt")
     implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
     val printer: Printer          = Printer.spaces2.copy(dropNullValues = true, sortKeys = true)

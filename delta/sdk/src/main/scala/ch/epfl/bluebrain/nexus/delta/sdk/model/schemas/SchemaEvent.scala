@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -124,7 +125,7 @@ object SchemaEvent {
       id: Iri,
       project: ProjectRef,
       targetRev: Long,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long,
       instant: Instant,
       subject: Subject
@@ -149,7 +150,7 @@ object SchemaEvent {
   final case class SchemaTagDeleted(
       id: Iri,
       project: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long,
       instant: Instant,
       subject: Subject

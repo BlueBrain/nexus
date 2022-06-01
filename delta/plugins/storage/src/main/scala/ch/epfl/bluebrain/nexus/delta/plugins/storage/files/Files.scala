@@ -42,6 +42,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
@@ -302,7 +304,7 @@ final class Files(
     for {
       file        <- fetch(iri, projectRef)
       _           <- IO.when(file.value.attributes.digest.computed)(IO.raiseError(DigestAlreadyComputed(file.id)))
-      storageIdRef = file.value.storage.toIdSegmentRef
+      storageIdRef = IdSegmentRef(file.value.storage)
       storage     <- storages.fetch(storageIdRef, projectRef).mapError(WrappedStorageRejection)
       attr         = file.value.attributes
       newAttr     <- FetchAttributes(storage.value).apply(attr).mapError(FetchAttributesRejection(iri, storage.id, _))
@@ -327,7 +329,7 @@ final class Files(
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
@@ -353,7 +355,7 @@ final class Files(
   def deleteTag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
@@ -596,7 +598,7 @@ object Files {
     * Create a reference exchange from a [[Files]] instance
     */
   def referenceExchange(files: Files)(implicit config: StorageTypeConfig): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => files.fetch(ref.toIdSegmentRef, projectRef)
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => files.fetch(IdSegmentRef(ref), projectRef)
     ReferenceExchange[File](fetch(_, _), _.asJson)
   }
 

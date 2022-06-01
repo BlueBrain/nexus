@@ -21,6 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.SaveProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import com.typesafe.config.ConfigFactory
@@ -128,7 +130,7 @@ class StoragesStatisticsSpec
           subject
         ),
         FileAttributesUpdated(file3, project1, None, 25L, NotComputedDigest, 2L, Instant.ofEpochMilli(5000L), subject),
-        FileTagAdded(file3, project1, 1L, TagLabel.unsafe("my-tag"), 3L, Instant.ofEpochMilli(6000L), subject),
+        FileTagAdded(file3, project1, 1L, UserTag.unsafe("my-tag"), 3L, Instant.ofEpochMilli(6000L), subject),
         FileDeprecated(file3, project1, 4L, Instant.ofEpochMilli(7000L), subject)
       ).zipWithIndex.map { case (event, index) =>
         Envelope(

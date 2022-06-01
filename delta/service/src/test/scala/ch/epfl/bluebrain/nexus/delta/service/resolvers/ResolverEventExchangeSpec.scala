@@ -13,8 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.ResolverDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResolverType, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.literal._
@@ -75,7 +76,7 @@ class ResolverEventExchangeSpec
               "@type": ["InProject", "Resolver"],
               "priority": 42
             }"""
-    val tag             = TagLabel.unsafe("tag")
+    val tag             = UserTag.unsafe("tag")
     val resRev1         = resolvers.create(id, project.ref, source).accepted
     val resRev2         = resolvers.tag(id, project.ref, tag, 1L, 1L).accepted
     val deprecatedEvent = ResolverDeprecated(id, project.ref, ResolverType.InProject, 1, Instant.EPOCH, subject)

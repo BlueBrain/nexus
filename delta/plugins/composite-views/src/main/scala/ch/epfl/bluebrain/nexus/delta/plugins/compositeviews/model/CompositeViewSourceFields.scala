@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
@@ -47,7 +47,7 @@ sealed trait CompositeViewSourceFields {
     * @return
     *   the optional tag to filter by
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -76,7 +76,7 @@ object CompositeViewSourceFields {
       id: Option[Iri] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = ProjectSourceType
@@ -101,7 +101,7 @@ object CompositeViewSourceFields {
       identities: Set[Identity],
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = CrossProjectSourceType
@@ -128,7 +128,7 @@ object CompositeViewSourceFields {
       token: Option[Secret[String]] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false
   ) extends CompositeViewSourceFields {
     override def tpe: SourceType = RemoteProjectSourceType

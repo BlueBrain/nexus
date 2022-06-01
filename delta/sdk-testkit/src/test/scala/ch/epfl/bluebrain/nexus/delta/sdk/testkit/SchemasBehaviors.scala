@@ -15,9 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -101,7 +102,7 @@ trait SchemasBehaviors {
 
   "The Schemas operations bundle" when {
 
-    val tag = TagLabel.unsafe("tag")
+    val tag = UserTag.unsafe("tag")
 
     "creating a schema" should {
 
@@ -315,7 +316,7 @@ trait SchemasBehaviors {
       }
 
       "reject if tag does not exist" in {
-        val otherTag = TagLabel.unsafe("other")
+        val otherTag = UserTag.unsafe("other")
         schemas.fetch(IdSegmentRef(mySchema, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 

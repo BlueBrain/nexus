@@ -19,6 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.ResourceDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.literal._
@@ -95,7 +97,7 @@ class ResourceEventExchangeSpec
               "number": 24,
               "bool": false
             }"""
-    val tag             = TagLabel.unsafe("tag")
+    val tag             = UserTag.unsafe("tag")
     val resRev1         = resources.create(id, project.ref, schemas.resources, source).accepted
     val resRev2         = resources.tag(id, project.ref, None, tag, 1L, 1L).accepted
     val deprecatedEvent = ResourceDeprecated(id, project.ref, Set(nxv + "Custom"), 1, Instant.EPOCH, subject)

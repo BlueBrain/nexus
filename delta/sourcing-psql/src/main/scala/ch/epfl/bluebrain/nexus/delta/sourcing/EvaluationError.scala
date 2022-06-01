@@ -15,8 +15,10 @@ object EvaluationError {
 
   /**
     * Error occurring when applying an event to a state result in an invalid one
-    * @param state the original state
-    * @param event the event to apply
+    * @param state
+    *   the original state
+    * @param event
+    *   the event to apply
     */
   final case class InvalidState[State, Event](state: Option[State], event: Event) extends EvaluationError
 
@@ -31,15 +33,20 @@ object EvaluationError {
 
   /**
     * Error occurring when the evaluation of a command raised an error
-    * @param command the command that failed
-    * @param errorType the type of error that was raised
-    * @param errorMessage the type of error that was raised
+    * @param command
+    *   the command that failed
+    * @param errorType
+    *   the type of error that was raised
+    * @param errorMessage
+    *   the type of error that was raised
     */
-  final case class EvaluationFailure[Command](command: Command, errorType: String, errorMessage: String)      extends EvaluationError
+  final case class EvaluationFailure[Command](command: Command, errorType: String, errorMessage: String)
+      extends EvaluationError
 
   object EvaluationFailure {
 
-    def apply[Command](command: Command, throwable: Throwable): EvaluationFailure[Command] = EvaluationFailure(command, ClassUtils.simpleName(throwable), throwable.getMessage)
+    def apply[Command](command: Command, throwable: Throwable): EvaluationFailure[Command] =
+      EvaluationFailure(command, ClassUtils.simpleName(throwable), throwable.getMessage)
 
   }
 

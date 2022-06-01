@@ -25,6 +25,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -96,7 +98,7 @@ trait Schemas {
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
@@ -116,7 +118,7 @@ trait Schemas {
   def deleteTag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource]
 
@@ -167,7 +169,7 @@ trait Schemas {
       resourceRef: ResourceRef,
       projectRef: ProjectRef
   )(implicit rejectionMapper: Mapper[SchemaFetchRejection, R]): IO[R, SchemaResource] =
-    fetch(resourceRef.toIdSegmentRef, projectRef).mapError(rejectionMapper.to)
+    fetch(IdSegmentRef(resourceRef), projectRef).mapError(rejectionMapper.to)
 
   /**
     * Fetch the active [[Schema]] from the provided ''projectRef'' and ''resourceRef''. Return on the error channel if

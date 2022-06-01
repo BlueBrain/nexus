@@ -5,11 +5,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.literal._
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
@@ -47,7 +48,7 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
               "@type": "ElasticSearchView",
               "mapping": $mapping
             }"""
-    val tag     = TagLabel.unsafe("tag")
+    val tag     = UserTag.unsafe("tag")
     val resRev1 = views.create(id, project.ref, source).accepted
     val resRev2 = views.tag(id, project.ref, tag, 1L, 1L).accepted
 
@@ -80,7 +81,7 @@ class ElasticSearchViewReferenceExchangeSpec extends AbstractDBSpec with Inspect
     }
 
     "return None for incorrect tag" in {
-      val label = TagLabel.unsafe("unknown")
+      val label = UserTag.unsafe("unknown")
       exchange.fetch(project.ref, Tag(id, label)).accepted shouldEqual None
     }
   }

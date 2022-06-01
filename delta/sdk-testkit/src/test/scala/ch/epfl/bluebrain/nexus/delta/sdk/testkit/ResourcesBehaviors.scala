@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
@@ -22,6 +21,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -114,7 +116,7 @@ trait ResourcesBehaviors {
     val myId2          = nxv + "myid2" // Resource created against the schema1 with id present on the payload
     val types          = Set(nxv + "Custom")
     val source         = jsonContentOf("resources/resource.json", "id" -> myId)
-    val tag            = TagLabel.unsafe("tag")
+    val tag            = UserTag.unsafe("tag")
 
     "creating a resource" should {
       "succeed with the id present on the payload" in {
@@ -524,7 +526,7 @@ trait ResourcesBehaviors {
       }
 
       "reject if tag does not exist" in {
-        val otherTag = TagLabel.unsafe("other")
+        val otherTag = UserTag.unsafe("other")
         forAll(List[Option[IdSegment]](None, Some(schemas.resources))) { schema =>
           resources.fetch(IdSegmentRef(myId, otherTag), projectRef, schema).rejected shouldEqual TagNotFound(otherTag)
         }

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, P
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectEventExchange.MarkedForDeletion
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
@@ -56,7 +57,7 @@ class ProjectEventExchange(projects: Projects)(implicit base: BaseUri, defaultAp
       case _               => UIO.none
     }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {
       case (ev: ProjectEvent, None) => resourceToValue(projects.fetch(ev.project))
       case _                        => UIO.none

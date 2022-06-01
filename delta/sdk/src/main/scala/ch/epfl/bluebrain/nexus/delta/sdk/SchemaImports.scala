@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResourceResolution, Re
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import monix.bio.IO
 
 /**

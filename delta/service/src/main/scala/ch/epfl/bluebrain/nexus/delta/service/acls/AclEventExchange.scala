@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclEvent, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 
@@ -34,7 +35,7 @@ class AclEventExchange(acls: Acls)(implicit base: BaseUri) extends EventExchange
 
   override def toResource(
       event: Event,
-      tag: Option[TagLabel]
+      tag: Option[UserTag]
   ): UIO[Option[EventExchange.EventExchangeValue[A, M]]] = (event, tag) match {
     case (ev: AclEvent, None) => resourceToValue(acls.fetch(ev.address))
     case _                    => UIO.none

@@ -4,11 +4,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, ResourceF, ResourceRef, ResourceUris, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 import java.time.Instant
@@ -113,7 +115,7 @@ object SchemaState {
       expanded: NonEmptyList[ExpandedJsonLd],
       rev: Long,
       deprecated: Boolean,
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

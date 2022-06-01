@@ -12,8 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import io.circe.literal._
 import monix.execution.Scheduler
@@ -41,7 +42,7 @@ class CompositeViewEventExchangeSpec extends AbstractDBSpec with Inspectors with
   "A CompositeViewEventExchange" should {
     val id              = iri"http://localhost/${genString()}"
     val viewSource      = jsonContentOf("composite-view-source.json")
-    val tag             = TagLabel.unsafe("tag")
+    val tag             = UserTag.unsafe("tag")
     val resRev1         = views.create(id, project.ref, viewSource).accepted
     val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
     val deprecatedEvent = CompositeViewDeprecated(id, project.ref, uuid, 1, Instant.EPOCH, subject)

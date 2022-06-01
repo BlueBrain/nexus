@@ -15,9 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.SchemaDeprecated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.JsonObject
 import io.circe.literal._
@@ -85,7 +86,7 @@ class SchemaEventExchangeSpec
     ).accepted
 
   "A SchemaEventExchange" should {
-    val tag     = TagLabel.unsafe("tag")
+    val tag     = UserTag.unsafe("tag")
     val resRev1 = schemas.create(schema.id, project.ref, schema.source).accepted
     val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L).accepted
 
@@ -108,7 +109,7 @@ class SchemaEventExchangeSpec
 
     "return TagNotFound when the schema is not found by tag" in {
       exchange
-        .toResource(deprecatedEvent, Some(TagLabel.unsafe("unknown")))
+        .toResource(deprecatedEvent, Some(UserTag.unsafe("unknown")))
         .accepted
         .value
         .asInstanceOf[EventExchange.TagNotFound]

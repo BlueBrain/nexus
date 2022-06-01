@@ -20,9 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
@@ -89,12 +90,12 @@ class DeltaClientSpec
                   },
                   (pathPrefix(
                     "v1" / "resources" / "org" / "proj" / "_" / "https://example.com/testresource"
-                  ) & pathEndOrSingleSlash & parameter("tag".as[TagLabel].?)) {
-                    case None                       =>
+                  ) & pathEndOrSingleSlash & parameter("tag".as[UserTag].?)) {
+                    case None                      =>
                       complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
-                    case Some(TagLabel("knowntag")) =>
+                    case Some(UserTag("knowntag")) =>
                       complete(StatusCodes.OK, HttpEntity(ContentType(RdfMediaTypes.`application/n-quads`), nQuads))
-                    case Some(_)                    => complete(StatusCodes.NotFound)
+                    case Some(_)                   => complete(StatusCodes.NotFound)
                   }
                 )
               case _                                =>
@@ -163,13 +164,13 @@ class DeltaClientSpec
     }
     "work with tag" in {
       deltaClient
-        .resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("knowntag")))
+        .resourceAsNQuads(source, resourceId, Some(UserTag.unsafe("knowntag")))
         .accepted
         .value shouldEqual NQuads(nQuads, resourceId)
     }
 
     "return None if tag doesn't exist" in {
-      deltaClient.resourceAsNQuads(source, resourceId, Some(TagLabel.unsafe("unknowntag"))).accepted shouldEqual None
+      deltaClient.resourceAsNQuads(source, resourceId, Some(UserTag.unsafe("unknowntag"))).accepted shouldEqual None
     }
 
     "fail if token is invalid" in {}

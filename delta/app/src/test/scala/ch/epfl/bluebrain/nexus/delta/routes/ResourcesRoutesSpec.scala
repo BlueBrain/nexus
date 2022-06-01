@@ -24,6 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Printer
@@ -110,7 +112,7 @@ class ResourcesRoutesSpec
   private val sseEventLog    = new SseEventLogDummy(
     List(
       Envelope(
-        ResourceTagAdded(myId, projectRef, Set.empty, 1, TagLabel.unsafe("mytag"), 1, Instant.EPOCH, subject),
+        ResourceTagAdded(myId, projectRef, Set.empty, 1, UserTag.unsafe("mytag"), 1, Instant.EPOCH, subject),
         Sequence(1),
         "p1",
         1

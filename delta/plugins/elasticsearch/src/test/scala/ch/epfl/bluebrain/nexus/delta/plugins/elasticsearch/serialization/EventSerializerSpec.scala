@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -37,12 +38,12 @@ class EventSerializerSpec
   private val uuid             = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   private val instant: Instant = Instant.EPOCH
   private val subject: Subject = User("username", Label.unsafe("myrealm"))
-  private val tag              = TagLabel.unsafe("mytag")
+  private val tag              = UserTag.unsafe("mytag")
   private val projectRef       = ProjectRef.unsafe("myorg", "myproj")
   private val indexingId       = nxv + "indexing-view"
   private val aggregateId      = nxv + "aggregate-view"
   private val indexingValue    = IndexingElasticSearchViewValue(
-    Some(TagLabel.unsafe("some.tag")),
+    Some(UserTag.unsafe("some.tag")),
     List(
       FilterBySchema(Set(nxv + "some-schema")).description("Only keeping a specific schema"),
       FilterByType(Set(nxv + "SomeType")),

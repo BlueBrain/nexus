@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
@@ -83,7 +84,7 @@ object ResolverResolutionRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends ResolutionFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: UserTag) extends ResolutionFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to fetch a resource using a resolver that doesn't exist.

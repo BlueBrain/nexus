@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -89,7 +90,7 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
-          resourceTag = Some(TagLabel.unsafe("release")),
+          resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
             FilterBySchema(Set(project.vocab / "Person")),
             FilterByType(Set(project.vocab / "Person")),
@@ -124,7 +125,7 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
-          resourceTag = Some(TagLabel.unsafe("release")),
+          resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(),
           mapping = Some(mapping),
           settings = Some(settings),
@@ -164,7 +165,7 @@ class ElasticSearchViewDecodingSpec
                   "permission": "custom/permission"
                 }"""
         val expected    = IndexingElasticSearchViewValue(
-          resourceTag = Some(TagLabel.unsafe("release")),
+          resourceTag = Some(UserTag.unsafe("release")),
           pipeline =
             List(FilterDeprecated(), FilterByType(Set(project.vocab / "Person")).description("Keep only person type")),
           mapping = Some(mapping),

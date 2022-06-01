@@ -14,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.{Current,
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverRejection, ResolverType}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -65,7 +66,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
       ProvidedIdentities(bob.identities)
     ),
     Json.obj(),
-    Map(TagLabel.unsafe("tag1") -> 5L),
+    Map(UserTag.unsafe("tag1") -> 5L),
     2L,
     deprecated = false,
     epoch,
@@ -308,7 +309,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "eval a tag command" should {
 
-      val tagResolver = TagResolver(ipId, project, 1L, TagLabel.unsafe("tag1"), 2L, bob.subject)
+      val tagResolver = TagResolver(ipId, project, 1L, UserTag.unsafe("tag1"), 2L, bob.subject)
 
       "fail if the resolver doesn't exist" in {
         eval(Initial, tagResolver)
@@ -542,7 +543,7 @@ class ResolversSpec extends AnyWordSpec with Matchers with IOValues with IOFixed
 
     "applying a tag event" should {
       val resolverTagAdded =
-        ResolverTagAdded(ipId, project, ResolverType.InProject, 1L, TagLabel.unsafe("tag2"), 3L, instant, alice.subject)
+        ResolverTagAdded(ipId, project, ResolverType.InProject, 1L, UserTag.unsafe("tag2"), 3L, instant, alice.subject)
 
       "update the tag list" in {
         forAll(List(inProjectCurrent, crossProjectCurrent)) { state =>

@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
@@ -33,6 +32,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
@@ -117,7 +118,7 @@ class BlazegraphIndexingSpec(docker: BlazegraphDocker)
   private val type2 = idPrefix / "Type2"
   private val type3 = idPrefix / "Type3"
 
-  val tag = TagLabel.unsafe("mytag")
+  val tag = UserTag.unsafe("mytag")
 
   private val res1Proj1                = exchangeValue(id1Proj1, project1.ref, type1, false, schema1, value1Proj1)
   private val res2Proj1                = exchangeValue(id2Proj1, project1.ref, type2, false, schema2, value2Proj1)
@@ -138,7 +139,7 @@ class BlazegraphIndexingSpec(docker: BlazegraphDocker)
       res3Proj2                -> ((project2.ref, None)),
       res1rev2Proj1            -> ((project1.ref, None)),
       res1rev2Proj1TagNotFound -> ((project1.ref, Some(tag)))
-    ).zipWithIndex.foldLeft(Map.empty[(ProjectRef, Option[TagLabel]), Seq[Message[EventExchangeResult]]]) { case (acc, ((res, project), i)) =>
+    ).zipWithIndex.foldLeft(Map.empty[(ProjectRef, Option[UserTag]), Seq[Message[EventExchangeResult]]]) { case (acc, ((res, project), i)) =>
       val entry = SuccessMessage(
         Sequence(i.toLong),
         Instant.EPOCH,

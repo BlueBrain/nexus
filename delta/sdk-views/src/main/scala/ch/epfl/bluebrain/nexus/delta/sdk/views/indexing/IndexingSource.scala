@@ -4,10 +4,11 @@ import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategy, RetryStrategyConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Message
 import com.typesafe.scalalogging.Logger
 import fs2.{Chunk, Stream}
@@ -36,7 +37,7 @@ trait IndexingSource {
   def apply(
       project: ProjectRef,
       offset: Offset,
-      tag: Option[TagLabel]
+      tag: Option[UserTag]
   ): Stream[Task, Chunk[Message[EventExchangeResult]]]
 }
 
@@ -62,7 +63,7 @@ object IndexingSource {
       override def apply(
           project: ProjectRef,
           offset: Offset,
-          tag: Option[TagLabel]
+          tag: Option[UserTag]
       ): Stream[Task, Chunk[Message[EventExchangeResult]]] =
         Stream
           .eval(

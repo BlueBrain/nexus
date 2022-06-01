@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{PermissionSet, PermissionsEvent, PermissionsRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
@@ -28,7 +29,7 @@ class PermissionsEventExchange(permissions: Permissions)(implicit base: BaseUri)
     case _                    => None
   }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchange.EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchange.EventExchangeValue[A, M]]] =
     (event, tag) match {
       case (_: PermissionsEvent, None) => resourceToValue(permissions.fetch)
       case _                           => UIO.none

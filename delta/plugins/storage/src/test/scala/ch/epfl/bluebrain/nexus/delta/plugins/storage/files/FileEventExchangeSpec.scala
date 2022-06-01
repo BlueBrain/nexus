@@ -16,9 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
@@ -75,7 +77,7 @@ class FileEventExchangeSpec
 
   "A FileEventExchange" should {
     val id     = iri"http://localhost/${genString()}"
-    val tag    = TagLabel.unsafe("tag")
+    val tag    = UserTag.unsafe("tag")
     val source =
       json"""{
                "_uuid" : "8249ba90-7cc6-4de5-93a1-802c04200dcc",
@@ -115,7 +117,7 @@ class FileEventExchangeSpec
     }
     "return TagNotFound when the file is not found by tag" in {
       exchange
-        .toResource(deprecatedEvent, Some(TagLabel.unsafe("unknown")))
+        .toResource(deprecatedEvent, Some(UserTag.unsafe("unknown")))
         .accepted
         .value
         .asInstanceOf[EventExchange.TagNotFound]

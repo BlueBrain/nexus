@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.FetchResource
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, ResourceResolutionGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
@@ -16,9 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -115,9 +117,9 @@ class ResourcesSpec
 
           eval(
             current,
-            TagResource(myId, projectRef, schemaOptCmd, 1L, TagLabel.unsafe("myTag"), 2L, subject)
+            TagResource(myId, projectRef, schemaOptCmd, 1L, UserTag.unsafe("myTag"), 2L, subject)
           ).accepted shouldEqual
-            ResourceTagAdded(myId, projectRef, types, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
+            ResourceTagAdded(myId, projectRef, types, 1L, UserTag.unsafe("myTag"), 3L, epoch, subject)
         }
       }
 
@@ -127,7 +129,7 @@ class ResourcesSpec
           (None, Latest(schema1.id), false),
           (Some(Latest(schema1.id)), Latest(schema1.id), true)
         )
-        val tag  = TagLabel.unsafe("myTag")
+        val tag  = UserTag.unsafe("myTag")
         forAll(list) { case (schemaOptCmd, schemaEvent, deprecated) =>
           val current =
             ResourceGen.currentState(
@@ -145,7 +147,7 @@ class ResourcesSpec
             current,
             DeleteResourceTag(myId, projectRef, schemaOptCmd, tag, 2L, subject)
           ).accepted shouldEqual
-            ResourceTagDeleted(myId, projectRef, types, TagLabel.unsafe("myTag"), 3L, epoch, subject)
+            ResourceTagDeleted(myId, projectRef, types, UserTag.unsafe("myTag"), 3L, epoch, subject)
         }
       }
 
@@ -183,8 +185,8 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           current -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 2L, caller),
-          current -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("tag"), 2L, subject),
-          current -> DeleteResourceTag(myId, projectRef, None, TagLabel.unsafe("tag"), 2L, subject),
+          current -> TagResource(myId, projectRef, None, 1L, UserTag.unsafe("tag"), 2L, subject),
+          current -> DeleteResourceTag(myId, projectRef, None, UserTag.unsafe("tag"), 2L, subject),
           current -> DeprecateResource(myId, projectRef, None, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -291,7 +293,7 @@ class ResourcesSpec
         val expanded  = current.expanded
         val list      = List(
           Initial -> UpdateResource(myId, projectRef, None, source, compacted, expanded, 1L, caller),
-          Initial -> TagResource(myId, projectRef, None, 1L, TagLabel.unsafe("myTag"), 1L, subject),
+          Initial -> TagResource(myId, projectRef, None, 1L, UserTag.unsafe("myTag"), 1L, subject),
           Initial -> DeprecateResource(myId, projectRef, None, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -317,7 +319,7 @@ class ResourcesSpec
         val current = ResourceGen.currentState(myId, projectRef, source, Latest(schemas.resources), types)
         eval(
           current,
-          TagResource(myId, projectRef, None, 3L, TagLabel.unsafe("myTag"), 1L, subject)
+          TagResource(myId, projectRef, None, 3L, UserTag.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual
           RevisionNotFound(provided = 3L, current = 1L)
       }
@@ -327,7 +329,7 @@ class ResourcesSpec
     "producing next state" should {
       val schema    = Latest(schemas.resources)
       val schemaRev = Revision(schemas.resources, 1)
-      val tags      = Map(TagLabel.unsafe("a") -> 1L)
+      val tags      = Map(UserTag.unsafe("a") -> 1L)
       val current   = ResourceGen.currentState(myId, projectRef, source, schema, types, tags)
       val comp      = current.compacted
       val exp       = current.expanded
@@ -375,7 +377,7 @@ class ResourcesSpec
       }
 
       "create new ResourceTagAdded state" in {
-        val tag = TagLabel.unsafe("tag")
+        val tag = UserTag.unsafe("tag")
         next(
           Initial,
           ResourceTagAdded(myId, projectRef, types, 1L, tag, 2L, time2, subject)

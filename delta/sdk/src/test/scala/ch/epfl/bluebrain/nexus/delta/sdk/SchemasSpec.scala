@@ -4,14 +4,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.Schemas.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Label
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -73,13 +74,13 @@ class SchemasSpec
       "create a new event from a TagSchema command" in {
         eval(
           SchemaGen.currentState(schema, rev = 2L),
-          TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 2L, subject)
+          TagSchema(myId, project.value.ref, 1L, UserTag.unsafe("myTag"), 2L, subject)
         ).accepted shouldEqual
-          SchemaTagAdded(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 3L, epoch, subject)
+          SchemaTagAdded(myId, project.value.ref, 1L, UserTag.unsafe("myTag"), 3L, epoch, subject)
       }
 
       "create a new event from a DeleteSchemaTag command" in {
-        val tag = TagLabel.unsafe("myTag")
+        val tag = UserTag.unsafe("myTag")
         eval(
           SchemaGen.currentState(schema, rev = 2L).copy(tags = Map(tag -> 1)),
           DeleteSchemaTag(myId, project.value.ref, tag, 2L, subject)
@@ -99,8 +100,8 @@ class SchemasSpec
         val current = SchemaGen.currentState(schema)
         val list    = List(
           current -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 2L, subject),
-          current -> TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("tag"), 2L, subject),
-          current -> DeleteSchemaTag(myId, project.value.ref, TagLabel.unsafe("tag"), 2L, subject),
+          current -> TagSchema(myId, project.value.ref, 1L, UserTag.unsafe("tag"), 2L, subject),
+          current -> DeleteSchemaTag(myId, project.value.ref, UserTag.unsafe("tag"), 2L, subject),
           current -> DeprecateSchema(myId, project.value.ref, 2L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -140,8 +141,8 @@ class SchemasSpec
       "reject with SchemaNotFound" in {
         val list = List(
           Initial -> UpdateSchema(myId, project.value.ref, source, compacted, expanded, 1L, subject),
-          Initial -> TagSchema(myId, project.value.ref, 1L, TagLabel.unsafe("myTag"), 1L, subject),
-          Initial -> DeleteSchemaTag(myId, project.value.ref, TagLabel.unsafe("myTag"), 1L, subject),
+          Initial -> TagSchema(myId, project.value.ref, 1L, UserTag.unsafe("myTag"), 1L, subject),
+          Initial -> DeleteSchemaTag(myId, project.value.ref, UserTag.unsafe("myTag"), 1L, subject),
           Initial -> DeprecateSchema(myId, project.value.ref, 1L, subject)
         )
         forAll(list) { case (state, cmd) =>
@@ -163,7 +164,7 @@ class SchemasSpec
       "reject with RevisionNotFound" in {
         eval(
           SchemaGen.currentState(schema),
-          TagSchema(myId, project.value.ref, 3L, TagLabel.unsafe("myTag"), 1L, subject)
+          TagSchema(myId, project.value.ref, 3L, UserTag.unsafe("myTag"), 1L, subject)
         ).rejected shouldEqual RevisionNotFound(provided = 3L, current = 1L)
       }
 
@@ -179,7 +180,7 @@ class SchemasSpec
     }
 
     "producing next state" should {
-      val tags    = Map(TagLabel.unsafe("a") -> 1L)
+      val tags    = Map(UserTag.unsafe("a") -> 1L)
       val current = SchemaGen.currentState(schema.copy(tags = tags))
 
       "create a new SchemaCreated state" in {
@@ -209,7 +210,7 @@ class SchemasSpec
       }
 
       "create new SchemaTagAdded state" in {
-        val tag = TagLabel.unsafe("tag")
+        val tag = UserTag.unsafe("tag")
         next(
           Initial,
           SchemaTagAdded(myId, project.value.ref, 1L, tag, 2L, time2, subject)

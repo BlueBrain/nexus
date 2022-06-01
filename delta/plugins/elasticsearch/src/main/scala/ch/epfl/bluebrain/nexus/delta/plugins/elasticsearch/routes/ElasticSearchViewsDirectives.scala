@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.IriBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import monix.execution.Scheduler
 
 trait ElasticSearchViewsDirectives extends UriDirectives {
