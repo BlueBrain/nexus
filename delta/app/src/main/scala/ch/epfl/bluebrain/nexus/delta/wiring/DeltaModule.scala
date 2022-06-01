@@ -173,8 +173,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
     else Task.delay(PersistenceIdCheck.skipPersistenceIdCheck)
   }
 
-  make[ResourceIdCheck].from { (idCheck: PersistenceIdCheck, moduleTypes: Set[EntityType]) =>
-    ResourceIdCheck(idCheck, moduleTypes)
+  make[ResourceIdCheck].fromValue {
+    ResourceIdCheck.alwaysAvailable
   }
 
   include(PermissionsModule)

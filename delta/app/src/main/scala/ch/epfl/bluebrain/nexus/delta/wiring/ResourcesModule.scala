@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, EntityType, Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
@@ -117,6 +117,5 @@ object ResourcesModule extends ModuleDef {
   make[ResourceEventExchange]
   many[EventExchange].ref[ResourceEventExchange]
   many[EventExchange].named("resources").ref[ResourceEventExchange]
-  many[EntityType].add(EntityType(Resources.moduleType))
 
 }

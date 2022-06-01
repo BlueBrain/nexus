@@ -125,6 +125,4 @@ object SchemasModule extends ModuleDef {
   make[SchemaEventExchange]
   many[EventExchange].ref[SchemaEventExchange]
   many[EventExchange].named("resources").ref[SchemaEventExchange]
-
-  many[EntityType].add(EntityType(Schemas.moduleType))
 }

@@ -390,7 +390,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].named("view").ref[ElasticSearchViewEventExchange]
   many[EventExchange].named("resources").ref[ElasticSearchViewEventExchange]
   many[EventExchange].ref[ElasticSearchViewEventExchange]
-  many[EntityType].add(EntityType(ElasticSearchViews.moduleType))
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 
