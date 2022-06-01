@@ -265,7 +265,7 @@ lazy val sourcing = project
   )
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
-    coverageMinimumStmtTotal := 64,
+    coverageMinimumStmtTotal := 10,
     libraryDependencies     ++= Seq(
       akkaActorTyped,
       akkaClusterTyped,
