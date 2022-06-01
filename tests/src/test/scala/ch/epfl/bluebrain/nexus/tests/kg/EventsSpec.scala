@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
-import com.fasterxml.uuid.Generators
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
