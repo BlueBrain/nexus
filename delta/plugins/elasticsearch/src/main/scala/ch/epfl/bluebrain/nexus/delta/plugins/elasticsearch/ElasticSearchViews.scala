@@ -44,6 +44,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -227,7 +229,7 @@ final class ElasticSearchViews private (
   def tag(
       id: IdSegment,
       project: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
@@ -483,7 +485,7 @@ object ElasticSearchViews {
     * Create a reference exchange from a [[ElasticSearchViews]] instance
     */
   def referenceExchange(views: ElasticSearchViews): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(IdSegmentRef(ref), projectRef)
     ReferenceExchange[ElasticSearchView](fetch(_, _), _.source)
   }
 

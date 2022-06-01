@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.{IO, Task}
 import monix.execution.Scheduler
@@ -491,8 +492,8 @@ trait ResolversBehaviors {
       }
     }
 
-    val tag  = TagLabel.unsafe("my-tag")
-    val tag2 = TagLabel.unsafe("my-tag2")
+    val tag  = UserTag.unsafe("my-tag")
+    val tag2 = UserTag.unsafe("my-tag2")
 
     "tagging a resolver" should {
       "succeed" in {
@@ -790,7 +791,7 @@ trait ResolversBehaviors {
       }
 
       "fail if tag does not exist" in {
-        val unknownTag = TagLabel.unsafe("xxx")
+        val unknownTag = UserTag.unsafe("xxx")
         resolvers.fetch(IdSegmentRef(nxv + "in-project", unknownTag), projectRef).rejected shouldEqual
           TagNotFound(unknownTag)
       }

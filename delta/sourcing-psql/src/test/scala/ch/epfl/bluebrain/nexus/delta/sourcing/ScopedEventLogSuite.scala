@@ -119,7 +119,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   test("Raise an error and persist nothing") {
     val boom = Boom(id, proj, "fail")
     for {
-      _ <- eventLog.evaluate(proj, id,  boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
+      _ <- eventLog.evaluate(proj, id, boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.state(proj, id).assertSome(state3)
     } yield ()

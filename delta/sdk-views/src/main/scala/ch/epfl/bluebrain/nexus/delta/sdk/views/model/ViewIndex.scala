@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.model
 import cats.Functor
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 
 /**
@@ -33,7 +33,7 @@ final case class ViewIndex[+V](
     index: String,
     rev: Long,
     deprecated: Boolean,
-    resourceTag: Option[TagLabel],
+    resourceTag: Option[UserTag],
     value: V
 )
 

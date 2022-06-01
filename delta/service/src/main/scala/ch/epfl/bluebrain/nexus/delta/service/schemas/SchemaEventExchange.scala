@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.{Schema, SchemaEvent, SchemaRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue, SchemaResource, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
@@ -52,7 +53,7 @@ class SchemaEventExchange(schemas: Schemas)(implicit base: BaseUri) extends Even
       case _              => UIO.none
     }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeResult]] =
     event match {
       case ev: SchemaEvent => resourceToValue(schemas.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project), ev.id)
       case _               => UIO.none

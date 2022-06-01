@@ -11,12 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -48,7 +49,7 @@ sealed trait ElasticSearchView extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Map[UserTag, Long]
 
   /**
     * @return
@@ -100,13 +101,13 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       uuid: UUID,
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       pipeline: List[PipeDef],
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
       permission: Permission,
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       source: Json
   ) extends ElasticSearchView {
     override def metadata: Metadata = Metadata(Some(uuid))
@@ -153,7 +154,7 @@ object ElasticSearchView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       source: Json
   ) extends ElasticSearchView {
     override def metadata: Metadata         = Metadata(None)
@@ -172,8 +173,8 @@ object ElasticSearchView {
 
   @nowarn("cat=unused")
   implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration                    = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[UserTag, Long]] = Encoder.instance(_ => Json.Null)
 
     // To keep retro-compatibility, we compute legacy fields from the view pipeline
     def encodeLegacyFields(v: ElasticSearchView) =

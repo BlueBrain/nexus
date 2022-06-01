@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 
 /**
   * Enumeration of File command types.
@@ -128,7 +129,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: TagLabel, rev: Long, subject: Subject)
+  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: UserTag, rev: Long, subject: Subject)
       extends FileCommand
 
   /**
@@ -145,7 +146,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: TagLabel, rev: Long, subject: Subject)
+  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: UserTag, rev: Long, subject: Subject)
       extends FileCommand
 
   /**

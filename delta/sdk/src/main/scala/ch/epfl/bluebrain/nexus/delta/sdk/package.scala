@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import monix.bio.IO
 
 package object sdk {

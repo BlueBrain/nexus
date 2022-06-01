@@ -13,8 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import io.circe.literal._
 import io.circe.syntax._
@@ -55,7 +56,7 @@ class ElasticSearchViewEventExchangeSpec extends AbstractDBSpec with Inspectors 
               "@type": "ElasticSearchView",
               "mapping": $mapping
             }"""
-    val tag             = TagLabel.unsafe("tag")
+    val tag             = UserTag.unsafe("tag")
     val resRev1         = views.create(id, project.ref, source).accepted
     val resRev2         = views.tag(id, project.ref, tag, 1L, 1L).accepted
     val deprecatedEvent =

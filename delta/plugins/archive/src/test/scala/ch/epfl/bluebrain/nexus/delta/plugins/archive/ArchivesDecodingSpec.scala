@@ -7,8 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepres
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import io.circe.literal._
 import org.scalatest.Inspectors
@@ -162,7 +163,7 @@ class ArchivesDecodingSpec
       "having a file reference" in {
         val resourceId = iri"http://localhost/${genString()}"
         val path       = AbsolutePath(Paths.get("/a/b")).rightValue
-        val tag        = TagLabel.unsafe("mytag")
+        val tag        = UserTag.unsafe("mytag")
         val source     =
           json"""{
               "resources": [

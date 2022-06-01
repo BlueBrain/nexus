@@ -14,11 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -62,7 +62,7 @@ object StorageRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: UserTag) extends StorageFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to update/fetch a storage with an id that doesn't exist.

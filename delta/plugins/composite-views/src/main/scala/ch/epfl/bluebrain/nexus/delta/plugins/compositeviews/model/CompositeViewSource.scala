@@ -7,10 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Encoder, Json}
 
 import java.util.UUID
@@ -50,7 +51,7 @@ sealed trait CompositeViewSource extends Product with Serializable {
     *   an optional tag to consider for indexing; when set, all resources that are tagged with the value of the field
     *   are indexed with the corresponding revision
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -89,7 +90,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean
   ) extends CompositeViewSource {
 
@@ -122,7 +123,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
       identities: Set[Identity]
@@ -157,7 +158,7 @@ object CompositeViewSource {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeDeprecated: Boolean,
       project: ProjectRef,
       endpoint: Uri,

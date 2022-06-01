@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
@@ -58,7 +59,7 @@ class BlazegraphViewsSpec
     )
     val indexingSource = jsonContentOf("indexing-view-source.json")
 
-    val updatedIndexingValue  = indexingValue.copy(resourceTag = Some(TagLabel.unsafe("v1.5")))
+    val updatedIndexingValue  = indexingValue.copy(resourceTag = Some(UserTag.unsafe("v1.5")))
     val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
     val indexingViewId  = nxv + "indexing-view"
@@ -81,7 +82,7 @@ class BlazegraphViewsSpec
     val aggregateViewId2 = nxv + "aggregate-view2"
     val aggregateSource  = jsonContentOf("aggregate-view-source.json")
 
-    val tag = TagLabel.unsafe("v1.5")
+    val tag = UserTag.unsafe("v1.5")
 
     val doesntExistId = nxv + "doesntexist"
 
@@ -375,7 +376,7 @@ class BlazegraphViewsSpec
       }
 
       "reject when the tag does not exist" in {
-        val notFound = TagLabel.unsafe("notfound")
+        val notFound = UserTag.unsafe("notfound")
         views.fetch(IdSegmentRef(aggregateViewId, notFound), projectRef).rejected shouldEqual TagNotFound(notFound)
       }
 

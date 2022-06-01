@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.model
 import akka.http.scaladsl.model.Uri.Query
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Decoder, Encoder}
 
@@ -66,6 +66,10 @@ object ResourceRef {
     final def apply(iri: Iri, rev: Long): Revision =
       Revision(iri"$iri?rev=$rev", iri, rev)
 
+    // TODO Migrate to Int
+    final def apply(iri: Iri, rev: Int): Revision =
+      Revision(iri"$iri?rev=$rev", iri, rev.toLong)
+
     implicit val resRefRevEncoder: Encoder[ResourceRef.Revision] = Encoder.encodeString.contramap(_.original.toString)
 
     implicit val resRefRevDecoder: Decoder[ResourceRef.Revision] = Decoder.decodeString.emap { str =>
@@ -109,7 +113,7 @@ object ResourceRef {
 
     def extractTagRev(map: Query): Option[Either[UserTag, Long]] = {
       def rev = map.get("rev").flatMap(s => Try(s.toLong).filter(_ > 0).toOption)
-      def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(UserTag.apply(_).toOption)
+      def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(UserTag(_).toOption)
       rev.map(Right.apply) orElse tag.map(Left.apply)
     }
     extractTagRev(iri.query()) match {

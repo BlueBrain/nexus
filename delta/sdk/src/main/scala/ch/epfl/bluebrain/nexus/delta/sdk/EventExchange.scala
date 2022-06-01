@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import monix.bio.UIO
 
 /**
@@ -63,7 +64,7 @@ trait EventExchange {
     * @return
     *   some value if the event is defined for this instance, none otherwise
     */
-  def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]]
+  def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeResult]]
 }
 
 object EventExchange {

@@ -354,7 +354,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, sourcing, rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, sourcing, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,

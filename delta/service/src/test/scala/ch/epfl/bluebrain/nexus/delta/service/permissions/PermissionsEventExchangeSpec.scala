@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent.PermissionsAppended
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal.JsonStringContext
 import monix.execution.Scheduler
@@ -35,7 +36,7 @@ class PermissionsEventExchangeSpec
   permissions.append(Set(Permission.unsafe("resource/write")), 0L).accepted
 
   "A PermissionsEventExchange" should {
-    val tag = TagLabel.unsafe("tag")
+    val tag = UserTag.unsafe("tag")
 
     val event = PermissionsAppended(1L, Set(Permission.unsafe("resource/write")), Instant.EPOCH, subject)
 

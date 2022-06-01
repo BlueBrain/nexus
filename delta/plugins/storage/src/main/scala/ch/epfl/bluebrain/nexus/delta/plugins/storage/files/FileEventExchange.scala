@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScoped
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -114,7 +115,7 @@ class FileEventExchange(files: Files)(implicit base: BaseUri, config: StorageTyp
     }
   }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeResult]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeResult]] =
     event match {
       case ev: FileEvent => resourceToValue(files.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project), ev.id)
       case _             => UIO.none

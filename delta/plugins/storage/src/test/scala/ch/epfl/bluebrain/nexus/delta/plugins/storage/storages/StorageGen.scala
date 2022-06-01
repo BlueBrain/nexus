@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageState
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import org.scalatest.OptionValues
 
@@ -22,7 +22,7 @@ object StorageGen extends OptionValues {
       source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[TagLabel, Long] = Map.empty,
+      tags: Map[UserTag, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
   ): Current = {
@@ -48,7 +48,7 @@ object StorageGen extends OptionValues {
       source: Secret[Json] = Secret(Json.obj()),
       rev: Long = 1L,
       deprecated: Boolean = false,
-      tags: Map[TagLabel, Long] = Map.empty,
+      tags: Map[UserTag, Long] = Map.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
       am: ApiMappings = ApiMappings.empty,

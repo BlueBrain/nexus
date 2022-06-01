@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 
 /**
   * Search parameters for ElasticSearch views.

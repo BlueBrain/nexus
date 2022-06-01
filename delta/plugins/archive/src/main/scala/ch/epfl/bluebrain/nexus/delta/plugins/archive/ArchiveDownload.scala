@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
 import com.typesafe.scalalogging.Logger
 import io.circe.{Json, Printer}
@@ -124,7 +124,7 @@ object ArchiveDownload {
       val refProject = ref.project.getOrElse(project)
       // the required permissions are checked for each file content fetch
       val tarEntryIO = files
-        .fetchContent(ref.ref.toIdSegmentRef, refProject)
+        .fetchContent(IdSegmentRef(ref.ref), refProject)
         .mapError {
           case _: FileRejection.FileNotFound                 => ResourceNotFound(ref.ref, project)
           case _: FileRejection.TagNotFound                  => ResourceNotFound(ref.ref, project)

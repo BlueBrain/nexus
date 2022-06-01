@@ -6,11 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -40,7 +41,7 @@ sealed trait BlazegraphView extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[TagLabel, Long]
+  def tags: Map[UserTag, Long]
 
   /**
     * @return
@@ -96,11 +97,11 @@ object BlazegraphView {
       uuid: UUID,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       source: Json
   ) extends BlazegraphView {
     override def metadata: Metadata = Metadata(Some(uuid))
@@ -146,7 +147,7 @@ object BlazegraphView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       source: Json
   ) extends BlazegraphView {
     override def metadata: Metadata      = Metadata(None)
@@ -164,8 +165,8 @@ object BlazegraphView {
 
   @nowarn("cat=unused")
   implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration                    = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[UserTag, Long]] = Encoder.instance(_ => Json.Null)
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[BlazegraphView]
         .encodeObject(v)

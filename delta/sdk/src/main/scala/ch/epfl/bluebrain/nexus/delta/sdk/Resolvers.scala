@@ -27,6 +27,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -119,7 +121,7 @@ trait Resolvers {
     * @param rev
     *   the current revision of the resolver
     */
-  def tag(id: IdSegment, projectRef: ProjectRef, tag: TagLabel, tagRev: Long, rev: Long)(implicit
+  def tag(id: IdSegment, projectRef: ProjectRef, tag: UserTag, tagRev: Long, rev: Long)(implicit
       subject: Subject
   ): IO[ResolverRejection, ResolverResource]
 
@@ -290,7 +292,7 @@ object Resolvers {
     * Create a reference exchange from a [[Resolvers]] instance
     */
   def referenceExchange(resolvers: Resolvers)(implicit baseUri: BaseUri): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => resolvers.fetch(ref.toIdSegmentRef, projectRef)
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => resolvers.fetch(IdSegmentRef(ref), projectRef)
     ReferenceExchange[Resolver](fetch(_, _), _.source)
   }
 

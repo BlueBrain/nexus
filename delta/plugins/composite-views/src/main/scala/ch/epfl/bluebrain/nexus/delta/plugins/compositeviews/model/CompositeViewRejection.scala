@@ -18,11 +18,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -264,7 +265,7 @@ object CompositeViewRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends CompositeViewRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: UserTag) extends CompositeViewRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when the returned state is the initial state after a successful command evaluation. Note: This

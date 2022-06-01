@@ -4,12 +4,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixt
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -50,7 +51,7 @@ class FileReferenceExchangeSpec
 
   "A FileReferenceExchange" should {
     val id     = iri"http://localhost/${genString()}"
-    val tag    = TagLabel.unsafe("tag")
+    val tag    = UserTag.unsafe("tag")
     val source =
       json"""{
                "_uuid" : "8249ba90-7cc6-4de5-93a1-802c04200dcc",
@@ -101,7 +102,7 @@ class FileReferenceExchangeSpec
     }
 
     "return None for incorrect tag" in {
-      val label = TagLabel.unsafe("unknown")
+      val label = UserTag.unsafe("unknown")
       exchange.fetch(project.ref, Tag(id, label)).accepted shouldEqual None
     }
   }

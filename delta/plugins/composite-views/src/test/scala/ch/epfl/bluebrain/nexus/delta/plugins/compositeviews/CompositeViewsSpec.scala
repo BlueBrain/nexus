@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Group, Subje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.syntax._
@@ -76,7 +77,7 @@ class CompositeViewsSpec
         createdBy: Subject = alice.subject,
         updatedAt: Instant = Instant.EPOCH,
         updatedBy: Subject = alice.subject,
-        tags: Map[TagLabel, Long] = Map.empty,
+        tags: Map[UserTag, Long] = Map.empty,
         source: Json
     ): ViewResource = {
       ResourceF(
@@ -229,7 +230,7 @@ class CompositeViewsSpec
     }
 
     "tag a view" when {
-      val tag = TagLabel.unsafe("mytag")
+      val tag = UserTag.unsafe("mytag")
       "view is not deprecated" in {
         compositeViews.tag(viewId, projectRef, tag, 1L, 2L).accepted
       }
@@ -241,15 +242,15 @@ class CompositeViewsSpec
 
     "reject tagging a view" when {
       "incorrect revision is provided" in {
-        val tag = TagLabel.unsafe("mytag2")
+        val tag = UserTag.unsafe("mytag2")
         compositeViews.tag(viewId, projectRef, tag, 1L, 2L).rejectedWith[IncorrectRev]
       }
       "view is deprecated" in {
-        val tag = TagLabel.unsafe("mytag3")
+        val tag = UserTag.unsafe("mytag3")
         compositeViews.tag(otherViewId, projectRef, tag, 1L, 2L).rejectedWith[IncorrectRev]
       }
       "target view is not found" in {
-        val tag = TagLabel.unsafe("mytag3")
+        val tag = UserTag.unsafe("mytag3")
         compositeViews.tag(iri"http://example.com/wrong", projectRef, tag, 1L, 2L).rejectedWith[ViewNotFound]
       }
     }
@@ -261,7 +262,7 @@ class CompositeViewsSpec
           updatedValue,
           source = viewSourceUpdated.removeAllKeys("token"),
           rev = 3L,
-          tags = Map(TagLabel.unsafe("mytag") -> 1)
+          tags = Map(UserTag.unsafe("mytag") -> 1)
         )
       }
       "rev is provided" in {
@@ -272,7 +273,7 @@ class CompositeViewsSpec
         )
       }
       "tag is provided" in {
-        val tag = TagLabel.unsafe("mytag")
+        val tag = UserTag.unsafe("mytag")
         compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).accepted shouldEqual
           resourceFor(viewId, viewValue, source = viewSource.removeAllKeys("token"))
       }
@@ -287,7 +288,7 @@ class CompositeViewsSpec
       }
 
       "tag doesn't exist" in {
-        val tag = TagLabel.unsafe("wrongtag")
+        val tag = UserTag.unsafe("wrongtag")
         compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
       }
     }

@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
@@ -52,7 +52,7 @@ class CompositeViewsStmSpec
         uuid: UUID = uuid,
         value: CompositeViewValue = viewValue,
         source: Json = source,
-        tags: Map[TagLabel, Long] = Map.empty,
+        tags: Map[UserTag, Long] = Map.empty,
         rev: Long = 1L,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
@@ -131,7 +131,7 @@ class CompositeViewsStmSpec
     }
 
     "evaluating the TagCompositeView command" should {
-      val tag = TagLabel.unsafe("tag")
+      val tag = UserTag.unsafe("tag")
       val cmd = TagCompositeView(id, project.ref, 1L, tag, 1L, subject)
       "emit an CompositeViewTagAdded" in {
         val expected = CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
@@ -206,7 +206,7 @@ class CompositeViewsStmSpec
     }
 
     "applying an CompositeViewTagAdded event" should {
-      val tag = TagLabel.unsafe("tag")
+      val tag = UserTag.unsafe("tag")
 
       "discard the event for an Initial state" in {
         next(

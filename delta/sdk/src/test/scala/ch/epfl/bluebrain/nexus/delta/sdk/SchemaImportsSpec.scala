@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptyList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.OptionValues

@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, RealmEvent, RealmRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import monix.bio.{IO, UIO}
 
@@ -31,7 +32,7 @@ class RealmEventExchange(realms: Realms)(implicit base: BaseUri) extends EventEx
   // TODO: Implement in further development
   override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {
       case (ev: RealmEvent, None) => resourceToValue(realms.fetch(ev.label))
       case _                      => UIO.none

@@ -42,6 +42,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
@@ -218,7 +220,7 @@ final class Storages private (
   def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
@@ -263,7 +265,7 @@ final class Storages private (
       resourceRef: ResourceRef,
       project: ProjectRef
   )(implicit rejectionMapper: Mapper[StorageFetchRejection, R]): IO[R, StorageResource] =
-    fetch(resourceRef.toIdSegmentRef, project).mapError(rejectionMapper.to)
+    fetch(IdSegmentRef(resourceRef), project).mapError(rejectionMapper.to)
 
   /**
     * Fetch the last version of a storage

@@ -6,11 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.IndexingData
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import monix.bio.IO
 
@@ -21,7 +23,7 @@ object IndexingDataGen {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[TagLabel, Long] = Map.empty,
+      tags: Map[UserTag, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,

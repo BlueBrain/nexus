@@ -7,8 +7,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventExchange, JsonValue}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
@@ -50,7 +51,7 @@ class StorageEventExchange(storages: Storages)(implicit base: BaseUri, crypto: C
       case _               => UIO.none
     }
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeValue[A, M]]] =
     event match {
       case ev: StorageEvent => resourceToValue(storages.fetch(IdSegmentRef.fromTagOpt(ev.id, tag), ev.project))
       case _                => UIO.none

@@ -16,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
@@ -27,6 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -115,7 +117,7 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
@@ -139,7 +141,7 @@ trait Resources {
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource]
 
@@ -205,7 +207,7 @@ trait Resources {
       resourceRef: ResourceRef,
       projectRef: ProjectRef
   )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[R, DataResource] =
-    fetch(resourceRef.toIdSegmentRef, projectRef, None).mapError(rejectionMapper.to)
+    fetch(IdSegmentRef(resourceRef), projectRef, None).mapError(rejectionMapper.to)
 
   /**
     * A terminating stream of events for resources. It finishes the stream after emitting all known events.

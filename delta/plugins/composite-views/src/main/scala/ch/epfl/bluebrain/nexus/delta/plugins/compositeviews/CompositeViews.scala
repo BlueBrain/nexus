@@ -46,6 +46,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
@@ -225,7 +227,7 @@ final class CompositeViews private (
   def tag(
       id: IdSegment,
       project: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
@@ -511,7 +513,7 @@ object CompositeViews {
     * Create a reference exchange from a [[CompositeViews]] instance
     */
   def referenceExchange(views: CompositeViews)(implicit base: BaseUri): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(ref.toIdSegmentRef, projectRef)
+    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(IdSegmentRef(ref), projectRef)
     ReferenceExchange[CompositeView](fetch(_, _), _.source)
   }
 

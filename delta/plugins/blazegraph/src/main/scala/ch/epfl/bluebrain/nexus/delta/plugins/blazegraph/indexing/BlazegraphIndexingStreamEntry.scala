@@ -10,10 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataPredicates}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewData.{IndexingData, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.Json
 import monix.bio.{IO, Task}
 

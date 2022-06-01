@@ -15,10 +15,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
 import io.circe.parser.decode
@@ -63,7 +63,7 @@ trait DeltaClient {
   /**
     * Fetches a resource with a given id in n-quads format.
     */
-  def resourceAsNQuads(source: RemoteProjectSource, id: Iri, tag: Option[TagLabel]): HttpResult[Option[NQuads]]
+  def resourceAsNQuads(source: RemoteProjectSource, id: Iri, tag: Option[UserTag]): HttpResult[Option[NQuads]]
 
 }
 
@@ -130,7 +130,7 @@ object DeltaClient {
     override def resourceAsNQuads(
         source: RemoteProjectSource,
         id: Iri,
-        tag: Option[TagLabel]
+        tag: Option[UserTag]
     ): HttpResult[Option[NQuads]] = {
       implicit val cred: Option[AuthToken] = token(source)
       val resourceUrl: Uri                 =

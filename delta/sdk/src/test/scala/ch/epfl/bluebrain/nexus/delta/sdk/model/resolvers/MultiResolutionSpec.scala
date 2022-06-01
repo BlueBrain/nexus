@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResolverResolutionGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
@@ -13,8 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Label, ResourceF, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, Label, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO

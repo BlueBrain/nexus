@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery._
@@ -10,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -50,7 +50,7 @@ sealed trait CompositeViewProjectionFields {
     * @return
     *   the optional tag to filter by
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -97,7 +97,7 @@ object CompositeViewProjectionFields {
       settings: Option[JsonObject] = None,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       permission: Permission = permissions.query
@@ -129,7 +129,7 @@ object CompositeViewProjectionFields {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri] = Set.empty,
       resourceTypes: Set[Iri] = Set.empty,
-      resourceTag: Option[TagLabel] = None,
+      resourceTag: Option[UserTag] = None,
       includeDeprecated: Boolean = false,
       includeMetadata: Boolean = false,
       permission: Permission = permissions.query

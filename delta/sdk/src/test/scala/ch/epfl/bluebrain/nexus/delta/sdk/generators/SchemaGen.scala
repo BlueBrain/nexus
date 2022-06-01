@@ -6,12 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import org.scalatest.OptionValues
@@ -48,7 +49,7 @@ object SchemaGen extends OptionValues with IOValues with EitherValuable {
       id: Iri,
       project: ProjectRef,
       source: Json,
-      tags: Map[TagLabel, Long] = Map.empty
+      tags: Map[UserTag, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Schema = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted

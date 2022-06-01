@@ -23,6 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import io.circe.Json
@@ -101,7 +103,7 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
@@ -116,7 +118,7 @@ final class ResourcesDummy private (
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     for {

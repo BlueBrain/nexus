@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 import java.time.Instant
@@ -73,7 +74,7 @@ object BlazegraphViewState {
       uuid: UUID,
       value: BlazegraphViewValue,
       source: Json,
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       rev: Long,
       deprecated: Boolean,
       createdAt: Instant,

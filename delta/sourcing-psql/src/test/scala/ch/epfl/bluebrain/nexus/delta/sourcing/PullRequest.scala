@@ -42,8 +42,8 @@ object PullRequest {
               IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
             case (_: PullRequestActive, Merge(id, project, rev))          =>
               IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_, Boom(_, _,message))         => IO.terminate(new RuntimeException(message))
-            case (_, _:Never)                 => IO.never
+            case (_, Boom(_, _, message))                                 => IO.terminate(new RuntimeException(message))
+            case (_, _: Never)                                            => IO.never
             case (_: PullRequestClosed, _)                                => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
           }
         },
@@ -80,7 +80,7 @@ object PullRequest {
     final case class Merge(id: Label, project: ProjectRef, rev: Int)               extends PullRequestCommand
 
     final case class Boom(id: Label, project: ProjectRef, message: String) extends PullRequestCommand
-    final case class Never(id: Label, project: ProjectRef) extends PullRequestCommand
+    final case class Never(id: Label, project: ProjectRef)                 extends PullRequestCommand
   }
 
   sealed trait PullRequestEvent extends ScopedEvent {

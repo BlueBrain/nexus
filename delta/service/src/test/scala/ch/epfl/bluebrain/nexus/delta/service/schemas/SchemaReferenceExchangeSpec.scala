@@ -7,13 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, SchemasDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -78,7 +79,7 @@ class SchemaReferenceExchangeSpec
     ).accepted
 
   "A SchemaReferenceExchange" should {
-    val tag     = TagLabel.unsafe("tag")
+    val tag     = UserTag.unsafe("tag")
     val resRev1 = schemas.create(schema.id, project.ref, schema.source).accepted
     val resRev2 = schemas.tag(schema.id, project.ref, tag, 1L, 1L).accepted
 
@@ -111,7 +112,7 @@ class SchemaReferenceExchangeSpec
     }
 
     "return None for incorrect tag" in {
-      exchange.fetch(project.ref, Tag(schema.id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
+      exchange.fetch(project.ref, Tag(schema.id, UserTag.unsafe("unknown"))).accepted shouldEqual None
     }
 
   }

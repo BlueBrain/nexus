@@ -10,14 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
+import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import fs2.Stream
 import io.circe.Decoder
@@ -40,7 +41,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
     override def resourceAsNQuads(
         source: CompositeViewSource.RemoteProjectSource,
         id: IriOrBNode.Iri,
-        tag: Option[TagLabel]
+        tag: Option[UserTag]
     ): HttpResult[Option[NQuads]] = IO.none
   }
 

@@ -44,7 +44,14 @@ object EntityDefinition {
       stateSerializer: Serializer[Id, S],
       onUniqueViolation: (Id, Command) => Rejection
   )(implicit get: Get[Id], put: Put[Id]): EntityDefinition[Id, S, Command, E, Rejection] =
-    EntityDefinition(tpe, stateMachine, eventSerializer, stateSerializer, Tagger(_ => None, _ => None), onUniqueViolation)
+    EntityDefinition(
+      tpe,
+      stateMachine,
+      eventSerializer,
+      stateSerializer,
+      Tagger(_ => None, _ => None),
+      onUniqueViolation
+    )
 
   /**
     * Defines how to extract an id from an event/state and how to serialize and deserialize it

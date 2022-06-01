@@ -137,27 +137,30 @@ object ScopedEventLog {
         stateStore.delete(ref, id, tag)
       }
 
-      stateMachine.evaluate(stateStore.get(ref, id), command, evaluationConfig).tapEval { case (event, state) =>
-        for {
-          tagQuery      <- saveTag(event, state)
-          deleteTagQuery = deleteTag(event)
-          _             <- (
-                             eventStore.save(event) >>
-                               stateStore.save(state) >>
-                               tagQuery >> deleteTagQuery
-                           ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                             onUniqueViolation(id, command)
-                           }.transact(xas.write)
-                             .hideErrors
-        } yield ()
-      }.redeemCauseWith(
-        {
-          case Error(rejection) => IO.raiseError(rejection)
-          case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
-          case Termination(e) => IO.terminate(EvaluationFailure(command, e))
-        },
-        r => IO.pure(r)
-      )
+      stateMachine
+        .evaluate(stateStore.get(ref, id), command, evaluationConfig)
+        .tapEval { case (event, state) =>
+          for {
+            tagQuery      <- saveTag(event, state)
+            deleteTagQuery = deleteTag(event)
+            _             <- (
+                               eventStore.save(event) >>
+                                 stateStore.save(state) >>
+                                 tagQuery >> deleteTagQuery
+                             ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                               onUniqueViolation(id, command)
+                             }.transact(xas.write)
+                               .hideErrors
+          } yield ()
+        }
+        .redeemCauseWith(
+          {
+            case Error(rejection)                     => IO.raiseError(rejection)
+            case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+            case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
+          },
+          r => IO.pure(r)
+        )
     }
 
     /**

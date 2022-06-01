@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
@@ -52,7 +52,7 @@ sealed trait CompositeViewProjection extends Product with Serializable {
     * @return
     *   the optional tag to filter by
     */
-  def resourceTag: Option[TagLabel]
+  def resourceTag: Option[UserTag]
 
   /**
     * @return
@@ -107,7 +107,7 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
@@ -131,7 +131,7 @@ object CompositeViewProjection {
       query: SparqlConstructQuery,
       resourceSchemas: Set[Iri],
       resourceTypes: Set[Iri],
-      resourceTag: Option[TagLabel],
+      resourceTag: Option[UserTag],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission

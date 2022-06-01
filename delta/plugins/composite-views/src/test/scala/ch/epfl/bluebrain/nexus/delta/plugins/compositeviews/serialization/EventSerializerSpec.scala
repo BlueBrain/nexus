@@ -5,9 +5,9 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -27,7 +27,7 @@ class EventSerializerSpec
 
   private val viewSource = jsonContentOf("composite-view-source.json").removeAllKeys("token")
   private val viewId     = iri"http://example.com/composite-view"
-  private val tag        = TagLabel.unsafe("mytag")
+  private val tag        = UserTag.unsafe("mytag")
 
   val mapping: Map[CompositeViewEvent, Json] = VectorMap(
     CompositeViewCreated(viewId, project.ref, uuid, viewValue, viewSource, 1L, epoch, subject) -> jsonContentOf(

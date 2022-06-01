@@ -23,8 +23,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import io.circe.Json
 import io.circe.syntax._
@@ -106,14 +107,14 @@ class StoragesSpec
 
       "create a new event from a TagStorage command" in {
         val current = currentState(dId, project, diskVal, rev = 3)
-        eval(current, TagStorage(dId, project, 2, TagLabel.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, DiskStorageType, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
+        eval(current, TagStorage(dId, project, 2, UserTag.unsafe("myTag"), 3, alice)).accepted shouldEqual
+          StorageTagAdded(dId, project, DiskStorageType, 2, UserTag.unsafe("myTag"), 4, epoch, alice)
       }
 
       "create a new event from a TagStorage command when storage is deprecated" in {
         val current = currentState(dId, project, diskVal, rev = 3, deprecated = true)
-        eval(current, TagStorage(dId, project, 2, TagLabel.unsafe("myTag"), 3, alice)).accepted shouldEqual
-          StorageTagAdded(dId, project, DiskStorageType, 2, TagLabel.unsafe("myTag"), 4, epoch, alice)
+        eval(current, TagStorage(dId, project, 2, UserTag.unsafe("myTag"), 3, alice)).accepted shouldEqual
+          StorageTagAdded(dId, project, DiskStorageType, 2, UserTag.unsafe("myTag"), 4, epoch, alice)
       }
 
       "create a new event from a DeprecateStorage command" in {
@@ -126,7 +127,7 @@ class StoragesSpec
         val current  = currentState(dId, project, diskVal)
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
+          TagStorage(dId, project, 1L, UserTag.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -220,7 +221,7 @@ class StoragesSpec
       "reject with StorageNotFound" in {
         val commands = List(
           UpdateStorage(dId, project, diskFields, Secret(Json.obj()), 2, alice),
-          TagStorage(dId, project, 1L, TagLabel.unsafe("tag"), 2, alice),
+          TagStorage(dId, project, 1L, UserTag.unsafe("tag"), 2, alice),
           DeprecateStorage(dId, project, 2, alice)
         )
         forAll(commands) { cmd =>
@@ -241,7 +242,7 @@ class StoragesSpec
 
       "reject with RevisionNotFound" in {
         val current = currentState(dId, project, diskVal)
-        eval(current, TagStorage(dId, project, 3L, TagLabel.unsafe("myTag"), 1L, alice)).rejected shouldEqual
+        eval(current, TagStorage(dId, project, 3L, UserTag.unsafe("myTag"), 1L, alice)).rejected shouldEqual
           RevisionNotFound(provided = 3L, current = 1L)
       }
 
@@ -322,8 +323,8 @@ class StoragesSpec
       }
 
       "from a new StorageTagAdded event" in {
-        val tag1    = TagLabel.unsafe("tag1")
-        val tag2    = TagLabel.unsafe("tag2")
+        val tag1    = UserTag.unsafe("tag1")
+        val tag2    = UserTag.unsafe("tag2")
         val event   = StorageTagAdded(dId, project, DiskStorageType, 1, tag2, 3, time2, alice)
         val current = currentState(dId, project, diskVal, tags = Map(tag1 -> 2), rev = 2)
 
@@ -363,7 +364,7 @@ class StoragesSpec
     val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
     val projectRef               = project.ref
 
-    val tag = TagLabel.unsafe("tag")
+    val tag = UserTag.unsafe("tag")
 
     val (orgs, projects) =
       ProjectSetup
@@ -585,7 +586,7 @@ class StoragesSpec
       }
 
       "reject if tag does not exist" in {
-        val otherTag = TagLabel.unsafe("other")
+        val otherTag = UserTag.unsafe("other")
         storages.fetch(IdSegmentRef(rdId, otherTag), projectRef).rejected shouldEqual TagNotFound(otherTag)
       }
 

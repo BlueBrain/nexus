@@ -36,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -156,7 +157,7 @@ class ElasticSearchViewsRoutesSpec
           ElasticSearchType,
           uuid,
           1,
-          TagLabel.unsafe("mytag"),
+          UserTag.unsafe("mytag"),
           1,
           Instant.EPOCH,
           subject

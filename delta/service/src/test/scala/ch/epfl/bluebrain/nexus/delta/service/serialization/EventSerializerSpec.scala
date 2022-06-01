@@ -6,7 +6,7 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Revision
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
@@ -28,9 +28,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -246,7 +247,7 @@ class EventSerializerSpec
       projectRef,
       ResolverType.InProject,
       1L,
-      TagLabel.unsafe("mytag"),
+      UserTag.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -286,7 +287,7 @@ class EventSerializerSpec
       myId,
       projectRef,
       1L,
-      TagLabel.unsafe("mytag"),
+      UserTag.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -294,7 +295,7 @@ class EventSerializerSpec
     SchemaTagDeleted(
       myId,
       projectRef,
-      TagLabel.unsafe("mytag"),
+      UserTag.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -340,7 +341,7 @@ class EventSerializerSpec
       projectRef,
       Set(schema.Person),
       1L,
-      TagLabel.unsafe("mytag"),
+      UserTag.unsafe("mytag"),
       3L,
       instant,
       subject
@@ -357,7 +358,7 @@ class EventSerializerSpec
       myId,
       projectRef,
       Set(schema.Person),
-      TagLabel.unsafe("mytag"),
+      UserTag.unsafe("mytag"),
       5L,
       instant,
       subject

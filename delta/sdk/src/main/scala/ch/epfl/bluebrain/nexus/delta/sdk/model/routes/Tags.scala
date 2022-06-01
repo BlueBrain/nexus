@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.TagLabel
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Encoder
 import io.circe.generic.semiauto.deriveEncoder
 
@@ -16,7 +16,7 @@ import scala.annotation.nowarn
 final case class Tags(tags: Seq[Tag])
 
 object Tags {
-  final def apply(values: Map[TagLabel, Long]): Tags           =
+  final def apply(values: Map[UserTag, Long]): Tags            =
     Tags(values.map { case (tag, rev) => Tag(rev, tag) }.toSeq)
 
   @nowarn("cat=unused")

@@ -6,13 +6,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
 import org.scalatest.OptionValues
@@ -30,7 +31,7 @@ object ResourceGen extends OptionValues with IOValues {
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
       types: Set[Iri] = Set.empty,
-      tags: Map[TagLabel, Long] = Map.empty,
+      tags: Map[UserTag, Long] = Map.empty,
       rev: Long = 1L,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
@@ -61,7 +62,7 @@ object ResourceGen extends OptionValues with IOValues {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[TagLabel, Long] = Map.empty
+      tags: Map[UserTag, Long] = Map.empty
   )(implicit resolution: RemoteContextResolution): Resource = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
@@ -73,7 +74,7 @@ object ResourceGen extends OptionValues with IOValues {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[TagLabel, Long] = Map.empty,
+      tags: Map[UserTag, Long] = Map.empty,
       rev: Long = 1L,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,

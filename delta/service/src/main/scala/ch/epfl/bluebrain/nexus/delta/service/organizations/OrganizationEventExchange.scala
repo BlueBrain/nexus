@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.service.organizations
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization.Metadata
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationEvent, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Event}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
@@ -33,7 +34,7 @@ class OrganizationEventExchange(orgs: Organizations)(implicit base: BaseUri) ext
   // TODO: Implement in further development
   override def toMetric(event: Event): UIO[Option[EventMetric]] = UIO.none
 
-  override def toResource(event: Event, tag: Option[TagLabel]): UIO[Option[EventExchangeValue[A, M]]] =
+  override def toResource(event: Event, tag: Option[UserTag]): UIO[Option[EventExchangeValue[A, M]]] =
     (event, tag) match {
       case (ev: OrganizationEvent, None) => resourceToValue(orgs.fetch(ev.organizationLabel))
       case _                             => UIO.none

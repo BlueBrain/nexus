@@ -16,8 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectRef, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceRef, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -58,7 +59,7 @@ object SchemaRejection {
     * @param tag
     *   the provided tag
     */
-  final case class TagNotFound(tag: TagLabel) extends SchemaFetchRejection(s"Tag requested '$tag' not found.")
+  final case class TagNotFound(tag: UserTag) extends SchemaFetchRejection(s"Tag requested '$tag' not found.")
 
   /**
     * Rejection returned when attempting to update a schema with an id that doesn't exist.

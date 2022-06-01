@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
@@ -98,7 +99,7 @@ class ElasticSearchViewsSpec
         updatedBy: Subject,
         value: ElasticSearchViewValue,
         source: Json,
-        tags: Map[TagLabel, Long]
+        tags: Map[UserTag, Long]
     ): Current =
       Current(
         id = id,
@@ -127,7 +128,7 @@ class ElasticSearchViewsSpec
         updatedBy: Subject = alice.subject,
         value: ElasticSearchViewValue,
         source: Json,
-        tags: Map[TagLabel, Long] = Map.empty
+        tags: Map[UserTag, Long] = Map.empty
     ): ViewResource =
       currentStateFor(
         id,
@@ -178,7 +179,7 @@ class ElasticSearchViewsSpec
       }
       "using an IndexingElasticSearchViewValue" in {
         val value = IndexingElasticSearchViewValue(
-          resourceTag = Some(TagLabel.unsafe("tag")),
+          resourceTag = Some(UserTag.unsafe("tag")),
           List(
             FilterBySchema(Set(iri"http://localhost/schema")),
             FilterByType(Set(iri"http://localhost/type")),
@@ -341,7 +342,7 @@ class ElasticSearchViewsSpec
     }
 
     "tag a view" when {
-      val tag = TagLabel.unsafe("mytag")
+      val tag = UserTag.unsafe("mytag")
       "using a correct revision" in {
         views.tag(viewId, projectRef, tag, 1L, 2L).accepted
       }
@@ -356,7 +357,7 @@ class ElasticSearchViewsSpec
     }
 
     "fail to tag a view" when {
-      val tag = TagLabel.unsafe("mytag")
+      val tag = UserTag.unsafe("mytag")
       "providing an incorrect revision for an IndexingElasticSearchViewValue" in {
         views.tag(viewId, projectRef, tag, 1L, 100L).rejectedWith[IncorrectRev]
       }
@@ -447,7 +448,7 @@ class ElasticSearchViewsSpec
         )
       }
       "a tag is provided" in {
-        val tag           = TagLabel.unsafe("mytag")
+        val tag           = UserTag.unsafe("mytag")
         val id            = iri"http://localhost/${genString()}"
         val source        = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted
@@ -481,7 +482,7 @@ class ElasticSearchViewsSpec
         views.fetch(IdSegmentRef(id, 2), projectRef).rejectedWith[RevisionNotFound]
       }
       "the tag does not exist" in {
-        val tag    = TagLabel.unsafe("mytag")
+        val tag    = UserTag.unsafe("mytag")
         val id     = iri"http://localhost/${genString()}"
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         views.create(id, projectRef, source).accepted

@@ -7,12 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResolversDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -71,7 +72,7 @@ class ResolverReferenceExchangeSpec
               "@type": ["InProject", "Resolver"],
               "priority": 42
             }"""
-    val tag     = TagLabel.unsafe("tag")
+    val tag     = UserTag.unsafe("tag")
     val resRev1 = resolvers.create(id, project.ref, source).accepted
     val resRev2 = resolvers.tag(id, project.ref, tag, 1L, 1L).accepted
 
@@ -104,7 +105,7 @@ class ResolverReferenceExchangeSpec
     }
 
     "return None for incorrect tag" in {
-      val label = TagLabel.unsafe("unknown")
+      val label = UserTag.unsafe("unknown")
       exchange.fetch(project.ref, Tag(id, label)).accepted shouldEqual None
     }
 

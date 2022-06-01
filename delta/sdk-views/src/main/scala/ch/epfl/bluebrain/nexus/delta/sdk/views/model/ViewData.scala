@@ -9,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.{EventExchangeResult, EventExchangeValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.Json
 import monix.bio.IO
 

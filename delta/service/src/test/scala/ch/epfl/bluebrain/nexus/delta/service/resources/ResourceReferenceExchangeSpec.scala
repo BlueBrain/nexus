@@ -9,14 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, Reso
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label, ResourceRef, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Label}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ProjectSetup, ResourcesDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.{IO, UIO}
@@ -98,7 +100,7 @@ class ResourceReferenceExchangeSpec
               "number": 24,
               "bool": false
             }"""
-    val tag     = TagLabel.unsafe("tag")
+    val tag     = UserTag.unsafe("tag")
     val resRev1 = resources.create(id, project.ref, schema.id, source).accepted
     val resRev2 = resources.tag(id, project.ref, None, tag, 1L, 1L).accepted
 
@@ -131,7 +133,7 @@ class ResourceReferenceExchangeSpec
     }
 
     "return None for incorrect tag" in {
-      exchange.fetch(project.ref, Tag(id, TagLabel.unsafe("unknown"))).accepted shouldEqual None
+      exchange.fetch(project.ref, Tag(id, UserTag.unsafe("unknown"))).accepted shouldEqual None
     }
   }
 }

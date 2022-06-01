@@ -3,10 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
+import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectBase, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceRef, ResourceUris, TagLabel}
-import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 import java.time.Instant
@@ -104,7 +106,7 @@ object ResourceState {
       deprecated: Boolean,
       schema: ResourceRef,
       types: Set[Iri],
-      tags: Map[TagLabel, Long],
+      tags: Map[UserTag, Long],
       createdAt: Instant,
       createdBy: Subject,
       updatedAt: Instant,

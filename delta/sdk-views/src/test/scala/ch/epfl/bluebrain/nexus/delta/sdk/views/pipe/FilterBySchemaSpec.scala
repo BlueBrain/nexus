@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 
 class FilterBySchemaSpec extends PipeBaseSpec {
 

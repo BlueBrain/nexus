@@ -9,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{Label, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import org.scalatest.Inspectors
@@ -60,7 +61,7 @@ class BlazegraphViewDecodingSpec
         val expected    = IndexingBlazegraphViewValue(
           resourceSchemas = Set(project.vocab / "Person"),
           resourceTypes = Set(project.vocab / "Person"),
-          resourceTag = Some(TagLabel.unsafe("release")),
+          resourceTag = Some(UserTag.unsafe("release")),
           includeMetadata = false,
           includeDeprecated = false,
           permission = Permission.unsafe("custom/permission")

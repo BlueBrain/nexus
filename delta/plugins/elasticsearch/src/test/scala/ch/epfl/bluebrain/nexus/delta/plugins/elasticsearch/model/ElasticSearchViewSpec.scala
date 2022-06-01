@@ -4,12 +4,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, TagLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, PipeDef, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -29,7 +30,7 @@ class ElasticSearchViewSpec
 
   private val id      = nxv + "myview"
   private val project = ProjectRef.unsafe("org", "project")
-  private val tagsMap = Map(TagLabel.unsafe("tag") -> 1L)
+  private val tagsMap = Map(UserTag.unsafe("tag") -> 1L)
   private val source  = json"""{"source": "value"}"""
   private val perm    = Permission.unsafe("views/query")
 
@@ -39,7 +40,7 @@ class ElasticSearchViewSpec
       id,
       project,
       uuid,
-      Some(TagLabel.unsafe("mytag")),
+      Some(UserTag.unsafe("mytag")),
       pipeline,
       jobj"""{"properties": {"@type": {"type": "keyword"}, "@id": {"type": "keyword"} } }""",
       jobj"""{"analysis": {"analyzer": {"nexus": {} } } }""",

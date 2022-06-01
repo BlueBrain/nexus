@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -54,7 +55,7 @@ final case class CompositeView(
     projections: NonEmptySet[CompositeViewProjection],
     rebuildStrategy: Option[RebuildStrategy],
     uuid: UUID,
-    tags: Map[TagLabel, Long],
+    tags: Map[UserTag, Long],
     source: Json,
     updatedAt: Instant
 ) {
@@ -95,8 +96,8 @@ object CompositeView {
 
   @nowarn("cat=unused")
   implicit private def compositeViewEncoder(implicit base: BaseUri): Encoder.AsObject[CompositeView] = {
-    implicit val config: Configuration                     = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[TagLabel, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration                    = Configuration.default.withDiscriminator(keywords.tpe)
+    implicit val encoderTags: Encoder[Map[UserTag, Long]] = Encoder.instance(_ => Json.Null)
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[CompositeView]
         .encodeObject(v)

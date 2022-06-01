@@ -94,22 +94,25 @@ object GlobalEventLog {
       stateMachine.computeState(eventStore.history(id, rev))
 
     override def evaluate(id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine.evaluate(stateStore.get(id), command, evaluationConfig).tapEval { case (event, state) =>
-        (eventStore.save(event) >> stateStore.save(state))
-          .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-            onUniqueViolation(id, command)
-          }
-          .transact(xas.write)
-          .hideErrors
-          .flatMap(IO.fromEither)
-      }.redeemCauseWith(
-        {
-          case Error(rejection) => IO.raiseError(rejection)
-          case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
-          case Termination(e) => IO.terminate(EvaluationFailure(command, e))
-        },
-        r => IO.pure(r)
-      )
+      stateMachine
+        .evaluate(stateStore.get(id), command, evaluationConfig)
+        .tapEval { case (event, state) =>
+          (eventStore.save(event) >> stateStore.save(state))
+            .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+              onUniqueViolation(id, command)
+            }
+            .transact(xas.write)
+            .hideErrors
+            .flatMap(IO.fromEither)
+        }
+        .redeemCauseWith(
+          {
+            case Error(rejection)                     => IO.raiseError(rejection)
+            case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+            case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
+          },
+          r => IO.pure(r)
+        )
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(id), command, evaluationConfig)

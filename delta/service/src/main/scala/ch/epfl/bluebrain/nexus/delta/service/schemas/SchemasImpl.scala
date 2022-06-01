@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import fs2.Stream
@@ -86,7 +87,7 @@ final class SchemasImpl private (
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       tagRev: Long,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
@@ -99,7 +100,7 @@ final class SchemasImpl private (
   override def deleteTag(
       id: IdSegment,
       projectRef: ProjectRef,
-      tag: TagLabel,
+      tag: UserTag,
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {

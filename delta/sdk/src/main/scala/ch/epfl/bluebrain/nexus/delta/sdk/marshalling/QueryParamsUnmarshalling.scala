@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label, TagLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 import io.circe.parser.parse
 
@@ -40,11 +41,11 @@ trait QueryParamsUnmarshalling {
   /**
     * Unmarsaller to transform a String to TagLabel
     */
-  implicit def tagLabelFromStringUnmarshaller: FromStringUnmarshaller[TagLabel] =
-    Unmarshaller.strict[String, TagLabel] { string =>
-      TagLabel(string) match {
+  implicit def tagLabelFromStringUnmarshaller: FromStringUnmarshaller[UserTag] =
+    Unmarshaller.strict[String, UserTag] { string =>
+      UserTag(string) match {
         case Right(tagLabel) => tagLabel
-        case Left(err)       => throw new IllegalArgumentException(err.getMessage)
+        case Left(err)       => throw new IllegalArgumentException(err.message)
       }
     }
 
