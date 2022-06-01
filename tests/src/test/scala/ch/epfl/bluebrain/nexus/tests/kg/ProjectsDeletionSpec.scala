@@ -311,25 +311,7 @@ final class ProjectsDeletionSpec extends BaseSpec with CirceEq with EitherValuab
     }
 
     "succeed in creating the project again with postgres" in {
-      if (isPostgres) {
-        adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
-      } else {
-        //TODO find a way to automate test with Cassandra
-        succeed
-      }
-    }
-
-    "reject as a cooldown must be respected for cassandra" in {
-      if (isCassandra) {
-        deltaClient.put[Json](s"/projects/$org/$proj1", json"""{}""", Bojack) { (json, response) =>
-          response.status shouldEqual StatusCodes.BadRequest
-
-          root.`@type`.string.getOption(json).value shouldEqual "ProjectCreationCooldown"
-        }
-      } else {
-        // No cooldown for postgresql
-        succeed
-      }
+      adminDsl.createProject(org, proj1, kgDsl.projectJson(name = proj1), Bojack)
     }
   }
 

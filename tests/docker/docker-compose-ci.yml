@@ -5,19 +5,19 @@ services:
       - keycloak
       - elasticsearch
       - blazegraph
-      - cassandra
+      - postgres
       - storage-service
       - minio
     environment:
       DELTA_PLUGINS: "/opt/docker/plugins/"
-      DELTA_EXTERNAL_CONF: "/config/delta-cassandra.conf"
+      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
     image: bluebrain/nexus-delta:latest
-    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "cassandra:9042", "--",
-                 "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
-                 "./bin/delta-app",
-                 "-Xmx4G",
-                 "-Dapp.cluster.remote-interface=delta" ]
+    entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
+                  "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
+                  "./bin/delta-app",
+                  "-Xmx4G",
+                  "-Dapp.cluster.remote-interface=delta" ]
     ports:
       - 8080:8080
     volumes:
@@ -29,7 +29,7 @@ services:
 #      - delta
 #    environment:
 #      DELTA_PLUGINS: "/opt/docker/plugins/"
-#      DELTA_EXTERNAL_CONF: "/config/delta-cassandra.conf"
+#      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest
 #    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta:25520", "--", "./bin/delta-app",
@@ -46,7 +46,7 @@ services:
 #      - delta2
 #    environment:
 #      DELTA_PLUGINS: "/opt/docker/plugins/"
-#      DELTA_EXTERNAL_CONF: "/config/delta-cassandra.conf"
+#      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest
 #    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta2:25520", "--", "./bin/delta-app",
@@ -94,19 +94,11 @@ services:
     ports:
       - 9999:9999
 
-  cassandra:
-    image: cassandra:3.11.11
+  postgres:
+    image: library/postgres:12.2
     environment:
-      JVM_OPTS: "-Xms8g -Xmx8g -Dcassandra.initial_token=0 -Dcassandra.skip_wait_for_gossip_to_settle=0"
-      MAX_HEAP_SIZE: "8G"
-      HEAP_NEWSIZE: "200m"
-      CASSANDRA_BROADCAST_ADDRESS: cassandra
-      CASSANDRA_NUM_TOKENS: 1
-    healthcheck:
-      test: ["CMD", "cqlsh","-e describe keyspaces"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
 
   storage-service:
     image: bluebrain/nexus-storage:latest

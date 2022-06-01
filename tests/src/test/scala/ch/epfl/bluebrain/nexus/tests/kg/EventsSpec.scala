@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.events.BugsBunny
 import ch.epfl.bluebrain.nexus.tests.Optics._
 import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Events, Organizations, Resources}
-import com.fasterxml.uuid.Generators
 import io.circe.Json
 import monix.bio.Task
 import monix.execution.Scheduler.Implicits.global
@@ -18,13 +17,10 @@ class EventsSpec extends BaseSpec with Inspectors {
   private val projId                         = genId()
   private val id                             = s"$orgId/$projId"
   private val id2                            = s"$orgId2/$projId"
-  private var initialEventId: Option[String] = None
+  private val initialEventId: Option[String] = None
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    initialEventId = Option.when(isCassandra) {
-      Generators.timeBasedGenerator().generate().toString
-    }
   }
 
   "creating projects" should {
