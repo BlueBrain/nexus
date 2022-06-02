@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
@@ -73,9 +73,9 @@ class ElasticSearchViewsDirectivesSpec
 
     "return the search parameters" in {
       val alicia   = User("alicia", Label.unsafe("myrealm"))
-      val aliciaId = UrlUtils.encode(alicia.id.toString)
+      val aliciaId = UrlUtils.encode(alicia.asIri.toString)
       val bob      = User("bob", Label.unsafe("myrealm"))
-      val bobId    = UrlUtils.encode(bob.id.toString)
+      val bobId    = UrlUtils.encode(bob.asIri.toString)
 
       Get(
         s"/search/org/project?id=myId&deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId&type=A&type=B&type=-C&schema=C&q=something"

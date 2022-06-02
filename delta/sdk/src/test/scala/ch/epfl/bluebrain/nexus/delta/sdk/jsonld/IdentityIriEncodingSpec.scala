@@ -1,17 +1,17 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
+package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.{IllegalIdentityIriFormatError, IllegalSubjectIriFormatError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
+class IdentityIriEncodingSpec extends AnyWordSpecLike with Matchers with Inspectors with EitherValuable {
 
   implicit private val base: BaseUri                = BaseUri("http://localhost:8080", Label.unsafe("v1"))
   private val realm                                 = Label.unsafe("myrealm")
@@ -26,13 +26,13 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
 
     "be converted to an Iri" in {
       forAll(list) { case (iri, identity) =>
-        identity.id shouldEqual iri
+        identity.asIri shouldEqual iri
       }
     }
 
     "be created from an Iri" in {
       forAll(list) { case (iri, identity) =>
-        Identity.unsafe(iri).rightValue shouldEqual identity
+        iri.as[Identity].rightValue shouldEqual identity
       }
     }
 
@@ -43,7 +43,7 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
         iri"http://localhost:8080/v1/realms/$realm/users/myuser/other"
       )
       forAll(failed) { iri =>
-        Identity.unsafe(iri).leftValue shouldBe a[IllegalIdentityIriFormatError]
+        iri.as[Identity].leftValue shouldBe a[IllegalIdentityIriFormatError]
       }
     }
   }
@@ -52,13 +52,13 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
 
     "be converted to an Iri" in {
       forAll(list.take(2)) { case (iri, identity) =>
-        identity.id shouldEqual iri
+        identity.asIri shouldEqual iri
       }
     }
 
     "be created from an Iri" in {
       forAll(list.take(2)) { case (iri, identity) =>
-        Subject.unsafe(iri).rightValue shouldEqual identity.asInstanceOf[Subject]
+        iri.as[Subject].rightValue shouldEqual identity.asInstanceOf[Subject]
       }
     }
 
@@ -69,7 +69,7 @@ class IdentitySpec extends AnyWordSpecLike with Matchers with Inspectors with Ei
         iri"http://localhost:8080/v1/realms/$realm/users/myuser/other"
       ) ++ list.slice(2, 4).map(_._1)
       forAll(failed) { iri =>
-        Subject.unsafe(iri).leftValue shouldBe a[IllegalSubjectIriFormatError]
+        iri.as[Subject].leftValue shouldBe a[IllegalSubjectIriFormatError]
       }
     }
   }

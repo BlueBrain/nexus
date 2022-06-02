@@ -5,9 +5,9 @@ import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import org.scalatest.OptionValues
 
 object AclGen extends OptionValues {

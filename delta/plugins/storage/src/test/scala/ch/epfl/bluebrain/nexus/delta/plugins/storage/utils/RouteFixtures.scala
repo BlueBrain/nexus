@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{DigestAlgor
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -50,8 +51,8 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       "id"         -> id,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "type"       -> storageType,
       "algorithm"  -> DigestAlgorithm.default,
       "label"      -> lastSegment(id)
@@ -85,8 +86,8 @@ trait RouteFixtures extends TestHelpers with RemoteContextResolutionFixture {
       "origin"      -> attributes.origin,
       "uuid"        -> attributes.uuid,
       "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.id,
-      "updatedBy"   -> updatedBy.id,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
       "type"        -> storageType,
       "label"       -> label.fold(lastSegment(id))(identity)
     )

@@ -9,20 +9,19 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.IndexingMode
-import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{FetchProject, FetchProjectByUuid}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectivesSpec.IntValue
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.{IriSegment, StringSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, SearchAfterPagination}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
 import monix.bio.IO
@@ -247,9 +246,9 @@ class UriDirectivesSpec
 
     "return search parameters" in {
       val alicia   = User("alicia", Label.unsafe("myrealm"))
-      val aliciaId = UrlUtils.encode(alicia.id.toString)
+      val aliciaId = UrlUtils.encode(alicia.asIri.toString)
       val bob      = User("bob", Label.unsafe("myrealm"))
-      val bobId    = UrlUtils.encode(bob.id.toString)
+      val bobId    = UrlUtils.encode(bob.asIri.toString)
 
       Get(s"/base/search?deprecated=false&rev=2&createdBy=$aliciaId&updatedBy=$bobId") ~> Accept(
         `*/*`
@@ -263,7 +262,7 @@ class UriDirectivesSpec
     }
 
     "reject on invalid search parameters" in {
-      val group     = UrlUtils.encode(Group("mygroup", Label.unsafe("myrealm")).id.toString)
+      val group     = UrlUtils.encode(Group("mygroup", Label.unsafe("myrealm")).asIri.toString)
       val endpoints = List(
         "/base/search?deprecated=3",
         "/base/search?rev=false",

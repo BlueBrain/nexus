@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, permissions => permissionsPerms}
@@ -47,8 +48,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
 
   import baseUri.prefixSegment
 
-  implicit private val fetchProjectUuids: FetchUuids                                    = _ => UIO.none
-  implicit final private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
+  implicit private val fetchProjectUuids: FetchUuids                              = _ => UIO.none
+  implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.permissionsMetadata))
 
   def routes: Route =

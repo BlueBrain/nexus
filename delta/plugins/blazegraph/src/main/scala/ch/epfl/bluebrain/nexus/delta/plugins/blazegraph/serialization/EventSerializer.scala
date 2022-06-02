@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewEve
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.serialization.EventSerializer.blazegraphViewsEventManifest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.parser.decode

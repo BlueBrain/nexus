@@ -6,10 +6,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
@@ -181,10 +181,9 @@ object CompositeViewEvent {
 
   @nowarn("cat=unused")
   implicit def compositeEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[CompositeViewEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]              = Identity.subjectIdEncoder
-    implicit val identityEncoder: Encoder.AsObject[Identity]   = Identity.persistIdentityDecoder
+    implicit val subjectEncoder: Encoder[Subject]              = IriEncoder.jsonEncoder[Subject]
     implicit val viewValueEncoder: Encoder[CompositeViewValue] = Encoder.instance[CompositeViewValue](_ => Json.Null)
-    implicit val projectRefEncoder: Encoder[ProjectRef]        = Encoder.instance(ResourceUris.projectUri(_).asJson)
+    implicit val projectRefEncoder: Encoder[ProjectRef]        = IriEncoder.jsonEncoder[ProjectRef]
 
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[CompositeViewEvent]

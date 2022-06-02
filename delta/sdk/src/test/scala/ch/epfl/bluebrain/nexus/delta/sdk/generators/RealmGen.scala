@@ -4,7 +4,7 @@ import java.time.Instant
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Current
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

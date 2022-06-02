@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

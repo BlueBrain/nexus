@@ -26,8 +26,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, Htt
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectBase
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
@@ -297,8 +298,8 @@ class BlazegraphIndexingSpec(docker: BlazegraphDocker)
          |${res.resolvedId.rdfFormat} ${nxv.updatedAt.iri.rdfFormat} "${res.updatedAt
         .atOffset(ZoneOffset.UTC)
         .format(dateTimeFormatter)}"^^${xsd.dateTime.rdfFormat} .
-         |${res.resolvedId.rdfFormat} ${nxv.createdBy.iri.rdfFormat} ${res.createdBy.id.rdfFormat} .
-         |${res.resolvedId.rdfFormat} ${nxv.updatedBy.iri.rdfFormat} ${res.updatedBy.id.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.createdBy.iri.rdfFormat} ${res.createdBy.asIri.rdfFormat} .
+         |${res.resolvedId.rdfFormat} ${nxv.updatedBy.iri.rdfFormat} ${res.updatedBy.asIri.rdfFormat} .
          |${res.resolvedId.rdfFormat} ${nxv.constrainedBy.iri.rdfFormat} ${res.schema.iri.rdfFormat} .
          |${res.resolvedId.rdfFormat} ${nxv.project.iri.rdfFormat} ${ResourceUris.project(project).accessUri.toIri.rdfFormat} .
          |${res.resolvedId.rdfFormat} ${nxv.self.iri.rdfFormat} ${res.uris.accessUri.toIri.rdfFormat} .

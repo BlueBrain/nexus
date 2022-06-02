@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -183,7 +183,7 @@ object CompositeViewRejection {
     */
   final case class CrossProjectSourceForbidden(crossProjectSource: CrossProjectSource)(implicit val baseUri: BaseUri)
       extends CompositeViewSourceRejection(
-        s"None of the identities  ${crossProjectSource.identities.map(_.id).mkString(",")} has permissions for project ${crossProjectSource.project}"
+        s"None of the identities  ${crossProjectSource.identities.map(_.asIri).mkString(",")} has permissions for project ${crossProjectSource.project}"
       )
 
   /**

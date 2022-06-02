@@ -3,16 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 object RealmSetup {
 
-  val service: User                   = User("service", Label.unsafe("internal"))
-  implicit val serviceAccount: Caller = Caller(service, Set(service))
+  implicit val serviceAccount: User = User("service", Label.unsafe("internal"))
 
   /**
     * Set up an create Realms for the given labels

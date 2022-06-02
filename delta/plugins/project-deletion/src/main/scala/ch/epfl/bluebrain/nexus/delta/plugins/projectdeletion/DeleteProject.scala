@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, ProjectResource, Projects}
 import com.typesafe.scalalogging.Logger
 import monix.bio.UIO

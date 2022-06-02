@@ -10,10 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
@@ -84,8 +85,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "id"         -> id,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "label"      -> lastSegment(id)
     )
 
@@ -106,8 +107,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "rev"         -> rev,
       "type"        -> tpe,
       "deprecated"  -> deprecated,
-      "createdBy"   -> createdBy.id,
-      "updatedBy"   -> updatedBy.id,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
       "schema"      -> schema,
       "label"       -> lastSegment(id),
       "schemaLabel" -> (if (schema == schemas.resources) "_" else lastSegment(schema))
@@ -131,8 +132,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "rev"               -> rev,
       "deprecated"        -> deprecated,
       "markedForDeletion" -> markedForDeletion,
-      "createdBy"         -> createdBy.id,
-      "updatedBy"         -> updatedBy.id,
+      "createdBy"         -> createdBy.asIri,
+      "updatedBy"         -> updatedBy.asIri,
       "label"             -> label,
       "uuid"              -> uuid,
       "organization"      -> organizationLabel,
@@ -151,8 +152,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "organizations/org-route-metadata-response.json",
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "label"      -> label,
       "uuid"       -> uuid
     )
@@ -167,8 +168,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "permissions/permissions-route-metadata-response.json",
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri
     )
 
   def aclMetadata(
@@ -182,8 +183,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "acls/acl-route-metadata-response.json",
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "path"       -> address,
       "project"    -> (if (address == AclAddress.Root) "" else address)
     )
@@ -199,8 +200,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "realms/realm-route-metadata-response.json",
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "label"      -> label
     )
 
@@ -219,8 +220,8 @@ trait RouteFixtures extends TestHelpers with IOValues {
       "id"         -> id,
       "rev"        -> rev,
       "deprecated" -> deprecated,
-      "createdBy"  -> createdBy.id,
-      "updatedBy"  -> updatedBy.id,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
       "type"       -> resolverType,
       "label"      -> lastSegment(id)
     )

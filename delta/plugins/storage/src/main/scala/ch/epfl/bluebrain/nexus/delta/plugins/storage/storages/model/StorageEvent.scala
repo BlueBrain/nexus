@@ -9,12 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -177,12 +177,11 @@ object StorageEvent {
   @nowarn("cat=unused")
   @SuppressWarnings(Array("OptionGet"))
   implicit def storageEventEncoder(implicit baseUri: BaseUri, crypto: Crypto): Encoder.AsObject[StorageEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]                = Identity.subjectIdEncoder
-    implicit val identityEncoder: Encoder.AsObject[Identity]     = Identity.persistIdentityDecoder
+    implicit val subjectEncoder: Encoder[Subject]                = IriEncoder.jsonEncoder[Subject]
     implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
-    implicit val projectRefEncoder: Encoder[ProjectRef]          = Encoder.instance(ResourceUris.projectUri(_).asJson)
+    implicit val projectRefEncoder: Encoder[ProjectRef]          = IriEncoder.jsonEncoder[ProjectRef]
 
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[StorageEvent]

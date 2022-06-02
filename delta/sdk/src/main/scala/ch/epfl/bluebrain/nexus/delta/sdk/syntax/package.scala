@@ -12,6 +12,7 @@ package object syntax
     extends EventLogSyntax
     with JsonSyntax
     with IriSyntax
+    with IriEncodingSyntax
     with JsonLdEncoderSyntax
     with UriSyntax
     with PathSyntax

@@ -23,8 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -32,6 +32,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Permissions}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import com.typesafe.config.Config
 import io.circe.Json
@@ -82,7 +83,7 @@ class ArchiveRoutesSpec
   }
 
   implicit private val baseUri: BaseUri   = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val subject: Subject   = Identity.User("user", Label.unsafe("realm"))
+  private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller     = Caller.unsafe(subject)
   private val subjectNoFilePerms: Subject = Identity.User("nofileperms", Label.unsafe("realm"))
   private val callerNoFilePerms: Caller   = Caller.unsafe(subjectNoFilePerms)
@@ -158,8 +159,8 @@ class ArchiveRoutesSpec
       "id"               -> id,
       "rev"              -> rev,
       "deprecated"       -> deprecated,
-      "createdBy"        -> createdBy.id,
-      "updatedBy"        -> updatedBy.id,
+      "createdBy"        -> createdBy.asIri,
+      "updatedBy"        -> updatedBy.asIri,
       "label"            -> label.fold(lastSegment(id))(identity),
       "expiresInSeconds" -> expiresInSeconds.toString
     )
