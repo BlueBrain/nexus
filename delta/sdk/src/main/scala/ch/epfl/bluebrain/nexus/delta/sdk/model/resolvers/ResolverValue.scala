@@ -8,10 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration => JsonLdConfiguration, JsonLdDecoder}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -85,7 +84,7 @@ object ResolverValue {
     *   the value to encode as Json
     */
   def generateSource(id: Iri, resolverValue: ResolverValue): Json = {
-    implicit val identityEncoder: Encoder[Identity] = Identity.persistIdentityDecoder
+    implicit val identityEncoder: Encoder[Identity] = Identity.Database.identityCodec
     resolverValue.asJson
       .deepMerge(
         Json.obj(

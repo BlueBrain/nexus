@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Anonymous, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}

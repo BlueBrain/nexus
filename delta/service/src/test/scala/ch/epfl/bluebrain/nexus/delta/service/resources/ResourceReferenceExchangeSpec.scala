@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, Reso
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revisio
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.{IO, UIO}
@@ -41,7 +42,7 @@ class ResourceReferenceExchangeSpec
 
   implicit private val scheduler: Scheduler = Scheduler.global
 
-  implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
+  private val subject: Subject          = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller   = Caller(subject, Set(subject))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val uuid                      = UUID.randomUUID()

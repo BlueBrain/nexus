@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue.Aux
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.metrics.EventMetric.ProjectScopedMetric
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}

@@ -1,19 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{IdentityRealm, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import monix.bio.UIO
 
 object AclSetup extends IOFixedClock {
 
-  val service: User                   = User("service", Label.unsafe("internal"))
-  implicit val serviceAccount: Caller = Caller(service, Set(service))
+  implicit val serviceAccount: User = User("service", Label.unsafe("internal"))
 
   /**
     * Init realms and permissions for the ACLs

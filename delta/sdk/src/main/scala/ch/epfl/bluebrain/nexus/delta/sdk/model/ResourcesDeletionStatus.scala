@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{IriDecoder, IriEncoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
@@ -62,19 +62,18 @@ object ResourcesDeletionStatus {
 
   @nowarn("cat=unused")
   implicit def resourcesDeletionStatusEncoder(implicit base: BaseUri): Encoder.AsObject[ResourcesDeletionStatus] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder(base)
+    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
     Encoder.AsObject.instance { status =>
       deriveConfiguredEncoder[ResourcesDeletionStatus]
         .encodeObject(status)
         .add(nxv.self.prefix, ResourceUris.projectDeletes(status.project, status.uuid).accessUriShortForm.asJson)
         .add("_finished", status.finished.asJson)
     }
-
   }
 
   @nowarn("cat=unused")
   implicit def resourcesDeletionStatusDecoder(implicit base: BaseUri): Decoder[ResourcesDeletionStatus] = {
-    implicit val subjectDecoder: Decoder[Subject] = Identity.subjectIdDecoder(base)
+    implicit val subjectDecoder: Decoder[Subject] = IriDecoder.jsonDecoder[Subject]
     deriveConfiguredDecoder
   }
 

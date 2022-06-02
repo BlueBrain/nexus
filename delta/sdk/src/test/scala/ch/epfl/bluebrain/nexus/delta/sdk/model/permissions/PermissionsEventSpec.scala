@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}

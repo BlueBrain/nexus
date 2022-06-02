@@ -5,12 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -87,7 +88,7 @@ object Resolver {
   val context: ContextValue = ContextValue(contexts.resolvers)
 
   implicit def resolverEncoder(implicit baseUri: BaseUri): Encoder.AsObject[Resolver] = {
-    implicit val identityEncoder: Encoder[Identity] = Identity.identityEncoder
+    implicit val identityEncoder: Encoder[Identity] = IdentityInstances.identityEncoder
     Encoder.AsObject.instance { r =>
       r.value.asJsonObject.addContext(r.source.topContextValueOrEmpty.excludeRemoteContexts.contextObj)
     }

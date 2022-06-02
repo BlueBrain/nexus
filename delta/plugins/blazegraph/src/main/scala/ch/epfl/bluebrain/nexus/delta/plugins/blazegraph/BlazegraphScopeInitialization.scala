@@ -6,9 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -23,8 +25,8 @@ import monix.bio.{IO, UIO}
 class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[BlazegraphScopeInitialization]
-  implicit private val caller: Caller = serviceAccount.caller
+  private val logger: Logger                          = Logger[BlazegraphScopeInitialization]
+  implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
   private val defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     resourceSchemas = Set.empty,

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.jira
 
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, RequestToken}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, ShouldMatchers, TestHelpers}
 import org.scalatest.OptionValues

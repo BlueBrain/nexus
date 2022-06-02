@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInProjectUris
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
@@ -66,7 +66,7 @@ class ArchivesSpec
   implicit private val sc: Scheduler = Scheduler.global
 
   private val usersRealm: Label       = Label.unsafe("users")
-  implicit private val bob: Subject   = User("bob", usersRealm)
+  private val bob: Subject            = User("bob", usersRealm)
   implicit private val caller: Caller = Caller.unsafe(bob)
 
   implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")

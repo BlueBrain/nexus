@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import java.time.Instant
 import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._

@@ -6,7 +6,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.{OAuthToken, TokenStore}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.CassandraConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.utils.CassandraUtils
 import com.typesafe.scalalogging.Logger

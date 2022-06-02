@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.mocks
 
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent, PermissionsRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PermissionsResource}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import monix.bio.{IO, Task, UIO}
 
 /**

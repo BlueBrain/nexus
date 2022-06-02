@@ -12,8 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.{EphemeralResourceInProjectUris, ResourceInProjectAndSchemaUris, ResourceInProjectUris, RootResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -103,9 +104,9 @@ object ResourceF {
       case "_rev"           => Some(Ordering[Long] on (_.rev))
       case "_deprecated"    => Some(Ordering[Boolean] on (_.deprecated))
       case "_createdAt"     => Some(defaultSort)
-      case "_createdBy"     => Some(Ordering[Subject] on (_.createdBy))
+      case "_createdBy"     => Some(IriEncoder.ordering[Subject] on (_.createdBy))
       case "_updatedAt"     => Some(Ordering[Instant] on (_.updatedAt))
-      case "_updatedBy"     => Some(Ordering[Subject] on (_.updatedBy))
+      case "_updatedBy"     => Some(IriEncoder.ordering[Subject] on (_.updatedBy))
       case "_constrainedBy" => Some(Ordering[Iri] on (_.schema.original))
       case field            => orderingValueFields(field).map(ordering => ordering on (_.value))
     }
@@ -153,18 +154,20 @@ object ResourceF {
         )
     }
 
-  implicit final private def metadataEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceMetadata] =
+  implicit final private def metadataEncoder(implicit base: BaseUri): Encoder.AsObject[ResourceMetadata] = {
+    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
     Encoder.AsObject.instance { r =>
       JsonObject.empty
         .add("_rev", r.rev.asJson)
         .add("_deprecated", r.deprecated.asJson)
         .add("_createdAt", r.createdAt.asJson)
-        .add("_createdBy", r.createdBy.id.asJson)
+        .add("_createdBy", r.createdBy.asJson)
         .add("_updatedAt", r.updatedAt.asJson)
-        .add("_updatedBy", r.updatedBy.id.asJson)
+        .add("_updatedBy", r.updatedBy.asJson)
         .add("_constrainedBy", r.schema.iri.asJson)
         .deepMerge(r.uris.asJsonObject)
     }
+  }
 
   implicit private def metadataJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[ResourceMetadata] =
     JsonLdEncoder.computeFromCirce(BNode.random, ContextValue(contexts.metadata))

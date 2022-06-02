@@ -21,7 +21,7 @@ final case class ProjectRef(organization: Label, project: Label) {
 
 object ProjectRef {
 
-  private val regex = s"^\\/?(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
+  val regex = s"^\\/?(${Label.regex.toString()})\\/(${Label.regex.toString()})$$".r
 
   /**
     * Parse [[ProjectRef]] from a string value e.g. "(/)org/project"

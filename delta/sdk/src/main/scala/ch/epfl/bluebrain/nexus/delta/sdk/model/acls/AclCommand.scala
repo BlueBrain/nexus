@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
 /**
   * Enumeration of ACL collection command types.

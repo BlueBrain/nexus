@@ -3,8 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.{Encoder, JsonObject}
 
 /**
@@ -37,16 +40,19 @@ object Caller {
     if (identities.contains(subject)) new Caller(subject, identities)
     else new Caller(subject, identities + subject)
 
-  implicit final def callerEncoder(implicit I: Encoder[Identity], base: BaseUri): Encoder.AsObject[Caller] =
+  implicit final def callerEncoder(implicit base: BaseUri): Encoder.AsObject[Caller] = {
+    implicit val identityEncoder: Encoder[Identity] = IdentityInstances.identityEncoder
     Encoder.AsObject.instance[Caller] { caller =>
       JsonObject.singleton(
         "identities",
-        Encoder.encodeList(I)(caller.identities.toList.sortBy(_.id.toString))
+        Encoder.encodeList(identityEncoder)(caller.identities.toList.sortBy(_.asIri.toString))
       )
     }
+  }
 
-  private val context                                                                                   = ContextValue(contexts.metadata, contexts.identities)
-  implicit def callerJsonLdEncoder(implicit I: Encoder[Identity], base: BaseUri): JsonLdEncoder[Caller] =
+  private val context = ContextValue(contexts.metadata, contexts.identities)
+  implicit def callerJsonLdEncoder(implicit base: BaseUri): JsonLdEncoder[Caller] = {
     JsonLdEncoder.computeFromCirce(context)
+  }
 
 }

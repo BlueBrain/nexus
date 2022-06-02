@@ -4,8 +4,8 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.{OAuthToken, TokenStore}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
 import doobie.util.transactor.Transactor

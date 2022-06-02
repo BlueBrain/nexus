@@ -5,7 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.ResourcesDeleted
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionStatus
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectCreationCooldown
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour

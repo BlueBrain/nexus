@@ -3,10 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Current
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 
 object PermissionsGen {
 

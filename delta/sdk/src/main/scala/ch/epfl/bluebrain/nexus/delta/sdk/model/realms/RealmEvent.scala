@@ -4,10 +4,11 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
@@ -185,7 +186,7 @@ object RealmEvent {
 
   @nowarn("cat=unused")
   implicit def realmEventEncoder(implicit base: BaseUri): Encoder.AsObject[RealmEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
     Encoder.encodeJsonObject.contramapObject { event =>
       deriveConfiguredEncoder[RealmEvent]
         .encodeObject(event)

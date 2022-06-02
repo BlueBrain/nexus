@@ -12,10 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.{defaultProjectionId, 
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, Identity, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -26,8 +28,8 @@ final class SearchScopeInitialization(
 )(implicit baseUri: BaseUri)
     extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[SearchScopeInitialization]
-  implicit private val caller: Caller = serviceAccount.caller
+  private val logger: Logger                          = Logger[SearchScopeInitialization]
+  implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
   private val searchGroup = Some(IndexGroup.unsafe("search"))
 

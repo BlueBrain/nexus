@@ -4,10 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -117,7 +118,7 @@ object AclEvent {
 
   @nowarn("cat=unused")
   implicit def aclEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[AclEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = Identity.subjectIdEncoder
+    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
     implicit val config: Configuration = Configuration.default
       .withDiscriminator(keywords.tpe)

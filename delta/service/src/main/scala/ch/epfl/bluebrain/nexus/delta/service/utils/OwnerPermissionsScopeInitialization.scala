@@ -4,11 +4,11 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -25,8 +25,8 @@ import monix.bio.{IO, UIO}
 class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Permission], serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[OwnerPermissionsScopeInitialization]
-  implicit private val caller: Caller = serviceAccount.caller
+  private val logger: Logger                          = Logger[OwnerPermissionsScopeInitialization]
+  implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
   override def onOrganizationCreation(
       organization: Organization,
