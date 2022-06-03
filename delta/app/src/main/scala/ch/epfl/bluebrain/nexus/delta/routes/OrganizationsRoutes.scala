@@ -9,11 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
@@ -23,13 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, Orga
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -54,8 +51,6 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-
-  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
@@ -90,9 +85,10 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             (pathPrefix("events") & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/orgs/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventId { offset =>
-                    emit(organizations.events(offset))
-                  }
+                  failWith(new NotImplementedError("TODO: Handle SSEs"))
+//                  lastEventId { offset =>
+//                    emit(organizations.events(offset))
+//                  }
                 }
               }
             },
@@ -100,7 +96,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
               operationName(s"$prefixSegment/orgs/{label}") {
                 concat(
                   put {
-                    parameter("rev".as[Long]) { rev =>
+                    parameter("rev".as[Int]) { rev =>
                       authorizeFor(id, orgs.write).apply {
                         // Update organization
                         entity(as[OrganizationInput]) { case OrganizationInput(description) =>
@@ -111,7 +107,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   },
                   get {
                     authorizeFor(id, orgs.read).apply {
-                      parameter("rev".as[Long].?) {
+                      parameter("rev".as[Int].?) {
                         case Some(rev) => // Fetch organization at specific revision
                           emit(organizations.fetchAt(id, rev).leftWiden[OrganizationRejection])
                         case None      => // Fetch organization
@@ -123,7 +119,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                   // Deprecate organization
                   delete {
                     authorizeFor(id, orgs.write).apply {
-                      parameter("rev".as[Long]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
+                      parameter("rev".as[Int]) { rev => emit(organizations.deprecate(id, rev).mapValue(_.metadata)) }
                     }
                   }
                 )

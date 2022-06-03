@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{Pull
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestCommand, PullRequestEvent, PullRequestState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.{EvaluationConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -37,7 +37,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     xas
   )
 
-  private val config = EvaluationConfig(100.millis)
+  private val maxDuration = 100.millis
 
   private val id   = Label.unsafe("id")
   private val proj = ProjectRef.unsafe("org", "proj")
@@ -67,7 +67,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
         case _                    => None
       }
     ),
-    config,
+    maxDuration,
     xas
   )
 
@@ -128,7 +128,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   test("Get a timeout and persist nothing") {
     val never = Never(id, proj)
     for {
-      _ <- eventLog.evaluate(proj, id, never).terminated(EvaluationTimeout(never, config.maxDuration))
+      _ <- eventLog.evaluate(proj, id, never).terminated(EvaluationTimeout(never, maxDuration))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
       _ <- eventLog.state(proj, id).assertSome(state3)
     } yield ()

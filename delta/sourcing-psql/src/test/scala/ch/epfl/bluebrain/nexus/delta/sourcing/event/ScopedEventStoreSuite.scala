@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestUpdated}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy

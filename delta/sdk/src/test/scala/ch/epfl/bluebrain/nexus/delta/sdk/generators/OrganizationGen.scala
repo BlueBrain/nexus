@@ -1,27 +1,25 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import org.scalatest.OptionValues
+
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Current
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import org.scalatest.OptionValues
-
 object OrganizationGen extends OptionValues {
 
-  def currentState(
+  def state(
       label: String,
-      rev: Long,
+      rev: Int,
       uuid: UUID = UUID.randomUUID(),
       description: Option[String] = None,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
-  ): Current =
-    Current(
+  ): OrganizationState =
+    OrganizationState(
       Label.unsafe(label),
       uuid,
       rev,
@@ -38,17 +36,17 @@ object OrganizationGen extends OptionValues {
 
   def resourceFor(
       organization: Organization,
-      rev: Long = 1L,
-      subject: Subject = Identity.Anonymous,
+      rev: Int = 1,
+      subject: Subject = Anonymous,
       deprecated: Boolean = false
   ): OrganizationResource =
-    currentState(
+    state(
       organization.label.value,
       rev,
       organization.uuid,
       organization.description,
       deprecated,
       subject
-    ).toResource.value
+    ).toResource
 
 }

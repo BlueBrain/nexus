@@ -1,24 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
-import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.moduleType
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.entityType
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand.{CreateOrganization, DeprecateOrganization, UpdateOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationInitializationFailed, OrganizationNotFound, UnexpectedInitialState}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.Initial
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationInitializationFailed, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.OrganizationsDummy._
 import ch.epfl.bluebrain.nexus.delta.sdk.{EventTags, OrganizationResource, Organizations, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -56,13 +54,13 @@ final class OrganizationsDummy private (
   override def update(
       label: Label,
       description: Option[String],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
     eval(UpdateOrganization(label, rev, description, caller))
 
   override def deprecate(
       label: Label,
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource] =
     eval(DeprecateOrganization(label, rev, caller))
 
@@ -85,7 +83,7 @@ final class OrganizationsDummy private (
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     cache.list(pagination, params, ordering)
 
-  override def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]] =
+  override def events(offset: Offset = Offset.Start): Stream[Task, Envelope[OrganizationEvent]] =
     journal.events(offset)
 
   override def currentEvents(offset: Offset): Stream[Task, Envelope[OrganizationEvent]] =
@@ -118,7 +116,7 @@ object OrganizationsDummy {
       clock: Clock[UIO]
   ): UIO[OrganizationsDummy] =
     for {
-      journal <- Journal(moduleType, 1L, EventTags.forOrganizationScopedEvent[OrganizationEvent](moduleType))
+      journal <- Journal(entityType, 1L, EventTags.forOrganizationScopedEvent[OrganizationEvent](entityType))
       cache   <- ResourceCache[Label, Organization]
       sem     <- IOSemaphore(1L)
     } yield new OrganizationsDummy(journal, cache, sem, scopeInitializations)

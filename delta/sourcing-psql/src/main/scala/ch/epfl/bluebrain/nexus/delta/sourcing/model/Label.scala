@@ -72,6 +72,7 @@ object Label {
     Decoder.decodeString.emap(str => Label(str).leftMap(_.getMessage))
 
   implicit val labelJsonLdDecoder: JsonLdDecoder[Label] =
-    (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
+    (cursor: ExpandedJsonLdCursor) =>
+      cursor.get[String].flatMap { Label(_).leftMap { e => ParsingFailure(e.getMessage) } }
 
 }

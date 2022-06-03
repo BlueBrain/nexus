@@ -21,7 +21,7 @@ class OrganizationRejectionsSpec
 
   "An OrganizationRejection" should {
 
-    val incorrectRev  = IncorrectRev(2L, 3L)
+    val incorrectRev  = IncorrectRev(2, 3)
     val alreadyExists = OrganizationAlreadyExists(Label.unsafe("org"))
 
     "be converted to compacted JSON-LD" in {

@@ -1,126 +1,77 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.uriSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
+import io.circe.Codec
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
 import java.time.Instant
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Enumeration of organization states.
   */
 
-sealed trait OrganizationState extends Product with Serializable {
-
-  /**
-    * @return
-    *   the current state revision
-    */
-  def rev: Long
-
-  /**
-    * @return
-    *   the current deprecation status of the organization
-    */
-  def deprecated: Boolean
+final case class OrganizationState(
+    label: Label,
+    uuid: UUID,
+    rev: Int,
+    deprecated: Boolean,
+    description: Option[String],
+    createdAt: Instant,
+    createdBy: Subject,
+    updatedAt: Instant,
+    updatedBy: Subject
+) extends GlobalState {
 
   /**
     * @return
     *   the schema reference that organizations conforms to
     */
-  final def schema: ResourceRef = Latest(schemas.organizations)
+  def schema: ResourceRef = Latest(schemas.organizations)
 
   /**
     * @return
     *   the collection of known types of organizations resources
     */
-  final def types: Set[Iri] = Set(nxv.Organization)
+  def types: Set[Iri] = Set(nxv.Organization)
 
-  /**
-    * Converts the state into a resource representation.
-    */
-  def toResource: Option[OrganizationResource]
+  private val uris = ResourceUris.organization(label)
+
+  def toResource: OrganizationResource =
+    ResourceF(
+      id = uris.relativeAccessUri.toIri,
+      uris = uris,
+      rev = rev.toLong,
+      types = types,
+      deprecated = deprecated,
+      createdAt = createdAt,
+      createdBy = createdBy,
+      updatedAt = updatedAt,
+      updatedBy = updatedBy,
+      schema = schema,
+      value = Organization(label, uuid, description)
+    )
 }
 
 object OrganizationState {
 
-  /**
-    * Initial state type.
-    */
-  type Initial = Initial.type
-
-  /**
-    * Initial organizations state.
-    */
-  final case object Initial extends OrganizationState {
-    override val rev: Long = 0L
-
-    override val deprecated: Boolean = false
-
-    override val toResource: Option[OrganizationResource] = None
+  @nowarn("cat=unused")
+  val serializer: Serializer[Label, OrganizationState] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration             = Serializer.circeConfiguration
+    implicit val coder: Codec.AsObject[OrganizationState] = deriveConfiguredCodec[OrganizationState]
+    Serializer(_.label)
   }
-
-  /**
-    * Initial organization state.
-    *
-    * @param label
-    *   the organization label
-    * @param uuid
-    *   the organization UUID
-    * @param rev
-    *   the organization revision
-    * @param deprecated
-    *   the deprecation status of the organization
-    * @param description
-    *   an optional description of the organization
-    * @param createdAt
-    *   the instant when the organization was created
-    * @param createdBy
-    *   the identity that created the organization
-    * @param updatedAt
-    *   the instant when the organization was last updated
-    * @param updatedBy
-    *   the identity that last updated the organization
-    */
-  final case class Current(
-      label: Label,
-      uuid: UUID,
-      rev: Long,
-      deprecated: Boolean,
-      description: Option[String],
-      createdAt: Instant,
-      createdBy: Subject,
-      updatedAt: Instant,
-      updatedBy: Subject
-  ) extends OrganizationState {
-
-    private val uris = ResourceUris.organization(label)
-
-    override def toResource: Option[OrganizationResource] =
-      Some(
-        ResourceF(
-          id = uris.relativeAccessUri.toIri,
-          uris = uris,
-          rev = rev,
-          types = types,
-          deprecated = deprecated,
-          createdAt = createdAt,
-          createdBy = createdBy,
-          updatedAt = updatedAt,
-          updatedBy = updatedBy,
-          schema = schema,
-          value = Organization(label, uuid, description)
-        )
-      )
-  }
-
-  implicit val revisionLens: Lens[OrganizationState, Long] = (s: OrganizationState) => s.rev
 
 }

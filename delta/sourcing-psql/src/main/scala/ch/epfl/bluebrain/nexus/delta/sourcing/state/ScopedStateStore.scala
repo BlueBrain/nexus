@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}

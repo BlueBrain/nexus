@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.service.utils
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.entityType
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
@@ -25,6 +27,8 @@ import monix.bio.{IO, UIO}
 class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Permission], serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+
   private val logger: Logger                          = Logger[OwnerPermissionsScopeInitialization]
   implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
@@ -41,7 +45,7 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
           val str = s"Failed to apply the owner permissions for org '${organization.label}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("setOwnerPermissions", Organizations.moduleType)
+      .span("setOwnerPermissions")
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
     acls

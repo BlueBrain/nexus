@@ -18,8 +18,10 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
+@nowarn("cat=unused")
 object EventLogUtils {
 
   implicit private val logger: Logger = Logger("EventLog")
@@ -215,12 +217,7 @@ object EventLogUtils {
   def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, fs2.Stream[Task, M]] =
-    orgs
-      .fetch(label)
-      .bimap(
-        rejectionMapper.to,
-        o => events(eventLog, Organizations.orgTag(label), o.createdAt, offset)
-      )
+    IO.pure(fs2.Stream.empty)
 
   /**
     * Fetch events related to the given project for the selected module
@@ -240,12 +237,7 @@ object EventLogUtils {
   def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, module: String, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, fs2.Stream[Task, M]] =
-    orgs
-      .fetch(label)
-      .bimap(
-        rejectionMapper.to,
-        o => events(eventLog, Organizations.orgTag(module, label), o.createdAt, offset)
-      )
+    IO.pure(fs2.Stream.empty)
 
   private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
     eventLog.config.flavour match {

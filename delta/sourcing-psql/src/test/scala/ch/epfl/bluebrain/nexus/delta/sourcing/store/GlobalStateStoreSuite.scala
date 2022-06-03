@@ -2,11 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.store
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
+
+import scala.concurrent.duration._
 
 import java.time.Instant
 
@@ -19,6 +23,7 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private lazy val store = GlobalStateStore[String, Total](
     Arithmetic.entityType,
     Total.serializer,
+    QueryConfig(10, RefreshStrategy.Delay(500.millis)),
     xas
   )
 

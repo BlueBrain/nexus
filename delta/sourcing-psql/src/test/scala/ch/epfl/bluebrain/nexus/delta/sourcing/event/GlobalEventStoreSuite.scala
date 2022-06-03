@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy

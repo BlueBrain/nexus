@@ -1,10 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import com.zaxxer.hikari.HikariConfig
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Configuration for the sourcing library
@@ -26,17 +22,3 @@ final case class SourcingConfig(
     tablesAutocreate: Boolean,
     query: QueryConfig
 )
-
-object SourcingConfig {
-
-  /**
-    * Defines parameters for streaming queries
-    * @param batchSize
-    *   the maximum number of elements to fetch with one query
-    * @param refreshInterval
-    *   the time to wait before reexecuting the query when the rows have all been consumed
-    */
-  final case class QueryConfig(batchSize: Int, refreshInterval: RefreshStrategy.Delay)
-
-  final case class EvaluationConfig(maxDuration: FiniteDuration)
-}

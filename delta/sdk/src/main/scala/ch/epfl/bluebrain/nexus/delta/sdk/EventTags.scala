@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.{OrganizationScopedEvent, ProjectScopedEvent, UnScopedEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 
 import scala.annotation.unused
 
@@ -10,6 +11,16 @@ import scala.annotation.unused
   * Provides the tags for certain events
   */
 object EventTags {
+
+  /**
+    * Creates event log tag for this organization.
+    */
+  def orgTag(org: Label): String = s"${Organizations.entityType}=$org"
+
+  /**
+    * Creates event log tag for this organization and a specific moduleType.
+    */
+  def orgTag(moduleType: String, org: Label): String = s"$moduleType-${Organizations.entityType}=$org"
 
   /**
     * @return
@@ -20,7 +31,7 @@ object EventTags {
       Event.eventTag,
       moduleType,
       Projects.projectTag(ev.project),
-      Organizations.orgTag(ev.project.organization)
+      orgTag(ev.project.organization)
     )
 
   /**
@@ -38,8 +49,8 @@ object EventTags {
     */
   def forOrganizationScopedEvent[E <: OrganizationScopedEvent](moduleTypes: String*)(ev: E): Set[String] =
     moduleTypes.toSet ++
-      Set(Event.eventTag, Organizations.orgTag(ev.organizationLabel)) ++
-      moduleTypes.map(moduleType => Organizations.orgTag(moduleType, ev.organizationLabel)).toSet
+      Set(Event.eventTag, orgTag(ev.organizationLabel)) ++
+      moduleTypes.map(moduleType => orgTag(moduleType, ev.organizationLabel)).toSet
 
   /**
     * @return

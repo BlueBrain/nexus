@@ -1,24 +1,24 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import java.util.UUID
-import akka.persistence.query.{NoOffset, Offset}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import java.util.UUID
 
 /**
   * Operations pertaining to managing organizations.
@@ -55,7 +55,7 @@ trait Organizations {
   def update(
       label: Label,
       description: Option[String],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource]
 
   /**
@@ -70,7 +70,7 @@ trait Organizations {
     */
   def deprecate(
       label: Label,
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[OrganizationRejection, OrganizationResource]
 
   /**
@@ -93,7 +93,7 @@ trait Organizations {
     * @return
     *   the organization in a Resource representation, None otherwise
     */
-  def fetchAt(label: Label, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource]
+  def fetchAt(label: Label, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource]
 
   /**
     * Fetch an organization at the current revision by uuid.
@@ -115,7 +115,7 @@ trait Organizations {
     * @return
     *   the organization in a Resource representation, None otherwise
     */
-  def fetchAt(uuid: UUID, rev: Long): IO[OrganizationRejection.NotFound, OrganizationResource] =
+  def fetchAt(uuid: UUID, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] =
     fetch(uuid).flatMap(resource => fetchAt(resource.value.label, rev))
 
   /**
@@ -165,7 +165,7 @@ trait Organizations {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
+  def events(offset: Offset = Offset.Start): Stream[Task, Envelope[Label, OrganizationEvent]]
 
   /**
     * The current organization events. The stream stops after emitting all known events.
@@ -173,7 +173,7 @@ trait Organizations {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[OrganizationEvent]]
+  def currentEvents(offset: Offset = Offset.Start): Stream[Task, Envelope[Label, OrganizationEvent]]
 
 }
 
@@ -182,62 +182,52 @@ object Organizations {
   /**
     * The organizations module type.
     */
-  final val moduleType: String = "organization"
+  final val entityType: EntityType = EntityType("organization")
 
-  /**
-    * Creates event log tag for this organization.
-    */
-  def orgTag(org: Label): String = s"${Organizations.moduleType}=$org"
-
-  /**
-    * Creates event log tag for this organization and a specific moduleType.
-    */
-  def orgTag(moduleType: String, org: Label): String = s"$moduleType-${Organizations.moduleType}=$org"
-
-  private[delta] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
+  private[delta] def next(state: Option[OrganizationState], ev: OrganizationEvent): Option[OrganizationState] =
     (state, ev) match {
-      case (Initial, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>
-        Current(label, uuid, 1L, deprecated = false, desc, instant, identity, instant, identity)
+      case (None, OrganizationCreated(label, uuid, _, desc, instant, identity)) =>
+        Some(OrganizationState(label, uuid, 1, deprecated = false, desc, instant, identity, instant, identity))
 
-      case (c: Current, OrganizationUpdated(_, _, rev, desc, instant, subject)) =>
-        c.copy(rev = rev, description = desc, updatedAt = instant, updatedBy = subject)
+      case (Some(c), OrganizationUpdated(_, _, rev, desc, instant, subject)) =>
+        Some(c.copy(rev = rev, description = desc, updatedAt = instant, updatedBy = subject))
 
-      case (c: Current, OrganizationDeprecated(_, _, rev, instant, subject)) =>
-        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
+      case (Some(c), OrganizationDeprecated(_, _, rev, instant, subject)) =>
+        Some(c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject))
 
-      case (s, _) => s
+      case (_, _) => None
     }
 
-  private[delta] def evaluate(state: OrganizationState, command: OrganizationCommand)(implicit
+  private[delta] def evaluate(state: Option[OrganizationState], command: OrganizationCommand)(implicit
       clock: Clock[UIO] = IO.clock,
       uuidf: UUIDF
   ): IO[OrganizationRejection, OrganizationEvent] = {
 
     def create(c: CreateOrganization) =
       state match {
-        case Initial =>
+        case None =>
           for {
             uuid <- uuidf()
             now  <- instant
-          } yield OrganizationCreated(c.label, uuid, 1L, c.description, now, c.subject)
-        case _       => IO.raiseError(OrganizationAlreadyExists(c.label))
+          } yield OrganizationCreated(c.label, uuid, 1, c.description, now, c.subject)
+        case _    => IO.raiseError(OrganizationAlreadyExists(c.label))
       }
 
     def update(c: UpdateOrganization) =
       state match {
-        case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
-        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated   =>
+        case None                      => IO.raiseError(OrganizationNotFound(c.label))
+        case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if s.deprecated   =>
           IO.raiseError(OrganizationIsDeprecated(s.label)) //remove this check if we want to allow un-deprecate
-        case s: Current => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
+        case Some(s) => instant.map(OrganizationUpdated(s.label, s.uuid, s.rev + 1, c.description, _, c.subject))
       }
 
     def deprecate(c: DeprecateOrganization) =
       state match {
-        case Initial                      => IO.raiseError(OrganizationNotFound(c.label))
-        case s: Current if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
-        case s: Current if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label))
-        case s: Current                   => instant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
+        case None                      => IO.raiseError(OrganizationNotFound(c.label))
+        case Some(s) if c.rev != s.rev => IO.raiseError(IncorrectRev(c.rev, s.rev))
+        case Some(s) if s.deprecated   => IO.raiseError(OrganizationIsDeprecated(s.label))
+        case Some(s)                   => instant.map(OrganizationDeprecated(s.label, s.uuid, s.rev + 1, _, c.subject))
       }
 
     command match {
@@ -246,4 +236,21 @@ object Organizations {
       case c: DeprecateOrganization => deprecate(c)
     }
   }
+
+  def definition(implicit
+      clock: Clock[UIO] = IO.clock,
+      uuidf: UUIDF
+  ): EntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] =
+    EntityDefinition.untagged(
+      entityType,
+      StateMachine(None, evaluate, next),
+      OrganizationEvent.serializer,
+      OrganizationState.serializer,
+      onUniqueViolation = (id: Label, c: OrganizationCommand) =>
+        c match {
+          case _: CreateOrganization    => OrganizationAlreadyExists(id)
+          case u: UpdateOrganization    => RevisionAlreadyExists(id, u.rev)
+          case d: DeprecateOrganization => RevisionAlreadyExists(id, d.rev)
+        }
+    )
 }

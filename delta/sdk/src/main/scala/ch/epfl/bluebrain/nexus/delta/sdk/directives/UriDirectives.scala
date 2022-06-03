@@ -128,7 +128,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
       Try(UUID.fromString(segment))
         .map(uuid =>
           onSuccess(organizations.fetch(uuid).attempt.runToFuture).flatMap {
-            case Right(resource) => provide(resource.value.label)
+            case Right(resource) => provide(Label.unsafe(resource.value.label.value))
             case Left(_)         => label(segment)
           }
         )

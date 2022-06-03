@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.{EvaluationConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
@@ -18,27 +18,30 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
 
   private lazy val xas = doobie()
 
+  private val queryConfig = QueryConfig(10, RefreshStrategy.Delay(500.millis))
+
   private lazy val eventStore = GlobalEventStore[String, ArithmeticEvent](
     Arithmetic.entityType,
     ArithmeticEvent.serializer,
-    QueryConfig(10, RefreshStrategy.Delay(500.millis)),
+    queryConfig,
     xas
   )
 
   private lazy val stateStore = GlobalStateStore[String, Total](
     Arithmetic.entityType,
     Total.serializer,
+    queryConfig,
     xas
   )
 
-  private val config = EvaluationConfig(100.millis)
+  private val maxDuration = 100.millis
 
   private lazy val eventLog = GlobalEventLog(
     eventStore,
     stateStore,
     Arithmetic.stateMachine,
     AlreadyExists,
-    config,
+    maxDuration,
     xas
   )
 
@@ -85,7 +88,7 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
 
   test("Get a timeout and persist nothing") {
     for {
-      _ <- eventLog.evaluate("id", Never).terminated(EvaluationTimeout(Never, config.maxDuration))
+      _ <- eventLog.evaluate("id", Never).terminated(EvaluationTimeout(Never, maxDuration))
       _ <- eventStore.history("id").assert(plus2, plus3)
       _ <- eventLog.state("id").assertSome(total2)
     } yield ()
