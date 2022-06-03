@@ -182,7 +182,7 @@ final class ResourcesDummy private (
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
     orgs
       .fetchOrganization(organization)
-      .as(journal.eventsByTag(Organizations.orgTag(organization), offset))
+      .as(Stream.empty)
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     journal.events(offset)
