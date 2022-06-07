@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseSerializer
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -131,7 +131,7 @@ object OrganizationEvent {
   }
 
   @nowarn("cat=unused")
-  val sseSerializer: SseSerializer[OrganizationEvent] = new SseSerializer[OrganizationEvent] {
+  val sseEncoder: SseEncoder[OrganizationEvent] = new SseEncoder[OrganizationEvent] {
     private val context = ContextValue(contexts.metadata, contexts.organizations)
 
     implicit private val config: Configuration = Configuration.default

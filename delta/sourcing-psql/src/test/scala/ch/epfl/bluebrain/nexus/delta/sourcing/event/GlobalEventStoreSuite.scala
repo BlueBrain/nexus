@@ -5,7 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
@@ -22,7 +23,7 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private lazy val store = GlobalEventStore[String, ArithmeticEvent](
     Arithmetic.entityType,
     ArithmeticEvent.serializer,
-    QueryConfig(10, RefreshStrategy.Delay(500.millis)),
+    QueryConfig(2, RefreshStrategy.Delay(500.millis)),
     xas
   )
 
@@ -32,6 +33,11 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val event2 = Minus("id", 2, 3, Instant.EPOCH, alice)
   private val event3 = Plus("id", 3, 4, Instant.EPOCH, alice)
   private val event4 = Minus("id2", 1, 4, Instant.EPOCH, Anonymous)
+
+  private val envelope1 = Envelope(Arithmetic.entityType, "id", 1, event1, Instant.EPOCH, Offset.at(1L))
+  private val envelope2 = Envelope(Arithmetic.entityType, "id", 2, event2, Instant.EPOCH, Offset.at(2L))
+  private val envelope3 = Envelope(Arithmetic.entityType, "id", 3, event3, Instant.EPOCH, Offset.at(3L))
+  private val envelope4 = Envelope(Arithmetic.entityType, "id2", 1, event4, Instant.EPOCH, Offset.at(4L))
 
   private def assertCount = sql"select count(*) from global_events".query[Int].unique.transact(xas.read).assert(4)
 
@@ -59,6 +65,22 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
 
   test("Get an empty stream for a unknown id") {
     store.history("xxx", 2).assertEmpty
+  }
+
+  test("Fetch all current events from the beginning") {
+    store.currentEvents(Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
+  }
+
+  test("Fetch all current events from offset 2") {
+    store.currentEvents(Offset.at(2L)).assert(envelope3, envelope4)
+  }
+
+  test("Fetch all events from the beginning") {
+    store.events(Offset.Start).take(4).assert(envelope1, envelope2, envelope3, envelope4)
+  }
+
+  test("Fetch all events from offset 2") {
+    store.events(Offset.at(2L)).take(2).assert(envelope3, envelope4)
   }
 
 }

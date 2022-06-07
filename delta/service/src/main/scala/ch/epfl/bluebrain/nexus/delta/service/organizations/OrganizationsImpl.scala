@@ -12,10 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, S
 import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import fs2.Stream
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
@@ -104,10 +103,9 @@ final class OrganizationsImpl private (
       }
       .span("listOrganizations")
 
-  override def events(offset: Offset): Stream[Task, Envelope[Label, OrganizationEvent]] = Stream.empty
+  override def currentEvents(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.events(offset)
 
-  override def currentEvents(offset: Offset): Stream[Task, Envelope[Label, OrganizationEvent]] = Stream.empty
-
+  override def events(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.currentEvents(offset)
 }
 
 object OrganizationsImpl {

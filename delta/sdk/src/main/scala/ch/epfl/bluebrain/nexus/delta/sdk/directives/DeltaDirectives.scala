@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
+import akka.persistence.query.{NoOffset, Offset => AkkaOffset, Sequence, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -60,6 +61,12 @@ trait DeltaDirectives extends UriDirectives {
     response()
 
   /**
+    * Completes the current Route with the provided conversion to SSEs
+    */
+  def emit(response: ResponseToSseNew): Route =
+    response()
+
+  /**
     * Completes the current Route with the provided conversion to Json-LD
     */
   def emit(response: ResponseToJsonLd): Route =
@@ -95,7 +102,7 @@ trait DeltaDirectives extends UriDirectives {
     * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
     * result in an [[MalformedHeaderRejection]].
     */
-  def lastEventId: Directive1[Offset] = {
+  def lastEventId: Directive1[AkkaOffset] = {
     optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
       case Some(value) =>
         val timeBasedUUID = Try(TimeBasedUUID(UUID.fromString(value.id))).toOption
@@ -110,6 +117,23 @@ trait DeltaDirectives extends UriDirectives {
       case None        => provide(NoOffset)
     }
   }
+
+  /**
+    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
+    * result in an [[MalformedHeaderRejection]].
+    */
+  def lastEventIdNew: Directive1[Offset] =
+    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
+      case Some(value) =>
+        value.id.toLongOption match {
+          case None    =>
+            val msg =
+              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
+            reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
+          case Some(o) => provide(Offset.at(o))
+        }
+      case None        => provide(Offset.Start)
+    }
 
   /**
     * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter''

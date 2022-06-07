@@ -11,12 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import fs2.Stream
-import monix.bio.{IO, Task, UIO}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import monix.bio.{IO, UIO}
 
 import java.util.UUID
 
@@ -165,7 +164,7 @@ trait Organizations {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = Offset.Start): Stream[Task, Envelope[Label, OrganizationEvent]]
+  def events(offset: Offset = Offset.Start): EnvelopeStream[Label, OrganizationEvent]
 
   /**
     * The current organization events. The stream stops after emitting all known events.
@@ -173,7 +172,7 @@ trait Organizations {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = Offset.Start): Stream[Task, Envelope[Label, OrganizationEvent]]
+  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[Label, OrganizationEvent]
 
 }
 

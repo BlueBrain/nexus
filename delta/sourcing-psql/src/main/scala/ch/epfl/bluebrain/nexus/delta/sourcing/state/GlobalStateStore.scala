@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -11,7 +11,6 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
-import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.{Task, UIO}
@@ -44,7 +43,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def currentStates(offset: Offset): Stream[Task, Envelope[Id, S]]
+  def currentStates(offset: Offset): EnvelopeStream[Id, S]
 
   /**
     * Fetches states from the given type from the provided offset
@@ -55,7 +54,7 @@ trait GlobalStateStore[Id, S <: GlobalState] {
     * @param offset
     *   the offset
     */
-  def states(offset: Offset): Stream[Task, Envelope[Id, S]]
+  def states(offset: Offset): EnvelopeStream[Id, S]
 
 }
 
@@ -120,21 +119,21 @@ object GlobalStateStore {
           case None       => UIO.none
         }
 
-    private def states(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, S]] =
+    private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
       Envelope.stream(
         offset,
         (o: Offset) =>
-          fr"SELECT type, id, value, rev, instant, ordering FROM public.global_states where type = $tpe" ++
-            Fragments.andOpt(o.after) ++
+          fr"SELECT type, id, value, rev, instant, ordering FROM public.global_states" ++
+            Fragments.whereAndOpt(Some(fr"type = $tpe"), o.after) ++
             fr"ORDER BY ordering" ++
             fr"LIMIT ${config.batchSize}",
         strategy,
         xas
       )
 
-    override def currentStates(offset: Offset): Stream[Task, Envelope[Id, S]] = states(offset, RefreshStrategy.Stop)
+    override def currentStates(offset: Offset): EnvelopeStream[Id, S] = states(offset, RefreshStrategy.Stop)
 
-    override def states(offset: Offset): Stream[Task, Envelope[Id, S]] = states(offset, config.refreshInterval)
+    override def states(offset: Offset): EnvelopeStream[Id, S] = states(offset, config.refreshInterval)
   }
 
 }

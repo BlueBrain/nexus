@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Envelope
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
@@ -108,19 +108,33 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
   def dryRun(id: Id, command: Command): IO[Rejection, (E, S)]
 
   /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param offset
+    *   offset to start from
+    */
+  def currentEvents(offset: Offset): EnvelopeStream[Id, E]
+
+  /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param offset
+    *   offset to start from
+    */
+  def events(offset: Offset): EnvelopeStream[Id, E]
+
+  /**
     * Allow to stream all current stream states within [[Envelope]] s without applying transformation
     * @param offset
     *   offset to start from
     */
-  def currentStates(offset: Offset): Stream[Task, Envelope[Id, S]]
+  def currentStates(offset: Offset): EnvelopeStream[Id, S]
 
   /**
-    * Allow to stream all current stream states from the beginning within [[Envelope]] s without applying transformation
+    * Allow to stream all current states from the beginning within [[Envelope]] s without applying transformation
     */
-  def currentStates: Stream[Task, Envelope[Id, S]] = currentStates(Offset.Start)
+  def currentStates: EnvelopeStream[Id, S] = currentStates(Offset.Start)
 
   /**
-    * Allow to stream all current stream states from the provided offset
+    * Allow to stream all current states from the provided offset
     * @param offset
     *   offset to start from
     * @param f
@@ -129,7 +143,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
   def currentStates[T](offset: Offset, f: S => T): Stream[Task, T]
 
   /**
-    * Allow to stream all current stream states from the beginning
+    * Allow to stream all current states from the beginning
     * @param f
     *   the function to apply on each state
     */
@@ -189,6 +203,10 @@ object GlobalEventLog {
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(id), command, maxDuration)
+
+    override def currentEvents(offset: Offset): EnvelopeStream[Id, E] = eventStore.currentEvents(offset)
+
+    override def events(offset: Offset): EnvelopeStream[Id, E] = eventStore.events(offset)
 
     override def currentStates[T](offset: Offset, f: S => T): Stream[Task, T] = currentStates(offset).map { e =>
       f(e.value)

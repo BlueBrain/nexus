@@ -25,4 +25,6 @@ object Offset {
     override def after: Option[Fragment] = Some(fr"ordering > $value")
   }
 
+  def at(value: Long): Offset = At(value)
+
 }

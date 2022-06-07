@@ -18,10 +18,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -51,6 +52,8 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+
+  implicit val sseConverter: SseConverter[OrganizationEvent] = SseConverter(OrganizationEvent.sseEncoder)
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
@@ -85,10 +88,9 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
             (pathPrefix("events") & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/orgs/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
-                  failWith(new NotImplementedError("TODO: Handle SSEs"))
-//                  lastEventId { offset =>
-//                    emit(organizations.events(offset))
-//                  }
+                  lastEventIdNew { offset =>
+                    emit(organizations.events(offset))
+                  }
                 }
               }
             },

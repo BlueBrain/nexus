@@ -30,14 +30,14 @@ import scala.annotation.nowarn
   * @param offset
   *   the offset
   */
-final case class Envelope[Id, Value](tpe: EntityType, id: Id, rev: Int, value: Value, instant: Instant, offset: Offset)
+final case class Envelope[Id, +Value](tpe: EntityType, id: Id, rev: Int, value: Value, instant: Instant, offset: Offset)
 
 object Envelope {
 
   def stream[Id, Value](offset: Offset, query: Offset => Fragment, strategy: RefreshStrategy, xas: Transactors)(implicit
       @nowarn("cat=unused") get: Get[Id],
       decoder: Decoder[Value]
-  ): Stream[Task, Envelope[Id, Value]] =
+  ): EnvelopeStream[Id, Value] =
     Stream.unfoldChunkEval[Task, Offset, Envelope[Id, Value]](offset) { currentOffset =>
       query(currentOffset).query[(EntityType, Id, Json, Int, Instant, Long)].to[List].transact(xas.streaming).flatMap {
         rows =>
