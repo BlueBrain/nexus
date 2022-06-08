@@ -1,15 +1,16 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.akka
+package ch.epfl.bluebrain.nexus.delta.sdk.stream
 
 import akka.NotUsed
 import akka.stream._
 import akka.stream.scaladsl.{Sink => AkkaSink, Source => AkkaSource, _}
-import cats.effect.ExitCase
-import fs2.Stream
+import cats.effect._
+import fs2._
 import monix.bio.Task
 import monix.execution.Scheduler
 
 /**
-  * Converts a fs2 stream to an Akka source Original code from:
+  * Converts a fs2 stream to an Akka source Original code from the streamz library from Martin Krasser (published under
+  * Apache License 2.0):
   * https://github.com/krasserm/streamz/blob/master/streamz-converter/src/main/scala/streamz/converter/Converter.scala
   */
 object StreamConverter {

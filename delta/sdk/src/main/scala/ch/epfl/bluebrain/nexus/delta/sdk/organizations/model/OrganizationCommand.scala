@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

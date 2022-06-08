@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler

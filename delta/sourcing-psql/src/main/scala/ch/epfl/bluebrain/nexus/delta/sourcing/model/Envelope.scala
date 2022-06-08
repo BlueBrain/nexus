@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import doobie._
@@ -30,7 +31,18 @@ import scala.annotation.nowarn
   * @param offset
   *   the offset
   */
-final case class Envelope[Id, +Value](tpe: EntityType, id: Id, rev: Int, value: Value, instant: Instant, offset: Offset)
+final case class Envelope[Id, +Value](
+    tpe: EntityType,
+    id: Id,
+    rev: Int,
+    value: Value,
+    instant: Instant,
+    offset: Offset
+) {
+
+  def valueClass: String = ClassUtils.simpleName(value)
+
+}
 
 object Envelope {
 

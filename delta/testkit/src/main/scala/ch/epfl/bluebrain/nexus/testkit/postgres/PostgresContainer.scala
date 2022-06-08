@@ -10,4 +10,5 @@ class PostgresContainer(user: String, password: String)
   addEnv("POSTGRES_PASSWORD", password)
   addExposedPort(5432)
   setWaitStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+  setCommand("postgres", "-c", "fsync=off")
 }

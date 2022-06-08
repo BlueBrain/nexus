@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, Projects, Quotas, QuotasDummy}
@@ -115,17 +116,7 @@ trait ProjectsBehaviors {
     )
     .accepted
 
-  lazy val organizations: OrganizationsDummy = {
-    val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
-    val orgs            = for {
-      o <- OrganizationsDummy()(orgUuidF, ioClock)
-      _ <- o.create(org1, None)
-      _ <- o.create(org2, None)
-      _ <- o.create(Label.unsafe("orgDeprecated"), None)
-      _ <- o.deprecate(Label.unsafe("orgDeprecated"), 1L)
-    } yield o
-    orgs.hideErrorsWith(r => new IllegalStateException(r.reason))
-  }.accepted
+  lazy val organizations: Organizations = null
 
   def create(quotas: Quotas): Task[Projects]
 
@@ -471,7 +462,7 @@ trait ProjectsBehaviors {
 
       projects.fetchProject(projectRef, notDeprecatedOrDeleted).accepted.ref shouldEqual projectRef
 
-      organizations.deprecate(orgLabel, 1L).accepted
+      organizations.deprecate(orgLabel, 1).accepted
 
       projects.fetchProject(projectRef, notDeprecatedOrDeleted).rejected shouldEqual
         RejectionWrapper(WrappedOrganizationRejection(OrganizationIsDeprecated(orgLabel)))

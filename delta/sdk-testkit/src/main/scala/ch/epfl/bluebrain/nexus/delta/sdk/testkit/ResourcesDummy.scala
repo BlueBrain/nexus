@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ResourcesDummy.ResourcesJournal
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

@@ -3,10 +3,11 @@ package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{EventEnvelope, Offset, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour

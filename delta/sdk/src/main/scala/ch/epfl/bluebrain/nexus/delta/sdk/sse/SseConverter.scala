@@ -23,9 +23,9 @@ final class SseConverter[E] private (sseEncoder: SseEncoder[E], injector: Json =
       val data = defaultPrinter.print(json.sort)
       envelope.offset match {
         case Start     =>
-          ServerSentEvent(data, envelope.tpe.value)
+          ServerSentEvent(data, envelope.valueClass)
         case At(value) =>
-          ServerSentEvent(data, envelope.tpe.value, value.toString)
+          ServerSentEvent(data, envelope.valueClass, value.toString)
       }
     }
 }

@@ -1,12 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent

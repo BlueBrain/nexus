@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

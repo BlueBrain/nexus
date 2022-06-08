@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -10,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
-import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl
-import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEventLog, Transactors}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -32,10 +32,10 @@ object OrganizationsModule extends ModuleDef {
         xas: Transactors
     ) =>
       OrganizationsImpl(
-        GlobalEventLog(Organizations.definition(clock, uuidF), config.organizations.eventLog, xas),
         scopeInitializations,
-        config.organizations.cacheMaxSize
-      )
+        config.organizations,
+        xas
+      )(clock, uuidF)
   }
 
   make[OrganizationsRoutes].from {

@@ -89,6 +89,8 @@ object Arithmetic {
   sealed trait ArithmeticRejection extends Product with Serializable
 
   object ArithmeticRejection {
+    final case object NotFound                                             extends ArithmeticRejection
+    final case class RevisionNotFound(provided: Int, current: Int)         extends ArithmeticRejection
     final case class AlreadyExists(id: String, command: ArithmeticCommand) extends ArithmeticRejection
     final case class NegativeTotal(invalidValue: Int)                      extends ArithmeticRejection
   }

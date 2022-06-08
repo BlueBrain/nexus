@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{PostgresPassword, PostgresUser}

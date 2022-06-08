@@ -1,3 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.kamon
 
-final case class KamonMetricComponent(value: String)
+/**
+  * Allow to define a component to be later used in Kamon spans
+  */
+final case class KamonMetricComponent(value: String) extends AnyVal

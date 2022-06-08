@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig

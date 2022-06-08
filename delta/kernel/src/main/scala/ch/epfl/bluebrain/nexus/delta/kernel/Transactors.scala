@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing
+package ch.epfl.bluebrain.nexus.delta.kernel
 
 import doobie.util.transactor.Transactor
 import monix.bio.Task

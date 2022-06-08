@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, Re
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.OrganizationNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolut
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
@@ -83,7 +84,7 @@ trait ResourcesBehaviors {
     (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
   )
 
-  lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
+  lazy val projectSetup: UIO[(Organizations, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: Nil,
     projectsToCreate = project :: projectDeprecated :: Nil,
     projectsToDeprecate = projectDeprecated.ref :: Nil

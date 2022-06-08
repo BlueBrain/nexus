@@ -1,15 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.service.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
+import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.entityType
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.entityType
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.{OrganizationsLog, UUIDCache}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, Organizations, ScopeInitialization}
-import ch.epfl.bluebrain.nexus.delta.service.organizations.OrganizationsImpl._
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
@@ -52,11 +55,11 @@ final class OrganizationsImpl private (
     eval(DeprecateOrganization(label, rev, caller)).span("deprecateOrganization")
 
   override def fetch(label: Label): IO[OrganizationNotFound, OrganizationResource] =
-    log.state(label, OrganizationNotFound(label)).map(_.toResource).span("fetchOrganization")
+    log.stateOr(label, OrganizationNotFound(label)).map(_.toResource).span("fetchOrganization")
 
   override def fetchAt(label: Label, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] = {
     log
-      .state(label, rev, OrganizationNotFound(label), RevisionNotFound)
+      .stateOr(label, rev, OrganizationNotFound(label), RevisionNotFound)
       .map(_.toResource)
       .span("fetchOrganizationAt")
   }
@@ -103,9 +106,9 @@ final class OrganizationsImpl private (
       }
       .span("listOrganizations")
 
-  override def currentEvents(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.events(offset)
+  override def currentEvents(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.currentEvents(offset)
 
-  override def events(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.currentEvents(offset)
+  override def events(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.events(offset)
 }
 
 object OrganizationsImpl {
@@ -116,12 +119,19 @@ object OrganizationsImpl {
   type UUIDCache = KeyValueStore[UUID, Label]
 
   def apply(
-      log: OrganizationsLog,
       scopeInitializations: Set[ScopeInitialization],
-      cacheMaxSize: Int
+      config: OrganizationsConfig,
+      xas: Transactors
+  )(implicit
+      clock: Clock[UIO] = IO.clock,
+      uuidf: UUIDF
   ): UIO[Organizations] =
-    KeyValueStore.localLRU[UUID, Label](cacheMaxSize.toLong).map { cache =>
-      new OrganizationsImpl(log, cache, scopeInitializations)
+    KeyValueStore.localLRU[UUID, Label](config.cacheMaxSize.toLong).map { cache =>
+      new OrganizationsImpl(
+        GlobalEventLog(Organizations.definition, config.eventLog, xas),
+        cache,
+        scopeInitializations
+      )
     }
 
 }

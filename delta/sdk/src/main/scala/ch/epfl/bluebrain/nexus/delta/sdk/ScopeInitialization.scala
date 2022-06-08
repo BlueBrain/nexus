@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import monix.bio.IO
 
 /**

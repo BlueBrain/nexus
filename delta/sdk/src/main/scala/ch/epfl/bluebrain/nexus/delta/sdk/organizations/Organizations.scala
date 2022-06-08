@@ -1,16 +1,17 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations._
+import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -248,8 +249,8 @@ object Organizations {
       onUniqueViolation = (id: Label, c: OrganizationCommand) =>
         c match {
           case _: CreateOrganization    => OrganizationAlreadyExists(id)
-          case u: UpdateOrganization    => RevisionAlreadyExists(id, u.rev)
-          case d: DeprecateOrganization => RevisionAlreadyExists(id, d.rev)
+          case u: UpdateOrganization    => IncorrectRev(u.rev, u.rev + 1)
+          case d: DeprecateOrganization => IncorrectRev(d.rev, d.rev + 1)
         }
     )
 }

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}

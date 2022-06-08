@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.server.Directives.{parameter, _}
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, Route}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -17,13 +17,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.{Organization, OrganizationEvent, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource, Organizations}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder

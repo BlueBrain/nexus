@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
@@ -58,11 +58,6 @@ object OrganizationRejection {
     */
   final case class OrganizationAlreadyExists(label: Label)
       extends OrganizationRejection(s"Organization '$label' already exists.")
-
-  final case class RevisionAlreadyExists(label: Label, rev: Int)
-      extends OrganizationRejection(
-        s"Revision $rev for organization '$label' already exists, it may have been updated since last seen.."
-      )
 
   /**
     * Signals that the provided revision does not match the latest revision

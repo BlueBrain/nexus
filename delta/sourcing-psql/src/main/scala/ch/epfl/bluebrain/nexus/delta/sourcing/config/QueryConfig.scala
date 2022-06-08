@@ -13,7 +13,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param refreshInterval
   *   the time to wait before reexecuting the query when the rows have all been consumed
   */
-final case class QueryConfig(batchSize: Int, refreshInterval: RefreshStrategy.Delay)
+final case class QueryConfig(batchSize: Int, refreshInterval: RefreshStrategy)
 
 object QueryConfig {
   implicit final val queryConfig: ConfigReader[QueryConfig] =

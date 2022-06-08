@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
@@ -13,11 +14,11 @@ import doobie.Get
 import doobie.implicits._
 import doobie.postgres.sqlstate
 import doobie.util.Put
+import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, Task}
 
 import scala.concurrent.duration.FiniteDuration
-import fs2.Stream
 
 /**
   * Event log for global entities that can be controlled through commands;
@@ -34,19 +35,10 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
     * Get the current state for the entity with the given __id__
     * @param id
     *   the entity identifier
-    */
-  def state(id: Id): UIO[Option[S]]
-
-  /**
-    * Get the current state for the entity with the given __id__
-    * @param id
-    *   the entity identifier
     * @param notFound
     *   if no state is found, fails with this rejection
     */
-  def state[R <: Rejection](id: Id, notFound: => R): IO[R, S] = state(id).flatMap {
-    IO.fromOption(_, notFound)
-  }
+  def stateOr[R <: Rejection](id: Id, notFound: => R): IO[R, S]
 
   /**
     * Get the current state for the entity with the given __id__ at the given __revision__
@@ -55,30 +47,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
     * @param rev
     *   the revision
     */
-  def state(id: Id, rev: Option[Int]): UIO[Option[S]]
-
-  /**
-    * Get the current state for the entity with the given __id__ at the given __revision__
-    * @param id
-    *   the entity identifier
-    * @param rev
-    *   the revision
-    */
-  def state(id: Id, rev: Int): UIO[Option[S]] = state(id, Some(rev))
-
-  /**
-    * Get the current state for the entity with the given __id__ at the given __revision__
-    * @param id
-    *   the entity identifier
-    * @param rev
-    *   the revision
-    */
-  def state[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S] =
-    state(id, rev).flatMap {
-      case None    =>
-        state(id, notFound).flatMap { latest => IO.raiseError(invalidRevision(rev, latest.rev)) }
-      case Some(s) => IO.pure(s)
-    }
+  def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -175,10 +144,16 @@ object GlobalEventLog {
       xas: Transactors
   ): GlobalEventLog[Id, S, Command, E, Rejection] = new GlobalEventLog[Id, S, Command, E, Rejection] {
 
-    override def state(id: Id): UIO[Option[S]] = stateStore.get(id)
+    override def stateOr[R <: Rejection](id: Id, notFound: => R): IO[R, S] = stateStore.get(id).flatMap {
+      IO.fromOption(_, notFound)
+    }
 
-    override def state(id: Id, rev: Option[Int]): UIO[Option[S]] =
-      stateMachine.computeState(eventStore.history(id, rev))
+    override def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S] =
+      stateMachine.computeState(eventStore.history(id, rev)).flatMap {
+        case Some(s) if s.rev == rev => IO.pure(s)
+        case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
+        case None                    => IO.raiseError(notFound)
+      }
 
     override def evaluate(id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine

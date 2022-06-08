@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasDeletion, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}

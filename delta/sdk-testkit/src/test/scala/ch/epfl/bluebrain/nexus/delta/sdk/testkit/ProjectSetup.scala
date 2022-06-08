@@ -4,15 +4,17 @@ import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.{QuotasDummy, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import monix.bio.UIO
 
 object ProjectSetup {
+
+  private val orgs: Organizations = null
 
   /**
     * Set up Organizations and Projects dummies, populate some data and then eventually apply some deprecation
@@ -39,9 +41,9 @@ object ProjectSetup {
       clock: Clock[UIO],
       uuidf: UUIDF,
       subject: Subject
-  ): UIO[(OrganizationsDummy, ProjectsDummy)] = {
+  ): UIO[(Organizations, ProjectsDummy)] = {
     for {
-      o <- OrganizationsDummy()
+      o <- UIO.pure(orgs)
       // Creating organizations
       _ <- orgsToCreate
              .traverse(o.create(_, None))
@@ -61,7 +63,7 @@ object ProjectSetup {
       // Deprecating orgs
       _ <- organizationsToDeprecate
              .traverse { org =>
-               o.deprecate(org, 1L)
+               o.deprecate(org, 1)
              }
              .hideErrorsWith(r => new IllegalStateException(r.reason))
     } yield (o, p)

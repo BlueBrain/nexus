@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccoun
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, QuotasDummy, SchemaImports}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -191,9 +192,9 @@ class ProjectDeletionSpec extends AnyWordSpecLike with Matchers with IOValues {
 object ProjectDeletionSpec {
 
   private class Fixture(implicit uuidf: UUIDF, clock: Clock[UIO], baseUri: BaseUri, api: JsonLdApi) {
-    val testContext: UIO[(OrganizationsDummy, ProjectsDummy, ResourcesDummy, EventLog[Envelope[ProjectScopedEvent]])] =
+    val testContext: UIO[(Organizations, ProjectsDummy, ResourcesDummy, EventLog[Envelope[ProjectScopedEvent]])] =
       (for {
-        orgs                     <- OrganizationsDummy()
+        orgs                     <- IO.pure(null: Organizations)
         projects                 <- ProjectsDummy(orgs, QuotasDummy.neverReached, ApiMappings.empty)
         acls                     <- AclSetup.init()
         resolverContextResolution = new ResolverContextResolution(

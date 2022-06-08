@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationsConfig, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
@@ -28,6 +29,7 @@ import java.util.UUID
 
 class OrganizationsRoutesSpec
     extends RouteHelpers
+    with DoobieFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -36,6 +38,7 @@ class OrganizationsRoutesSpec
     with OptionValues
     with TestMatchers
     with Inspectors
+    with ConfigFixtures
     with RouteFixtures {
 
   private val fixedUuid             = UUID.randomUUID()
@@ -55,13 +58,16 @@ class OrganizationsRoutesSpec
     Set(orgsPermissions.write, orgsPermissions.read),
     ServiceAccount(subject)
   )
-  private val orgs = OrganizationsDummy(Set(aopd)).accepted
+
+  private lazy val config = OrganizationsConfig(eventLogConfig, pagination, 10)
+
+  private lazy val orgs = OrganizationsImpl(Set(aopd), config, xas).accepted
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
 
-  private val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
+  private lazy val routes = Route.seal(OrganizationsRoutes(identities, orgs, acls))
 
   private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid)
 

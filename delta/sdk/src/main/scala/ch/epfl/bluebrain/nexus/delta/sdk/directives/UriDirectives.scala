@@ -21,7 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, PaginationConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingMode, OrderingFields, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

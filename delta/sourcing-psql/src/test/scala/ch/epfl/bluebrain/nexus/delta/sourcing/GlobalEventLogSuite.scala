@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.{AlreadyExists, NegativeTotal, NotFound, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.{ArithmeticEvent, Total}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -53,11 +53,15 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
   private val total2 = Total(2, 5)
   private val total3 = Total(3, 1)
 
+  test("Raise an error with a non-existent id") {
+    eventLog.stateOr("xxx", NotFound).error(NotFound)
+  }
+
   test("Evaluate successfully a command and store both event and state for an initial state") {
     for {
       _ <- eventLog.evaluate("id", Add(2)).assert((plus2, total1))
       _ <- eventStore.history("id").assert(plus2)
-      _ <- eventLog.state("id").assertSome(total1)
+      _ <- eventLog.stateOr("id", NotFound).assert(total1)
     } yield ()
   }
 
@@ -65,7 +69,7 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate("id", Add(3)).assert((plus3, total2))
       _ <- eventStore.history("id").assert(plus2, plus3)
-      _ <- eventLog.state("id").assertSome(total2)
+      _ <- eventLog.stateOr("id", NotFound).assert(total2)
     } yield ()
   }
 
@@ -73,7 +77,7 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate("id", Subtract(8)).error(NegativeTotal(-3))
       _ <- eventStore.history("id").assert(plus2, plus3)
-      _ <- eventLog.state("id").assertSome(total2)
+      _ <- eventLog.stateOr("id", NotFound).assert(total2)
     } yield ()
   }
 
@@ -82,7 +86,7 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate("id", boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history("id").assert(plus2, plus3)
-      _ <- eventLog.state("id").assertSome(total2)
+      _ <- eventLog.stateOr("id", NotFound).assert(total2)
     } yield ()
   }
 
@@ -90,7 +94,7 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate("id", Never).terminated(EvaluationTimeout(Never, maxDuration))
       _ <- eventStore.history("id").assert(plus2, plus3)
-      _ <- eventLog.state("id").assertSome(total2)
+      _ <- eventLog.stateOr("id", NotFound).assert(total2)
     } yield ()
   }
 
@@ -98,12 +102,24 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.dryRun("id", Subtract(4)).assert((minus4, total3))
       _ <- eventStore.history("id").assert(plus2, plus3)
-      _ <- eventLog.state("id").assertSome(total2)
+      _ <- eventLog.stateOr("id", NotFound).assert(total2)
     } yield ()
   }
 
   test("Get state at the specified revision") {
-    eventLog.state("id", 1).assertSome(total1)
+    eventLog.stateOr("id", 1, NotFound, RevisionNotFound).assert(total1)
+  }
+
+  test("Get state at the specified revision") {
+    eventLog.stateOr("id", 1, NotFound, RevisionNotFound).assert(total1)
+  }
+
+  test("Raise an error with a non-existent id") {
+    eventLog.stateOr("xxx", 1, NotFound, RevisionNotFound).error(NotFound)
+  }
+
+  test("Raise an error when providing a nonexistent revision") {
+    eventLog.stateOr("id", 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 2))
   }
 
 }

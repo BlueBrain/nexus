@@ -9,13 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{SchemaImports, Schemas}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -92,7 +93,7 @@ trait SchemasBehaviors {
   val sourceUpdated = sourceNoId.replace("datatype" -> "xsd:integer", "xsd:double")
   val schemaUpdated = SchemaGen.schema(mySchema, project.ref, sourceUpdated)
 
-  lazy val projectSetup: UIO[(OrganizationsDummy, ProjectsDummy)] = ProjectSetup.init(
+  lazy val projectSetup: UIO[(Organizations, ProjectsDummy)] = ProjectSetup.init(
     orgsToCreate = org :: orgDeprecated :: Nil,
     organizationsToDeprecate = orgDeprecated :: Nil,
     projectsToCreate = project :: projectDeprecated :: projectWithDeprecatedOrg :: Nil,

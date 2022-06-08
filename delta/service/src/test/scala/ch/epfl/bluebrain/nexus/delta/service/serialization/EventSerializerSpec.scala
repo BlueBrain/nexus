@@ -9,9 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
@@ -29,11 +26,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -181,12 +177,6 @@ class EventSerializerSpec
       instant = instant,
       subject = subject
     ) -> jsonContentOf("/serialization/realm-deprecated.json")
-  )
-
-  val orgsMapping: Map[OrganizationEvent, Json] = Map(
-    OrganizationCreated(org, orgUuid, rev, Some(description), instant, subject) -> jsonContentOf("/serialization/org-created.json"),
-    OrganizationUpdated(org, orgUuid, rev, Some(description), instant, subject) -> jsonContentOf("/serialization/org-updated.json"),
-    OrganizationDeprecated(org, orgUuid, rev, instant, subject)                 -> jsonContentOf("/serialization/org-deprecated.json")
   )
 
   val resolversMapping: Map[ResolverEvent, Json] = Map(
@@ -411,8 +401,6 @@ class EventSerializerSpec
   "An EventSerializer" should behave like jsonToEventDeserializer("acl", aclsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("realm", realmsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("realm", realmsMapping)
-  "An EventSerializer" should behave like eventToJsonSerializer("organization", orgsMapping)
-  "An EventSerializer" should behave like jsonToEventDeserializer("organization", orgsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("project", projectsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("project", projectsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resolver", resolversMapping)

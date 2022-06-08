@@ -1,18 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Organizations.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationState
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.{evaluate, next}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationState
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOFixedClock, IOValues}
 import monix.execution.Scheduler
-import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
