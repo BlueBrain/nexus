@@ -6,23 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 
 import java.time.Instant
-import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
-@nowarn("cat=unused")
 object EventLogUtils {
 
   implicit private val logger: Logger = Logger("EventLog")
@@ -201,44 +196,6 @@ object EventLogUtils {
         rejectionMapper.to,
         p => currentEvents(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
       )
-
-  /**
-    * Fetch events related to the given project
-    * @param orgs
-    *   a [[Organizations]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param label
-    *   the project ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, offset: Offset)(implicit
-      rejectionMapper: Mapper[OrganizationRejection, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    IO.pure(fs2.Stream.empty)
-
-  /**
-    * Fetch events related to the given project for the selected module
-    * @param orgs
-    *   a [[Organizations]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param label
-    *   the project ref where the events belong
-    * @param module
-    *   the module where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, module: String, offset: Offset)(implicit
-      rejectionMapper: Mapper[OrganizationRejection, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    IO.pure(fs2.Stream.empty)
 
   private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
     eventLog.config.flavour match {

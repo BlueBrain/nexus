@@ -73,7 +73,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def orgEvents[R](orgs: Organizations, label: Label, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.orgEvents(orgs, eventLog, label, offset)
+    orgs.fetch(label).bimap(rejectionMapper.to, _ => eventLog.eventsByTag("", offset))
 
   /**
     * Fetch organization events for the given module
@@ -81,5 +81,5 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def orgEvents[R](orgs: Organizations, label: Label, module: String, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.orgEvents(orgs, eventLog, label, module, offset)
+    orgs.fetch(label).bimap(rejectionMapper.to, _ => eventLog.eventsByTag(module, offset))
 }

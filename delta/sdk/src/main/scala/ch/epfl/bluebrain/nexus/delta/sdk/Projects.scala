@@ -307,10 +307,7 @@ object Projects {
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
-    val f: FetchOrganization = label =>
-      orgs.fetchActiveOrganization(ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.unsafe(label.value))(
-        rejectionMapper
-      )
+    val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
     evaluate(f, creationCooldown)(state, command)
   }
 
