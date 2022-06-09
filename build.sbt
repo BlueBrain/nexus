@@ -314,7 +314,8 @@ lazy val sourcingPsql = project
       catsEffectLaws % Test,
       logback        % Test
     ) ++ doobie,
-    Test / fork          := true
+    Test / fork          := true,
+    addCompilerPlugin(kindProjector)
   )
 
 lazy val rdf = project
