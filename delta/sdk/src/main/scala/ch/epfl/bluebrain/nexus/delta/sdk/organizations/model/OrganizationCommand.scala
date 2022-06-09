@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -52,7 +52,7 @@ object OrganizationCommand {
     */
   final case class UpdateOrganization(
       label: Label,
-      rev: Long,
+      rev: Int,
       description: Option[String],
       subject: Subject
   ) extends OrganizationCommand
@@ -69,7 +69,7 @@ object OrganizationCommand {
     */
   final case class DeprecateOrganization(
       label: Label,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends OrganizationCommand
 }

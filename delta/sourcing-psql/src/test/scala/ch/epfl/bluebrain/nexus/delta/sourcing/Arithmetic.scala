@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticCommand.{Add, Boom, Never, Subtract}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -90,6 +89,8 @@ object Arithmetic {
   sealed trait ArithmeticRejection extends Product with Serializable
 
   object ArithmeticRejection {
+    final case object NotFound                                             extends ArithmeticRejection
+    final case class RevisionNotFound(provided: Int, current: Int)         extends ArithmeticRejection
     final case class AlreadyExists(id: String, command: ArithmeticCommand) extends ArithmeticRejection
     final case class NegativeTotal(invalidValue: Int)                      extends ArithmeticRejection
   }

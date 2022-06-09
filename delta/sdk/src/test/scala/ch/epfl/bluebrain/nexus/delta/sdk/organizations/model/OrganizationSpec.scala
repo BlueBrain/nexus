@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen

@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.service.utils
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
@@ -25,6 +26,8 @@ import monix.bio.{IO, UIO}
 class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Permission], serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent("ownerPermissions")
+
   private val logger: Logger                          = Logger[OwnerPermissionsScopeInitialization]
   implicit private val serviceAccountSubject: Subject = serviceAccount.subject
 
@@ -41,7 +44,7 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
           val str = s"Failed to apply the owner permissions for org '${organization.label}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("setOwnerPermissions", Organizations.moduleType)
+      .span("setOrgPermissions")
 
   override def onProjectCreation(project: Project, subject: Subject): IO[ScopeInitializationFailed, Unit] =
     acls
@@ -53,5 +56,5 @@ class OwnerPermissionsScopeInitialization(acls: Acls, ownerPermissions: Set[Perm
           val str = s"Failed to apply the owner permissions for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("setOwnerPermissions", Projects.moduleType)
+      .span("setProjectPermissions")
 }

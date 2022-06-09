@@ -8,8 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig, SaveProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, EventLogConfig, ExternalIndexingConfig, QueryConfig, SaveProgressConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.{EventSourceProcessorConfig, StopStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{config, SnapshotStrategyConfig}
 import org.scalatest.OptionValues
 
@@ -29,6 +30,8 @@ trait ConfigFixtures extends OptionValues {
     stashSize = 100,
     RetryStrategyConfig.AlwaysGiveUp
   )
+
+  def eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)
 
   def keyValueStore: KeyValueStoreConfig =
     KeyValueStoreConfig(

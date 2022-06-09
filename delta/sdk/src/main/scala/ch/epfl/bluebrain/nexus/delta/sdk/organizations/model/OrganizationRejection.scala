@@ -1,20 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
 import java.util.UUID
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of organization rejection types.
@@ -44,7 +42,7 @@ object OrganizationRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   object OrganizationNotFound {
@@ -69,7 +67,7 @@ object OrganizationRejection {
     * @param expected
     *   latest know revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends OrganizationRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
       )
@@ -84,13 +82,6 @@ object OrganizationRejection {
       extends OrganizationRejection(s"Organization '$label' is deprecated.")
 
   /**
-    * Rejection returned when the state is the initial after a Organizations.evaluation plus a Organizations.next Note:
-    * This should never happen since the evaluation method already guarantees that the next function returns a current
-    */
-  final case class UnexpectedInitialState(label: Label)
-      extends OrganizationRejection(s"Unexpected initial state for organization '$label'.")
-
-  /**
     * Rejection returned when the organization initialization could not be performed.
     *
     * @param failure
@@ -101,29 +92,15 @@ object OrganizationRejection {
         s"The organization has been successfully created but it could not be initialized due to: '${failure.reason}'"
       )
 
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class OrganizationEvaluationError(err: EvaluationError)
-      extends OrganizationRejection("Unexpected evaluation error")
-
-  implicit def orgRejectionEncoder(implicit C: ClassTag[OrganizationCommand]): Encoder.AsObject[OrganizationRejection] =
+  implicit val orgRejectionEncoder: Encoder.AsObject[OrganizationRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case OrganizationEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason =
-            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for organization '${cmd.label}'"
-          JsonObject(keywords.tpe -> "OrganizationEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case OrganizationEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason =
-            s"Timeout while evaluating the command '${simpleName(cmd)}' for organization '${cmd.label}' after '$t'"
-          JsonObject(keywords.tpe -> "OrganizationEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case OrganizationAlreadyExists(orgLabel)                       => default.add("label", orgLabel.asJson)
-        case IncorrectRev(provided, expected)                          =>
+        case OrganizationAlreadyExists(orgLabel) => default.add("label", orgLabel.asJson)
+        case IncorrectRev(provided, expected)    =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                                         => default
+        case _                                   => default
       }
 
     }
@@ -131,7 +108,13 @@ object OrganizationRejection {
   implicit final val orgRejectionJsonLdEncoder: JsonLdEncoder[OrganizationRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, OrganizationRejection] =
-    OrganizationEvaluationError.apply
+  implicit val responseFieldsOrganizations: HttpResponseFields[OrganizationRejection] =
+    HttpResponseFields {
+      case OrganizationRejection.OrganizationNotFound(_)      => StatusCodes.NotFound
+      case OrganizationRejection.OrganizationAlreadyExists(_) => StatusCodes.Conflict
+      case OrganizationRejection.IncorrectRev(_, _)           => StatusCodes.Conflict
+      case OrganizationRejection.RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case _                                                  => StatusCodes.BadRequest
+    }
 
 }

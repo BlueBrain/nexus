@@ -3,20 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
-import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OrganizationsDummy, OwnerPermissionsDummy, ProjectsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OwnerPermissionsDummy, ProjectsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.InvalidProjectLabel
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -26,6 +25,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.util.UUID
+import scala.annotation.nowarn
 
 class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock with OptionValues {
 
@@ -50,10 +50,11 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
     )
     .accepted
 
-  lazy val organizations: OrganizationsDummy = {
+  @nowarn("cat=unused")
+  lazy val organizations: Organizations = {
     val orgUuidF: UUIDF = UUIDF.fixed(orgUuid)
     val orgs            = for {
-      o <- OrganizationsDummy()(orgUuidF, ioClock)
+      o <- IO.pure(null: Organizations)
       _ <- o.create(usersOrg, None)
     } yield o
     orgs.hideErrorsWith(r => new IllegalStateException(r.reason))

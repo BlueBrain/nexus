@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.Automatic
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
@@ -99,20 +100,20 @@ class ProjectsRoutesSpec
     )
     .accepted
 
-  private val aopd = new OwnerPermissionsScopeInitialization(
+  private val aopd                = new OwnerPermissionsScopeInitialization(
     acls,
     Set(projectsPermissions.write, projectsPermissions.read),
     ServiceAccount(subject)
   )
   // Creating the org instance and injecting some data in it
-  private val orgs = {
+  private val orgs: Organizations = {
     implicit val subject: Identity.Subject = caller.subject
     for {
-      o <- OrganizationsDummy(Set(aopd))(uuidF = UUIDF.fixed(orgUuid), clock = ioClock)
+      o <- IO.pure(null: Organizations)
       _ <- o.create(Label.unsafe("org1"), None)
       _ <- o.create(Label.unsafe("org2"), None)
       _ <- o.create(Label.unsafe("users-org"), None)
-      _ <- o.deprecate(Label.unsafe("org2"), 1L)
+      _ <- o.deprecate(Label.unsafe("org2"), 1)
 
     } yield o
   }.accepted

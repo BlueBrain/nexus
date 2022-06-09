@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.organizations
+package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -21,7 +21,7 @@ class OrganizationRejectionsSpec
 
   "An OrganizationRejection" should {
 
-    val incorrectRev  = IncorrectRev(2L, 3L)
+    val incorrectRev  = IncorrectRev(2, 3)
     val alreadyExists = OrganizationAlreadyExists(Label.unsafe("org"))
 
     "be converted to compacted JSON-LD" in {

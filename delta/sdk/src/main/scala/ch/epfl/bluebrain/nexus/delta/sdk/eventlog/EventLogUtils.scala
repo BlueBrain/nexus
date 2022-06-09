@@ -3,16 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.{EventEnvelope, Offset, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
@@ -197,54 +195,6 @@ object EventLogUtils {
       .bimap(
         rejectionMapper.to,
         p => currentEvents(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
-      )
-
-  /**
-    * Fetch events related to the given project
-    * @param orgs
-    *   a [[Organizations]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param label
-    *   the project ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, offset: Offset)(implicit
-      rejectionMapper: Mapper[OrganizationRejection, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    orgs
-      .fetch(label)
-      .bimap(
-        rejectionMapper.to,
-        o => events(eventLog, Organizations.orgTag(label), o.createdAt, offset)
-      )
-
-  /**
-    * Fetch events related to the given project for the selected module
-    * @param orgs
-    *   a [[Organizations]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param label
-    *   the project ref where the events belong
-    * @param module
-    *   the module where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def orgEvents[R, M](orgs: Organizations, eventLog: EventLog[M], label: Label, module: String, offset: Offset)(implicit
-      rejectionMapper: Mapper[OrganizationRejection, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    orgs
-      .fetch(label)
-      .bimap(
-        rejectionMapper.to,
-        o => events(eventLog, Organizations.orgTag(module, label), o.createdAt, offset)
       )
 
   private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =

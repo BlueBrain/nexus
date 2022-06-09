@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.kernel.syntax
 
-import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.{KamonMetricComponent, KamonMonitoring}
 import monix.bio.IO
 
 trait KamonSyntax {
@@ -31,5 +31,10 @@ final class KamonOps[E, A](private val io: IO[E, A]) extends AnyVal {
       takeSamplingDecision: Boolean = true
   ): IO[E, A] =
     KamonMonitoring.operationName(name, component, tags, takeSamplingDecision)(io)
+
+  def span(name: String, tags: Map[String, Any] = Map.empty, takeSamplingDecision: Boolean = true)(implicit
+      component: KamonMetricComponent
+  ): IO[E, A] =
+    named(name, component.value, tags, takeSamplingDecision)
 
 }

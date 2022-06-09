@@ -19,13 +19,13 @@ sealed trait ResourceUris extends Product with Serializable {
     * @return
     *   the relative access [[Uri]]
     */
-  private[model] def relativeAccessUri: Uri
+  def relativeAccessUri: Uri
 
   /**
     * @return
     *   the relative access [[Uri]] in a short form
     */
-  private[model] def relativeAccessUriShortForm: Uri
+  def relativeAccessUriShortForm: Uri
 
   /**
     * @return

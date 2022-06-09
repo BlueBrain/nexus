@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
@@ -15,6 +15,8 @@ import doobie.implicits._
 import doobie.postgres.sqlstate
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Event log for project-scoped entities that can be controlled through commands;
@@ -112,7 +114,7 @@ object ScopedEventLog {
       stateMachine: StateMachine[S, Command, E, Rejection],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
-      evaluationConfig: EvaluationConfig,
+      maxDuration: FiniteDuration,
       xas: Transactors
   ): ScopedEventLog[Id, S, Command, E, Rejection] = new ScopedEventLog[Id, S, Command, E, Rejection] {
 
@@ -138,7 +140,7 @@ object ScopedEventLog {
       }
 
       stateMachine
-        .evaluate(stateStore.get(ref, id), command, evaluationConfig)
+        .evaluate(stateStore.get(ref, id), command, maxDuration)
         .tapEval { case (event, state) =>
           for {
             tagQuery      <- saveTag(event, state)
@@ -178,7 +180,7 @@ object ScopedEventLog {
       *   rejection of the __command__ in otherwise
       */
     override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine.evaluate(stateStore.get(ref, id), command, evaluationConfig)
+      stateMachine.evaluate(stateStore.get(ref, id), command, maxDuration)
   }
 
 }

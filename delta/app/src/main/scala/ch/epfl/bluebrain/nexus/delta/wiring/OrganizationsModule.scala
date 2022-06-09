@@ -1,20 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.service.organizations.{OrganizationEventExchange, OrganizationsImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -26,23 +23,19 @@ import monix.execution.Scheduler
 object OrganizationsModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[OrganizationEvent]]].fromEffect { databaseEventLog[OrganizationEvent](_, _) }
-
   make[Organizations].fromEffect {
     (
         config: AppConfig,
-        eventLog: EventLog[Envelope[OrganizationEvent]],
-        as: ActorSystem[Nothing],
+        scopeInitializations: Set[ScopeInitialization],
         clock: Clock[UIO],
         uuidF: UUIDF,
-        scheduler: Scheduler,
-        scopeInitializations: Set[ScopeInitialization]
+        xas: Transactors
     ) =>
       OrganizationsImpl(
+        scopeInitializations,
         config.organizations,
-        eventLog,
-        scopeInitializations
-      )(uuidF, as, scheduler, clock)
+        xas
+      )(clock, uuidF)
   }
 
   make[OrganizationsRoutes].from {
@@ -79,12 +72,6 @@ object OrganizationsModule extends ModuleDef {
   many[PriorityRoute].add { (route: OrganizationsRoutes) =>
     PriorityRoute(pluginsMaxPriority + 6, route.routes, requiresStrictEntity = true)
   }
-
-  make[OrganizationEventExchange].from { (projects: Organizations, base: BaseUri) =>
-    new OrganizationEventExchange(projects)(base)
-  }
-  many[EventExchange].ref[OrganizationEventExchange]
-  many[EventExchange].named("resources").ref[OrganizationEventExchange]
 
 }
 // $COVERAGE-ON$

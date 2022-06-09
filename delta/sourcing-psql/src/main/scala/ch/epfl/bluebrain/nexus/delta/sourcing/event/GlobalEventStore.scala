@@ -1,25 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Serializer
-import ch.epfl.bluebrain.nexus.delta.sourcing.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
-import doobie.util.Put
-import fs2.{Chunk, Stream}
+import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.Task
-
-import java.time.Instant
-import scala.annotation.nowarn
 
 /**
   * Allows to save and fetch [[GlobalEvent]] s from the database
@@ -54,7 +50,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def currentEvents(offset: Offset): Stream[Task, Envelope[Id, E]]
+  def currentEvents(offset: Offset): EnvelopeStream[Id, E]
 
   /**
     * Fetches events from the given type from the provided offset
@@ -65,7 +61,7 @@ trait GlobalEventStore[Id, E <: GlobalEvent] {
     * @param offset
     *   the offset
     */
-  def events(offset: Offset): Stream[Task, Envelope[Id, E]]
+  def events(offset: Offset): EnvelopeStream[Id, E]
 
 }
 
@@ -76,7 +72,7 @@ object GlobalEventStore {
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
-  )(implicit @nowarn("cat=unused") get: Get[Id], put: Put[Id]): GlobalEventStore[Id, E] =
+  )(implicit getId: Get[Id], putId: Put[Id]): GlobalEventStore[Id, E] =
     new GlobalEventStore[Id, E] {
 
       import serializer._
@@ -110,43 +106,17 @@ object GlobalEventStore {
         }
       }
 
-      private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] = {
-        val select = fr"SELECT type, id, rev, value, instant, ordering FROM public.global_events where type = $tpe"
-        Stream.unfoldChunkEval[Task, Offset, Envelope[Id, E]](offset) { currentOffset =>
-          val query =
-            select ++ Fragments.andOpt(currentOffset.after) ++
+      private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
+        Envelope.stream(
+          offset,
+          (o: Offset) =>
+            fr"SELECT type, id, value, rev, instant, ordering FROM public.global_events" ++
+              Fragments.whereAndOpt(Some(fr"type = $tpe"), o.after) ++
               fr"ORDER BY ordering" ++
-              fr"LIMIT ${config.batchSize}"
-
-          query.query[(EntityType, Id, Json, Int, Instant, Long)].to[List].transact(xas.streaming).flatMap { rows =>
-            Task
-              .fromEither(
-                rows
-                  .traverse { case (entityType, id, value, rev, instant, offset) =>
-                    value.as[E].map { event =>
-                      Envelope(
-                        entityType,
-                        id,
-                        rev,
-                        event,
-                        instant,
-                        Offset.At(offset)
-                      )
-                    }
-                  }
-              )
-              .flatMap { envelopes =>
-                envelopes.lastOption.fold(
-                  strategy match {
-                    case RefreshStrategy.Stop         => Task.none
-                    case RefreshStrategy.Delay(value) =>
-                      Task.sleep(value) >> Task.some((Chunk.empty[Envelope[Id, E]], currentOffset))
-                  }
-                ) { last => Task.some((Chunk.seq(envelopes), last.offset)) }
-              }
-          }
-        }
-      }
+              fr"LIMIT ${config.batchSize}",
+          strategy,
+          xas
+        )
 
       override def currentEvents(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, RefreshStrategy.Stop)
 

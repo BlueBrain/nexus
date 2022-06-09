@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, xsd}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{evaluate, FetchOrganization}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, ProjectGen}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -42,8 +42,8 @@ class ProjectsSpec
     val am                      = ApiMappings("xsd" -> xsd.base, "Person" -> schema.Person)
     val base                    = PrefixIri.unsafe(iri"http://example.com/base/")
     val vocab                   = PrefixIri.unsafe(iri"http://example.com/vocab/")
-    val org1                    = OrganizationGen.currentState("org", 1L)
-    val org2                    = OrganizationGen.currentState("org2", 1L, deprecated = true)
+    val org1                    = OrganizationGen.state("org", 1)
+    val org2                    = OrganizationGen.state("org2", 1, deprecated = true)
     val current                 = ProjectGen.currentState(
       "org",
       "proj",
@@ -63,7 +63,7 @@ class ProjectsSpec
     val org2Label               = org2.label
     val subject                 = User("myuser", label)
     val orgs: FetchOrganization = {
-      case `orgLabel`  => IO.pure(org1.toResource.value.value)
+      case `orgLabel`  => IO.pure(org1.toResource.value)
       case `org2Label` => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2Label)))
       case label       => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(label)))
     }

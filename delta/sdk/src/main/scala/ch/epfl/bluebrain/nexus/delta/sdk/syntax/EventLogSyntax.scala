@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Organizations, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -72,7 +73,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def orgEvents[R](orgs: Organizations, label: Label, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.orgEvents(orgs, eventLog, label, offset)
+    orgs.fetch(label).bimap(rejectionMapper.to, _ => eventLog.eventsByTag("", offset))
 
   /**
     * Fetch organization events for the given module
@@ -80,5 +81,5 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def orgEvents[R](orgs: Organizations, label: Label, module: String, offset: Offset)(implicit
       rejectionMapper: Mapper[OrganizationRejection, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.orgEvents(orgs, eventLog, label, module, offset)
+    orgs.fetch(label).bimap(rejectionMapper.to, _ => eventLog.eventsByTag(module, offset))
 }

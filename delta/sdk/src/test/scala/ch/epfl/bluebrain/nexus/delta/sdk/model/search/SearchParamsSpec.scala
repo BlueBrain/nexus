@@ -56,7 +56,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
       label = Some("myorg"),
       _ => true
     )
-    val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1L, subject)
+    val resource            = OrganizationGen.resourceFor(OrganizationGen.organization("myorg"), 1, subject)
 
     "match an organization resource" in {
       forAll(

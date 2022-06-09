@@ -5,9 +5,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
-import monix.bio.UIO
 import fs2.Stream
+import monix.bio.UIO
 
 import scala.concurrent.duration._
 
@@ -17,7 +16,7 @@ class StateMachineSuite extends MonixBioSuite {
 
   private val current = Total(1, 4)
 
-  private val config = EvaluationConfig(100.millis)
+  private val maxDuration = 100.millis
 
   List(
     (None, Add(5))               -> (Plus(1, 5), Total(1, 5)),
@@ -25,7 +24,7 @@ class StateMachineSuite extends MonixBioSuite {
     (Some(current), Subtract(2)) -> (Minus(2, 2), Total(2, 2))
   ).foreach { case ((original, command), (event, newState)) =>
     test(s"Evaluate successfully state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      stm.evaluate(UIO.pure(original), command, config).assert((event, newState))
+      stm.evaluate(UIO.pure(original), command, maxDuration).assert((event, newState))
     }
   }
 
@@ -34,16 +33,16 @@ class StateMachineSuite extends MonixBioSuite {
     (Some(current), Subtract(5)) -> NegativeTotal(-1)
   ).foreach { case ((original, command), rejection) =>
     test(s"Evaluate and reject state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      stm.evaluate(UIO.pure(original), command, config).error(rejection)
+      stm.evaluate(UIO.pure(original), command, maxDuration).error(rejection)
     }
   }
 
   test("Evaluate and get an RuntimeException with the expected message") {
-    stm.evaluate(UIO.pure(None), Boom("Game over"), config).terminated[RuntimeException]("Game over")
+    stm.evaluate(UIO.pure(None), Boom("Game over"), maxDuration).terminated[RuntimeException]("Game over")
   }
 
   test("Evaluate and get a timeout error") {
-    stm.evaluate(UIO.pure(None), Never, config).terminated(EvaluationTimeout(Never, config.maxDuration))
+    stm.evaluate(UIO.pure(None), Never, maxDuration).terminated(EvaluationTimeout(Never, maxDuration))
   }
 
   test("Compute state and get back the initial state from an empty stream of events") {

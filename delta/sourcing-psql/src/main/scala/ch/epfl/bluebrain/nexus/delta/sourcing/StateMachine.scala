@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.SourcingConfig.EvaluationConfig
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Defines the state machine for an entity
@@ -27,12 +28,12 @@ final class StateMachine[State, Command, Event, Rejection] private (
   def evaluate(
       getCurrent: UIO[Option[State]],
       command: Command,
-      config: EvaluationConfig
+      maxDuration: FiniteDuration
   ): IO[Rejection, (Event, State)] = {
     for {
       original  <- getCurrent.map(_.orElse(initialState))
       evaluated <- evaluate(original, command).attempt
-                     .timeoutWith(config.maxDuration, EvaluationTimeout(command, config.maxDuration))
+                     .timeoutWith(maxDuration, EvaluationTimeout(command, maxDuration))
                      .hideErrors
       event     <- IO.fromEither(evaluated)
       newState  <- IO.fromOption(next(original, event), InvalidState(original, event)).hideErrors

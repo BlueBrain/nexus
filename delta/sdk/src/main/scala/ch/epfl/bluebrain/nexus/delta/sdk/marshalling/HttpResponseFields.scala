@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
@@ -109,17 +108,6 @@ object HttpResponseFields {
       case RealmRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
       case RealmRejection.RealmEvaluationError(_)   => StatusCodes.InternalServerError
       case _                                        => StatusCodes.BadRequest
-    }
-
-  implicit val responseFieldsOrganizations: HttpResponseFields[OrganizationRejection] =
-    HttpResponseFields {
-      case OrganizationRejection.OrganizationNotFound(_)        => StatusCodes.NotFound
-      case OrganizationRejection.OrganizationAlreadyExists(_)   => StatusCodes.Conflict
-      case OrganizationRejection.IncorrectRev(_, _)             => StatusCodes.Conflict
-      case OrganizationRejection.RevisionNotFound(_, _)         => StatusCodes.NotFound
-      case OrganizationRejection.UnexpectedInitialState(_)      => StatusCodes.InternalServerError
-      case OrganizationRejection.OrganizationEvaluationError(_) => StatusCodes.InternalServerError
-      case _                                                    => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =
