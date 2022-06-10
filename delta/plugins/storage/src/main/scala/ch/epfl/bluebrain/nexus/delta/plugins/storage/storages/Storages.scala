@@ -28,27 +28,26 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
@@ -556,7 +555,7 @@ object Storages {
   def aggregate(
       config: StoragesConfig,
       resourceIdCheck: ResourceIdCheck,
-      permissions: Permissions,
+      fetchPermissions: UIO[Set[Permission]],
       crypto: Crypto
   )(implicit client: HttpClient, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[StoragesAggregate] = {
     implicit val classicAs: actor.ActorSystem                 = as.classicSystem
@@ -564,14 +563,14 @@ object Storages {
     val idAvailability: IdAvailability[ResourceAlreadyExists] =
       (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
     val storageAccess: StorageAccess                          = StorageAccess.apply(_, _)
-    aggregate(config, storageAccess, idAvailability, permissions, crypto)
+    aggregate(config, storageAccess, idAvailability, fetchPermissions, crypto)
   }
 
   private[storages] def aggregate(
       config: StoragesConfig,
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      permissions: Permissions,
+      fetchPermissions: UIO[Set[Permission]],
       crypto: Crypto
   )(implicit
       as: ActorSystem[Nothing],
@@ -581,7 +580,7 @@ object Storages {
       entityType = moduleType,
       initialState = Initial,
       next = next,
-      evaluate = evaluate(access, idAvailability, permissions, config.storageTypeConfig, crypto),
+      evaluate = evaluate(access, idAvailability, fetchPermissions, config.storageTypeConfig, crypto),
       tagger = EventTags.forProjectScopedEvent(moduleType),
       snapshotStrategy = NoSnapshot,
       stopStrategy = config.aggregate.stopStrategy.persistentStrategy
@@ -630,7 +629,7 @@ object Storages {
   private[storages] def evaluate(
       access: StorageAccess,
       idAvailability: IdAvailability[ResourceAlreadyExists],
-      permissions: Permissions,
+      fetchPermissions: UIO[Set[Permission]],
       config: StorageTypeConfig,
       crypto: Crypto
   )(
@@ -676,9 +675,9 @@ object Storages {
         IO.unit
       else {
         val storagePerms = Set.empty[Permission] ++ value.readPermission ++ value.writePermission
-        permissions.fetch.flatMap {
-          case perms if storagePerms.subsetOf(perms.value.permissions) => IO.unit
-          case perms                                                   => IO.raiseError(PermissionsAreNotDefined(storagePerms -- perms.value.permissions))
+        fetchPermissions.flatMap {
+          case perms if storagePerms.subsetOf(perms) => IO.unit
+          case perms                                 => IO.raiseError(PermissionsAreNotDefined(storagePerms -- perms))
         }
       }
 

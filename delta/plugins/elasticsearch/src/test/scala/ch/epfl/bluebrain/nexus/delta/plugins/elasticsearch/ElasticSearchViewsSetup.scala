@@ -9,16 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, Projects, ResourceIdCheck}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOFixedClock, IOValues}
 import monix.bio.{IO, Task}
@@ -65,12 +65,12 @@ trait ElasticSearchViewsSetup extends IOValues with EitherValuable with ConfigFi
       projects: Projects,
       perms: Permission*
   )(implicit api: JsonLdApi, base: BaseUri, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): ElasticSearchViews =
-    init(orgs, projects, PermissionsDummy(perms.toSet).accepted)
+    init(orgs, projects, perms.toSet)
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      perms: Permissions
+      perms: Set[Permission]
   )(implicit
       api: JsonLdApi,
       base: BaseUri,
@@ -85,7 +85,7 @@ trait ElasticSearchViewsSetup extends IOValues with EitherValuable with ConfigFi
       agg        <- ElasticSearchViews.aggregate(
                       PipeConfig.coreConfig.rightValue,
                       config,
-                      perms,
+                      IO.pure(perms),
                       (_, _) => IO.unit,
                       deferred,
                       ResourceIdCheck.alwaysAvailable

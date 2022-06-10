@@ -4,26 +4,24 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, FilesSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
@@ -82,9 +80,8 @@ class FilesRoutesSpec
   private val stCfg                    = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   implicit private val f: FusionConfig = fusionConfig
 
-  private val perms             = PermissionsDummy(allowedPerms.toSet).accepted
   private val realms            = RealmSetup.init(realm).accepted
-  private val acls              = AclsDummy(perms, realms).accepted
+  private val acls              = AclsDummy(allowedPerms.toSet, realms).accepted
   private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
   private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files, IndexingActionDummy()))
 

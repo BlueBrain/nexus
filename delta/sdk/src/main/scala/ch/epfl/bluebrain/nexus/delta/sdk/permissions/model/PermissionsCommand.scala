@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 
@@ -11,7 +11,7 @@ sealed trait PermissionsCommand extends Product with Serializable {
     * @return
     *   the current revision of the permission resource
     */
-  def rev: Long
+  def rev: Int
 
   /**
     * @return
@@ -33,7 +33,7 @@ object PermissionsCommand {
     *   the subject that intends to evaluate this command
     */
   final case class ReplacePermissions(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       subject: Subject
   ) extends PermissionsCommand
@@ -49,7 +49,7 @@ object PermissionsCommand {
     *   the subject that intends to evaluate this command
     */
   final case class AppendPermissions(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       subject: Subject
   ) extends PermissionsCommand
@@ -65,7 +65,7 @@ object PermissionsCommand {
     *   the subject that intends to evaluate this command
     */
   final case class SubtractPermissions(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       subject: Subject
   ) extends PermissionsCommand
@@ -79,7 +79,7 @@ object PermissionsCommand {
     *   the subject that intends to evaluate this command
     */
   final case class DeletePermissions(
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends PermissionsCommand
 }

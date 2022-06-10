@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri

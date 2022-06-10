@@ -10,10 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclNotFound, R
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy.AclsJournal
-import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, EventTags, Permissions, Realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AclResource, Acls, EventTags, Realms}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
 import monix.bio.{IO, Task, UIO}
 
@@ -32,15 +33,14 @@ import monix.bio.{IO, Task, UIO}
   *   a semaphore for serializing write operations on the journal
   */
 final class AclsDummy private (
-    permissions: Permissions,
+    minimum: Set[Permission],
+    fetchPermissions: UIO[Set[Permission]],
     realms: Realms,
     journal: AclsJournal,
     cache: IORef[AclCollection],
     semaphore: IOSemaphore
 )(implicit clock: Clock[UIO])
     extends Acls {
-
-  private val minimum: Set[Permission] = permissions.minimum
 
   override def fetch(address: AclAddress): IO[AclNotFound, AclResource] =
     cache.get
@@ -91,7 +91,7 @@ final class AclsDummy private (
     semaphore.withPermit {
       for {
         state      <- journal.currentState(cmd.address, Initial, Acls.next).map(_.getOrElse(Initial))
-        event      <- Acls.evaluate(permissions, realms)(state, cmd)
+        event      <- Acls.evaluate(fetchPermissions, realms)(state, cmd)
         _          <- journal.add(event)
         resourceOpt = Acls.next(state, event).toResource(cmd.address, minimum)
         res        <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.address))
@@ -111,13 +111,23 @@ object AclsDummy {
     * @param realms
     *   the bundle of operations pertaining to managing realms
     */
-  final def apply(permissions: Permissions, realms: Realms)(implicit clock: Clock[UIO] = IO.clock): UIO[AclsDummy] = {
+  final def apply(permissions: Permissions, realms: Realms)(implicit clock: Clock[UIO]): UIO[AclsDummy] = {
     implicit val idLens: Lens[AclEvent, AclAddress] = _.address
 
     for {
       journal  <- Journal(moduleType, 1L, EventTags.forUnScopedEvent[AclEvent](moduleType))
       cacheRef <- IORef.of(AclCollection.empty)
       sem      <- IOSemaphore(1L)
-    } yield new AclsDummy(permissions, realms, journal, cacheRef, sem)
+    } yield new AclsDummy(permissions.minimum, permissions.fetchPermissionSet, realms, journal, cacheRef, sem)
+  }
+
+  final def apply(permissions: Set[Permission], realms: Realms)(implicit clock: Clock[UIO]): UIO[AclsDummy] = {
+    implicit val idLens: Lens[AclEvent, AclAddress] = _.address
+
+    for {
+      journal  <- Journal(moduleType, 1L, EventTags.forUnScopedEvent[AclEvent](moduleType))
+      cacheRef <- IORef.of(AclCollection.empty)
+      sem      <- IOSemaphore(1L)
+    } yield new AclsDummy(permissions, UIO.pure(permissions), realms, journal, cacheRef, sem)
   }
 }

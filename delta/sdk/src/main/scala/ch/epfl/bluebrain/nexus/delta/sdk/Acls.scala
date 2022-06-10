@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -349,12 +349,12 @@ object Acls {
   }
 
   private[delta] def evaluate(
-      perms: Permissions,
+      fetchPermissionSet: UIO[Set[Permission]],
       realms: Realms
   )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
-      perms.fetchPermissionSet.flatMap { permissions =>
+      fetchPermissionSet.flatMap { permissions =>
         IO.when(!acl.permissions.subsetOf(permissions))(
           IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
         )

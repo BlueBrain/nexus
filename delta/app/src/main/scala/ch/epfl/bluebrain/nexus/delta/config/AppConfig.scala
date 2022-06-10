@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig

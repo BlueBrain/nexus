@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{DeletionStatusCache, ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
@@ -252,7 +253,7 @@ object ProjectsDummy {
       uuidf: UUIDF
   ): UIO[ProjectsDummy] =
     for {
-      p        <- PermissionsDummy(Set.empty)
+      p        <- UIO.pure(null: Permissions)
       r        <- RealmsDummy(uri => IO.raiseError(UnsuccessfulOpenIdConfigResponse(uri)))
       a        <- AclsDummy(p, r)
       scopeInit = Set[ScopeInitialization](OwnerPermissionsDummy(a, Set.empty, ServiceAccount(Identity.Anonymous)))

@@ -1,23 +1,23 @@
-package ch.epfl.bluebrain.nexus.delta.config
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 import pureconfig.generic.semiauto._
 
 /**
   * The permissions module config.
+  * @param eventLog
+  *   The event log configuration
   * @param minimum
   *   the minimum collection of permissions
-  * @param aggregate
-  *   the aggregate config
   */
 final case class PermissionsConfig(
+    eventLog: EventLogConfig,
     minimum: Set[Permission],
-    ownerPermissions: Set[Permission],
-    aggregate: AggregateConfig
+    ownerPermissions: Set[Permission]
 )
 
 object PermissionsConfig {

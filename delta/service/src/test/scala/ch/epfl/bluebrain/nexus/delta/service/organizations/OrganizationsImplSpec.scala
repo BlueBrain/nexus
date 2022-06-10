@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.service.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions

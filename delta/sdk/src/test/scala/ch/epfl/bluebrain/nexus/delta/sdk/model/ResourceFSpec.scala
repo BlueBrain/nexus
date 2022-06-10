@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{PermissionsGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -26,7 +26,7 @@ class ResourceFSpec
 
   "A ResourceF of a permission" should {
     val updatedBy = User("maria", Label.unsafe("bbp"))
-    val resource  = PermissionsGen.resourceFor(Set(acls.read, acls.write), rev = 1L, updatedBy = updatedBy)
+    val resource  = PermissionsGen.resourceFor(Set(acls.read, acls.write), rev = 1, updatedBy = updatedBy)
 
     "be converted to Json-LD compacted" in {
       resource.toCompactedJsonLd.accepted.json shouldEqual jsonContentOf("resource-compacted.jsonld")

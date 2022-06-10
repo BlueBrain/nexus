@@ -46,6 +46,10 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
     *   the entity identifier
     * @param rev
     *   the revision
+    * @param notFound
+    *   if no state is found, fails with this rejection
+    * @param invalidRevision
+    *   if the revision of the resulting state does not match with the one provided
     */
   def stateOr[R <: Rejection](id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S]
 

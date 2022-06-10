@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{ContextFixtures, G
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures.s
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}

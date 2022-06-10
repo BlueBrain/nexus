@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import monix.execution.Scheduler
 

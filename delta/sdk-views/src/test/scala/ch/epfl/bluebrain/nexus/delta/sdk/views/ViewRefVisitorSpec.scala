@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}

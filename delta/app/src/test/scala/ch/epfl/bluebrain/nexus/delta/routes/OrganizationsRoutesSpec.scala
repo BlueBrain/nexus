@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerTo
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, orgs => orgsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}

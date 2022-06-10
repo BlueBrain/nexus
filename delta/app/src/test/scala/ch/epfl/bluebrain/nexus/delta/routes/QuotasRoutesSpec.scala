@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.service.quotas.QuotasImpl

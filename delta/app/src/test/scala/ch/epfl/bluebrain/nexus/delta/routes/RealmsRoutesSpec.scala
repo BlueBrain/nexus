@@ -8,17 +8,16 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, realms => realmsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -57,7 +56,7 @@ class RealmsRoutesSpec
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-  private val perms      = PermissionsDummy(Set(realmsPermissions.read, realmsPermissions.write, events.read)).accepted
+  private val perms      = Set(realmsPermissions.read, realmsPermissions.write, events.read)
   private val acls       = AclsDummy(perms, realms).accepted
 
   private val routes = Route.seal(RealmsRoutes(identities, realms, acls))

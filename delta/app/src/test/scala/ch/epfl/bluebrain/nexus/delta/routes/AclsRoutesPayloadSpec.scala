@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl.{Append, Subtract}
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.{AclValues, PatchAcl, ReplaceAcl}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable}
 import org.scalatest.matchers.should.Matchers

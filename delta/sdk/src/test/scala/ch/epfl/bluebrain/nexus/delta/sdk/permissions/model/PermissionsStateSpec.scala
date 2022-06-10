@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
-
-import java.time.Instant
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.time.Instant
 
 class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
 
@@ -16,21 +16,21 @@ class PermissionsStateSpec extends AnyWordSpecLike with Matchers {
 
     "initial" should {
       "return its resource representation" in {
-        PermissionsState.Initial.toResource(minimum) shouldEqual PermissionsGen.resourceFor(minimum, rev = 0L)
+        PermissionsState.initial(minimum).toResource(minimum) shouldEqual PermissionsGen.resourceFor(minimum, rev = 0)
       }
     }
 
     "current" should {
       "return its resource representation" in {
-        val current = PermissionsState.Current(
-          3L,
+        val current = PermissionsState(
+          3,
           additional,
           Instant.EPOCH,
           Identity.Anonymous,
           Instant.EPOCH,
           Identity.Anonymous
         )
-        current.toResource(minimum) shouldEqual PermissionsGen.resourceFor(minimum ++ additional, rev = 3L)
+        current.toResource(minimum) shouldEqual PermissionsGen.resourceFor(minimum ++ additional, rev = 3)
       }
     }
   }

@@ -1,29 +1,23 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions
+
+import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import monix.bio.{IO, UIO}
 
 import java.time.Instant
-
-import akka.persistence.query.{NoOffset, Offset}
-import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.{Current, Initial}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions._
-import fs2.Stream
-import monix.bio.{IO, Task, UIO}
 
 /**
   * Operations pertaining to managing permissions.
   */
 trait Permissions {
-
-  /**
-    * @return
-    *   the permissions singleton persistence id
-    */
-  def persistenceId: String = Permissions.persistenceId
 
   /**
     * @return
@@ -43,7 +37,7 @@ trait Permissions {
     * @return
     *   the permissions as a resource at the specified revision
     */
-  def fetchAt(rev: Long): IO[RevisionNotFound, PermissionsResource]
+  def fetchAt(rev: Int): IO[PermissionsRejection, PermissionsResource]
 
   /**
     * @return
@@ -66,7 +60,7 @@ trait Permissions {
     */
   def replace(
       permissions: Set[Permission],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
 
   /**
@@ -83,7 +77,7 @@ trait Permissions {
     */
   def append(
       permissions: Set[Permission],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
 
   /**
@@ -100,7 +94,7 @@ trait Permissions {
     */
   def subtract(
       permissions: Set[Permission],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
 
   /**
@@ -113,7 +107,7 @@ trait Permissions {
     * @return
     *   the new resource or a description of why the change was rejected
     */
-  def delete(rev: Long)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
+  def delete(rev: Int)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
 
   /**
     * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events are
@@ -122,7 +116,7 @@ trait Permissions {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def events(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
+  def events(offset: Offset = Offset.Start): EnvelopeStream[Label, PermissionsEvent]
 
   /**
     * The current permissions events. The stream stops after emitting all known events.
@@ -130,22 +124,17 @@ trait Permissions {
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
-  def currentEvents(offset: Offset = NoOffset): Stream[Task, Envelope[PermissionsEvent]]
+  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[Label, PermissionsEvent]
 }
 
 object Permissions {
 
-  /**
-    * The permissions module type.
-    */
-  val moduleType: String = "permissions"
+  final val entityType: EntityType = EntityType("permission")
 
   /**
     * The constant entity id.
     */
-  val entityId: String = "permissions"
-
-  val persistenceId: String = s"$moduleType-$entityId"
+  val entityId: Label = Label.unsafe("permission")
 
   /**
     * ACLs permissions.
@@ -242,14 +231,8 @@ object Permissions {
     implicit class WithPermissionsState(s: PermissionsState) {
       def withPermissions(permissions: Set[Permission], instant: Instant, subject: Subject): PermissionsState =
         s match {
-          case Initial    => Current(s.rev + 1L, permissions, instant, subject, instant, subject)
-          case c: Current => Current(c.rev + 1L, permissions, c.createdAt, c.createdBy, instant, subject)
-        }
-
-      def permissions: Set[Permission] =
-        s match {
-          case Initial    => minimum
-          case c: Current => c.permissions
+          case c if c.rev == 0 => PermissionsState(1, permissions, instant, subject, instant, subject)
+          case c               => PermissionsState(c.rev + 1, permissions, c.createdAt, c.createdBy, instant, subject)
         }
     }
 
@@ -274,7 +257,7 @@ object Permissions {
   }
 
   private[delta] def evaluate(minimum: Set[Permission])(state: PermissionsState, cmd: PermissionsCommand)(implicit
-      clock: Clock[UIO] = IO.timer.clock
+      clock: Clock[UIO] = IO.clock
   ): IO[PermissionsRejection, PermissionsEvent] = {
     import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils._
 
@@ -288,11 +271,7 @@ object Permissions {
       state match {
         case _ if state.rev != c.rev    => IO.raiseError(IncorrectRev(c.rev, state.rev))
         case _ if c.permissions.isEmpty => IO.raiseError(CannotAppendEmptyCollection)
-        case Initial                    =>
-          val appended = c.permissions -- minimum
-          if (appended.isEmpty) IO.raiseError(CannotAppendEmptyCollection)
-          else instant.map(PermissionsAppended(1L, c.permissions, _, c.subject))
-        case s: Current                 =>
+        case s                          =>
           val appended = c.permissions -- s.permissions -- minimum
           if (appended.isEmpty) IO.raiseError(CannotAppendEmptyCollection)
           else instant.map(PermissionsAppended(c.rev + 1, appended, _, c.subject))
@@ -302,8 +281,8 @@ object Permissions {
       state match {
         case _ if state.rev != c.rev    => IO.raiseError(IncorrectRev(c.rev, state.rev))
         case _ if c.permissions.isEmpty => IO.raiseError(CannotSubtractEmptyCollection)
-        case Initial                    => IO.raiseError(CannotSubtractFromMinimumCollection(minimum))
-        case s: Current                 =>
+        case s if s.rev == 0            => IO.raiseError(CannotSubtractFromMinimumCollection(minimum))
+        case s                          =>
           val intendedDelta = c.permissions -- s.permissions
           val delta         = c.permissions & s.permissions
           val subtracted    = delta -- minimum
@@ -314,10 +293,9 @@ object Permissions {
 
     def delete(c: DeletePermissions) =
       state match {
-        case _ if state.rev != c.rev                => IO.raiseError(IncorrectRev(c.rev, state.rev))
-        case Initial                                => IO.raiseError(CannotDeleteMinimumCollection)
-        case s: Current if s.permissions == minimum => IO.raiseError(CannotDeleteMinimumCollection)
-        case _: Current                             => instant.map(PermissionsDeleted(c.rev + 1, _, c.subject))
+        case _ if state.rev != c.rev       => IO.raiseError(IncorrectRev(c.rev, state.rev))
+        case s if s.permissions == minimum => IO.raiseError(CannotDeleteMinimumCollection)
+        case _                             => instant.map(PermissionsDeleted(c.rev + 1, _, c.subject))
       }
 
     cmd match {
@@ -326,5 +304,23 @@ object Permissions {
       case c: SubtractPermissions => subtract(c)
       case c: DeletePermissions   => delete(c)
     }
+  }
+
+  def definition(minimum: Set[Permission])(implicit
+      clock: Clock[UIO] = IO.clock
+  ): EntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
+    val initial = PermissionsState.initial(minimum)
+    EntityDefinition.untagged(
+      entityType,
+      StateMachine(
+        Some(initial),
+        (state: Option[PermissionsState], cmd: PermissionsCommand) => evaluate(minimum)(state.getOrElse(initial), cmd),
+        (state: Option[PermissionsState], event: PermissionsEvent) =>
+          Some(next(minimum)(state.getOrElse(initial), event))
+      ),
+      PermissionsEvent.serializer,
+      PermissionsState.serializer,
+      onUniqueViolation = (_: Label, c: PermissionsCommand) => IncorrectRev(c.rev, c.rev + 1)
+    )
   }
 }

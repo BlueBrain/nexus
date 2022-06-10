@@ -132,7 +132,8 @@ trait DeltaDirectives extends UriDirectives {
             reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
           case Some(o) => provide(Offset.at(o))
         }
-      case None        => provide(Offset.Start)
+      case None        =>
+        provide(Offset.Start)
     }
 
   /**

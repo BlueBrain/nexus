@@ -3,29 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
-import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.AclAppended
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent.PermissionsAppended
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent.RealmDeprecated
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup, SseEventLogDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import java.time.Instant
 import java.util.UUID
 
 class EventsRoutesSpec
@@ -58,35 +48,8 @@ class EventsRoutesSpec
       .init(orgsToCreate = List.empty, projectsToCreate = List.empty)
       .accepted
 
-  private val sseEventLog = new SseEventLogDummy(
-    List(
-      Envelope(
-        PermissionsAppended(1, Set(resources.write, resources.read, events.read), Instant.EPOCH, subject),
-        Sequence(1),
-        "permissions",
-        1
-      ),
-      Envelope(
-        AclAppended(
-          Acl(AclAddress.Root, Identity.Anonymous -> Set(resources.write, resources.read, events.read)),
-          1L,
-          Instant.EPOCH,
-          subject
-        ),
-        Sequence(2),
-        "acls-/",
-        1
-      ),
-      Envelope(RealmDeprecated(Label.unsafe("realm1"), 2, Instant.EPOCH, subject), Sequence(3), "realms-realm1", 1)
-    ),
-    {
-      case ev: PermissionsEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]]
-      case ev: AclEvent         => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]]
-      case ev: RealmEvent       => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]]
-    }
-  )
-
-  private val routes = Route.seal(EventsRoutes(identities, acls, projs, sseEventLog))
+  //TODO
+  private val routes = Route.seal(EventsRoutes(identities, acls, projs, null))
 
   "EventsRoutes" should {
 
