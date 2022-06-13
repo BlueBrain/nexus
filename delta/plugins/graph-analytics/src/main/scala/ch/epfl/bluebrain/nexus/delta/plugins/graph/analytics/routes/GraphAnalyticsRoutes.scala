@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit, idSegment, projectRef}

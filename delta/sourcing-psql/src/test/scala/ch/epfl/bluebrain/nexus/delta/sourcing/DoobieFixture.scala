@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{PostgresPassword, PostgresUser}
 import doobie._
 import doobie.implicits._
-import monix.bio.Task
 import monix.execution.Scheduler
 import munit.Suite
 
@@ -26,19 +25,16 @@ trait DoobieFixture extends TestHelpers { self: Suite =>
     def apply(): Transactors = xas
 
     override def beforeAll(): Unit = {
+      implicit val s: Scheduler = Scheduler.global
       container = new PostgresContainer(PostgresUser, PostgresPassword)
         .withReuse(false)
         .withStartupTimeout(60.seconds.toJava)
       container.start()
-      xas = Transactors.shared(
-        Transactor.fromDriverManager[Task](
-          "org.postgresql.Driver",
-          s"jdbc:postgresql://${container.getHost}:${container.getMappedPort(5432)}/",
-          "postgres",
-          "postgres"
-        )
-      )
-      implicit val s: Scheduler = Scheduler.global
+      xas = Transactors.sharedFrom(
+        container.getHost,
+        container.getMappedPort(5432),
+        "postgres",
+        "postgres" ).runSyncUnsafe()
       val createTables          = loadDDL("/scripts/schema.ddl").update.run
       val dropTables            = loadDDL("/scripts/drop-tables.ddl").update.run
       (dropTables, createTables).mapN(_ + _).transact(xas.write).void.runSyncUnsafe()

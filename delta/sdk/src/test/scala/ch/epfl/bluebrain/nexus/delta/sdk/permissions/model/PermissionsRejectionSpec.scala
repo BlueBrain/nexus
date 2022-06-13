@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
@@ -20,7 +20,7 @@ class PermissionsRejectionSpec
 
   "A PermissionsRejection" should {
 
-    val incorrectRev  = IncorrectRev(2L, 3L)
+    val incorrectRev  = IncorrectRev(2, 3)
     val cannotReplace = CannotReplaceWithEmptyCollection
 
     "be converted to compacted JSON-LD" in {

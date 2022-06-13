@@ -10,22 +10,22 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, permissions => permissionsPerms}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import io.circe.{Decoder, Json}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, permissions => permissionsPerms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{Permission, PermissionsEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.syntax._
+import io.circe.{Decoder, Json}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -48,7 +48,8 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
 
   import baseUri.prefixSegment
 
-  implicit private val fetchProjectUuids: FetchUuids                              = _ => UIO.none
+  implicit val sseConverter: SseConverter[PermissionsEvent] = SseConverter(PermissionsEvent.sseEncoder)
+
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.permissionsMetadata))
 
@@ -63,14 +64,14 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   // Fetch permissions
                   get {
                     authorizeFor(AclAddress.Root, permissionsPerms.read).apply {
-                      parameter("rev".as[Long].?) {
-                        case Some(rev) => emit(permissions.fetchAt(rev).leftWiden[PermissionsRejection])
+                      parameter("rev".as[Int].?) {
+                        case Some(rev) => emit(permissions.fetchAt(rev))
                         case None      => emit(permissions.fetch)
                       }
                     }
                   },
                   // Replace permissions
-                  (put & parameter("rev" ? 0L)) { rev =>
+                  (put & parameter("rev" ? 0)) { rev =>
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                       entity(as[PatchPermissions]) {
                         case Replace(set) => emit(permissions.replace(set, rev).map(_.void))
@@ -82,7 +83,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     }
                   },
                   // Append or Subtract permissions
-                  (patch & parameter("rev" ? 0L)) { rev =>
+                  (patch & parameter("rev" ? 0)) { rev =>
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
                       entity(as[PatchPermissions]) {
                         case Append(set)   => emit(permissions.append(set, rev).map(_.void))
@@ -99,7 +100,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                   // Delete permissions
                   delete {
                     authorizeFor(AclAddress.Root, permissionsPerms.write).apply {
-                      parameter("rev".as[Long]) { rev =>
+                      parameter("rev".as[Int]) { rev =>
                         emit(permissions.delete(rev).map(_.void))
                       }
                     }
@@ -111,7 +112,7 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
             (pathPrefix("events") & pathEndOrSingleSlash) {
               operationName(s"$prefixSegment/permissions/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventId { offset =>
+                  lastEventIdNew { offset =>
                     emit(permissions.events(offset))
                   }
                 }

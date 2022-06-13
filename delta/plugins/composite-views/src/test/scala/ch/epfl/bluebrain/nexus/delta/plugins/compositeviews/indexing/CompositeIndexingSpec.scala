@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
@@ -104,11 +104,11 @@ class CompositeIndexingSpec
 
   private val allowedPerms = Set(permissions.query, events.read)
 
-  private val (acls, perms) = AclSetup.initValuesWithPerms((bob, AclAddress.Root, allowedPerms)).accepted
-  private val org           = Label.unsafe("org")
-  private val base          = nxv.base
-  private val project1      = ProjectGen.project("org", "proj", base = base)
-  private val project2      = ProjectGen.project("org", "proj2", base = base)
+  private val acls     = AclSetup.init((bob, AclAddress.Root, allowedPerms)).accepted
+  private val org      = Label.unsafe("org")
+  private val base     = nxv.base
+  private val project1 = ProjectGen.project("org", "proj", base = base)
+  private val project2 = ProjectGen.project("org", "proj2", base = base)
 
   private def projectSetup =
     ProjectSetup
@@ -285,7 +285,7 @@ class CompositeIndexingSpec
     initViews(
       orgs,
       projects,
-      perms,
+      allowedPerms,
       acls,
       esClient,
       Crypto("password", "salt"),

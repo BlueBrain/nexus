@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
@@ -68,14 +67,6 @@ object HttpResponseFields {
     new HttpResponseFields[A] {
       override def statusFrom(value: A): StatusCode       = f(value)._1
       override def headersFrom(value: A): Seq[HttpHeader] = f(value)._2
-    }
-
-  implicit val responseFieldsPermissions: HttpResponseFields[PermissionsRejection] =
-    HttpResponseFields {
-      case PermissionsRejection.IncorrectRev(_, _)            => StatusCodes.Conflict
-      case PermissionsRejection.RevisionNotFound(_, _)        => StatusCodes.NotFound
-      case PermissionsRejection.PermissionsEvaluationError(_) => StatusCodes.InternalServerError
-      case _                                                  => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsAcls: HttpResponseFields[AclRejection] =

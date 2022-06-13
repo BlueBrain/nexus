@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.acls.{AclEventExchange, AclsDeletion, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
@@ -31,7 +32,7 @@ object AclsModule extends ModuleDef {
 
   make[AclsAggregate].fromEffect {
     (config: AppConfig, permissions: Permissions, realms: Realms, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      AclsImpl.aggregate(permissions, realms, config.acls.aggregate)(as, clock)
+      AclsImpl.aggregate(permissions.fetchPermissionSet, realms, config.acls.aggregate)(as, clock)
   }
 
   make[AclsCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>

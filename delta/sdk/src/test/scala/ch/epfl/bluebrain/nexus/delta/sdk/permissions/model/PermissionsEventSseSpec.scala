@@ -1,18 +1,19 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.acls
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
+import io.circe.Encoder
 import io.circe.syntax._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 
-class PermissionsEventSpec
+class PermissionsEventSseSpec
     extends AnyWordSpecLike
     with Matchers
     with TestHelpers
@@ -20,11 +21,12 @@ class PermissionsEventSpec
     with CirceLiteral
     with Fixtures {
 
-  implicit private val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
+  private val baseUri: BaseUri                             = BaseUri.withoutPrefix("http://localhost")
+  implicit val encoder: Encoder.AsObject[PermissionsEvent] = PermissionsEvent.sseEncoder(baseUri)
 
   "A PermissionsAppended" should {
     val event: PermissionsEvent = PermissionsAppended(
-      1L,
+      1,
       Set(acls.read, acls.write),
       Instant.EPOCH,
       Anonymous
@@ -48,7 +50,7 @@ class PermissionsEventSpec
 
   "A PermissionsSubtracted" should {
     val event: PermissionsEvent = PermissionsSubtracted(
-      1L,
+      1,
       Set(acls.read, acls.write),
       Instant.EPOCH,
       Anonymous
@@ -72,7 +74,7 @@ class PermissionsEventSpec
 
   "A PermissionsReplaced" should {
     val event: PermissionsEvent = PermissionsReplaced(
-      1L,
+      1,
       Set(acls.read, acls.write),
       Instant.EPOCH,
       Anonymous
@@ -96,7 +98,7 @@ class PermissionsEventSpec
 
   "A PermissionsDeleted" should {
     val event: PermissionsEvent = PermissionsDeleted(
-      1L,
+      1,
       Instant.EPOCH,
       Anonymous
     )

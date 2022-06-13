@@ -9,8 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType._
@@ -24,12 +22,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import org.scalatest.CancelAfterFailure
@@ -118,13 +117,6 @@ class EventSerializerSpec
     Set(schemas.projects, schemas.resources),
     NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
     UseCurrentCaller
-  )
-
-  val permissionsMapping: Map[PermissionsEvent, Json] = Map(
-    PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-appended.json"),
-    PermissionsSubtracted(rev, permSet, instant, subject) -> jsonContentOf("/serialization/permissions-subtracted.json"),
-    PermissionsReplaced(rev, permSet, instant, subject)   -> jsonContentOf("/serialization/permissions-replaced.json"),
-    PermissionsDeleted(rev, instant, anonymous)           -> jsonContentOf("/serialization/permissions-deleted.json")
   )
 
   val aclsMapping: Map[AclEvent, Json] = Map(
@@ -395,8 +387,6 @@ class EventSerializerSpec
     ) -> jsonContentOf("/serialization/project-deprecated.json")
   )
 
-  "An EventSerializer" should behave like eventToJsonSerializer("permissions", permissionsMapping)
-  "An EventSerializer" should behave like jsonToEventDeserializer("permissions", permissionsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("acl", aclsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("acl", aclsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("realm", realmsMapping)

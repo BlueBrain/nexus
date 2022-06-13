@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.service.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.PermissionsDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.{Permissions, PriorityRoute}
+import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
@@ -15,9 +14,9 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matchers with IOValues {
 
-  private val perms         = PermissionsDummy(Set(Permission.unsafe("test"), Permission.unsafe("test2")))
+  private val baseUri       = BaseUri.withoutPrefix("http://localhost")
   private val serviceModule = new ModuleDef {
-    make[Permissions].fromEffect(perms)
+    make[BaseUri].fromValue(baseUri)
     make[Scheduler].from(Scheduler.global)
   }
 

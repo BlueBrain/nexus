@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Root}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import org.scalatest.matchers.should.Matchers

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, resources, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}

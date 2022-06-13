@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor

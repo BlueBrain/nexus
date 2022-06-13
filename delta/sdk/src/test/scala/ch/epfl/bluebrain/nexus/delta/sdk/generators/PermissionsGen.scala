@@ -1,16 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
-
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.PermissionsState.Current
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{Permission, PermissionsState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+
+import java.time.Instant
 
 object PermissionsGen {
 
-  import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{schemas, _}
+  import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 
   /**
     * The collection of minimum permissions.
@@ -48,10 +47,10 @@ object PermissionsGen {
 
   def resourceFor(
       permissions: Set[Permission],
-      rev: Long,
+      rev: Int,
       createdBy: Subject = Identity.Anonymous,
       updatedBy: Subject = Identity.Anonymous
   ): PermissionsResource =
-    Current(rev, permissions, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy).toResource(permissions)
+    PermissionsState(rev, permissions, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy).toResource(permissions)
 
 }

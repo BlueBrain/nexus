@@ -1,17 +1,21 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.permissions
+package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import io.circe.Encoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
+import io.circe.{Codec, Encoder}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -19,7 +23,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Permissions event types.
   */
-sealed trait PermissionsEvent extends UnScopedEvent
+sealed trait PermissionsEvent extends GlobalEvent
 
 object PermissionsEvent {
 
@@ -36,7 +40,7 @@ object PermissionsEvent {
     *   the subject that performed the action that resulted in emitting this event
     */
   final case class PermissionsAppended(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       instant: Instant,
       subject: Subject
@@ -55,7 +59,7 @@ object PermissionsEvent {
     *   the subject that performed the action that resulted in emitting this event
     */
   final case class PermissionsSubtracted(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       instant: Instant,
       subject: Subject
@@ -74,7 +78,7 @@ object PermissionsEvent {
     *   the subject that performed the action that resulted in emitting this event
     */
   final case class PermissionsReplaced(
-      rev: Long,
+      rev: Int,
       permissions: Set[Permission],
       instant: Instant,
       subject: Subject
@@ -91,16 +95,22 @@ object PermissionsEvent {
     *   the subject that performed the action that resulted in emitting this event
     */
   final case class PermissionsDeleted(
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends PermissionsEvent
 
-  private val context = ContextValue(contexts.metadata, contexts.permissions)
+  @nowarn("cat=unused")
+  val serializer: Serializer[Label, PermissionsEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration            = Serializer.circeConfiguration
+    implicit val coder: Codec.AsObject[PermissionsEvent] = deriveConfiguredCodec[PermissionsEvent]
+    Serializer(_ => Permissions.entityId)
+  }
 
   @nowarn("cat=unused")
-  implicit final def permissionsEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[PermissionsEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
+  val sseEncoder: SseEncoder[PermissionsEvent] = new SseEncoder[PermissionsEvent] {
+    private val context = ContextValue(contexts.metadata, contexts.permissions)
 
     implicit val derivationConfiguration: Configuration =
       Configuration(
@@ -116,11 +126,14 @@ object PermissionsEvent {
         strictDecoding = false
       )
 
-    Encoder.encodeJsonObject.contramapObject { event =>
-      deriveConfiguredEncoder[PermissionsEvent]
-        .encodeObject(event)
-        .add("_permissionsId", ResourceUris.permissions.accessUri.asJson)
-        .add(keywords.context, context.value)
+    override def apply(implicit base: BaseUri): Encoder.AsObject[PermissionsEvent] = {
+      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
+      Encoder.encodeJsonObject.contramapObject { event =>
+        deriveConfiguredEncoder[PermissionsEvent]
+          .encodeObject(event)
+          .add("_permissionsId", ResourceUris.permissions.accessUri.asJson)
+          .add(keywords.context, context.value)
+      }
     }
   }
 }

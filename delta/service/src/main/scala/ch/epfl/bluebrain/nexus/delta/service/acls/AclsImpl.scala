@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
@@ -30,12 +31,10 @@ import monix.execution.Scheduler
 
 final class AclsImpl private (
     agg: AclsAggregate,
-    permissions: Permissions,
+    minimum: Set[Permission],
     eventLog: EventLog[Envelope[AclEvent]],
     index: AclsCache
 ) extends Acls {
-
-  private val minimum: Set[Permission] = permissions.minimum
 
   override def fetch(address: AclAddress): IO[AclNotFound, AclResource] =
     agg
@@ -109,7 +108,7 @@ object AclsImpl {
   private val logger: Logger = Logger[AclsImpl]
 
   def aggregate(
-      permissions: Permissions,
+      fetchPermissionSet: UIO[Set[Permission]],
       realms: Realms,
       aggregateConfig: AggregateConfig
   )(implicit as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[AclsAggregate] = {
@@ -117,7 +116,7 @@ object AclsImpl {
       entityType = moduleType,
       initialState = AclState.Initial,
       next = Acls.next,
-      evaluate = Acls.evaluate(permissions, realms),
+      evaluate = Acls.evaluate(fetchPermissionSet, realms),
       tagger = EventTags.forUnScopedEvent(moduleType),
       snapshotStrategy = aggregateConfig.snapshotStrategy.strategy,
       stopStrategy = aggregateConfig.stopStrategy.persistentStrategy
@@ -157,7 +156,7 @@ object AclsImpl {
       eventLog: EventLog[Envelope[AclEvent]],
       cache: AclsCache
   ): AclsImpl =
-    new AclsImpl(agg, permissions, eventLog, cache)
+    new AclsImpl(agg, permissions.minimum, eventLog, cache)
 
   /**
     * Constructs an [[AclsImpl]] instance.
@@ -174,6 +173,24 @@ object AclsImpl {
       uuidF: UUIDF
   ): Task[AclsImpl] = {
     val acls = AclsImpl(agg, permissions, eventLog, cache)
+    startIndexing(config, eventLog, cache, acls).as(acls)
+  }
+
+  /**
+    * Constructs an [[AclsImpl]] instance.
+    */
+  final def apply(
+      agg: AclsAggregate,
+      cache: AclsCache,
+      config: AclsConfig,
+      minimum: Set[Permission],
+      eventLog: EventLog[Envelope[AclEvent]]
+  )(implicit
+      as: ActorSystem[Nothing],
+      sc: Scheduler,
+      uuidF: UUIDF
+  ): Task[AclsImpl] = {
+    val acls = new AclsImpl(agg, minimum, eventLog, cache)
     startIndexing(config, eventLog, cache, acls).as(acls)
   }
 }

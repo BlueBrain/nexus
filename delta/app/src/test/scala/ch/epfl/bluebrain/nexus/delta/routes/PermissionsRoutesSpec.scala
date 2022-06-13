@@ -1,26 +1,31 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
+import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{acls, events, orgs, permissions => permissionsPerms, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, PermissionsDummy, RealmSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, events, orgs, permissions => permissionsPerms, realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{PermissionsConfig, PermissionsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, RealmSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
+import scala.concurrent.duration._
+
 class PermissionsRoutesSpec
     extends RouteHelpers
+    with DoobieFixture
     with Matchers
     with CirceLiteral
     with IOFixedClock
@@ -31,14 +36,23 @@ class PermissionsRoutesSpec
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val minimum          = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
-  private val identities       = IdentitiesDummy(Map.empty[AuthToken, Caller])
-  val (permissions, aclsDummy) = (for {
-    perms  <- PermissionsDummy(minimum)
+  private val minimum    = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
+  private val identities = IdentitiesDummy(Map.empty[AuthToken, Caller])
+
+  private val eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 10.millis)
+
+  private val config = PermissionsConfig(
+    eventLogConfig,
+    minimum,
+    Set.empty
+  )
+
+  lazy val (permissions, aclsDummy) = (for {
     realms <- RealmSetup.init(realm)
+    perms   = PermissionsImpl(config, xas)
     acls   <- AclsDummy(perms, realms)
   } yield (perms, acls)).accepted
-  private val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private lazy val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
 
   "The permissions routes" should {
 
@@ -65,7 +79,7 @@ class PermissionsRoutesSpec
     }
 
     "fetch permissions at specific revision" in {
-      permissions.append(Set(realms.read), 0L).accepted
+      permissions.append(Set(realms.read), 0).accepted
 
       val permissionsToFetch = minimum + realms.read
       val expected           = jsonContentOf(
@@ -116,18 +130,18 @@ class PermissionsRoutesSpec
     "replace permissions" in {
 
       aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 3L).accepted
-      val expected = permissionsMetadata(rev = 2L)
+      val expected = permissionsMetadata(rev = 2)
       val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
         response.status shouldEqual StatusCodes.OK
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
-      permissions.fetchAt(2L).accepted.value.permissions shouldEqual minimum + realms.write
+      permissions.fetchAt(2).accepted.value.permissions shouldEqual minimum + realms.write
     }
 
     "append permissions" in {
-      val expected = permissionsMetadata(rev = 3L)
+      val expected = permissionsMetadata(rev = 3)
 
       val append = json"""{"@type": "Append", "permissions": ["${realms.read}", "${orgs.read}"]}"""
       Patch("/v1/permissions?rev=2", append.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -135,12 +149,12 @@ class PermissionsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
-      permissions.fetchAt(3L).accepted.value.permissions shouldEqual
+      permissions.fetchAt(3).accepted.value.permissions shouldEqual
         minimum ++ Set(realms.write, realms.read, orgs.read)
     }
 
     "subtract permissions" in {
-      val expected = permissionsMetadata(rev = 4L)
+      val expected = permissionsMetadata(rev = 4)
 
       val subtract = json"""{"@type": "Subtract", "permissions": ["${realms.read}", "${realms.write}"]}"""
       Patch("/v1/permissions?rev=3", subtract.toEntity) ~> Accept(`*/*`) ~> route ~> check {
@@ -148,18 +162,18 @@ class PermissionsRoutesSpec
         response.status shouldEqual StatusCodes.OK
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
-      permissions.fetchAt(4L).accepted.value.permissions shouldEqual minimum + orgs.read
+      permissions.fetchAt(4).accepted.value.permissions shouldEqual minimum + orgs.read
     }
 
     "delete permissions" in {
-      val expected = permissionsMetadata(rev = 5L)
+      val expected = permissionsMetadata(rev = 5)
 
       Delete("/v1/permissions?rev=4") ~> Accept(`*/*`) ~> route ~> check {
         response.asJson shouldEqual expected
         response.status shouldEqual StatusCodes.OK
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
       }
-      permissions.fetchAt(5L).accepted.value.permissions shouldEqual minimum
+      permissions.fetchAt(5).accepted.value.permissions shouldEqual minimum
     }
 
     "reject on PATCH request with unknown @type" in {
@@ -213,46 +227,6 @@ class PermissionsRoutesSpec
         response.asJson shouldEqual jsonContentOf("permissions/reject_endpoint_not_found.jsonld")
         response.status shouldEqual StatusCodes.NotFound
         response.entity.contentType shouldEqual `application/ld+json`.toContentType
-      }
-    }
-
-    "fail to get the events stream without events/read permission" in {
-      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
-    "return the event stream when no offset is provided" in {
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
-      val dummy = PermissionsDummy(Set.empty).accepted
-      val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
-      dummy.append(Set(acls.read), 0L).accepted
-      dummy.subtract(Set(acls.read), 1L).accepted
-      dummy.replace(Set(acls.write), 2L).accepted
-      dummy.delete(3L).accepted
-      dummy.append(Set(acls.read), 4L).accepted
-      dummy.append(Set(realms.write), 5L).accepted
-      dummy.subtract(Set(realms.write), 6L).accepted
-      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
-        mediaType shouldBe `text/event-stream`
-        chunksStream.asString(5).strip shouldEqual contentOf("/permissions/eventstream-0-5.txt").strip
-      }
-    }
-
-    "return the event stream when an offset is provided" in {
-      val dummy = PermissionsDummy(Set.empty).accepted
-      val route = Route.seal(PermissionsRoutes(identities, dummy, aclsDummy))
-      dummy.append(Set(acls.read), 0L).accepted
-      dummy.subtract(Set(acls.read), 1L).accepted
-      dummy.replace(Set(acls.write), 2L).accepted
-      dummy.delete(3L).accepted
-      dummy.append(Set(acls.read), 4L).accepted
-      dummy.append(Set(realms.write), 5L).accepted
-      dummy.subtract(Set(realms.write), 6L).accepted
-      Get("/v1/permissions/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> route ~> check {
-        mediaType shouldBe `text/event-stream`
-        chunksStream.asString(5).strip shouldEqual contentOf("/permissions/eventstream-2-7.txt").strip
       }
     }
   }

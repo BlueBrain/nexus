@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
@@ -62,7 +63,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
   def initViews(
       orgs: Organizations,
       projects: Projects,
-      permissions: Permissions,
+      permissions: Set[Permission],
       acls: Acls,
       client: ElasticSearchClient,
       crypto: Crypto,
@@ -75,7 +76,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
                       config,
                       projects,
                       acls,
-                      permissions,
+                      UIO.pure(permissions),
                       ResourceIdCheck.alwaysAvailable,
                       client,
                       deltaClient,

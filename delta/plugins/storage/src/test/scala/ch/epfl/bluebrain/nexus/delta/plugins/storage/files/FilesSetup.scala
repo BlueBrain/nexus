@@ -2,22 +2,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup, StoragesStatistics, StoragesStatisticsSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, PermissionsDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
@@ -73,11 +72,10 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
   )(implicit config: StorageTypeConfig, as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) = {
     implicit val httpClient: HttpClient = HttpClient()(httpClientConfig, as.classicSystem, sc)
     for {
-      storagesPerms <- PermissionsDummy(storagePermissions.toSet)
-      storages       = StoragesSetup.init(orgs, projects, storagesPerms, storageTypeConfig)
-      eventLog      <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      agg           <- Files.aggregate(filesConfig.aggregate, ResourceIdCheck.alwaysAvailable)
-      files         <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, storageStatistics, agg)
+      eventLog <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
+      storages  = StoragesSetup.init(orgs, projects, storagePermissions.toSet, storageTypeConfig)
+      agg      <- Files.aggregate(filesConfig.aggregate, ResourceIdCheck.alwaysAvailable)
+      files    <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, storageStatistics, agg)
     } yield files -> storages
   }.accepted
 }
