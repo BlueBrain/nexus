@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -6,14 +6,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.UnScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -21,7 +23,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Realm event types.
   */
-sealed trait RealmEvent extends UnScopedEvent {
+sealed trait RealmEvent extends GlobalEvent {
 
   /**
     * @return
@@ -71,7 +73,7 @@ object RealmEvent {
     */
   final case class RealmCreated(
       label: Label,
-      rev: Long,
+      rev: Int,
       name: Name,
       openIdConfig: Uri,
       issuer: String,
@@ -87,6 +89,39 @@ object RealmEvent {
       instant: Instant,
       subject: Subject
   ) extends RealmEvent
+
+  object RealmCreated {
+
+    def apply(
+        label: Label,
+        name: Name,
+        openIdConfig: Uri,
+        logo: Option[Uri],
+        acceptedAudiences: Option[NonEmptySet[String]],
+        wk: WellKnown,
+        instant: Instant,
+        subject: Subject
+    ): RealmCreated =
+      RealmCreated(
+        label,
+        1,
+        name,
+        openIdConfig,
+        wk.issuer,
+        wk.keys,
+        wk.grantTypes,
+        logo,
+        acceptedAudiences,
+        wk.authorizationEndpoint,
+        wk.tokenEndpoint,
+        wk.userInfoEndpoint,
+        wk.revocationEndpoint,
+        wk.endSessionEndpoint,
+        instant,
+        subject
+      )
+
+  }
 
   /**
     * A witness to a realm update.
@@ -126,7 +161,7 @@ object RealmEvent {
     */
   final case class RealmUpdated(
       label: Label,
-      rev: Long,
+      rev: Int,
       name: Name,
       openIdConfig: Uri,
       issuer: String,
@@ -143,6 +178,40 @@ object RealmEvent {
       subject: Subject
   ) extends RealmEvent
 
+  object RealmUpdated {
+
+    def apply(
+        label: Label,
+        rev: Int,
+        name: Name,
+        openIdConfig: Uri,
+        logo: Option[Uri],
+        acceptedAudiences: Option[NonEmptySet[String]],
+        wk: WellKnown,
+        instant: Instant,
+        subject: Subject
+    ): RealmUpdated =
+      RealmUpdated(
+        label,
+        rev,
+        name,
+        openIdConfig,
+        wk.issuer,
+        wk.keys,
+        wk.grantTypes,
+        logo,
+        acceptedAudiences,
+        wk.authorizationEndpoint,
+        wk.tokenEndpoint,
+        wk.userInfoEndpoint,
+        wk.revocationEndpoint,
+        wk.endSessionEndpoint,
+        instant,
+        subject
+      )
+
+  }
+
   /**
     * A witness to a realm deprecation.
     *
@@ -157,7 +226,7 @@ object RealmEvent {
     */
   final case class RealmDeprecated(
       label: Label,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends RealmEvent
@@ -165,34 +234,44 @@ object RealmEvent {
   import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
-  private val context = ContextValue(contexts.metadata, contexts.realms)
-
-  implicit private[realms] val config: Configuration = Configuration.default
-    .withDiscriminator(keywords.tpe)
-    .copy(transformMemberNames = {
-      case "label"                 => nxv.label.prefix
-      case "rev"                   => nxv.rev.prefix
-      case "instant"               => nxv.instant.prefix
-      case "subject"               => nxv.eventSubject.prefix
-      case "issuer"                => nxv.issuer.prefix
-      case "grantTypes"            => nxv.grantTypes.prefix
-      case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix
-      case "tokenEndpoint"         => nxv.tokenEndpoint.prefix
-      case "userInfoEndpoint"      => nxv.userInfoEndpoint.prefix
-      case "revocationEndpoint"    => nxv.revocationEndpoint.prefix
-      case "endSessionEndpoint"    => nxv.endSessionEndpoint.prefix
-      case other                   => other
-    })
+  @nowarn("cat=unused")
+  val serializer: Serializer[Label, RealmEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration      = Serializer.circeConfiguration
+    implicit val coder: Codec.AsObject[RealmEvent] = deriveConfiguredCodec[RealmEvent]
+    Serializer(_.label)
+  }
 
   @nowarn("cat=unused")
-  implicit def realmEventEncoder(implicit base: BaseUri): Encoder.AsObject[RealmEvent] = {
-    implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
-    Encoder.encodeJsonObject.contramapObject { event =>
-      deriveConfiguredEncoder[RealmEvent]
-        .encodeObject(event)
-        .remove("keys")
-        .add("_realmId", ResourceUris.realm(event.label).accessUri.asJson)
-        .add(keywords.context, context.value)
+  val sseEncoder: SseEncoder[RealmEvent] = new SseEncoder[RealmEvent] {
+    private val context = ContextValue(contexts.metadata, contexts.realms)
+
+    implicit private val config: Configuration = Configuration.default
+      .withDiscriminator(keywords.tpe)
+      .copy(transformMemberNames = {
+        case "label"                 => nxv.label.prefix
+        case "rev"                   => nxv.rev.prefix
+        case "instant"               => nxv.instant.prefix
+        case "subject"               => nxv.eventSubject.prefix
+        case "issuer"                => nxv.issuer.prefix
+        case "grantTypes"            => nxv.grantTypes.prefix
+        case "authorizationEndpoint" => nxv.authorizationEndpoint.prefix
+        case "tokenEndpoint"         => nxv.tokenEndpoint.prefix
+        case "userInfoEndpoint"      => nxv.userInfoEndpoint.prefix
+        case "revocationEndpoint"    => nxv.revocationEndpoint.prefix
+        case "endSessionEndpoint"    => nxv.endSessionEndpoint.prefix
+        case other                   => other
+      })
+
+    override def apply(implicit base: BaseUri): Encoder.AsObject[RealmEvent] = {
+      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
+      Encoder.encodeJsonObject.contramapObject { event =>
+        deriveConfiguredEncoder[RealmEvent]
+          .encodeObject(event)
+          .remove("keys")
+          .add("_realmId", ResourceUris.realm(event.label).accessUri.asJson)
+          .add(keywords.context, context.value)
+      }
     }
   }
 

@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.service.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IllegalEndpointFormat, IllegalGrantTypeFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, RealmRejection, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IllegalEndpointFormat, IllegalGrantTypeFormat, IllegalIssuerFormat, IllegalJwkFormat, IllegalJwksUriFormat, NoValidKeysFound, UnsuccessfulJwksResponse, UnsuccessfulOpenIdConfigResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{GrantType, RealmRejection, WellKnown}
 import com.nimbusds.jose.jwk.{JWK, KeyType}
 import io.circe.generic.semiauto._
 import io.circe.{CursorOp, Decoder, Json}
@@ -92,7 +92,7 @@ object WellKnownResolver {
       jwkUri     <- IO.fromEither(jwksUri(json))
       jwkKeys    <- fetchJwkKeys(jwkUri)
       endPoints  <- IO.fromEither(endpoints(json))
-    } yield WellKnown(
+    } yield model.WellKnown(
       issuer,
       grantTypes,
       jwkKeys,

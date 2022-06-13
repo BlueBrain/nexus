@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
@@ -89,16 +88,6 @@ object HttpResponseFields {
     HttpResponseFields {
       case IdentityError.AuthenticationFailed    => StatusCodes.Unauthorized
       case IdentityError.InvalidToken(rejection) => rejection.status
-    }
-
-  implicit val responseFieldsRealms: HttpResponseFields[RealmRejection] =
-    HttpResponseFields {
-      case RealmRejection.RevisionNotFound(_, _)    => StatusCodes.NotFound
-      case RealmRejection.RealmNotFound(_)          => StatusCodes.NotFound
-      case RealmRejection.IncorrectRev(_, _)        => StatusCodes.Conflict
-      case RealmRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
-      case RealmRejection.RealmEvaluationError(_)   => StatusCodes.InternalServerError
-      case _                                        => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =

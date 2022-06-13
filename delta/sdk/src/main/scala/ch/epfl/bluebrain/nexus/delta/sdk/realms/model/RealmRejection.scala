@@ -1,19 +1,15 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
-import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of Realm rejection types.
@@ -39,7 +35,7 @@ object RealmRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
@@ -86,7 +82,7 @@ object RealmRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends RealmRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the realm may have been updated since last seen."
       )
@@ -177,38 +173,26 @@ object RealmRejection {
   final case class NoValidKeysFound(document: Uri)
       extends RealmRejection(s"Failed to find a valid RSA JWK key at '$document'.")
 
-  /**
-    * Rejection returned when the returned state is the initial state after a Realm.evaluation plus a Realm.next Note:
-    * This should never happen since the evaluation method already guarantees that the next function returns a current
-    */
-  final case class UnexpectedInitialState(label: Label)
-      extends RealmRejection(s"Unexpected initial state for realm '$label'.")
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class RealmEvaluationError(err: EvaluationError) extends RealmRejection("Unexpected evaluation error")
-
-  implicit def realmRejectionEncoder(implicit C: ClassTag[RealmCommand]): Encoder.AsObject[RealmRejection] =
+  implicit val realmRejectionEncoder: Encoder.AsObject[RealmRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case RealmEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for realm '${cmd.label}'"
-          JsonObject(keywords.tpe -> "RealmEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case RealmEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for realm '${cmd.label}' after '$t'"
-          JsonObject(keywords.tpe -> "RealmEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case IncorrectRev(provided, expected)                   =>
+        case IncorrectRev(provided, expected) =>
           default.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _                                                  => default
+        case _                                => default
       }
     }
 
   implicit final val realmRejectionJsonLdEncoder: JsonLdEncoder[RealmRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, RealmRejection] = RealmEvaluationError.apply
+  implicit val responseFieldsRealms: HttpResponseFields[RealmRejection] =
+    HttpResponseFields {
+      case RealmRejection.RevisionNotFound(_, _) => StatusCodes.NotFound
+      case RealmRejection.RealmNotFound(_)       => StatusCodes.NotFound
+      case RealmRejection.IncorrectRev(_, _)     => StatusCodes.Conflict
+      case _                                     => StatusCodes.BadRequest
+    }
 
 }

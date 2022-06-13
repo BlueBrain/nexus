@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -31,8 +32,11 @@ object AclsModule extends ModuleDef {
   make[EventLog[Envelope[AclEvent]]].fromEffect { databaseEventLog[AclEvent](_, _) }
 
   make[AclsAggregate].fromEffect {
-    (config: AppConfig, permissions: Permissions, realms: Realms, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      AclsImpl.aggregate(permissions.fetchPermissionSet, realms, config.acls.aggregate)(as, clock)
+    (config: AppConfig, permissions: Permissions, xas: Transactors, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      AclsImpl.aggregate(permissions.fetchPermissionSet, AclsImpl.findUnknownRealms(xas), config.acls.aggregate)(
+        as,
+        clock
+      )
   }
 
   make[AclsCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>

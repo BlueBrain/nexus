@@ -2,16 +2,18 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
+import doobie.util.transactor.Transactor
+import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.{Task, UIO}
@@ -60,6 +62,9 @@ trait GlobalStateStore[Id, S <: GlobalState] {
 }
 
 object GlobalStateStore {
+
+  def listIds[Id](tpe: EntityType, xa: Transactor[Task])(implicit getId: Get[Id]): Stream[Task, Id] =
+    sql"SELECT id FROM global_states WHERE type = $tpe".query[Id].stream.transact(xa)
 
   def apply[Id, S <: GlobalState](
       tpe: EntityType,

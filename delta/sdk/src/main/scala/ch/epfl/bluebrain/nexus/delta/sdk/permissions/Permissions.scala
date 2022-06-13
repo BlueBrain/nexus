@@ -306,6 +306,12 @@ object Permissions {
     }
   }
 
+  /**
+    * Entity definition for [[Permissions]]
+    *
+    * @param minimum
+    *   the minimum set of permissions
+    */
   def definition(minimum: Set[Permission])(implicit
       clock: Clock[UIO] = IO.clock
   ): EntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {

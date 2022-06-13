@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, RealmsDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, ConfigFixtures, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
@@ -26,6 +27,7 @@ import org.scalatest.{Inspectors, OptionValues}
 
 class RealmsRoutesSpec
     extends RouteHelpers
+    with DoobieFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -34,6 +36,7 @@ class RealmsRoutesSpec
     with OptionValues
     with TestMatchers
     with Inspectors
+    with ConfigFixtures
     with RouteFixtures {
 
   implicit private val subject: Subject = Identity.Anonymous
@@ -43,30 +46,34 @@ class RealmsRoutesSpec
 
   val githubLogo: Uri = "https://localhost/ghlogo"
 
+  val config: RealmsConfig = RealmsConfig(eventLogConfig, pagination, httpClientConfig)
+
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
 
-  private val realms = RealmsDummy(
+  private lazy val realms = RealmsImpl(
+    config,
     ioFromMap(
       Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
       (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
-    )
-  ).accepted
+    ),
+    xas
+  )
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
   private val perms      = Set(realmsPermissions.read, realmsPermissions.write, events.read)
-  private val acls       = AclsDummy(perms, realms).accepted
+  private val acls       = AclsDummy(perms, Set.empty).accepted
 
-  private val routes = Route.seal(RealmsRoutes(identities, realms, acls))
+  private lazy val routes = Route.seal(RealmsRoutes(identities, realms, acls))
 
   private val githubCreatedMeta = realmMetadata(github)
-  private val githubUpdatedMeta = realmMetadata(github, rev = 2L)
+  private val githubUpdatedMeta = realmMetadata(github, rev = 2)
   private val gitlabCreatedMeta = realmMetadata(gitlab, createdBy = alice, updatedBy = alice)
 
   private val gitlabDeprecatedMeta =
-    realmMetadata(gitlab, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    realmMetadata(gitlab, rev = 2, deprecated = true, createdBy = alice, updatedBy = alice)
 
   private val githubCreated = jsonContentOf(
     "/realms/realm-resource.json",

@@ -93,8 +93,7 @@ class CompositeViewsRoutesSpec
     events.read
   )
 
-  private val realms = RealmSetup.init(realm).accepted
-  private val acls   = AclsDummy(allowedPerms, realms).accepted
+  private val acls = AclsDummy(allowedPerms, Set(realm)).accepted
 
   val org  = Label.unsafe("myorg")
   val base = nxv.base

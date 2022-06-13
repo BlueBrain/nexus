@@ -1,37 +1,34 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.testkit
+package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
-import java.time.Instant
 import akka.http.scaladsl.model.Uri
-import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.sdk.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen._
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen.{realm, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.Task
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound, UnsuccessfulOpenIdConfigResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, IOFixedClock, IOValues}
 import monix.execution.Scheduler
-import org.scalatest.{CancelAfterFailure, OptionValues}
+import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
-trait RealmsBehaviors {
-  this: AnyWordSpecLike
+import java.time.Instant
+
+class RealmImplSpec
+    extends DoobieFixture
     with Matchers
     with IOValues
-    with IOFixedClock
-    with TestHelpers
     with CancelAfterFailure
-    with OptionValues =>
+    with IOFixedClock
+    with ConfigFixtures {
 
   val epoch: Instant                = Instant.EPOCH
   implicit val subject: Subject     = Identity.User("user", Label.unsafe("realm"))
@@ -46,9 +43,14 @@ trait RealmsBehaviors {
   val (githubOpenId, githubWk) = WellKnownGen.create(github.value)
   val (gitlabOpenId, gitlabWk) = WellKnownGen.create(gitlab.value)
 
-  def create: Task[Realms]
+  val realmConfig = RealmsConfig(eventLogConfig, pagination, httpClientConfig)
 
-  val realms = create.accepted
+  val resolveWellKnown = ioFromMap(
+    Map(githubOpenId -> githubWk, gitlabOpenId -> gitlabWk),
+    (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
+  )
+
+  lazy val realms = RealmsImpl(realmConfig, resolveWellKnown, xas)
 
   "Realms implementation" should {
 
@@ -60,14 +62,14 @@ trait RealmsBehaviors {
             githubWk,
             None
           ),
-          1L,
+          1,
           subject
         )
     }
 
     "update a realm" in {
       realms
-        .update(github, 1L, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
+        .update(github, 1, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
         .accepted shouldEqual
         resourceFor(
           realm(
@@ -76,13 +78,13 @@ trait RealmsBehaviors {
             Some(githubLogo),
             Some(NonEmptySet.of("aud"))
           ),
-          2L,
+          2,
           subject
         )
     }
 
     "deprecate a realm" in {
-      realms.deprecate(github, 2L).accepted shouldEqual
+      realms.deprecate(github, 2).accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
@@ -90,7 +92,7 @@ trait RealmsBehaviors {
             Some(githubLogo),
             Some(NonEmptySet.of("aud"))
           ),
-          3L,
+          3,
           subject,
           deprecated = true
         )
@@ -105,21 +107,21 @@ trait RealmsBehaviors {
             Some(githubLogo),
             Some(NonEmptySet.of("aud"))
           ),
-          3L,
+          3,
           subject,
           deprecated = true
         )
     }
 
     "fetch a realm at specific revision" in {
-      realms.fetchAt(github, 1L).accepted shouldEqual
+      realms.fetchAt(github, 1).accepted shouldEqual
         resourceFor(
           realm(
             githubOpenId,
             githubWk,
             None
           ),
-          1L,
+          1,
           subject
         )
     }
@@ -129,7 +131,7 @@ trait RealmsBehaviors {
     }
 
     "fail fetching a non existing realm at specific revision" in {
-      realms.fetchAt(Label.unsafe("non-existing"), 1L).rejectedWith[RealmNotFound]
+      realms.fetchAt(Label.unsafe("non-existing"), 1).rejectedWith[RealmNotFound]
     }
 
     "list realms" in {
@@ -141,7 +143,7 @@ trait RealmsBehaviors {
           Some(githubLogo),
           Some(NonEmptySet.of("aud"))
         ),
-        3L,
+        3,
         subject,
         deprecated = true
       )
@@ -151,7 +153,7 @@ trait RealmsBehaviors {
           gitlabWk,
           None
         ),
-        1L,
+        1,
         subject
       )
       val order = ResourceF.defaultSort[Realm]
@@ -166,7 +168,7 @@ trait RealmsBehaviors {
     }
 
     "fail to fetch a realm on nonexistent revision" in {
-      realms.fetchAt(github, 10L).rejected shouldEqual RevisionNotFound(10L, 3L)
+      realms.fetchAt(github, 10).rejected shouldEqual RevisionNotFound(10, 3)
     }
 
     "fail to create a realm already created" in {
@@ -182,43 +184,43 @@ trait RealmsBehaviors {
     }
 
     "fail to update a realm with incorrect rev" in {
-      realms.update(gitlab, 3L, gitlabName, gitlabOpenId, None, None).rejected shouldEqual IncorrectRev(3L, 1L)
+      realms.update(gitlab, 3, gitlabName, gitlabOpenId, None, None).rejected shouldEqual IncorrectRev(3, 1)
     }
 
     "fail to update a realm a already used openId config" in {
       realms
-        .update(gitlab, 1L, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
+        .update(gitlab, 1, githubName, githubOpenId, Some(githubLogo), Some(NonEmptySet.of("aud")))
         .rejectedWith[RealmOpenIdConfigAlreadyExists] shouldEqual
         RealmOpenIdConfigAlreadyExists(gitlab, githubOpenId)
     }
 
     "fail to deprecate a realm with incorrect rev" in {
-      realms.deprecate(gitlab, 3L).rejected shouldEqual IncorrectRev(3L, 1L)
+      realms.deprecate(gitlab, 3).rejected shouldEqual IncorrectRev(3, 1)
     }
 
     "fail to update a non existing realm" in {
-      realms.update(Label.unsafe("other"), 1L, gitlabName, gitlabOpenId, None, None).rejectedWith[RealmNotFound]
+      realms.update(Label.unsafe("other"), 1, gitlabName, gitlabOpenId, None, None).rejectedWith[RealmNotFound]
     }
 
     "fail to deprecate a non existing realm" in {
-      realms.deprecate(Label.unsafe("other"), 1L).rejectedWith[RealmNotFound]
+      realms.deprecate(Label.unsafe("other"), 1).rejectedWith[RealmNotFound]
     }
 
     "fail to deprecate an already deprecated realm" in {
-      realms.deprecate(github, 3L).rejectedWith[RealmAlreadyDeprecated]
+      realms.deprecate(github, 3).rejectedWith[RealmAlreadyDeprecated]
     }
 
-    val allEvents = SSEUtils.list(
-      (github -> RealmCreated),
-      (github -> RealmUpdated),
-      (github -> RealmDeprecated),
-      (gitlab -> RealmCreated)
+    val allEvents = SSEUtils.extract(
+      github -> RealmCreated,
+      github -> RealmUpdated,
+      github -> RealmDeprecated,
+      gitlab -> RealmCreated
     )
 
     "get the different events from start" in {
       val events = realms
         .events()
-        .map { e => (e.event.label, e.eventType, e.offset) }
+        .map { e => (e.value.label, e.valueClass, e.offset) }
         .take(4L)
         .compile
         .toList
@@ -229,7 +231,7 @@ trait RealmsBehaviors {
     "get the different current events from start" in {
       val events = realms
         .currentEvents()
-        .map { e => (e.event.label, e.eventType, e.offset) }
+        .map { e => (e.value.label, e.valueClass, e.offset) }
         .compile
         .toList
 
@@ -238,8 +240,8 @@ trait RealmsBehaviors {
 
     "get the different events from offset 2" in {
       val events = realms
-        .events(Sequence(2L))
-        .map { e => (e.event.label, e.eventType, e.offset) }
+        .events(Offset.at(2L))
+        .map { e => (e.value.label, e.valueClass, e.offset) }
         .take(2L)
         .compile
         .toList
@@ -249,8 +251,8 @@ trait RealmsBehaviors {
 
     "get the different current events from offset 2" in {
       val events = realms
-        .currentEvents(Sequence(2L))
-        .map { e => (e.event.label, e.eventType, e.offset) }
+        .currentEvents(Offset.at(2L))
+        .map { e => (e.value.label, e.valueClass, e.offset) }
         .compile
         .toList
 

@@ -17,10 +17,7 @@ object AclSetup extends IOFixedClock {
     * Init realms and permissions for the ACLs
     */
   def init(permissions: Set[Permission], realmLabels: Set[Label]): UIO[Acls] =
-    for {
-      realms <- RealmSetup.init(realmLabels.toSeq: _*)
-      acls   <- AclsDummy(permissions, realms)
-    } yield acls
+    AclsDummy(permissions, realmLabels)
 
   /**
     * Set up Acls and PermissionsDummy and init some acls for the given users
@@ -29,16 +26,16 @@ object AclSetup extends IOFixedClock {
     */
   def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] = {
     val allPermissions = input.foldLeft(Set.empty[Permission])(_ ++ _._3)
+    val realms         = input.map(_._1).collect { case id: IdentityRealm => id.realm }.toSet
     for {
-      realms <- RealmSetup.init(input.map(_._1).collect { case id: IdentityRealm => id.realm }: _*)
-      acls   <- AclsDummy(allPermissions, realms)
-      _      <- input.toList
-                  .traverse { case (subject, address, permissions) =>
-                    acls.fetch(address).redeem(_ => 0L, _.rev).flatMap { rev =>
-                      acls.append(Acl(address, subject -> permissions), rev)
-                    }
+      acls <- AclsDummy(allPermissions, realms)
+      _    <- input.toList
+                .traverse { case (subject, address, permissions) =>
+                  acls.fetch(address).redeem(_ => 0L, _.rev).flatMap { rev =>
+                    acls.append(Acl(address, subject -> permissions), rev)
                   }
-                  .hideErrorsWith(r => new IllegalStateException(r.reason))
+                }
+                .hideErrorsWith(r => new IllegalStateException(r.reason))
     } yield acls
   }
 

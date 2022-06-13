@@ -13,8 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.GrantType.Camel._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
@@ -38,7 +36,6 @@ class EventSerializer extends SerializerWithStringManifest {
 
   override def manifest(o: AnyRef): String = o match {
     case _: AclEvent      => aclEventManifest
-    case _: RealmEvent    => realmEventManifest
     case _: ProjectEvent  => projectEventManifest
     case _: ResolverEvent => resolverEventManifest
     case _: ResourceEvent => resourceEventManifest
@@ -48,7 +45,6 @@ class EventSerializer extends SerializerWithStringManifest {
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case e: AclEvent      => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-    case e: RealmEvent    => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ProjectEvent  => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResolverEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -58,7 +54,6 @@ class EventSerializer extends SerializerWithStringManifest {
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case `aclEventManifest`      => parseAndDecode[AclEvent](bytes, manifest)
-    case `realmEventManifest`    => parseAndDecode[RealmEvent](bytes, manifest)
     case `projectEventManifest`  => parseAndDecode[ProjectEvent](bytes, manifest)
     case `resolverEventManifest` => parseAndDecode[ResolverEvent](bytes, manifest)
     case `resourceEventManifest` => parseAndDecode[ResourceEvent](bytes, manifest)
@@ -77,7 +72,6 @@ class EventSerializer extends SerializerWithStringManifest {
 object EventSerializer {
 
   final val aclEventManifest: String      = Acls.moduleType
-  final val realmEventManifest: String    = Realms.moduleType
   final val projectEventManifest: String  = Projects.moduleType
   final val resolverEventManifest: String = Resolvers.moduleType
   final val resourceEventManifest: String = Resources.moduleType
@@ -134,7 +128,6 @@ object EventSerializer {
     Encoder.AsObject.instance { ev =>
       deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("address", ev.address.asJson)).encodeObject(ev)
     }
-  implicit final val realmEventCodec: Codec.AsObject[RealmEvent]       = deriveConfiguredCodec[RealmEvent]
   implicit final val projectEventCodec: Codec.AsObject[ProjectEvent]   = deriveConfiguredCodec[ProjectEvent]
   implicit final val resolverEvent: Codec.AsObject[ResolverEvent]      = deriveConfiguredCodec[ResolverEvent]
   implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]

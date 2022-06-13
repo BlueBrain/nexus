@@ -1,12 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe._
 import io.circe.generic.extras.Configuration
@@ -74,6 +74,7 @@ object Realm {
     *   the label of the realm
     */
   final case class Metadata(label: Label)
+
   import GrantType.Camel._
   import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
