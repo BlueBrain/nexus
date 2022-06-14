@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, events, realms, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy, RealmSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
+import monix.bio.IO
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 
@@ -47,9 +48,8 @@ class PermissionsEventsRoutesSpec
   )
 
   lazy val (permissions, aclsDummy) = (for {
-    realms <- RealmSetup.init(realm)
-    perms   = PermissionsImpl(config, xas)
-    acls   <- AclsDummy(perms, realms)
+    perms <- IO.pure(PermissionsImpl(config, xas))
+    acls  <- AclsDummy(perms)
   } yield (perms, acls)).accepted
   private lazy val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
 

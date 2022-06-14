@@ -191,7 +191,7 @@ trait RouteFixtures extends TestHelpers with IOValues {
 
   def realmMetadata(
       label: Label,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

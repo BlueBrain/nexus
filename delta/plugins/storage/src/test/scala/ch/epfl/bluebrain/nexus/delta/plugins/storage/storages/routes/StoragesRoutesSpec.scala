@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
@@ -11,20 +11,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStats
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -91,7 +90,7 @@ class StoragesRoutesSpec
   private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist, config)
 
   private val perms              = allowedPerms.toSet
-  private val acls               = AclsDummy(perms, RealmSetup.init(realm).accepted).accepted
+  private val acls               = AclsDummy(perms, Set(realm)).accepted
   private val (orgs, projs)      = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   implicit private val c: Crypto = crypto
 

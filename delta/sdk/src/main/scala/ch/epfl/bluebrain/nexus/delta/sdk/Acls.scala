@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.acls._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
 
@@ -319,6 +320,11 @@ object Acls {
     */
   final val moduleType: String = "acl"
 
+  def findUnknownRealms(labels: Set[Label], existing: Set[Label]): IO[UnknownRealms, Unit] = {
+    val unknown = labels.diff(existing)
+    IO.raiseWhen(unknown.nonEmpty)(UnknownRealms(unknown))
+  }
+
   private[delta] def next(state: AclState, event: AclEvent): AclState = {
     def replaced(e: AclReplaced): AclState     =
       state match {
@@ -350,7 +356,7 @@ object Acls {
 
   private[delta] def evaluate(
       fetchPermissionSet: UIO[Set[Permission]],
-      realms: Realms
+      findUnknownRealms: Set[Label] => IO[UnknownRealms, Unit]
   )(state: AclState, cmd: AclCommand)(implicit clock: Clock[UIO] = IO.clock): IO[AclRejection, AclEvent] = {
 
     def acceptChecking(acl: Acl)(f: Instant => AclEvent) =
@@ -359,13 +365,7 @@ object Acls {
           IO.raiseError(UnknownPermissions(acl.permissions -- permissions))
         )
       } >>
-        IO.parSequence(acl.value.keySet.collect { case id: IdentityRealm => realms.fetch(id.realm).attempt }.toList)
-          .flatMap { results =>
-            val unknownRealmLabels = results.collect { case Left(err) => err.label }.toSet
-            IO.when(unknownRealmLabels.nonEmpty)(
-              IO.raiseError(UnknownRealms(unknownRealmLabels))
-            )
-          } >>
+        findUnknownRealms(acl.value.keySet.collect { case id: IdentityRealm => id.realm }) >>
         instant.map(f)
 
     def replace(c: ReplaceAcl)   =

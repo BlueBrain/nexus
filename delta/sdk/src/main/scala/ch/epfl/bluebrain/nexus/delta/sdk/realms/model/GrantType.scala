@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._

@@ -20,9 +20,5 @@ class AclsDummySpec
     with AclsBehaviors {
 
   override def create: Task[Acls] =
-    for {
-      r <- RealmSetup.init(realm, realm2)
-      a <- AclsDummy(minimumPermissions, r)
-    } yield a
-
+    AclsDummy(minimumPermissions, Set(realm, realm2))
 }

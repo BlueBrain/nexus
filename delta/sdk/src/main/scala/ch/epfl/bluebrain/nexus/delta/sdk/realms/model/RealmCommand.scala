@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
@@ -70,7 +70,7 @@ object RealmCommand {
     */
   final case class UpdateRealm(
       label: Label,
-      rev: Long,
+      rev: Int,
       name: Name,
       openIdConfig: Uri,
       logo: Option[Uri],
@@ -91,7 +91,7 @@ object RealmCommand {
     */
   final case class DeprecateRealm(
       label: Label,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends RealmCommand
 }

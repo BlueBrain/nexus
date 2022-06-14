@@ -80,8 +80,7 @@ class FilesRoutesSpec
   private val stCfg                    = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   implicit private val f: FusionConfig = fusionConfig
 
-  private val realms            = RealmSetup.init(realm).accepted
-  private val acls              = AclsDummy(allowedPerms.toSet, realms).accepted
+  private val acls              = AclsDummy(allowedPerms.toSet, Set(realm)).accepted
   private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
   private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files, IndexingActionDummy()))
 

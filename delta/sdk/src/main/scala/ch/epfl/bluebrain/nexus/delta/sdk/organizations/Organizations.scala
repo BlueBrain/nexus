@@ -237,6 +237,9 @@ object Organizations {
     }
   }
 
+  /**
+    * Entity definition for [[Organization]]
+    */
   def definition(implicit
       clock: Clock[UIO] = IO.clock,
       uuidf: UUIDF

@@ -33,8 +33,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -97,8 +97,7 @@ class BlazegraphViewsRoutesSpec
     events.read
   )
 
-  private val realms        = RealmSetup.init(realm).accepted
-  private val acls          = AclsDummy(allowedPerms, realms).accepted
+  private val acls          = AclsDummy(allowedPerms, Set(realm)).accepted
   private val (orgs, projs) =
     ProjectSetup
       .init(

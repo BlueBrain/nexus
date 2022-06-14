@@ -1,27 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmState, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{Realm, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import org.scalatest.OptionValues
 
+import java.time.Instant
+
 object RealmGen extends OptionValues {
 
-  def currentState(
+  def state(
       openIdConfig: Uri,
       wk: WellKnown,
-      rev: Long,
+      rev: Int,
       deprecated: Boolean = false,
       logo: Option[Uri] = None,
       acceptedAudiences: Option[NonEmptySet[String]] = None,
       subject: Subject = Anonymous
-  ): Current =
-    Current(
+  ): RealmState =
+    RealmState(
       Label.unsafe(wk.issuer),
       rev,
       deprecated = deprecated,
@@ -49,7 +50,7 @@ object RealmGen extends OptionValues {
       logo: Option[Uri] = None,
       acceptedAudiences: Option[NonEmptySet[String]] = None
   ): Realm =
-    Realm(
+    model.Realm(
       Label.unsafe(wk.issuer),
       Name.unsafe(s"${wk.issuer}-name"),
       openIdConfig,
@@ -67,11 +68,11 @@ object RealmGen extends OptionValues {
 
   def resourceFor(
       realm: Realm,
-      rev: Long,
+      rev: Int,
       subject: Subject = Anonymous,
       deprecated: Boolean = false
   ): RealmResource = {
-    val wk = WellKnown(
+    val wk = model.WellKnown(
       realm.issuer,
       realm.grantTypes,
       realm.keys,
@@ -81,10 +82,9 @@ object RealmGen extends OptionValues {
       realm.revocationEndpoint,
       realm.endSessionEndpoint
     )
-    currentState(realm.openIdConfig, wk, rev, deprecated, realm.logo, realm.acceptedAudiences, subject)
+    state(realm.openIdConfig, wk, rev, deprecated, realm.logo, realm.acceptedAudiences, subject)
       .copy(label = realm.label, name = realm.name)
       .toResource
-      .value
   }
 
 }

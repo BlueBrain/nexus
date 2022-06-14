@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.Realm
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.service.identity.IdentitiesImpl.{FetchGroups, GroupsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate

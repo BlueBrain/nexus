@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.{GrantType, WellKnown}
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{GrantType, WellKnown}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral
 
 object WellKnownGen extends CirceLiteral {
@@ -19,7 +20,7 @@ object WellKnownGen extends CirceLiteral {
       issuer: String,
       grantTypes: Set[GrantType] = Set(GrantType.AuthorizationCode, GrantType.Implicit)
   ): WellKnown =
-    WellKnown(
+    model.WellKnown(
       issuer,
       grantTypes,
       Set(json"""{ "k": "$issuer" }"""),

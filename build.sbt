@@ -371,6 +371,7 @@ lazy val sdk = project
       fs2,
       kryo,
       monixBio,
+      nimbusJoseJwt,
       streamz,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,

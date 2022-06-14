@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import ch.epfl.bluebrain.nexus.delta.sdk.Acls.{evaluate, next}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.mocks.RealmsMock
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Root
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclCommand.{AppendAcl, DeleteAcl, ReplaceAcl, SubtractAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
@@ -32,17 +30,12 @@ class AclsSpec
 
   "The ACL state machine" when {
     implicit val sc: Scheduler = Scheduler.global
-    val (openIdUri, wk)        = WellKnownGen.create(realm.value)
-    val (openIdUri2, wk2)      = WellKnownGen.create(realm2.value)
-    val currentRealms          = Map(
-      realm  -> RealmGen.resourceFor(RealmGen.realm(openIdUri, wk), 1),
-      realm2 -> RealmGen.resourceFor(RealmGen.realm(openIdUri2, wk2), 1)
-    )
+    val currentRealms          = Set(realm, realm2)
     val fetchPermissionsSet    = UIO.pure(rwx)
-    val realms                 = new RealmsMock(currentRealms)
+    val findUnknownRealms      = Acls.findUnknownRealms(_, currentRealms)
     val current                = Current(userR_groupX(Root), 1L, epoch, Anonymous, epoch, Anonymous)
     val time2                  = Instant.ofEpochMilli(10L)
-    val eval                   = evaluate(fetchPermissionsSet, realms)(_, _)
+    val eval                   = evaluate(fetchPermissionsSet, findUnknownRealms)(_, _)
 
     "evaluating an incoming command" should {
 

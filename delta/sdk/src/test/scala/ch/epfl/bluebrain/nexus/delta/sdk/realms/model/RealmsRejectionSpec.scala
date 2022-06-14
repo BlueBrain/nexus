@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.realms
+package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -21,7 +21,7 @@ class RealmsRejectionSpec
 
   "A RealmsRejection" should {
 
-    val incorrectRev  = IncorrectRev(2L, 3L)
+    val incorrectRev  = IncorrectRev(2, 3)
     val alreadyExists = RealmAlreadyExists(Label.unsafe("name"))
 
     "be converted to compacted JSON-LD" in {

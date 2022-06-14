@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, RealmSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
@@ -22,13 +22,8 @@ class OwnerPermissionsScopeInitializationSpec
   private val saRealm: Label    = Label.unsafe("service-accounts")
   private val usersRealm: Label = Label.unsafe("users")
 
-  private val acls: Acls = {
-    val aclsIO = for {
-      r <- RealmSetup.init(saRealm, usersRealm)
-      a <- AclsDummy(PermissionsGen.minimum, r)
-    } yield a
-    aclsIO.accepted
-  }
+  private val acls: Acls =
+    AclsDummy(PermissionsGen.minimum, Set(saRealm, usersRealm)).accepted
 
   private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   private val bob: Caller        = Caller.unsafe(User("bob", usersRealm))
