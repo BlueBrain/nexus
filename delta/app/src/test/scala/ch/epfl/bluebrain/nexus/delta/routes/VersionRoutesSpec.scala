@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.config.DescriptionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.{events, version}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, version}
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name

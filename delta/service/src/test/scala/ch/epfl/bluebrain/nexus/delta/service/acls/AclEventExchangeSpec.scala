@@ -1,17 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.service.acls
 
-import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{AclGen, WellKnownGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.AclAppended
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AclsDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.realms.RealmRejection.UnsuccessfulOpenIdConfigResponse
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, PermissionsDummy, RealmsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -34,23 +31,8 @@ class AclEventExchangeSpec
   implicit private val subject: Subject = Identity.User("user", Label.unsafe("realm"))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  val permissions = PermissionsDummy(Set(Permission.unsafe("resource/read"))).accepted
-
-  val realmLabel             = Label.unsafe("realm1")
-  val realmName              = Name.unsafe("realm1-name")
-  val (realmOpenId, realmWk) = WellKnownGen.create(realmLabel.value)
-
-  val realms = RealmsDummy(
-    ioFromMap(
-      Map(
-        realmOpenId -> realmWk
-      ),
-      (uri: Uri) => UnsuccessfulOpenIdConfigResponse(uri)
-    )
-  ).accepted
-  realms.create(realmLabel, realmName, realmOpenId, None, None).accepted
-
-  val acls = AclsDummy(permissions, realms).accepted
+  val realmLabel = Label.unsafe("realm1")
+  val acls       = AclsDummy(Set(Permission.unsafe("resource/read")), Set(realmLabel)).accepted
 
   val acl = Acl(AclAddress.Root, Identity.Anonymous -> Set(Permission.unsafe("resource/read")))
   acls.append(acl, 0L).accepted

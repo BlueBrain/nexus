@@ -17,7 +17,7 @@ class SearchParamsSpec extends AnyWordSpecLike with Matchers with Inspectors {
   "A RealmSearchParams" should {
     val issuer              = "myrealm"
     val (wellKnownUri, wk)  = WellKnownGen.create(issuer)
-    val resource            = RealmGen.resourceFor(RealmGen.realm(wellKnownUri, wk, None), 1L, subject)
+    val resource            = RealmGen.resourceFor(RealmGen.realm(wellKnownUri, wk, None), 1, subject)
     val searchWithAllParams = RealmSearchParams(
       issuer = Some(issuer),
       deprecated = Some(false),

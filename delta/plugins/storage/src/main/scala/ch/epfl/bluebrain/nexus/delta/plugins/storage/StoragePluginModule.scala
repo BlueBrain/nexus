@@ -34,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -76,7 +77,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         client: HttpClient @Id("storage"),
         as: ActorSystem[Nothing],
         clock: Clock[UIO]
-    ) => Storages.aggregate(config.storages, resourceIdCheck, permissions, crypto)(client, as, clock)
+    ) => Storages.aggregate(config.storages, resourceIdCheck, permissions.fetchPermissionSet, crypto)(client, as, clock)
   }
 
   make[Storages]

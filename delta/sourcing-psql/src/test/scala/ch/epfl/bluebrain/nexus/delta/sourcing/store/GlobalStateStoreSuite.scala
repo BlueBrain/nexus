@@ -47,6 +47,10 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     } yield ()
   }
 
+  test("List ids") {
+    GlobalStateStore.listIds[String](Arithmetic.entityType, xas.read).assert("id1", "id2")
+  }
+
   test("get state 1") {
     store.get("id1").assertSome(state1)
   }

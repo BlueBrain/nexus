@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -143,7 +144,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         as: ActorSystem[Nothing],
         uuidF: UUIDF,
         clock: Clock[UIO]
-    ) => BlazegraphViews.aggregate(config, deferred, permissions, resourceIdCheck)(as, uuidF, clock)
+    ) => BlazegraphViews.aggregate(config, deferred, permissions.fetchPermissionSet, resourceIdCheck)(as, uuidF, clock)
   }
 
   make[BlazegraphViews]

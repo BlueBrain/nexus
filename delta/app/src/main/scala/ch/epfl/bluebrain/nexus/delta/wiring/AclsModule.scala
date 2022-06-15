@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -13,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.service.acls.AclsImpl.{AclsAggregate, AclsCache}
 import ch.epfl.bluebrain.nexus.delta.service.acls.{AclEventExchange, AclsDeletion, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
@@ -30,8 +32,11 @@ object AclsModule extends ModuleDef {
   make[EventLog[Envelope[AclEvent]]].fromEffect { databaseEventLog[AclEvent](_, _) }
 
   make[AclsAggregate].fromEffect {
-    (config: AppConfig, permissions: Permissions, realms: Realms, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      AclsImpl.aggregate(permissions, realms, config.acls.aggregate)(as, clock)
+    (config: AppConfig, permissions: Permissions, xas: Transactors, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+      AclsImpl.aggregate(permissions.fetchPermissionSet, AclsImpl.findUnknownRealms(xas), config.acls.aggregate)(
+        as,
+        clock
+      )
   }
 
   make[AclsCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>

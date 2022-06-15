@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import akka.persistence.query.Sequence
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.AclGen.resourceFor
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent.{AclAppended, AclDeleted, AclReplaced, AclSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection.{AclCannotContainEmptyPermissionCollection, AclIsEmpty, AclNotFound, NothingToBeUpdated, RevisionNotFound, UnknownPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclCollection, AclState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues, TestHelpers}
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -73,10 +73,12 @@ trait AclsBehaviors {
   val anyOrg              = AnyOrganization(false)
   val anyOrgWithAncestors = AnyOrganization(true)
 
-  def create: Task[(Acls, Permissions)]
+  def create: Task[Acls]
+
+  val minimumPermissions: Set[Permission] = PermissionsGen.minimum
 
   "An ACLs implementation" should {
-    val (acls, permissions) =
+    val acls =
       create
         .timeoutWith(10.seconds, new TimeoutException("Unable to create a permissions instance"))
         .memoizeOnSuccess
@@ -84,9 +86,7 @@ trait AclsBehaviors {
 
     "return the full permissions for Anonymous if no permissions are defined" in {
       val expected: AclCollection =
-        permissions.fetchPermissionSet
-          .map(ps => AclCollection(AclState.Initial.toResource(AclAddress.Root, ps).value))
-          .accepted
+        AclCollection(AclState.Initial.toResource(AclAddress.Root, minimumPermissions).value)
       acls.fetchWithAncestors(projectTarget).accepted shouldEqual expected
       acls.fetchWithAncestors(orgTarget).accepted shouldEqual expected
       acls.fetchWithAncestors(AclAddress.Root).accepted shouldEqual expected

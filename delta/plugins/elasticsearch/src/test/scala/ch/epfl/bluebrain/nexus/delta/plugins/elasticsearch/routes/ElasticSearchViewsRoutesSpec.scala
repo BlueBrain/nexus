@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -128,10 +128,10 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (orgs, projs)       = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
-  private val allowedPerms        = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
-  private val (acls, permissions) = AclSetup.initWithPerms(allowedPerms, Set(realm)).accepted
-  private val views               = ElasticSearchViewsSetup.init(orgs, projs, permissions)
+  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  private val allowedPerms  = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
+  private val acls          = AclSetup.init(allowedPerms, Set(realm)).accepted
+  private val views         = ElasticSearchViewsSetup.init(orgs, projs, allowedPerms)
 
   private val now          = Instant.now()
   private val nowMinus5    = now.minusSeconds(5)

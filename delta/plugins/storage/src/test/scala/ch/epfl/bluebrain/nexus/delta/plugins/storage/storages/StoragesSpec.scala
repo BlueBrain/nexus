@@ -20,10 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -73,7 +73,7 @@ class StoragesSpec
       IO.when(remote.endpoint != remoteFields.endpoint.value)(IO.raiseError(StorageNotAccessible(id, "wrong endpoint")))
   }
 
-  private val perms = PermissionsDummy(allowedPerms.toSet).accepted
+  private val perms = IO.pure(allowedPerms.toSet)
 
   private val eval = evaluate(access, (_, _) => IO.unit, perms, config, crypto)(_, _)
 
@@ -378,7 +378,7 @@ class StoragesSpec
         )
         .accepted
 
-    val storages = StoragesSetup.init(orgs, projects, perms)
+    val storages = StoragesSetup.init(orgs, projects, allowedPerms.toSet)
 
     "creating a storage" should {
 

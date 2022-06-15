@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.permissions.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Permissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
@@ -17,42 +17,26 @@ object AclSetup extends IOFixedClock {
     * Init realms and permissions for the ACLs
     */
   def init(permissions: Set[Permission], realmLabels: Set[Label]): UIO[Acls] =
-    initWithPerms(permissions, realmLabels).map(_._1)
-
-  def initWithPerms(permissions: Set[Permission], realmLabels: Set[Label]): UIO[(Acls, Permissions)] =
-    for {
-      perms  <- PermissionsDummy(permissions)
-      realms <- RealmSetup.init(realmLabels.toSeq: _*)
-      acls   <- AclsDummy(perms, realms)
-    } yield (acls, perms)
+    AclsDummy(permissions, realmLabels)
 
   /**
     * Set up Acls and PermissionsDummy and init some acls for the given users
     * @param input
     *   the acls to create
     */
-  def initValuesWithPerms(input: (Subject, AclAddress, Set[Permission])*): UIO[(Acls, Permissions)] = {
+  def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] = {
     val allPermissions = input.foldLeft(Set.empty[Permission])(_ ++ _._3)
+    val realms         = input.map(_._1).collect { case id: IdentityRealm => id.realm }.toSet
     for {
-      perms  <- PermissionsDummy(allPermissions)
-      realms <- RealmSetup.init(input.map(_._1).collect { case id: IdentityRealm => id.realm }: _*)
-      acls   <- AclsDummy(perms, realms)
-      _      <- input.toList
-                  .traverse { case (subject, address, permissions) =>
-                    acls.fetch(address).redeem(_ => 0L, _.rev).flatMap { rev =>
-                      acls.append(Acl(address, subject -> permissions), rev)
-                    }
+      acls <- AclsDummy(allPermissions, realms)
+      _    <- input.toList
+                .traverse { case (subject, address, permissions) =>
+                  acls.fetch(address).redeem(_ => 0L, _.rev).flatMap { rev =>
+                    acls.append(Acl(address, subject -> permissions), rev)
                   }
-                  .hideErrorsWith(r => new IllegalStateException(r.reason))
-    } yield acls -> perms
+                }
+                .hideErrorsWith(r => new IllegalStateException(r.reason))
+    } yield acls
   }
-
-  /**
-    * Set up Acls and PermissionsDummy and init some acls for the given users
-    * @param input
-    *   the acls to create
-    */
-  def init(input: (Subject, AclAddress, Set[Permission])*): UIO[Acls] =
-    initValuesWithPerms(input: _*).map(_._1)
 
 }

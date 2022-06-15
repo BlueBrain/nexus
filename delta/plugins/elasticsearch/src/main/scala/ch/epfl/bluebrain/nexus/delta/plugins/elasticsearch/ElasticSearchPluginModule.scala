@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
@@ -153,7 +154,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO]
     ) =>
-      ElasticSearchViews.aggregate(pipeConfig, config, permissions, client, deferred, resourceIdCheck)(as, uuidF, clock)
+      ElasticSearchViews.aggregate(
+        pipeConfig,
+        config,
+        permissions.fetchPermissionSet,
+        client,
+        deferred,
+        resourceIdCheck
+      )(as, uuidF, clock)
   }
 
   make[ElasticSearchViews]

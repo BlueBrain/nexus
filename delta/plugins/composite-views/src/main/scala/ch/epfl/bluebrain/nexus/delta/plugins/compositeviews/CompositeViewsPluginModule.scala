@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -67,7 +68,16 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         uuidF: UUIDF,
         clock: Clock[UIO]
     ) =>
-      CompositeViews.aggregate(config, projects, acls, permissions, resourceIdCheck, client, deltaClient, crypto)(
+      CompositeViews.aggregate(
+        config,
+        projects,
+        acls,
+        permissions.fetchPermissionSet,
+        resourceIdCheck,
+        client,
+        deltaClient,
+        crypto
+      )(
         as,
         baseUri,
         uuidF,

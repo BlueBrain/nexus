@@ -34,6 +34,8 @@ trait RouteHelpers extends AnyWordSpecLike with ScalatestRouteTest with ScalaFut
 
 trait Consumer extends ScalaFutures with Matchers {
 
+  implicit private val patience: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
+
   private def consume(source: Source[ByteString, Any])(implicit materializer: Materializer): String =
     source.runFold("")(_ ++ _.utf8String).futureValue
 
