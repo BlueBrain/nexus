@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMat
 import fs2.Stream
 import monix.bio.Task
 import shapeless.Typeable
-import cats.implicits._
 
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
@@ -57,18 +57,10 @@ trait Source { self =>
     *
     * @param offset
     *   the offset from which the source should emit elements
-    * @param skipUntilOffset
-    *   When true, the Source must emit elements using [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start]]
-    *   but discard the underlying element value and emit only the contextual information with a [[Elem.SkippedElem]];
-    *   when the last element has the provided [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset]] the Source
-    *   should stop discarding element values and emit elements as [[Elem.SuccessElem]]. When false, the Source must
-    *   emit elements with their value as [[Elem.SuccessElem]]. Note: the value of this flag would have no effect when
-    *   the function would be applied with ([[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start]], _).
-    *
     * @return
     *   an [[fs2.Stream]] of elements of this Source's Out type
     */
-  def apply(offset: ProjectionOffset, skipUntilOffset: Boolean): Stream[Task, Envelope[Iri, Elem[Out]]]
+  def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Out]]]
 
   private[stream] def through(pipe: Pipe): Either[SourceOutPipeInMatchErr, Source] =
     Either.cond(
@@ -80,9 +72,9 @@ trait Source { self =>
         override def name: String                = s"${self.name} -> ${pipe.name}"
         override def outType: Typeable[pipe.Out] = pipe.outType
 
-        override def apply(offset: ProjectionOffset, skip: Boolean): Stream[Task, Envelope[Iri, Elem[pipe.Out]]] =
+        override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[pipe.Out]]] =
           self
-            .apply(offset, skip)
+            .apply(offset)
             .map { element =>
               element.value match {
                 case SuccessElem(ctx, e) =>
@@ -108,10 +100,10 @@ trait Source { self =>
         override def name: String                = s"(${self.name}, ${that.name})"
         override def outType: Typeable[self.Out] = self.outType
 
-        override def apply(offset: ProjectionOffset, skipUntilOffset: Boolean): Stream[Task, Envelope[Iri, Elem[Out]]] =
+        override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Out]]] =
           self
-            .apply(offset, skipUntilOffset)
-            .merge(that.apply(offset, skipUntilOffset).map { e =>
+            .apply(offset)
+            .merge(that.apply(offset).map { e =>
               e.value match {
                 case Elem.SuccessElem(ctx, value) =>
                   self.outType.cast(value) match {
@@ -126,13 +118,13 @@ trait Source { self =>
     )
 
   private[stream] def broadcastThrough(
-      pipes: NonEmptyChain[Pipe.Aux[_, Unit]]
+      pipes: NonEmptyChain[(Iri, Pipe.Aux[_, Unit])]
   ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
     pipes
-      .traverse { pipe =>
+      .traverse { case (id, pipe) =>
         Either.cond(
           self.outType.describe == pipe.inType.describe,
-          pipe.asInstanceOf[Pipe.Aux[self.Out, Unit]],
+          (id, pipe.asInstanceOf[Pipe.Aux[self.Out, Unit]]),
           SourceOutPipeInMatchErr(self, pipe)
         )
       }
@@ -143,11 +135,10 @@ trait Source { self =>
           override def label: Label            = self.label
           override def outType: Typeable[Unit] = Typeable[Unit]
 
-          override def apply(
-              offset: ProjectionOffset,
-              skipUntilOffset: Boolean
-          ): Stream[Task, Envelope[Iri, Elem[Unit]]] =
-            self.apply(offset, skipUntilOffset).broadcastThrough(verified.toList.map(_.asFs2): _*)
+          override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Unit]]] =
+            self
+              .apply(offset)
+              .broadcastThrough(verified.toList.map { case (_, pipe) => pipe.asFs2 }: _*)
         }
       }
 

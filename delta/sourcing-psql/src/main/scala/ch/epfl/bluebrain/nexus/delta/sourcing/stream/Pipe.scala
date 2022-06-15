@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SkippedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.PipeInOutMatchErr
 import fs2.Pull
@@ -70,7 +70,7 @@ trait Pipe { self =>
       s.pull.uncons1.flatMap {
         case Some((head, tail)) =>
           partitionSuccess(head) match {
-            case Right(value) => Pull.eval(apply(value)) >> go(tail)
+            case Right(value) => Pull.eval(apply(value)).flatMap(Pull.output1) >> go(tail)
             case Left(other)  => Pull.output1(other) >> go(tail)
           }
         case None               => Pull.done
@@ -131,12 +131,14 @@ trait Pipe { self =>
       override def outType: Typeable[Out] = self.outType
 
       override def apply(element: Envelope[Iri, SuccessElem[self.In]]): Task[Envelope[Iri, Elem[self.Out]]] =
-        self.apply(element)
+        self.apply(
+          element.copy(value = SuccessElem(SourceIdPipeChainId(element.value.ctx.source, id), element.value.value))
+        )
 
       override private[stream] def asFs2 = { stream =>
         stream
           .map(e => e.copy(value = e.value.withCtx(SourceIdPipeChainId(e.value.ctx.source, id))))
-          .through(super.asFs2)
+          .through(self.asFs2)
       }
     }
 
@@ -151,8 +153,8 @@ trait Pipe { self =>
       element: Envelope[Iri, Elem[I]]
   ): Either[Envelope[Iri, Elem[O]], Envelope[Iri, SuccessElem[I]]] =
     element.value match {
-      case s @ SuccessElem(_, _)                           => Right(element.copy(value = s))
-      case _: FailedElem | _: DroppedElem | _: SkippedElem => Left(element.asInstanceOf[Envelope[Iri, Elem[O]]])
+      case s @ SuccessElem(_, _)          => Right(element.copy(value = s))
+      case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Envelope[Iri, Elem[O]]])
     }
 }
 

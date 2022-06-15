@@ -53,8 +53,8 @@ final case class ProjectionDef(
   def compile(registry: ReferenceRegistry): Either[ProjectionErr, CompiledProjection] =
     for {
       compiledSources <- sources.traverse(_.compile(registry))
-      mergedSources   <- compiledSources.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
-      compiledPipes   <- pipes.traverse(_.compile(registry))
+      mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
+      compiledPipes   <- pipes.traverse(pc => pc.compile(registry).map(pipe => (pc.id, pipe)))
       source          <- mergedSources.broadcastThrough(compiledPipes)
     } yield new CompiledProjection(name, source, passivationStrategy, rebuildStrategy)
 

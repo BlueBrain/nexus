@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SkippedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 
 /**
   * Enumeration of projection element states.
@@ -25,7 +25,6 @@ sealed trait Elem[+A] extends Product with Serializable {
     case SuccessElem(_, value) => SuccessElem(ctx, value)
     case FailedElem(_, reason) => FailedElem(ctx, reason)
     case DroppedElem(_)        => DroppedElem(ctx)
-    case SkippedElem(_)        => SkippedElem(ctx)
   }
 }
 
@@ -57,11 +56,4 @@ object Elem {
     *   the element contextual information
     */
   final case class DroppedElem(ctx: ElemCtx) extends Elem[Nothing]
-
-  /**
-    * An element that was skipped during a partial re-execution of a projection.
-    * @param ctx
-    *   the element contextual information
-    */
-  final case class SkippedElem(ctx: ElemCtx) extends Elem[Nothing]
 }

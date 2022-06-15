@@ -11,7 +11,7 @@ import scala.util.control.NonFatal
 
 trait MonixBioAssertions { self: Assertions =>
 
-  implicit class MonixBioAsertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
+  implicit class MonixBioAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
 
     def assert(expected: A)(implicit loc: Location): UIO[Unit] = io.attempt.map {
       case Left(NonFatal(err)) =>
@@ -87,7 +87,7 @@ trait MonixBioAssertions { self: Assertions =>
       )
   }
 
-  implicit class MonixBioAsertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E]) {
+  implicit class MonixBioAssertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E]) {
     def assertSome(expected: A)(implicit loc: Location): UIO[Unit] = io.assert(Some(expected))
 
     def assertNone(implicit loc: Location): UIO[Unit] = io.assert(None)
@@ -95,4 +95,4 @@ trait MonixBioAssertions { self: Assertions =>
 
 }
 
-object MonixBioAssertions extends Assertions with MonixBioAssertions {}
+object MonixBioAssertions extends Assertions with MonixBioAssertions

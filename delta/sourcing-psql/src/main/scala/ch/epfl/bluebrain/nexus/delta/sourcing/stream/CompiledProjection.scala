@@ -35,18 +35,16 @@ final class CompiledProjection private[stream] (
     * background and can be interacted with using the [[Projection]] methods.
     * @param offset
     *   the offset to be used for starting the projection
-    * @param skipUntilOffset
-    *   whether elements should be emitted from the beginning but skipped until the provided offset
     * @return
     *   the materialized running [[Projection]]
     */
-  def start(offset: ProjectionOffset, skipUntilOffset: Boolean): Task[Projection] =
+  def start(offset: ProjectionOffset): Task[Projection] =
     for {
       offsetRef <- Ref[Task].of(offset)
-      signal    <- SignallingRef[Task, Boolean](true)
+      signal    <- SignallingRef[Task, Boolean](false)
       // TODO handle failures with restarts, passivate after
       fiber     <- source
-                     .apply(offset, skipUntilOffset)
+                     .apply(offset)
                      .evalTap { elem =>
                        offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.value.ctx, elem.offset))
                      }
@@ -64,5 +62,5 @@ final class CompiledProjection private[stream] (
     *   the materialized running [[Projection]]
     */
   def start(): Task[Projection] =
-    start(ProjectionOffset.empty, skipUntilOffset = false)
+    start(ProjectionOffset.empty)
 }

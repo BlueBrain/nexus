@@ -37,7 +37,7 @@ final class Projection private[stream] (
   def stop(): Task[Unit] =
     for {
       f <- fiber.get
-      _ <- signal.set(false)
+      _ <- signal.set(true)
       _ <- f.join
     } yield ()
 
