@@ -73,6 +73,9 @@ trait JsonLdDecoder[A] { self =>
 }
 
 object JsonLdDecoder {
+
+  def apply[A](implicit A: JsonLdDecoder[A]): JsonLdDecoder[A] = A
+
   private val relativeOrAbsoluteIriDecoder: JsonLdDecoder[Iri] = _.get[Iri](keywords.id)
 
   implicit val iriJsonLdDecoder: JsonLdDecoder[Iri] =
@@ -122,4 +125,5 @@ object JsonLdDecoder {
   // TODO: remove when `@type: json` is supported by the json-ld lib
   implicit val jsonJsonLdDecoder: JsonLdDecoder[Json] = _.getValue(parse(_).toOption)
 
+  implicit val unitJsonLdDecoder: JsonLdDecoder[Unit] = _ => Right(())
 }
