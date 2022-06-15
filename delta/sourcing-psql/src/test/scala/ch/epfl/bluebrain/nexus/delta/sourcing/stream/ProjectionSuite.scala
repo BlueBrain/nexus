@@ -52,7 +52,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
       Chain(logPipe)
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile SourceChain when pipe.Out does not match pipe.In") {
@@ -61,21 +61,21 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
       Chain(evensPipe, logPipe)
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile PipeChain when pipe.Out does not match pipe.In") {
     PipeChain(
       iri"https://fail",
       NonEmptyChain(evensPipe, logPipe)
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile PipeChain when reference is not found in registry") {
     PipeChain(
       iri"https://fail",
       NonEmptyChain((PipeRef.unsafe("unknown"), emptyConfig))
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile SourceChain when reference is not found in registry") {
@@ -84,7 +84,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
       Chain.empty
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile SourceChain when configuration cannot be decoded") {
@@ -93,21 +93,21 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       iri"https://fail",
       ExpandedJsonLd.empty,
       Chain.empty
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile PipeChain when configuration cannot be decoded") {
     PipeChain(
       iri"https://fail",
       NonEmptyChain(TimesN.reference -> emptyConfig, intToStringPipe, logPipe)
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("Fail to compile PipeChain when the terminal type is not Unit") {
     PipeChain(
       iri"https://fail",
       NonEmptyChain(intToStringPipe)
-    ).compile(registry).assertLeft
+    ).compile(registry).assertLeft()
   }
 
   test("All elements emitted by the sources should pass through the defined pipes") {

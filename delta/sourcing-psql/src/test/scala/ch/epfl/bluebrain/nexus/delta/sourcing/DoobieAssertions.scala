@@ -7,8 +7,8 @@ import org.postgresql.util.PSQLException
 
 trait DoobieAssertions { self: Assertions =>
 
-  implicit class DoobieAssertionsOps[E, A](io: IO[E, A]) {
-    def expectUniqueViolation(implicit loc: Location): UIO[Unit] = io.attempt.map {
+  implicit class DoobieAssertionsOps[E, A](io: IO[E, A])(implicit loc: Location) {
+    def expectUniqueViolation: UIO[Unit] = io.attempt.map {
       case Left(p: PSQLException) if p.getSQLState == sqlstate.class23.UNIQUE_VIOLATION.value => ()
       case Left(p: PSQLException)                                                             =>
         fail(

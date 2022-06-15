@@ -13,8 +13,8 @@ import shapeless.Typeable
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
   * [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset]]. Its elements are wrapped in an [[Elem]] and [[Envelope]]
-  * that augments the value with contextual information, like for example whether an element was skipped, dropped, its
-  * offset etc. They are uniquely identified with an id of type [[Iri]].
+  * that augments the value with contextual information, like for example whether an element was dropped, its offset
+  * etc. They are uniquely identified with an id of type [[Iri]].
   *
   * A [[Projection]] may make use of multiple [[Source]] s (at least one) that will be further chained with [[Pipe]] s
   * and ultimately merged together.

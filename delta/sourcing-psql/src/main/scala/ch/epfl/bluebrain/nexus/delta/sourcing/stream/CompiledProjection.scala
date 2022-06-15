@@ -31,8 +31,8 @@ final class CompiledProjection private[stream] (
 ) {
 
   /**
-    * Starts the projection from the provided offset, skipping elements if necessary. The stream is executed in the
-    * background and can be interacted with using the [[Projection]] methods.
+    * Starts the projection from the provided offset. The stream is executed in the background and can be interacted
+    * with using the [[Projection]] methods.
     * @param offset
     *   the offset to be used for starting the projection
     * @return

@@ -17,7 +17,7 @@ class LabelSuite extends FunSuite with EitherAssertions with TestHelpers {
 
   test("Fail to construct for illegal formats") {
     List("", " ", "a ", " a", "è", "$", "%a", genString(65)).foreach { string =>
-      Label(string).assertLeft
+      Label(string).assertLeft()
     }
   }
 
@@ -30,7 +30,7 @@ class LabelSuite extends FunSuite with EitherAssertions with TestHelpers {
 
   test("Fail to construct if there are no valid characters") {
     val string = s"!@#%^&*()!@#%^&*()"
-    Label(string).assertLeft
+    Label(string).assertLeft()
   }
 
 }

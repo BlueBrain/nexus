@@ -11,9 +11,9 @@ import scala.util.control.NonFatal
 
 trait MonixBioAssertions { self: Assertions =>
 
-  implicit class MonixBioAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E]) {
+  implicit class MonixBioAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location) {
 
-    def assert(expected: A)(implicit loc: Location): UIO[Unit] = io.attempt.map {
+    def assert(expected: A): UIO[Unit] = io.attempt.map {
       case Left(NonFatal(err)) =>
         val baos  = new ByteArrayOutputStream()
         err.printStackTrace(new PrintStream(baos))
@@ -33,10 +33,10 @@ trait MonixBioAssertions { self: Assertions =>
       case Right(a)            => assertEquals(a, expected)
     }
 
-    def assert(expected: A, timeout: FiniteDuration)(implicit loc: Location): UIO[Unit] =
+    def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)
 
-    def error(expected: E)(implicit loc: Location): UIO[Unit] = io.attempt.map {
+    def error(expected: E): UIO[Unit] = io.attempt.map {
       case Left(E(err)) => assertEquals(err, expected)
       case Left(err)    =>
         fail(
@@ -48,7 +48,7 @@ trait MonixBioAssertions { self: Assertions =>
         )
     }
 
-    def terminated[T <: Throwable](expectedMessage: String)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
+    def terminated[T <: Throwable](expectedMessage: String)(implicit T: ClassTag[T]): UIO[Unit] =
       io.redeemCause(
         {
           case Error(err)        =>
@@ -67,7 +67,7 @@ trait MonixBioAssertions { self: Assertions =>
           )
       )
 
-    def terminated[T <: Throwable](expected: T)(implicit T: ClassTag[T], loc: Location): UIO[Unit] =
+    def terminated[T <: Throwable](expected: T)(implicit T: ClassTag[T]): UIO[Unit] =
       io.redeemCause(
         {
           case Error(err)        =>
@@ -87,10 +87,10 @@ trait MonixBioAssertions { self: Assertions =>
       )
   }
 
-  implicit class MonixBioAssertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E]) {
-    def assertSome(expected: A)(implicit loc: Location): UIO[Unit] = io.assert(Some(expected))
+  implicit class MonixBioAssertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E], loc: Location) {
+    def assertSome(expected: A): UIO[Unit] = io.assert(Some(expected))
 
-    def assertNone(implicit loc: Location): UIO[Unit] = io.assert(None)
+    def assertNone: UIO[Unit] = io.assert(None)
   }
 
 }

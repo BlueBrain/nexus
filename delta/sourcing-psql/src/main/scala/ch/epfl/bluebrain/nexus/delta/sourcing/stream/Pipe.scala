@@ -56,12 +56,11 @@ trait Pipe { self =>
 
   /**
     * The pipe behaviour left abstract to be implemented by each specific pipe. It takes an element of type In that up
-    * to this pipe has been processed successfully and returns another element (possibly failed, skipped, dropped) of
-    * type Out.
+    * to this pipe has been processed successfully and returns another element (possibly failed, dropped) of type Out.
     * @param element
     *   the element to process
     * @return
-    *   a new element (possibly failed, skipped, dropped) of type Out
+    *   a new element (possibly failed, dropped) of type Out
     */
   def apply(element: Envelope[Iri, SuccessElem[In]]): Task[Envelope[Iri, Elem[Out]]]
 
