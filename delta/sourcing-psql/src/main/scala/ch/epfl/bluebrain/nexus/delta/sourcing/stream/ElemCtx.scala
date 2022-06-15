@@ -1,6 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import io.circe.Codec
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+
+import scala.annotation.nowarn
 
 /**
   * Contextual information about a [[Projection]] element.
@@ -34,4 +40,10 @@ object ElemCtx {
     */
   final case class SourceIdPipeChainId(source: Iri, pipeChain: Iri) extends ElemCtx
 
+  implicit final val elemCtxCodec: Codec[ElemCtx] = {
+    @nowarn("cat=unused")
+    implicit val configuration: Configuration =
+      Configuration.default.withDiscriminator(keywords.tpe)
+    deriveConfiguredCodec[ElemCtx]
+  }
 }

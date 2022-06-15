@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.PipeInOutMatchErr
@@ -11,8 +11,7 @@ import shapeless.Typeable
 
 /**
   * Pipes represent individual steps in a [[Projection]] where [[SuccessElem]] values are processed to produce other
-  * [[Elem]] values. They apply to [[Envelope]] of [[SuccessElem]] of type [[Pipe#In]] and produce [[Envelope]] of
-  * [[Elem]] of type [[Pipe#Out]].
+  * [[Elem]] values. They apply [[SuccessElem]] of type [[Pipe#In]] and produce [[Elem]] of type [[Pipe#Out]].
   *
   * Pipes can perform all sorts of objectives like filtering and transformations of any kind.
   *
@@ -62,10 +61,10 @@ trait Pipe { self =>
     * @return
     *   a new element (possibly failed, dropped) of type Out
     */
-  def apply(element: Envelope[Iri, SuccessElem[In]]): Task[Envelope[Iri, Elem[Out]]]
+  def apply(element: SuccessElem[In]): Task[Elem[Out]]
 
-  private[stream] def asFs2: fs2.Pipe[Task, Envelope[Iri, Elem[In]], Envelope[Iri, Elem[Out]]] = {
-    def go(s: fs2.Stream[Task, Envelope[Iri, Elem[In]]]): Pull[Task, Envelope[Iri, Elem[Out]], Unit] = {
+  private[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
+    def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
       s.pull.uncons1.flatMap {
         case Some((head, tail)) =>
           partitionSuccess(head) match {
@@ -89,14 +88,13 @@ trait Pipe { self =>
         override def inType: Typeable[self.In]   = self.inType
         override def outType: Typeable[that.Out] = that.outType
 
-        override def apply(element: Envelope[Iri, SuccessElem[self.In]]): Task[Envelope[Iri, Elem[that.Out]]] =
+        override def apply(element: SuccessElem[self.In]): Task[Elem[that.Out]] =
           self.apply(element).flatMap { element =>
             partitionSuccess[self.Out, that.Out](element) match {
               case Right(e)    =>
-                that.inType.cast(e.value.value) match {
-                  case Some(value) => that.apply(e.copy(value = SuccessElem(e.value.ctx, value)))
-                  case None        =>
-                    Task.pure(e.copy(value = FailedElem(e.value.ctx, PipeInOutMatchErr(self, that).reason)))
+                that.inType.cast(e.value) match {
+                  case Some(value) => that.apply(e.success(value))
+                  case None        => Task.pure(e.failed(PipeInOutMatchErr(self, that).reason))
                 }
               case Left(value) => Task.pure(value)
             }
@@ -108,9 +106,9 @@ trait Pipe { self =>
             .map { element =>
               partitionSuccess[self.Out, that.In](element) match {
                 case Right(e)    =>
-                  that.inType.cast(e.value.value) match {
-                    case Some(value) => e.copy(value = SuccessElem(e.value.ctx, value))
-                    case None        => e.copy(value = FailedElem(e.value.ctx, PipeInOutMatchErr(self, that).reason))
+                  that.inType.cast(e.value) match {
+                    case Some(value) => e.success(value)
+                    case None        => e.failed(PipeInOutMatchErr(self, that).reason)
                   }
                 case Left(value) => value
               }
@@ -129,14 +127,14 @@ trait Pipe { self =>
       override def inType: Typeable[In]   = self.inType
       override def outType: Typeable[Out] = self.outType
 
-      override def apply(element: Envelope[Iri, SuccessElem[self.In]]): Task[Envelope[Iri, Elem[self.Out]]] =
+      override def apply(element: SuccessElem[self.In]): Task[Elem[self.Out]] =
         self.apply(
-          element.copy(value = SuccessElem(SourceIdPipeChainId(element.value.ctx.source, id), element.value.value))
+          element.withCtx(SourceIdPipeChainId(element.ctx.source, id)).asInstanceOf[SuccessElem[self.In]]
         )
 
       override private[stream] def asFs2 = { stream =>
         stream
-          .map(e => e.copy(value = e.value.withCtx(SourceIdPipeChainId(e.value.ctx.source, id))))
+          .map(e => e.withCtx(SourceIdPipeChainId(e.ctx.source, id)))
           .through(self.asFs2)
       }
     }
@@ -148,12 +146,10 @@ trait Pipe { self =>
     * @param element
     *   an envelope with an Elem to be tested
     */
-  private def partitionSuccess[I, O](
-      element: Envelope[Iri, Elem[I]]
-  ): Either[Envelope[Iri, Elem[O]], Envelope[Iri, SuccessElem[I]]] =
-    element.value match {
-      case s @ SuccessElem(_, _)          => Right(element.copy(value = s))
-      case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Envelope[Iri, Elem[O]]])
+  private def partitionSuccess[I, O](element: Elem[I]): Either[Elem[O], SuccessElem[I]] =
+    element match {
+      case _: SuccessElem[_]              => Right(element.asInstanceOf[SuccessElem[I]])
+      case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
     }
 }
 

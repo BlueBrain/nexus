@@ -62,3 +62,12 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     UNIQUE (org, project, id, tag)
 );
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);
+
+--
+-- Table for projection offsets
+--
+CREATE TABLE if NOT EXISTS public.projection_offsets(
+    name   text,
+    value JSONB NOT NULL,
+    PRIMARY KEY(name)
+);

@@ -46,7 +46,7 @@ final class CompiledProjection private[stream] (
       fiber     <- source
                      .apply(offset)
                      .evalTap { elem =>
-                       offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.value.ctx, elem.offset))
+                       offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.ctx, elem.offset))
                      }
                      .interruptWhen(signal)
                      .compile

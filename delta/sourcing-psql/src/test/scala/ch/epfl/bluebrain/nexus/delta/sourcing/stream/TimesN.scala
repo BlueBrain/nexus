@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
@@ -18,8 +18,8 @@ class TimesN(times: Int) extends Pipe {
   override def inType: Typeable[Int]  = Typeable[Int]
   override def outType: Typeable[Int] = Typeable[Int]
 
-  override def apply(element: Envelope[Iri, SuccessElem[Int]]): Task[Envelope[Iri, Elem[Int]]] =
-    Task.pure(element.copy(value = SuccessElem(element.value.ctx, element.value.value * times)))
+  override def apply(element: SuccessElem[Int]): Task[Elem[Int]] =
+    Task.pure(element.success(element.value * times))
 }
 
 object TimesN extends PipeDef {
