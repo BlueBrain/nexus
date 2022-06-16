@@ -41,7 +41,6 @@ The corresponding Fusion release notes can be found [here](https://github.com/Bl
 **Full Changelogs**:
 Delta: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus/compare/v1.7.0...v1.7.1)
 Fusion: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus-web/compare/v1.7.0...v1.7.1)
-Master
 
 ## 1.7.0 (14.03.2022)
 
