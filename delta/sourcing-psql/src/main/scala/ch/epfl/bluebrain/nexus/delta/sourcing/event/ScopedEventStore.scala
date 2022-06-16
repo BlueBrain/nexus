@@ -46,6 +46,7 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
 
 object ScopedEventStore {
 
+  @SuppressWarnings(Array("UnusedMethodParameter"))
   def apply[Id, E <: ScopedEvent](
       tpe: EntityType,
       serializer: Serializer[Id, E],

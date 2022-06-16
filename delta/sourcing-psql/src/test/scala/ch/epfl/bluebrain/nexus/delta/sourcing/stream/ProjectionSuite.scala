@@ -140,7 +140,16 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
         NonEmptyChain(intToStringPipe, failNPipe(2), logPipe)
       )
     )
-    val defined  = ProjectionDef("naturals", sources, pipes, PassivationStrategy.Never, RebuildStrategy.Never)
+    val defined  = ProjectionDef(
+      "naturals",
+      None,
+      None,
+      sources,
+      pipes,
+      PassivationStrategy.Never,
+      RebuildStrategy.Never,
+      persistOffset = false
+    )
     val compiled = defined.compile(registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://evens", iri"https://log"), Offset.at(1L))
 

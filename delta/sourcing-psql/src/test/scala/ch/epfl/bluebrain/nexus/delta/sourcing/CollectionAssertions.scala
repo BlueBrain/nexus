@@ -17,6 +17,20 @@ trait CollectionAssertions { self: Assertions =>
       val notfound = elements.diff(found)
       assert(notfound.isEmpty, s"Element(s) ${notfound.mkString(", ")} were not found in the collection")
     }
+
+    def assertEmpty(): Unit =
+      assert(cc.isEmpty, s"The collection is not empty, it has ${cc.size} elements.")
+
+    def assertSize(expected: Int): Unit =
+      assertEquals(cc.size, expected, s"The collection does not have the expected size of $expected, but ${cc.size}")
+
+    def assertOneElem: A = {
+      assertSize(1)
+      cc.headOption match {
+        case Some(value) => value
+        case None        => fail("Could not collect the single element of the collection")
+      }
+    }
   }
 
 }

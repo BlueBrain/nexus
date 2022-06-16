@@ -30,11 +30,8 @@ trait DoobieFixture extends TestHelpers { self: Suite =>
         .withReuse(false)
         .withStartupTimeout(60.seconds.toJava)
       container.start()
-      xas = Transactors.sharedFrom(
-        container.getHost,
-        container.getMappedPort(5432),
-        "postgres",
-        "postgres" ).runSyncUnsafe()
+      xas =
+        Transactors.sharedFrom(container.getHost, container.getMappedPort(5432), "postgres", "postgres").runSyncUnsafe()
       val createTables          = loadDDL("/scripts/schema.ddl").update.run
       val dropTables            = loadDDL("/scripts/drop-tables.ddl").update.run
       (dropTables, createTables).mapN(_ + _).transact(xas.write).void.runSyncUnsafe()

@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.NonEmptyChain
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 
 /**
   * A projection definition to be used for materializing a [[Projection]]. It is assembled from a number of
@@ -28,6 +30,10 @@ import cats.implicits._
   *
   * @param name
   *   the projection name
+  * @param project
+  *   an optional project reference associated with the projection
+  * @param resourceId
+  *   an optional resource id associated with the projection
   * @param sources
   *   the collection of source chains
   * @param pipes
@@ -36,13 +42,18 @@ import cats.implicits._
   *   a strategy for passivation
   * @param rebuildStrategy
   *   a strategy for rebuild
+  * @param persistOffset
+  *   whether to persist the offset such that a restart/crash would not cause starting from the beginning
   */
 final case class ProjectionDef(
     name: String,
+    project: Option[ProjectRef],
+    resourceId: Option[Iri],
     sources: NonEmptyChain[SourceChain],
     pipes: NonEmptyChain[PipeChain],
     passivationStrategy: PassivationStrategy,
-    rebuildStrategy: RebuildStrategy
+    rebuildStrategy: RebuildStrategy,
+    persistOffset: Boolean
 ) {
 
   /**
@@ -56,6 +67,14 @@ final case class ProjectionDef(
       mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
       compiledPipes   <- pipes.traverse(pc => pc.compile(registry).map(pipe => (pc.id, pipe)))
       source          <- mergedSources.broadcastThrough(compiledPipes)
-    } yield new CompiledProjection(name, source, passivationStrategy, rebuildStrategy)
+    } yield new CompiledProjection(
+      name,
+      project,
+      resourceId,
+      source,
+      passivationStrategy,
+      rebuildStrategy,
+      persistOffset
+    )
 
 }

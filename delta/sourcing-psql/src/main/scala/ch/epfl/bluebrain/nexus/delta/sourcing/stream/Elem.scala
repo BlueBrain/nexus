@@ -91,6 +91,16 @@ object Elem {
     * An element that has a value of type [[A]] that has been previously successfully processed.
     * @param ctx
     *   the element contextual information
+    * @param tpe
+    *   the underlying entity type
+    * @param id
+    *   the underlying entity id
+    * @param rev
+    *   the underlying entity revision
+    * @param instant
+    *   the instant when the element was produced
+    * @param offset
+    *   the element offset
     * @param value
     *   the element value
     * @tparam A
@@ -110,6 +120,16 @@ object Elem {
     * An element that has suffered a processing failure.
     * @param ctx
     *   the element contextual information
+    * @param tpe
+    *   the underlying entity type
+    * @param id
+    *   the underlying entity id
+    * @param rev
+    *   the underlying entity revision
+    * @param instant
+    *   the instant when the element was produced
+    * @param offset
+    *   the element offset
     * @param reason
     *   a human readable reason for why processing has failed for this element
     */
@@ -127,7 +147,23 @@ object Elem {
     * An element that was discarded through filtering.
     * @param ctx
     *   the element contextual information
+    * @param tpe
+    *   the underlying entity type
+    * @param id
+    *   the underlying entity id
+    * @param rev
+    *   the underlying entity revision
+    * @param instant
+    *   the instant when the element was produced
+    * @param offset
+    *   the element offset
     */
-  final case class DroppedElem(ctx: ElemCtx, tpe: EntityType, id: Iri, rev: Int, instant: Instant, offset: Offset)
-      extends Elem[Nothing]
+  final case class DroppedElem(
+      ctx: ElemCtx,
+      tpe: EntityType,
+      id: Iri,
+      rev: Int,
+      instant: Instant,
+      offset: Offset
+  ) extends Elem[Nothing]
 }

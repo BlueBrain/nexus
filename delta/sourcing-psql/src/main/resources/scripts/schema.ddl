@@ -67,7 +67,13 @@ CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states US
 -- Table for projection offsets
 --
 CREATE TABLE if NOT EXISTS public.projection_offsets(
-    name   text,
-    value JSONB NOT NULL,
+    name         text,
+    project      text,
+    resource_id  text,
+    value        JSONB       NOT NULL,
+    created_at   timestamptz NOT NULL,
+    updated_at   timestamptz NOT NULL,
     PRIMARY KEY(name)
 );
+CREATE INDEX IF NOT EXISTS projection_offsets_project_idx on public.projection_offsets(project);
+CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx on public.projection_offsets(resource_id);
