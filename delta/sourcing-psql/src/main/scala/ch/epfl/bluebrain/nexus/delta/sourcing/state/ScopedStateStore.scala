@@ -50,6 +50,7 @@ trait ScopedStateStore[Id, S <: ScopedState] {
 
 object ScopedStateStore {
 
+  @SuppressWarnings(Array("UnusedMethodParameter"))
   def apply[Id, S <: ScopedState](tpe: EntityType, serializer: Serializer[Id, S], xas: Transactors)(implicit
       @nowarn("cat=unused") get: Get[Id],
       put: Put[Id]

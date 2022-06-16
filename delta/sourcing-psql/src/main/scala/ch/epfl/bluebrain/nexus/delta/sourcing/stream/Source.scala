@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.data.NonEmptyChain
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{FailedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.{SourceOutMatchErr, SourceOutPipeInMatchErr}
 import fs2.Stream
 import monix.bio.Task
@@ -12,9 +12,9 @@ import shapeless.Typeable
 
 /**
   * Sources emit Stream elements of type [[Source#Out]] from a predefined
-  * [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset]]. Its elements are wrapped in an [[Elem]] and [[Envelope]]
-  * that augments the value with contextual information, like for example whether an element was dropped, its offset
-  * etc. They are uniquely identified with an id of type [[Iri]].
+  * [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset]]. Its elements are wrapped in an [[Elem]] that augments the
+  * value with contextual information, like for example whether an element was dropped, its offset etc. They are
+  * uniquely identified with an id of type [[Iri]].
   *
   * A [[Projection]] may make use of multiple [[Source]] s (at least one) that will be further chained with [[Pipe]] s
   * and ultimately merged together.
@@ -60,7 +60,7 @@ trait Source { self =>
     * @return
     *   an [[fs2.Stream]] of elements of this Source's Out type
     */
-  def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Out]]]
+  def apply(offset: ProjectionOffset): Stream[Task, Elem[Out]]
 
   private[stream] def through(pipe: Pipe): Either[SourceOutPipeInMatchErr, Source] =
     Either.cond(
@@ -72,18 +72,16 @@ trait Source { self =>
         override def name: String                = s"${self.name} -> ${pipe.name}"
         override def outType: Typeable[pipe.Out] = pipe.outType
 
-        override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[pipe.Out]]] =
+        override def apply(offset: ProjectionOffset): Stream[Task, Elem[pipe.Out]] =
           self
             .apply(offset)
-            .map { element =>
-              element.value match {
-                case SuccessElem(ctx, e) =>
-                  pipe.inType.cast(e) match {
-                    case Some(value) => element.copy(value = SuccessElem(ctx, value))
-                    case None        => element.copy(value = FailedElem(ctx, SourceOutPipeInMatchErr(self, pipe).reason))
-                  }
-                case _                   => element.asInstanceOf[Envelope[Iri, Elem[pipe.In]]]
-              }
+            .map {
+              case e @ SuccessElem(_, _, _, _, _, _, value) =>
+                pipe.inType.cast(value) match {
+                  case Some(value) => e.success(value)
+                  case None        => e.failed(SourceOutPipeInMatchErr(self, pipe).reason)
+                }
+              case e                                        => e.asInstanceOf[Elem[pipe.In]]
             }
             .through(pipe.asFs2)
       },
@@ -100,18 +98,16 @@ trait Source { self =>
         override def name: String                = s"(${self.name}, ${that.name})"
         override def outType: Typeable[self.Out] = self.outType
 
-        override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Out]]] =
+        override def apply(offset: ProjectionOffset): Stream[Task, Elem[Out]] =
           self
             .apply(offset)
-            .merge(that.apply(offset).map { e =>
-              e.value match {
-                case Elem.SuccessElem(ctx, value) =>
-                  self.outType.cast(value) match {
-                    case Some(_) => e.asInstanceOf[Envelope[Iri, Elem[Out]]]
-                    case None    => e.copy(value = Elem.FailedElem(ctx, SourceOutMatchErr(self, that).reason))
-                  }
-                case _                            => e.asInstanceOf[Envelope[Iri, Elem[Out]]]
-              }
+            .merge(that.apply(offset).map {
+              case e @ SuccessElem(_, _, _, _, _, _, value) =>
+                self.outType.cast(value) match {
+                  case Some(_) => e.asInstanceOf[SuccessElem[Out]]
+                  case None    => e.failed(SourceOutMatchErr(self, that).reason)
+                }
+              case e                                        => e.asInstanceOf[Elem[Out]]
             })
       },
       SourceOutMatchErr(self, that)
@@ -135,7 +131,7 @@ trait Source { self =>
           override def label: Label            = self.label
           override def outType: Typeable[Unit] = Typeable[Unit]
 
-          override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[Unit]]] =
+          override def apply(offset: ProjectionOffset): Stream[Task, Elem[Unit]] =
             self
               .apply(offset)
               .broadcastThrough(verified.toList.map { case (_, pipe) => pipe.asFs2 }: _*)

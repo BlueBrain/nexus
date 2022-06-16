@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import monix.bio.Task
 import shapeless.Typeable
@@ -14,8 +13,8 @@ class IntToString extends Pipe {
   override def inType: Typeable[Int]     = Typeable[Int]
   override def outType: Typeable[String] = Typeable[String]
 
-  override def apply(element: Envelope[Iri, SuccessElem[Int]]): Task[Envelope[Iri, Elem[String]]] =
-    Task.pure(element.copy(value = SuccessElem(element.value.ctx, element.value.value.toString)))
+  override def apply(element: SuccessElem[Int]): Task[Elem[String]] =
+    Task.pure(element.success(element.value.toString))
 }
 
 object IntToString extends PipeDef {

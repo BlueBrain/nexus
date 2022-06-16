@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.concurrent.Ref
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.concurrent.SignallingRef
 import monix.bio.Task
 
@@ -12,12 +14,18 @@ import scala.annotation.nowarn
   *
   * @param name
   *   the name of the projection
+  * @param project
+  *   an optional project reference associated with the projection
+  * @param resourceId
+  *   an optional resource id associated with the projection
   * @param source
   *   the underlying source that represents the stream
   * @param passivationStrategy
   *   a strategy for passivation
   * @param rebuildStrategy
   *   a strategy to rebuild the projection
+  * @param persistOffset
+  *   whether to persist the offset such that a restart/crash would not cause starting from the beginning
   * @see
   *   [[ProjectionDef]]
   */
@@ -25,9 +33,12 @@ import scala.annotation.nowarn
 @SuppressWarnings(Array("UnusedMethodParameter"))
 final class CompiledProjection private[stream] (
     val name: String,
+    project: Option[ProjectRef],
+    resourceId: Option[Iri],
     source: Source.Aux[Unit],
     passivationStrategy: PassivationStrategy,
-    rebuildStrategy: RebuildStrategy
+    rebuildStrategy: RebuildStrategy,
+    persistOffset: Boolean
 ) {
 
   /**
@@ -46,7 +57,7 @@ final class CompiledProjection private[stream] (
       fiber     <- source
                      .apply(offset)
                      .evalTap { elem =>
-                       offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.value.ctx, elem.offset))
+                       offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.ctx, elem.offset))
                      }
                      .interruptWhen(signal)
                      .compile

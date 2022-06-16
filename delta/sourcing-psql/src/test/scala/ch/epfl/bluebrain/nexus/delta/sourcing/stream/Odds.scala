@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, SuccessElem}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import monix.bio.Task
 import shapeless.Typeable
 
@@ -13,9 +12,9 @@ class Odds extends Pipe {
   override def inType: Typeable[Int]  = Typeable[Int]
   override def outType: Typeable[Int] = Typeable[Int]
 
-  override def apply(element: Envelope[Iri, SuccessElem[Int]]): Task[Envelope[Iri, Elem[Int]]] =
-    if (element.value.value % 2 == 1) Task.pure(element)
-    else Task.pure(element.copy(value = DroppedElem(element.value.ctx)))
+  override def apply(element: SuccessElem[Int]): Task[Elem[Int]] =
+    if (element.value % 2 == 1) Task.pure(element)
+    else Task.pure(element.dropped)
 }
 
 object Odds extends PipeDef {

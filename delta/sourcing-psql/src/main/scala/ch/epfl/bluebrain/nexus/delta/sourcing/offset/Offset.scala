@@ -1,8 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.offset
 
 import cats.Order
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import doobie.implicits._
 import doobie.util.fragment.Fragment
+import io.circe.Codec
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+
+import scala.annotation.nowarn
 
 sealed trait Offset extends Product with Serializable {
 
@@ -35,4 +41,10 @@ object Offset {
     case (At(x), At(y)) => Order.compare(x, y)
   }
 
+  implicit final val offsetCodec: Codec[Offset] = {
+    @nowarn("cat=unused")
+    implicit val configuration: Configuration =
+      Configuration.default.withDiscriminator(keywords.tpe)
+    deriveConfiguredCodec[Offset]
+  }
 }

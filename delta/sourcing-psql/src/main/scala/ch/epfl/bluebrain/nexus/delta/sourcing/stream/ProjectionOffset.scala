@@ -2,7 +2,15 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.implicits._
 import cats.kernel.Monoid
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import doobie.postgres.circe.jsonb.implicits._
+import doobie.util.{Get, Put}
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto._
+import io.circe.{Codec, Decoder, Encoder}
+
+import scala.annotation.nowarn
 
 /**
   * The collection of projection offsets indexed by their context.
@@ -47,4 +55,30 @@ object ProjectionOffset {
 
   implicit val projectionOffsetMonoid: Monoid[ProjectionOffset] =
     Monoid.instance(empty, { (left, right) => ProjectionOffset(left.toMap ++ right.toMap) })
+
+  private[stream] case class ProjectionOffsetEntry(ctx: ElemCtx, offset: Offset)
+  object ProjectionOffsetEntry {
+    implicit final val projectionOffsetEntryCodec: Codec[ProjectionOffsetEntry] = {
+      @nowarn("cat=unused")
+      implicit val configuration: Configuration =
+        Configuration.default.withDiscriminator(keywords.tpe)
+      deriveConfiguredCodec[ProjectionOffsetEntry]
+    }
+  }
+
+  implicit final val projectionOffsetCodec: Codec[ProjectionOffset] =
+    Codec.from(
+      Decoder.decodeList[ProjectionOffsetEntry].map(es => ProjectionOffset(es.map(e => (e.ctx, e.offset)).toMap)),
+      Encoder
+        .encodeList[ProjectionOffsetEntry]
+        .contramap[ProjectionOffset](po =>
+          po.toMap.toList.map({ case (ctx, offset) => ProjectionOffsetEntry(ctx, offset) })
+        )
+    )
+
+  implicit val projectionOffsetGet: Get[ProjectionOffset] =
+    jsonbGet.temap(json => projectionOffsetCodec.apply(json.hcursor).leftMap(_.getMessage()))
+
+  implicit val projectionOffsetPut: Put[ProjectionOffset] =
+    jsonbPut.contramap(o => projectionOffsetCodec.apply(o))
 }

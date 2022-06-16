@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceId
@@ -27,7 +27,7 @@ class Strings(override val id: Iri, length: Int, until: Int, sleepAtEnd: FiniteD
   override def label: Label              = Strings.label
   override def outType: Typeable[String] = Typeable[String]
 
-  override def apply(offset: ProjectionOffset): Stream[Task, Envelope[Iri, Elem[String]]] =
+  override def apply(offset: ProjectionOffset): Stream[Task, Elem[String]] =
     offset.forSource(this) match {
       case Offset.Start     => buildStream(0)
       case Offset.At(value) => buildStream(value.toInt)
@@ -40,14 +40,15 @@ class Strings(override val id: Iri, length: Int, until: Int, sleepAtEnd: FiniteD
       .map(e => elemFor(e))
       .covary[Task] ++ terminal
 
-  private def elemFor(idx: Int): Envelope[Iri, Elem[String]] =
-    Envelope[Iri, Elem[String]](
+  private def elemFor(idx: Int): Elem[String] =
+    SuccessElem[String](
+      SourceId(id),
       EntityType("String"),
       iri"http://localhost/$idx",
       1,
-      SuccessElem(SourceId(id), genString(length)),
       Instant.now(),
-      Offset.at(idx.toLong)
+      Offset.at(idx.toLong),
+      genString(length)
     )
 
   private val terminal = Stream

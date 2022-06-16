@@ -51,6 +51,7 @@ jobs:
             sdkViews/test \
             service/test \
             sourcing/test \
+            sourcingPsql/test \
             testkit/test \
             app/coverageReport \
             kernel/coverageReport \
@@ -60,4 +61,5 @@ jobs:
             sdkViews/coverageReport \
             service/coverageReport \
             sourcing/coverageReport \
+            sourcingPsql/coverageReport \
             testkit/coverageReport

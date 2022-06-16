@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.{SourceId, SourceIdPipeChainId}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailEveryN.FailEveryNConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.TimesN.TimesNConfig
@@ -140,15 +140,33 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
         NonEmptyChain(intToStringPipe, failNPipe(2), logPipe)
       )
     )
-    val defined  = ProjectionDef("naturals", sources, pipes, PassivationStrategy.Never, RebuildStrategy.Never)
+    val defined  = ProjectionDef(
+      "naturals",
+      None,
+      None,
+      sources,
+      pipes,
+      PassivationStrategy.Never,
+      RebuildStrategy.Never,
+      persistOffset = false
+    )
     val compiled = defined.compile(registry).rightValue
-    val offset   = ProjectionOffset(SourceId(iri"https://evens"), Offset.at(1L))
+    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://evens", iri"https://log"), Offset.at(1L))
 
     // evens chain should emit before stop: 2*2, 4*2, 6*2, 8*2
     // odds chain should emit before stop: 1, 3, 5
     // log chain should see: 2*2*2, 4*2*2, 6*2*2, 8*2*2, 1*2, 3*2, 5*2
     // log2 chain should see 4 elements but nondeterministic depending on how the source elements are emitted
     // total elements in the queue: 11
+    val expectedOffset = ProjectionOffset(
+      Map(
+        SourceIdPipeChainId(iri"https://evens", iri"https://log")  -> Offset.at(9L),
+        SourceIdPipeChainId(iri"https://evens", iri"https://log2") -> Offset.at(9L),
+        SourceIdPipeChainId(iri"https://odds", iri"https://log")   -> Offset.at(6L),
+        SourceIdPipeChainId(iri"https://odds", iri"https://log2")  -> Offset.at(6L)
+      )
+    )
+
     for {
       projection <- compiled.start(offset)
       elements   <- waitForNElements(11, 500.millis)
@@ -159,9 +177,12 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       _           = assertEquals(values.size, 11, "Exactly 11 elements should be observed on the queue")
       _           = values.assertContainsAllOf(Set(8, 16, 24, 32, 2, 6, 10).map(_.toString))
       elemsOfLog2 = elements.collect {
-                      case e @ SuccessElem(SourceIdPipeChainId(_, pipeChain), _) if pipeChain == iri"https://log2" => e
+                      case e @ SuccessElem(SourceIdPipeChainId(_, pipeChain), _, _, _, _, _, _)
+                          if pipeChain == iri"https://log2" =>
+                        e
                     }
       _           = assertEquals(elemsOfLog2.size, 4, "Exactly 4 elements should pass through log2")
+      _          <- projection.offset().assert(expectedOffset)
     } yield ()
   }
 }
