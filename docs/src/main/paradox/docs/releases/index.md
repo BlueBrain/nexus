@@ -21,7 +21,26 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.7.0** released on **14.03.2022**.
+The latest stable release is **v1.7.1** released on **01.06.2022**.
+
+## 1.7.2 (16.06.2022)
+
+The 1.7.2 Fusion release notes can be found [here](https://github.com/BlueBrain/nexus-web/releases/tag/v1.7.2).
+
+## 1.7.1 (01.06.2022)
+
+This is a bug-fix release that addresses a series of Delta issues:
+
+- Fetch original payload is not retrieving null values #3112
+- Unable to upload empty files using the RemoteDiskStorage #2921
+- Improve error message on remote storage errors #3254
+- ElasticSearchView resourceTag config is not taken in consideration for synchronous indexing #3266
+
+The corresponding Fusion release notes can be found [here](https://github.com/BlueBrain/nexus-web/releases/tag/v1.7.1).
+
+**Full Changelogs**:
+Delta: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus/compare/v1.7.0...v1.7.1)
+Fusion: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus-web/compare/v1.7.0...v1.7.1)
 
 ## 1.7.0 (14.03.2022)
 
@@ -32,7 +51,7 @@ The latest stable release is **v1.7.0** released on **14.03.2022**.
 
 ### Deprecations
 
-In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases. 
+In the upcoming version, the support of Cassandra as a primary store for Nexus Delta will be removed in favour of PostgreSQL to focus development efforts on features rather than supporting multiple databases.
 For very large deployments there are commercial options that are wire compatible to PostgreSQL.
 
 Tools will be provided to enable migration from Cassandra to PostgreSQL for existing Delta deployments.
@@ -61,7 +80,7 @@ This release contains bugfixes and minor improvements:
 - User can see all data, when the search query is empty @link:[#2875](https://github.com/BlueBrain/nexus/issues/2875)
 - A loading spinner shows up when there is a delay in fetching search results @link:[#2880](https://github.com/BlueBrain/nexus/issues/2880)
 - Label 'none of' in filter was previously mis labelled as 'any of' @link:[#2872](https://github.com/BlueBrain/nexus/issues/2872)
-- The behaviour of  'none of' filter has been fixed to avoid confusion with other filters @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
+- The behaviour of 'none of' filter has been fixed to avoid confusion with other filters @link:[#2898](https://github.com/BlueBrain/nexus/issues/2898)
 - Preview plugin big fix to prevent it from crashing for certain file paths @link:[#2884](https://github.com/BlueBrain/nexus/issues/2884)
 - Search bar matches query content @link:[#2874](https://github.com/BlueBrain/nexus/issues/2874)
 
@@ -74,47 +93,47 @@ This release contains bugfixes and minor improvements:
 
 ### Deprecations
 
- - Nexus client
- - Indexing data in other systems
- - @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)              
+- Nexus client
+- Indexing data in other systems
+- @ref:[RemoteDiskStorage](../delta/api/storages-api.md#remote-disk-storage)
 
 ### New features / enhancements
 
- - Introduced a plugin to search among different projects
- - Introduced PDF, CSV, TSV and Youtube Viewer Fusion Plugins
- - Add basic authentication to access a secured Elasticsearch cluster
- - Handle user-defined queries to Blazegraph with a dedicated client
- - Introduced a plugin to analyze properties and relationships of resources within a project
- - Synchronous indexing
- - Listing of resources outside the project scope
- - The RDF parser to validate resources is now configurable
- - Automatic project provisioning
- - Introduced quotas on projects
- - Project deletion (on demand and automatic)
- - Tagging resources after deprecation
- - View passivation
-            
-A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).  
+- Introduced a plugin to search among different projects
+- Introduced PDF, CSV, TSV and Youtube Viewer Fusion Plugins
+- Add basic authentication to access a secured Elasticsearch cluster
+- Handle user-defined queries to Blazegraph with a dedicated client
+- Introduced a plugin to analyze properties and relationships of resources within a project
+- Synchronous indexing
+- Listing of resources outside the project scope
+- The RDF parser to validate resources is now configurable
+- Automatic project provisioning
+- Introduced quotas on projects
+- Project deletion (on demand and automatic)
+- Tagging resources after deprecation
+- View passivation
+
+A detailed list of changes included in the release can be found in the @ref:[release notes](v1.6-release-notes.md).
 
 ## v1.5.1 (04.06.2021)
 
 This release contains bugfixes and minor improvements:
 
- - File paths now respect tar spec, added n-quads format option to archives @link:[#2459](https://github.com/BlueBrain/nexus/pull/2459)
- - Use service account to unset previous default storage @link:[#2465](https://github.com/BlueBrain/nexus/pull/2465)
- - Support type query exclusion on listings @link:[#2468](https://github.com/BlueBrain/nexus/pull/2468)
- - Added organization events to SSEs @link:[#2477](https://github.com/BlueBrain/nexus/pull/2477)
- - Allow the deletion of some persistence ids at startup @link:[#2480](https://github.com/BlueBrain/nexus/pull/2480)
- - Prevent creating schemas starting with `schemas.base` @link:[#2481](https://github.com/BlueBrain/nexus/pull/2481)
- - Updated the default number of shards value to 50 (prev => 1000) @link:[#2490](https://github.com/BlueBrain/nexus/pull/2490)
- - Expose indexing metrics @link:[#2485](https://github.com/BlueBrain/nexus/pull/2485)
- - Clean up error messages @link:[#2497](https://github.com/BlueBrain/nexus/pull/2497)
- - Allow plugins to be disabled via configuration @link:[#2498](https://github.com/BlueBrain/nexus/pull/2498)
- - Consume the entire base URI path in the routes @link:[#2502](https://github.com/BlueBrain/nexus/pull/2502)
- - Update progress cache on stream start. @link:[#2505](https://github.com/BlueBrain/nexus/pull/2505)
- - Fetch org/project events from their creation time if none is provided @link:[#2500](https://github.com/BlueBrain/nexus/pull/2500)
- - Count view statistics deterministically. @link:[#2509](https://github.com/BlueBrain/nexus/pull/2509)
- - Add SHACL context to resource/schemas errors including SHACL report @link:[#2508](https://github.com/BlueBrain/nexus/pull/2508)
+- File paths now respect tar spec, added n-quads format option to archives @link:[#2459](https://github.com/BlueBrain/nexus/pull/2459)
+- Use service account to unset previous default storage @link:[#2465](https://github.com/BlueBrain/nexus/pull/2465)
+- Support type query exclusion on listings @link:[#2468](https://github.com/BlueBrain/nexus/pull/2468)
+- Added organization events to SSEs @link:[#2477](https://github.com/BlueBrain/nexus/pull/2477)
+- Allow the deletion of some persistence ids at startup @link:[#2480](https://github.com/BlueBrain/nexus/pull/2480)
+- Prevent creating schemas starting with `schemas.base` @link:[#2481](https://github.com/BlueBrain/nexus/pull/2481)
+- Updated the default number of shards value to 50 (prev => 1000) @link:[#2490](https://github.com/BlueBrain/nexus/pull/2490)
+- Expose indexing metrics @link:[#2485](https://github.com/BlueBrain/nexus/pull/2485)
+- Clean up error messages @link:[#2497](https://github.com/BlueBrain/nexus/pull/2497)
+- Allow plugins to be disabled via configuration @link:[#2498](https://github.com/BlueBrain/nexus/pull/2498)
+- Consume the entire base URI path in the routes @link:[#2502](https://github.com/BlueBrain/nexus/pull/2502)
+- Update progress cache on stream start. @link:[#2505](https://github.com/BlueBrain/nexus/pull/2505)
+- Fetch org/project events from their creation time if none is provided @link:[#2500](https://github.com/BlueBrain/nexus/pull/2500)
+- Count view statistics deterministically. @link:[#2509](https://github.com/BlueBrain/nexus/pull/2509)
+- Add SHACL context to resource/schemas errors including SHACL report @link:[#2508](https://github.com/BlueBrain/nexus/pull/2508)
 
 ## v1.5.0 (19.05.2021)
 
@@ -195,7 +214,7 @@ Summary of the significant changes:
   can be switched for descending by prefixing the `-` character to the field name.
 - New ElasticSearch indices are automatically configured to perform word split and properly handle UUIDs. The new
   configuration yields better full text search results.
-- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the 
+- _Nexus Web_ - Adds the ability to have persistent customisable queries and data visualizations for your data via the
   new @ref:[Studios feature](../fusion/studio.md)
 
 A detailed list of changes included in the release can be found in the @ref:[release notes](v1.3-release-notes.md).
