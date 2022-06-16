@@ -21,7 +21,27 @@
 
 This section of the documentation lists the significant BlueBrain Nexus releases across all services and web applications.
 
-The latest stable release is **v1.7.0** released on **14.03.2022**.
+The latest stable release is **v1.7.1** released on **01.06.2022**.
+
+## 1.7.2 (16.06.2022)
+
+The 1.7.2 Fusion release notes can be found [here](https://github.com/BlueBrain/nexus-web/releases/tag/v1.7.2).
+
+## 1.7.1 (01.06.2022)
+
+This is a bug-fix release that addresses a series of Delta issues:
+
+- Fetch original payload is not retrieving null values #3112
+- Unable to upload empty files using the RemoteDiskStorage #2921
+- Improve error message on remote storage errors #3254
+- ElasticSearchView resourceTag config is not taken in consideration for synchronous indexing #3266
+
+The corresponding Fusion release notes can be found [here](https://github.com/BlueBrain/nexus-web/releases/tag/v1.7.1).
+
+**Full Changelogs**:
+Delta: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus/compare/v1.7.0...v1.7.1)
+Fusion: [v1.7.0...v1.7.1](https://github.com/BlueBrain/nexus-web/compare/v1.7.0...v1.7.1)
+Master
 
 ## 1.7.0 (14.03.2022)
 
