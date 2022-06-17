@@ -7,14 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup, StoragesStatistics, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects, ResourceIdCheck}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -35,12 +36,12 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       subject: Subject,
       sc: Scheduler
   ): (Files, Storages) =
-    AclSetup.init().map(init(org, project, _, storageTypeConfig)).accepted
+    AclSimpleCheck().map(init(org, project, _, storageTypeConfig)).accepted
 
   def init(
       org: Label,
       project: Project,
-      acls: Acls,
+      aclCheck: AclCheck,
       storageTypeConfig: StorageTypeConfig
   )(implicit
       baseUri: BaseUri,
@@ -51,21 +52,21 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
   ): (Files, Storages) = {
     for {
       (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    } yield init(orgs, projects, acls, storageTypeConfig)
+    } yield init(orgs, projects, aclCheck, storageTypeConfig)
   }.accepted
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      acls: Acls,
+      aclCheck: AclCheck,
       storageTypeConfig: StorageTypeConfig
   )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) =
-    init(orgs, projects, acls, StoragesStatisticsSetup.init(Map.empty), storageTypeConfig, allowedPerms: _*)
+    init(orgs, projects, aclCheck, StoragesStatisticsSetup.init(Map.empty), storageTypeConfig, allowedPerms: _*)
 
   def init(
       orgs: Organizations,
       projects: Projects,
-      acls: Acls,
+      aclCheck: AclCheck,
       storageStatistics: StoragesStatistics,
       storageTypeConfig: StorageTypeConfig,
       storagePermissions: Permission*
@@ -75,7 +76,7 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       eventLog <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
       storages  = StoragesSetup.init(orgs, projects, storagePermissions.toSet, storageTypeConfig)
       agg      <- Files.aggregate(filesConfig.aggregate, ResourceIdCheck.alwaysAvailable)
-      files    <- Files(filesConfig, config, eventLog, acls, orgs, projects, storages, storageStatistics, agg)
+      files    <- Files(filesConfig, config, eventLog, aclCheck, orgs, projects, storages, storageStatistics, agg)
     } yield files -> storages
   }.accepted
 }

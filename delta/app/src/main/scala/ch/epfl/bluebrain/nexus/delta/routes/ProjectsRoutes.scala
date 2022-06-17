@@ -10,25 +10,25 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.Complete
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris, ResourcesDeletionStatus}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectFields, ProjectRejection, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
@@ -38,14 +38,14 @@ import monix.execution.Scheduler
   * The project routes
   * @param identities
   *   the identity module
-  * @param acls
-  *   the ACLs module
+  * @param aclCheck
+  *   verify the acls for users
   * @param projects
   *   the projects module
   */
 final class ProjectsRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     projects: Projects,
     projectsCounts: ProjectsCounts,
     projectProvisioning: ProjectProvisioning
@@ -58,7 +58,7 @@ final class ProjectsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -70,18 +70,16 @@ final class ProjectsRoutes(
   private val statusCtx = ContextValue(contexts.deletionStatus)
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
-    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      onSuccess(acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture).map { aclsCol =>
-        ProjectSearchParams(
-          None,
-          deprecated,
-          rev,
-          createdBy,
-          updatedBy,
-          label,
-          proj => aclsCol.exists(caller.identities, projectsPermissions.read, proj.ref)
-        )
-      }
+    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      ProjectSearchParams(
+        None,
+        deprecated,
+        rev,
+        createdBy,
+        updatedBy,
+        label,
+        proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read)
+      )
     }
 
   private def provisionProject(implicit caller: Caller): Directive0 = onSuccess(
@@ -220,7 +218,7 @@ object ProjectsRoutes {
     */
   def apply(
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       projects: Projects,
       projectsCounts: ProjectsCounts,
       projectProvisioning: ProjectProvisioning
@@ -233,6 +231,6 @@ object ProjectsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning).routes
+  ): Route = new ProjectsRoutes(identities, aclCheck, projects, projectsCounts, projectProvisioning).routes
 
 }

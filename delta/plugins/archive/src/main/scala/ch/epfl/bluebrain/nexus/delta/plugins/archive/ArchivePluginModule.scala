@@ -10,9 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk._
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -29,13 +30,13 @@ object ArchivePluginModule extends ModuleDef {
   make[ArchiveDownload].from {
     (
         exchanges: Set[ReferenceExchange],
-        acls: Acls,
+        aclCheck: AclCheck,
         files: Files,
         sort: JsonKeyOrdering,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate")
     ) =>
-      new ArchiveDownloadImpl(exchanges.toList, acls, files)(sort, baseUri, rcr)
+      new ArchiveDownloadImpl(exchanges.toList, aclCheck, files)(sort, baseUri, rcr)
   }
 
   make[Archives].fromEffect {
@@ -57,14 +58,14 @@ object ArchivePluginModule extends ModuleDef {
     (
         archives: Archives,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
         jko: JsonKeyOrdering,
         sc: Scheduler
     ) =>
-      new ArchiveRoutes(archives, identities, acls, projects)(baseUri, rcr, jko, sc)
+      new ArchiveRoutes(archives, identities, aclCheck, projects)(baseUri, rcr, jko, sc)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

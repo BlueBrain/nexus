@@ -6,8 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclEvent._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
@@ -18,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
@@ -55,16 +52,10 @@ class EventSerializerSpec
 
   val realm: Label = Label.unsafe("myrealm")
 
-  val subject: Subject         = User("username", realm)
-  val anonymous: Subject       = Anonymous
-  val group: Identity          = Group("group", realm)
-  val authenticated: Identity  = Authenticated(realm)
-  val permSet: Set[Permission] = Set(Permission.unsafe("my/perm"))
-
-  val root: AclAddress                    = AclAddress.Root
-  val orgAddress: AclAddress.Organization = AclAddress.Organization(Label.unsafe("myorg"))
-  val projAddress: AclAddress.Project     = AclAddress.Project(Label.unsafe("myorg"), Label.unsafe("myproj"))
-  def acl(address: AclAddress): Acl       = Acl(address, Anonymous -> permSet, authenticated -> permSet, group -> permSet, subject -> permSet)
+  val subject: Subject        = User("username", realm)
+  val anonymous: Subject      = Anonymous
+  val group: Identity         = Group("group", realm)
+  val authenticated: Identity = Authenticated(realm)
 
   val org: Label          = Label.unsafe("myorg")
   val orgUuid: UUID       = UUID.fromString("b6bde92f-7836-4da6-8ead-2e0fd516ebe7")
@@ -101,13 +92,6 @@ class EventSerializerSpec
     Set(schemas.projects, schemas.resources),
     NonEmptyList.of(projectRef, ProjectRef.unsafe("org2", "proj2")),
     UseCurrentCaller
-  )
-
-  val aclsMapping: Map[AclEvent, Json] = Map(
-    AclAppended(acl(root), rev, instant, subject)         -> jsonContentOf("/serialization/acl-appended.json"),
-    AclSubtracted(acl(orgAddress), rev, instant, subject) -> jsonContentOf("/serialization/acl-subtracted.json"),
-    AclReplaced(acl(projAddress), rev, instant, subject)  -> jsonContentOf("/serialization/acl-replaced.json"),
-    AclDeleted(projAddress, rev, instant, anonymous)      -> jsonContentOf("/serialization/acl-deleted.json")
   )
 
   val resolversMapping: Map[ResolverEvent, Json] = Map(
@@ -326,8 +310,6 @@ class EventSerializerSpec
     ) -> jsonContentOf("/serialization/project-deprecated.json")
   )
 
-  "An EventSerializer" should behave like eventToJsonSerializer("acl", aclsMapping)
-  "An EventSerializer" should behave like jsonToEventDeserializer("acl", aclsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("project", projectsMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("project", projectsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resolver", resolversMapping)

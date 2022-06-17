@@ -94,7 +94,7 @@ final class OrganizationsImpl private (
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
     log
       .currentStates(_.toResource)
-      .filter(params.matches)
+      .evalFilter(params.matches)
       .compile
       .toList
       .hideErrors

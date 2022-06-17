@@ -4,7 +4,6 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.persistence.query.{Offset, Sequence}
-import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
@@ -16,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.RemoteIndex
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, _}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, QueryBuilder}
@@ -31,29 +30,29 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientError, HttpClientWorthRetry}
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectCountsCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, ProjectsCounts, Resources}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
@@ -104,7 +103,7 @@ class CompositeIndexingSpec
 
   private val allowedPerms = Set(permissions.query, events.read)
 
-  private val acls     = AclSetup.init((bob, AclAddress.Root, allowedPerms)).accepted
+  private val aclCheck = AclSimpleCheck((bob, AclAddress.Root, allowedPerms)).accepted
   private val org      = Label.unsafe("org")
   private val base     = nxv.base
   private val project1 = ProjectGen.project("org", "proj", base = base)
@@ -121,9 +120,8 @@ class CompositeIndexingSpec
 
   implicit private val keyValueStoreConfig = keyValueStore
 
-  implicit private val httpConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  private val httpClient          = HttpClient()
-  private lazy val blazeClient    = BlazegraphClient(httpClient, hostConfig.endpoint, None, 10.seconds)
+  private val httpClient       = HttpClient()
+  private lazy val blazeClient = BlazegraphClient(httpClient, hostConfig.endpoint, None, 10.seconds)
 
   private val museId              = iri"http://music.com/muse"
   private val museUuid            = UUID.randomUUID()
@@ -286,7 +284,7 @@ class CompositeIndexingSpec
       orgs,
       projects,
       allowedPerms,
-      acls,
+      aclCheck,
       esClient,
       Crypto("password", "salt"),
       config.copy(minIntervalRebuild = 900.millis)

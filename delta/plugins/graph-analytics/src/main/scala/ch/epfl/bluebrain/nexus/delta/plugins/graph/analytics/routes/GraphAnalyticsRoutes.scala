@@ -5,13 +5,14 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.GraphAnalytics
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit, idSegment, projectRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, ProgressesStatistics, Projects}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -20,8 +21,8 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   to check acls
   * @param projects
   *   the projects module
   * @param graphAnalytics
@@ -31,12 +32,12 @@ import monix.execution.Scheduler
   */
 class GraphAnalyticsRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     projects: Projects,
     graphAnalytics: GraphAnalytics,
     progresses: ProgressesStatistics
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+    extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
   import baseUri.prefixSegment

@@ -4,10 +4,11 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{IdentitiesDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
@@ -33,7 +34,7 @@ class EventsRoutesSpec
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-  private val acls                  = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
+  private val aclCheck              = AclSimpleCheck().accepted
 
   implicit private val subject: Subject = Identity.Anonymous
 
@@ -49,12 +50,12 @@ class EventsRoutesSpec
       .accepted
 
   //TODO
-  private val routes = Route.seal(EventsRoutes(identities, acls, projs, null))
+  private val routes = Route.seal(EventsRoutes(identities, aclCheck, projs, null))
 
   "EventsRoutes" should {
 
     "fail to get the events stream without events/read permission" in {
-      acls.append(Acl(AclAddress.Root, alice -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, alice -> Set(events.read)).accepted
 
       Head("/v1/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden

@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
@@ -64,7 +65,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
       orgs: Organizations,
       projects: Projects,
       permissions: Set[Permission],
-      acls: Acls,
+      aclCheck: AclCheck,
       client: ElasticSearchClient,
       crypto: Crypto,
       config: CompositeViewsConfig = CompositeViewsFixture.config
@@ -75,7 +76,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
       agg        <- CompositeViews.aggregate(
                       config,
                       projects,
-                      acls,
+                      aclCheck,
                       UIO.pure(permissions),
                       ResourceIdCheck.alwaysAvailable,
                       client,

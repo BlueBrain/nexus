@@ -12,8 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => st
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -80,9 +81,9 @@ class FilesRoutesSpec
   private val stCfg                    = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
   implicit private val f: FusionConfig = fusionConfig
 
-  private val acls              = AclsDummy(allowedPerms.toSet, Set(realm)).accepted
-  private val (files, storages) = FilesSetup.init(orgs, projs, acls, stCfg)
-  private val routes            = Route.seal(FilesRoutes(stCfg, identities, acls, orgs, projs, files, IndexingActionDummy()))
+  private val aclCheck          = AclSimpleCheck().accepted
+  private val (files, storages) = FilesSetup.init(orgs, projs, aclCheck, stCfg)
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, aclCheck, orgs, projs, files, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)
@@ -92,14 +93,11 @@ class FilesRoutesSpec
     "create storages for files" in {
       val defaults = json"""{"maxFileSize": 1000, "volume": "$path"}"""
       val s3Perms  = json"""{"readPermission": "$s3Read", "writePermission": "$s3Write"}"""
-      acls
+      aclCheck
         .append(
-          Acl(
-            AclAddress.Root,
-            Anonymous      -> Set(storagesPermissions.write),
-            caller.subject -> Set(storagesPermissions.write)
-          ),
-          0
+          AclAddress.Root,
+          Anonymous      -> Set(storagesPermissions.write),
+          caller.subject -> Set(storagesPermissions.write)
         )
         .accepted
       storages.create(s3Id, projectRef, diskFieldsJson.map(_ deepMerge defaults deepMerge s3Perms)).accepted
@@ -116,9 +114,7 @@ class FilesRoutesSpec
     }
 
     "create a file" in {
-      acls
-        .append(Acl(AclAddress.Root, Anonymous -> Set(diskWrite), caller.subject -> Set(diskWrite)), 1)
-        .accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(diskWrite), caller.subject -> Set(diskWrite)).accepted
       Post("/v1/files/org/proj", entity()) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val attr = attributes()
@@ -143,9 +139,7 @@ class FilesRoutesSpec
     }
 
     "create a file with an authenticated user and provided id" in {
-      acls
-        .append(Acl(AclAddress.Root, Anonymous -> Set(s3Write), caller.subject -> Set(s3Write)), 2)
-        .accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(s3Write), caller.subject -> Set(s3Write)).accepted
       Put("/v1/files/org/proj/file1?storage=s3-storage", entity("file2.txt")) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         val attr = attributes("file2.txt")
@@ -177,7 +171,7 @@ class FilesRoutesSpec
     }
 
     "fail to update a file without disk/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(diskWrite)), 3).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(diskWrite)).accepted
       Put(s"/v1/files/org/proj/file1?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -185,7 +179,7 @@ class FilesRoutesSpec
     }
 
     "update a file" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(diskWrite)), 4).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(diskWrite)).accepted
       val endpoints = List(
         "/v1/files/org/proj/file1",
         s"/v1/files/org/proj/$file1Encoded"
@@ -242,7 +236,7 @@ class FilesRoutesSpec
     }
 
     "deprecate a file" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 5).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Delete(s"/v1/files/org/proj/$uuid?rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val attr = attributes()
@@ -283,7 +277,7 @@ class FilesRoutesSpec
     }
 
     "fail to fetch a file when the accept header does not match file media type" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(diskRead, s3Read)), 6).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(diskRead, s3Read)).accepted
       forAll(List("", "?rev=1", "?tags=mytag")) { suffix =>
         Get(s"/v1/files/org/proj/file1$suffix") ~> Accept(`video/*`) ~> routes ~> check {
           response.status shouldEqual StatusCodes.NotAcceptable
@@ -349,7 +343,7 @@ class FilesRoutesSpec
     }
 
     "fetch a file metadata" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.read)), 7).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/files/org/proj/file1") ~> Accept(`application/ld+json`) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val attr = attributes("file-idx-1.txt")

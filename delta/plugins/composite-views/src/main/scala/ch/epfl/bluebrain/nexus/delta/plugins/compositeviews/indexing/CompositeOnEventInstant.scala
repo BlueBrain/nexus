@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.OnePage
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -39,11 +39,13 @@ final class CompositeOnEventInstant(
     CompositeViewSearchParams(
       deprecated = Some(false),
       filter = v =>
-        v.sources.value.exists {
-          case _: ProjectSource      => v.project == project
-          case s: CrossProjectSource => s.project == project
-          case _                     => false
-        }
+        UIO.pure(
+          v.sources.value.exists {
+            case _: ProjectSource      => v.project == project
+            case s: CrossProjectSource => s.project == project
+            case _                     => false
+          }
+        )
     )
 
 }

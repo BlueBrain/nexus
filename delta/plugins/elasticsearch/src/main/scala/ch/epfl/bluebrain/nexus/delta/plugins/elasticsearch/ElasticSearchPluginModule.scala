@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -214,14 +215,14 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchViewsQuery].from {
     (
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         views: ElasticSearchViews,
         cache: ElasticSearchViewCache,
         client: ElasticSearchClient,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(acls, projects, views, cache, client)(cfg.indexing)
+      ElasticSearchViewsQuery(aclCheck, projects, views, cache, client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("elasticsearch-statistics").from {
@@ -288,7 +289,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         orgs: Organizations,
         projects: Projects,
         views: ElasticSearchViews,
@@ -308,7 +309,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
       new ElasticSearchViewsRoutes(
         identities,
-        acls,
+        aclCheck,
         orgs,
         projects,
         views,

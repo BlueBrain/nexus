@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStats
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -90,7 +91,7 @@ class StoragesRoutesSpec
   private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist, config)
 
   private val perms              = allowedPerms.toSet
-  private val acls               = AclsDummy(perms, Set(realm)).accepted
+  private val aclCheck           = AclSimpleCheck().accepted
   private val (orgs, projs)      = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   implicit private val c: Crypto = crypto
 
@@ -108,12 +109,14 @@ class StoragesRoutesSpec
 
   private val storages = StoragesSetup.init(orgs, projs, perms)
   private val routes   =
-    Route.seal(StoragesRoutes(cfg, identities, acls, orgs, projs, storages, storageStatistics, IndexingActionDummy()))
+    Route.seal(
+      StoragesRoutes(cfg, identities, aclCheck, orgs, projs, storages, storageStatistics, IndexingActionDummy())
+    )
 
   "Storage routes" should {
 
     "fail to create a storage without storages/write permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -122,8 +125,8 @@ class StoragesRoutesSpec
     }
 
     "create a storage" in {
-      acls
-        .append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write), caller.subject -> Set(permissions.write)), 1L)
+      aclCheck
+        .append(AclAddress.Root, Anonymous -> Set(permissions.write), caller.subject -> Set(permissions.write))
         .accepted
       val payload = s3FieldsJson.value deepMerge json"""{"@id": "$s3Id", "bucket": "mybucket2"}"""
       Post("/v1/storages/myorg/myproject", payload.toEntity) ~> routes ~> check {
@@ -151,7 +154,7 @@ class StoragesRoutesSpec
     }
 
     "fail to update a storage without storages/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Put(s"/v1/storages/myorg/myproject/s3-storage?rev=1", s3FieldsJson.value.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -159,7 +162,7 @@ class StoragesRoutesSpec
     }
 
     "update a storage" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       val endpoints = List(
         "/v1/storages/myorg/myproject/s3-storage",
         s"/v1/storages/myorg/myproject/$s3IdEncoded"
@@ -190,7 +193,7 @@ class StoragesRoutesSpec
     }
 
     "fail to deprecate a storage without storages/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 4L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Delete("/v1/storages/myorg/myproject/s3-storage?rev=3") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -198,7 +201,7 @@ class StoragesRoutesSpec
     }
 
     "deprecate a storage" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 5L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       Delete("/v1/storages/myorg/myproject/s3-storage?rev=4") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
@@ -247,7 +250,7 @@ class StoragesRoutesSpec
     }
 
     "fetch a storage" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/s3-storage") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual jsonContentOf("storage/s3-storage-fetched.json")
@@ -359,7 +362,7 @@ class StoragesRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       forAll(List("/v1/storages/events", "/v1/storages/myorg/events", "/v1/storages/myorg/myproject/events")) {
         endpoint =>
           Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
@@ -388,7 +391,7 @@ class StoragesRoutesSpec
     }
 
     "fail to get storage statistics for an existing entry without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissions.read)), 8L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissions.read)).accepted
       Get("/v1/storages/myorg/myproject/remote-disk-storage/statistics") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")

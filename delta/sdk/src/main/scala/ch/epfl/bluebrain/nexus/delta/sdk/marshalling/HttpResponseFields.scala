@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
@@ -66,16 +65,6 @@ object HttpResponseFields {
     new HttpResponseFields[A] {
       override def statusFrom(value: A): StatusCode       = f(value)._1
       override def headersFrom(value: A): Seq[HttpHeader] = f(value)._2
-    }
-
-  implicit val responseFieldsAcls: HttpResponseFields[AclRejection] =
-    HttpResponseFields {
-      case AclRejection.AclNotFound(_)            => StatusCodes.NotFound
-      case AclRejection.IncorrectRev(_, _, _)     => StatusCodes.Conflict
-      case AclRejection.RevisionNotFound(_, _)    => StatusCodes.NotFound
-      case AclRejection.UnexpectedInitialState(_) => StatusCodes.InternalServerError
-      case AclRejection.AclEvaluationError(_)     => StatusCodes.InternalServerError
-      case _                                      => StatusCodes.BadRequest
     }
 
   implicit val responseFieldsTokenRejection: HttpResponseFields[TokenRejection] =

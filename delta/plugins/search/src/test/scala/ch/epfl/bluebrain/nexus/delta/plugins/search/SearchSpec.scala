@@ -18,14 +18,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
@@ -71,12 +72,10 @@ class SearchSpec
   private val project2        = ProjectGen.project("org2", "proj2")
   private val queryPermission = Permission.unsafe("views/query")
 
-  private val acls = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
-      (bob.subject, AclAddress.Root, Set(queryPermission))
-    )
-    .accepted
+  private val aclCheck = AclSimpleCheck(
+    (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
+    (bob.subject, AclAddress.Root, Set(queryPermission))
+  ).accepted
 
   private val mappings = jsonObjectContentOf("test-mapping.json")
 
@@ -143,7 +142,7 @@ class SearchSpec
   }
 
   "Search" should {
-    lazy val search = Search(listViews, acls, esClient, externalConfig)
+    lazy val search = Search(listViews, aclCheck, esClient, externalConfig)
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>

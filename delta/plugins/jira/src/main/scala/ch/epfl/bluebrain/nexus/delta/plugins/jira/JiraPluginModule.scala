@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.jira.routes.JiraRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -30,7 +31,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         jiraClient: JiraClient,
         baseUri: BaseUri,
         s: Scheduler,
@@ -39,7 +40,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new JiraRoutes(
         identities,
-        acls,
+        aclCheck,
         jiraClient
       )(
         baseUri,

@@ -18,12 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -97,7 +98,6 @@ class BlazegraphViewsRoutesSpec
     events.read
   )
 
-  private val acls          = AclsDummy(allowedPerms, Set(realm)).accepted
   private val (orgs, projs) =
     ProjectSetup
       .init(
@@ -150,13 +150,14 @@ class BlazegraphViewsRoutesSpec
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val routes =
+  private val aclCheck = AclSimpleCheck().accepted
+  private val routes   =
     Route.seal(
       BlazegraphViewsRoutes(
         views,
         viewsQuery,
         identities,
-        acls,
+        aclCheck,
         projs,
         statisticsProgress,
         restart,
@@ -166,15 +167,15 @@ class BlazegraphViewsRoutesSpec
 
   "Blazegraph view routes" should {
     "fail to create a view without permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
       }
     }
     "create an indexing view" in {
-      acls
-        .append(Acl(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)), 1L)
+      aclCheck
+        .append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read))
         .accepted
       Post("/v1/views/org/proj", indexingSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
@@ -473,7 +474,7 @@ class BlazegraphViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(permissions.write)), 2L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissions.write)).accepted
       restartedView shouldEqual None
       Delete("/v1/views/org/proj/indexing-view/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK

@@ -17,12 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, ReferenceExchange}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, ReferenceExchange}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.{Json, Printer}
@@ -63,14 +64,14 @@ object ArchiveDownload {
     *
     * @param exchanges
     *   the collection of [[ReferenceExchange]] implementations
-    * @param acls
-    *   the acls module
+    * @param aclCheck
+    *   to check acls the acls module
     * @param files
     *   the files module
     * @param sort
     *   the configuration for sorting json keys
     */
-  class ArchiveDownloadImpl(exchanges: List[ReferenceExchange], acls: Acls, files: Files)(implicit
+  class ArchiveDownloadImpl(exchanges: List[ReferenceExchange], aclCheck: AclCheck, files: Files)(implicit
       sort: JsonKeyOrdering,
       baseUri: BaseUri,
       rcr: RemoteContextResolution
@@ -99,24 +100,15 @@ object ArchiveDownload {
     private def checkResourcePermissions(
         refs: List[ArchiveReference],
         project: ProjectRef
-    )(implicit caller: Caller): IO[AuthorizationFailed, Unit] = {
-      val authTargets = refs
-        .collect { case ref: ResourceReference => ref }
-        .map { ref =>
-          val p       = ref.project.getOrElse(project)
-          val address = AclAddress.Project(p)
-          (address, resources.read)
-        }
-        .toSet
-      acls.authorizeForAny(authTargets).flatMap { authResult =>
-        IO.fromEither(
-          authResult
-            .collectFirst { case (addr, false) => addr } // find the first entry that has a false auth result
-            .map(AuthorizationFailed(_, resources.read))
-            .toLeft(())
+    )(implicit caller: Caller): IO[AuthorizationFailed, Unit] =
+      aclCheck
+        .mapFilterOrRaise(
+          refs,
+          (a: ArchiveReference) => AclAddress.Project(a.project.getOrElse(project)) -> resources.read,
+          identity[ArchiveReference],
+          address => IO.raiseError(AuthorizationFailed(address, resources.read))
         )
-      }
-    }
+        .void
 
     private def fetchFile(ref: FileReference, project: ProjectRef, ignoreNotFound: Boolean)(implicit
         caller: Caller

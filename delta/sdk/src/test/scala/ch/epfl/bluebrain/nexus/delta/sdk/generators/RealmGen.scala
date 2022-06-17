@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmState, WellKnown}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import org.scalatest.OptionValues
 
 import java.time.Instant
 
-object RealmGen extends OptionValues {
+object RealmGen {
 
   def state(
       openIdConfig: Uri,

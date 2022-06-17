@@ -377,8 +377,7 @@ lazy val sdk = project
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
-      scalaTest        % Test,
-      mockito          % Test
+      scalaTest        % Test
     ),
     addCompilerPlugin(kindProjector),
     addCompilerPlugin(betterMonadicFor)

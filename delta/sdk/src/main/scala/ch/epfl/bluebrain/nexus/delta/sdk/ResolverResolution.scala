@@ -4,6 +4,8 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{Fetch, ResolverResolutionResult}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.{CrossProjectResolver, InProjectResolver}
@@ -12,12 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResolverRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import monix.bio.{IO, UIO}
 
 import java.time.Instant
@@ -203,14 +202,14 @@ object ResolverResolution {
 
   type ResolverResolutionResult[R] = (ResolverReport, Option[R])
 
-  private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => true)
+  private val resolverSearchParams = ResolverSearchParams(deprecated = Some(false), filter = _ => UIO.pure(true))
 
   private val resolverOrdering: Ordering[ResolverResource] = Ordering[Instant] on (r => r.createdAt)
 
   /**
     * Resolution for a given type based on resolvers
-    * @param acls
-    *   an acls instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param fetch
@@ -221,14 +220,13 @@ object ResolverResolution {
     *   the mandatory permission
     */
   def apply[R](
-      acls: Acls,
+      aclCheck: AclCheck,
       resolvers: Resolvers,
       fetch: (ResourceRef, ProjectRef) => Fetch[R],
       extractTypes: R => Set[Iri],
       readPermission: Permission
   ) = new ResolverResolution(
-    checkAcls = (p: ProjectRef, identities: Set[Identity]) =>
-      acls.fetchWithAncestors(p).map(_.exists(identities, readPermission, p)),
+    checkAcls = (p: ProjectRef, identities: Set[Identity]) => aclCheck.authorizeFor(p, readPermission, identities),
     listResolvers = (projectRef: ProjectRef) =>
       resolvers
         .list(projectRef, Pagination.OnePage, resolverSearchParams, resolverOrdering)
@@ -240,15 +238,15 @@ object ResolverResolution {
 
   /**
     * Resolution based on resolvers and reference exchanges
-    * @param acls
-    *   an acls instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param exchanges
     *   how to fetch the resource
     */
   def apply(
-      acls: Acls,
+      aclCheck: AclCheck,
       resolvers: Resolvers,
       exchanges: List[ReferenceExchange]
   ): ResolverResolution[ReferenceExchangeValue[_]] = {
@@ -257,7 +255,7 @@ object ResolverResolution {
         case Nil              => UIO.pure(Right(None))
         case exchange :: rest => exchange.fetch(project, ref).map(_.toRight(rest).map(Some.apply))
       }
-    apply[ReferenceExchangeValue[_]](acls, resolvers, fetch, _.resource.types, Permissions.resources.read)
+    apply[ReferenceExchangeValue[_]](aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read)
   }
 
 }

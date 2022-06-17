@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import monix.bio.{IO, Task}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -804,7 +804,11 @@ trait ResolversBehaviors {
 
       "return deprecated resolvers" in {
         val results = resolvers
-          .list(FromPagination(0, 10), ResolverSearchParams(deprecated = Some(true), filter = _ => true), order)
+          .list(
+            FromPagination(0, 10),
+            ResolverSearchParams(deprecated = Some(true), filter = _ => UIO.pure(true)),
+            order
+          )
           .accepted
 
         results.total shouldEqual 2L
@@ -813,7 +817,11 @@ trait ResolversBehaviors {
 
       "return resolvers created by alice" in {
         val results = resolvers
-          .list(FromPagination(0, 10), ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => true), order)
+          .list(
+            FromPagination(0, 10),
+            ResolverSearchParams(createdBy = Some(alice.subject), filter = _ => UIO.pure(true)),
+            order
+          )
           .accepted
 
         results.total shouldEqual 2L

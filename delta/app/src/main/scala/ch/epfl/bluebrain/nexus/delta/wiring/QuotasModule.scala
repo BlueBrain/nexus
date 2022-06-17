@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.QuotasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.service.quotas.QuotasImpl
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -30,14 +31,14 @@ object QuotasModule extends ModuleDef {
   make[QuotasRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         quotas: Quotas,
         s: Scheduler,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new QuotasRoutes(identities, acls, projects, quotas)(baseUri, s, cr, ordering)
+    ) => new QuotasRoutes(identities, aclCheck, projects, quotas)(baseUri, s, cr, ordering)
 
   }
 

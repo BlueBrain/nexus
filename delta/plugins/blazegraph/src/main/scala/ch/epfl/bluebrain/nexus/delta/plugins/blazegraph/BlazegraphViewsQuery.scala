@@ -10,9 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{Sparql
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -23,7 +25,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
@@ -94,14 +95,14 @@ object BlazegraphViewsQuery {
   private[blazegraph] type FetchView    = (IdSegmentRef, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
   private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
 
-  final def apply(acls: Acls, views: BlazegraphViews, projects: Projects, client: SparqlQueryClient)(implicit
+  final def apply(aclCheck: AclCheck, views: BlazegraphViews, projects: Projects, client: SparqlQueryClient)(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
     apply(
       views.fetch,
       BlazegraphViewRefVisitor(views, config),
       projects.fetchProject[BlazegraphViewRejection],
-      acls,
+      aclCheck,
       client
     )
 
@@ -109,7 +110,7 @@ object BlazegraphViewsQuery {
       fetchView: FetchView,
       visitor: ViewRefVisitor[BlazegraphViewRejection],
       fetchProject: FetchProject,
-      acls: Acls,
+      aclCheck: AclCheck,
       client: SparqlQueryClient
   )(implicit config: ExternalIndexingConfig): BlazegraphViewsQuery =
     new BlazegraphViewsQuery {
@@ -188,16 +189,18 @@ object BlazegraphViewsQuery {
         view.value match {
 
           case v: IndexingBlazegraphView =>
-            acls
+            aclCheck
               .authorizeForOr(v.project, v.permission)(AuthorizationFailed)
               .as(Set(BlazegraphViews.namespace(view.as(v), config)))
 
           case v: AggregateBlazegraphView =>
-            for {
-              views         <- visitor.visitAll(v.views).map(_.collect { case v: IndexedVisitedView => v })
-              access        <- acls.authorizeForAny(views.map(v => ProjectAcl(v.ref.project) -> v.permission))
-              accessProjects = access.collect { case (p: ProjectAcl, true) => ProjectRef(p.org, p.project) }.toSet
-            } yield views.collect { case v if accessProjects.contains(v.ref.project) => v.index }
+            visitor.visitAll(v.views).map(_.collect { case v: IndexedVisitedView => v }).flatMap { views =>
+              aclCheck.mapFilter[IndexedVisitedView, String](
+                views,
+                v => ProjectAcl(v.ref.project) -> v.permission,
+                _.index
+              )
+            }
         }
 
       private def toSparqlLinks(sparqlResults: SparqlResults, mappings: ApiMappings, projectBase: ProjectBase)(implicit

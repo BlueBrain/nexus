@@ -16,19 +16,20 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileResourc
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
@@ -44,8 +45,8 @@ import scala.annotation.nowarn
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   to check acls
   * @param organizations
   *   the organizations module
   * @param projects
@@ -57,7 +58,7 @@ import scala.annotation.nowarn
   */
 final class FilesRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     organizations: Organizations,
     projects: Projects,
     files: Files,
@@ -69,7 +70,7 @@ final class FilesRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -240,7 +241,7 @@ final class FilesRoutes(
     }
 
   def fetchMetadata(id: IdSegmentRef, ref: ProjectRef)(implicit caller: Caller): IO[FileRejection, FileResource] =
-    acls.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
+    aclCheck.authorizeForOr(ref, Read)(AuthorizationFailed(ref, Read)) >> files.fetch(id, ref)
 }
 
 object FilesRoutes {
@@ -256,7 +257,7 @@ object FilesRoutes {
   def apply(
       config: StorageTypeConfig,
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       organizations: Organizations,
       projects: Projects,
       files: Files,
@@ -269,7 +270,7 @@ object FilesRoutes {
       fusionConfig: FusionConfig
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, acls, organizations, projects, files, index).routes
+    new FilesRoutes(identities, aclCheck, organizations, projects, files, index).routes
   }
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)

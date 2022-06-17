@@ -211,10 +211,10 @@ class RealmImplSpec
     }
 
     val allEvents = SSEUtils.extract(
-      github -> RealmCreated,
-      github -> RealmUpdated,
-      github -> RealmDeprecated,
-      gitlab -> RealmCreated
+      (github, RealmCreated, 1L),
+      (github, RealmUpdated, 2L),
+      (github, RealmDeprecated, 3L),
+      (gitlab, RealmCreated, 4L)
     )
 
     "get the different events from start" in {

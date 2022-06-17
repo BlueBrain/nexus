@@ -12,24 +12,25 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -40,8 +41,8 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   how to check acls
   * @param organizations
   *   the organizations module
   * @param projects
@@ -53,7 +54,7 @@ import monix.execution.Scheduler
   */
 final class StoragesRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     organizations: Organizations,
     projects: Projects,
     storages: Storages,
@@ -67,7 +68,7 @@ final class StoragesRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
 
@@ -78,18 +79,16 @@ final class StoragesRoutes(
   implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
-    (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
-      callerAcls.map { aclsCol =>
-        StorageSearchParams(
-          Some(projectRef),
-          deprecated,
-          rev,
-          createdBy,
-          updatedBy,
-          types,
-          storage => aclsCol.exists(caller.identities, Read, storage.project)
-        )
-      }
+    (searchParams & types(projects)).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
+      StorageSearchParams(
+        Some(projectRef),
+        deprecated,
+        rev,
+        createdBy,
+        updatedBy,
+        types,
+        storage => aclCheck.authorizeFor(storage.project, Read)
+      )
     }
   }
 
@@ -275,7 +274,7 @@ object StoragesRoutes {
   def apply(
       config: StoragesConfig,
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       organizations: Organizations,
       projects: Projects,
       storages: Storages,
@@ -290,7 +289,7 @@ object StoragesRoutes {
       fusionConfig: FusionConfig
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, index).routes
+    new StoragesRoutes(identities, aclCheck, organizations, projects, storages, storagesStatistics, index).routes
   }
 
 }

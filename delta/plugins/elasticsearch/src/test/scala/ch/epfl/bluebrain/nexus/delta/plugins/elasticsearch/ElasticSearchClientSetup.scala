@@ -13,7 +13,7 @@ trait ElasticSearchClientSetup {
   def docker: ElasticSearchDocker
   implicit def system: ActorSystem
   implicit val sc: Scheduler                                     = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig              =
+  implicit val httpConfig: HttpClientConfig                      =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true)
   implicit private val credentials: Option[BasicHttpCredentials] = ElasticSearchDocker.Credentials
 

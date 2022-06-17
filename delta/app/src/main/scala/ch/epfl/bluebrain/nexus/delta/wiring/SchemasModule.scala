@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -68,18 +69,18 @@ object SchemasModule extends ModuleDef {
 
   make[SchemaImports].from {
     (
-        acls: Acls,
+        aclCheck: AclCheck,
         resolvers: Resolvers,
         resources: Resources,
         schemas: Schemas
     ) =>
-      SchemaImports(acls, resolvers, schemas, resources)
+      SchemaImports(aclCheck, resolvers, schemas, resources)
   }
 
   make[SchemasRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         organizations: Organizations,
         projects: Projects,
         schemas: Schemas,
@@ -90,7 +91,7 @@ object SchemasModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new SchemasRoutes(identities, acls, organizations, projects, schemas, indexingAction)(
+      new SchemasRoutes(identities, aclCheck, organizations, projects, schemas, indexingAction)(
         baseUri,
         s,
         cr,

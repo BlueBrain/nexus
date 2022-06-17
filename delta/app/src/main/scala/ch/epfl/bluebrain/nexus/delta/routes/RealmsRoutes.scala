@@ -9,20 +9,21 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, RealmResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, RealmResource}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -31,13 +32,13 @@ import monix.execution.Scheduler
 
 import scala.annotation.nowarn
 
-class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
+class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -129,7 +130,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, acls: Acls)(implicit
 }
 
 object RealmsRoutes {
-  import ch.epfl.bluebrain.nexus.delta.rdf.instances._
 
   @nowarn("cat=unused")
   implicit final private val configuration: Configuration = Configuration.default.withStrictDecoding
@@ -148,13 +148,13 @@ object RealmsRoutes {
     * @return
     *   the [[Route]] for realms
     */
-  def apply(identities: Identities, realms: Realms, acls: Acls)(implicit
+  def apply(identities: Identities, realms: Realms, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new RealmsRoutes(identities, realms, acls).routes
+    new RealmsRoutes(identities, realms, aclCheck).routes
 
 }

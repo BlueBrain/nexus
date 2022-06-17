@@ -8,12 +8,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, FileResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, AkkaSource, Identities, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, Identities, Projects}
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -25,18 +26,18 @@ import monix.execution.Scheduler
   *   the archive module
   * @param identities
   *   the identities module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   to check acls
   * @param projects
   *   the projects module
   */
 class ArchiveRoutes(
     archives: Archives,
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     projects: Projects
 )(implicit baseUri: BaseUri, rcr: RemoteContextResolution, jko: JsonKeyOrdering, sc: Scheduler)
-    extends AuthDirectives(identities, acls)
+    extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with DeltaDirectives {
 

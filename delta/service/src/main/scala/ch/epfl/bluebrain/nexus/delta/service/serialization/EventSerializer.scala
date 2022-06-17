@@ -1,30 +1,27 @@
 package ch.epfl.bluebrain.nexus.delta.service.serialization
 
-import java.nio.charset.StandardCharsets
-
 import akka.serialization.SerializerWithStringManifest
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclEvent}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Codec, Decoder, DecodingFailure, Encoder}
 
+import java.nio.charset.StandardCharsets
 import scala.annotation.nowarn
 
 /**
@@ -35,7 +32,6 @@ class EventSerializer extends SerializerWithStringManifest {
   override def identifier: Int = 453223
 
   override def manifest(o: AnyRef): String = o match {
-    case _: AclEvent      => aclEventManifest
     case _: ProjectEvent  => projectEventManifest
     case _: ResolverEvent => resolverEventManifest
     case _: ResourceEvent => resourceEventManifest
@@ -44,7 +40,6 @@ class EventSerializer extends SerializerWithStringManifest {
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case e: AclEvent      => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ProjectEvent  => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResolverEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -53,7 +48,6 @@ class EventSerializer extends SerializerWithStringManifest {
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case `aclEventManifest`      => parseAndDecode[AclEvent](bytes, manifest)
     case `projectEventManifest`  => parseAndDecode[ProjectEvent](bytes, manifest)
     case `resolverEventManifest` => parseAndDecode[ResolverEvent](bytes, manifest)
     case `resourceEventManifest` => parseAndDecode[ResourceEvent](bytes, manifest)
@@ -71,7 +65,6 @@ class EventSerializer extends SerializerWithStringManifest {
 @nowarn("cat=unused")
 object EventSerializer {
 
-  final val aclEventManifest: String      = Acls.moduleType
   final val projectEventManifest: String  = Projects.moduleType
   final val resolverEventManifest: String = Resolvers.moduleType
   final val resourceEventManifest: String = Resources.moduleType
@@ -87,24 +80,6 @@ object EventSerializer {
     Decoder.decodeMap[String, Iri].map(ApiMappings(_))
   implicit final private val apiMappingsEncoder: Encoder.AsObject[ApiMappings] =
     Encoder.encodeMap[String, Iri].contramapObject(_.value)
-
-  implicit final private val aclAddressEncoder: Encoder[AclAddress] = Encoder.encodeString.contramap(_.string)
-  implicit final private val aclAddressDecoder: Decoder[AclAddress] = Decoder.decodeString.emap { str =>
-    AclAddress.fromString(str).leftMap(_.getMessage)
-  }
-
-  final private case class AclEntry(identity: Identity, permissions: Set[Permission])
-  implicit final private val aclEntryCodec: Codec.AsObject[AclEntry] = deriveConfiguredCodec[AclEntry]
-  implicit final private val aclEncoder: Encoder[Acl]                =
-    Encoder.encodeList[AclEntry].contramap(acl => acl.value.toList.map { case (id, perms) => AclEntry(id, perms) })
-
-  implicit private val aclDecoder: Decoder[Acl]                      =
-    Decoder.instance { hc =>
-      for {
-        address <- hc.up.get[AclAddress]("address")
-        entries <- hc.as[Vector[AclEntry]]
-      } yield Acl(address, entries.map(e => e.identity -> e.permissions).toMap)
-    }
 
   implicit final private val compactedEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
   implicit final private val compactedDecoder: Decoder[CompactedJsonLd] =
@@ -123,11 +98,6 @@ object EventSerializer {
     deriveConfiguredCodec[IdentityResolution]
   implicit final private val resolverValueCodec: Codec.AsObject[ResolverValue]           = deriveConfiguredCodec[ResolverValue]
 
-  implicit final val aclEventDecoder: Decoder[AclEvent]                = deriveConfiguredDecoder[AclEvent]
-  implicit final val aclEventEncoder: Encoder.AsObject[AclEvent]       =
-    Encoder.AsObject.instance { ev =>
-      deriveConfiguredEncoder[AclEvent].mapJsonObject(_.add("address", ev.address.asJson)).encodeObject(ev)
-    }
   implicit final val projectEventCodec: Codec.AsObject[ProjectEvent]   = deriveConfiguredCodec[ProjectEvent]
   implicit final val resolverEvent: Codec.AsObject[ResolverEvent]      = deriveConfiguredCodec[ResolverEvent]
   implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]

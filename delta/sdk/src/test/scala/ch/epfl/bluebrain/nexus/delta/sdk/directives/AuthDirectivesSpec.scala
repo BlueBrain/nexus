@@ -7,25 +7,25 @@ import akka.http.scaladsl.server.{ExceptionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfExceptionHandler
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller.Anonymous
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler.Implicits.global
-import org.mockito.IdiomaticMockito
 import org.scalatest.matchers.should.Matchers
 
-class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IdiomaticMockito with IOValues {
+class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers with IOValues {
 
   implicit private val cl = getClass.getClassLoader
 
@@ -37,10 +37,12 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
   implicit private val jsonKeys                     =
     JsonKeyOrdering.default(topKeys = List("@context", "@id", "@type", "reason", "details"))
 
-  val user        = User("alice", Label.unsafe("wonderland"))
-  val userCaller  = Caller(user, Set(user))
-  val user2       = User("bob", Label.unsafe("wonderland"))
-  val user2Caller = Caller(user2, Set(user2))
+  val user: Subject = User("alice", Label.unsafe("wonderland"))
+  val userCaller    = Caller(user, Set(user))
+  val user2         = User("bob", Label.unsafe("wonderland"))
+  val user2Caller   = Caller(user2, Set(user2))
+
+  val permission = Permission.unsafe("test/read")
 
   val identities = new Identities {
 
@@ -54,10 +56,11 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
   }
 
-  val acls = mock[Acls]
+  val aclCheck = AclSimpleCheck(
+    (user, AclAddress.Root, Set(permission))
+  ).accepted
 
-  val directives = new AuthDirectives(identities, acls) {}
-  val permission = Permission.unsafe("test/read")
+  val directives = new AuthDirectives(identities, aclCheck) {}
 
   private val callerRoute: Route =
     handleExceptions(RdfExceptionHandler.apply) {
@@ -127,7 +130,6 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
 
     "correctly authorize user" in {
-      acls.authorizeFor(AclAddress.Root, permission)(userCaller) shouldReturn UIO.pure(true)
       Get("/user") ~> addCredentials(OAuth2BearerToken("alice")) ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.OK
         response.asString shouldEqual "alice"
@@ -135,14 +137,12 @@ class AuthDirectivesSpec extends RouteHelpers with TestHelpers with Matchers wit
     }
 
     "correctly reject Anonymous " in {
-      acls.authorizeFor(AclAddress.Root, permission)(Caller.Anonymous) shouldReturn UIO.pure(false)
       Get("/user") ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.Forbidden
       }
     }
 
     "correctly reject user without permission " in {
-      acls.authorizeFor(AclAddress.Root, permission)(user2Caller) shouldReturn UIO.pure(false)
       Get("/user") ~> addCredentials(OAuth2BearerToken("bob")) ~> authorizationRoute ~> check {
         response.status shouldEqual StatusCodes.Forbidden
       }

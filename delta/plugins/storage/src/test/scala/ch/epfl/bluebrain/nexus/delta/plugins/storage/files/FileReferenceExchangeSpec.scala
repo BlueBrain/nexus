@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors, TryValues}
 
@@ -39,7 +39,7 @@ class FileReferenceExchangeSpec
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
 
-  private val aclSetup = AclSetup.init(
+  private val aclChek = AclSimpleCheck(
     (
       subject,
       AclAddress.Root,
@@ -47,7 +47,7 @@ class FileReferenceExchangeSpec
     )
   )
 
-  private val (files, storages) = FilesSetup.init(org, project, aclSetup.accepted, cfg)
+  private val (files, storages) = FilesSetup.init(org, project, aclChek.accepted, cfg)
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted
 

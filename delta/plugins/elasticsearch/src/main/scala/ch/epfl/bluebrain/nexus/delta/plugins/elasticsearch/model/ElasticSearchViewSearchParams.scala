@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import monix.bio.UIO
 
 /**
   * Search parameters for ElasticSearch views.
@@ -32,12 +33,12 @@ final case class ElasticSearchViewSearchParams(
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set.empty,
-    filter: ElasticSearchView => Boolean
+    filter: ElasticSearchView => UIO[Boolean]
 ) extends SearchParams[ElasticSearchView] {
 
   override val schema: Option[ResourceRef] = Some(model.schema)
 
-  override def matches(resource: ViewResource): Boolean =
-    super.matches(resource) &&
-      project.forall(_ == resource.value.project)
+  override def matches(resource: ViewResource): UIO[Boolean] =
+    super.matches(resource).map(_ && project.forall(_ == resource.value.project))
+
 }
