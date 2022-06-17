@@ -64,6 +64,21 @@ trait AclCheck {
     authorizeForOr(path, permission, identities, f)(false).redeem(identity, _ => true)
 
   /**
+    * Checkswhether a given [[Caller]] has the passed ''permission'' on the passed ''path''.
+    */
+  def authorizeFor(
+      path: AclAddress,
+      permission: Permission,
+      fAll: UIO[Map[AclAddress, Acl]]
+  )(implicit caller: Caller): UIO[Boolean] = {
+    def fetch = (address: AclAddress) =>
+      fAll.flatMap { m =>
+        IO.fromOption(m.get(address), AclNotFound(address))
+      }
+    authorizeFor(path, permission, caller.identities, fetch)
+  }
+
+  /**
     * Checks whether the provided entities have the passed ''permission'' on the passed ''path''.
     */
   def authorizeFor(path: AclAddress, permission: Permission, identities: Set[Identity]): UIO[Boolean] =
@@ -122,13 +137,10 @@ trait AclCheck {
       onAuthorized: A => B,
       onFailure: AclAddress => IO[E, Unit]
   )(implicit caller: Caller): IO[E, Set[B]] = {
-    def fetch = (address: AclAddress) =>
-      fetchAll.memoize.flatMap { m =>
-        IO.fromOption(m.get(address), AclNotFound(address))
-      }
+    val fetchAllCached = fetchAll.memoizeOnSuccess
     values.toList.foldLeftM(Set.empty[B]) { case (acc, value) =>
       val (address, permission) = extractAddressPermission(value)
-      authorizeFor(address, permission, caller.identities, fetch).flatMap { success =>
+      authorizeFor(address, permission, fetchAllCached).flatMap { success =>
         if (success)
           IO.pure(acc + onAuthorized(value))
         else

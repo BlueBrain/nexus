@@ -71,6 +71,7 @@ final class ProjectsRoutes(
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
       ProjectSearchParams(
         None,
         deprecated,
@@ -78,7 +79,7 @@ final class ProjectsRoutes(
         createdBy,
         updatedBy,
         label,
-        proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read)
+        proj => aclCheck.authorizeFor(proj.ref, projectsPermissions.read, fetchAllCached)
       )
     }
 

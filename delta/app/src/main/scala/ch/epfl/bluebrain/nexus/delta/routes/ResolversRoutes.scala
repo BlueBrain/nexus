@@ -84,6 +84,7 @@ final class ResolversRoutes(
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
     (searchParams & types(projects)).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
+      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
       ResolverSearchParams(
         Some(projectRef),
         deprecated,
@@ -91,7 +92,7 @@ final class ResolversRoutes(
         createdBy,
         updatedBy,
         types,
-        resolver => aclCheck.authorizeFor(resolver.project, Read)
+        resolver => aclCheck.authorizeFor(resolver.project, Read, fetchAllCached)
       )
     }
 

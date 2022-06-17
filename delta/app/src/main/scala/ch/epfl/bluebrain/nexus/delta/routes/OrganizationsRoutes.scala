@@ -58,13 +58,14 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
       OrganizationSearchParams(
         deprecated,
         rev,
         createdBy,
         updatedBy,
         label,
-        org => aclCheck.authorizeFor(org.label, orgs.read)
+        org => aclCheck.authorizeFor(org.label, orgs.read, fetchAllCached)
       )
     }
 

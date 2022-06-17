@@ -18,14 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfi
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.DoobieFixture
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
 
 import scala.concurrent.duration._
 
-class AclsRoutesSpec extends BaseRouteSpec with DoobieFixture {
+class AclsRoutesSpec extends BaseRouteSpec {
 
   val realm1 = Label.unsafe("realm")
   val realm2 = Label.unsafe("myrealm")
