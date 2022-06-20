@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.{CancelAfterFailure, Inspectors}
@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import java.time.Instant
 
 class AclsImplSpec
-    extends DoobieFixture
+    extends DoobieScalaTestFixture
     with IOValues
     with IOFixedClock
     with Inspectors

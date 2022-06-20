@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.testkit.IORef
 import monix.bio.{IO, UIO}
 
@@ -49,7 +48,7 @@ object AclSimpleCheck {
     * @param input
     * @return
     */
-  def apply(input: (Subject, AclAddress, Set[Permission])*): UIO[AclSimpleCheck] =
+  def apply(input: (Identity, AclAddress, Set[Permission])*): UIO[AclSimpleCheck] =
     IORef.of[Map[AclAddress, Acl]](Map.empty).map(new AclSimpleCheck(_)).tapEval { checker =>
       input.toList
         .traverse { case (subject, address, permissions) =>

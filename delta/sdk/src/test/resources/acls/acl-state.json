@@ -1,0 +1,55 @@
+{
+  "acl": [
+    {
+      "identity": {
+        "subject": "username",
+        "realm": "myrealm",
+        "@type": "User"
+      },
+      "permissions": [
+        "my/perm"
+      ]
+    },
+    {
+      "identity": {
+        "@type": "Anonymous"
+      },
+      "permissions": [
+        "my/perm"
+      ]
+    },
+    {
+      "identity": {
+        "group": "group",
+        "realm": "myrealm",
+        "@type": "Group"
+      },
+      "permissions": [
+        "my/perm"
+      ]
+    },
+    {
+      "identity": {
+        "realm": "myrealm",
+        "@type": "Authenticated"
+      },
+      "permissions": [
+        "my/perm"
+      ]
+    }
+  ],
+  "rev": 1,
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "address": "/myorg/myproj"
+}

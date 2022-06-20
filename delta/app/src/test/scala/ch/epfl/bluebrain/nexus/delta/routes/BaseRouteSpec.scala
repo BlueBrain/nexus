@@ -9,7 +9,7 @@ import org.scalatest.{Inspectors, OptionValues}
 
 trait BaseRouteSpec
     extends RouteHelpers
-    with DoobieFixture
+    with DoobieScalaTestFixture
     with Matchers
     with CirceLiteral
     with CirceEq

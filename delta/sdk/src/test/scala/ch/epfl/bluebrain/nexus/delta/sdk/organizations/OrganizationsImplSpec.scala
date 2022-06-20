@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils, ScopeInitial
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, IOFixedClock, IORef, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IORef, IOValues}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -26,7 +26,7 @@ import java.time.Instant
 import java.util.UUID
 
 class OrganizationsImplSpec
-    extends DoobieFixture
+    extends DoobieScalaTestFixture
     with Matchers
     with IOValues
     with IOFixedClock

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing
+package ch.epfl.bluebrain.nexus.testkit
 
 import fs2.Stream
 import monix.bio.Task

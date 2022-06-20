@@ -10,7 +10,7 @@ import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class AclEventSuite extends FunSuite with Assertions with TestHelpers {
+class AclSerializationSuite extends FunSuite with Assertions with TestHelpers {
 
   val instant: Instant = Instant.EPOCH
   val rev: Int         = 1
@@ -46,6 +46,25 @@ class AclEventSuite extends FunSuite with Assertions with TestHelpers {
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(AclEvent.serializer.codec.decodeJson(json), Right(event))
     }
+  }
+
+  private val state = AclState(
+    Acl(projAddress, subject -> permSet, anonymous -> permSet, group -> permSet, authenticated -> permSet),
+    rev = rev,
+    createdAt = instant,
+    createdBy = subject,
+    updatedAt = instant,
+    updatedBy = subject
+  )
+
+  private val jsonState = jsonContentOf("/acls/acl-state.json")
+
+  test(s"Correctly serialize an AclState") {
+    assertEquals(AclState.serializer.codec(state), jsonState)
+  }
+
+  test(s"Correctly deserialize an AclState") {
+    assertEquals(AclState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
 }

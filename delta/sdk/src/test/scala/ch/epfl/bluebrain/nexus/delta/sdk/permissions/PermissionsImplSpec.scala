@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
@@ -20,7 +20,12 @@ import org.scalatest.matchers.should.Matchers
 import java.time.Instant
 import scala.concurrent.duration._
 
-class PermissionsImplSpec extends DoobieFixture with Matchers with IOValues with CancelAfterFailure with IOFixedClock {
+class PermissionsImplSpec
+    extends DoobieScalaTestFixture
+    with Matchers
+    with IOValues
+    with CancelAfterFailure
+    with IOFixedClock {
 
   implicit def subject: Subject = Identity.User("user", Label.unsafe("realm"))
 

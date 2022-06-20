@@ -12,7 +12,7 @@ import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class RealmEventSuite extends FunSuite with Assertions with TestHelpers {
+class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers {
 
   val rev              = 1
   val instant: Instant = Instant.EPOCH
@@ -88,6 +88,38 @@ class RealmEventSuite extends FunSuite with Assertions with TestHelpers {
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(RealmEvent.serializer.codec.decodeJson(json), Right(event))
     }
+  }
+
+  private val state = RealmState(
+    label = realm,
+    rev = rev,
+    name = name,
+    deprecated = false,
+    openIdConfig = openIdConfig,
+    issuer = issuer,
+    keys = keys,
+    grantTypes = grantTypes,
+    logo = Some(logo),
+    acceptedAudiences = Some(acceptedAudiences),
+    authorizationEndpoint = authorizationEndpoint,
+    tokenEndpoint = tokenEndpoint,
+    userInfoEndpoint = userInfoEndpoint,
+    revocationEndpoint = Some(revocationEndpoint),
+    endSessionEndpoint = Some(endSessionEndpoint),
+    createdAt = instant,
+    createdBy = subject,
+    updatedAt = instant,
+    updatedBy = subject
+  )
+
+  private val jsonState = jsonContentOf("/realms/realm-state.json")
+
+  test(s"Correctly serialize an OrganizationState") {
+    assertEquals(RealmState.serializer.codec(state), jsonState)
+  }
+
+  test(s"Correctly deserialize an OrganizationState") {
+    assertEquals(RealmState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
 }

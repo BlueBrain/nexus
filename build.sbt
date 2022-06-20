@@ -250,6 +250,7 @@ lazy val testkit = project
       catsRetry,
       doobiePostgres,
       monixBio,
+      munit,
       scalaTest,
       testContainers
     ),

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailEveryN.FailEveryNConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.TimesN.TimesNConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.{CollectionAssertions, EitherAssertions, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.{CollectionAssertions, EitherAssertions, MonixBioSuite}
 import fs2.concurrent.Queue
 import io.circe.JsonObject
 import monix.bio.Task
