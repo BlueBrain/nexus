@@ -34,6 +34,16 @@ final case class ProjectionOffset(toMap: Map[ElemCtx, Offset]) {
       }
       .minOption
       .getOrElse(Offset.Start)
+
+  /**
+    * Adds the ElemCtx->Offset to the ProjectionOffset.
+    * @param ctx
+    *   the ctx key
+    * @param offset
+    *   the offset value
+    */
+  def add(ctx: ElemCtx, offset: Offset): ProjectionOffset =
+    this |+| ProjectionOffset(ctx, offset)
 }
 
 object ProjectionOffset {

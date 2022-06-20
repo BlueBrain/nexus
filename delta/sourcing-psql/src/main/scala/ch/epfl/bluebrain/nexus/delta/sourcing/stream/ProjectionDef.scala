@@ -38,22 +38,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
   *   the collection of source chains
   * @param pipes
   *   the collection of pipe chains
-  * @param passivationStrategy
-  *   a strategy for passivation
-  * @param rebuildStrategy
-  *   a strategy for rebuild
-  * @param persistOffset
-  *   whether to persist the offset such that a restart/crash would not cause starting from the beginning
   */
 final case class ProjectionDef(
     name: String,
     project: Option[ProjectRef],
     resourceId: Option[Iri],
     sources: NonEmptyChain[SourceChain],
-    pipes: NonEmptyChain[PipeChain],
-    passivationStrategy: PassivationStrategy,
-    rebuildStrategy: RebuildStrategy,
-    persistOffset: Boolean
+    pipes: NonEmptyChain[PipeChain]
 ) {
 
   /**
@@ -67,14 +58,5 @@ final case class ProjectionDef(
       mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
       compiledPipes   <- pipes.traverse(pc => pc.compile(registry).map(pipe => (pc.id, pipe)))
       source          <- mergedSources.broadcastThrough(compiledPipes)
-    } yield new CompiledProjection(
-      name,
-      project,
-      resourceId,
-      source,
-      passivationStrategy,
-      rebuildStrategy,
-      persistOffset
-    )
-
+    } yield CompiledProjection(name, project, resourceId, source.apply)
 }

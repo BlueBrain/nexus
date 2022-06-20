@@ -83,6 +83,14 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def dropped: DroppedElem =
     DroppedElem(ctx, tpe, id, rev, instant, offset)
+
+  /**
+    * Produces a ProjectionOffset given the current value and this elem ctx and offset.
+    * @param current
+    *   the current projection offset
+    */
+  def projectionOffset(current: ProjectionOffset): ProjectionOffset =
+    current.add(ctx, offset)
 }
 
 object Elem {

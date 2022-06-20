@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.{Chain, NonEmptyChain}
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -140,16 +141,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
         NonEmptyChain(intToStringPipe, failNPipe(2), logPipe)
       )
     )
-    val defined  = ProjectionDef(
-      "naturals",
-      None,
-      None,
-      sources,
-      pipes,
-      PassivationStrategy.Never,
-      RebuildStrategy.Never,
-      persistOffset = false
-    )
+    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
     val compiled = defined.compile(registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://evens", iri"https://log"), Offset.at(1L))
 
@@ -172,7 +164,9 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       elements   <- waitForNElements(11, 500.millis)
       empty      <- waitForNElements(1, 50.millis)
       _           = assertEquals(empty.size, 0, "No other elements should be found after the first 11")
+      _          <- projection.isRunning.assert(true)
       _          <- projection.stop()
+      _          <- projection.isRunning.assert(false)
       values      = elements.map(_.value)
       _           = assertEquals(values.size, 11, "Exactly 11 elements should be observed on the queue")
       _           = values.assertContainsAllOf(Set(8, 16, 24, 32, 2, 6, 10).map(_.toString))
@@ -183,6 +177,42 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
                     }
       _           = assertEquals(elemsOfLog2.size, 4, "Exactly 4 elements should pass through log2")
       _          <- projection.offset().assert(expectedOffset)
+    } yield ()
+  }
+
+  test("Persist the current offset at regular intervals") {
+    val sources  = NonEmptyChain(
+      SourceChain(
+        Naturals.reference,
+        iri"https://naturals",
+        NaturalsConfig(10, 50.millis).toJsonLd,
+        Chain()
+      )
+    )
+    val pipes    = NonEmptyChain(
+      PipeChain(
+        iri"https://log",
+        NonEmptyChain(intToStringPipe, logPipe)
+      )
+    )
+    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
+    val compiled = defined.compile(registry).rightValue
+    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(2L))
+
+    for {
+      persistCallCountRef <- Ref.of[Task, (Int, ProjectionOffset)]((0, ProjectionOffset.empty))
+      persistFn            = (po: ProjectionOffset) => persistCallCountRef.update { case (i, _) => (i + 1, po) }
+      projection          <- compiled.persistOffset(persistFn, 5.millis).start(offset)
+      _                   <- waitForNElements(10, 50.millis)
+      _                   <- projection.stop()
+      value               <- persistCallCountRef.get
+      (count, observed)    = value
+      _                    = assert(count > 1, "The persist fn should have been called at least twice.")
+      _                    = assertNotEquals(
+                               observed,
+                               offset,
+                               "The offsets observed by the persist fn should be different than the initial."
+                             )
     } yield ()
   }
 }
