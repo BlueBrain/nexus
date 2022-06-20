@@ -8,10 +8,9 @@ import akka.http.scaladsl.server.Route
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 
@@ -19,7 +18,7 @@ class PermissionsEventsRoutesSpec extends BaseRouteSpec {
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val identities = IdentitiesDummy(Map.empty[AuthToken, Caller])
+  private val identities = IdentitiesDummy()
 
   private val config = PermissionsConfig(
     eventLogConfig,

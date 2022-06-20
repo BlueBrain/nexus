@@ -9,11 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsConfig, AclsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
@@ -42,10 +42,10 @@ class AclsRoutesSpec extends BaseRouteSpec {
   def userAclRead(address: AclAddress) = Acl(address, user -> Set(aclsPermissions.read))
   def groupAcl(address: AclAddress)    = Acl(address, group -> manage)
   def group2Acl(address: AclAddress)   = Acl(address, group2 -> manage)
-  val token                            = OAuth2BearerToken("valid")
   def selfAcls(address: AclAddress)    = userAcl(address) ++ groupAcl(address)
   def allAcls(address: AclAddress)     = userAcl(address) ++ groupAcl(address) ++ group2Acl(address)
 
+  private val asUser          = addCredentials(OAuth2BearerToken("uuid"))
   implicit val caller: Caller = Caller(user, Set(user, group))
   val subject: Subject        = caller.subject
 
@@ -84,7 +84,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       Json.obj("_results"                                   -> Json.fromValues(results))
   }
 
-  private val identities = IdentitiesDummy(Map(AuthToken(token.token) -> caller))
+  private val identities = IdentitiesDummy(caller)
 
   private lazy val acls =
     AclsImpl(
@@ -107,7 +107,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "fail to create acls without permissions" in {
       forAll(paths) { case (path, address) =>
         val json = aclJson(userAcl(address)).removeKeys("_path")
-        Put(s"/v1/acls$path", json.toEntity) ~> addCredentials(token) ~> routes ~> check {
+        Put(s"/v1/acls$path", json.toEntity) ~> asUser ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         }
@@ -119,7 +119,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.replace(userAcl(AclAddress.Root), 0).accepted
       val replace = aclJson(userAcl(AclAddress.Root)).removeKeys("_path")
       forAll(paths.drop(1)) { case (path, address) =>
-        Put(s"/v1/acls$path", replace.toEntity) ~> addCredentials(token) ~> routes ~> check {
+        Put(s"/v1/acls$path", replace.toEntity) ~> asUser ~> routes ~> check {
           response.asJson shouldEqual aclMetadata(address, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.Created
         }
@@ -130,7 +130,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "append ACL" in {
       val patch = aclJson(groupAcl(Root)).removeKeys("_path") deepMerge Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
-        Patch(s"/v1/acls$path?rev=1", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
+        Patch(s"/v1/acls$path?rev=1", patch.toEntity) ~> asUser ~> routes ~> check {
           response.asJson shouldEqual aclMetadata(address, rev = 2L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
@@ -138,7 +138,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get the events stream" in {
-      Get("/v1/acls/events") ~> addCredentials(token) ~> Accept(`*/*`) ~> routes ~> check {
+      Get("/v1/acls/events") ~> asUser ~> Accept(`*/*`) ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual contentOf("/acls/eventstream.txt").strip
       }
@@ -148,7 +148,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       val patch = aclJson(group2Acl(Root)).removeKeys("_path") deepMerge
         Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
-        Patch(s"/v1/acls$path?rev=2", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
+        Patch(s"/v1/acls$path?rev=2", patch.toEntity) ~> asUser ~> routes ~> check {
           response.asJson shouldEqual aclMetadata(address, rev = 3L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
@@ -157,7 +157,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
     "get ACL self = true" in {
       forAll(paths) { case (path, address) =>
-        Get(s"/v1/acls$path") ~> addCredentials(token) ~> routes ~> check {
+        Get(s"/v1/acls$path") ~> asUser ~> routes ~> check {
           response.asJson shouldEqual expectedResponse(1L, Seq((selfAcls(address), 3L)))
           status shouldEqual StatusCodes.OK
         }
@@ -166,7 +166,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
     "get ACL self = false" in {
       forAll(paths) { case (path, address) =>
-        Get(s"/v1/acls$path?self=false") ~> addCredentials(token) ~> routes ~> check {
+        Get(s"/v1/acls$path?self=false") ~> asUser ~> routes ~> check {
           response.asJson shouldEqual expectedResponse(1L, Seq((allAcls(address), 3L)))
           status shouldEqual StatusCodes.OK
         }
@@ -175,7 +175,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
     "get ACL self = true and rev = 1" in {
       forAll(paths) { case (path, address) =>
-        Get(s"/v1/acls$path?rev=1") ~> addCredentials(token) ~> routes ~> check {
+        Get(s"/v1/acls$path?rev=1") ~> asUser ~> routes ~> check {
           response.asJson shouldEqual expectedResponse(1L, Seq((userAcl(address), 1L)))
           status shouldEqual StatusCodes.OK
         }
@@ -186,14 +186,14 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.append(userAcl(myOrg2), 0).accepted
       acls.append(groupAcl(myOrg2), 1).accepted
       acls.append(group2Acl(myOrg2), 2).accepted
-      Get(s"/v1/acls/*") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(2L, Seq((selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L)))
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = false with org path containing *" in {
-      Get(s"/v1/acls/*?self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*?self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(2L, Seq((allAcls(myOrg), 3L), (allAcls(myOrg2), 3L)))
         status shouldEqual StatusCodes.OK
       }
@@ -204,7 +204,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.append(groupAcl(myOrgMyProj2), 1).accepted
       acls.append(group2Acl(myOrgMyProj2), 2).accepted
       acls.append(group2Acl(myOrg3), 0).accepted
-      Get(s"/v1/acls/myorg/*") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/*") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(2L, Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L)))
         status shouldEqual StatusCodes.OK
@@ -212,7 +212,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false with project path containing *" in {
-      Get(s"/v1/acls/myorg/*?self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/*?self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(2L, Seq((allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L)))
         status shouldEqual StatusCodes.OK
@@ -223,7 +223,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.append(userAcl(myOrg2MyProj2), 0).accepted
       acls.append(groupAcl(myOrg2MyProj2), 1).accepted
       acls.append(group2Acl(myOrg2MyProj2), 2).accepted
-      Get(s"/v1/acls/*/*") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*/*") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(
             3L,
@@ -234,7 +234,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false with org and project path containing *" in {
-      Get(s"/v1/acls/*/*?self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*/*?self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(
             3L,
@@ -245,7 +245,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = true with project path containing * with ancestors" in {
-      Get(s"/v1/acls/myorg/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/*?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(
             4L,
@@ -256,7 +256,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false with project path containing * with ancestors" in {
-      Get(s"/v1/acls/myorg/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/*?ancestors=true&self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(
             4L,
@@ -267,7 +267,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = true with org path containing * with ancestors" in {
-      Get(s"/v1/acls/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           3L,
           Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L))
@@ -277,7 +277,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false with org path containing * with ancestors" in {
-      Get(s"/v1/acls/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*?ancestors=true&self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           4L,
           Seq((allAcls(Root), 3L), (allAcls(myOrg), 3L), (allAcls(myOrg2), 3L), (group2Acl(myOrg3), 1L))
@@ -287,7 +287,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = true with org  and project path containing * with ancestors" in {
-      Get(s"/v1/acls/*/*?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*/*?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           6L,
           Seq(
@@ -304,7 +304,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false with org  and project path containing * with ancestors" in {
-      Get(s"/v1/acls/*/*?ancestors=true&self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/*/*?ancestors=true&self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           7L,
           Seq(
@@ -322,14 +322,14 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "get ACL self = false and rev = 2 when response is an empty ACL" in {
-      Get(s"/v1/acls/myorg/myproj1?rev=2&self=false") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/myproj1?rev=2&self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(0L, Seq.empty)
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = true and ancestors = true" in {
-      Get(s"/v1/acls/myorg/myproj?ancestors=true") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/myproj?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(3L, Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrgMyProj), 3L)))
         status shouldEqual StatusCodes.OK
@@ -340,7 +340,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       val patch = aclJson(userAclRead(Root)).removeKeys("_path") deepMerge
         Json.obj("@type" -> Json.fromString("Subtract"))
       forAll(paths) { case (path, address) =>
-        Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> addCredentials(token) ~> routes ~> check {
+        Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> asUser ~> routes ~> check {
           response.asJson shouldEqual aclMetadata(address, rev = 4L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
@@ -349,7 +349,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
     "delete ACL" in {
       forAll(paths) { case (path, address) =>
-        Delete(s"/v1/acls$path?rev=4") ~> addCredentials(token) ~> routes ~> check {
+        Delete(s"/v1/acls$path?rev=4") ~> asUser ~> routes ~> check {
           response.asJson shouldEqual aclMetadata(address, rev = 5L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
@@ -357,7 +357,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
     "return error when getting ACL with rev and ancestors = true" in {
-      Get(s"/v1/acls/myorg/myproj?rev=2&ancestors=true") ~> addCredentials(token) ~> routes ~> check {
+      Get(s"/v1/acls/myorg/myproj?rev=2&ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/acls-malformed-query-params.json")
         status shouldEqual StatusCodes.BadRequest
       }

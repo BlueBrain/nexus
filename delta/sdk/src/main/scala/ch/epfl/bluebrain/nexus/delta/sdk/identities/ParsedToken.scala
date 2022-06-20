@@ -1,12 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.service.identity
-
-import java.time.Instant
+package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, TokenRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection._
 import com.nimbusds.jwt.{JWTClaimsSet, SignedJWT}
 
+import java.time.Instant
 import scala.util.Try
 
 /**
@@ -29,7 +28,7 @@ object ParsedToken {
     * @param token
     *   the raw token
     */
-  private[identity] def fromToken(token: AuthToken): Either[TokenRejection, ParsedToken] = {
+  private[identities] def fromToken(token: AuthToken): Either[TokenRejection, ParsedToken] = {
 
     def parseJwt: Either[TokenRejection, SignedJWT] =
       Either

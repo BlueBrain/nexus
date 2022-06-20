@@ -8,10 +8,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs, permissions => permissionsPerms, realms}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 
@@ -21,7 +20,7 @@ class PermissionsRoutesSpec extends BaseRouteSpec {
 
   private val minimum    =
     Set(Permissions.acls.read, Permissions.acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
-  private val identities = IdentitiesDummy(Map.empty[AuthToken, Caller])
+  private val identities = IdentitiesDummy()
 
   private val config = PermissionsConfig(
     eventLogConfig,

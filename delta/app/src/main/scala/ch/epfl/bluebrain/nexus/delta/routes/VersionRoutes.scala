@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.{PluginDescription, ServiceDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ComponentDescription}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.version
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, ServiceDependency}
+import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
+package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.{Decoder, Encoder}

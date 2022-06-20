@@ -1,40 +1,84 @@
-package ch.epfl.bluebrain.nexus.delta.service.identity
+package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.service.TokenGenerator
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import com.nimbusds.jose.crypto.RSASSASigner
+import com.nimbusds.jose.jwk.RSAKey
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
 import com.nimbusds.jose.{JWSAlgorithm, JWSHeader}
 import com.nimbusds.jwt.{JWTClaimsSet, PlainJWT, SignedJWT}
 import io.circe.{parser, Json}
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.time.Instant
 import java.util.Date
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 class IdentitiesImplSpec
-    extends AbstractDBSpec
+    extends AnyWordSpecLike
     with Matchers
     with CirceLiteral
     with TestHelpers
     with IOValues
-    with EitherValuable
-    with ConfigFixtures {
+    with EitherValuable {
 
-  private val rsaKey = TokenGenerator.generateKeys
+  /**
+    * Generate RSA key
+    */
+  def generateKeys: RSAKey =
+    new RSAKeyGenerator(2048)
+      .keyID(genString())
+      .generate()
+
+  /**
+    * Generate token
+    */
+  def generateToken(
+      subject: String,
+      issuer: String,
+      rsaKey: RSAKey,
+      expires: Instant = Instant.now().plusSeconds(3600),
+      notBefore: Instant = Instant.now().minusSeconds(3600),
+      aud: Option[NonEmptySet[String]] = None,
+      groups: Option[Set[String]] = None,
+      useCommas: Boolean = false,
+      preferredUsername: Option[String] = None
+  ): AuthToken = {
+    val signer = new RSASSASigner(rsaKey.toPrivateKey)
+    val csb    = new JWTClaimsSet.Builder()
+      .issuer(issuer)
+      .subject(subject)
+      .expirationTime(Date.from(expires))
+      .notBeforeTime(Date.from(notBefore))
+
+    groups.foreach { set =>
+      if (useCommas) csb.claim("groups", set.mkString(","))
+      else csb.claim("groups", set.toArray)
+    }
+
+    aud.foreach(audiences => csb.audience(audiences.value.toList.asJava))
+
+    preferredUsername.foreach(pu => csb.claim("preferred_username", pu))
+
+    val jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID).build(), csb.build())
+    jwt.sign(signer)
+    AuthToken(jwt.serialize())
+  }
+
+  private val rsaKey = generateKeys
 
   private val signer = new RSASSASigner(rsaKey.toPrivateKey)
 
@@ -89,16 +133,11 @@ class IdentitiesImplSpec
       (_: Uri) => HttpUnexpectedError(HttpRequest(), "Error while getting response")
     )(uri)
 
-  private val groupsConfig = GroupsConfig(
-    aggregate,
-    2.minutes
-  )
-
-  private val identities: IdentitiesImpl = IdentitiesImpl(
+  private val identities: Identities = IdentitiesImpl(
     findActiveRealm,
     (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
-    groupsConfig
-  ).runSyncUnsafe()
+    IdentitiesConfig(10, 2.minutes)
+  ).accepted
 
   "Identities" should {
 
@@ -110,7 +149,7 @@ class IdentitiesImplSpec
 
     "correctly extract the caller" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -125,7 +164,7 @@ class IdentitiesImplSpec
 
     "succeed when the token is valid and preferred user name is not set" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -140,7 +179,7 @@ class IdentitiesImplSpec
 
     "succeed when the token is valid and groups are comma delimited" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -156,7 +195,7 @@ class IdentitiesImplSpec
 
     "succeed when the token is valid and groups are defined" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -172,7 +211,7 @@ class IdentitiesImplSpec
 
     "succeed when the token is valid and aud matches the available audiences" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel2.value,
         rsaKey = rsaKey,
@@ -190,7 +229,7 @@ class IdentitiesImplSpec
 
     "fail when the token is valid but aud does not match the available audiences" in {
       val expires = Instant.now().plusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel2.value,
         rsaKey = rsaKey,
@@ -233,7 +272,7 @@ class IdentitiesImplSpec
     }
 
     "fail when the token doesn't contain a known issuer" in {
-      val token = TokenGenerator.token(
+      val token = generateToken(
         subject = "Robert",
         issuer = "unoknown",
         rsaKey = rsaKey,
@@ -246,7 +285,7 @@ class IdentitiesImplSpec
 
     "fail when the token is expired" in {
       val expires = Instant.now().minusSeconds(3600)
-      val token   = TokenGenerator.token(
+      val token   = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -260,7 +299,7 @@ class IdentitiesImplSpec
 
     "fail when the token is not yet valid" in {
       val notBefore = Instant.now().plusSeconds(3600)
-      val token     = TokenGenerator.token(
+      val token     = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
         rsaKey = rsaKey,
@@ -273,10 +312,10 @@ class IdentitiesImplSpec
     }
 
     "fail when the signature is invalid" in {
-      val token = TokenGenerator.token(
+      val token = generateToken(
         subject = "Robert",
         issuer = githubLabel.value,
-        rsaKey = TokenGenerator.generateKeys,
+        rsaKey = generateKeys,
         groups = None,
         useCommas = true
       )
@@ -287,7 +326,7 @@ class IdentitiesImplSpec
     }
 
     "fail when getting groups from the oidc provider can't be complete" in {
-      val token = TokenGenerator.token(
+      val token = generateToken(
         subject = "Robert",
         issuer = gitlabLabel.value,
         rsaKey = rsaKey,

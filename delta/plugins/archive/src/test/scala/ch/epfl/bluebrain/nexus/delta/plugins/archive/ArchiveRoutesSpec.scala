@@ -22,10 +22,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -135,7 +136,7 @@ class ArchiveRoutesSpec
       _                 <- storages.create(diskId, projectRef, storageJson)
       archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
       archives          <- Archives(projs, archiveDownload, archivesConfig, (_, _) => IO.unit)
-      identities         = IdentitiesDummy(Map(AuthToken("subject") -> caller, AuthToken("nofileperms") -> callerNoFilePerms))
+      identities         = IdentitiesDummy(caller, callerNoFilePerms)
       r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, projs).routes)
     } yield (r, files)
   }.accepted

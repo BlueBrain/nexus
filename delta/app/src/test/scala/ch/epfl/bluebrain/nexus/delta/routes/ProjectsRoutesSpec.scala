@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReference
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
@@ -70,13 +71,7 @@ class ProjectsRoutesSpec
   private val invalidCaller     =
     Caller(invalidUser, Set(invalidUser, Anonymous, Authenticated(provisionedRealm), Group("group", provisionedRealm)))
 
-  private val identities = IdentitiesDummy(
-    Map(
-      AuthToken("alice")   -> caller,
-      AuthToken("user1")   -> provisionedCaller,
-      AuthToken("invalid") -> invalidCaller
-    )
-  )
+  private val identities = IdentitiesDummy(caller, provisionedCaller, invalidCaller)
 
   private val asAlice       = addCredentials(OAuth2BearerToken("alice"))
   private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))

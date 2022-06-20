@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls
 
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheckSuite.{ProjectValue, Value}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}

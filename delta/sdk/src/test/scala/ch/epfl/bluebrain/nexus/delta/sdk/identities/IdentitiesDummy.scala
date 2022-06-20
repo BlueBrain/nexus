@@ -1,9 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.testkit
+package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
-import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.InvalidAccessToken
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection.InvalidAccessToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, TokenRejection}
 import monix.bio.IO
 
 /**
@@ -18,12 +17,6 @@ class IdentitiesDummy private (expected: Map[AuthToken, Caller]) extends Identit
 object IdentitiesDummy {
 
   /**
-    * Create a new dummy Identities implementation
-    */
-  def apply(expected: Map[AuthToken, Caller]): Identities =
-    new IdentitiesDummy(expected)
-
-  /**
     * Create a new dummy Identities implementation from a list of callers
     */
   def apply(expected: Caller*): Identities =
@@ -33,5 +26,4 @@ object IdentitiesDummy {
         case _                => None
       }
     }.toMap)
-
 }

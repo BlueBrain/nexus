@@ -23,7 +23,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmEvent, RealmRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, RealmResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder

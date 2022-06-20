@@ -15,8 +15,9 @@ import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 import retry.syntax.all._
 
-import java.time.Duration
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
+import scala.jdk.DurationConverters._
 
 /**
   * An arbitrary key value store.
@@ -342,12 +343,12 @@ object KeyValueStore {
     * @param maxSize
     *   the max number of entries in the Map
     */
-  final def localLRU[K, V](maxSize: Long): UIO[KeyValueStore[K, V]] =
+  final def localLRU[K, V](maxSize: Long, expireAfter: FiniteDuration = 1.hour): UIO[KeyValueStore[K, V]] =
     UIO.delay {
       val cache: Cache[K, V] =
         Caffeine
           .newBuilder()
-          .expireAfterAccess(Duration.ofHours(1L)) //TODO make this configurable
+          .expireAfterAccess(expireAfter.toJava)
           .maximumSize(maxSize)
           .build[K, V]()
       new LocalLruCache(cache)
