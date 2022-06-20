@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
@@ -38,7 +37,7 @@ class ProjectProvisioningSpec
 
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
-  val serviceAccount: ServiceAccount = model.ServiceAccount(Identity.User("serviceAccount", Label.unsafe("realm")))
+  val serviceAccount: ServiceAccount = ServiceAccount(Identity.User("serviceAccount", Label.unsafe("realm")))
 
   implicit val scheduler: Scheduler = Scheduler.global
   implicit val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))

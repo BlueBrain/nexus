@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -34,7 +33,7 @@ object ServiceAccountConfig {
                   obj
                 )
               ),
-            l => ServiceAccountConfig(model.ServiceAccount(User(subject, l)))
+            l => ServiceAccountConfig(ServiceAccount(User(subject, l)))
           )
       } yield serviceAccountConfig
     }

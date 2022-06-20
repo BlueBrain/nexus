@@ -4,7 +4,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{Acls, AclsConfig, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{OrganizationGen, PermissionsGen, ProjectGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
@@ -33,7 +32,7 @@ class OwnerPermissionsScopeInitializationSpec
       xas
     )
 
-  private val sa: ServiceAccount = model.ServiceAccount(User("nexus-sa", saRealm))
+  private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   private val bob: Caller        = Caller.unsafe(User("bob", usersRealm))
 
   "An OwnerPermissionsScopeInitialization" should {

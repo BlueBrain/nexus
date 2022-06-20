@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -37,7 +36,7 @@ class ProjectDeletionSpec extends AnyWordSpecLike with Matchers with IOValues {
 
   implicit private val uuidF: UUIDF                = UUIDF.random
   implicit private val baseUri: BaseUri            = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val sa: ServiceAccount          = model.ServiceAccount(User("nexus-sa", Label.unsafe("realm")))
+  implicit private val sa: ServiceAccount          = ServiceAccount(User("nexus-sa", Label.unsafe("realm")))
   implicit private val subject: Subject            = sa.subject
   implicit private val caller: Caller              = Caller.unsafe(subject)
   implicit private val jsonLdApi: JsonLdApi        = JsonLdJavaApi.strict
