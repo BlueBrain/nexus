@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.delta
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.Acl
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Resolver, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource

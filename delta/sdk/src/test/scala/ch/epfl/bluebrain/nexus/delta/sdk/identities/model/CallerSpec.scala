@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
+package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import org.scalatest.matchers.should.Matchers

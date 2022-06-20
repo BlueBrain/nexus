@@ -5,8 +5,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -28,7 +29,7 @@ class DeleteProjectSpec extends AnyWordSpecLike with Matchers with IOValues {
   implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
   private val saRealm: Label              = Label.unsafe("service-accounts")
-  implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
+  implicit private val sa: ServiceAccount = model.ServiceAccount(User("nexus-sa", saRealm))
   implicit private val subject: Subject   = sa.subject
 
   implicit private val prf: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)

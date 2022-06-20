@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.quotas
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectsCountsDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.QuotaReached.{QuotaEventsReached, QuotaResourcesReached}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection.{QuotasDisabled, WrappedProjectRejection}
@@ -12,9 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig.QuotaConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.{Quota, QuotasConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ServiceAccountConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -39,7 +37,9 @@ class QuotasImplSpec extends AnyWordSpecLike with Matchers with IOValues with Co
     enabled = true,
     Map(project2.ref -> QuotaConfig(resources = Some(200), events = None))
   )
-  implicit private val serviceAccountCfg = ServiceAccountConfig(ServiceAccount(User("internal", Label.unsafe("sa"))))
+  implicit private val serviceAccountCfg = ServiceAccountConfig(
+    model.ServiceAccount(User("internal", Label.unsafe("sa")))
+  )
 
   private val projectsCounts =
     ProjectsCountsDummy(project.ref -> ProjectCount(events = 10, resources = 8, Instant.EPOCH))

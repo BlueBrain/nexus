@@ -5,7 +5,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.AnyOrganizationAnyProject
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import monix.bio.{IO, Task, UIO}

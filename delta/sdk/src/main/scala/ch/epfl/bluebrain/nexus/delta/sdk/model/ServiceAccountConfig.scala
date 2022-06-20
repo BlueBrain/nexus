@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import pureconfig.ConfigReader
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure}
@@ -33,7 +34,7 @@ object ServiceAccountConfig {
                   obj
                 )
               ),
-            l => ServiceAccountConfig(ServiceAccount(User(subject, l)))
+            l => ServiceAccountConfig(model.ServiceAccount(User(subject, l)))
           )
       } yield serviceAccountConfig
     }

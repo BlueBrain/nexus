@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.identities
+package ch.epfl.bluebrain.nexus.delta.sdk.identities.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.TokenRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
