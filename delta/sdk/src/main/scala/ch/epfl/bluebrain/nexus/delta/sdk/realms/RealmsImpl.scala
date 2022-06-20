@@ -71,7 +71,7 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
   ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] = {
     log
       .currentStates(_.toResource)
-      .filter(params.matches)
+      .evalFilter(params.matches)
       .compile
       .toList
       .hideErrors

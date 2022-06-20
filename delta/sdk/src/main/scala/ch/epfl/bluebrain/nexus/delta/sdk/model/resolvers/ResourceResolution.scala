@@ -3,14 +3,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import monix.bio.{IO, UIO}
 
 object ResourceResolution {
@@ -36,8 +35,8 @@ object ResourceResolution {
 
   /**
     * Resolution for a given type of a resource based on resolvers
-    * @param acls
-    *   an acls instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param fetchResource
@@ -46,24 +45,24 @@ object ResourceResolution {
     *   the mandatory permission
     */
   def apply[R](
-      acls: Acls,
+      aclCheck: AclCheck,
       resolvers: Resolvers,
       fetchResource: (ResourceRef, ProjectRef) => FetchResource[R],
       readPermission: Permission
-  ): ResourceResolution[R] = ResolverResolution(acls, resolvers, fetchResource, _.types, readPermission)
+  ): ResourceResolution[R] = ResolverResolution(aclCheck, resolvers, fetchResource, _.types, readPermission)
 
   /**
     * Resolution for a data resource based on resolvers
-    * @param acls
-    *   an acls instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param resources
     *   a resources instance
     */
-  def dataResource(acls: Acls, resolvers: Resolvers, resources: Resources): ResourceResolution[Resource] =
+  def dataResource(aclCheck: AclCheck, resolvers: Resolvers, resources: Resources): ResourceResolution[Resource] =
     apply(
-      acls,
+      aclCheck,
       resolvers,
       (ref: ResourceRef, project: ProjectRef) => resources.fetch(ref, project).redeem(_ => None, Some(_)),
       Permissions.resources.read
@@ -71,16 +70,16 @@ object ResourceResolution {
 
   /**
     * Resolution for a schema resource based on resolvers
-    * @param acls
-    *   an acls instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param schemas
     *   a schemas instance
     */
-  def schemaResource(acls: Acls, resolvers: Resolvers, schemas: Schemas): ResourceResolution[Schema] =
+  def schemaResource(aclCheck: AclCheck, resolvers: Resolvers, schemas: Schemas): ResourceResolution[Schema] =
     apply(
-      acls,
+      aclCheck,
       resolvers,
       (ref: ResourceRef, project: ProjectRef) => schemas.fetch(ref, project).redeem(_ => None, Some(_)),
       Permissions.schemas.read

@@ -2,30 +2,28 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, ProjectsCountsDummy, QuotasDummy}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller, ServiceAccount}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, ProjectsCountsDummy, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
-import ch.epfl.bluebrain.nexus.delta.service.utils.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -34,9 +32,9 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import scala.concurrent.duration._
 import java.time.Instant
 import java.util.UUID
+import scala.concurrent.duration._
 
 class ProjectsRoutesSpec
     extends RouteHelpers
@@ -58,8 +56,7 @@ class ProjectsRoutesSpec
   private val projectUuid           = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(projectUuid)
 
-  private val orgUuid                   = UUID.randomUUID()
-  implicit private val subject: Subject = Identity.Anonymous
+  private val orgUuid = UUID.randomUUID()
 
   private val provisionedRealm  = Label.unsafe("realm2")
   private val caller            = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
@@ -85,26 +82,8 @@ class ProjectsRoutesSpec
   private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))
   private val asInvalid     = addCredentials(OAuth2BearerToken("invalid"))
 
-  private val acls = AclSetup
-    .init(
-      Set(
-        projectsPermissions.write,
-        projectsPermissions.read,
-        projectsPermissions.create,
-        projectsPermissions.delete,
-        events.read,
-        resources.read,
-        resources.write
-      ),
-      Set(realm, provisionedRealm)
-    )
-    .accepted
+  private val aclCheck: AclSimpleCheck = AclSimpleCheck().accepted
 
-  private val aopd                = new OwnerPermissionsScopeInitialization(
-    acls,
-    Set(projectsPermissions.write, projectsPermissions.read),
-    ServiceAccount(subject)
-  )
   // Creating the org instance and injecting some data in it
   private val orgs: Organizations = {
     implicit val subject: Identity.Subject = caller.subject
@@ -143,16 +122,16 @@ class ProjectsRoutesSpec
     )
 
   implicit private val finder: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)
-  private val projectDummy                            =
-    ProjectsDummy(orgs, QuotasDummy.neverReached, Set(aopd), defaultApiMappings, _ => IO.unit).accepted
+  private lazy val projectDummy                       =
+    ProjectsDummy(orgs, QuotasDummy.neverReached, Set.empty, defaultApiMappings, _ => IO.unit).accepted
 
   private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
 
   private val projectsCounts = ProjectsCountsDummy(ProjectRef.unsafe("org1", "proj") -> projectStats)
 
-  private val provisioning = ProjectProvisioning(acls, projectDummy, provisioningConfig)
+  private val provisioning = ProjectProvisioning(aclCheck.append, projectDummy, provisioningConfig)
 
-  private val routes = Route.seal(ProjectsRoutes(identities, acls, projectDummy, projectsCounts, provisioning))
+  private lazy val routes = Route.seal(ProjectsRoutes(identities, aclCheck, projectDummy, projectsCounts, provisioning))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
@@ -168,7 +147,7 @@ class ProjectsRoutesSpec
   "A project route" should {
 
     "fail to create a project without projects/create permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -176,14 +155,11 @@ class ProjectsRoutesSpec
     }
 
     "create a project" in {
-      acls
+      aclCheck
         .append(
-          Acl(
-            AclAddress.Root,
-            Anonymous      -> Set(projectsPermissions.create),
-            caller.subject -> Set(projectsPermissions.create)
-          ),
-          1L
+          AclAddress.Root,
+          Anonymous      -> Set(projectsPermissions.create),
+          caller.subject -> Set(projectsPermissions.create)
         )
         .accepted
       Put("/v1/projects/org1/proj", payload.toEntity) ~> routes ~> check {
@@ -198,7 +174,7 @@ class ProjectsRoutesSpec
     "create a project with an authenticated user" in {
       Put("/v1/projects/org1/proj2", anotherPayload.toEntity) ~> asAlice ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj2"))
+        val ref = ProjectRef.unsafe("org1", "proj2")
         response.asJson should
           equalIgnoreArrayOrder(
             projectMetadata(
@@ -240,7 +216,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to update a project without projects/write permission" in {
-      acls.delete(AclAddress.Project(Label.unsafe("org1"), Label.unsafe("proj")), 1L).accepted
+      aclCheck.delete(AclAddress.Project(Label.unsafe("org1"), Label.unsafe("proj"))).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -248,11 +224,11 @@ class ProjectsRoutesSpec
     }
 
     "update a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 2L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)).accepted
       Put("/v1/projects/org1/proj?rev=1", payloadUpdated.toEntity) ~> routes ~> check {
 
         status shouldEqual StatusCodes.OK
-        val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
+        val ref = ProjectRef.unsafe("org1", "proj")
         response.asJson should equalIgnoreArrayOrder(
           projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
         )
@@ -281,7 +257,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to deprecate a project without projects/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 3L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -289,7 +265,7 @@ class ProjectsRoutesSpec
     }
 
     "deprecate a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)), 4L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.write)).accepted
       Delete("/v1/projects/org1/proj?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
@@ -327,7 +303,7 @@ class ProjectsRoutesSpec
     var deletedUuid: Option[String] = None
 
     "delete a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.delete, resources.read)), 5L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.delete, resources.read)).accepted
       Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
         status shouldEqual StatusCodes.SeeOther
         val link = header("Location").value.value()
@@ -431,7 +407,7 @@ class ProjectsRoutesSpec
     }
 
     "fetch a project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)).accepted
       Get("/v1/projects/org1/proj") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(fetchProjRev4)
@@ -568,10 +544,8 @@ class ProjectsRoutesSpec
     }
 
     "list all projects user has access to" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)), 7L).accepted
-      acls
-        .append(Acl(AclAddress.fromString("/org1/proj").rightValue, Anonymous -> Set(projectsPermissions.read)), 2L)
-        .accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)).accepted
+      aclCheck.append(ProjectRef.unsafe("org1", "proj"), Anonymous -> Set(projectsPermissions.read)).accepted
       Get("/v1/projects") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
@@ -583,7 +557,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -591,7 +565,7 @@ class ProjectsRoutesSpec
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 9L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual
@@ -600,7 +574,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to get the project statistics without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 10L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/projects/org1/proj/statistics") ~> routes ~> check {
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
         response.status shouldEqual StatusCodes.Forbidden
@@ -608,7 +582,7 @@ class ProjectsRoutesSpec
     }
 
     "fail to get the project statistics for an unknown project" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 11L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/projects/org1/unknown/statistics") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/projects/errors/project-not-found.json", "proj" -> "org1/unknown")

@@ -11,9 +11,9 @@ object SSEUtils {
     * @param values
     *   the values to transform
     */
-  def extract[Id, Tpe](values: (Id, Tpe)*): Seq[(Id, String, Offset)] =
-    values.zipWithIndex.map { case ((id, tpe), index) =>
-      (id, ClassUtils.simpleName(tpe), Offset.at(index.toLong + 1))
+  def extract[Id, Tpe](values: (Id, Tpe, Long)*): Seq[(Id, String, Offset)] =
+    values.map { case (id, tpe, offset) =>
+      (id, ClassUtils.simpleName(tpe), Offset.at(offset))
     }
 
 }

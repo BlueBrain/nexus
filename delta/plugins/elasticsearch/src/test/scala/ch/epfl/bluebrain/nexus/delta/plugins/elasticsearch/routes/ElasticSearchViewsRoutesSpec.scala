@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -19,29 +19,28 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -130,7 +129,6 @@ class ElasticSearchViewsRoutesSpec
 
   private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
   private val allowedPerms  = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
-  private val acls          = AclSetup.init(allowedPerms, Set(realm)).accepted
   private val views         = ElasticSearchViewsSetup.init(orgs, projs, allowedPerms)
 
   private val now          = Instant.now()
@@ -179,11 +177,12 @@ class ElasticSearchViewsRoutesSpec
     { case ev: ElasticSearchViewEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
   )
 
-  private val routes =
+  private val aclCheck    = AclSimpleCheck().accepted
+  private lazy val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
-        acls,
+        aclCheck,
         orgs,
         projs,
         views,
@@ -199,7 +198,7 @@ class ElasticSearchViewsRoutesSpec
   "Elasticsearch views routes" should {
 
     "fail to create a view without views/write permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -207,11 +206,8 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "create a view" in {
-      acls
-        .append(
-          Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write), caller.subject -> Set(esPermissions.write)),
-          1L
-        )
+      aclCheck
+        .append(AclAddress.Root, Anonymous -> Set(esPermissions.write), caller.subject -> Set(esPermissions.write))
         .accepted
       Post("/v1/views/myorg/myproject", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
@@ -257,7 +253,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to update a view without views/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Put(s"/v1/views/myorg/myproject/myid?rev=1", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -265,7 +261,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "update a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       val endpoints = List(
         "/v1/views/myorg/myproject/myid",
         s"/v1/views/myorg/myproject/$myIdEncoded"
@@ -296,7 +292,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to deprecate a view without views/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 4L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
@@ -304,7 +300,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "deprecate a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 5L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4L, deprecated = true)
@@ -357,7 +353,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch a view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
       Get("/v1/views/myorg/myproject/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual elasticSearchView(myId, includeDeprecated = false, rev = 4, deprecated = true)
@@ -444,7 +440,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to fetch statistics and offset from view without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 7L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints = List(
         "/v1/views/myorg/myproject/myid2/statistics",
@@ -459,7 +455,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fetch statistics from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 8L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
       val projectionId = ViewProjectionId(s"elasticsearch-${uuid}_2")
       viewsProgressesCache.put(projectionId, ProjectionProgress(Sequence(2), nowMinus5, 2, 0, 0, 0)).accepted
       Get("/v1/views/myorg/myproject/myid2/statistics") ~> routes ~> check {
@@ -480,7 +476,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to restart offset from view without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 9L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
 
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -489,7 +485,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "restart offset from view" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.write)), 10L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       restartedView shouldEqual None
       Delete("/v1/views/myorg/myproject/myid2/offset") ~> routes ~> check {
         response.status shouldEqual StatusCodes.OK
@@ -508,7 +504,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to do listings from view without resources/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 11L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints = List(
         "/v1/views/myorg/myproject",
@@ -523,7 +519,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "list on project scope" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(esPermissions.read)), 12L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.read)).accepted
 
       val endpoints: Seq[(String, IdSegment)] = List(
         "/v1/views/myorg/myproject"                    -> elasticSearchSchema,
@@ -593,7 +589,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 13L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
 
       Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -606,7 +602,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "get the events stream" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 14L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       val endpoints = List("/v1/views/events", "/v1/views/myorg/events", "/v1/views/myorg/myproject/events")
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {

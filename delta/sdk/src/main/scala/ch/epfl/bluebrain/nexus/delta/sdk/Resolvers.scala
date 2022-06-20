@@ -304,8 +304,8 @@ object Resolvers {
       val params = ResolverSearchParams(
         deprecated = Some(false),
         filter = {
-          case c: CrossProjectResolver => c.project != project && c.value.projects.value.contains(project)
-          case _                       => false
+          case c: CrossProjectResolver => UIO.pure(c.project != project && c.value.projects.value.contains(project))
+          case _                       => UIO.pure(false)
         }
       )
 
@@ -383,7 +383,7 @@ object Resolvers {
         ResolverSearchParams(
           project = Some(project),
           deprecated = Some(false),
-          filter = r => r.priority == priority && r.id != id
+          filter = r => UIO.pure(r.priority == priority && r.id != id)
         )
       ).flatMap {
         case None        => IO.unit

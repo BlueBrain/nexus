@@ -2,17 +2,17 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.ownerPermissions
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, OwnerPermissionsDummy, ProjectsDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.QuotasDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, QuotasDummy}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.InvalidProjectLabel
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -27,7 +27,13 @@ import java.time.Instant
 import java.util.UUID
 import scala.annotation.nowarn
 
-class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValues with IOFixedClock with OptionValues {
+class ProjectProvisioningSpec
+    extends AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with IOFixedClock
+    with OptionValues
+    with ConfigFixtures {
 
   val epoch: Instant                 = Instant.EPOCH
   implicit val subject: Subject      = Identity.User("user", Label.unsafe("realm"))
@@ -44,11 +50,11 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
   val usersOrg = Label.unsafe("users-org")
 
   val rootPermissions = PermissionsGen.ownerPermissions
-  val acls            = AclSetup
-    .init(
-      (subject, AclAddress.Root, rootPermissions)
-    )
-    .accepted
+  val acls            = null: Acls
+//    .init(
+//      (subject, AclAddress.Root, rootPermissions)
+//    )
+//    .accepted
 
   @nowarn("cat=unused")
   lazy val organizations: Organizations = {
@@ -75,12 +81,12 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
   val projects = ProjectsDummy(
     organizations,
     QuotasDummy.neverReached,
-    Set(OwnerPermissionsDummy(acls, ownerPermissions, serviceAccount)),
+    Set.empty,
     ApiMappings.empty,
     _ => IO.unit
   ).accepted
 
-  val provisioning = ProjectProvisioning(acls, projects, provisioningConfig)
+  val provisioning = ProjectProvisioning(acls, projects, provisioningConfig, serviceAccount)
   "Provisioning projects" should {
 
     "provision project with correct permissions" in {
@@ -107,7 +113,7 @@ class ProjectProvisioningSpec extends AnyWordSpecLike with Matchers with IOValue
       val projectLabel     = Label.unsafe("user2")
       val projectRef       = ProjectRef(usersOrg, projectLabel)
       val acl              = Acl(AclAddress.Project(projectRef), subject -> provisioningConfig.permissions)
-      acls.append(acl, 0L)(subject).accepted
+      acls.append(acl, 0)(subject).accepted
       provisioning(subject).accepted
       projects.fetchProject(ProjectRef(usersOrg, projectLabel)).accepted shouldEqual Project(
         projectLabel,

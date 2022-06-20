@@ -7,39 +7,21 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, ConfigFixtures, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{Inspectors, OptionValues}
 
-class RealmsRoutesSpec
-    extends RouteHelpers
-    with DoobieFixture
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with ConfigFixtures
-    with RouteFixtures {
-
-  implicit private val subject: Subject = Identity.Anonymous
+class RealmsRoutesSpec extends BaseRouteSpec {
 
   val (github, gitlab)         = (Label.unsafe("github"), Label.unsafe("gitlab"))
   val (githubName, gitlabName) = (Name.unsafe("github-name"), Name.unsafe("gitlab-name"))
@@ -63,10 +45,9 @@ class RealmsRoutesSpec
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
-  private val perms      = Set(realmsPermissions.read, realmsPermissions.write, events.read)
-  private val acls       = AclsDummy(perms, Set.empty).accepted
+  private val aclCheck   = AclSimpleCheck().accepted
 
-  private lazy val routes = Route.seal(RealmsRoutes(identities, realms, acls))
+  private lazy val routes = Route.seal(RealmsRoutes(identities, realms, aclCheck))
 
   private val githubCreatedMeta = realmMetadata(github)
   private val githubUpdatedMeta = realmMetadata(github, rev = 2)
@@ -110,7 +91,7 @@ class RealmsRoutesSpec
   "A RealmsRoute" should {
 
     "fail to create a realm  without realms/write permission" in {
-      acls.replace(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 0L).accepted
+      aclCheck.replace(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)).accepted
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
@@ -120,7 +101,7 @@ class RealmsRoutesSpec
     }
 
     "create a new realm" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.write)), 1L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(realmsPermissions.write)).accepted
       val input = json"""{"name": "${githubName.value}", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github", input.toEntity) ~> routes ~> check {
@@ -130,7 +111,6 @@ class RealmsRoutesSpec
     }
 
     "fail when creating another realm with the same openIdConfig" in {
-
       val input = json"""{"name": "duplicate", "openIdConfig": "$githubOpenId"}"""
 
       val expected =
@@ -143,7 +123,6 @@ class RealmsRoutesSpec
     }
 
     "create another realm with an authenticated user" in {
-
       val input = json"""{"name": "$gitlabName", "openIdConfig": "$gitlabOpenId", "logo": "$githubLogo"}"""
       Put("/v1/realms/gitlab", input.toEntity) ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
@@ -152,7 +131,6 @@ class RealmsRoutesSpec
     }
 
     "update an existing realm" in {
-
       val input = json"""{"name": "updated", "openIdConfig": "$githubOpenId", "logo": "$githubLogo"}"""
 
       Put("/v1/realms/github?rev=1", input.toEntity) ~> routes ~> check {
@@ -162,7 +140,7 @@ class RealmsRoutesSpec
     }
 
     "fail to fetch a realm  without realms/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)).accepted
       Get("/v1/realms/github") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -177,7 +155,7 @@ class RealmsRoutesSpec
     }
 
     "fetch a realm by id" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(realmsPermissions.read)).accepted
       Get("/v1/realms/github") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual githubUpdated
@@ -251,14 +229,14 @@ class RealmsRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
+      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("4") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
       }
     }
 
     "get the events stream with an offset" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 4L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe `text/event-stream`
         response.asString.strip shouldEqual contentOf("/realms/eventstream-2-4.txt").strip

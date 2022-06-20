@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
@@ -22,35 +22,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-class ResolversRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with CancelAfterFailure
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class ResolversRoutesSpec extends BaseRouteSpec {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -81,14 +63,6 @@ class ResolversRoutesSpec
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm))),
     Caller(bob, Set(bob))
   )
-
-  private val acls = AclSetup
-    .init(
-      (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
-      (alice, AclAddress.Organization(org), Set(Permissions.resolvers.read, Permissions.resolvers.write)),
-      (bob, AclAddress.Project(project.ref), Set(Permissions.resolvers.read, Permissions.resolvers.write))
-    )
-    .accepted
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
@@ -126,8 +100,14 @@ class ResolversRoutesSpec
   private val resolvers =
     ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
 
-  private val resolverResolution = ResolverResolution(
-    acls,
+  private val aclCheck = AclSimpleCheck(
+    (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
+    (alice, AclAddress.Organization(org), Set(Permissions.resolvers.read, Permissions.resolvers.write)),
+    (bob, AclAddress.Project(project.ref), Set(Permissions.resolvers.read, Permissions.resolvers.write))
+  ).accepted
+
+  private lazy val resolverResolution = ResolverResolution(
+    aclCheck,
     resolvers,
     List(
       ReferenceExchange[Resource](fetchResource, _.source),
@@ -135,10 +115,10 @@ class ResolversRoutesSpec
     )
   )
 
-  private val multiResolution = MultiResolution(projects, resolverResolution)
+  private lazy val multiResolution = MultiResolution(projects, resolverResolution)
 
-  private val routes =
-    Route.seal(ResolversRoutes(identities, acls, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
+  private lazy val routes =
+    Route.seal(ResolversRoutes(identities, aclCheck, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))

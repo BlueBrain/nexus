@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.concurrent.Deferred
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.Fixtures.rcr
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
@@ -9,8 +10,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -31,10 +34,14 @@ trait ElasticSearchViewsSetup extends IOValues with EitherValuable with ConfigFi
   private def config(implicit baseUri: BaseUri) = ElasticSearchViewsConfig(
     baseUri.toString,
     None,
-    httpClientConfig,
+    HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, compression = true),
     aggregate,
     keyValueStore,
-    pagination,
+    PaginationConfig(
+      defaultSize = 30,
+      sizeLimit = 100,
+      fromLimit = 10000
+    ),
     cacheIndexing,
     externalIndexing,
     10,

@@ -12,22 +12,22 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{ContextFixtures, G
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures.s
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures, IdentitiesDummy, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, IdentitiesDummy, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit._
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
@@ -66,7 +66,7 @@ class GraphAnalyticsRoutesSpec
   private val identities = IdentitiesDummy(Map(AuthToken("alice") -> caller))
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
 
-  private val acls = AclSetup.init(Set(resources.read), Set(realm)).accepted
+  private val aclCheck = AclSimpleCheck().accepted
 
   private val org            = Label.unsafe("org")
   private val project        = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
@@ -100,13 +100,13 @@ class GraphAnalyticsRoutesSpec
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
   private val routes                              =
-    Route.seal(new GraphAnalyticsRoutes(identities, acls, projects, graphAnalytics, graphAnalyticsProgress).routes)
+    Route.seal(new GraphAnalyticsRoutes(identities, aclCheck, projects, graphAnalytics, graphAnalyticsProgress).routes)
 
   "graph analytics routes" when {
 
     "dealing with relationships" should {
       "fail to fetch without resources/read permission" in {
-        acls.append(Acl(AclAddress.Root, alice -> Set(resources.read)), 0L).accepted
+        aclCheck.append(AclAddress.Root, alice -> Set(resources.read)).accepted
         Get("/v1/graph-analytics/org/project/relationships") ~> routes ~> check {
           response.status shouldEqual StatusCodes.Forbidden
           response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")

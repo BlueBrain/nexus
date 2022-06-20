@@ -11,9 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectMarkedForDeletion
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
@@ -154,15 +156,16 @@ object ProjectsModule extends ModuleDef {
         .tapEval(_.run())
   }
 
-  make[ProjectProvisioning].from { (acls: Acls, projects: Projects, config: ProjectsConfig) =>
-    ProjectProvisioning(acls, projects, config.automaticProvisioning)
+  make[ProjectProvisioning].from {
+    (acls: Acls, projects: Projects, config: ProjectsConfig, serviceAccount: ServiceAccount) =>
+      ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
   make[ProjectsRoutes].from {
     (
         config: AppConfig,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         projectsCounts: ProjectsCounts,
         projectProvisioning: ProjectProvisioning,
@@ -174,7 +177,7 @@ object ProjectsModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, acls, projects, projectsCounts, projectProvisioning)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectsCounts, projectProvisioning)(
         baseUri,
         mappings.merge,
         config.projects,

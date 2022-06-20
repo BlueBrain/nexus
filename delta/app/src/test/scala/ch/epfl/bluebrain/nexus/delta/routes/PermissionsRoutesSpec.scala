@@ -6,41 +6,22 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, events, orgs, permissions => permissionsPerms, realms}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{PermissionsConfig, PermissionsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs, permissions => permissionsPerms, realms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.duration._
-
-class PermissionsRoutesSpec
-    extends RouteHelpers
-    with DoobieFixture
-    with Matchers
-    with CirceLiteral
-    with IOFixedClock
-    with IOValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class PermissionsRoutesSpec extends BaseRouteSpec {
 
   implicit private val caller: Subject = Identity.Anonymous
 
-  private val minimum    = Set(acls.read, acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
+  private val minimum    =
+    Set(Permissions.acls.read, Permissions.acls.write, permissionsPerms.read, permissionsPerms.write, events.read)
   private val identities = IdentitiesDummy(Map.empty[AuthToken, Caller])
-
-  private val eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 10.millis)
 
   private val config = PermissionsConfig(
     eventLogConfig,
@@ -48,16 +29,14 @@ class PermissionsRoutesSpec
     Set.empty
   )
 
-  lazy val (permissions, aclsDummy) = (for {
-    perms <- IO.pure(PermissionsImpl(config, xas))
-    acls  <- AclsDummy(perms)
-  } yield (perms, acls)).accepted
-  private lazy val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private val aclCheck         = AclSimpleCheck().accepted
+  private lazy val permissions = PermissionsImpl(config, xas)
+  private lazy val route       = Route.seal(PermissionsRoutes(identities, permissions, aclCheck))
 
   "The permissions routes" should {
 
     "fail to fetch permissions without permissions/read permission" in {
-      aclsDummy.replace(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)).accepted
       Get("/v1/permissions") ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -65,7 +44,7 @@ class PermissionsRoutesSpec
     }
 
     "fetch permissions" in {
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.read)), 1L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissionsPerms.read)).accepted
       val expected = jsonContentOf(
         "permissions/fetch_compacted.jsonld",
         "rev"         -> "0",
@@ -96,7 +75,7 @@ class PermissionsRoutesSpec
     }
 
     "fail to replace permissions without permissions/write permission" in {
-      aclsDummy.subtract(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)).accepted
       val replace = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -128,8 +107,7 @@ class PermissionsRoutesSpec
     }
 
     "replace permissions" in {
-
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(permissionsPerms.write)).accepted
       val expected = permissionsMetadata(rev = 2)
       val replace  = json"""{"permissions": ["${realms.write}"]}"""
       Put("/v1/permissions?rev=1", replace.toEntity) ~> Accept(`*/*`) ~> route ~> check {

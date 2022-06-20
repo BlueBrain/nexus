@@ -9,47 +9,30 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceDeprecated, ResourceTagAdded}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import io.circe.Printer
 import monix.bio.{IO, UIO}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 
-class ResourcesRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CancelAfterFailure
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class ResourcesRoutesSpec extends BaseRouteSpec {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -101,7 +84,7 @@ class ResourcesRoutesSpec
   private val resourceResolution: ResourceResolution[Schema] =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
-  private val acls = AclSetup.init(Set(resources.write, resources.read, events.read), Set(realm)).accepted
+  private val aclCheck = AclSimpleCheck().accepted
 
   private val resourcesDummy =
     ResourcesDummy(
@@ -125,14 +108,14 @@ class ResourcesRoutesSpec
   )
 
   private val routes =
-    Route.seal(ResourcesRoutes(identities, acls, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
+    Route.seal(ResourcesRoutes(identities, aclCheck, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
 
   val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 
     "fail to create a resource without resources/write permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/resources/myorg/myproject", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -140,8 +123,8 @@ class ResourcesRoutesSpec
     }
 
     "create a resource" in {
-      acls
-        .append(Acl(AclAddress.Root, Anonymous -> Set(resources.write), caller.subject -> Set(resources.write)), 1L)
+      aclCheck
+        .append(AclAddress.Root, Anonymous -> Set(resources.write), caller.subject -> Set(resources.write))
         .accepted
 
       val endpoints = List(
@@ -192,7 +175,7 @@ class ResourcesRoutesSpec
     }
 
     "fail to update a resource without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 2L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Put("/v1/resources/myorg/myproject/_/myid?rev=1", payload.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -200,7 +183,7 @@ class ResourcesRoutesSpec
     }
 
     "update a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 3L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       val encodedSchema = UrlUtils.encode(schemas.resources.toString)
       val endpoints     = List(
         "/v1/resources/myorg/myproject/_/myid"               -> 1L,
@@ -235,7 +218,7 @@ class ResourcesRoutesSpec
     }
 
     "fail to deprecate a resource without resources/write permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 4L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=4") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
@@ -243,7 +226,7 @@ class ResourcesRoutesSpec
     }
 
     "deprecate a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.write)), 5L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
@@ -291,7 +274,7 @@ class ResourcesRoutesSpec
     val resourceCtx = json"""{"@context": ["${contexts.metadata}", {"@vocab": "${nxv.base}"}]}"""
 
     "fetch a resource" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 6L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L)
@@ -403,7 +386,7 @@ class ResourcesRoutesSpec
     }
 
     "fail to get the events stream without events/read permission" in {
-      acls.subtract(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 7L).accepted
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
 
       Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
@@ -419,7 +402,7 @@ class ResourcesRoutesSpec
     }
 
     "get the events stream" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 8L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       forAll(
         List(
           "/v1/resources/events",

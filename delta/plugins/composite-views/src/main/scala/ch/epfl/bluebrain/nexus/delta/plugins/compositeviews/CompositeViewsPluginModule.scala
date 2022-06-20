@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -57,7 +58,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         config: CompositeViewsConfig,
         projects: Projects,
-        acls: Acls,
+        aclCheck: AclCheck,
         permissions: Permissions,
         resourceIdCheck: ResourceIdCheck,
         client: ElasticSearchClient,
@@ -71,7 +72,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       CompositeViews.aggregate(
         config,
         projects,
-        acls,
+        aclCheck,
         permissions.fetchPermissionSet,
         resourceIdCheck,
         client,
@@ -262,24 +263,24 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphQuery].from {
     (
-        acls: Acls,
+        aclCheck: AclCheck,
         views: CompositeViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
         cfg: CompositeViewsConfig
     ) =>
-      BlazegraphQuery(acls, views, client)(cfg.blazegraphIndexing)
+      BlazegraphQuery(aclCheck, views, client)(cfg.blazegraphIndexing)
 
   }
 
   make[ElasticSearchQuery].from {
-    (acls: Acls, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
-      ElasticSearchQuery(acls, views, client)(cfg.elasticSearchIndexing)
+    (aclCheck: AclCheck, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
+      ElasticSearchQuery(aclCheck, views, client)(cfg.elasticSearchIndexing)
   }
 
   make[CompositeViewsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         views: CompositeViews,
         indexingController: CompositeIndexingController,
@@ -295,7 +296,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     ) =>
       new CompositeViewsRoutes(
         identities,
-        acls,
+        aclCheck,
         projects,
         views,
         indexingController.restart,

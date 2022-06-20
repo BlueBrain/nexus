@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -300,12 +300,13 @@ final class BlazegraphViews(
       params: BlazegraphViewSearchParams,
       ordering: Ordering[ViewResource]
   ): UIO[UnscoredSearchResults[ViewResource]] = index.values
-    .map { resources =>
-      val results = resources.filter(params.matches).sorted(ordering)
-      UnscoredSearchResults(
-        results.size.toLong,
-        results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
-      )
+    .flatMap {
+      _.toList.filterA(params.matches).map { results =>
+        SearchResults(
+          results.size.toLong,
+          results.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
+        )
+      }
     }
     .named("listBlazegraphViews", moduleType)
 
@@ -460,8 +461,9 @@ object BlazegraphViews {
       val params = BlazegraphViewSearchParams(
         deprecated = Some(false),
         filter = {
-          case a: AggregateBlazegraphView => a.project != project && a.views.value.exists(_.project == project)
-          case _                          => false
+          case a: AggregateBlazegraphView =>
+            UIO.pure(a.project != project && a.views.value.exists(_.project == project))
+          case _                          => UIO.pure(false)
         }
       )
       views.list(OnePage, params, ProjectReferenceFinder.ordering).map {

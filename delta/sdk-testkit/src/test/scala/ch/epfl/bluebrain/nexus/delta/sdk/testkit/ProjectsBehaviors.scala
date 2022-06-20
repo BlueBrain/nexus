@@ -4,16 +4,14 @@ import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationIsDeprecated
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -23,12 +21,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationIsDeprecated
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsBehaviors._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, Projects, Quotas, QuotasDummy}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import com.datastax.oss.driver.api.core.uuid.Uuids
 import monix.bio.{IO, Task, UIO}
@@ -106,15 +105,16 @@ trait ProjectsBehaviors {
 
   private val order = ResourceF.defaultSort[Project]
 
-  val acls = AclSetup
-    .init(
-      (subject, AclAddress.Root, rootPermissions),
-      (subject, AclAddress.Organization(org1), org1Permissions),
-      (subject, AclAddress.Organization(org2), org2Permissions),
-      (subject, AclAddress.Project(org2, proj20), proj20Permissions),
-      (subject, AclAddress.Project(org2, proj21), proj21Permissions)
-    )
-    .accepted
+  val acls: Acls = null
+//    AclSetup
+//    .init(
+//      (subject, AclAddress.Root, rootPermissions),
+//      (subject, AclAddress.Organization(org1), org1Permissions),
+//      (subject, AclAddress.Organization(org2), org2Permissions),
+//      (subject, AclAddress.Project(org2, proj20), proj20Permissions),
+//      (subject, AclAddress.Project(org2, proj21), proj21Permissions)
+//    )
+//    .accepted
 
   lazy val organizations: Organizations = null
 
@@ -321,13 +321,15 @@ trait ProjectsBehaviors {
     }
 
     "list projects without filters nor pagination" in {
-      val results = projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => true), order).accepted
+      val results =
+        projects.list(FromPagination(0, 10), ProjectSearchParams(filter = _ => UIO.pure(true)), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(resource, anotherProjResource))
     }
 
     "list projects without filers but paginated" in {
-      val results = projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => true), order).accepted
+      val results =
+        projects.list(FromPagination(0, 1), ProjectSearchParams(filter = _ => UIO.pure(true)), order).accepted
 
       results shouldEqual SearchResults(2L, Vector(resource))
     }
@@ -335,7 +337,11 @@ trait ProjectsBehaviors {
     "list deprecated projects" in {
       val results =
         projects
-          .list(FromPagination(0, 10), ProjectSearchParams(deprecated = Some(true), filter = _ => true), order)
+          .list(
+            FromPagination(0, 10),
+            ProjectSearchParams(deprecated = Some(true), filter = _ => UIO.pure(true)),
+            order
+          )
           .accepted
 
       results shouldEqual SearchResults(1L, Vector(resource))
@@ -346,7 +352,7 @@ trait ProjectsBehaviors {
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => true),
+            ProjectSearchParams(organization = Some(anotherRef.organization), filter = _ => UIO.pure(true)),
             order
           )
           .accepted
@@ -359,7 +365,7 @@ trait ProjectsBehaviors {
         projects
           .list(
             FromPagination(0, 10),
-            ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => true),
+            ProjectSearchParams(createdBy = Some(Identity.Anonymous), filter = _ => UIO.pure(true)),
             order
           )
           .accepted

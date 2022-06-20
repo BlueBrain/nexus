@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, IndexingAction, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, IndexingAction, ProgressesStatistics, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -60,7 +61,7 @@ class BlazegraphViewsRoutes(
     views: BlazegraphViews,
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     projects: Projects,
     progresses: ProgressesStatistics,
     restartView: RestartView,
@@ -72,7 +73,7 @@ class BlazegraphViewsRoutes(
     ordering: JsonKeyOrdering,
     pc: PaginationConfig,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with DeltaDirectives
     with RdfMarshalling
@@ -316,7 +317,7 @@ object BlazegraphViewsRoutes {
       views: BlazegraphViews,
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       projects: Projects,
       progresses: ProgressesStatistics,
       restartView: RestartView,
@@ -333,7 +334,7 @@ object BlazegraphViewsRoutes {
       views,
       viewsQuery,
       identities,
-      acls,
+      aclCheck,
       projects,
       progresses,
       restartView,

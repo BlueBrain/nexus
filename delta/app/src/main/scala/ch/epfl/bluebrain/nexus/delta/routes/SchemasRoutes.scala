@@ -10,22 +10,23 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
@@ -35,8 +36,8 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the ACLs module
+  * @param aclCheck
+  *   verify the acls for users
   * @param organizations
   *   the organizations module
   * @param projects
@@ -48,7 +49,7 @@ import monix.execution.Scheduler
   */
 final class SchemasRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     organizations: Organizations,
     projects: Projects,
     schemas: Schemas,
@@ -59,7 +60,7 @@ final class SchemasRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
 
@@ -226,7 +227,7 @@ object SchemasRoutes {
     */
   def apply(
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       orgs: Organizations,
       projects: Projects,
       schemas: Schemas,
@@ -237,6 +238,6 @@ object SchemasRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new SchemasRoutes(identities, acls, orgs, projects, schemas, index).routes
+  ): Route = new SchemasRoutes(identities, aclCheck, orgs, projects, schemas, index).routes
 
 }

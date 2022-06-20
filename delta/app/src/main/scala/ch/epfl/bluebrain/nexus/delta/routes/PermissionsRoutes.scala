@@ -10,17 +10,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes.PatchPermissions._
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes._
+import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, permissions => permissionsPerms}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{Permission, PermissionsEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.syntax._
@@ -37,13 +38,15 @@ import scala.annotation.nowarn
   *   the identities operations bundle
   * @param permissions
   *   the permissions operations bundle
+  * @param aclCheck
+  *   verify the acls for users
   */
-final class PermissionsRoutes(identities: Identities, permissions: Permissions, acls: Acls)(implicit
+final class PermissionsRoutes(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -133,13 +136,13 @@ object PermissionsRoutes {
     * @return
     *   the [[Route]] for the permission resources
     */
-  def apply(identities: Identities, permissions: Permissions, acls: Acls)(implicit
+  def apply(identities: Identities, permissions: Permissions, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new PermissionsRoutes(identities, permissions, acls).routes
+    new PermissionsRoutes(identities, permissions, aclCheck: AclCheck).routes
 
   sealed private[routes] trait PatchPermissions extends Product with Serializable
 

@@ -6,40 +6,20 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.Route
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls, events, realms, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsConfig, PermissionsImpl}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclsDummy, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
-import monix.bio.IO
-import org.scalatest.Inspectors
-import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.duration._
-
-class PermissionsEventsRoutesSpec
-    extends RouteHelpers
-    with DoobieFixture
-    with Matchers
-    with CirceLiteral
-    with IOFixedClock
-    with IOValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class PermissionsEventsRoutesSpec extends BaseRouteSpec {
 
   implicit private val caller: Subject = Identity.Anonymous
 
   private val identities = IdentitiesDummy(Map.empty[AuthToken, Caller])
-
-  private val eventLogConfig = EventLogConfig(QueryConfig(10, RefreshStrategy.Stop), 100.millis)
 
   private val config = PermissionsConfig(
     eventLogConfig,
@@ -47,24 +27,22 @@ class PermissionsEventsRoutesSpec
     Set.empty
   )
 
-  lazy val (permissions, aclsDummy) = (for {
-    perms <- IO.pure(PermissionsImpl(config, xas))
-    acls  <- AclsDummy(perms)
-  } yield (perms, acls)).accepted
-  private lazy val route            = Route.seal(PermissionsRoutes(identities, permissions, aclsDummy))
+  private val aclCheck         = AclSimpleCheck().accepted
+  private lazy val permissions = PermissionsImpl(config, xas)
+  private lazy val route       = Route.seal(PermissionsRoutes(identities, permissions, aclCheck))
 
   "The permissions routes" should {
 
     "add some permissions" in {
       List(
-        permissions.append(Set(acls.read), 0),
-        permissions.subtract(Set(acls.read), 1),
-        permissions.replace(Set(acls.write), 2),
+        permissions.append(Set(Permissions.acls.read), 0),
+        permissions.subtract(Set(Permissions.acls.read), 1),
+        permissions.replace(Set(Permissions.acls.write), 2),
         permissions.delete(3),
-        permissions.append(Set(acls.read), 4),
+        permissions.append(Set(Permissions.acls.read), 4),
         permissions.append(Set(realms.write), 5),
         permissions.subtract(Set(realms.write), 6),
-        aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(resources.read)), 0L)
+        aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read))
       ).traverse(_.void).accepted
     }
 
@@ -77,7 +55,7 @@ class PermissionsEventsRoutesSpec
     }
 
     "return the event stream when no offset is provided" in {
-      aclsDummy.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 1L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Get("/v1/permissions/events") ~> Accept(`*/*`) ~> route ~> check {
         mediaType shouldBe `text/event-stream`
         //chunksStream.asString(5).strip shouldEqual contentOf("/permissions/eventstream-0-5.txt").strip

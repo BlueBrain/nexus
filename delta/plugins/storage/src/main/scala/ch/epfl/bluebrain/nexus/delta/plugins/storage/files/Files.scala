@@ -30,25 +30,25 @@ import ch.epfl.bluebrain.nexus.delta.sdk.EventExchange.EventExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.FileResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.syntax._
@@ -65,7 +65,7 @@ final class Files(
     formDataExtractor: FormDataExtractor,
     aggregate: FilesAggregate,
     eventLog: EventLog[Envelope[FileEvent]],
-    acls: Acls,
+    aclCheck: AclCheck,
     orgs: Organizations,
     projects: Projects,
     storages: Storages,
@@ -405,7 +405,7 @@ final class Files(
           attributes = file.value.attributes
           storage   <- storages.fetch(file.value.storage, project)
           permission = storage.value.storageValue.readPermission
-          _         <- acls.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
+          _         <- aclCheck.authorizeForOr(project, permission)(AuthorizationFailed(project, permission))
           s         <- FetchFile(storage.value).apply(file.value.attributes).mapError(FetchRejection(file.id, storage.id, _))
           mediaType  = attributes.mediaType.getOrElse(`application/octet-stream`)
         } yield FileResponse(attributes.filename, mediaType, attributes.bytes, s)
@@ -543,13 +543,13 @@ final class Files(
           storage   <- storages.fetch(ResourceRef(iri), project.ref)
           _         <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
           permission = storage.value.storageValue.writePermission
-          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
+          _         <- aclCheck.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
           storage   <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
           permission = storage.value.storageValue.writePermission
-          _         <- acls.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
+          _         <- aclCheck.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
@@ -616,7 +616,7 @@ object Files {
       config: FilesConfig,
       storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
-      acls: Acls,
+      aclCheck: AclCheck,
       orgs: Organizations,
       projects: Projects,
       storages: Storages,
@@ -631,9 +631,10 @@ object Files {
     implicit val classicAs: ClassicActorSystem  = as.classicSystem
     implicit val sTypeConfig: StorageTypeConfig = storageTypeConfig
     for {
-      files <- Task.delay(
-                 new Files(FormDataExtractor.apply, agg, eventLog, acls, orgs, projects, storages, storagesStatistics)
-               )
+      files <-
+        Task.delay(
+          new Files(FormDataExtractor.apply, agg, eventLog, aclCheck, orgs, projects, storages, storagesStatistics)
+        )
       _     <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files
   }

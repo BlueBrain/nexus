@@ -21,27 +21,27 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Decoder
 import io.circe.syntax._
@@ -93,7 +93,7 @@ class CompositeViewsRoutesSpec
     events.read
   )
 
-  private val acls = AclsDummy(allowedPerms, Set(realm)).accepted
+  private val aclCheck = AclSimpleCheck().accepted
 
   val org  = Label.unsafe("myorg")
   val base = nxv.base
@@ -182,7 +182,7 @@ class CompositeViewsRoutesSpec
     Route.seal(
       CompositeViewsRoutes(
         identities,
-        acls,
+        aclCheck,
         projects,
         views,
         restart,
@@ -199,7 +199,7 @@ class CompositeViewsRoutesSpec
 
   "Composite views routes" should {
     "fail to create a view without permission" in {
-      acls.append(Acl(AclAddress.Root, Anonymous -> Set(events.read)), 0L).accepted
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
       Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> routes ~> check {
         response.status shouldEqual StatusCodes.Forbidden
         response.asJson shouldEqual jsonContentOf("routes/errors/authorization-failed.json")
@@ -207,9 +207,7 @@ class CompositeViewsRoutesSpec
     }
 
     "create a view" in {
-      acls
-        .append(Acl(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)), 1L)
-        .accepted
+      aclCheck.append(AclAddress.Root, caller.subject -> Set(permissions.write, permissions.read)).accepted
       Post("/v1/views/myorg/myproj", viewSource.toEntity) ~> asBob ~> routes ~> check {
         response.status shouldEqual StatusCodes.Created
         response.asJson shouldEqual jsonContentOf(
