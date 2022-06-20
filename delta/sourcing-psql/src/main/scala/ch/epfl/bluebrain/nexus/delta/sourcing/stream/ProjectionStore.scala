@@ -56,6 +56,20 @@ trait ProjectionStore {
     */
   def entries: Stream[Task, ProjectionOffsetRow]
 
+  /**
+    * Absorbs the common arguments for a projection to have its offset persisted into a function of
+    * [[ProjectionOffset]].
+    * @param name
+    *   the name of the projection
+    * @param project
+    *   an optional project reference
+    * @param resourceId
+    *   an optional resource id
+    * @return
+    */
+  def persistFn(name: String, project: Option[ProjectRef], resourceId: Option[Iri]): ProjectionOffset => UIO[Unit] =
+    offset => save(name, project, resourceId, offset)
+
 }
 
 object ProjectionStore {

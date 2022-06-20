@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.concurrent.Ref
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.Task
 
-import scala.annotation.nowarn
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * A projection that has been successfully compiled and is ready to be run.
@@ -18,28 +18,39 @@ import scala.annotation.nowarn
   *   an optional project reference associated with the projection
   * @param resourceId
   *   an optional resource id associated with the projection
-  * @param source
-  *   the underlying source that represents the stream
-  * @param passivationStrategy
-  *   a strategy for passivation
-  * @param rebuildStrategy
-  *   a strategy to rebuild the projection
-  * @param persistOffset
-  *   whether to persist the offset such that a restart/crash would not cause starting from the beginning
+  * @param streamF
+  *   a fn that produces a stream given a starting offset
   * @see
   *   [[ProjectionDef]]
   */
-@nowarn("cat=unused")
-@SuppressWarnings(Array("UnusedMethodParameter"))
-final class CompiledProjection private[stream] (
+final case class CompiledProjection private[stream] (
     val name: String,
     project: Option[ProjectRef],
     resourceId: Option[Iri],
-    source: Source.Aux[Unit],
-    passivationStrategy: PassivationStrategy,
-    rebuildStrategy: RebuildStrategy,
-    persistOffset: Boolean
+    streamF: ProjectionOffset => Stream[Task, Elem[Unit]]
 ) {
+
+  /**
+    * Transforms this projection such that it persists the observed offsets at regular intervals.
+    *
+    * @param store
+    *   the store to use for persisting offsets
+    * @param interval
+    *   the interval at which the offset should be persisted if there are differences
+    */
+  def persistOffset(store: ProjectionStore, interval: FiniteDuration): CompiledProjection =
+    persistOffset(store.persistFn(name, project, resourceId), interval)
+
+  /**
+    * Transforms this projection such that it persists the observed offsets at regular intervals.
+    *
+    * @param persistOffsetFn
+    *   the fn to persist an offset
+    * @param interval
+    *   the interval at which the offset should be persisted if there are differences
+    */
+  def persistOffset(persistOffsetFn: ProjectionOffset => Task[Unit], interval: FiniteDuration): CompiledProjection =
+    copy(streamF = offset => streamF(offset).through(PersistOffset(offset, interval, persistOffsetFn)))
 
   /**
     * Starts the projection from the provided offset. The stream is executed in the background and can be interacted
@@ -51,20 +62,22 @@ final class CompiledProjection private[stream] (
     */
   def start(offset: ProjectionOffset): Task[Projection] =
     for {
-      offsetRef <- Ref[Task].of(offset)
-      signal    <- SignallingRef[Task, Boolean](false)
+      offsetRef   <- Ref[Task].of(offset)
+      finaliseRef <- Ref[Task].of(false)
+      signal      <- SignallingRef[Task, Boolean](false)
       // TODO handle failures with restarts, passivate after
-      fiber     <- source
-                     .apply(offset)
-                     .evalTap { elem =>
-                       offsetRef.getAndUpdate(current => current |+| ProjectionOffset(elem.ctx, elem.offset))
-                     }
-                     .interruptWhen(signal)
-                     .compile
-                     .drain
-                     .start
-      fiberRef  <- Ref[Task].of(fiber)
-    } yield new Projection(name, offsetRef, signal, fiberRef)
+      fiber       <- streamF
+                       .apply(offset)
+                       .evalTap { elem =>
+                         offsetRef.getAndUpdate(current => current.add(elem.ctx, elem.offset))
+                       }
+                       .interruptWhen(signal)
+                       .onFinalizeWeak(finaliseRef.set(true))
+                       .compile
+                       .drain
+                       .start
+      fiberRef    <- Ref[Task].of(fiber)
+    } yield new Projection(name, offsetRef, signal, finaliseRef, fiberRef)
 
   /**
     * Starts the projection from the beginning. The stream is executed in the background and can be interacted with
