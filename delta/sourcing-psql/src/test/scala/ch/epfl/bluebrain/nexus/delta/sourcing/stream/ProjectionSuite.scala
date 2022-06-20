@@ -215,4 +215,30 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
                              )
     } yield ()
   }
+
+  test("Passivate a projection after becoming idle") {
+    val sources  = NonEmptyChain(
+      SourceChain(
+        Naturals.reference,
+        iri"https://naturals",
+        NaturalsConfig(10, 1.second).toJsonLd,
+        Chain()
+      )
+    )
+    val pipes    = NonEmptyChain(
+      PipeChain(
+        iri"https://log",
+        NonEmptyChain(intToStringPipe, logPipe)
+      )
+    )
+    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
+    val compiled = defined.compile(registry).rightValue
+    for {
+      projection <- compiled.passivate(100.millis, 5.millis).start()
+      _          <- waitForNElements(10, 50.millis)
+      _          <- projection.isRunning.assert(true)
+      _          <- Task.sleep(500.millis)
+      _          <- projection.isRunning.assert(false)
+    } yield ()
+  }
 }
