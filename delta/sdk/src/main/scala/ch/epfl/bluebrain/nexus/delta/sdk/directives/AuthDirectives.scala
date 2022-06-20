@@ -4,14 +4,14 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.Credentials
+import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.error.IdentityError.{AuthenticationFailed, InvalidToken}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.AuthorizationFailed
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{AclAddress, AclCollection}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganizationAnyProject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import monix.execution.Scheduler
 
 import scala.concurrent.Future
@@ -19,7 +19,7 @@ import scala.concurrent.Future
 /**
   * Akka HTTP directives for authentication
   */
-abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s: Scheduler) {
+abstract class AuthDirectives(identities: Identities, aclCheck: AclCheck)(implicit val s: Scheduler) {
 
   private def authenticator: AsyncAuthenticator[Caller] = {
     case Credentials.Missing         => Future.successful(None)
@@ -53,13 +53,6 @@ abstract class AuthDirectives(identities: Identities, acls: Acls)(implicit val s
     * Checks whether given [[Caller]] has the [[Permission]] on the [[AclAddress]].
     */
   def authorizeFor(path: AclAddress, permission: Permission)(implicit caller: Caller): Directive0 =
-    authorizeAsync(acls.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
-
-  /**
-    * Return all callers acls
-    */
-  def callerAcls(implicit caller: Caller): Directive1[AclCollection] = onSuccess(
-    acls.listSelf(AnyOrganizationAnyProject(true)).runToFuture
-  )
+    authorizeAsync(aclCheck.authorizeFor(path, permission).runToFuture) or failWith(AuthorizationFailed)
 
 }

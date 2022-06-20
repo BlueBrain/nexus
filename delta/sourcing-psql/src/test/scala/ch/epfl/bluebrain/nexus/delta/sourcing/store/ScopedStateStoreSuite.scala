@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DoobieAssertions, DoobieFixture, MonixBioSuite, PullRequest}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
+import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
 
 import java.time.Instant

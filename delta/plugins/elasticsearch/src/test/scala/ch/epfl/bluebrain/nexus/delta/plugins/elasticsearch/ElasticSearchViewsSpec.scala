@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.Json
 import io.circe.literal._
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -510,14 +511,14 @@ class ElasticSearchViewsSpec
         views.create(idDeprecated, listProject.ref, source).accepted
         views.deprecate(idDeprecated, listProject.ref, 1L).accepted
         views.create(aggregateId, listProject.ref, aggregateSource).accepted
-        val params = ElasticSearchViewSearchParams(project = Some(listProject.ref), filter = _ => true)
+        val params = ElasticSearchViewSearchParams(project = Some(listProject.ref), filter = _ => UIO.pure(true))
         views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 3
       }
       "only deprecated views are selected" in {
         val params = ElasticSearchViewSearchParams(
           project = Some(listProject.ref),
           deprecated = Some(true),
-          filter = _ => true
+          filter = _ => UIO.pure(true)
         )
         views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
       }
@@ -525,7 +526,7 @@ class ElasticSearchViewsSpec
         val params = ElasticSearchViewSearchParams(
           project = Some(listProject.ref),
           types = Set(AggregateElasticSearch.tpe),
-          filter = _ => true
+          filter = _ => UIO.pure(true)
         )
         views.list(Pagination.OnePage, params, Ordering.by(_.createdAt)).accepted.total shouldEqual 1
       }

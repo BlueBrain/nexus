@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.PermissionsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -33,12 +34,12 @@ object PermissionsModule extends ModuleDef {
     (
         identities: Identities,
         permissions: Permissions,
-        acls: Acls,
+        aclCheck: AclCheck,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new PermissionsRoutes(identities, permissions, acls)(baseUri, s, cr, ordering)
+    ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, s, cr, ordering)
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/permissions-metadata.json"))

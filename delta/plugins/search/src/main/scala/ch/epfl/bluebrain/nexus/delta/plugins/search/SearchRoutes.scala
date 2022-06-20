@@ -6,12 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{baseUriPrefix, emit}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities}
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -20,11 +21,11 @@ import monix.execution.Scheduler
 
 class SearchRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     search: Search,
     config: SearchConfig
 )(implicit baseUri: BaseUri, s: Scheduler, cr: RemoteContextResolution, ordering: JsonKeyOrdering)
-    extends AuthDirectives(identities, acls)
+    extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
 

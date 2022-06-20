@@ -19,28 +19,27 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
 import monix.bio.IO
@@ -85,14 +84,6 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   private val project1        = ProjectGen.project("org", "proj")
   private val project2        = ProjectGen.project("org2", "proj2")
   private val queryPermission = Permission.unsafe("views/query")
-
-  private val acls = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
-      (bob.subject, AclAddress.Root, Set(queryPermission)),
-      (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    )
-    .accepted
 
   private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
     resourceFor(id, project, IndexingBlazegraphViewValue()).asInstanceOf[IndexingViewResource]
@@ -200,14 +191,19 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue
 
   "A BlazegraphViewsQuery" should {
-    val visitor    = new ViewRefVisitor(fetchView(_, _).map { view =>
+    val visitor = new ViewRefVisitor(fetchView(_, _).map { view =>
       view.value match {
         case v: IndexingBlazegraphView  =>
           IndexedVisitedView(ViewRef(v.project, v.id), v.permission, namespace(v.uuid, view.rev, externalConfig))
         case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
       }
     })
-    lazy val views = BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client)
+
+    lazy val views = AclSimpleCheck(
+      (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
+      (bob.subject, AclAddress.Root, Set(queryPermission)),
+      (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
+    ).map { acls => BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client) }.accepted
 
     "index triples" in {
       forAll(indexingViews) { v =>

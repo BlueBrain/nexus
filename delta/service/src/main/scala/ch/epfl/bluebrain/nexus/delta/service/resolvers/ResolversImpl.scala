@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.resolvers
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -166,13 +167,18 @@ final class ResolversImpl private (
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     params.project
       .fold(index.values)(index.values)
-      .map { resources =>
-        val results = resources.filter(params.matches).sorted(ordering)
-        UnscoredSearchResults(
-          results.size.toLong,
-          results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
-        )
+      .flatMap { resources =>
+        resources.filterA(params.matches).map { results =>
+          UnscoredSearchResults(
+            results.size.toLong,
+            results
+              .sorted(ordering)
+              .map(UnscoredResultEntry(_))
+              .slice(pagination.from, pagination.from + pagination.size)
+          )
+        }
       }
+      .hideErrors
       .named("listResolvers", moduleType)
 
   override def currentEvents(
@@ -251,7 +257,7 @@ object ResolversImpl {
     )
 
   private def findResolver(index: ResolversCache)(project: ProjectRef, params: ResolverSearchParams): UIO[Option[Iri]] =
-    index.find(project, params.matches).map(_.map(_.id))
+    index.values(project).flatMap { v => v.findM(params.matches).map(_.map(_.id)) }
 
   def aggregate(
       config: AggregateConfig,

@@ -132,7 +132,7 @@ object ProjectDeletion {
         val projectResources: UIO[Seq[ProjectResource]] = projects
           .list(
             Pagination.OnePage,
-            ProjectSearchParams(filter = project => !project.markedForDeletion),
+            ProjectSearchParams(filter = project => UIO.pure(!project.markedForDeletion)),
             Ordering.by(_.updatedAt)
           )
           .map(_.results.map(_.source))

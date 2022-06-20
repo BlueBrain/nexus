@@ -20,19 +20,19 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.{ProjectIsDeprecated, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOFixedClock, IOValues}
 import monix.bio.IO
@@ -271,13 +271,11 @@ class FilesSpec(docker: RemoteStorageDocker)
         )
         .accepted
 
-    val acls = AclSetup
-      .init(
-        (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
-        (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
-        (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
-      )
-      .accepted
+    val aclCheck = AclSimpleCheck(
+      (Anonymous, AclAddress.Root, Set(Permissions.resources.read)),
+      (bob, AclAddress.Project(projectRef), Set(diskFields.readPermission.value, diskFields.writePermission.value)),
+      (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
+    ).accepted
 
     val cfg = config.copy(
       disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
@@ -287,7 +285,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     val storageStatistics =
       StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Some(Instant.EPOCH)))))
 
-    val (files, storages) = FilesSetup.init(orgs, projs, acls, storageStatistics, cfg, allowedPerms.toSeq: _*)
+    val (files, storages) = FilesSetup.init(orgs, projs, aclCheck, storageStatistics, cfg, allowedPerms.toSeq: _*)
 
     "creating a file" should {
 
@@ -376,7 +374,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "succeed with the id passed" in {
-        acls.append(Acl(AclAddress.Root, bob -> Set(otherWrite)), 1).accepted
+        aclCheck.append(AclAddress.Root, bob -> Set(otherWrite)).accepted
         val path     = Uri.Path("my/file-3.txt")
         val tempAttr = attributes("myfile.txt").copy(digest = NotComputedDigest)
         val attr     =

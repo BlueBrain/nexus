@@ -9,17 +9,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
@@ -28,9 +28,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -42,8 +43,8 @@ import monix.execution.Scheduler
   *
   * @param identities
   *   the identity module
-  * @param acls
-  *   the acls module
+  * @param aclCheck
+  *   verify the acls for users
   * @param organizations
   *   the organizations module
   * @param projects
@@ -55,7 +56,7 @@ import monix.execution.Scheduler
   */
 final class ResolversRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     organizations: Organizations,
     projects: Projects,
     resolvers: Resolvers,
@@ -68,7 +69,7 @@ final class ResolversRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling
     with RdfMarshalling {
 
@@ -82,18 +83,17 @@ final class ResolversRoutes(
   implicit private val eventExchangeMapper = Mapper(Resolvers.eventExchangeValue(_))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
-    (searchParams & types(projects)).tflatMap { case (deprecated, rev, createdBy, updatedBy, types) =>
-      callerAcls.map { aclsCol =>
-        ResolverSearchParams(
-          Some(projectRef),
-          deprecated,
-          rev,
-          createdBy,
-          updatedBy,
-          types,
-          resolver => aclsCol.exists(caller.identities, Read, resolver.project)
-        )
-      }
+    (searchParams & types(projects)).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
+      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
+      ResolverSearchParams(
+        Some(projectRef),
+        deprecated,
+        rev,
+        createdBy,
+        updatedBy,
+        types,
+        resolver => aclCheck.authorizeFor(resolver.project, Read, fetchAllCached)
+      )
     }
 
   def routes: Route =
@@ -280,7 +280,7 @@ object ResolversRoutes {
     */
   def apply(
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       organizations: Organizations,
       projects: Projects,
       resolvers: Resolvers,
@@ -293,6 +293,7 @@ object ResolversRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, index).routes
+  ): Route =
+    new ResolversRoutes(identities, aclCheck, organizations, projects, resolvers, multiResolution, index).routes
 
 }

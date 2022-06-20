@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
@@ -83,10 +84,10 @@ object ResolversModule extends ModuleDef {
   }
 
   make[MultiResolution].from {
-    (acls: Acls, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
+    (aclCheck: AclCheck, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
       MultiResolution(
         projects,
-        ResolverResolution(acls, resolvers, exchanges.toList)
+        ResolverResolution(aclCheck, resolvers, exchanges.toList)
       )
   }
 
@@ -94,7 +95,7 @@ object ResolversModule extends ModuleDef {
     (
         config: AppConfig,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         organizations: Organizations,
         projects: Projects,
         resolvers: Resolvers,
@@ -106,7 +107,7 @@ object ResolversModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResolversRoutes(identities, acls, organizations, projects, resolvers, multiResolution, indexingAction)(
+      new ResolversRoutes(identities, aclCheck, organizations, projects, resolvers, multiResolution, indexingAction)(
         baseUri,
         config.resolvers.pagination,
         s,

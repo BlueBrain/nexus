@@ -8,7 +8,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, DoobieAssertions, DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic
+import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
 
 import java.time.Instant

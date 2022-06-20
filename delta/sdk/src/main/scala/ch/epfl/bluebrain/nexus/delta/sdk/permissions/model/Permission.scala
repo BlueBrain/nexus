@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.sdk.error.FormatErrors.IllegalPermissionFormatError
-import io.circe.{Decoder, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 
 /**
   * Wraps a permission string that must begin with a letter, followed by at most 31 alphanumeric characters or symbols
@@ -43,11 +43,11 @@ object Permission {
   final def unsafe(value: String): Permission =
     new Permission(value)
 
-  implicit final val permissionEncoder: Encoder[Permission] =
-    Encoder.encodeString.contramap(_.value)
-
-  implicit final val permissionDecoder: Decoder[Permission] =
-    Decoder.decodeString.emap(str => Permission(str).leftMap(_.getMessage))
+  implicit final val permissionCodec: Codec[Permission] =
+    Codec.from(
+      Decoder.decodeString.emap(str => Permission(str).leftMap(_.getMessage)),
+      Encoder.encodeString.contramap(_.value)
+    )
 
   implicit final val permissionJsonLdDecoder: JsonLdDecoder[Permission] = (cursor: ExpandedJsonLdCursor) =>
     cursor

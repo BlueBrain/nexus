@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
@@ -39,7 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{Project, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
@@ -395,12 +396,13 @@ final class CompositeViews private (
       ordering: Ordering[ViewResource]
   ): UIO[UnscoredSearchResults[ViewResource]] =
     cache.values
-      .map { resources =>
-        val results = resources.filter(params.matches).sorted(ordering)
-        UnscoredSearchResults(
-          results.size.toLong,
-          results.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
-        )
+      .flatMap {
+        _.toList.filterA(params.matches).map { results =>
+          SearchResults(
+            results.size.toLong,
+            results.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
+          )
+        }
       }
       .named("listCompositeViews", moduleType)
 
@@ -526,11 +528,13 @@ object CompositeViews {
       val params = CompositeViewSearchParams(
         deprecated = Some(false),
         filter = { c =>
-          c.project != project && c.sources.value.exists {
-            case crossProjectSource: CrossProjectSource =>
-              crossProjectSource.project == project
-            case _                                      => false
-          }
+          UIO.pure(
+            c.project != project && c.sources.value.exists {
+              case crossProjectSource: CrossProjectSource =>
+                crossProjectSource.project == project
+              case _                                      => false
+            }
+          )
         }
       )
       views.list(OnePage, params, ProjectReferenceFinder.ordering).map {
@@ -698,7 +702,7 @@ object CompositeViews {
   def aggregate(
       config: CompositeViewsConfig,
       projects: Projects,
-      acls: Acls,
+      aclCheck: AclCheck,
       fetchPermissions: UIO[Set[Permission]],
       resourceIdCheck: ResourceIdCheck,
       client: ElasticSearchClient,
@@ -711,11 +715,8 @@ object CompositeViews {
       clock: Clock[UIO]
   ): UIO[CompositeViewsAggregate] = {
 
-    def validateAcls(cpSource: CrossProjectSource) =
-      acls
-        .fetchWithAncestors(cpSource.project)
-        .map(_.exists(cpSource.identities, events.read, cpSource.project))
-        .flatMap(IO.unless(_)(IO.raiseError(CrossProjectSourceForbidden(cpSource))))
+    def validateAcls(cpSource: CrossProjectSource): IO[CrossProjectSourceForbidden, Unit] =
+      aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
 
     def validateProject(cpSource: CrossProjectSource) = {
       projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void

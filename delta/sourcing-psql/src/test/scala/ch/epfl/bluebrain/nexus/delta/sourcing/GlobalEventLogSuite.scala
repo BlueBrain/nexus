@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
+import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, MonixBioSuite}
 
 import scala.concurrent.duration._
 

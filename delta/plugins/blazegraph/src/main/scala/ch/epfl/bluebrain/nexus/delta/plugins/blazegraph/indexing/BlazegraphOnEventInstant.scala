@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.OnePage
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._
 import java.time.Instant
@@ -37,7 +37,7 @@ final class BlazegraphOnEventInstant(
     BlazegraphViewSearchParams(
       project = Some(project),
       deprecated = Some(false),
-      filter = _.tpe == BlazegraphViewType.IndexingBlazegraphView
+      filter = v => UIO.pure(v.tpe == BlazegraphViewType.IndexingBlazegraphView)
     )
 
 }

@@ -9,9 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution, ResourceResolutionReport}
@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, QuotasDummy, SchemaImports}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.literal._
 import monix.bio.{IO, Task, UIO}
@@ -196,7 +196,7 @@ object ProjectDeletionSpec {
       (for {
         orgs                     <- IO.pure(null: Organizations)
         projects                 <- ProjectsDummy(orgs, QuotasDummy.neverReached, ApiMappings.empty)
-        acls                     <- AclSetup.init()
+        aclCheck                 <- AclSimpleCheck()
         resolverContextResolution = new ResolverContextResolution(
                                       RemoteContextResolution.fixed(),
                                       (_, _, _) => IO.raiseError(ResourceResolutionReport())
@@ -205,8 +205,8 @@ object ProjectDeletionSpec {
         schemaImports            <- Deferred[Task, SchemaImports]
         schemas                  <-
           SchemasDummy.fromDeferredImports(orgs, projects, schemaImports, resolverContextResolution, (_, _) => IO.unit)
-        _                        <- schemaImports.complete(SchemaImports(acls, resolvers, schemas, null))
-        resolverResolution        = ResourceResolution.schemaResource(acls, resolvers, schemas)
+        _                        <- schemaImports.complete(SchemaImports(aclCheck, resolvers, schemas, null))
+        resolverResolution        = ResourceResolution.schemaResource(aclCheck, resolvers, schemas)
         resources                <- ResourcesDummy(orgs, projects, resolverResolution, (_, _) => IO.unit, resolverContextResolution)
         eventLog                  = resources.journal.asInstanceOf[EventLog[Envelope[ProjectScopedEvent]]]
       } yield (orgs, projects, resources, eventLog)).hideErrors

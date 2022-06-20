@@ -6,12 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolutionE
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import monix.bio.IO
@@ -87,8 +87,8 @@ object ResolverContextResolution {
 
   /**
     * Constructs a [[ResolverContextResolution]]
-    * @param acls
-    *   an acl instance
+    * @param aclCheck
+    *   how to check acls
     * @param resolvers
     *   a resolvers instance
     * @param resources
@@ -97,10 +97,10 @@ object ResolverContextResolution {
     *   a previously defined 'RemoteContextResolution'
     */
   def apply(
-      acls: Acls,
+      aclCheck: AclCheck,
       resolvers: Resolvers,
       resources: Resources,
       rcr: RemoteContextResolution
   ): ResolverContextResolution =
-    apply(rcr, ResourceResolution.dataResource(acls, resolvers, resources))
+    apply(rcr, ResourceResolution.dataResource(aclCheck, resolvers, resources))
 }

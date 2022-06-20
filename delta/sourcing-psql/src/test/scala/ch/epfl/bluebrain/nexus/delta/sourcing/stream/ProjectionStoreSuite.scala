@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.{SourceId, SourceIdPipeChainId}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{CollectionAssertions, DoobieAssertions, DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.{CollectionAssertions, DoobieAssertions, DoobieFixture, MonixBioSuite}
 
 class ProjectionStoreSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions with CollectionAssertions {
 

@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -199,13 +200,13 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
 
   make[BlazegraphViewsQuery].from {
     (
-        acls: Acls,
+        aclCheck: AclCheck,
         views: BlazegraphViews,
         projects: Projects,
         client: BlazegraphClient @Id("blazegraph-query-client"),
         cfg: BlazegraphViewsConfig
     ) =>
-      BlazegraphViewsQuery(acls, views, projects, client)(cfg.indexing)
+      BlazegraphViewsQuery(aclCheck, views, projects, client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("blazegraph-statistics").from {
@@ -216,7 +217,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
   make[BlazegraphViewsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
@@ -234,7 +235,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         views,
         viewsQuery,
         identities,
-        acls,
+        aclCheck,
         projects,
         progresses,
         indexingController.restart,

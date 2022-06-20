@@ -1,16 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.service.projects
 
 import ch.epfl.bluebrain.nexus.delta.kernel.error.FormatError
+import ch.epfl.bluebrain.nexus.delta.sdk.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress, AclRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.SDKError
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress, AclRejection}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning.ProjectProvisioningRejection
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import monix.bio.{IO, UIO}
 
 /**
@@ -54,15 +55,15 @@ object ProjectProvisioning {
 
   /**
     * Create an instance of [[ProjectProvisioning]]
-    * @param acls
-    *   ACLs operations
+    * @param appendAcls
+    *   how to append acls
     * @param projects
     *   project operations
     * @param provisioningConfig
     *   provisioning configuration
     */
   def apply(
-      acls: Acls,
+      appendAcls: Acl => IO[AclRejection, Unit],
       projects: Projects,
       provisioningConfig: AutomaticProvisioningConfig
   ): ProjectProvisioning = new ProjectProvisioning {
@@ -70,13 +71,11 @@ object ProjectProvisioning {
     private def provisionOnNotFound(
         projectRef: ProjectRef,
         user: User,
-        acls: Acls,
         provisioningConfig: AutomaticProvisioningConfig
     ): IO[ProjectProvisioningRejection, Unit] = {
       val acl = Acl(AclAddress.Project(projectRef), user -> provisioningConfig.permissions)
       for {
-        _ <- acls
-               .append(acl, 0L)(user)
+        _ <- appendAcls(acl)
                .onErrorRecover { case _: AclRejection.IncorrectRev | _: AclRejection.NothingToBeUpdated => () }
                .mapError(UnableToSetAcls)
         _ <- projects
@@ -97,11 +96,30 @@ object ProjectProvisioning {
               proj      <- IO.fromEither(Label.sanitized(subject)).mapError(InvalidProjectLabel)
               projectRef = ProjectRef(org, proj)
               exists    <- projects.fetch(projectRef).map(_ => true).onErrorHandle(_ => false)
-              _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, acls, provisioningConfig))
+              _         <- IO.when(!exists)(provisionOnNotFound(projectRef, user, provisioningConfig))
             } yield ()
           case None      => IO.unit
         }
       case _                                                         => UIO.unit
     }
+  }
+
+  /**
+    * Create an instance of [[ProjectProvisioning]] from an [[Acls]] instance
+    * @param acls
+    *   an acls instance
+    * @param projects
+    *   project operations
+    * @param provisioningConfig
+    *   provisioning configuration
+    */
+  def apply(
+      acls: Acls,
+      projects: Projects,
+      provisioningConfig: AutomaticProvisioningConfig,
+      serviceAccount: ServiceAccount
+  ): ProjectProvisioning = {
+    implicit val serviceAccountSubject: Subject = serviceAccount.subject
+    apply(acls.append(_, 0).void, projects, provisioningConfig)
   }
 }

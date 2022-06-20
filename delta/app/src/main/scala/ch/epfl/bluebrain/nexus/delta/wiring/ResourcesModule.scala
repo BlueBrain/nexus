@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
@@ -34,7 +35,7 @@ object ResourcesModule extends ModuleDef {
   make[ResourcesAggregate].fromEffect {
     (
         config: AppConfig,
-        acls: Acls,
+        aclCheck: AclCheck,
         resolvers: Resolvers,
         schemas: Schemas,
         resourceIdCheck: ResourceIdCheck,
@@ -44,7 +45,7 @@ object ResourcesModule extends ModuleDef {
     ) =>
       ResourcesImpl.aggregate(
         config.resources.aggregate,
-        ResourceResolution.schemaResource(acls, resolvers, schemas),
+        ResourceResolution.schemaResource(aclCheck, resolvers, schemas),
         resourceIdCheck
       )(api, as, clock)
   }
@@ -67,8 +68,8 @@ object ResourcesModule extends ModuleDef {
   }
 
   make[ResolverContextResolution].from {
-    (acls: Acls, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
-      ResolverContextResolution(acls, resolvers, resources, rcr)
+    (aclCheck: AclCheck, resolvers: Resolvers, resources: Resources, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ResolverContextResolution(aclCheck, resolvers, resources, rcr)
   }
   make[SseEventLog]
     .named("resources")
@@ -84,7 +85,7 @@ object ResourcesModule extends ModuleDef {
   make[ResourcesRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         organizations: Organizations,
         projects: Projects,
         resources: Resources,
@@ -96,7 +97,7 @@ object ResourcesModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResourcesRoutes(identities, acls, organizations, projects, resources, sseEventLog, indexingAction)(
+      new ResourcesRoutes(identities, aclCheck, organizations, projects, resources, sseEventLog, indexingAction)(
         baseUri,
         s,
         cr,

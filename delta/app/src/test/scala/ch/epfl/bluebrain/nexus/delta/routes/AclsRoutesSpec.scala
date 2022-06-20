@@ -5,41 +5,26 @@ import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, _}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress.{Organization, Project, Root}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.{Acl, AclAddress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclAddress}
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls, AclsConfig, AclsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{AuthToken, Caller}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, IdentitiesDummy}
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.IdentitiesDummy
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{Inspectors, OptionValues}
+import monix.bio.UIO
 
-class AclsRoutesSpec
-    extends AnyWordSpecLike
-    with ScalatestRouteTest
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with RouteHelpers
-    with TestMatchers
-    with Inspectors
-    with TestHelpers
-    with RouteFixtures {
+import scala.concurrent.duration._
+
+class AclsRoutesSpec extends BaseRouteSpec {
 
   val realm1 = Label.unsafe("realm")
   val realm2 = Label.unsafe("myrealm")
@@ -48,8 +33,7 @@ class AclsRoutesSpec
   val user2     = User("uuid2", realm1)
   val group     = Group("mygroup", realm2)
   val group2    = Group("mygroup2", realm2)
-  val readWrite =
-    Set(aclsPermissions.read, aclsPermissions.write, events.read)
+  val readWrite = Set(aclsPermissions.read, aclsPermissions.write, events.read)
 
   val managePermission = Permission.unsafe("acls/manage")
   val manage           = Set(managePermission)
@@ -71,10 +55,6 @@ class AclsRoutesSpec
   val myOrgMyProj   = Project(Label.unsafe("myorg"), Label.unsafe("myproj"))
   val myOrgMyProj2  = Project(Label.unsafe("myorg"), Label.unsafe("myproj2"))
   val myOrg2MyProj2 = Project(Label.unsafe("myorg2"), Label.unsafe("myproj2"))
-
-  private val acls = AclSetup
-    .init(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read), Set(realm1, realm2))
-    .accepted
 
   def aclEntryJson(identity: Identity, permissions: Set[Permission]): Json =
     Json.obj(
@@ -106,7 +86,15 @@ class AclsRoutesSpec
 
   private val identities = IdentitiesDummy(Map(AuthToken(token.token) -> caller))
 
-  val routes = Route.seal(AclsRoutes(identities, acls).routes)
+  private lazy val acls =
+    AclsImpl(
+      UIO.pure(Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read)),
+      Acls.findUnknownRealms(_, Set(realm1, realm2)),
+      Set(aclsPermissions.read, aclsPermissions.write, managePermission, events.read),
+      AclsConfig(EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)),
+      xas
+    )
+  lazy val routes       = Route.seal(AclsRoutes(identities, acls, AclCheck(acls)).routes)
 
   val paths = Seq(
     "/"             -> AclAddress.Root,
@@ -128,7 +116,7 @@ class AclsRoutesSpec
     }
 
     "create ACL" in {
-      acls.replace(userAcl(AclAddress.Root), 0L).accepted
+      acls.replace(userAcl(AclAddress.Root), 0).accepted
       val replace = aclJson(userAcl(AclAddress.Root)).removeKeys("_path")
       forAll(paths.drop(1)) { case (path, address) =>
         Put(s"/v1/acls$path", replace.toEntity) ~> addCredentials(token) ~> routes ~> check {
@@ -195,10 +183,9 @@ class AclsRoutesSpec
     }
 
     "get ACL self = true with org path containing *" in {
-
-      acls.append(userAcl(myOrg2), 0L).accepted
-      acls.append(groupAcl(myOrg2), 1L).accepted
-      acls.append(group2Acl(myOrg2), 2L).accepted
+      acls.append(userAcl(myOrg2), 0).accepted
+      acls.append(groupAcl(myOrg2), 1).accepted
+      acls.append(group2Acl(myOrg2), 2).accepted
       Get(s"/v1/acls/*") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(2L, Seq((selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L)))
         status shouldEqual StatusCodes.OK
@@ -213,10 +200,10 @@ class AclsRoutesSpec
     }
 
     "get ACL self = true with project path containing *" in {
-      acls.append(userAcl(myOrgMyProj2), 0L).accepted
-      acls.append(groupAcl(myOrgMyProj2), 1L).accepted
-      acls.append(group2Acl(myOrgMyProj2), 2L).accepted
-      acls.append(group2Acl(myOrg3), 0L).accepted
+      acls.append(userAcl(myOrgMyProj2), 0).accepted
+      acls.append(groupAcl(myOrgMyProj2), 1).accepted
+      acls.append(group2Acl(myOrgMyProj2), 2).accepted
+      acls.append(group2Acl(myOrg3), 0).accepted
       Get(s"/v1/acls/myorg/*") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(2L, Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L)))
@@ -233,9 +220,9 @@ class AclsRoutesSpec
     }
 
     "get ACL self = true with org and project path containing *" in {
-      acls.append(userAcl(myOrg2MyProj2), 0L).accepted
-      acls.append(groupAcl(myOrg2MyProj2), 1L).accepted
-      acls.append(group2Acl(myOrg2MyProj2), 2L).accepted
+      acls.append(userAcl(myOrg2MyProj2), 0).accepted
+      acls.append(groupAcl(myOrg2MyProj2), 1).accepted
+      acls.append(group2Acl(myOrg2MyProj2), 2).accepted
       Get(s"/v1/acls/*/*") ~> addCredentials(token) ~> routes ~> check {
         response.asJson shouldEqual
           expectedResponse(

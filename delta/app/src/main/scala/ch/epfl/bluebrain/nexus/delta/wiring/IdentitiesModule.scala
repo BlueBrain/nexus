@@ -9,13 +9,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, PriorityRoute}
 import ch.epfl.bluebrain.nexus.delta.service.identity.{GroupsConfig, IdentitiesImpl}
 import io.circe.Json
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -61,12 +62,12 @@ object IdentitiesModule extends ModuleDef {
   make[IdentitiesRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         s: Scheduler,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new IdentitiesRoutes(identities, acls)(s, baseUri, cr, ordering)
+    ) => new IdentitiesRoutes(identities, aclCheck)(s, baseUri, cr, ordering)
 
   }
 

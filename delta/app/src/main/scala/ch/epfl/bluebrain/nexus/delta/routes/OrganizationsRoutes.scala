@@ -8,23 +8,23 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddressFilter.AnyOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationEvent, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, OrganizationResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, OrganizationResource}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -40,16 +40,16 @@ import scala.annotation.nowarn
   *   the identities operations bundle
   * @param organizations
   *   the organizations operations bundle
-  * @param acls
-  *   the acls operations bundle
+  * @param aclCheck
+  *   verify the acl for users
   */
-final class OrganizationsRoutes(identities: Identities, organizations: Organizations, acls: Acls)(implicit
+final class OrganizationsRoutes(identities: Identities, organizations: Organizations, aclCheck: AclCheck)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
@@ -57,17 +57,16 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
   implicit val sseConverter: SseConverter[OrganizationEvent] = SseConverter(OrganizationEvent.sseEncoder)
 
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
-    (searchParams & parameter("label".?)).tflatMap { case (deprecated, rev, createdBy, updatedBy, label) =>
-      onSuccess(acls.listSelf(AnyOrganization(true)).runToFuture).map { aclsCol =>
-        OrganizationSearchParams(
-          deprecated,
-          rev,
-          createdBy,
-          updatedBy,
-          label,
-          org => aclsCol.exists(caller.identities, orgs.read, org.label)
-        )
-      }
+    (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
+      val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
+      OrganizationSearchParams(
+        deprecated,
+        rev,
+        createdBy,
+        updatedBy,
+        label,
+        org => aclCheck.authorizeFor(org.label, orgs.read, fetchAllCached)
+      )
     }
 
   def routes: Route =
@@ -157,13 +156,13 @@ object OrganizationsRoutes {
     * @return
     *   the [[Route]] for organizations
     */
-  def apply(identities: Identities, organizations: Organizations, acls: Acls)(implicit
+  def apply(identities: Identities, organizations: Organizations, aclCheck: AclCheck)(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations, acls).routes
+    new OrganizationsRoutes(identities, organizations, aclCheck).routes
 
 }

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import monix.bio.UIO
 
 /**
   * Search parameters for storage.
@@ -33,12 +34,12 @@ final case class StorageSearchParams(
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set(nxvStorage),
-    filter: Storage => Boolean
+    filter: Storage => UIO[Boolean]
 ) extends SearchParams[Storage] {
 
   override val schema: Option[ResourceRef] = Some(Latest(schemas.storage))
 
-  override def matches(resource: StorageResource): Boolean =
-    super.matches(resource) &&
-      project.forall(_ == resource.value.project)
+  override def matches(resource: StorageResource): UIO[Boolean] =
+    super.matches(resource).map(_ && project.forall(_ == resource.value.project))
+
 }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
@@ -9,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
-import ch.epfl.bluebrain.nexus.delta.service.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}

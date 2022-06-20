@@ -14,17 +14,17 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files,
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, AclSetup, ConfigFixtures}
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
@@ -63,15 +63,13 @@ class ArchiveDownloadSpec
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
 
-  private val acls              = AclSetup
-    .init(
-      (
-        subject,
-        AclAddress.Root,
-        Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
-      )
+  private val acls              = AclSimpleCheck(
+    (
+      subject,
+      AclAddress.Root,
+      Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
     )
-    .accepted
+  ).accepted
   private val (files, storages) = FilesSetup.init(org, project, acls, cfg)
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted

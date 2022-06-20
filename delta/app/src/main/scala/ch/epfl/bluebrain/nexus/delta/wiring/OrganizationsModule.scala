@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -43,12 +44,12 @@ object OrganizationsModule extends ModuleDef {
         identities: Identities,
         organizations: Organizations,
         cfg: AppConfig,
-        acls: Acls,
+        aclCheck: AclCheck,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new OrganizationsRoutes(identities, organizations, acls)(
+      new OrganizationsRoutes(identities, organizations, aclCheck)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         s,

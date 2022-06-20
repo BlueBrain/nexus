@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EitherAssertions
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.testkit.EitherAssertions
 import io.circe.Json
 import io.circe.syntax._
 import munit.FunSuite

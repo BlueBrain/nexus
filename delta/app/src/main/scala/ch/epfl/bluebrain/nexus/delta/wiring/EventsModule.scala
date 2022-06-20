@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.EventsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -19,7 +20,7 @@ object EventsModule extends ModuleDef {
   make[EventsRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         projects: Projects,
         sseEventLog: SseEventLog,
         baseUri: BaseUri,
@@ -27,7 +28,7 @@ object EventsModule extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new EventsRoutes(identities, acls, projects, sseEventLog)(baseUri, s, cr, ordering)
+      new EventsRoutes(identities, aclCheck, projects, sseEventLog)(baseUri, s, cr, ordering)
   }
 
   make[SseEventLog]

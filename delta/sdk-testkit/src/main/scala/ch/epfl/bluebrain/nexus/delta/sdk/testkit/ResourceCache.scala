@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.testkit
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -53,19 +54,23 @@ private[testkit] class ResourceCache[Id, R](cache: IORef[Map[Id, ResourceF[R]]])
       searchParams: SearchParams[R],
       ordering: Ordering[ResourceF[R]]
   ): UIO[UnscoredSearchResults[ResourceF[R]]] =
-    cache.get.map { resources =>
-      val filtered = resources.values.filter(searchParams.matches).toVector.sorted(ordering)
-      UnscoredSearchResults(
-        filtered.length.toLong,
-        filtered.map(UnscoredResultEntry(_)).slice(pagination.from, pagination.from + pagination.size)
-      )
+    cache.get.flatMap { resources =>
+      resources.values.toList.filterA(searchParams.matches).map { filtered =>
+        UnscoredSearchResults(
+          filtered.length.toLong,
+          filtered
+            .sorted(ordering)
+            .map(UnscoredResultEntry(_))
+            .slice(pagination.from, pagination.from + pagination.size)
+        )
+      }
     }
 
   /**
     * Find the first resource that matches the passed ''searchParams''
     */
   def find(searchParams: SearchParams[R]): UIO[Option[ResourceF[R]]] =
-    cache.get.map(_.values.find(searchParams.matches))
+    cache.get.flatMap(_.values.toList.findM(searchParams.matches))
 
   /**
     * Return raw values

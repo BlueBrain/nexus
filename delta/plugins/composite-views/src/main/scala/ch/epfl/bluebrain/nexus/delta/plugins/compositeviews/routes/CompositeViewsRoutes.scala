@@ -19,19 +19,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
@@ -42,7 +43,7 @@ import monix.execution.Scheduler
   */
 class CompositeViewsRoutes(
     identities: Identities,
-    acls: Acls,
+    aclCheck: AclCheck,
     projects: Projects,
     views: CompositeViews,
     restartView: RestartView,
@@ -57,7 +58,7 @@ class CompositeViewsRoutes(
     cr: RemoteContextResolution,
     ordering: JsonKeyOrdering,
     fusionConfig: FusionConfig
-) extends AuthDirectives(identities, acls)
+) extends AuthDirectives(identities, aclCheck)
     with DeltaDirectives
     with CirceUnmarshalling
     with RdfMarshalling
@@ -432,7 +433,7 @@ object CompositeViewsRoutes {
     */
   def apply(
       identities: Identities,
-      acls: Acls,
+      aclCheck: AclCheck,
       projects: Projects,
       views: CompositeViews,
       restartView: RestartView,
@@ -450,7 +451,7 @@ object CompositeViewsRoutes {
   ): Route =
     new CompositeViewsRoutes(
       identities,
-      acls,
+      aclCheck,
       projects,
       views,
       restartView,

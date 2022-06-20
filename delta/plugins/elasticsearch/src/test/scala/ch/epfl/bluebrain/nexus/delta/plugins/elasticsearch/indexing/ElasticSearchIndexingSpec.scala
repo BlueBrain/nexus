@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Gro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
@@ -91,10 +92,14 @@ class ElasticSearchIndexingSpec(override val docker: ElasticSearchDocker)
   private val config = ElasticSearchViewsConfig(
     "http://localhost",
     None,
-    httpClientConfig,
+    httpConfig,
     aggregate,
     keyValueStore,
-    pagination,
+    PaginationConfig(
+      defaultSize = 30,
+      sizeLimit = 100,
+      fromLimit = 10000
+    ),
     cacheIndexing,
     externalIndexing,
     10,

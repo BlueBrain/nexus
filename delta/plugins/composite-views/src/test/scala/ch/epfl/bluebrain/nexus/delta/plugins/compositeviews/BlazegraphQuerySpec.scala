@@ -13,15 +13,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NTriples
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AclSetup, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.{Json, JsonObject}
@@ -63,13 +64,11 @@ class BlazegraphQuerySpec
   private val project   = ProjectGen.project("myorg", "proj")
   private val otherPerm = Permission.unsafe("other")
 
-  private val acls = AclSetup
-    .init(
-      (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
-      (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
-      (anon.subject, AclAddress.Root, Set(permissions.read))
-    )
-    .accepted
+  private val aclCheck = AclSimpleCheck(
+    (alice.subject, AclAddress.Project(project.ref), Set(permissions.query)),
+    (bob.subject, AclAddress.Project(project.ref), Set(permissions.query, otherPerm)),
+    (anon.subject, AclAddress.Root, Set(permissions.read))
+  ).accepted
 
   private val construct = TemplateSparqlConstructQuery(
     "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
@@ -181,7 +180,7 @@ class BlazegraphQuerySpec
 
   private val viewsQuery =
     BlazegraphQuery(
-      acls,
+      aclCheck,
       views.fetch,
       views.fetchBlazegraphProjection,
       new SparqlQueryClientDummy(sparqlNTriples = {

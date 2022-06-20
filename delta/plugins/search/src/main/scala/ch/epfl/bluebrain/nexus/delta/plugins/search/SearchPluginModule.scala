@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.ServiceAccount
 import distage.ModuleDef
@@ -18,8 +19,8 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchConfig].fromEffect { cfg => SearchConfig.load(cfg) }
 
   make[Search].from {
-    (compositeViews: CompositeViews, acls: Acls, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
-      Search(compositeViews, acls, esClient, config.elasticSearchIndexing)
+    (compositeViews: CompositeViews, aclCheck: AclCheck, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
+      Search(compositeViews, aclCheck, esClient, config.elasticSearchIndexing)
   }
 
   make[SearchScopeInitialization].from {
@@ -32,14 +33,14 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
   make[SearchRoutes].from {
     (
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         search: Search,
         config: SearchConfig,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new SearchRoutes(identities, acls, search, config)(baseUri, s, cr, ordering)
+    ) => new SearchRoutes(identities, aclCheck, search, config)(baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: SearchRoutes) =>

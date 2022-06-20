@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
+import ch.epfl.bluebrain.nexus.testkit.MonixBioSuite
 import fs2.Stream
 import monix.bio.UIO
 

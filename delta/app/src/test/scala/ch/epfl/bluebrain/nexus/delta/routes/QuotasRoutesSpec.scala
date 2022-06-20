@@ -6,38 +6,22 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.identities.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.service.quotas.QuotasImpl
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 
 import java.util.UUID
 
-class QuotasRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with CancelAfterFailure
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures {
+class QuotasRoutesSpec extends BaseRouteSpec {
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -59,13 +43,6 @@ class QuotasRoutesSpec
       Caller(bob, Set(bob))
     )
 
-  private val acls = AclSetup
-    .init(
-      (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
-      (bob, AclAddress.Project(project.ref), Set(Permissions.quotas.read))
-    )
-    .accepted
-
   implicit private val config            = QuotasConfig(Some(5), Some(10), enabled = true, Map.empty)
   implicit private val serviceAccountCfg = ServiceAccountConfig(ServiceAccount(User("internal", Label.unsafe("sa"))))
 
@@ -73,7 +50,12 @@ class QuotasRoutesSpec
 
   private val quotas = new QuotasImpl(projects, projectsCounts)
 
-  private val routes = Route.seal(new QuotasRoutes(identities, acls, projects, quotas).routes)
+  private val aclCheck = AclSimpleCheck(
+    (Anonymous, AclAddress.Root, Set(Permissions.events.read)),
+    (bob, AclAddress.Project(project.ref), Set(Permissions.quotas.read))
+  ).accepted
+
+  private lazy val routes = Route.seal(new QuotasRoutes(identities, aclCheck, projects, quotas).routes)
 
   "The Quotas route" when {
 

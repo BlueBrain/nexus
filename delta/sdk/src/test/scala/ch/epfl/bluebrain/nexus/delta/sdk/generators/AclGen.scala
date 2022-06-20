@@ -1,31 +1,26 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.{Acl, AclState}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+
 import java.time.Instant
 
-import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.Acl
-import ch.epfl.bluebrain.nexus.delta.sdk.model.acls.AclState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
-import org.scalatest.OptionValues
+object AclGen {
 
-object AclGen extends OptionValues {
-
-  def currentState(
+  def state(
       acl: Acl,
-      rev: Long,
+      rev: Int,
       createdBy: Subject = Identity.Anonymous,
       updatedBy: Subject = Identity.Anonymous
-  ): Current =
-    Current(acl, rev, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
+  ): AclState =
+    AclState(acl, rev, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
 
   def resourceFor(
       acl: Acl,
-      rev: Long = 1L,
-      subject: Subject = Identity.Anonymous,
-      perms: Set[Permission] = Set.empty
-  ): AclResource =
-    currentState(acl, rev, subject, subject).toResource(acl.address, perms).value
+      rev: Int = 1,
+      subject: Subject = Identity.Anonymous
+  ): AclResource = state(acl, rev, subject, subject).toResource
 
 }

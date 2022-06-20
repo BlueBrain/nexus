@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.service.projects
 import akka.actor.typed.ActorSystem
 import akka.persistence.query.Offset
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, uuidFrom}
@@ -175,12 +176,13 @@ final class ProjectsImpl private (
       ordering: Ordering[ProjectResource]
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]]            =
     index.values
-      .map { resources =>
-        val results = resources.filter(params.matches).sorted(ordering)
-        SearchResults(
-          results.size.toLong,
-          results.slice(pagination.from, pagination.from + pagination.size)
-        )
+      .flatMap {
+        _.toList.filterA(params.matches).map { results =>
+          SearchResults(
+            results.size.toLong,
+            results.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
+          )
+        }
       }
       .named("listProjects", moduleType)
 

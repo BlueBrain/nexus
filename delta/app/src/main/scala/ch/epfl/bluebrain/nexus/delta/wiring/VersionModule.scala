@@ -6,8 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.{Acls, Identities, PriorityRoute, ServiceDependency}
+import ch.epfl.bluebrain.nexus.delta.sdk.{Identities, PriorityRoute, ServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.service.database.{CassandraServiceDependency, PostgresServiceDependency}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -30,14 +31,14 @@ object VersionModule extends ModuleDef {
     (
         cfg: AppConfig,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         plugins: List[PluginDescription],
         dependencies: Set[ServiceDependency],
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      VersionRoutes(identities, acls, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)
+      VersionRoutes(identities, aclCheck, plugins, dependencies, cfg.description)(cfg.http.baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: VersionRoutes) =>

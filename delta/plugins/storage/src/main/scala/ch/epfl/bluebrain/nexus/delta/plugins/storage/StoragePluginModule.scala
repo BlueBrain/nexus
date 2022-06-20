@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
@@ -136,7 +137,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cfg: StoragePluginConfig,
         crypto: Crypto,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         organizations: Organizations,
         projects: Projects,
         storages: Storages,
@@ -150,7 +151,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, acls, organizations, projects, storages, storagesStatistics, indexingAction)(
+        new StoragesRoutes(identities, aclCheck, organizations, projects, storages, storagesStatistics, indexingAction)(
           baseUri,
           crypto,
           paginationConfig,
@@ -199,7 +200,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           storageTypeConfig: StorageTypeConfig,
           log: EventLog[Envelope[FileEvent]],
           client: HttpClient @Id("storage"),
-          acls: Acls,
+          aclCheck: AclCheck,
           orgs: Organizations,
           projects: Projects,
           storages: Storages,
@@ -209,7 +210,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, acls, orgs, projects, storages, storagesStatistics, agg)(
+        Files(cfg.files, storageTypeConfig, log, aclCheck, orgs, projects, storages, storagesStatistics, agg)(
           client,
           uuidF,
           scheduler,
@@ -221,7 +222,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     (
         cfg: StoragePluginConfig,
         identities: Identities,
-        acls: Acls,
+        aclCheck: AclCheck,
         organizations: Organizations,
         projects: Projects,
         files: Files,
@@ -233,7 +234,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, acls, organizations, projects, files, indexingAction)(
+      new FilesRoutes(identities, aclCheck, organizations, projects, files, indexingAction)(
         baseUri,
         storageConfig,
         s,
