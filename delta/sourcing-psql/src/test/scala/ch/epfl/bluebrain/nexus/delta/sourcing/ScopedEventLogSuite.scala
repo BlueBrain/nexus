@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
+import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, MonixBioSuite}
 
 import java.time.Instant
 import scala.concurrent.duration._

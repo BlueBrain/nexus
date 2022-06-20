@@ -129,7 +129,7 @@ trait AclCheck {
     * @param onAuthorized
     *   to map the value [[A]] to [[B]] if access is granted
     * @param onFailure
-    *   to raise an error at the firt unauthorized value
+    *   to raise an error at the first unauthorized value
     */
   def mapFilterOrRaise[E, A, B](
       values: Iterable[A],
@@ -180,7 +180,7 @@ trait AclCheck {
     * @param onAuthorized
     *   to map the value [[A]] to [[B]] if access is granted
     * @param onFailure
-    *   to raise an error at the firt unauthorized value
+    *   to raise an error at the first unauthorized value
     */
   def mapFilterAtAddressOrRaise[E, A, B](
       values: Iterable[A],

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing
+package ch.epfl.bluebrain.nexus.testkit
 
 import munit.{Assertions, Location}
 

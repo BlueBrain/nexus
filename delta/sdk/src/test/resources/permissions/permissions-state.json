@@ -1,0 +1,18 @@
+{
+  "rev": 1,
+  "permissions": [
+    "my/perm"
+  ],
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  }
+}

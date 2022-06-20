@@ -9,7 +9,7 @@ import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class PermissionsEventSuite extends FunSuite with Assertions with TestHelpers {
+class PermissionsSerializationSuite extends FunSuite with Assertions with TestHelpers {
 
   val instant: Instant         = Instant.EPOCH
   val rev: Int                 = 1
@@ -35,6 +35,25 @@ class PermissionsEventSuite extends FunSuite with Assertions with TestHelpers {
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(PermissionsEvent.serializer.codec.decodeJson(json), Right(event))
     }
+  }
+
+  private val state = PermissionsState(
+    rev = rev,
+    permSet,
+    createdAt = instant,
+    createdBy = subject,
+    updatedAt = instant,
+    updatedBy = subject
+  )
+
+  private val jsonState = jsonContentOf("/permissions/permissions-state.json")
+
+  test(s"Correctly serialize a PermissionsState") {
+    assertEquals(PermissionsState.serializer.codec(state), jsonState)
+  }
+
+  test(s"Correctly deserialize a PermissionsState") {
+    assertEquals(PermissionsState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
 }

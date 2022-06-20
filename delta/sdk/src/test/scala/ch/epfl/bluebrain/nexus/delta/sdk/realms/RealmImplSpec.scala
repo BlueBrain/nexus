@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, IOFixedClock, IOValues}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import java.time.Instant
 
 class RealmImplSpec
-    extends DoobieFixture
+    extends DoobieScalaTestFixture
     with Matchers
     with IOValues
     with CancelAfterFailure

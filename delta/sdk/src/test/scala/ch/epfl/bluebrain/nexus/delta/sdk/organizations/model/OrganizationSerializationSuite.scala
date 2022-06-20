@@ -10,7 +10,7 @@ import munit.{Assertions, FunSuite}
 import java.time.Instant
 import java.util.UUID
 
-class OrganizationEventSuite extends FunSuite with Assertions with TestHelpers {
+class OrganizationSerializationSuite extends FunSuite with Assertions with TestHelpers {
 
   val realm: Label        = Label.unsafe("myrealm")
   val subject: Subject    = User("username", realm)
@@ -20,7 +20,7 @@ class OrganizationEventSuite extends FunSuite with Assertions with TestHelpers {
   val instant: Instant    = Instant.EPOCH
   val rev                 = 1
 
-  val orgsMapping: Map[OrganizationEvent, Json] = Map(
+  val orgsEventMapping: Map[OrganizationEvent, Json] = Map(
     OrganizationCreated(org, orgUuid, 1, Some(description), instant, subject) -> jsonContentOf(
       "/organizations/org-created.json"
     ),
@@ -30,16 +30,38 @@ class OrganizationEventSuite extends FunSuite with Assertions with TestHelpers {
     OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> jsonContentOf("/organizations/org-deprecated.json")
   )
 
-  orgsMapping.foreach { case (event, json) =>
+  orgsEventMapping.foreach { case (event, json) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
       assertEquals(OrganizationEvent.serializer.codec(event), json)
     }
   }
 
-  orgsMapping.foreach { case (event, json) =>
+  orgsEventMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
       assertEquals(OrganizationEvent.serializer.codec.decodeJson(json), Right(event))
     }
+  }
+
+  private val state = OrganizationState(
+    org,
+    orgUuid,
+    rev = rev,
+    deprecated = false,
+    description = Some(description),
+    createdAt = instant,
+    createdBy = subject,
+    updatedAt = instant,
+    updatedBy = subject
+  )
+
+  private val jsonState = jsonContentOf("/organizations/org-state.json")
+
+  test(s"Correctly serialize an OrganizationState") {
+    assertEquals(OrganizationState.serializer.codec(state), jsonState)
+  }
+
+  test(s"Correctly deserialize an OrganizationState") {
+    assertEquals(OrganizationState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 
 }
