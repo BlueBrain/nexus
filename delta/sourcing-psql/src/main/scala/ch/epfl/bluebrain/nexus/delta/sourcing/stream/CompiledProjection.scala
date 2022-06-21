@@ -24,15 +24,25 @@ import scala.concurrent.duration.FiniteDuration
   *   [[ProjectionDef]]
   */
 final case class CompiledProjection private[stream] (
-    val name: String,
+    name: String,
     project: Option[ProjectRef],
     resourceId: Option[Iri],
     streamF: ProjectionOffset => Stream[Task, Elem[Unit]]
 ) {
 
   /**
+    * Transforms this projection such that is passivates gracefully when it becomes idle. A projection is considered
+    * idle when there are no elements that have been processed within the defined `inactiveInterval`.
+    * @param inactiveInterval
+    *   the idle interval after which a projection should be passivated
+    * @param checkInterval
+    *   how frequent to check if the projection becomes idle
+    */
+  def passivate(inactiveInterval: FiniteDuration, checkInterval: FiniteDuration): CompiledProjection =
+    copy(streamF = offset => streamF(offset).through(Passivation(inactiveInterval, checkInterval)))
+
+  /**
     * Transforms this projection such that it persists the observed offsets at regular intervals.
-    *
     * @param store
     *   the store to use for persisting offsets
     * @param interval
@@ -43,7 +53,6 @@ final case class CompiledProjection private[stream] (
 
   /**
     * Transforms this projection such that it persists the observed offsets at regular intervals.
-    *
     * @param persistOffsetFn
     *   the fn to persist an offset
     * @param interval
