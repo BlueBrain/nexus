@@ -34,7 +34,7 @@ class OrganizationsImplSpec
     with OptionValues
     with ConfigFixtures {
 
-  private lazy val config = OrganizationsConfig(eventLogConfig, pagination, 10)
+  private lazy val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
 
   val uuid                  = UUID.randomUUID()
   implicit val uuidF: UUIDF = UUIDF.fixed(uuid)

@@ -126,7 +126,7 @@ object OrganizationsImpl {
       clock: Clock[UIO] = IO.clock,
       uuidf: UUIDF
   ): UIO[Organizations] =
-    KeyValueStore.localLRU[UUID, Label](config.cacheMaxSize.toLong).map { cache =>
+    KeyValueStore.localLRU[UUID, Label](config.cache).map { cache =>
       new OrganizationsImpl(
         GlobalEventLog(Organizations.definition, config.eventLog, xas),
         cache,
