@@ -7,14 +7,16 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
-import monix.bio.{IO, UIO}
+import monix.bio.{IO, Task, UIO}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -30,47 +32,44 @@ import scala.concurrent.duration.FiniteDuration
 trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection] {
 
   /**
-    * Get the current state for the entity with the given __id__ in the given project
+    * Get the latest state for the entity with the given __id__ in the given project
     *
     * @param ref
     *   the project the entity belongs in
     * @param id
     *   the entity identifier
+    * @param notFound
+    *   if no state is found, fails with this rejection
     */
-  def state(ref: ProjectRef, id: Id): UIO[Option[S]] = state(ref, id, Latest)
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] = stateOr[R](ref, id, Latest, notFound)
 
   /**
-    * Get the current state for the entity with the given __id__ at the given __tag__ in the given project
+    * Get the state for the entity with the given __id__ at the given __tag__ in the given project
     * @param ref
     *   the project the entity belongs in
     * @param id
     *   the entity identifier
     * @param tag
     *   the tag
+    * @param notFound
+    *   if no state is found, fails with this rejection
     */
-  def state(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]]
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, tag: Tag, notFound: => R): IO[R, S]
 
   /**
-    * Get the current state for the entity with the given __id__ at the given __revision__ in the given project
+    * Get the state for the entity with the given __id__ at the given __revision__ in the given project
     * @param ref
     *   the project the entity belongs in
     * @param id
     *   the entity identifier
     * @param rev
     *   the revision
+    *  @param notFound
+    *   if no state is found, fails with this rejection
+    *@param invalidRevision
+    *   if the revision of the resulting state does not match with the one provided
     */
-  def state(ref: ProjectRef, id: Id, rev: Option[Int]): UIO[Option[S]]
-
-  /**
-    * Get the current state for the entity with the given __id__ at the given __revision__ in the given project
-    * @param ref
-    *   the project the entity belongs in
-    * @param id
-    *   the entity identifier
-    * @param rev
-    *   the revision
-    */
-  def state(ref: ProjectRef, id: Id, rev: Int): UIO[Option[S]] = state(ref, id, Some(rev))
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -102,6 +101,59 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     */
   def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)]
 
+  /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param predicate
+    *   to filter returned events
+    * @param offset
+    *   offset to start from
+    */
+  def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+
+  /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param predicate
+    *   to filter returned events
+    * @param offset
+    *   offset to start from
+    */
+  def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+
+  /**
+    * Allow to stream all latest states within [[Envelope]] s without applying transformation
+    * @param predicate
+    *   to filter returned states
+    * @param offset
+    *   offset to start from
+    */
+  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S]
+
+  /**
+    * Allow to stream all latest states from the beginning within [[Envelope]] s without applying transformation
+    * @param predicate
+    *   to filter returned states
+    */
+  def currentStates(predicate: Predicate): EnvelopeStream[Id, S] = currentStates(predicate, Offset.Start)
+
+  /**
+    * Allow to stream all current states from the provided offset
+    * @param predicate
+    *   to filter returned states
+    * @param offset
+    *   offset to start from
+    * @param f
+    *   the function to apply on each state
+    */
+  def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T]
+
+  /**
+    * Allow to stream all current states from the beginning
+    * @param predicate
+    *   to filter returned states
+    * @param f
+    *   the function to apply on each state
+    */
+  def currentStates[T](predicate: Predicate, f: S => T): Stream[Task, T] = currentStates(predicate, Offset.Start, f)
 }
 
 object ScopedEventLog {
@@ -118,10 +170,19 @@ object ScopedEventLog {
       xas: Transactors
   ): ScopedEventLog[Id, S, Command, E, Rejection] = new ScopedEventLog[Id, S, Command, E, Rejection] {
 
-    override def state(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]] = stateStore.get(ref, id, tag)
+    override def stateOr[R <: Rejection](ref: ProjectRef,
+                                         id: Id,
+                                         tag: Tag,
+                                         notFound: => R): IO[R, S] = stateStore.get(ref, id, tag).flatMap {
+      IO.fromOption(_, notFound)
+    }
 
-    override def state(ref: ProjectRef, id: Id, rev: Option[Int]): UIO[Option[S]] =
-      stateMachine.computeState(eventStore.history(ref, id, rev))
+    override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S] =
+      stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
+        case Some(s) if s.rev == rev => IO.pure(s)
+        case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
+        case None                    => IO.raiseError(notFound)
+      }
 
     override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] = {
 
@@ -165,22 +226,18 @@ object ScopedEventLog {
         )
     }
 
-    /**
-      * Tests the evaluation the argument __command__ in the context of the entity, without applying any changes to the
-      * state or event log of the entity regardless of the outcome of the command evaluation.
-      *
-      * @param ref
-      *   the project the entity belongs in
-      * @param id
-      *   the entity identifier
-      * @param command
-      *   the command to evaluate
-      * @return
-      *   the state and event that would be generated in if the command was tested for evaluation successfully, or the
-      *   rejection of the __command__ in otherwise
-      */
     override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(ref, id), command, maxDuration)
+
+    override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] = eventStore.currentEvents(predicate, offset)
+
+    override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] = eventStore.events(predicate, offset)
+
+    override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] = stateStore.currentStates(predicate, offset)
+
+    override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] = currentStates(predicate, offset).map { s =>
+      f(s.value)
+    }
   }
 
 }

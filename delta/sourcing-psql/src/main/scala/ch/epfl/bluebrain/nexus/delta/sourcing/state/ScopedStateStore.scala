@@ -2,10 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -13,8 +16,6 @@ import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.{Task, UIO}
-
-import scala.annotation.nowarn
 
 /**
   * Allows to save/fetch [[ScopeState]] from the database
@@ -42,19 +43,121 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   def get(ref: ProjectRef, id: Id): UIO[Option[S]] = get(ref, id, Latest)
 
   /**
-    * Returns the latest state
+    * Returns the state at the given tag
     */
   def get(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]]
+
+  /**
+    * Fetches latest states from the given type from the beginning.
+    *
+    * The stream is completed when it reaches the end.
+    * @param predicate
+    *   to filter returned states
+    */
+  def currentStates(predicate: Predicate): EnvelopeStream[Id, S] =
+    currentStates(predicate, Offset.Start)
+
+  /**
+    * Fetches states from the given type with the given tag from the beginning.
+    *
+    * The stream is completed when it reaches the end.
+    * @param predicate
+    *   to filter returned states
+    * @param tag
+    *   only states with this tag will be selected
+    */
+  def currentStates(predicate: Predicate, tag: Tag): EnvelopeStream[Id, S] =
+    currentStates(predicate, tag, Offset.Start)
+
+  /**
+    * Fetches latest states from the given type from the provided offset.
+    *
+    * The stream is completed when it reaches the end.
+    * @param predicate
+    *   to filter returned states
+    * @param offset
+    *   the offset
+    */
+  def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+    currentStates(predicate, Latest, offset)
+
+  /**
+    * Fetches states from the given type with the given tag from the provided offset.
+    *
+    * The stream is completed when it reaches the end.
+    * @param predicate
+    *   to filter returned states
+    * @param tag
+    *   only states with this tag will be selected
+    * @param offset
+    *   the offset
+    */
+  def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S]
+
+  /**
+    * Fetches latest states from the given type from the beginning
+    *
+    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
+    * when new events are persisted.
+    *
+    * @param predicate
+    *   to filter returned states
+    */
+  def states(predicate: Predicate): EnvelopeStream[Id, S] =
+    states(predicate, Latest, Offset.Start)
+
+  /**
+    * Fetches states from the given type with the given tag from the beginning
+    *
+    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
+    * when new states are persisted.
+    *
+    * @param predicate
+    *   to filter returned states
+    * @param tag
+    *   only states with this tag will be selected
+    */
+  def states(predicate: Predicate, tag: Tag): EnvelopeStream[Id, S] = states(predicate, tag, Offset.Start)
+
+  /**
+    * Fetches latest states from the given type from the provided offset
+    *
+    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
+    * when new events are persisted.
+    *
+    * @param predicate
+    *   to filter returned states
+    * @param offset
+    *   the offset
+    */
+  def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+    states(predicate, Latest, offset)
+
+  /**
+    * Fetches states from the given type with the given tag from the provided offset
+    *
+    * The stream is not completed when it reaches the end of the existing events, but it continues to push new events
+    * when new states are persisted.
+    *
+    * @param predicate
+    *   to filter returned states
+    * @param tag
+    *   only states with this tag will be selected
+    * @param offset
+    *   the offset
+    */
+  def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S]
 
 }
 
 object ScopedStateStore {
 
-  @SuppressWarnings(Array("UnusedMethodParameter"))
-  def apply[Id, S <: ScopedState](tpe: EntityType, serializer: Serializer[Id, S], xas: Transactors)(implicit
-      @nowarn("cat=unused") get: Get[Id],
-      put: Put[Id]
-  ): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+  def apply[Id, S <: ScopedState](
+                                   tpe: EntityType,
+                                   serializer: Serializer[Id, S],
+                                   config: QueryConfig,
+                                   xas: Transactors)(implicit getId: Get[Id], putId: Put[Id]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+
     import serializer._
 
     override def save(state: S, tag: Tag): doobie.ConnectionIO[Unit] = {
@@ -115,6 +218,22 @@ object ScopedStateStore {
           case Some(json) => Task.fromEither(json.as[S]).map(Some(_)).hideErrors
           case None       => UIO.none
         }
+
+    private def states(predicate: Predicate, tag: Tag, offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
+      Envelope.stream(
+        offset,
+        (o: Offset) =>
+          fr"SELECT type, id, value, rev, instant, ordering FROM scoped_states" ++
+            Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), o.asFragment) ++
+            fr"ORDER BY ordering" ++
+            fr"LIMIT ${config.batchSize}",
+        strategy,
+        xas
+      )
+
+    override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] = states(predicate, tag, offset, RefreshStrategy.Stop)
+
+    override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] = states(predicate, tag, offset, config.refreshInterval)
   }
 
 }

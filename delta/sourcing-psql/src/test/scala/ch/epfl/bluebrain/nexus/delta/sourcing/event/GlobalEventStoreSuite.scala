@@ -77,11 +77,11 @@ class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("Fetch all events from the beginning") {
-    store.events(Offset.Start).take(4).assert(envelope1, envelope2, envelope3, envelope4)
+    store.events(Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
   }
 
   test("Fetch all events from offset 2") {
-    store.events(Offset.at(2L)).take(2).assert(envelope3, envelope4)
+    store.events(Offset.at(2L)).assert(envelope3, envelope4)
   }
 
 }

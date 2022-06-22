@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, PullRequestAlreadyClosed}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestCommand, PullRequestEvent, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -25,16 +25,19 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
 
   private lazy val xas = doobie()
 
+  private val queryConfig = QueryConfig(10, RefreshStrategy.Delay(500.millis))
+
   private lazy val eventStore = ScopedEventStore(
     PullRequest.entityType,
     PullRequestEvent.serializer,
-    QueryConfig(10, RefreshStrategy.Delay(500.millis)),
+    queryConfig,
     xas
   )
 
   private lazy val stateStore = ScopedStateStore(
     PullRequest.entityType,
     PullRequestState.serializer,
+    queryConfig,
     xas
   )
 
@@ -76,16 +79,24 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate(proj, id, Create(id, proj)).assert((opened, state1))
       _ <- eventStore.history(proj, id).assert(opened)
-      _ <- eventLog.state(proj, id).assertSome(state1)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state1)
     } yield ()
+  }
+
+  test("Raise an error with a non-existent project") {
+    eventLog.stateOr(ProjectRef.unsafe("xxx", "xxx"), id, NotFound).error(NotFound)
+  }
+
+  test("Raise an error with a non-existent id") {
+    eventLog.stateOr(proj, Label.unsafe("xxx"), NotFound).error(NotFound)
   }
 
   test("Tag and check that the state has also been successfully tagged as well") {
     for {
       _ <- eventLog.evaluate(proj, id, Tag(id, proj, 2, 1)).assert((tagged, state2))
       _ <- eventStore.history(proj, id).assert(opened, tagged)
-      _ <- eventLog.state(proj, id).assertSome(state2)
-      _ <- eventLog.state(proj, id, tag).assertSome(state1)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state2)
+      _ <- eventLog.stateOr(proj, id, tag, NotFound).assert(state1)
     } yield ()
   }
 
@@ -93,7 +104,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.dryRun(proj, id, Merge(id, proj, 3)).assert((merged, state3))
       _ <- eventStore.history(proj, id).assert(opened, tagged)
-      _ <- eventLog.state(proj, id).assertSome(state2)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state2)
     } yield ()
   }
 
@@ -101,19 +112,19 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate(proj, id, Merge(id, proj, 3)).assert((merged, state3))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
-      _ <- eventLog.state(proj, id).assertSome(state3)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state3)
     } yield ()
   }
 
   test("Check that the tagged state has been successfully removed after") {
-    eventLog.state(proj, id, tag).assertNone
+    eventLog.stateOr(proj, id, tag, NotFound).error(NotFound)
   }
 
   test("Reject a command and persist nothing") {
     for {
       _ <- eventLog.evaluate(proj, id, Update(id, proj, 3)).error(PullRequestAlreadyClosed(id, proj))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
-      _ <- eventLog.state(proj, id).assertSome(state3)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state3)
     } yield ()
   }
 
@@ -122,7 +133,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate(proj, id, boom).terminated(EvaluationFailure(boom, "RuntimeException", boom.message))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
-      _ <- eventLog.state(proj, id).assertSome(state3)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state3)
     } yield ()
   }
 
@@ -131,12 +142,20 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
     for {
       _ <- eventLog.evaluate(proj, id, never).terminated(EvaluationTimeout(never, maxDuration))
       _ <- eventStore.history(proj, id).assert(opened, tagged, merged)
-      _ <- eventLog.state(proj, id).assertSome(state3)
+      _ <- eventLog.stateOr(proj, id, NotFound).assert(state3)
     } yield ()
   }
 
   test("Get state at the specified revision") {
-    eventLog.state(proj, id, 1).assertSome(state1)
+    eventLog.stateOr(proj, id, 1, NotFound, RevisionNotFound).assert(state1)
+  }
+
+  test("Raise an error with a non-existent id") {
+    eventLog.stateOr(proj, Label.unsafe("xxx"), 1, NotFound, RevisionNotFound).error(NotFound)
+  }
+
+  test("Raise an error when providing a nonexistent revision") {
+    eventLog.stateOr(proj, id, 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 3))
   }
 
 }

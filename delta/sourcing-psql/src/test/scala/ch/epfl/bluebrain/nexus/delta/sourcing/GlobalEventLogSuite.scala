@@ -111,10 +111,6 @@ class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
     eventLog.stateOr("id", 1, NotFound, RevisionNotFound).assert(total1)
   }
 
-  test("Get state at the specified revision") {
-    eventLog.stateOr("id", 1, NotFound, RevisionNotFound).assert(total1)
-  }
-
   test("Raise an error with a non-existent id") {
     eventLog.stateOr("xxx", 1, NotFound, RevisionNotFound).error(NotFound)
   }

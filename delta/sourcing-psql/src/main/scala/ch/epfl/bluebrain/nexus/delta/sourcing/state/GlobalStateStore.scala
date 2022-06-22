@@ -130,7 +130,7 @@ object GlobalStateStore {
         offset,
         (o: Offset) =>
           fr"SELECT type, id, value, rev, instant, ordering FROM public.global_states" ++
-            Fragments.whereAndOpt(Some(fr"type = $tpe"), o.after) ++
+            Fragments.whereAndOpt(Some(fr"type = $tpe"), o.asFragment) ++
             fr"ORDER BY ordering" ++
             fr"LIMIT ${config.batchSize}",
         strategy,
