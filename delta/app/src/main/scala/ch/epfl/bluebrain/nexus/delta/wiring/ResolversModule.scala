@@ -20,9 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversDeletion, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -73,11 +73,6 @@ object ResolversModule extends ModuleDef {
         cache,
         agg
       )(api, uuidF, scheduler, as)
-  }
-
-  many[ResourcesDeletion].add {
-    (cache: ResolversCache, agg: ResolversAggregate, resolvers: Resolvers, dbCleanup: DatabaseCleanup) =>
-      ResolversDeletion(cache, agg, resolvers, dbCleanup)
   }
 
   many[ProjectReferenceFinder].add { (resolvers: Resolvers) =>

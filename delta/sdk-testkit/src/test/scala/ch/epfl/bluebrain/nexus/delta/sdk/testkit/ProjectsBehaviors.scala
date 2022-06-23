@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions._
@@ -29,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, Projects, Quot
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
-import com.datastax.oss.driver.api.core.uuid.Uuids
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -240,18 +238,6 @@ trait ProjectsBehaviors {
         anotherRef,
         anotherProjectReferences
       )
-    }
-
-    "fetch projects deletion status" in {
-      val uuid   = Uuids.nameBased(Uuids.startOf(epoch.toEpochMilli), ref.toString)
-      val status = ResourcesDeletionStatus(Deleting, ref, subject, epoch, subject, epoch, epoch, uuid)
-      projects.fetchDeletionStatus.accepted shouldEqual SearchResults(1, List(status))
-
-      projects.fetchDeletionStatus(ref, uuid).accepted shouldEqual status
-    }
-
-    "fail fetching project deletion status" in {
-      projects.fetchDeletionStatus(ref, UUID.randomUUID()).rejectedWith[ProjectNotDeleted]
     }
 
     val resource = resourceFor(

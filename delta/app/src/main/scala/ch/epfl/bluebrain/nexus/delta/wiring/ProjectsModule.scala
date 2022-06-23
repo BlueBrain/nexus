@@ -17,16 +17,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.ProjectMarkedForDeletion
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{DeletionStatusCache, ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.service.projects._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -43,18 +40,12 @@ object ProjectsModule extends ModuleDef {
 
   make[EventLog[Envelope[ProjectEvent]]].fromEffect { databaseEventLog[ProjectEvent](_, _) }
 
-  make[EventLog[Envelope[ProjectMarkedForDeletion]]].fromEffect { databaseEventLog[ProjectMarkedForDeletion](_, _) }
-
   make[ApiMappingsCollection].from { (mappings: Set[ApiMappings]) =>
     ApiMappingsCollection(mappings)
   }
 
   make[ProjectsCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
     ProjectsImpl.cache(config.projects)(as)
-  }
-
-  make[DeletionStatusCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
-    ProjectsImpl.deletionCache(config.projects)(as)
   }
 
   make[Deferred[Task, ProjectReferenceFinder]].fromEffect(
@@ -70,8 +61,6 @@ object ProjectsModule extends ModuleDef {
         config: AppConfig,
         organizations: Organizations,
         mappings: ApiMappingsCollection,
-        cache: DeletionStatusCache,
-        eventLog: EventLog[Envelope[ProjectEvent]],
         as: ActorSystem[Nothing],
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -80,7 +69,7 @@ object ProjectsModule extends ModuleDef {
         config.projects,
         organizations,
         mappings.merge,
-        CreationCooldown.validate(cache, eventLog.config)
+        _ => IO.unit
       )(as, clock, uuidF)
   }
 
@@ -97,7 +86,6 @@ object ProjectsModule extends ModuleDef {
         scopeInitializations: Set[ScopeInitialization],
         mappings: ApiMappingsCollection,
         cache: ProjectsCache,
-        deletionCache: DeletionStatusCache,
         agg: ProjectsAggregate
     ) =>
       ProjectsImpl(
@@ -108,53 +96,8 @@ object ProjectsModule extends ModuleDef {
         quotas,
         scopeInitializations,
         mappings.merge,
-        cache,
-        deletionCache
+        cache
       )(baseUri, uuidF, as, scheduler)
-  }
-
-  make[ResourcesDeletion].named("aggregate").from {
-    (
-        deletions: Set[ResourcesDeletion],
-        cache: ProjectsCache,
-        agg: ProjectsAggregate,
-        projectsCounts: ProjectsCounts,
-        dbCleanup: DatabaseCleanup
-    ) =>
-      ResourcesDeletion.combine(deletions, ProjectDeletion(cache, agg, projectsCounts, dbCleanup))
-  }
-
-  make[Projection[ResourcesDeletionStatusCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO], base: BaseUri) =>
-      implicit val baseUri: BaseUri = base
-      Projection(database, ResourcesDeletionStatusCollection.empty, system, clock)
-  }
-
-  make[ProjectsDeletionStream].fromEffect {
-    (
-        eventLog: EventLog[Envelope[ProjectMarkedForDeletion]],
-        projects: Projects,
-        cache: DeletionStatusCache,
-        projection: Projection[ResourcesDeletionStatusCollection],
-        resourcesDeletion: ResourcesDeletion @Id("aggregate"),
-        clock: Clock[UIO],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler,
-        config: AppConfig
-    ) =>
-      Task
-        .delay(
-          new ProjectsDeletionStream(eventLog, projects, cache, projection, resourcesDeletion)(
-            clock,
-            uuidF,
-            as,
-            sc,
-            config.projects.persistProgressConfig,
-            config.projects.keyValueStore
-          )
-        )
-        .tapEval(_.run())
   }
 
   make[ProjectProvisioning].from {
@@ -194,13 +137,11 @@ object ProjectsModule extends ModuleDef {
 
   many[RemoteContextResolution].addEffect(
     for {
-      projectsCtx       <- ContextValue.fromFile("contexts/projects.json")
-      projectsMetaCtx   <- ContextValue.fromFile("contexts/projects-metadata.json")
-      deletionStatusCtx <- ContextValue.fromFile("contexts/deletion-status.json")
+      projectsCtx     <- ContextValue.fromFile("contexts/projects.json")
+      projectsMetaCtx <- ContextValue.fromFile("contexts/projects-metadata.json")
     } yield RemoteContextResolution.fixed(
       contexts.projects         -> projectsCtx,
-      contexts.projectsMetadata -> projectsMetaCtx,
-      contexts.deletionStatus   -> deletionStatusCtx
+      contexts.projectsMetadata -> projectsMetaCtx
     )
   )
 

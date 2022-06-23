@@ -288,58 +288,6 @@ class ProjectsRoutesSpec
       }
     }
 
-    "fail to delete a project without projects/delete permission" in {
-      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-      }
-    }
-
-    var deletedUuid: Option[String] = None
-
-    "delete a project" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.delete, resources.read)).accepted
-      Delete("/v1/projects/org1/proj?rev=3&prune=true") ~> routes ~> check {
-        status shouldEqual StatusCodes.SeeOther
-        val link = header("Location").value.value()
-        deletedUuid = Some(link.takeRight(36))
-        val ref  = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
-        response.asJson should equalIgnoreArrayOrder(
-          projectMetadata(
-            ref,
-            "proj",
-            projectUuid,
-            "org1",
-            orgUuid,
-            rev = 4L,
-            deprecated = true,
-            markedForDeletion = true
-          )
-        )
-        eventually {
-          Get(link.replace(baseUri.base.toString(), "")) ~> routes ~> check {
-            status shouldEqual StatusCodes.OK
-            response.asJson shouldEqual jsonContentOf(
-              "/projects/project-deletion-status.json",
-              "base" -> baseUri.base,
-              "uuid" -> deletedUuid.value
-            )
-          }
-        }
-      }
-    }
-
-    "list deleted projects" in {
-      Get("/v1/projects/deletions") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual jsonContentOf(
-          "/projects/projects-deletion-status.json",
-          "base" -> baseUri.base,
-          "uuid" -> deletedUuid.value
-        )
-      }
-    }
-
     val fetchProjRev2 = jsonContentOf(
       "/projects/fetch.json",
       "org"               -> "org1",

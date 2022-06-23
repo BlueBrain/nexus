@@ -31,8 +31,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -115,16 +115,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         as,
         sc
       )
-  }
-
-  many[ResourcesDeletion].add {
-    (
-        cache: CompositeViewsCache,
-        agg: CompositeViewsAggregate,
-        views: CompositeViews,
-        dbCleanup: DatabaseCleanup,
-        coordinator: CompositeIndexingCoordinator
-    ) => CompositeViewsDeletion(cache, agg, views, dbCleanup, coordinator)
   }
 
   many[ProjectReferenceFinder].add { (views: CompositeViews) =>
