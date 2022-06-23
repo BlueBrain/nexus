@@ -30,7 +30,7 @@ object PullRequest {
         state.fold[IO[PullRequestRejection, PullRequestEvent]] {
           command match {
             case Create(id, project) => IO.pure(PullRequestCreated(id, project, Instant.EPOCH, Anonymous))
-            case c                   => IO.raiseError(NotFound(c.id, c.project))
+            case _                   => IO.raiseError(NotFound)
           }
         } { s =>
           (s, command) match {
@@ -119,8 +119,9 @@ object PullRequest {
   sealed trait PullRequestRejection extends Product with Serializable
 
   object PullRequestRejection {
+    final case object NotFound                 extends PullRequestRejection
+    final case class RevisionNotFound(provided: Int, current: Int)            extends PullRequestRejection
     final case class AlreadyExists(id: Label, project: ProjectRef)            extends PullRequestRejection
-    final case class NotFound(id: Label, project: ProjectRef)                 extends PullRequestRejection
     final case class PullRequestAlreadyClosed(id: Label, project: ProjectRef) extends PullRequestRejection
   }
 

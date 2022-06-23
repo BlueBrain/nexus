@@ -60,15 +60,15 @@ class GlobalStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     store.currentStates(Offset.Start).assert(envelope1, envelope2)
   }
 
-  test("Fetch all current events from offset 2") {
+  test("Fetch all current states from offset 2") {
     store.currentStates(Offset.at(1L)).assert(envelope2)
   }
 
-  test("Fetch all events from the beginning") {
+  test("Fetch all states from the beginning") {
     store.states(Offset.Start).take(2).assert(envelope1, envelope2)
   }
 
-  test("Fetch all events from offset 2") {
+  test("Fetch all states from offset 2") {
     store.states(Offset.at(1L)).take(1).assert(envelope2)
   }
 

@@ -4,8 +4,10 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -14,8 +16,6 @@ import fs2.Stream
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.Task
-
-import scala.annotation.nowarn
 
 /**
   * A
@@ -42,18 +42,35 @@ trait ScopedEventStore[Id, E <: ScopedEvent] {
     */
   def history(ref: ProjectRef, id: Id): Stream[Task, E] = history(ref, id, None)
 
+  /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param predicate
+    *   to filter returned events
+    * @param offset
+    *   offset to start from
+    */
+  def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+
+  /**
+    * Allow to stream all current events within [[Envelope]] s
+    * @param predicate
+    *   to filter returned events
+    * @param offset
+    *   offset to start from
+    */
+  def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E]
+
 }
 
 object ScopedEventStore {
 
-  @SuppressWarnings(Array("UnusedMethodParameter"))
   def apply[Id, E <: ScopedEvent](
       tpe: EntityType,
       serializer: Serializer[Id, E],
       config: QueryConfig,
       xas: Transactors
   )(implicit
-      @nowarn("cat=unused") get: Get[Id],
+      get: Get[Id],
       put: Put[Id]
   ): ScopedEventStore[Id, E] =
     new ScopedEventStore[Id, E] {
@@ -97,5 +114,22 @@ object ScopedEventStore {
           Stream.fromEither[Task](json.as[E])
         }
       }
+
+      private def events(predicate: Predicate,offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
+        Envelope.stream(
+          offset,
+          (o: Offset) =>
+            fr"SELECT type, id, value, rev, instant, ordering FROM public.scoped_events" ++
+              Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, o.asFragment) ++
+              fr"ORDER BY ordering" ++
+              fr"LIMIT ${config.batchSize}",
+          strategy,
+          xas
+        )
+
+      override def currentEvents(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] = events(predicate, offset, RefreshStrategy.Stop)
+
+      override def events(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] = events(predicate, offset, config.refreshInterval)
+
     }
 }
