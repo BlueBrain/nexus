@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fi
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files, FilesDeletion}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{StoragesAggregate, StoragesCache}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEven
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesDeletion, StoragesStatistics}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -37,10 +37,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -114,24 +114,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as
         )
     }
-
-  many[ResourcesDeletion].add {
-    (
-        cache: StoragesCache,
-        agg: StoragesAggregate,
-        storages: Storages,
-        dbCleanup: DatabaseCleanup,
-        storagesStatistics: StoragesStatistics
-    ) => StoragesDeletion(cache, agg, storages, dbCleanup, storagesStatistics)
-  }
-
-  many[ResourcesDeletion].add {
-    (
-        agg: FilesAggregate,
-        files: Files,
-        dbCleanup: DatabaseCleanup
-    ) => FilesDeletion(agg, files, dbCleanup)
-  }
 
   make[StoragesRoutes].from {
     (

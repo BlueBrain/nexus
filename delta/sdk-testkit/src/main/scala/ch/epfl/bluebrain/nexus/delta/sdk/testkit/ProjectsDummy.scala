@@ -6,20 +6,18 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, uuidFrom}
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.allQuotas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{DeletionStatusCache, ProjectsCache, ProjectsJournal}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectsDummy.{ProjectsCache, ProjectsJournal}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.{IORef, IOSemaphore}
+import ch.epfl.bluebrain.nexus.testkit.IOSemaphore
 import monix.bio.{IO, Task, UIO}
 
 import java.util.UUID
@@ -27,7 +25,6 @@ import java.util.UUID
 final class ProjectsDummy private (
     journal: ProjectsJournal,
     cache: ProjectsCache,
-    deletionCache: DeletionStatusCache,
     semaphore: IOSemaphore,
     organizations: Organizations,
     quotas: Quotas,
@@ -80,37 +77,13 @@ final class ProjectsDummy private (
   override def delete(ref: ProjectRef, rev: Long)(implicit
       caller: Subject,
       referenceFinder: ProjectReferenceFinder
-  ): IO[ProjectRejection, (UUID, ProjectResource)]                                      =
+  ): IO[ProjectRejection, (UUID, ProjectResource)]                          =
     for {
       references <- referenceFinder(ref)
       _          <- IO.raiseUnless(references.value.isEmpty)(ProjectIsReferenced(ref, references))
       resource   <- eval(DeleteProject(ref, rev, caller))
       uuid        = uuidFrom(ref, resource.updatedAt)
-      _          <- deletionCache.update(
-                      _ + (uuid -> ResourcesDeletionStatus(
-                        progress = Deleting,
-                        project = ref,
-                        projectCreatedBy = resource.createdBy,
-                        projectCreatedAt = resource.createdAt,
-                        createdBy = caller,
-                        createdAt = resource.updatedAt,
-                        updatedAt = resource.updatedAt,
-                        uuid = uuid
-                      ))
-                    )
     } yield uuid -> resource
-
-  override def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]] =
-    for {
-      statusMap <- deletionCache.get
-      vector     = statusMap.values.toVector
-    } yield SearchResults(vector.size.toLong, vector)
-
-  override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
-    for {
-      statusMap <- deletionCache.get
-      status    <- IO.fromOption(statusMap.get(uuid).filter(_.project == ref), ProjectNotDeleted(ref))
-    } yield status
 
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     cache.fetchOr(ref, ProjectNotFound(ref))
@@ -180,9 +153,8 @@ final class ProjectsDummy private (
 
 object ProjectsDummy {
 
-  type ProjectsJournal     = Journal[ProjectRef, ProjectEvent]
-  type ProjectsCache       = ResourceCache[ProjectRef, Project]
-  type DeletionStatusCache = IORef[Map[UUID, ResourcesDeletionStatus]]
+  type ProjectsJournal = Journal[ProjectRef, ProjectEvent]
+  type ProjectsCache   = ResourceCache[ProjectRef, Project]
 
   implicit private val idLens: Lens[ProjectEvent, ProjectRef] = (event: ProjectEvent) =>
     ProjectRef(event.organizationLabel, event.label)
@@ -211,14 +183,12 @@ object ProjectsDummy {
       creationCooldown: ProjectRef => IO[ProjectCreationCooldown, Unit]
   )(implicit base: BaseUri, clock: Clock[UIO], uuidf: UUIDF): UIO[ProjectsDummy] =
     for {
-      journal       <- Journal(moduleType, 1L, Projects.projectTagger)
-      cache         <- ResourceCache[ProjectRef, Project]
-      deletionCache <- IORef.of[Map[UUID, ResourcesDeletionStatus]](Map.empty)
-      sem           <- IOSemaphore(1L)
+      journal <- Journal(moduleType, 1L, Projects.projectTagger)
+      cache   <- ResourceCache[ProjectRef, Project]
+      sem     <- IOSemaphore(1L)
     } yield new ProjectsDummy(
       journal,
       cache,
-      deletionCache,
       sem,
       organizations,
       quotas,
@@ -234,8 +204,6 @@ object ProjectsDummy {
     *   an Organizations instance
     * @param quotas
     *   a Quotas instance
-    * @param referenceFinder
-    *   a ProjectReferenceFinder instance
     * @param defaultApiMappings
     *   the default api mappings
     */

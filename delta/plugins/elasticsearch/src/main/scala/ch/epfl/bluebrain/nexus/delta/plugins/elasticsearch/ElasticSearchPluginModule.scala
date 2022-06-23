@@ -35,10 +35,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -198,17 +198,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           as
         )
     }
-
-  many[ResourcesDeletion].add {
-    (
-        cache: ElasticSearchViewCache,
-        agg: ElasticSearchViewAggregate,
-        views: ElasticSearchViews,
-        dbCleanup: DatabaseCleanup,
-        coordinator: ElasticSearchIndexingCoordinator,
-        indexingStreamAwake: IndexingStreamAwake
-    ) => ElasticSearchViewsDeletion(cache, agg, views, dbCleanup, coordinator, indexingStreamAwake)
-  }
 
   many[ProjectReferenceFinder].add { (views: ElasticSearchViews) =>
     ElasticSearchViews.projectReferenceFinder(views)

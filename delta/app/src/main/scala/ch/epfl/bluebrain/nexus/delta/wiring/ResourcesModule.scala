@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
-import ch.epfl.bluebrain.nexus.delta.service.resources.{DataDeletion, ResourceEventExchange, ResourcesImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
+import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -49,10 +49,6 @@ object ResourcesModule extends ModuleDef {
         ResourceResolution.schemaResource(aclCheck, resolvers, schemas),
         resourceIdCheck
       )(api, as, clock)
-  }
-
-  many[ResourcesDeletion].add { (agg: ResourcesAggregate, resources: Resources, dbCleanup: DatabaseCleanup) =>
-    DataDeletion(agg, resources, dbCleanup)
   }
 
   make[Resources].from {

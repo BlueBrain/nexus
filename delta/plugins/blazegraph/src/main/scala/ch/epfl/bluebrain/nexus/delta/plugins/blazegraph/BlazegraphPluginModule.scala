@@ -27,9 +27,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, EventLog}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
@@ -183,17 +183,6 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           as
         )
     }
-
-  many[ResourcesDeletion].add {
-    (
-        cache: BlazegraphViewsCache,
-        agg: BlazegraphViewsAggregate,
-        views: BlazegraphViews,
-        dbCleanup: DatabaseCleanup,
-        coordinator: BlazegraphIndexingCoordinator
-    ) =>
-      BlazegraphViewsDeletion(cache, agg, views, dbCleanup, coordinator)
-  }
 
   many[ProjectReferenceFinder].add { (views: BlazegraphViews) =>
     BlazegraphViews.projectReferenceFinder(views)

@@ -9,24 +9,22 @@ import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, RetryStrategy}
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.{moduleType, uuidFrom}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourcesDeletionProgress.Deleting
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectFetchOptions.allQuotas
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{DeletionStatusCache, ProjectsAggregate, ProjectsCache}
+import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectsImpl.{ProjectsAggregate, ProjectsCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import monix.bio.{IO, Task, UIO}
@@ -38,7 +36,6 @@ final class ProjectsImpl private (
     agg: ProjectsAggregate,
     eventLog: EventLog[Envelope[ProjectEvent]],
     index: ProjectsCache,
-    deletionCache: DeletionStatusCache,
     organizations: Organizations,
     quotas: Quotas,
     scopeInitializations: Set[ScopeInitialization],
@@ -95,30 +92,8 @@ final class ProjectsImpl private (
       resource   <- eval(DeleteProject(ref, rev, caller))
       uuid        = uuidFrom(ref, resource.updatedAt)
       _          <- index.put(ref, resource)
-      _          <- deletionCache.put(
-                      uuid,
-                      ResourcesDeletionStatus(
-                        progress = Deleting,
-                        project = ref,
-                        projectCreatedBy = resource.createdBy,
-                        projectCreatedAt = resource.createdAt,
-                        createdBy = caller,
-                        createdAt = resource.updatedAt,
-                        updatedAt = resource.updatedAt,
-                        uuid = uuid
-                      )
-                    )
     } yield uuid -> resource
   }.named("deleteProject", moduleType)
-
-  override def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]] =
-    deletionCache.values.map(vector => SearchResults(vector.size.toLong, vector))
-
-  override def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus] =
-    for {
-      status <- deletionCache.get(uuid)
-      status <- IO.fromOption(status.filter(_.project == ref), ProjectNotDeleted(ref))
-    } yield status
 
   override def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource] =
     agg
@@ -206,8 +181,7 @@ object ProjectsImpl {
   type ProjectsAggregate =
     Aggregate[String, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
-  type ProjectsCache       = KeyValueStore[ProjectRef, ProjectResource]
-  type DeletionStatusCache = KeyValueStore[UUID, ResourcesDeletionStatus]
+  type ProjectsCache = KeyValueStore[ProjectRef, ProjectResource]
 
   private val logger: Logger = Logger[ProjectsImpl]
 
@@ -215,12 +189,6 @@ object ProjectsImpl {
     implicit val cfg: KeyValueStoreConfig      = config.keyValueStore
     val clock: (Long, ProjectResource) => Long = (_, resource) => resource.rev
     KeyValueStore.distributed(moduleType, clock)
-  }
-
-  def deletionCache(config: ProjectsConfig)(implicit as: ActorSystem[Nothing]): DeletionStatusCache = {
-    implicit val cfg: KeyValueStoreConfig              = config.keyValueStore
-    val clock: (Long, ResourcesDeletionStatus) => Long = (_, status) => status.updatedAt.toEpochMilli
-    KeyValueStore.distributed(s"${moduleType}Deletions", clock)
   }
 
   private def startIndexing(
@@ -283,8 +251,7 @@ object ProjectsImpl {
       quotas: Quotas,
       scopeInitializations: Set[ScopeInitialization],
       defaultApiMappings: ApiMappings,
-      cache: ProjectsCache,
-      deletionCache: DeletionStatusCache
+      cache: ProjectsCache
   )(implicit
       base: BaseUri,
       uuidF: UUIDF = UUIDF.random,
@@ -297,7 +264,6 @@ object ProjectsImpl {
           agg,
           eventLog,
           cache,
-          deletionCache,
           organizations,
           quotas,
           scopeInitializations,

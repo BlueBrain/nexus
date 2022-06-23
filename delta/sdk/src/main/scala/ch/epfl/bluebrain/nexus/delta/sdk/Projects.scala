@@ -5,6 +5,7 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection._
@@ -13,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, ResourcesDeletionStatus}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -86,21 +86,6 @@ trait Projects {
       caller: Subject,
       referenceFinder: ProjectReferenceFinder
   ): IO[ProjectRejection, (UUID, ProjectResource)]
-
-  /**
-    * Fetches deletion status for all projects.
-    */
-  def fetchDeletionStatus: UIO[UnscoredSearchResults[ResourcesDeletionStatus]]
-
-  /**
-    * Fetches a project deletion status resource based on its reference.
-    *
-    * @param ref
-    *   the project reference
-    * @param uuid
-    *   the uuid generated when a project was deleted (based on the deletion instant)
-    */
-  def fetchDeletionStatus(ref: ProjectRef, uuid: UUID): IO[ProjectNotDeleted, ResourcesDeletionStatus]
 
   /**
     * Fetches a project resource based on its reference.

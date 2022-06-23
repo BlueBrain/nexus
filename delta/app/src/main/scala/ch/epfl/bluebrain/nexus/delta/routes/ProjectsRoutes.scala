@@ -6,8 +6,7 @@ import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.Projects.FetchUuids
@@ -28,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris, ResourcesDeletionStatus}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
@@ -68,8 +67,6 @@ final class ProjectsRoutes(
 
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
-  private val statusCtx = ContextValue(contexts.deletionStatus)
-
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
       val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
@@ -101,17 +98,6 @@ final class ProjectsRoutes(
                   searchResultsJsonLdEncoder(Project.context, pagination, uri)
 
                 emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
-              }
-            },
-            // Deletions progress
-            operationName(s"$prefixSegment/projects/deletions") {
-              // Project deletion status
-              (pathPrefix("deletions") & get & pathEndOrSingleSlash & extractUri & fromPaginated) { (uri, pagination) =>
-                authorizeFor(AclAddress.Root, resources.read).apply {
-                  implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[ResourcesDeletionStatus]] =
-                    searchResultsJsonLdEncoder(statusCtx, pagination, uri)
-                  emit(projects.fetchDeletionStatus.widen[SearchResults[ResourcesDeletionStatus]])
-                }
               }
             },
             // SSE projects
@@ -178,14 +164,6 @@ final class ProjectsRoutes(
                       }
                     }
                   )
-                },
-                operationName(s"$prefixSegment/projects/{org}/{project}/deletions/{uuid}") {
-                  // Project deletion status
-                  (pathPrefix("deletions") & get & uuid & pathEndOrSingleSlash) { uuid =>
-                    authorizeFor(ref, resources.read).apply {
-                      emit(projects.fetchDeletionStatus(ref, uuid).leftWiden[ProjectRejection])
-                    }
-                  }
                 },
                 operationName(s"$prefixSegment/projects/{org}/{project}/statistics") {
                   // Project statistics
