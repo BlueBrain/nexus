@@ -10,8 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.IdentitiesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesConfig, IdentitiesImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.{Identities, IdentitiesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
@@ -29,9 +30,9 @@ import monix.execution.Scheduler
 object IdentitiesModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[IdentitiesConfig].from((cfg: AppConfig) => cfg.identities)
+  make[CacheConfig].from((cfg: AppConfig) => cfg.identities)
 
-  make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: IdentitiesConfig) =>
+  make[Identities].fromEffect { (realms: Realms, hc: HttpClient @Id("realm"), config: CacheConfig) =>
     val findActiveRealm: String => UIO[Option[Realm]] = { (issuer: String) =>
       realms
         .list(

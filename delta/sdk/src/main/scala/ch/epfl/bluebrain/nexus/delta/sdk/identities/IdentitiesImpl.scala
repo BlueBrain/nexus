@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import IdentitiesImpl.{extractGroups, GroupsCache}
@@ -127,9 +127,9 @@ object IdentitiesImpl {
   def apply(
       findActiveRealm: String => UIO[Option[Realm]],
       getUserInfo: (Uri, OAuth2BearerToken) => IO[HttpClientError, Json],
-      config: IdentitiesConfig
+      config: CacheConfig
   ): UIO[Identities] =
-    KeyValueStore.localLRU(config.cacheMaxSize.toLong, config.cacheExpiration).map { groups =>
+    KeyValueStore.localLRU(config).map { groups =>
       new IdentitiesImpl(findActiveRealm, getUserInfo, groups)
     }
 }

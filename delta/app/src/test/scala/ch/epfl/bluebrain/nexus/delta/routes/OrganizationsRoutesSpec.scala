@@ -30,7 +30,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   private val org1 = OrganizationGen.organization("org1", fixedUuid, Some("My description"))
   private val org2 = OrganizationGen.organization("org2", fixedUuid)
 
-  private val config = OrganizationsConfig(eventLogConfig, pagination, 10)
+  private val config = OrganizationsConfig(eventLogConfig, pagination, cacheConfig)
 
   private val aclChecker = AclSimpleCheck().accepted
   private val aopd       = new OwnerPermissionsScopeInitialization(

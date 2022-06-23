@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
@@ -136,7 +137,7 @@ class IdentitiesImplSpec
   private val identities: Identities = IdentitiesImpl(
     findActiveRealm,
     (uri: Uri, _: OAuth2BearerToken) => userInfo(uri),
-    IdentitiesConfig(10, 2.minutes)
+    CacheConfig(10, 2.minutes)
   ).accepted
 
   "Identities" should {

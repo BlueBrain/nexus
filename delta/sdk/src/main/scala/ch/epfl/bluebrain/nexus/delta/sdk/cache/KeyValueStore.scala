@@ -340,6 +340,15 @@ object KeyValueStore {
   /**
     * Constructs a local key-value store following a LRU policy
     *
+    * @param config
+    *   the cache configuration
+    */
+  final def localLRU[K, V](config: CacheConfig): UIO[KeyValueStore[K, V]] =
+    localLRU(config.maxSize.toLong, config.expireAfter)
+
+  /**
+    * Constructs a local key-value store following a LRU policy
+    *
     * @param maxSize
     *   the max number of entries in the Map
     */
