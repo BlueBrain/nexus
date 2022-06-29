@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.{QuotasConfig, QuotasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -29,8 +29,6 @@ class QuotasRoutesSpec extends BaseRouteSpec {
       Caller(bob, Set(bob))
     )
 
-  private val projects: Projects = null
-
   implicit private val config: QuotasConfig                    = QuotasConfig(Some(5), Some(10), enabled = true, Map.empty)
   implicit private val serviceAccountCfg: ServiceAccountConfig = ServiceAccountConfig(
     ServiceAccount(User("internal", Label.unsafe("sa")))
@@ -45,7 +43,7 @@ class QuotasRoutesSpec extends BaseRouteSpec {
     (bob, AclAddress.Project(project), Set(Permissions.quotas.read))
   ).accepted
 
-  private lazy val routes = Route.seal(new QuotasRoutes(identities, aclCheck, projects, quotas).routes)
+  private lazy val routes = Route.seal(new QuotasRoutes(identities, aclCheck, quotas).routes)
 
   "The Quotas route" when {
 
