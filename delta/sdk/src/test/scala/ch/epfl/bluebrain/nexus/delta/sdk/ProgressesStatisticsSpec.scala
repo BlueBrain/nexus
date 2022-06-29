@@ -21,10 +21,10 @@ class ProgressesStatisticsSpec extends AnyWordSpecLike with Matchers with IOValu
     val nowMinus5    = now.minusSeconds(5)
     val projectStats = ProjectStatistics(10, 10, now)
 
-    val projectsCounts = ioFromMap(project -> projectStats)
+    val projectsStatistics = ioFromMap(project -> projectStats)
 
     val progressesCache = KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-    val stats           = new ProgressesStatistics(progressesCache, projectsCounts)
+    val stats           = new ProgressesStatistics(progressesCache, projectsStatistics)
 
     "fetch statistics for a projection" in {
       val projectionId = CacheProjectionId("statistic")

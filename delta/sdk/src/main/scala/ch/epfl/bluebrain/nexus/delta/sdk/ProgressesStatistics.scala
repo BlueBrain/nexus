@@ -16,12 +16,12 @@ import monix.bio.UIO
   *
   * @param progressCache
   *   a cache containing a collection of [[ProjectionProgress]], where the index key is the view projectionId
-  * @param projectsCounts
+  * @param projectsStatistics
   *   to get the statistics of the given project
   */
 class ProgressesStatistics(
     progressCache: ProgressesCache,
-    projectsCounts: ProjectRef => UIO[Option[ProjectStatistics]]
+    projectsStatistics: ProjectRef => UIO[Option[ProjectStatistics]]
 ) {
 
   private val logger: Logger = Logger[ProgressesStatistics.type]
@@ -36,7 +36,7 @@ class ProgressesStatistics(
     *   the projection id for which the statistics are computed
     */
   def statistics(project: ProjectRef, projectionId: ProjectionId): UIO[ProgressStatistics] =
-    projectsCounts(project).flatMap {
+    projectsStatistics(project).flatMap {
       case Some(count) => statistics(count, projectionId)
       case None        =>
         logger.warn(s"Project count not found for project '$project'")

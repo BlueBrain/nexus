@@ -44,7 +44,7 @@ final class ProjectsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projects: Projects,
-    projectsCounts: ProjectsStatistics,
+    projectsStatistics: ProjectsStatistics,
     projectProvisioning: ProjectProvisioning
 )(implicit
     baseUri: BaseUri,
@@ -156,7 +156,9 @@ final class ProjectsRoutes(
                   // Project statistics
                   (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
                     authorizeFor(ref, resources.read).apply {
-                      emit(IO.fromOptionEval(projectsCounts.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection])
+                      emit(
+                        IO.fromOptionEval(projectsStatistics.get(ref), ProjectNotFound(ref)).leftWiden[ProjectRejection]
+                      )
                     }
                   }
                 }
@@ -187,7 +189,7 @@ object ProjectsRoutes {
       identities: Identities,
       aclCheck: AclCheck,
       projects: Projects,
-      projectsCounts: ProjectsStatistics,
+      projectsStatistics: ProjectsStatistics,
       projectProvisioning: ProjectProvisioning
   )(implicit
       baseUri: BaseUri,
@@ -196,6 +198,6 @@ object ProjectsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new ProjectsRoutes(identities, aclCheck, projects, projectsCounts, projectProvisioning).routes
+  ): Route = new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning).routes
 
 }

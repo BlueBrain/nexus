@@ -56,7 +56,7 @@ final class CompositeIndexingStream(
     blazeConfig: ExternalIndexingConfig,
     blazeClient: BlazegraphClient,
     cache: ProgressesCache,
-    projectsCounts: ProjectsStatistics,
+    projectsStatistics: ProjectsStatistics,
     remoteProjectsCounts: RemoteProjectsCounts,
     restartProjections: RestartProjections,
     projections: Projection[Unit],
@@ -367,8 +367,8 @@ final class CompositeIndexingStream(
 
   def fetchProjectsCounts(view: CompositeView): UIO[Map[CompositeViewSource, ProjectStatistics]] = UIO
     .traverse(view.sources.value) {
-      case source: ProjectSource       => projectsCounts.get(view.project).map(_.map(source -> _))
-      case source: CrossProjectSource  => projectsCounts.get(source.project).map(_.map(source -> _))
+      case source: ProjectSource       => projectsStatistics.get(view.project).map(_.map(source -> _))
+      case source: CrossProjectSource  => projectsStatistics.get(source.project).map(_.map(source -> _))
       case source: RemoteProjectSource => remoteProjectsCounts(source).map(_.map(source -> _))
     }
     .map(_.flatten.toMap)
@@ -409,7 +409,7 @@ object CompositeIndexingStream {
       blazeClient: BlazegraphClient,
       deltaClient: DeltaClient,
       cache: ProgressesCache,
-      projectsCounts: ProjectsStatistics,
+      projectsStatistics: ProjectsStatistics,
       indexingController: CompositeIndexingController,
       projections: Projection[Unit],
       indexingSource: IndexingSource,
@@ -435,7 +435,7 @@ object CompositeIndexingStream {
       config.blazegraphIndexing,
       blazeClient,
       cache,
-      projectsCounts,
+      projectsStatistics,
       remoteProjectCounts,
       restartProjections,
       projections,

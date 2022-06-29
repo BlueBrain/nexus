@@ -185,7 +185,7 @@ class CompositeIndexingSpec
     RemoteProjectSourceFields(Some(source3Id), project2.ref, Uri("http://nexus.example.com"))
   private val query               = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
-  private val elasticSearchProjection                                        = ElasticSearchProjectionFields(
+  private val elasticSearchProjection                                            = ElasticSearchProjectionFields(
     Some(projection1Id),
     query,
     None,
@@ -193,19 +193,20 @@ class CompositeIndexingSpec
     context,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val blazegraphProjection                                           = SparqlProjectionFields(
+  private val blazegraphProjection                                               = SparqlProjectionFields(
     Some(projection2Id),
     query,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val projectsCountsCache: MutableMap[ProjectRef, ProjectStatistics] = MutableMap.empty
-  private val restartProjectionsCache                                        = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
+  private val projectsStatisticsCache: MutableMap[ProjectRef, ProjectStatistics] = MutableMap.empty
+  private val restartProjectionsCache                                            = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
 
   private val initCount = ProjectStatistics(1, 1, Instant.EPOCH)
 
   private val projectsStatistics = new ProjectsStatistics {
 
-    override def get(project: ProjectRef): UIO[Option[ProjectStatistics]] = UIO.pure(projectsCountsCache.get(project))
+    override def get(project: ProjectRef): UIO[Option[ProjectStatistics]] =
+      UIO.pure(projectsStatisticsCache.get(project))
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
@@ -337,8 +338,8 @@ class CompositeIndexingSpec
       .value
 
   override protected def beforeEach(): Unit = {
-    projectsCountsCache.clear()
-    projectsCountsCache.addOne(project1.ref -> initCount).addOne(project2.ref -> initCount)
+    projectsStatisticsCache.clear()
+    projectsStatisticsCache.addOne(project1.ref -> initCount).addOne(project2.ref -> initCount)
     restartProjectionsCache.clear()
     super.beforeEach()
   }
@@ -410,12 +411,12 @@ class CompositeIndexingSpec
       Thread.sleep(1 * 3000)
       restartProjectionsCache shouldBe empty
 
-      projectsCountsCache.addOne(project1.ref -> modifiedCount)
+      projectsStatisticsCache.addOne(project1.ref -> modifiedCount)
       Thread.sleep(1 * 3000)
       val expected1 = restartedProjections(result, Set(source1Id), times = 1)
       restartProjectionsCache shouldEqual expected1
 
-      projectsCountsCache.addOne(project2.ref -> modifiedCount)
+      projectsStatisticsCache.addOne(project2.ref -> modifiedCount)
       Thread.sleep(1 * 3000)
       val expected2 = expected1 ++ restartedProjections(result, Set(source2Id), times = 1)
       restartProjectionsCache shouldEqual expected2

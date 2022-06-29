@@ -74,7 +74,7 @@ object ProjectsModule extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         projects: Projects,
-        projectsCounts: ProjectsStatistics,
+        projectsStatistics: ProjectsStatistics,
         projectProvisioning: ProjectProvisioning,
         baseUri: BaseUri,
         s: Scheduler,
@@ -82,7 +82,7 @@ object ProjectsModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, aclCheck, projects, projectsCounts, projectProvisioning)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning)(
         baseUri,
         config.projects,
         s,

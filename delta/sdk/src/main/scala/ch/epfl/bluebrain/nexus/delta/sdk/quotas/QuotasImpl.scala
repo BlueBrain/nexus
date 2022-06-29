@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, UIO}
 
 final class QuotasImpl(
-    projectsCounts: ProjectsStatistics
+    projectsStatistics: ProjectsStatistics
 )(implicit quotaConfig: QuotasConfig, serviceAccountConfig: ServiceAccountConfig)
     extends Quotas {
 
@@ -29,7 +29,7 @@ final class QuotasImpl(
     IO.unless(subject == serviceAccountConfig.value.subject) {
       for {
         quota     <- UIO.delay(quotasFromConfig(ref).toOption)
-        countsOpt <- projectsCounts.get(ref)
+        countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
                          quotaReached(count.resources, quota.flatMap(_.resources)) { QuotaResourcesReached(ref, _) }
@@ -45,7 +45,7 @@ final class QuotasImpl(
     IO.unless(subject == serviceAccountConfig.value.subject) {
       for {
         quota     <- UIO.delay(quotasFromConfig(ref).toOption)
-        countsOpt <- projectsCounts.get(ref)
+        countsOpt <- projectsStatistics.get(ref)
         _         <- countsOpt
                        .map { count =>
                          quotaReached(count.events, quota.flatMap(_.events)) { QuotaEventsReached(ref, _) }
