@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, Project, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -41,6 +41,7 @@ class ElasticSearchViewDecodingSpec
     organizationUuid = UUID.randomUUID(),
     description = None,
     apiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
+    defaultApiMappings = ApiMappings.empty,
     base = ProjectBase.unsafe(iri"http://localhost/v1/resources/org/proj/_/"),
     vocab = iri"http://schema.org/",
     markedForDeletion = false

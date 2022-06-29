@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.routes
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -18,8 +17,6 @@ import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
-import java.util.UUID
-
 class EventsRoutesSpec
     extends RouteHelpers
     with Matchers
@@ -33,9 +30,7 @@ class EventsRoutesSpec
     with Inspectors
     with RouteFixtures {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-  private val aclCheck              = AclSimpleCheck().accepted
+  private val aclCheck = AclSimpleCheck().accepted
 
   implicit private val subject: Subject = Identity.Anonymous
 

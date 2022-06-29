@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -27,13 +28,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -122,15 +122,17 @@ class BlazegraphViewsRoutesSpec
 
   val doesntExistId = nxv + "doesntexist"
 
-  private val now          = Instant.now()
-  private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, 10, now)
-
-  val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
+  private val now       = Instant.now()
+  private val nowMinus5 = now.minusSeconds(5)
 
   val viewsProgressesCache =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-  val statisticsProgress   = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
+  val statisticsProgress   = new ProgressesStatistics(
+    viewsProgressesCache,
+    ioFromMap(
+      projectRef -> ProjectStatistics(events = 10, resources = 10, now)
+    )
+  )
 
   implicit val externalIndexingConfig  = externalIndexing
   implicit val paginationConfig        = pagination

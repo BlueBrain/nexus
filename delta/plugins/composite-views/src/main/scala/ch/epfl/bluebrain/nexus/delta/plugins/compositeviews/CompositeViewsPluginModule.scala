@@ -29,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -145,8 +146,8 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ProgressesStatistics].named("composite-statistics").from {
-    (cache: ProgressesCache @Id("composite-progresses"), projectsCounts: ProjectsCounts) =>
-      new ProgressesStatistics(cache, projectsCounts)
+    (cache: ProgressesCache @Id("composite-progresses"), projectsStatistics: ProjectsStatistics) =>
+      new ProgressesStatistics(cache, projectsStatistics.get)
   }
 
   make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>
@@ -181,7 +182,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         projection: Projection[Unit],
         deltaClient: DeltaClient,
         indexingController: CompositeIndexingController,
-        projectsCounts: ProjectsCounts,
+        projectsCounts: ProjectsStatistics,
         indexingSource: IndexingSource @Id("composite-source"),
         remoteIndexingSource: RemoteIndexingSource,
         cache: ProgressesCache @Id("composite-progresses"),

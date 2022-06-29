@@ -15,11 +15,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
@@ -28,11 +29,13 @@ import io.circe.Decoder
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
+import java.time.Instant
+
 trait CompositeViewsSetup extends Fixtures with IOFixedClock {
 
   private val deltaClient = new DeltaClient {
-    override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectCount] =
-      IO.pure(ProjectCount.emptyEpoch)
+    override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectStatistics] =
+      IO.pure(ProjectStatistics(0L, 0L, Instant.EPOCH))
 
     override def checkEvents(source: CompositeViewSource.RemoteProjectSource): HttpResult[Unit] = IO.unit
 

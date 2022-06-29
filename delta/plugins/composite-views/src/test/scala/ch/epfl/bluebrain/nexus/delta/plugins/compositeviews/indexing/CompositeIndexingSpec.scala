@@ -40,14 +40,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientError}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectBase, ProjectCountsCollection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectBase, ProjectStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, ProjectsCounts, Resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -185,7 +185,7 @@ class CompositeIndexingSpec
     RemoteProjectSourceFields(Some(source3Id), project2.ref, Uri("http://nexus.example.com"))
   private val query               = TemplateSparqlConstructQuery(contentOf("indexing/query.txt")).toOption.value
 
-  private val elasticSearchProjection                                   = ElasticSearchProjectionFields(
+  private val elasticSearchProjection                                        = ElasticSearchProjectionFields(
     Some(projection1Id),
     query,
     None,
@@ -193,23 +193,19 @@ class CompositeIndexingSpec
     context,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val blazegraphProjection                                      = SparqlProjectionFields(
+  private val blazegraphProjection                                           = SparqlProjectionFields(
     Some(projection2Id),
     query,
     resourceTypes = Set(iri"http://music.com/Band")
   )
-  private val projectsCountsCache: MutableMap[ProjectRef, ProjectCount] = MutableMap.empty
-  private val restartProjectionsCache                                   = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
+  private val projectsCountsCache: MutableMap[ProjectRef, ProjectStatistics] = MutableMap.empty
+  private val restartProjectionsCache                                        = MutableMap.empty[(Iri, ProjectRef, Set[CompositeViewProjectionId]), Int]
 
-  private val initCount = ProjectCount(1, 1, Instant.EPOCH)
+  private val initCount = ProjectStatistics(1, 1, Instant.EPOCH)
 
-  private val projectsCounts = new ProjectsCounts {
-    override def get(): UIO[ProjectCountsCollection] =
-      UIO.delay(ProjectCountsCollection(projectsCountsCache.toMap))
+  private val projectsStatistics = new ProjectsStatistics {
 
-    override def get(project: ProjectRef): UIO[Option[ProjectCount]] = get().map(_.get(project))
-
-    override def remove(project: ProjectRef): UIO[Unit] = UIO.pure(projectsCountsCache.remove(project)).void
+    override def get(project: ProjectRef): UIO[Option[ProjectStatistics]] = UIO.pure(projectsCountsCache.get(project))
   }
 
   private val remoteProjectsCounts: RemoteProjectsCounts = _ => UIO.delay(None)
@@ -269,7 +265,7 @@ class CompositeIndexingSpec
     config.blazegraphIndexing,
     blazeClient,
     cache,
-    projectsCounts,
+    projectsStatistics,
     remoteProjectsCounts,
     restartProjections,
     projection,

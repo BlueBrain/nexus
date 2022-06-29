@@ -13,6 +13,8 @@ sealed trait Predicate extends Product with Serializable {
 
 object Predicate {
 
+  val root: Predicate = Root
+
   /**
     * Get all results for any org and any project
     */

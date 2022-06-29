@@ -70,7 +70,7 @@ final class OrganizationsImpl private (
   override def fetchAt(uuid: UUID, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] =
     super.fetchAt(uuid, rev).span("fetchOrganizationAtByUuid")
 
-  private def fetchFromCache(uuid: UUID): IO[OrganizationNotFound, Label] = {
+  private def fetchFromCache(uuid: UUID): IO[OrganizationNotFound, Label] =
     cache.get(uuid).flatMap {
       case None        =>
         for {
@@ -80,7 +80,6 @@ final class OrganizationsImpl private (
         } yield cached
       case Some(label) => UIO.pure(label)
     }
-  }
 
   private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] =
     log.evaluate(cmd.label, cmd).map(_._2.toResource).tapEval { r =>

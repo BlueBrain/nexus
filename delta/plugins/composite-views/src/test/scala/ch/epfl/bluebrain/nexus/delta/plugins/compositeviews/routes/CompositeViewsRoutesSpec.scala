@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.{NQuads, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfMediaTypes, Vocabulary}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -31,13 +32,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, ProjectsCountsDummy}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -109,27 +109,25 @@ class CompositeViewsRoutesSpec
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
-  private val projectStats       = ProjectCount(10, 10, nowPlus5)
-  private val otherProjectStats  = ProjectCount(100, 100, nowPlus5)
-  private val remoteProjectStats = ProjectCount(1000, 1000, nowPlus5)
-
-  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats, otherProjectRef -> otherProjectStats)
+  private val projectStats       = ProjectStatistics(10, 10, nowPlus5)
+  private val otherProjectStats  = ProjectStatistics(100, 100, nowPlus5)
+  private val remoteProjectStats = ProjectStatistics(1000, 1000, nowPlus5)
 
   private val deltaClient = new DeltaClient {
-    override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectCount] =
+    override def projectCount(source: CompositeViewSource.RemoteProjectSource): HttpResult[ProjectStatistics] =
       UIO.pure(remoteProjectStats)
-    override def checkEvents(source: CompositeViewSource.RemoteProjectSource): HttpResult[Unit]          =
+    override def checkEvents(source: CompositeViewSource.RemoteProjectSource): HttpResult[Unit]               =
       IO.terminate(new RuntimeException("Not implemented"))
     override def events[A: Decoder](
         source: CompositeViewSource.RemoteProjectSource,
         offset: Offset
-    ): fs2.Stream[Task, (Offset, A)]                                                                     =
+    ): fs2.Stream[Task, (Offset, A)]                                                                          =
       fs2.Stream.raiseError[Task](new RuntimeException("Not implemented"))
     override def resourceAsNQuads(
         source: CompositeViewSource.RemoteProjectSource,
         id: Iri,
         tag: Option[UserTag]
-    ): HttpResult[Option[NQuads]]                                                                        =
+    ): HttpResult[Option[NQuads]]                                                                             =
       IO.terminate(new RuntimeException("Not implemented"))
   }
 
@@ -144,7 +142,10 @@ class CompositeViewsRoutesSpec
   viewsProgressesCache.put(esProjectionId, ProjectionProgress(Sequence(3), now, 3, 1, 0, 1)).accepted
   viewsProgressesCache.put(blazeProjectionId, ProjectionProgress(Sequence(1), nowPlus5, 1, 0, 0, 0)).accepted
 
-  private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
+  private val statisticsProgress = new ProgressesStatistics(
+    viewsProgressesCache,
+    ioFromMap(projectRef -> projectStats, otherProjectRef -> otherProjectStats)
+  )
 
   private val selectQuery = SparqlQuery("SELECT * WHERE {?s ?p ?o}")
   private val esQuery     = jobj"""{"query": {"match_all": {} } }"""

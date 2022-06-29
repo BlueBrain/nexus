@@ -180,7 +180,7 @@ trait Organizations {
 object Organizations {
 
   /**
-    * The organizations module type.
+    * The organizations entity type.
     */
   final val entityType: EntityType = EntityType("organization")
 

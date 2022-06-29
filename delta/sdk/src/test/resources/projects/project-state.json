@@ -1,0 +1,30 @@
+{
+  "label": "myproj",
+  "uuid": "fe1301a6-a105-4966-84af-32723fd003d2",
+  "organizationLabel": "myorg",
+  "organizationUuid": "b6bde92f-7836-4da6-8ead-2e0fd516ebe7",
+  "rev": 1,
+  "deprecated": false,
+  "markedForDeletion": false,
+  "description": "some description",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    }
+  ],
+  "base": "https://bluebrain.github.io/nexus/schemas/",
+  "vocab": "https://bluebrain.github.io/nexus/vocabulary/",
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  },
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
+    "subject": "username",
+    "realm": "myrealm",
+    "@type": "User"
+  }
+}

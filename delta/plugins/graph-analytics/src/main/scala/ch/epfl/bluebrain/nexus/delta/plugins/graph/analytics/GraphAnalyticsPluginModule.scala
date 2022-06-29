@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -100,8 +101,8 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
     }
 
   make[ProgressesStatistics].named("graph-analytics").from {
-    (cache: ProgressesCache @Id("graph-analytics-progresses"), projectsCounts: ProjectsCounts) =>
-      new ProgressesStatistics(cache, projectsCounts)
+    (cache: ProgressesCache @Id("graph-analytics-progresses"), projectsStatistics: ProjectsStatistics) =>
+      new ProgressesStatistics(cache, projectsStatistics.get)
   }
 
   make[GraphAnalyticsRoutes].from {

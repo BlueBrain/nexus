@@ -7,11 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverContextResolution, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -47,13 +47,12 @@ class ResolverScopeInitializationSpec
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
   val resolvers: Resolvers = {
-    implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
-    implicit val api: JsonLdApi   = JsonLdJavaApi.strict
-    val resolution                = RemoteContextResolution.fixed(
+    implicit val api: JsonLdApi = JsonLdJavaApi.strict
+    val resolution              = RemoteContextResolution.fixed(
       contexts.resolvers -> jsonContentOf("/contexts/resolvers.json").topContextValueOrEmpty
     )
-    val rcr                       = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-    val (o, p)                    = ProjectSetup.init(List(org), List(project)).accepted
+    val rcr                     = new ResolverContextResolution(resolution, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
+    val (o, p)                  = ProjectSetup.init(List(org), List(project)).accepted
     ResolversDummy(o, p, rcr, (_, _) => IO.unit).accepted
   }
   "A ResolverScopeInitialization" should {

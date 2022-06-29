@@ -6,10 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.AutomaticProvisioningConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
@@ -70,6 +72,8 @@ final case class AppConfig(
     organizations: OrganizationsConfig,
     acls: AclsConfig,
     projects: ProjectsConfig,
+    automaticProvisioning: AutomaticProvisioningConfig,
+    quotas: QuotasConfig,
     resolvers: ResolversConfig,
     resources: ResourcesConfig,
     schemas: SchemasConfig,
@@ -82,10 +86,6 @@ object AppConfig {
 
   private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
   private val resolverOptions = ConfigResolveOptions.defaults()
-
-  val projectPruningMisconfiguration: InvalidConfiguration = InvalidConfiguration(
-    "Database cleanup is a precondition to enable project pruning."
-  )
 
   /**
     * Loads the application in two steps:<br/>
@@ -125,9 +125,6 @@ object AppConfig {
                                      )
                                    }
       (appConfig, mergedConfig) <- merge(externalConfig :: config :: pluginConfigs: _*)
-      _                         <- IO.raiseWhen(appConfig.database.denyCleanup && appConfig.projects.allowProjectPruning)(
-                                     ConfigReaderFailures(projectPruningMisconfiguration)
-                                   )
     } yield (appConfig, mergedConfig)
   }
 

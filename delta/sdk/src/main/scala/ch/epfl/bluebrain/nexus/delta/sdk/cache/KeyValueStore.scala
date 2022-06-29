@@ -150,6 +150,24 @@ trait KeyValueStore[K, V] {
     }
 
   /**
+    * Fetch the value for the given key and if not, compute the new value, insert it in the store if defined and return
+    * it This operation is not atomic.
+    * @param key
+    *   the key
+    * @param op
+    *   the computation yielding the value to associate with `key`, if `key` is previously unbound.
+    */
+  def getOrElseAttemptUpdate[E](key: K, op: => IO[E, Option[V]]): IO[E, Option[V]] =
+    get(key).flatMap {
+      case Some(value) => UIO.some(value)
+      case None        =>
+        op.flatMap {
+          case Some(newValue) => put(key, newValue).as(Some(newValue))
+          case None           => UIO.none
+        }
+    }
+
+  /**
     * @param key
     *   the key
     * @return

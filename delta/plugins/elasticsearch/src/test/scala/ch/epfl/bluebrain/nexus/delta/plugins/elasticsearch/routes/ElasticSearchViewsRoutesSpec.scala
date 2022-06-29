@@ -30,13 +30,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, ProjectsCountsDummy, SseEventLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
@@ -132,11 +131,8 @@ class ElasticSearchViewsRoutesSpec
   private val allowedPerms  = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
   private val views         = ElasticSearchViewsSetup.init(orgs, projs, allowedPerms)
 
-  private val now          = Instant.now()
-  private val nowMinus5    = now.minusSeconds(5)
-  private val projectStats = ProjectCount(10, 10, now)
-
-  private val projectsCounts = ProjectsCountsDummy(projectRef -> projectStats)
+  private val now       = Instant.now()
+  private val nowMinus5 = now.minusSeconds(5)
 
   private val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
@@ -148,7 +144,12 @@ class ElasticSearchViewsRoutesSpec
   private val viewsProgressesCache    =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
 
-  private val statisticsProgress = new ProgressesStatistics(viewsProgressesCache, projectsCounts)
+  private val statisticsProgress = new ProgressesStatistics(
+    viewsProgressesCache,
+    ioFromMap(
+      projectRef -> ProjectStatistics(events = 10, resources = 10, now)
+    )
+  )
 
   private val sseEventLog: SseEventLog = new SseEventLogDummy(
     List(

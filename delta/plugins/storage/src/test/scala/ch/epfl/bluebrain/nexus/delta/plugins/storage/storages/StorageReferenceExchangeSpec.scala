@@ -7,13 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
@@ -37,11 +35,10 @@ class StorageReferenceExchangeSpec
   implicit private val scheduler: Scheduler = Scheduler.global
   implicit val ec: ExecutionContext         = system.dispatcher
 
-  private val subject: Subject          = Identity.User("user", Label.unsafe("realm"))
-  implicit private val caller: Caller   = Caller.unsafe(subject)
-  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val uuid                      = UUID.randomUUID()
-  implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  private val subject: Subject        = Identity.User("user", Label.unsafe("realm"))
+  implicit private val caller: Caller = Caller.unsafe(subject)
+  private val uuid                    = UUID.randomUUID()
+  implicit private val uuidF: UUIDF   = UUIDF.fixed(uuid)
 
   private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
