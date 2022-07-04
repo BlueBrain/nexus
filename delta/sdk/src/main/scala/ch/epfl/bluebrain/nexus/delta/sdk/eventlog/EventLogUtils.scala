@@ -1,21 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.eventlog
 
 import akka.actor.typed.ActorSystem
-import akka.persistence.query.{EventEnvelope, Offset, TimeBasedUUID}
-import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import akka.persistence.query.{EventEnvelope, Offset}
+import ch.epfl.bluebrain.nexus.delta.kernel.Lens
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EventLog, OffsetUtils}
-import com.datastax.oss.driver.api.core.uuid.Uuids
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, Task, UIO}
 
-import java.time.Instant
 import scala.reflect.ClassTag
 
 object EventLogUtils {
@@ -87,137 +81,5 @@ object EventLogUtils {
     flavour match {
       case DatabaseFlavour.Postgres  => EventLog.postgresEventLog(toEnvelope[A])(as)
       case DatabaseFlavour.Cassandra => EventLog.cassandraEventLog(toEnvelope[A])(as)
-    }
-
-  /**
-    * Fetch events related to the given project
-    * @param projects
-    *   a [[Projects]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param projectRef
-    *   the project ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def projectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(implicit
-      rejectionMapper: Mapper[ProjectNotFound, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    projects
-      .fetch(projectRef)
-      .bimap(
-        rejectionMapper.to,
-        p => events(eventLog, Projects.projectTag(projectRef), p.createdAt, offset)
-      )
-
-  /**
-    * Fetch events related to the given project
-    * @param projects
-    *   a [[Projects]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param projectRef
-    *   the project ref where the events belong
-    * @param module
-    *   the module ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def projectEvents[R, M](
-      projects: Projects,
-      eventLog: EventLog[M],
-      projectRef: ProjectRef,
-      module: String,
-      offset: Offset
-  )(implicit
-      rejectionMapper: Mapper[ProjectNotFound, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    projects
-      .fetch(projectRef)
-      .bimap(
-        rejectionMapper.to,
-        p => events(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
-      )
-
-  /**
-    * Fetch current events related to the given project
-    * @param projects
-    *   a [[Projects]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param projectRef
-    *   the project ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def currentProjectEvents[R, M](projects: Projects, eventLog: EventLog[M], projectRef: ProjectRef, offset: Offset)(
-      implicit rejectionMapper: Mapper[ProjectNotFound, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    projects
-      .fetch(projectRef)
-      .bimap(
-        rejectionMapper.to,
-        p => currentEvents(eventLog, Projects.projectTag(projectRef), p.createdAt, offset)
-      )
-
-  /**
-    * Fetch current events related to the given project and module
-    * @param projects
-    *   a [[Projects]] instance
-    * @param eventLog
-    *   a [[EventLog]] instance
-    * @param projectRef
-    *   the project ref where the events belong
-    * @param module
-    *   the project ref where the events belong
-    * @param offset
-    *   the requested offset
-    * @param rejectionMapper
-    *   to fit the project rejection to one handled by the caller
-    */
-  def currentProjectEvents[R, M](
-      projects: Projects,
-      eventLog: EventLog[M],
-      projectRef: ProjectRef,
-      module: String,
-      offset: Offset
-  )(implicit
-      rejectionMapper: Mapper[ProjectNotFound, R]
-  ): IO[R, fs2.Stream[Task, M]] =
-    projects
-      .fetch(projectRef)
-      .bimap(
-        rejectionMapper.to,
-        p => currentEvents(eventLog, Projects.projectTag(module, projectRef), p.createdAt, offset)
-      )
-
-  private def events[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
-    eventLog.config.flavour match {
-      case Postgres  => eventLog.eventsByTag(tag, offset)
-      case Cassandra =>
-        val maxOffset = OffsetUtils.offsetOrdering.max(
-          offset,
-          OffsetUtils.offsetOrdering
-            .max(eventLog.config.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
-        )
-        eventLog.eventsByTag(tag, maxOffset)
-    }
-
-  private def currentEvents[M](eventLog: EventLog[M], tag: String, instant: Instant, offset: Offset) =
-    eventLog.config.flavour match {
-      case Postgres  => eventLog.currentEventsByTag(tag, offset)
-      case Cassandra =>
-        val maxOffset = OffsetUtils.offsetOrdering.max(
-          offset,
-          OffsetUtils.offsetOrdering
-            .max(eventLog.config.firstOffset, TimeBasedUUID(Uuids.startOf(instant.toEpochMilli)))
-        )
-        eventLog.currentEventsByTag(tag, maxOffset)
     }
 }

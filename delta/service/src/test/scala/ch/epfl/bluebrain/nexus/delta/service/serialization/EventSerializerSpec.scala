@@ -6,8 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, PrefixIri, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossProjectValue, InProjectValue}
@@ -28,7 +26,6 @@ import org.scalatest.CancelAfterFailure
 import org.scalatest.flatspec.AnyFlatSpecLike
 
 import java.time.Instant
-import java.util.UUID
 
 /*
 scalafmt: {
@@ -53,21 +50,13 @@ class EventSerializerSpec
   val realm: Label = Label.unsafe("myrealm")
 
   val subject: Subject        = User("username", realm)
-  val anonymous: Subject      = Anonymous
   val group: Identity         = Group("group", realm)
   val authenticated: Identity = Authenticated(realm)
 
-  val org: Label          = Label.unsafe("myorg")
-  val orgUuid: UUID       = UUID.fromString("b6bde92f-7836-4da6-8ead-2e0fd516ebe7")
-  val description: String = "some description"
-
-  val proj: Label              = Label.unsafe("myproj")
-  val projUuid: UUID           = UUID.fromString("fe1301a6-a105-4966-84af-32723fd003d2")
-  val apiMappings: ApiMappings = ApiMappings("nxv" -> nxv.base)
-  val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
-  val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
-  val projectRef               = ProjectRef(org, proj)
-  val myId                     = nxv + "myId"
+  val org: Label  = Label.unsafe("myorg")
+  val proj: Label = Label.unsafe("myproj")
+  val projectRef  = ProjectRef(org, proj)
+  val myId        = nxv + "myId"
   implicit def res: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").accepted,
@@ -272,46 +261,6 @@ class EventSerializerSpec
     ) -> jsonContentOf("/serialization/resource-tag-deleted.json")
   )
 
-  val projectsMapping: Map[ProjectEvent, Json] = Map(
-    ProjectCreated(
-      label = proj,
-      uuid = projUuid,
-      organizationLabel = org,
-      organizationUuid = orgUuid,
-      rev = rev,
-      description = Some(description),
-      apiMappings = apiMappings,
-      base = base,
-      vocab = vocab,
-      instant = instant,
-      subject = subject
-    ) -> jsonContentOf("/serialization/project-created.json"),
-    ProjectUpdated(
-      label = proj,
-      uuid = projUuid,
-      organizationLabel = org,
-      organizationUuid = orgUuid,
-      rev = rev,
-      description = Some(description),
-      apiMappings = apiMappings,
-      base = base,
-      vocab = vocab,
-      instant = instant,
-      subject = subject
-    ) -> jsonContentOf("/serialization/project-updated.json"),
-    ProjectDeprecated(
-      label = proj,
-      uuid = projUuid,
-      organizationLabel = org,
-      organizationUuid = orgUuid,
-      rev = rev,
-      instant = instant,
-      subject = subject
-    ) -> jsonContentOf("/serialization/project-deprecated.json")
-  )
-
-  "An EventSerializer" should behave like eventToJsonSerializer("project", projectsMapping)
-  "An EventSerializer" should behave like jsonToEventDeserializer("project", projectsMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resolver", resolversMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("resolver", resolversMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resource", resourcesMapping)

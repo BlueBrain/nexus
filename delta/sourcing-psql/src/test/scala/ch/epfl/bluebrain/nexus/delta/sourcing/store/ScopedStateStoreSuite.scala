@@ -3,19 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.store
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, PullRequest}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, PullRequest}
 import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
 
-import scala.concurrent.duration._
 import java.time.Instant
+import scala.concurrent.duration._
 
 class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions {
 

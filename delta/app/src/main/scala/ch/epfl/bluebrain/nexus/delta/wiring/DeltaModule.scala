@@ -26,9 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ProjectCountsCollection, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.wiring.ViewsModule
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
@@ -137,24 +136,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
   make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
 
-  make[Projection[ProjectCountsCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      Projection(database, ProjectCountsCollection.empty, system, clock)
-  }
-
   make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
     Projection(database, (), system, clock)
-  }
-
-  make[ProjectsCounts].fromEffect {
-    (
-        projection: Projection[ProjectCountsCollection],
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
-    ) =>
-      ProjectsCounts(appCfg.projects, projection, eventLog.eventsByTag(Event.eventTag, _))(uuidF, as, sc)
   }
 
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>

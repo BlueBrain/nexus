@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sdk.syntax
 
 import akka.persistence.query.Offset
 import ch.epfl.bluebrain.nexus.delta.kernel.{Lens, Mapper}
-import ch.epfl.bluebrain.nexus.delta.sdk.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -41,7 +41,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def projectEvents[R](projects: Projects, projectRef: ProjectRef, offset: Offset)(implicit
       rejectionMapper: Mapper[ProjectNotFound, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.projectEvents(projects, eventLog, projectRef, offset)
+    projects.fetch(projectRef).bimap(rejectionMapper.to, _ => eventLog.currentEventsByTag("", offset))
 
   /**
     * Fetch project events for the given module
@@ -49,7 +49,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def projectEvents[R](projects: Projects, projectRef: ProjectRef, module: String, offset: Offset)(implicit
       rejectionMapper: Mapper[ProjectNotFound, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.projectEvents(projects, eventLog, projectRef, module, offset)
+    projects.fetch(projectRef).bimap(rejectionMapper.to, _ => eventLog.currentEventsByTag(module, offset))
 
   /**
     * Fetch project events
@@ -57,7 +57,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def currentProjectEvents[R](projects: Projects, projectRef: ProjectRef, offset: Offset)(implicit
       rejectionMapper: Mapper[ProjectNotFound, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.currentProjectEvents(projects, eventLog, projectRef, offset)
+    projects.fetch(projectRef).bimap(rejectionMapper.to, _ => eventLog.currentEventsByTag("", offset))
 
   /**
     * Fetch project events for the given module
@@ -65,7 +65,7 @@ final class EventLogOpts[State, E <: Event](private val eventLog: EventLog[Envel
   def currentProjectEvents[R](projects: Projects, projectRef: ProjectRef, module: String, offset: Offset)(implicit
       rejectionMapper: Mapper[ProjectNotFound, R]
   ): IO[R, Stream[Task, Envelope[E]]] =
-    EventLogUtils.currentProjectEvents(projects, eventLog, projectRef, module, offset)
+    projects.fetch(projectRef).bimap(rejectionMapper.to, _ => eventLog.currentEventsByTag(module, offset))
 
   /**
     * Fetch organization events

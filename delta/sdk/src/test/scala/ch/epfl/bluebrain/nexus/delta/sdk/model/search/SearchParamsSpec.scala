@@ -97,7 +97,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       label = Some("myproj"),
       _ => UIO.pure(true)
     )
-    val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1L, subject)
+    val resource            = ProjectGen.resourceFor(ProjectGen.project("myorg", "myproj"), 1, subject)
 
     "match a project resource" in {
       forAll(

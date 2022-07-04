@@ -58,8 +58,8 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     rev      integer      NOT NULL,
     value    JSONB        NOT NULL,
     instant  timestamptz  NOT NULL,
-    PRIMARY KEY(type, org, project, id, tag),
-    UNIQUE (org, project, id, tag)
+    PRIMARY KEY(type, org, project, tag, id),
+    UNIQUE (org, project, tag, id)
 );
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);
 

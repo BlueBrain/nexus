@@ -1,30 +1,28 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
-import java.time.Instant
-import java.util.UUID
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import org.scalatest.OptionValues
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 
-object ProjectGen extends OptionValues {
+import java.time.Instant
+import java.util.UUID
 
-  implicit val defaultApiMappings: ApiMappings = ApiMappings(
+object ProjectGen {
+
+  val defaultApiMappings: ApiMappings = ApiMappings(
     "nxv" -> iri"https://bluebrain.github.io/nexus/vocabulary/",
     "_"   -> iri"https://bluebrain.github.io/nexus/vocabulary/unconstrained.json"
   )
 
-  def currentState(
+  def state(
       orgLabel: String,
       label: String,
-      rev: Long,
+      rev: Int,
       uuid: UUID = UUID.randomUUID(),
       orgUuid: UUID = UUID.randomUUID(),
       description: Option[String] = None,
@@ -34,8 +32,8 @@ object ProjectGen extends OptionValues {
       deprecated: Boolean = false,
       markedForDeletion: Boolean = false,
       subject: Subject = Anonymous
-  ): Current =
-    Current(
+  ): ProjectState =
+    ProjectState(
       Label.unsafe(label),
       uuid,
       Label.unsafe(orgLabel),
@@ -67,6 +65,7 @@ object ProjectGen extends OptionValues {
       orgUuid,
       projectFields.description,
       projectFields.apiMappings,
+      defaultApiMappings,
       ProjectBase.unsafe(projectFields.baseOrGenerated(ref).value),
       projectFields.vocabOrGenerated(ref).value,
       markedForDeletion
@@ -90,6 +89,7 @@ object ProjectGen extends OptionValues {
       orgUuid,
       description,
       mappings,
+      defaultApiMappings,
       ProjectBase.unsafe(base),
       vocab,
       markedForDeletion
@@ -105,12 +105,12 @@ object ProjectGen extends OptionValues {
 
   def resourceFor(
       project: Project,
-      rev: Long = 1L,
+      rev: Int = 1,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,
       markedForDeletion: Boolean = false
   ): ProjectResource =
-    currentState(
+    state(
       project.organizationLabel.value,
       project.label.value,
       rev,
@@ -123,6 +123,6 @@ object ProjectGen extends OptionValues {
       deprecated,
       markedForDeletion,
       subject
-    ).toResource.value
+    ).toResource(defaultApiMappings)
 
 }

@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import com.typesafe.scalalogging.Logger
@@ -38,9 +38,9 @@ import scala.util.Try
 trait DeltaClient {
 
   /**
-    * Fetches the [[ProjectCount]] for the remote source
+    * Fetches the [[ProjectStatistics]] for the remote source
     */
-  def projectCount(source: RemoteProjectSource): HttpResult[ProjectCount]
+  def projectCount(source: RemoteProjectSource): HttpResult[ProjectStatistics]
 
   /**
     * Checks whether the events endpoint and token provided by the source are correct
@@ -78,13 +78,13 @@ object DeltaClient {
       scheduler: Scheduler
   ) extends DeltaClient {
 
-    override def projectCount(source: RemoteProjectSource): HttpResult[ProjectCount] = {
+    override def projectCount(source: RemoteProjectSource): HttpResult[ProjectStatistics] = {
       implicit val cred: Option[AuthToken] = token(source)
       val statisticsEndpoint: HttpRequest  =
         Get(
           source.endpoint / "projects" / source.project.organization.value / source.project.project.value / "statistics"
         ).addHeader(accept).withCredentials
-      client.fromJsonTo[ProjectCount](statisticsEndpoint)
+      client.fromJsonTo[ProjectStatistics](statisticsEndpoint)
     }
 
     override def checkEvents(source: RemoteProjectSource): HttpResult[Unit] = {

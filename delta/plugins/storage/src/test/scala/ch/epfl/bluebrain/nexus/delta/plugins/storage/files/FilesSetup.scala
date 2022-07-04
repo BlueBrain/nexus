@@ -7,15 +7,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup, StoragesStatistics, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
-import ch.epfl.bluebrain.nexus.delta.sdk.{Projects, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -30,7 +31,6 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       project: Project,
       storageTypeConfig: StorageTypeConfig
   )(implicit
-      baseUri: BaseUri,
       as: ActorSystem[Nothing],
       uuid: UUIDF,
       subject: Subject,
@@ -44,7 +44,6 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
       aclCheck: AclCheck,
       storageTypeConfig: StorageTypeConfig
   )(implicit
-      baseUri: BaseUri,
       as: ActorSystem[Nothing],
       uuid: UUIDF,
       subject: Subject,

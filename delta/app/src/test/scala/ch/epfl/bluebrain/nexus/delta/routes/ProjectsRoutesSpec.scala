@@ -6,51 +6,30 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAut
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectCountsCollection.ProjectCount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectsConfig.AutomaticProvisioningConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotasConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProjectReferenceFinder, ProjectsCountsDummy, QuotasDummy}
-import ch.epfl.bluebrain.nexus.delta.service.projects.ProjectProvisioning
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConfig, ProjectProvisioning}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.utils.RouteFixtures
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 import monix.bio.{IO, UIO}
-import org.scalatest.concurrent.Eventually
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration._
 
-class ProjectsRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with RouteFixtures
-    with ConfigFixtures
-    with CancelAfterFailure
-    with Eventually {
+class ProjectsRoutesSpec extends BaseRouteSpec {
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 10.milliseconds)
 
@@ -61,7 +40,7 @@ class ProjectsRoutesSpec
 
   private val provisionedRealm  = Label.unsafe("realm2")
   private val caller            = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
-  private val provisionedUser   = User("user1!!!!", provisionedRealm)
+  private val provisionedUser   = User("user1", provisionedRealm)
   private val provisionedCaller =
     Caller(
       provisionedUser,
@@ -75,22 +54,23 @@ class ProjectsRoutesSpec
 
   private val asAlice       = addCredentials(OAuth2BearerToken("alice"))
   private val asProvisioned = addCredentials(OAuth2BearerToken("user1"))
-  private val asInvalid     = addCredentials(OAuth2BearerToken("invalid"))
+  private val asInvalid     = addCredentials(OAuth2BearerToken("!@#%^"))
 
   private val aclCheck: AclSimpleCheck = AclSimpleCheck().accepted
 
-  // Creating the org instance and injecting some data in it
-  private val orgs: Organizations = {
-    implicit val subject: Identity.Subject = caller.subject
-    for {
-      o <- IO.pure(null: Organizations)
-      _ <- o.create(Label.unsafe("org1"), None)
-      _ <- o.create(Label.unsafe("org2"), None)
-      _ <- o.create(Label.unsafe("users-org"), None)
-      _ <- o.deprecate(Label.unsafe("org2"), 1)
+  private val org1     = Label.unsafe("org1")
+  private val org2     = Label.unsafe("org2")
+  private val usersOrg = Label.unsafe("users-org")
 
-    } yield o
-  }.accepted
+  private val ref = ProjectRef.unsafe("org1", "proj")
+
+  // Creating the org instance and injecting some data in it
+  private def fetchOrg: FetchOrganization = {
+    case `org1`     => UIO.pure(Organization(org1, orgUuid, None))
+    case `usersOrg` => UIO.pure(Organization(usersOrg, orgUuid, None))
+    case `org2`     => IO.raiseError(WrappedOrganizationRejection(OrganizationIsDeprecated(org2)))
+    case other      => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
+  }
 
   private val provisioningConfig = AutomaticProvisioningConfig(
     enabled = true,
@@ -105,28 +85,18 @@ class ProjectsRoutesSpec
   )
 
   implicit private val projectsConfig: ProjectsConfig =
-    ProjectsConfig(
-      aggregate,
-      keyValueStore,
-      pagination,
-      cacheIndexing,
-      persist,
-      AutomaticProvisioningConfig.disabled,
-      QuotasConfig(None, None, enabled = false, Map.empty),
-      denyProjectPruning = false
-    )
+    ProjectsConfig(eventLogConfig, pagination, cacheConfig)
 
-  implicit private val finder: ProjectReferenceFinder = (_: ProjectRef) => UIO.pure(ProjectReferenceMap.empty)
-  private lazy val projectDummy                       =
-    ProjectsDummy(orgs, QuotasDummy.neverReached, Set.empty, defaultApiMappings, _ => IO.unit).accepted
+  private val projectStats = ProjectStatistics(10, 10, Instant.EPOCH)
 
-  private val projectStats = ProjectCount(10, 10, Instant.EPOCH)
+  private val projectsStatistics: ProjectsStatistics = {
+    case `ref` => UIO.some(projectStats)
+    case _     => UIO.none
+  }
 
-  private val projectsCounts = ProjectsCountsDummy(ProjectRef.unsafe("org1", "proj") -> projectStats)
-
-  private val provisioning = ProjectProvisioning(aclCheck.append, projectDummy, provisioningConfig)
-
-  private lazy val routes = Route.seal(ProjectsRoutes(identities, aclCheck, projectDummy, projectsCounts, provisioning))
+  private lazy val projects     = ProjectsImpl(fetchOrg, Set.empty, defaultApiMappings, projectsConfig, xas).accepted
+  private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
+  private lazy val routes       = Route.seal(ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, provisioning))
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
@@ -302,15 +272,15 @@ class ProjectsRoutesSpec
       "vocab"             -> vocab
     )
 
-    val fetchProjRev4 = jsonContentOf(
+    val fetchProjRev3 = jsonContentOf(
       "/projects/fetch.json",
       "org"               -> "org1",
       "proj"              -> "proj",
       "orgUuid"           -> orgUuid,
       "uuid"              -> projectUuid,
-      "rev"               -> 4L,
+      "rev"               -> 3L,
       "deprecated"        -> true,
-      "markedForDeletion" -> true,
+      "markedForDeletion" -> false,
       "description"       -> "New description",
       "base"              -> base,
       "vocab"             -> vocab
@@ -353,7 +323,7 @@ class ProjectsRoutesSpec
       aclCheck.append(AclAddress.Root, Anonymous -> Set(projectsPermissions.read)).accepted
       Get("/v1/projects/org1/proj") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(fetchProjRev4)
+        response.asJson should equalIgnoreArrayOrder(fetchProjRev3)
       }
     }
 
@@ -367,7 +337,7 @@ class ProjectsRoutesSpec
     "fetch a project by uuid" in {
       Get(s"/v1/projects/$orgUuid/$projectUuid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson should equalIgnoreArrayOrder(fetchProjRev4)
+        response.asJson should equalIgnoreArrayOrder(fetchProjRev3)
       }
     }
 
@@ -384,7 +354,7 @@ class ProjectsRoutesSpec
         response.asJson shouldEqual jsonContentOf(
           "/errors/revision-not-found.json",
           "provided" -> 42L,
-          "current"  -> 4L
+          "current"  -> 3L
         )
       }
     }
@@ -395,7 +365,7 @@ class ProjectsRoutesSpec
         response.asJson shouldEqual jsonContentOf(
           "/errors/revision-not-found.json",
           "provided" -> 42L,
-          "current"  -> 4L
+          "current"  -> 3L
         )
       }
     }
@@ -440,7 +410,7 @@ class ProjectsRoutesSpec
       )
 
     "list all projects" in {
-      val expected = expectedResults(fetchProjRev4.removeKeys("@context"), fetchProj2.removeKeys("@context"))
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
       Get("/v1/projects") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(expected)
@@ -452,7 +422,7 @@ class ProjectsRoutesSpec
     }
 
     "list all projects for organization" in {
-      val expected = expectedResults(fetchProjRev4.removeKeys("@context"), fetchProj2.removeKeys("@context"))
+      val expected = expectedResults(fetchProjRev3.removeKeys("@context"), fetchProj2.removeKeys("@context"))
 
       Get("/v1/projects/org1") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -469,7 +439,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
-            fetchProjRev4.removeKeys("@context")
+            fetchProjRev3.removeKeys("@context")
           )
         )
       }
@@ -493,7 +463,7 @@ class ProjectsRoutesSpec
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(
           expectedResults(
-            fetchProjRev4.removeKeys("@context")
+            fetchProjRev3.removeKeys("@context")
           )
         )
       }

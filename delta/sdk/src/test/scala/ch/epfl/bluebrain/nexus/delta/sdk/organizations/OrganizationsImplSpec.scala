@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen.{organization, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
@@ -12,12 +10,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils, ScopeInitialization}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IORef, IOValues}
-import monix.bio.{IO, UIO}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, OptionValues}
@@ -49,26 +47,15 @@ class OrganizationsImplSpec
   val label        = Label.unsafe("myorg")
   val label2       = Label.unsafe("myorg2")
 
-  private lazy val (orgLabels, orgs) = {
+  private lazy val (scopeInitLog, orgs) = {
     for {
-      orgLabels <- IORef.of(Set.empty[Label])
-      orgs      <- OrganizationsImpl(
-                     Set(new ScopeInitialization {
-                       override def onOrganizationCreation(
-                           organization: Organization,
-                           subject: Subject
-                       ): IO[ServiceError.ScopeInitializationFailed, Unit] =
-                         orgLabels.update(_ + organization.label)
-
-                       override def onProjectCreation(
-                           project: Project,
-                           subject: Subject
-                       ): IO[ServiceError.ScopeInitializationFailed, Unit] = IO.unit
-                     }),
-                     config,
-                     xas
-                   )
-    } yield (orgLabels, orgs)
+      scopeInitLog <- ScopeInitializationLog()
+      orgs         <- OrganizationsImpl(
+                        Set(scopeInitLog),
+                        config,
+                        xas
+                      )
+    } yield (scopeInitLog, orgs)
   }.accepted
 
   "Organizations implementation" should {
@@ -76,7 +63,7 @@ class OrganizationsImplSpec
     "create an organization" in {
       orgs.create(label, description).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1, subject)
-      orgLabels.get.accepted shouldEqual Set(label)
+      scopeInitLog.createdOrgs.get.accepted shouldEqual Set(label)
     }
 
     "update an organization" in {
@@ -126,7 +113,7 @@ class OrganizationsImplSpec
     "create another organization" in {
       orgs.create(label2, None).accepted
 
-      orgLabels.get.accepted shouldEqual Set(label, label2)
+      scopeInitLog.createdOrgs.get.accepted shouldEqual Set(label, label2)
     }
 
     "list organizations" in {

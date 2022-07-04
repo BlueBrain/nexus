@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
@@ -32,7 +31,6 @@ class EventSerializer extends SerializerWithStringManifest {
   override def identifier: Int = 453223
 
   override def manifest(o: AnyRef): String = o match {
-    case _: ProjectEvent  => projectEventManifest
     case _: ResolverEvent => resolverEventManifest
     case _: ResourceEvent => resourceEventManifest
     case _: SchemaEvent   => schemaEventManifest
@@ -40,7 +38,6 @@ class EventSerializer extends SerializerWithStringManifest {
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case e: ProjectEvent  => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResolverEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: SchemaEvent   => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
@@ -48,7 +45,6 @@ class EventSerializer extends SerializerWithStringManifest {
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case `projectEventManifest`  => parseAndDecode[ProjectEvent](bytes, manifest)
     case `resolverEventManifest` => parseAndDecode[ResolverEvent](bytes, manifest)
     case `resourceEventManifest` => parseAndDecode[ResourceEvent](bytes, manifest)
     case `schemaEventManifest`   => parseAndDecode[SchemaEvent](bytes, manifest)
@@ -65,7 +61,6 @@ class EventSerializer extends SerializerWithStringManifest {
 @nowarn("cat=unused")
 object EventSerializer {
 
-  final val projectEventManifest: String  = Projects.moduleType
   final val resolverEventManifest: String = Resolvers.moduleType
   final val resourceEventManifest: String = Resources.moduleType
   final val schemaEventManifest: String   = Schemas.moduleType
@@ -75,11 +70,6 @@ object EventSerializer {
 
   implicit final private val subjectCodec: Codec.AsObject[Subject]   = deriveConfiguredCodec[Subject]
   implicit final private val identityCodec: Codec.AsObject[Identity] = deriveConfiguredCodec[Identity]
-
-  implicit final private val apiMappingsDecoder: Decoder[ApiMappings]          =
-    Decoder.decodeMap[String, Iri].map(ApiMappings(_))
-  implicit final private val apiMappingsEncoder: Encoder.AsObject[ApiMappings] =
-    Encoder.encodeMap[String, Iri].contramapObject(_.value)
 
   implicit final private val compactedEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
   implicit final private val compactedDecoder: Decoder[CompactedJsonLd] =
@@ -98,7 +88,6 @@ object EventSerializer {
     deriveConfiguredCodec[IdentityResolution]
   implicit final private val resolverValueCodec: Codec.AsObject[ResolverValue]           = deriveConfiguredCodec[ResolverValue]
 
-  implicit final val projectEventCodec: Codec.AsObject[ProjectEvent]   = deriveConfiguredCodec[ProjectEvent]
   implicit final val resolverEvent: Codec.AsObject[ResolverEvent]      = deriveConfiguredCodec[ResolverEvent]
   implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
   implicit final val schemaEventCodec: Codec.AsObject[SchemaEvent]     = deriveConfiguredCodec[SchemaEvent]

@@ -10,7 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.service.quotas.QuotasImpl
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.quotas.{Quotas, QuotasImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -21,8 +22,8 @@ import monix.execution.Scheduler
 object QuotasModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[Quotas].from { (projects: Projects, projectsCounts: ProjectsCounts, cfg: AppConfig) =>
-    new QuotasImpl(projects, projectsCounts)(cfg.projects.quotas, cfg.serviceAccount)
+  make[Quotas].from { (projectsStatistics: ProjectsStatistics, cfg: AppConfig) =>
+    new QuotasImpl(projectsStatistics)(cfg.quotas, cfg.serviceAccount)
   }
 
   many[RemoteContextResolution].addEffect(ContextValue.fromFile("contexts/quotas.json").map { ctx =>
@@ -33,14 +34,12 @@ object QuotasModule extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        projects: Projects,
         quotas: Quotas,
         s: Scheduler,
         baseUri: BaseUri,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
-    ) => new QuotasRoutes(identities, aclCheck, projects, quotas)(baseUri, s, cr, ordering)
-
+    ) => new QuotasRoutes(identities, aclCheck, quotas)(baseUri, s, cr, ordering)
   }
 
   many[PriorityRoute].add { (route: QuotasRoutes) =>

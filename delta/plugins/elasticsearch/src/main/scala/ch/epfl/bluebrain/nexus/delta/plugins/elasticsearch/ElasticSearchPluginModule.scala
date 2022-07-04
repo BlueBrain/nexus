@@ -28,15 +28,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.{ApiMappings, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamAwake, IndexingStreamController, OnEventInstant}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ProjectsEventsInstantCollection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionId, ProjectionProgress}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -216,8 +215,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[ProgressesStatistics].named("elasticsearch-statistics").from {
-    (cache: ProgressesCache @Id("elasticsearch-progresses"), projectsCounts: ProjectsCounts) =>
-      new ProgressesStatistics(cache, projectsCounts)
+    (cache: ProgressesCache @Id("elasticsearch-progresses"), projectsStatistics: ProjectsStatistics) =>
+      new ProgressesStatistics(cache, projectsStatistics.get)
   }
 
   make[SseEventLog]
@@ -230,31 +229,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           exchanges: Set[EventExchange] @Id("view")
       ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
     )
-
-  make[Projection[ProjectsEventsInstantCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      Projection(database, ProjectsEventsInstantCollection.empty, system, clock)
-  }
-
-  make[IndexingStreamAwake].fromEffect {
-    (
-        cfg: ProjectsConfig,
-        projection: Projection[ProjectsEventsInstantCollection],
-        onEventInstantsSet: Set[OnEventInstant],
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
-    ) =>
-      IndexingStreamAwake(
-        projection,
-        eventLog.eventsByTag(Event.eventTag, _),
-        OnEventInstant.combine(onEventInstantsSet),
-        cfg.keyValueStore.retry,
-        cfg.persistProgressConfig
-      )(uuidF, as, sc)
-
-  }
 
   make[ProjectEventMetricsStream].fromEffect {
     (

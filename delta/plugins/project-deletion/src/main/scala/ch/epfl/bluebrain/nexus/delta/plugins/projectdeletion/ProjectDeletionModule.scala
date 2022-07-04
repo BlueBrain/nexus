@@ -3,11 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion
 import ch.epfl.bluebrain.nexus.delta.plugins.projectdeletion.model.{contexts, ProjectDeletionConfig}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.{PriorityRoute, ProjectReferenceFinder, Projects}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -33,20 +30,5 @@ class ProjectDeletionModule(priority: Int) extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectDeletionRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
-  }
-
-  make[DeleteProject].from {
-    (projects: Projects, serviceAccount: ServiceAccount, prf: ProjectReferenceFinder @Id("aggregate")) =>
-      DeleteProject(projects)(serviceAccount.subject, prf)
-  }
-
-  make[ProjectDeletion].fromEffect {
-    (
-        projects: Projects,
-        config: ProjectDeletionConfig,
-        eventLog: EventLog[Envelope[ProjectScopedEvent]],
-        deleteProject: DeleteProject
-    ) =>
-      ProjectDeletion(projects, config, eventLog, deleteProject)
   }
 }

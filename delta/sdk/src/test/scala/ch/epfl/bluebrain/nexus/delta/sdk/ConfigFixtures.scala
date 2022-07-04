@@ -14,7 +14,9 @@ trait ConfigFixtures extends OptionValues {
 
   def cacheConfig = CacheConfig(10, 5.minutes)
 
-  def eventLogConfig = EventLogConfig(QueryConfig(5, RefreshStrategy.Stop), 100.millis)
+  def queryConfig = QueryConfig(5, RefreshStrategy.Stop)
+
+  def eventLogConfig = EventLogConfig(queryConfig, 100.millis)
 
   def pagination: PaginationConfig =
     PaginationConfig(

@@ -3,8 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.projects.ProjectRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.quotas.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
@@ -72,19 +70,6 @@ object HttpResponseFields {
       case IdentityError.InvalidToken(rejection) => rejection.status
     }
 
-  implicit val responseFieldsProjects: HttpResponseFields[ProjectRejection] =
-    HttpResponseFields {
-      case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
-      case ProjectRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
-      case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
-      case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
-      case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ProjectRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
-      case ProjectRejection.ProjectEvaluationError(_)         => StatusCodes.InternalServerError
-      case _                                                  => StatusCodes.BadRequest
-    }
-
   implicit val responseFieldsResolvers: HttpResponseFields[ResolverRejection] =
     HttpResponseFields {
       case ResolverRejection.RevisionNotFound(_, _)                => StatusCodes.NotFound
@@ -131,13 +116,6 @@ object HttpResponseFields {
       case SchemaRejection.UnexpectedInitialState(_)         => StatusCodes.InternalServerError
       case SchemaRejection.WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case _                                                 => StatusCodes.BadRequest
-    }
-
-  implicit val responseFieldsQuotas: HttpResponseFields[QuotaRejection] =
-    HttpResponseFields {
-      case _: QuotaRejection.QuotasDisabled            => StatusCodes.NotFound
-      case QuotaRejection.WrappedProjectRejection(rej) => (rej: ProjectRejection).status
-      case _: QuotaRejection.QuotaReached              => StatusCodes.Forbidden
     }
 
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =

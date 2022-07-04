@@ -13,7 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ProgressesStatistics, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 

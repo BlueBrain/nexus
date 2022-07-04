@@ -4,6 +4,7 @@ import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
@@ -11,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef,
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.postgres.sqlstate
+import doobie.util.Put
+import doobie.{ConnectionIO, Get}
 import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, Task, UIO}
@@ -159,6 +161,21 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
 object ScopedEventLog {
 
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
+
+  def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+                                                                         definition: EntityDefinition[Id, S, Command, E, Rejection],
+                                                                         config: EventLogConfig,
+                                                                         xas: Transactors
+                                                                       )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+    apply(
+      ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
+      ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
+      definition.stateMachine,
+      definition.onUniqueViolation,
+      definition.tagger,
+      config.maxDuration,
+      xas
+    )
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
       eventStore: ScopedEventStore[Id, E],
