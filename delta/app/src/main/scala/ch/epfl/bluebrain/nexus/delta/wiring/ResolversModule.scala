@@ -16,10 +16,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
 import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
@@ -55,8 +57,7 @@ object ResolversModule extends ModuleDef {
     (
         config: AppConfig,
         eventLog: EventLog[Envelope[ResolverEvent]],
-        orgs: Organizations,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         cache: ResolversCache,
         agg: ResolversAggregate,
         api: JsonLdApi,
@@ -68,8 +69,7 @@ object ResolversModule extends ModuleDef {
       ResolversImpl(
         config.resolvers,
         eventLog,
-        orgs,
-        projects,
+        fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
         cache,
         agg
@@ -81,9 +81,14 @@ object ResolversModule extends ModuleDef {
   }
 
   make[MultiResolution].from {
-    (aclCheck: AclCheck, projects: Projects, resolvers: Resolvers, exchanges: Set[ReferenceExchange]) =>
+    (
+        aclCheck: AclCheck,
+        fetchContext: FetchContext[ContextRejection],
+        resolvers: Resolvers,
+        exchanges: Set[ReferenceExchange]
+    ) =>
       MultiResolution(
-        projects,
+        fetchContext.mapRejection(ProjectContextRejection),
         ResolverResolution(aclCheck, resolvers, exchanges.toList)
       )
   }

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.jsonld
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import monix.bio.IO
 
@@ -15,8 +15,8 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
     * @param project
     *   the project
     */
-  def apply(segment: IdSegment, project: Project): IO[R, Iri] =
-    apply(IdSegmentRef(segment), project).map(_.iri)
+  def apply(segment: IdSegment, projectContext: ProjectContext): IO[R, Iri] =
+    apply(IdSegmentRef(segment), projectContext).map(_.iri)
 
   /**
     * Expand the given segment to a ResourceRef using the provided project if necessary and applying the revision to get
@@ -27,9 +27,9 @@ final class ExpandIri[R](val onError: String => R) extends AnyVal {
     * @param project
     *   the project
     */
-  def apply(segment: IdSegmentRef, project: Project): IO[R, ResourceRef] =
+  def apply(segment: IdSegmentRef, projectContext: ProjectContext): IO[R, ResourceRef] =
     IO.fromOption(
-      segment.value.toIri(project.apiMappings, project.base).map { iri =>
+      segment.value.toIri(projectContext.apiMappings, projectContext.base).map { iri =>
         segment match {
           case IdSegmentRef.Latest(_)        => ResourceRef.Latest(iri)
           case IdSegmentRef.Revision(_, rev) => ResourceRef.Revision(iri, rev)

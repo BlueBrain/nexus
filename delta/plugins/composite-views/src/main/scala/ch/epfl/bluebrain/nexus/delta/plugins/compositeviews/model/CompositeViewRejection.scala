@@ -15,17 +15,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.{RdfError, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -246,18 +245,10 @@ object CompositeViewRejection {
       extends CompositeViewRejection(s"Composite view identifier '$id' cannot be expanded to an Iri.")
 
   /**
-    * Signals a rejection caused when interacting with the projects API
+    * Signals a rejection caused when interacting with other APIs when fetching a view
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends CompositeViewRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends CompositeViewRejection(rejection.reason)
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends CompositeViewRejection("Something went wrong while interacting with another module.")
 
   /**
     * Rejection returned when a subject intends to retrieve a view at a specific tag, but the provided tag does not
@@ -324,12 +315,6 @@ object CompositeViewRejection {
   final case class WrappedElasticSearchClientError(error: HttpClientError)
       extends CompositeViewProjectionRejection("Error while interacting with the underlying ElasticSearch index")
 
-  implicit final val projectToElasticSearchRejectionMapper: Mapper[ProjectRejection, CompositeViewRejection] =
-    WrappedProjectRejection.apply
-
-  implicit val orgToElasticSearchRejectionMapper: Mapper[OrganizationRejection, CompositeViewRejection] =
-    WrappedOrganizationRejection.apply
-
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, CompositeViewRejection] =
     CompositeViewEvaluationError.apply
 
@@ -354,8 +339,7 @@ object CompositeViewRejection {
           val reason =
             s"Timeout while evaluating the command '${simpleName(cmd)}' for composite view '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "CompositeViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedOrganizationRejection(rejection)                    => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                         => rejection.asJsonObject
+        case ProjectContextRejection(rejection)                         => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                    =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case WrappedElasticSearchClientError(rejection)                 =>
@@ -383,8 +367,7 @@ object CompositeViewRejection {
       case ViewAlreadyExists(_, _)                => StatusCodes.Conflict
       case ResourceAlreadyExists(_, _)            => StatusCodes.Conflict
       case IncorrectRev(_, _)                     => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)           => rej.status
-      case WrappedOrganizationRejection(rej)      => rej.status
+      case ProjectContextRejection(rej)           => rej.status
       case UnexpectedInitialState(_, _)           => StatusCodes.InternalServerError
       case CompositeViewEvaluationError(_)        => StatusCodes.InternalServerError
       case AuthorizationFailed                    => StatusCodes.Forbidden

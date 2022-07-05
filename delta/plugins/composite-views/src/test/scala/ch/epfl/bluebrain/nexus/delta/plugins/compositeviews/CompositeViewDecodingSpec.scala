@@ -11,14 +11,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewFields, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, TestHelpers}
 import monix.bio.IO
 import org.scalatest.matchers.should.Matchers
@@ -40,7 +42,13 @@ class CompositeViewDecodingSpec
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
-  private val project                = ProjectGen.project("org", "project")
+
+  private val ref = ProjectRef.unsafe("org", "proj")
+  private val pc  = ProjectContext.unsafe(
+    ApiMappings.empty,
+    nxv.base,
+    nxv.base
+  )
 
   val uuid                                          = UUID.randomUUID()
   implicit private val uuidF: UUIDF                 = UUIDF.fixed(uuid)
@@ -168,17 +176,15 @@ class CompositeViewDecodingSpec
     "be decoded correctly from json-ld" when {
 
       "projections and sources have ids" in {
-        val decoded = decoder(
-          project,
-          source
-        ).accepted
+        val decoded = decoder(ref, pc, source).accepted
         decoded._1 shouldEqual iri"http://music.com/composite/view"
         decoded._2 shouldEqual compositeViewValue
       }
 
       "projections and sources have ids and composite view id is specified" in {
         decoder(
-          project,
+          ref,
+          pc,
           iri"http://music.com/composite/view",
           source
         ).accepted shouldEqual compositeViewValue
@@ -186,7 +192,8 @@ class CompositeViewDecodingSpec
 
       "projections and sources don't have ids" in {
         val decoded = decoder(
-          project,
+          ref,
+          pc,
           sourceNoIds
         ).accepted
         decoded._1 shouldEqual iri"http://music.com/composite/view"
@@ -195,7 +202,8 @@ class CompositeViewDecodingSpec
 
       "projections and sources don't have ids and composite view id is specified" in {
         decoder(
-          project,
+          ref,
+          pc,
           iri"http://music.com/composite/view",
           sourceNoIds
         ).accepted shouldEqual compositeViewValueNoIds
@@ -205,7 +213,8 @@ class CompositeViewDecodingSpec
     "fail decoding from json-ld" when {
       "the provided id did not match the expected one" in {
         decoder(
-          project,
+          ref,
+          pc,
           iri"http://example.com/wrong.id",
           source
         ).rejectedWith[UnexpectedCompositeViewId]
@@ -213,7 +222,8 @@ class CompositeViewDecodingSpec
 
       "the resource_id template does not exist" in {
         val r = decoder(
-          project,
+          ref,
+          pc,
           source.replaceKeyWithValue("query", "CONSTRUCT {?s ?p ?o} WHERE {?s ?p ?o}")
         ).rejectedWith[DecodingFailed]
         r.reason should endWith("'Required templating '{resource_id}' in the provided SPARQL query is not found'")
@@ -221,7 +231,8 @@ class CompositeViewDecodingSpec
 
       "the query is not a construct query" in {
         val r = decoder(
-          project,
+          ref,
+          pc,
           source.replaceKeyWithValue("query", "SELECT {resource_id} WHERE {?s ?p ?o}")
         ).rejectedWith[DecodingFailed]
         r.reason should endWith("'The provided query is not a valid SPARQL query'")
@@ -229,7 +240,8 @@ class CompositeViewDecodingSpec
 
       "the interval is smaller than the configuration minimum interval" in {
         val r = decoder(
-          project,
+          ref,
+          pc,
           source.replaceKeyWithValue("value", "30 seconds")
         ).rejectedWith[DecodingFailed]
         r.reason should endWith("'duration must be greater than 1 minute'")

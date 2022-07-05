@@ -12,6 +12,7 @@ import akka.stream.scaladsl.FileIO
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
@@ -28,6 +29,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -114,14 +116,13 @@ class ArchiveRoutesSpec
   private val acceptMeta    = Accept(`application/ld+json`)
   private val acceptAll     = Accept(`*/*`)
 
+  private val fetchContext = FetchContextDummy(
+    Map(project.ref -> project.context),
+    Set(deprecatedProject.ref)
+  )
+
   lazy val (routes, files) = {
     for {
-      (orgs, projs)     <- ProjectSetup
-                             .init(
-                               orgsToCreate = org :: Nil,
-                               projectsToCreate = project :: deprecatedProject :: Nil,
-                               projectsToDeprecate = deprecatedProject.ref :: Nil
-                             )
       aclCheck          <- AclSimpleCheck(
                              (subject, AclAddress.Root, allowedPerms.toSet),
                              (
@@ -131,13 +132,16 @@ class ArchiveRoutesSpec
                              )
                            )
       (files, storages) <-
-        IO.delay(FilesSetup.init(orgs, projs, aclCheck, StoragesStatisticsSetup.init(Map.empty), cfg, allowedPerms: _*))
+        IO.delay(
+          FilesSetup.init(fetchContext, aclCheck, StoragesStatisticsSetup.init(Map.empty), cfg, allowedPerms: _*)
+        )
       storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
       _                 <- storages.create(diskId, projectRef, storageJson)
       archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
-      archives          <- Archives(projs, archiveDownload, archivesConfig, (_, _) => IO.unit)
+      archives          <-
+        Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
       identities         = IdentitiesDummy(caller, callerNoFilePerms)
-      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, projs).routes)
+      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, null).routes)
     } yield (r, files)
   }.accepted
 

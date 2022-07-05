@@ -11,36 +11,32 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
 final class ResourcesImpl private (
     agg: ResourcesAggregate,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[ResourceFetchRejection],
     eventLog: EventLog[Envelope[ResourceEvent]],
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 ) extends Resources {
@@ -51,10 +47,10 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      schemeRef                  <- expandResourceRef(schema, project)
-      (iri, compacted, expanded) <- sourceParser(project, source)
-      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      projectContext             <- fetchContext.onCreate(projectRef)
+      schemeRef                  <- expandResourceRef(schema, projectContext)
+      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
+      res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
     } yield res
   }.named("createResource", moduleType)
 
@@ -65,11 +61,11 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri                   <- expandIri(id, project)
-      schemeRef             <- expandResourceRef(schema, project)
-      (compacted, expanded) <- sourceParser(project, iri, source)
-      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), project)
+      projectContext        <- fetchContext.onCreate(projectRef)
+      iri                   <- expandIri(id, projectContext)
+      schemeRef             <- expandResourceRef(schema, projectContext)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
+      res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
     } yield res
   }.named("createResource", moduleType)
 
@@ -81,11 +77,12 @@ final class ResourcesImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri                   <- expandIri(id, project)
-      schemeRefOpt          <- expandResourceRef(schemaOpt, project)
-      (compacted, expanded) <- sourceParser(project, iri, source)
-      res                   <- eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), project)
+      projectContext        <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, projectContext)
+      schemeRefOpt          <- expandResourceRef(schemaOpt, projectContext)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
+      res                   <-
+        eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), projectContext)
     } yield res
   }.named("updateResource", moduleType)
 
@@ -98,10 +95,10 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      res          <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), project)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      res            <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), projectContext)
     } yield res).named("tagResource", moduleType)
 
   override def deleteTag(
@@ -112,10 +109,10 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      res          <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller), project)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      res            <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller), projectContext)
     } yield res).named("deleteResourceTag", moduleType)
 
   override def deprecate(
@@ -125,10 +122,10 @@ final class ResourcesImpl private (
       rev: Long
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
-      project      <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri          <- expandIri(id, project)
-      schemeRefOpt <- expandResourceRef(schemaOpt, project)
-      res          <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), project)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
+      res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), projectContext)
     } yield res).named("deprecateResource", moduleType)
 
   override def fetch(
@@ -138,11 +135,11 @@ final class ResourcesImpl private (
   ): IO[ResourceFetchRejection, DataResource] =
     id.asTag.fold(
       for {
-        project              <- projects.fetchProject(projectRef)
-        iri                  <- expandIri(id.value, project)
-        schemeRefOpt         <- expandResourceRef(schemaOpt, project)
+        projectContext       <- fetchContext.onRead(projectRef)
+        iri                  <- expandIri(id.value, projectContext)
+        schemeRefOpt         <- expandResourceRef(schemaOpt, projectContext)
         state                <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
-        resourceOpt           = state.toResource(project.apiMappings, project.base)
+        resourceOpt           = state.toResource(projectContext.apiMappings, projectContext.base)
         resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
         res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
       } yield res
@@ -152,19 +149,19 @@ final class ResourcesImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
-    eventLog.projectEvents(projects, projectRef, offset)
+    IO.pure(Stream.empty)
 
   override def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, offset)
+    IO.pure(Stream.empty)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
-    eventLog.orgEvents(orgs, organization, offset)
+    IO.pure(Stream.empty)
 
   override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -177,29 +174,29 @@ final class ResourcesImpl private (
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resources.next)
       .mapError(RevisionNotFound(rev, _))
 
-  private def eval(cmd: ResourceCommand, project: Project): IO[ResourceRejection, DataResource] =
+  private def eval(cmd: ResourceCommand, projectContext: ProjectContext): IO[ResourceRejection, DataResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base)        = project.apiMappings -> project.base
+      (am, base)        = projectContext.apiMappings -> projectContext.base
       resource         <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id))
     } yield resource
 
   private def identifier(projectRef: ProjectRef, id: Iri): String =
     s"${projectRef}_$id"
 
-  private def expandResourceRef(segment: IdSegment, project: Project): IO[InvalidResourceId, ResourceRef] =
+  private def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
     IO.fromOption(
-      segment.toIri(project.apiMappings, project.base).map(ResourceRef(_)),
+      segment.toIri(context.apiMappings, context.base).map(ResourceRef(_)),
       InvalidResourceId(segment.asString)
     )
 
   private def expandResourceRef(
       segmentOpt: Option[IdSegment],
-      project: Project
+      context: ProjectContext
   ): IO[InvalidResourceId, Option[ResourceRef]] =
     segmentOpt match {
       case None         => IO.none
-      case Some(schema) => expandResourceRef(schema, project).map(Some.apply)
+      case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
     }
 
   private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
@@ -250,26 +247,22 @@ object ResourcesImpl {
   /**
     * Constructs a [[Resources]] instance.
     *
-    * @param orgs
-    *   the organization operations bundle
-    * @param projects
-    *   the project operations bundle
+    * @param fetchContext
+    *   to fetch the project context
     * @param contextResolution
     *   the context resolver
     * @param eventLog
     *   the event log for [[ResourceEvent]]
     */
   final def apply(
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[ResourceFetchRejection],
       agg: ResourcesAggregate,
       contextResolution: ResolverContextResolution,
       eventLog: EventLog[Envelope[ResourceEvent]]
   )(implicit api: JsonLdApi, uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
       agg,
-      orgs,
-      projects,
+      fetchContext,
       eventLog,
       JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     )

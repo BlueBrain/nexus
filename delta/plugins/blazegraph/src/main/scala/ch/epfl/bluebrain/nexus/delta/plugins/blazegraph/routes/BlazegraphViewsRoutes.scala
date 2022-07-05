@@ -48,8 +48,8 @@ import monix.execution.Scheduler
   *   the blazegraph views operations bundle
   * @param identities
   *   the identity module
-  * @param acls
-  *   the ACLs module
+  * @param aclCheck
+  *   to check the acls
   * @param projects
   *   the projects module
   * @param progresses

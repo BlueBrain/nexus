@@ -19,13 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.all._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -253,21 +252,10 @@ object FileRejection {
       extends FileRejection(s"File '$id' could not be linked using storage '$storageId'", Some(rejection.loggedDetails))
 
   /**
-    * Rejection returned when the associated project is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the project
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends FileRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends FileRejection(rejection.reason)
+  final case class ProjectContextRejection(rejection: FetchContext.ContextRejection)
+      extends FileRejection("Something went wrong while interacting with another module.")
 
   /**
     * Signals a rejection caused by a failure to perform indexing.
@@ -286,13 +274,6 @@ object FileRejection {
     * Rejection returned when attempting to evaluate a command but the evaluation failed
     */
   final case class FileEvaluationError(err: EvaluationError) extends FileRejection("Unexpected evaluation error")
-
-  implicit val fileProjectRejectionMapper: Mapper[ProjectRejection, FileRejection]                 = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
-    case value                                            => WrappedProjectRejection(value)
-  }
-  implicit val fileOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    WrappedOrganizationRejection.apply
 
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
@@ -324,8 +305,7 @@ object FileRejection {
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
         case LinkRejection(_, _, rejection)                    =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case WrappedOrganizationRejection(rejection)           => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                => rejection.asJsonObject
+        case ProjectContextRejection(rejection)                => rejection.asJsonObject
         case IncorrectRev(provided, expected)                  => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: FileNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
         case _                                                 => obj
@@ -345,8 +325,7 @@ object FileRejection {
       case FileTooLarge(_, _)                                              => (StatusCodes.PayloadTooLarge, Seq.empty)
       case WrappedAkkaRejection(rej)                                       => (rej.status, rej.headers)
       case WrappedStorageRejection(rej)                                    => (rej.status, rej.headers)
-      case WrappedProjectRejection(rej)                                    => (rej.status, rej.headers)
-      case WrappedOrganizationRejection(rej)                               => (rej.status, rej.headers)
+      case ProjectContextRejection(rej)                                    => (rej.status, rej.headers)
       case FetchRejection(_, _, FetchFileRejection.FileNotFound(_))        => (StatusCodes.NotFound, Seq.empty)
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)

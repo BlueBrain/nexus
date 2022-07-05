@@ -9,8 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{IndexLabel, Q
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchIndexingSpec.{Metadata, Value}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, IndexingViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions, ElasticSearchViewRejection, IndexingViewResource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, ElasticSearchViews, ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -23,23 +24,23 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValu
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.generic.semiauto.deriveEncoder
@@ -84,7 +85,6 @@ class ElasticSearchIndexingSpec(override val docker: ElasticSearchDocker)
     permission = permissions.query
   )
 
-  private val org      = Label.unsafe("org")
   private val base     = nxv.base
   private val project1 = ProjectGen.project("org", "proj", base = base)
   private val project2 = ProjectGen.project("org", "proj2", base = base)
@@ -196,9 +196,13 @@ class ElasticSearchIndexingSpec(override val docker: ElasticSearchDocker)
     projection
   )
 
-  private lazy val (orgs, projs)             = ProjectSetup.init(org :: Nil, project1 :: project2 :: Nil).accepted
+  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+    List(project1, project2),
+    ProjectContextRejection
+  )
+
   private lazy val indexingCleanup           = new ElasticSearchIndexingCleanup(esClient, cache, projection)
-  private lazy val views: ElasticSearchViews = ElasticSearchViewsSetup.init(orgs, projs, permissions.query)
+  private lazy val views: ElasticSearchViews = ElasticSearchViewsSetup.init(fetchContext, permissions.query)
   private lazy val controller                = new IndexingStreamController[IndexingElasticSearchView](ElasticSearchViews.moduleType)
 
   private def listAll(index: IndexLabel) =

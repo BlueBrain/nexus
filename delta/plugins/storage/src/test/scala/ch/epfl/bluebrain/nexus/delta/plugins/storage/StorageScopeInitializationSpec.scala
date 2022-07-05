@@ -3,11 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesSetup
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -36,12 +37,16 @@ class StorageScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org     = Label.unsafe("org")
   private val am      = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val project =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = nxv.base, mappings = am)
 
-  private val storages = StoragesSetup.init(org, project, allowedPerms: _*)
+  private val fetchContext = FetchContextDummy[StorageFetchRejection](
+    List(project),
+    ProjectContextRejection
+  )
+
+  private val storages = StoragesSetup.init(fetchContext, allowedPerms.toSet)
 
   "A StorageScopeInitialization" should {
     val init = new StorageScopeInitialization(storages, sa)

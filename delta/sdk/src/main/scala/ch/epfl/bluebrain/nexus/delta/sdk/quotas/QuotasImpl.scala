@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
@@ -22,10 +21,10 @@ final class QuotasImpl(
   override def fetch(ref: ProjectRef): IO[QuotaRejection, Quota] =
     IO.fromEither(quotasFromConfig(ref)).span("fetchQuota")
 
-  override def reachedForResources[R](
+  override def reachedForResources(
       ref: ProjectRef,
       subject: Subject
-  )(implicit m: Mapper[QuotaReached, R]): IO[R, Unit] =
+  ): IO[QuotaReached, Unit] =
     IO.unless(subject == serviceAccountConfig.value.subject) {
       for {
         quota     <- UIO.delay(quotasFromConfig(ref).toOption)
@@ -38,10 +37,10 @@ final class QuotasImpl(
       } yield ()
     }
 
-  override def reachedForEvents[R](
+  override def reachedForEvents(
       ref: ProjectRef,
       subject: Subject
-  )(implicit mapper: Mapper[QuotaReached, R]): IO[R, Unit] =
+  ): IO[QuotaReached, Unit] =
     IO.unless(subject == serviceAccountConfig.value.subject) {
       for {
         quota     <- UIO.delay(quotasFromConfig(ref).toOption)
@@ -55,11 +54,11 @@ final class QuotasImpl(
       } yield ()
     }
 
-  private def quotaReached[R](current: Long, config: Option[Int])(
+  private def quotaReached(current: Long, config: Option[Int])(
       onQuotaReached: Int => QuotaReached
-  )(implicit m: Mapper[QuotaReached, R]) =
+  ) =
     config match {
-      case Some(value) if current >= value => IO.raiseError(m.to(onQuotaReached(value)))
+      case Some(value) if current >= value => IO.raiseError(onQuotaReached(value))
       case _                               => IO.unit
     }
 

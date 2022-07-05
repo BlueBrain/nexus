@@ -11,8 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -129,23 +127,14 @@ object ProjectRejection {
   final case class ProjectInitializationFailed(failure: ScopeInitializationFailed)
       extends ProjectRejection(s"The project has been successfully created but it could not be initialized correctly")
 
-  /**
-    * Signals a rejection caused when interacting with the quotas API
-    */
-  final case class WrappedQuotaRejection(rejection: QuotaReached) extends ProjectRejection(rejection.reason)
-
   implicit val organizationRejectionMapper: Mapper[OrganizationRejection, ProjectRejection] =
     (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
-  implicit val projectQuotasRejectionMapper: Mapper[QuotaReached, WrappedQuotaRejection] =
-    WrappedQuotaRejection(_)
 
   implicit val projectRejectionEncoder: Encoder.AsObject[ProjectRejection] =
     Encoder.AsObject.instance { r =>
       val tpe     = ClassUtils.simpleName(r)
       val default = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case WrappedQuotaRejection(rejection)        => (rejection: QuotaRejection).asJsonObject
         case WrappedOrganizationRejection(rejection) => rejection.asJsonObject
         case ProjectInitializationFailed(rejection)  => default.add("details", rejection.reason.asJson)
         case ProjectIsReferenced(_, references)      => default.add("referencedBy", references.asJson)
@@ -165,7 +154,6 @@ object ProjectRejection {
     HttpResponseFields {
       case ProjectRejection.RevisionNotFound(_, _)            => StatusCodes.NotFound
       case ProjectRejection.ProjectNotFound(_)                => StatusCodes.NotFound
-      case ProjectRejection.WrappedQuotaRejection(rej)        => (rej: QuotaRejection).status
       case ProjectRejection.WrappedOrganizationRejection(rej) => rej.status
       case ProjectRejection.ProjectAlreadyExists(_)           => StatusCodes.Conflict
       case ProjectRejection.IncorrectRev(_, _)                => StatusCodes.Conflict

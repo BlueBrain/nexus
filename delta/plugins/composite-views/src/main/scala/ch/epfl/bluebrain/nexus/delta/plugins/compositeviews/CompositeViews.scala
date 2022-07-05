@@ -39,13 +39,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{Project, ProjectBase}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectBase, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -61,6 +59,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Composite views resource lifecycle operations.
@@ -69,8 +68,7 @@ final class CompositeViews private (
     aggregate: CompositeViewsAggregate,
     eventLog: EventLog[Envelope[CompositeViewEvent]],
     cache: CompositeViewsCache,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[CompositeViewRejection],
     sourceDecoder: CompositeViewFieldsJsonLdSourceDecoder
 )(implicit uuidF: UUIDF) {
 
@@ -104,9 +102,9 @@ final class CompositeViews private (
       value: CompositeViewFields
   )(implicit subject: Subject, baseUri: BaseUri): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, p.base), p)
+      pc  <- fetchContext.onCreate(project)
+      iri <- expandIri(id, pc)
+      res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, pc.base), pc)
     } yield res
   }.named("createCompositeView", moduleType)
 
@@ -123,9 +121,9 @@ final class CompositeViews private (
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      (iri, value) <- sourceDecoder(p, source)
-      res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, p.base), p)
+      pc           <- fetchContext.onCreate(project)
+      (iri, value) <- sourceDecoder(project, pc, source)
+      res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, pc.base), pc)
     } yield res
   }.named("createCompositeView", moduleType)
 
@@ -144,11 +142,11 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri       <- expandIri(id, p)
-      viewValue <- sourceDecoder(p, iri, source)
+      pc        <- fetchContext.onCreate(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
       res       <-
-        eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, p.base), p)
+        eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, pc.base), pc)
     } yield res
   }.named("createCompositeView", moduleType)
 
@@ -176,10 +174,10 @@ final class CompositeViews private (
       baseUri: BaseUri
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri   <- expandIri(id, p)
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
       source = value.toJson(iri)
-      res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, p.base), p)
+      res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, pc.base), pc)
     } yield res
   }.named("updateCompositeView", moduleType)
 
@@ -201,13 +199,14 @@ final class CompositeViews private (
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri       <- expandIri(id, p)
-      viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(
-                     UpdateCompositeView(iri, project, rev, viewValue, source.removeAllKeys("token"), caller.subject, p.base),
-                     p
-                   )
+      pc        <- fetchContext.onModify(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
+      res       <-
+        eval(
+          UpdateCompositeView(iri, project, rev, viewValue, source.removeAllKeys("token"), caller.subject, pc.base),
+          pc
+        )
     } yield res
   }.named("updateCompositeView", moduleType)
 
@@ -235,9 +234,9 @@ final class CompositeViews private (
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), pc)
     } yield res
   }.named("tagCompositeView", moduleType)
 
@@ -259,9 +258,9 @@ final class CompositeViews private (
       rev: Long
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(DeprecateCompositeView(iri, project, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateCompositeView(iri, project, rev, subject), pc)
     } yield res
   }.named("deprecateCompositeView", moduleType)
 
@@ -415,11 +414,12 @@ final class CompositeViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * Retrieves the ordered collection of events for all composite views starting from the last known offset. The event
@@ -442,11 +442,12 @@ final class CompositeViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
@@ -457,11 +458,12 @@ final class CompositeViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       organization: Label,
       offset: Offset
   ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+    IO.pure(Stream.empty)
 
   private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
     eventLog
@@ -474,22 +476,22 @@ final class CompositeViews private (
   private def fetchRevOrLatest(
       id: IdSegmentRef,
       project: ProjectRef
-  ): IO[CompositeViewRejection, (Project, ViewResource)] =
+  ): IO[CompositeViewRejection, (ProjectContext, ViewResource)] =
     for {
-      p     <- projects.fetchProject(project)
-      iri   <- expandIri(id.value, p)
+      pc    <- fetchContext.onRead(project)
+      iri   <- expandIri(id.value, pc)
       state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
-      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
-    } yield (p, res)
+      res   <- IO.fromOption(state.toResource(pc.apiMappings, pc.base), ViewNotFound(iri, project))
+    } yield (pc, res)
 
   private def eval(
       cmd: CompositeViewCommand,
-      project: Project
+      pc: ProjectContext
   ): IO[CompositeViewRejection, ViewResource] =
     for {
       result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base) = project.apiMappings -> project.base
-      resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
+      (am, base) = pc.apiMappings -> pc.base
+      resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, cmd.project))
       _         <- cache.put(ViewRef(cmd.project, cmd.id), resource)
     } yield resource
 
@@ -688,15 +690,14 @@ object CompositeViews {
   def apply(
       config: CompositeViewsConfig,
       eventLog: EventLog[Envelope[CompositeViewEvent]],
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[CompositeViewRejection],
       cache: CompositeViewsCache,
       agg: CompositeViewsAggregate,
       contextResolution: ResolverContextResolution
   )(implicit api: JsonLdApi, uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[CompositeViews] =
     for {
       sourceDecoder <- Task.delay(CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(api, config))
-      views          = new CompositeViews(agg, eventLog, cache, orgs, projects, sourceDecoder)
+      views          = new CompositeViews(agg, eventLog, cache, fetchContext, sourceDecoder)
       _             <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views
 

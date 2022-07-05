@@ -4,6 +4,7 @@ import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -14,8 +15,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -43,7 +45,7 @@ object ArchivePluginModule extends ModuleDef {
 
   make[Archives].fromEffect {
     (
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         archiveDownload: ArchiveDownload,
         cfg: ArchivePluginConfig,
         resourceIdCheck: ResourceIdCheck,
@@ -53,7 +55,13 @@ object ArchivePluginModule extends ModuleDef {
         rcr: RemoteContextResolution @Id("aggregate"),
         clock: Clock[UIO]
     ) =>
-      Archives(projects, archiveDownload, cfg, resourceIdCheck)(api, as, uuidF, rcr, clock)
+      Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, cfg, resourceIdCheck)(
+        api,
+        as,
+        uuidF,
+        rcr,
+        clock
+      )
   }
 
   make[ArchiveRoutes].from {

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -10,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImplSpec.RejectionWrapper
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
@@ -213,8 +211,8 @@ class ProjectsImplSpec
     "fail fetching an unknown project with fetchProject" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
-      projects.fetchProject[RejectionWrapper](ref).rejectedWith[RejectionWrapper] shouldEqual
-        RejectionWrapper(ProjectNotFound(ref))
+      projects.fetchProject(ref).rejected shouldEqual
+        ProjectNotFound(ref)
     }
 
     "fail fetching an unknown project by uuid" in {
@@ -344,11 +342,4 @@ class ProjectsImplSpec
       events.accepted shouldEqual allEvents.drop(2)
     }
   }
-}
-
-object ProjectsImplSpec {
-  final case class RejectionWrapper(projectRejection: ProjectRejection)
-
-  implicit val rejectionMapper: Mapper[ProjectRejection, RejectionWrapper] =
-    (value: ProjectRejection) => RejectionWrapper(value)
 }

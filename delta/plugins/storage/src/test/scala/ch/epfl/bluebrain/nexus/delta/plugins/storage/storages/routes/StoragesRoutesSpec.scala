@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
@@ -20,12 +21,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
@@ -60,20 +61,16 @@ class StoragesRoutesSpec
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
-  implicit private val subject: Subject = Identity.Anonymous
-
   private val caller     = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
   private val identities = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
   private val am         = ApiMappings("nxv" -> nxv.base, "storage" -> schemas.storage)
   private val projBase   = nxv.base
-  private val project    = ProjectGen.resourceFor(
+  private val project    =
     ProjectGen.project("myorg", "myproject", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  )
-  private val projectRef = project.value.ref
+  private val projectRef = project.ref
 
   private val remoteIdEncoded = UrlUtils.encode(rdId.toString)
   private val s3IdEncoded     = UrlUtils.encode(s3Id.toString)
@@ -90,16 +87,20 @@ class StoragesRoutesSpec
 
   private val cfg = StoragesConfig(aggregate, keyValueStore, pagination, cacheIndexing, persist, config)
 
-  private val perms              = allowedPerms.toSet
-  private val aclCheck           = AclSimpleCheck().accepted
-  private val (orgs, projs)      = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  private val perms        = allowedPerms.toSet
+  private val aclCheck     = AclSimpleCheck().accepted
+  private val fetchContext = FetchContextDummy[StorageFetchRejection](
+    Map(project.ref -> project.context),
+    ProjectContextRejection
+  )
+
   implicit private val c: Crypto = crypto
 
   implicit private val f: FusionConfig = fusionConfig
 
   private val storageStatistics = StoragesStatisticsSetup.init(
     Map(
-      project.value -> Map(
+      project -> Map(
         dId  -> StorageStatEntry(10L, 1000L, Some(Instant.ofEpochMilli(1000L))),
         rdId -> StorageStatEntry(50L, 5000L, Some(Instant.ofEpochMilli(5000L))),
         s3Id -> StorageStatEntry(100L, 10000L, Some(Instant.ofEpochMilli(10000L)))
@@ -107,10 +108,10 @@ class StoragesRoutesSpec
     )
   )
 
-  private val storages = StoragesSetup.init(orgs, projs, perms)
+  private val storages = StoragesSetup.init(fetchContext, perms)
   private val routes   =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, orgs, projs, storages, storageStatistics, IndexingActionDummy())
+      StoragesRoutes(cfg, identities, aclCheck, null, null, storages, storageStatistics, IndexingActionDummy())
     )
 
   "Storage routes" should {

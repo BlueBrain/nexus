@@ -16,14 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions.notDeprecatedOrDeleted
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, ResourceIdCheck}
 import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -34,8 +33,8 @@ import scala.annotation.unused
   *
   * @param aggregate
   *   the underlying aggregate
-  * @param projects
-  *   the projects module
+  * @param fetchContext
+  *   to fetch the project context
   * @param archiveDownload
   *   the archive download logic
   * @param sourceDecoder
@@ -49,7 +48,7 @@ import scala.annotation.unused
   */
 class Archives(
     aggregate: ArchiveAggregate,
-    projects: Projects,
+    fetchContext: FetchContext[ArchiveRejection],
     archiveDownload: ArchiveDownload,
     sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
     cfg: ArchivePluginConfig
@@ -89,7 +88,7 @@ class Archives(
       value: ArchiveValue
   )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeleted)
+      p   <- fetchContext.onRead(project)
       iri <- expandIri(id, p)
       res <- eval(CreateArchive(iri, project, value, subject), p)
     } yield res).named("createArchive", moduleType)
@@ -107,7 +106,7 @@ class Archives(
     */
   def create(project: ProjectRef, source: Json)(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p            <- projects.fetchProject(project, notDeprecatedOrDeleted)
+      p            <- fetchContext.onRead(project)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateArchive(iri, project, value, subject), p)
     } yield res).named("createArchive", moduleType)
@@ -132,7 +131,7 @@ class Archives(
       source: Json
   )(implicit subject: Subject): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeleted)
+      p     <- fetchContext.onRead(project)
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateArchive(iri, project, value, subject), p)
@@ -148,7 +147,7 @@ class Archives(
     */
   def fetch(id: IdSegment, project: ProjectRef): IO[ArchiveRejection, ArchiveResource] =
     (for {
-      p     <- projects.fetchProject(project)
+      p     <- fetchContext.onRead(project)
       iri   <- expandIri(id, p)
       state <- currentState(project, iri)
       res   <- IO.fromOption(state.toResource(p.apiMappings, p.base, cfg.ttl), ArchiveNotFound(iri, project))
@@ -175,11 +174,11 @@ class Archives(
       source   <- archiveDownload(value.value, project, ignoreNotFound)
     } yield source).named("downloadArchive", moduleType)
 
-  private def eval(cmd: CreateArchive, project: Project): IO[ArchiveRejection, ArchiveResource] =
+  private def eval(cmd: CreateArchive, pc: ProjectContext): IO[ArchiveRejection, ArchiveResource] =
     for {
       result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base) = project.apiMappings -> project.base
-      resource  <- IO.fromOption(result.state.toResource(am, base, cfg.ttl), UnexpectedInitialState(cmd.id, project.ref))
+      (am, base) = pc.apiMappings -> pc.base
+      resource  <- IO.fromOption(result.state.toResource(am, base, cfg.ttl), UnexpectedInitialState(cmd.id, cmd.project))
     } yield resource
 
   private def currentState(project: ProjectRef, iri: Iri): UIO[ArchiveState] =
@@ -211,7 +210,7 @@ object Archives {
     * Constructs a new [[Archives]] module instance.
     */
   final def apply(
-      projects: Projects,
+      fetchContext: FetchContext[ArchiveRejection],
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       resourceIdCheck: ResourceIdCheck
@@ -224,11 +223,11 @@ object Archives {
   ): UIO[Archives] = {
     val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
       resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(projects, archiveDownload, cfg, idAvailability)
+    apply(fetchContext, archiveDownload, cfg, idAvailability)
   }
 
   private[archive] def apply(
-      projects: Projects,
+      fetchContext: FetchContext[ArchiveRejection],
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
       idAvailability: IdAvailability[ResourceAlreadyExists]
@@ -250,7 +249,7 @@ object Archives {
       config = cfg.aggregate.processor
     )
     aggregate.map { agg =>
-      new Archives(agg, projects, archiveDownload, sourceDecoder, cfg)
+      new Archives(agg, fetchContext, archiveDownload, sourceDecoder, cfg)
     }
   }
 

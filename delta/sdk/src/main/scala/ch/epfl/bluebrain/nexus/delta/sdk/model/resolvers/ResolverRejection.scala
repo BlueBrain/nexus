@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -13,9 +14,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -219,6 +223,12 @@ object ResolverRejection {
   final case class ResolverIsDeprecated(id: Iri) extends ResolverRejection(s"Resolver '$id' is deprecated.")
 
   /**
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
+    */
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends ResolverRejection("Something went wrong while interacting with another module.")
+
+  /**
     * Rejection returned when the associated project is invalid
     *
     * @param rejection
@@ -285,6 +295,7 @@ object ResolverRejection {
         case ResolverEvaluationError(EvaluationTimeout(C(cmd), t)) =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for resolver '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "ResolverEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case ProjectContextRejection(rejection)                    => rejection.asJsonObject
         case WrappedOrganizationRejection(rejection)               => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                    => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                           => obj.add("details", rdf.asJson)
@@ -298,4 +309,22 @@ object ResolverRejection {
 
   implicit final val resourceRejectionJsonLdEncoder: JsonLdEncoder[ResolverRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
+
+  implicit val responseFieldsResolvers: HttpResponseFields[ResolverRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)                => StatusCodes.NotFound
+      case ResolverNotFound(_, _)                => StatusCodes.NotFound
+      case TagNotFound(_)                        => StatusCodes.NotFound
+      case InvalidResolution(_, _, _)            => StatusCodes.NotFound
+      case InvalidResolverResolution(_, _, _, _) => StatusCodes.NotFound
+      case ProjectContextRejection(rej)          => rej.status
+      case WrappedProjectRejection(rej)          => rej.status
+      case WrappedOrganizationRejection(rej)     => rej.status
+      case ResourceAlreadyExists(_, _)           => StatusCodes.Conflict
+      case IncorrectRev(_, _)                    => StatusCodes.Conflict
+      case UnexpectedInitialState(_, _)          => StatusCodes.InternalServerError
+      case ResolverEvaluationError(_)            => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_)     => StatusCodes.InternalServerError
+      case _                                     => StatusCodes.BadRequest
+    }
 }

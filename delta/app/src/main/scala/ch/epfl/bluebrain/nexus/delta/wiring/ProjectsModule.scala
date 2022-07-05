@@ -17,7 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -51,7 +52,7 @@ object ProjectsModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       ProjectsImpl(
-        organizations.fetchActiveOrganization[ProjectRejection],
+        organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
         scopeInitializations,
         mappings.merge,
         config.projects,

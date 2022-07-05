@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingCoordinator.{BlazegraphIndexingController, BlazegraphIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.{BlazegraphIndexingCleanup, BlazegraphIndexingCoordinator, BlazegraphIndexingStream, BlazegraphOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.IndexingBlazegraphView
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{contexts, schema => viewsSchemaId, BlazegraphViewEvent, BlazegraphViewsConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -23,10 +24,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -160,8 +161,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           cache: BlazegraphViewsCache,
           deferred: Deferred[Task, BlazegraphViews],
           agg: BlazegraphViewsAggregate,
-          orgs: Organizations,
-          projects: Projects,
+          fetchContext: FetchContext[ContextRejection],
           api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
@@ -174,8 +174,7 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
           cache,
           deferred,
           agg,
-          orgs,
-          projects,
+          fetchContext.mapRejection(ProjectContextRejection),
           client
         )(
           api,
@@ -193,11 +192,11 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         aclCheck: AclCheck,
         views: BlazegraphViews,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         client: BlazegraphClient @Id("blazegraph-query-client"),
         cfg: BlazegraphViewsConfig
     ) =>
-      BlazegraphViewsQuery(aclCheck, views, projects, client)(cfg.indexing)
+      BlazegraphViewsQuery(aclCheck, views, fetchContext.mapRejection(ProjectContextRejection), client)(cfg.indexing)
   }
 
   make[ProgressesStatistics].named("blazegraph-statistics").from {

@@ -83,11 +83,7 @@ trait ResourcesBehaviors {
     (r, p, _) => resources.fetch(r, p).bimap(_ => ResourceResolutionReport(), _.value)
   )
 
-  lazy val projectSetup: UIO[(Organizations, Projects)] = ProjectSetup.init(
-    orgsToCreate = org :: Nil,
-    projectsToCreate = project :: projectDeprecated :: Nil,
-    projectsToDeprecate = projectDeprecated.ref :: Nil
-  )
+  lazy val projectSetup: (Organizations, Projects) = (null, null)
 
   private val fetchSchema: (ResourceRef, ProjectRef) => FetchResource[Schema] = {
     case (ref, _) if ref.iri == schema2.id => UIO.some(SchemaGen.resourceFor(schema2, deprecated = true))

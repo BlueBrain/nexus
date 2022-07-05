@@ -7,10 +7,9 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent.{ElasticSearchViewDeprecated, ElasticSearchViewTagAdded}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{ElasticSearch => ElasticSearchType}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -19,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -32,13 +32,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.{JsonValue, ProgressesStatistics, SseEventLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
 import ch.epfl.bluebrain.nexus.testkit._
@@ -93,15 +92,12 @@ class ElasticSearchViewsRoutesSpec
   private val realm: Label = Label.unsafe("wonderland")
   private val alice: User  = User("alice", realm)
 
-  implicit private val subject: Subject = Identity.Anonymous
-
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
   private val project    = ProjectGen.resourceFor(
     ProjectGen.project(
       "myorg",
@@ -127,9 +123,15 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (orgs, projs) = ProjectSetup.init(org :: Nil, project.value :: Nil).accepted
+  private val (orgs, projs) = (null, null)
   private val allowedPerms  = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
-  private val views         = ElasticSearchViewsSetup.init(orgs, projs, allowedPerms)
+
+  private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+    Map(project.value.ref -> project.value.context),
+    ProjectContextRejection
+  )
+
+  private val views = ElasticSearchViewsSetup.init(fetchContext, allowedPerms)
 
   private val now       = Instant.now()
   private val nowMinus5 = now.minusSeconds(5)
@@ -151,34 +153,6 @@ class ElasticSearchViewsRoutesSpec
     )
   )
 
-  private val sseEventLog: SseEventLog = new SseEventLogDummy(
-    List(
-      Envelope(
-        ElasticSearchViewTagAdded(
-          myId,
-          projectRef,
-          ElasticSearchType,
-          uuid,
-          1,
-          UserTag.unsafe("mytag"),
-          1,
-          Instant.EPOCH,
-          subject
-        ),
-        Sequence(1),
-        "p1",
-        1
-      ),
-      Envelope(
-        ElasticSearchViewDeprecated(myId, projectRef, ElasticSearchType, uuid, 1, Instant.EPOCH, subject),
-        Sequence(2),
-        "p1",
-        2
-      )
-    ),
-    { case ev: ElasticSearchViewEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
-  )
-
   private val aclCheck    = AclSimpleCheck().accepted
   private lazy val routes =
     Route.seal(
@@ -192,7 +166,6 @@ class ElasticSearchViewsRoutesSpec
         statisticsProgress,
         restart,
         resourceToSchemaMapping,
-        sseEventLog,
         IndexingActionDummy()
       )
     )

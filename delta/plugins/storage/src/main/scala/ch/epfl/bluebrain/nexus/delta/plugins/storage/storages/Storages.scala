@@ -37,11 +37,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -57,6 +55,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.time.Instant
+import scala.annotation.nowarn
 
 /**
   * Operations for handling storages
@@ -65,8 +64,7 @@ final class Storages private (
     aggregate: StoragesAggregate,
     eventLog: EventLog[Envelope[StorageEvent]],
     cache: StoragesCache,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[StorageFetchRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[StorageRejection, StorageFields],
     serviceAccount: ServiceAccount
 ) {
@@ -87,9 +85,9 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      (iri, storageFields) <- sourceDecoder(p, source.value)
-      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
+      pc                   <- fetchContext.onCreate(projectRef)
+      (iri, storageFields) <- sourceDecoder(projectRef, pc, source.value)
+      res                  <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
       _                    <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -110,10 +108,10 @@ final class Storages private (
       source: Secret[Json]
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri           <- expandIri(id, p)
-      storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
+      pc            <- fetchContext.onCreate(projectRef)
+      iri           <- expandIri(id, pc)
+      storageFields <- sourceDecoder(projectRef, pc, iri, source.value)
+      res           <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
       _             <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -134,10 +132,10 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri   <- expandIri(id, p)
+      pc    <- fetchContext.onCreate(projectRef)
+      iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
-      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), p)
+      res   <- eval(CreateStorage(iri, projectRef, storageFields, source, caller.subject), pc)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("createStorage", moduleType)
@@ -170,10 +168,10 @@ final class Storages private (
       unsetPreviousDefault: Boolean
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri           <- expandIri(id, p)
-      storageFields <- sourceDecoder(p, iri, source.value)
-      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
+      pc            <- fetchContext.onModify(projectRef)
+      iri           <- expandIri(id, pc)
+      storageFields <- sourceDecoder(projectRef, pc, iri, source.value)
+      res           <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), pc)
       _             <- IO.when(unsetPreviousDefault)(unsetPreviousDefaultIfRequired(projectRef, res))
     } yield res
   }.named("updateStorage", moduleType)
@@ -197,10 +195,10 @@ final class Storages private (
       storageFields: StorageFields
   )(implicit caller: Caller): IO[StorageRejection, StorageResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri   <- expandIri(id, p)
+      pc    <- fetchContext.onModify(projectRef)
+      iri   <- expandIri(id, pc)
       source = storageFields.toJson(iri)
-      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), p)
+      res   <- eval(UpdateStorage(iri, projectRef, storageFields, source, rev, caller.subject), pc)
       _     <- unsetPreviousDefaultIfRequired(projectRef, res)
     } yield res
   }.named("updateStorage", moduleType)
@@ -227,9 +225,9 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), p)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(TagStorage(iri, projectRef, tagRev, tag, rev, subject), pc)
     } yield res
   }.named("tagStorage", moduleType)
 
@@ -249,9 +247,9 @@ final class Storages private (
       rev: Long
   )(implicit subject: Subject): IO[StorageRejection, StorageResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(DeprecateStorage(iri, projectRef, rev, subject), p)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateStorage(iri, projectRef, rev, subject), pc)
     } yield res
   }.named("deprecateStorage", moduleType)
 
@@ -281,10 +279,10 @@ final class Storages private (
     id.asTag
       .fold(
         for {
-          p     <- projects.fetchProject(project)
-          iri   <- expandIri(id.value, p)
+          pc    <- fetchContext.onRead(project)
+          iri   <- expandIri(id.value, pc)
           state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
-          res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), StorageNotFound(iri, project))
+          res   <- IO.fromOption(state.toResource(pc.apiMappings, pc.base), StorageNotFound(iri, project))
         } yield res
       )(fetchBy(_, project))
       .named("fetchStorage", moduleType)
@@ -376,11 +374,12 @@ final class Storages private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -391,11 +390,12 @@ final class Storages private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -406,11 +406,12 @@ final class Storages private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       organization: Label,
       offset: Offset
-  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[StorageEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+  ): IO[StorageRejection, Stream[Task, Envelope[StorageEvent]]] =
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -441,11 +442,11 @@ final class Storages private (
   private def logFailureAndContinue[A](io: IO[StorageRejection, A]): UIO[Unit] =
     io.mapError(err => logger.warn(err.reason)).attempt >> UIO.unit
 
-  private def eval(cmd: StorageCommand, project: Project): IO[StorageRejection, StorageResource] =
+  private def eval(cmd: StorageCommand, pc: ProjectContext): IO[StorageRejection, StorageResource] =
     for {
       evaluationResult <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
-      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
+      resourceOpt       = evaluationResult.state.toResource(pc.apiMappings, pc.base)
+      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, cmd.project))
       _                <- cache.put(cmd.project, cmd.id, res)
     } yield res
 
@@ -509,8 +510,7 @@ object Storages {
       config: StoragesConfig,
       eventLog: EventLog[Envelope[StorageEvent]],
       contextResolution: ResolverContextResolution,
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[StorageFetchRejection],
       cache: StoragesCache,
       agg: StoragesAggregate,
       serviceAccount: ServiceAccount
@@ -525,7 +525,7 @@ object Storages {
         Task.delay(
           new JsonLdSourceResolvingDecoder[StorageRejection, StorageFields](contexts.storages, contextResolution, uuidF)
         )
-      storages       = new Storages(agg, eventLog, cache, orgs, projects, sourceDecoder, serviceAccount)
+      storages       = new Storages(agg, eventLog, cache, fetchContext, sourceDecoder, serviceAccount)
       _             <- startIndexing(config, eventLog, cache, storages)
     } yield storages
   }

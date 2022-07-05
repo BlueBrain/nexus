@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -9,9 +9,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -42,27 +43,21 @@ class CompositeViewsSpec
   implicit private val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
   "CompositeViews" should {
-    val org                      = Label.unsafe("org")
-    val orgDeprecated            = Label.unsafe("org-deprecated")
-    val apiMappings              = ApiMappings("nxv" -> nxv.base)
-    val base                     = nxv.base
-    val project                  = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
-    val deprecatedProject        = ProjectGen.project("org", "proj-deprecated")
-    val projectWithDeprecatedOrg = ProjectGen.project("org-deprecated", "other-proj")
-    val listProject              = ProjectGen.project("org", "list", base = base, mappings = apiMappings)
+    val apiMappings       = ApiMappings("nxv" -> nxv.base)
+    val base              = nxv.base
+    val project           = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)
+    val deprecatedProject = ProjectGen.project("org", "proj-deprecated")
+    val listProject       = ProjectGen.project("org", "list", base = base, mappings = apiMappings)
 
     val projectRef = project.ref
 
-    val (orgs, projects) = ProjectSetup
-      .init(
-        orgsToCreate = org :: orgDeprecated :: Nil,
-        projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: listProject :: Nil,
-        projectsToDeprecate = deprecatedProject.ref :: Nil,
-        organizationsToDeprecate = orgDeprecated :: Nil
-      )
-      .accepted
+    val fetchContext = FetchContextDummy[CompositeViewRejection](
+      Map(project.ref -> project.context, listProject.ref -> listProject.context),
+      Set(deprecatedProject.ref),
+      ProjectContextRejection
+    )
 
-    val compositeViews = initViews(orgs, projects).accepted
+    val compositeViews = initViews(fetchContext).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")
     val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")

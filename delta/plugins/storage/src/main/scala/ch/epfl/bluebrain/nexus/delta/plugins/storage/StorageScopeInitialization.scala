@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ResourceAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
 import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
@@ -40,10 +40,9 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
       .create(defaultStorageId, project.ref, defaultValue)
       .void
       .onErrorHandleWith {
-        case _: ResourceAlreadyExists        => UIO.unit // nothing to do, storage already exits
-        case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
-        case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
-        case rej                             =>
+        case _: ResourceAlreadyExists   => UIO.unit // nothing to do, storage already exits
+        case _: ProjectContextRejection => UIO.unit // project or org are likely deprecated
+        case rej                        =>
           val str =
             s"Failed to create the default DiskStorage for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))

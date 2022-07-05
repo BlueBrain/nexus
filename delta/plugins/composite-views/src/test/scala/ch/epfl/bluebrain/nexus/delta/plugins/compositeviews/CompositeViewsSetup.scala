@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViewsFixture.config
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, CompositeViewSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewEvent, CompositeViewRejection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.NQuads
@@ -17,9 +17,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -51,7 +50,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
     ): HttpResult[Option[NQuads]] = IO.none
   }
 
-  def initViews(orgs: Organizations, projects: Projects)(implicit
+  def initViews(fetchContext: FetchContext[CompositeViewRejection])(implicit
       uuidF: UUIDF,
       as: ActorSystem[Nothing],
       sc: Scheduler
@@ -61,12 +60,11 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
       agg        <- CompositeViews.aggregate(config, _ => UIO.unit, (_, _, _) => UIO.unit, (_, _) => IO.unit)
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
       cache       = CompositeViews.cache(config)
-      views      <- CompositeViews(config, eventLog, orgs, projects, cache, agg, resolverCtx)
+      views      <- CompositeViews(config, eventLog, fetchContext, cache, agg, resolverCtx)
     } yield views
 
   def initViews(
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[CompositeViewRejection],
       permissions: Set[Permission],
       aclCheck: AclCheck,
       client: ElasticSearchClient,
@@ -78,7 +76,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
       cache       = CompositeViews.cache(config)
       agg        <- CompositeViews.aggregate(
                       config,
-                      projects,
+                      null,
                       aclCheck,
                       UIO.pure(permissions),
                       ResourceIdCheck.alwaysAvailable,
@@ -87,7 +85,7 @@ trait CompositeViewsSetup extends Fixtures with IOFixedClock {
                       crypto
                     )
       resolverCtx = new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-      views      <- CompositeViews(config, eventLog, orgs, projects, cache, agg, resolverCtx)
+      views      <- CompositeViews(config, eventLog, fetchContext, cache, agg, resolverCtx)
     } yield views
 }
 

@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeView
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCleanup, CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -27,9 +28,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -92,8 +93,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         config: CompositeViewsConfig,
         eventLog: EventLog[Envelope[CompositeViewEvent]],
-        orgs: Organizations,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         cache: CompositeViewsCache,
         agg: CompositeViewsAggregate,
         contextResolution: ResolverContextResolution,
@@ -105,8 +105,7 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       CompositeViews(
         config,
         eventLog,
-        orgs,
-        projects,
+        fetchContext.mapRejection(ProjectContextRejection),
         cache,
         agg,
         contextResolution

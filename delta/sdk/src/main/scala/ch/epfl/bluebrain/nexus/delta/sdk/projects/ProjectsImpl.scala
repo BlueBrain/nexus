@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, Transactors}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
@@ -86,16 +86,7 @@ final class ProjectsImpl private (
       .map(_.toResource(defaultApiMappings))
       .span("fetchProjectAt")
 
-  override def fetchProject[R](
-      ref: ProjectRef,
-      options: Set[ProjectFetchOptions]
-  )(implicit subject: Subject, rejectionMapper: Mapper[ProjectRejection, R]): IO[R, Project] =
-    IO.raiseError(ProjectNotFound(ref)).mapError(rejectionMapper.to)
-
-  override def fetchProject[R](
-      ref: ProjectRef
-  )(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project] =
-    fetch(ref).bimap(rejectionMapper.to, _.value)
+  override def fetchProject(ref: ProjectRef): IO[ProjectNotFound, Project] = fetch(ref).map(_.value)
 
   override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
     fetchFromCache(uuid).flatMap(fetch)

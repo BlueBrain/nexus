@@ -11,7 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClientDummy
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
@@ -35,6 +36,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRe
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
@@ -96,16 +98,6 @@ class CompositeViewsRoutesSpec
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  val org  = Label.unsafe("myorg")
-  val base = nxv.base
-
-  def projectSetup =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: Nil,
-        projectsToCreate = project :: Nil
-      )
-
   private val now      = Instant.now()
   private val nowPlus5 = now.plusSeconds(5)
 
@@ -155,8 +147,8 @@ class CompositeViewsRoutesSpec
   private val responseQueryProjection  = NTriples("queryProjection", BNode.random)
   private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
-  private val (orgs, projects)      = projectSetup.accepted
-  private val views: CompositeViews = initViews(orgs, projects).accepted
+  private val fetchContext          = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val views: CompositeViews = initViews(fetchContext).accepted
 
   private val blazegraphQuery = new BlazegraphQueryDummy(
     new SparqlQueryClientDummy(
@@ -185,7 +177,7 @@ class CompositeViewsRoutesSpec
       CompositeViewsRoutes(
         identities,
         aclCheck,
-        projects,
+        null,
         views,
         restart,
         restartProjection,

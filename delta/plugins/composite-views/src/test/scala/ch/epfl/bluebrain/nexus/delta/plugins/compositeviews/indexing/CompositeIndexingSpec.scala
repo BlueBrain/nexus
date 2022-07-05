@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIn
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.RemoteIndexingSource.{RemoteProjectStream, RemoteResourceNQuads}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.{CrossProjectSourceFields, ProjectSourceFields, RemoteProjectSourceFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
@@ -43,9 +44,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectBase, ProjectStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContextDummy, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSourceDummy, IndexingStreamController}
 import ch.epfl.bluebrain.nexus.delta.sdk.{JsonLdValue, ProgressesStatistics, Resources}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
@@ -104,19 +105,9 @@ class CompositeIndexingSpec
   private val allowedPerms = Set(permissions.query, events.read)
 
   private val aclCheck = AclSimpleCheck((bob, AclAddress.Root, allowedPerms)).accepted
-  private val org      = Label.unsafe("org")
   private val base     = nxv.base
   private val project1 = ProjectGen.project("org", "proj", base = base)
   private val project2 = ProjectGen.project("org", "proj2", base = base)
-
-  private def projectSetup =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: Nil,
-        projectsToCreate = project1 :: project2 :: Nil,
-        projectsToDeprecate = Nil,
-        organizationsToDeprecate = Nil
-      )
 
   implicit private val keyValueStoreConfig = keyValueStore
 
@@ -274,12 +265,12 @@ class CompositeIndexingSpec
     remoteIndexingSource
   )
 
-  private val (orgs, projects)           = projectSetup.accepted
+  private val fetchContext               =
+    FetchContextDummy[CompositeViewRejection](List(project1, project2), ProjectContextRejection)
   private lazy val indexingController    = new IndexingStreamController[CompositeView](CompositeViews.moduleType)
   private lazy val views: CompositeViews =
     initViews(
-      orgs,
-      projects,
+      fetchContext,
       allowedPerms,
       aclCheck,
       esClient,
