@@ -221,6 +221,17 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ProgressesStatistics(cache, projectsStatistics.get)
   }
 
+  make[SseEventLog]
+    .named("view-sse")
+    .from(
+      (
+          eventLog: EventLog[Envelope[Event]],
+          orgs: Organizations,
+          projects: Projects,
+          exchanges: Set[EventExchange] @Id("view")
+      ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
+    )
+
   make[ProjectEventMetricsStream].fromEffect {
     (
         eventLog: EventLog[Envelope[ProjectScopedEvent]],

@@ -45,7 +45,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
       .void
       .onErrorHandleWith {
         case _: ResourceAlreadyExists   => UIO.unit // nothing to do, view already exits
-        case _: ProjectContextRejection => UIO.unit // project is likely deprecated
+        case _: ProjectContextRejection => UIO.unit // project or org are likely deprecated
         case rej                        =>
           val str =
             s"Failed to create the default ElasticSearchView for project '${project.ref}' due to '${rej.reason}'."

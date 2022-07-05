@@ -12,13 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.OrganizationNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
@@ -415,6 +417,15 @@ class BlazegraphViewsSpec
 
           events.accepted shouldEqual allEvents.drop(2)
         }
+      }
+
+      "reject when the project does not exist" ignore {
+        val projectRef = ProjectRef(org, Label.unsafe("other"))
+        views.events(projectRef, NoOffset).rejected shouldEqual ProjectNotFound(projectRef)
+      }
+      "reject when the organization does not exist" ignore {
+        val org = Label.unsafe("other")
+        views.events(org, NoOffset).rejected shouldEqual OrganizationNotFound(org)
       }
     }
   }
