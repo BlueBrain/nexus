@@ -7,16 +7,16 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchivesSpec.config
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ArchiveNotFound
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveValue}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{ArchiveNotFound, ProjectContextRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{Archive, ArchiveRejection, ArchiveValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceUris.EphemeralResourceInProjectUris
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ProjectSetup
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
@@ -69,17 +69,19 @@ class ArchivesSpec
   private val bob: Subject            = User("bob", usersRealm)
   implicit private val caller: Caller = Caller.unsafe(bob)
 
-  private val org      = Label.unsafe("org")
   private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase = iri"http://localhost/base/"
   private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (_, projects) = ProjectSetup.init(List(org), List(project)).accepted
+  private val fetchContext = FetchContextDummy[ArchiveRejection](
+    List(project),
+    ProjectContextRejection
+  )
 
   private val cfg      = ArchivePluginConfig.load(config).accepted
   private val download = ArchiveDownloadDummy()
-  private val archives = Archives(projects, download, cfg, (_, _) => IO.unit).accepted
+  private val archives = Archives(fetchContext, download, cfg, (_, _) => IO.unit).accepted
 
   "An Archives module" should {
     "create an archive from source" in {

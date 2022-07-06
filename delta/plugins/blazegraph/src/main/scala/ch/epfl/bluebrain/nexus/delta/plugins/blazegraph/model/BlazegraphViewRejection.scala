@@ -17,14 +17,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
 
@@ -102,19 +100,10 @@ object BlazegraphViewRejection {
       )
 
   /**
-    * Signals a rejection caused when interacting with the projects API
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection)
-      extends BlazegraphViewRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends BlazegraphViewRejection(rejection.reason)
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends BlazegraphViewRejection("Something went wrong while interacting with another module.")
 
   /**
     * Rejection when attempting to decode an expanded JsonLD as an BlazegraphViewValue.
@@ -252,14 +241,6 @@ object BlazegraphViewRejection {
   final case class TooManyViewReferences(provided: Int, max: Int)
       extends BlazegraphViewRejection(s"$provided exceeds the maximum allowed number of view references ($max).")
 
-  implicit val blazegraphViewsProjectRejectionMapper: Mapper[ProjectRejection, BlazegraphViewRejection] = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
-    case value                                            => WrappedProjectRejection(value)
-  }
-
-  implicit val blazegraphViewOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
   implicit val blazegraphViewIndexingActionRejectionMapper
       : Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
     (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
@@ -285,8 +266,7 @@ object BlazegraphViewRejection {
           val reason =
             s"Timeout while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "BlazegraphViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedOrganizationRejection(rejection)                     => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                          => rejection.asJsonObject
+        case ProjectContextRejection(rejection)                          => rejection.asJsonObject
         case WrappedBlazegraphClientError(rejection)                     =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
         case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
@@ -310,8 +290,7 @@ object BlazegraphViewRejection {
       case ViewNotFound(_, _)                => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
+      case ProjectContextRejection(rej)      => rej.status
       case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
       case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
       case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError

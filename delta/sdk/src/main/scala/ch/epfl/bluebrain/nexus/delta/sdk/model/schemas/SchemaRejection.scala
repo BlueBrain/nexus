@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
 
+import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
@@ -13,14 +14,15 @@ import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
+import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -178,6 +180,12 @@ object SchemaRejection {
       )
 
   /**
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
+    */
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends SchemaFetchRejection("Something went wrong while interacting with another module.")
+
+  /**
     * Signals a rejection caused when interacting with the projects API
     */
   final case class WrappedProjectRejection(rejection: ProjectRejection) extends SchemaFetchRejection(rejection.reason)
@@ -237,6 +245,7 @@ object SchemaRejection {
         case SchemaEvaluationError(EvaluationTimeout(C(cmd), t))                              =>
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for schema '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "SchemaEvaluationTimeout".asJson, "reason" -> reason.asJson)
+        case ProjectContextRejection(rejection)                                               => rejection.asJsonObject
         case WrappedOrganizationRejection(rejection)                                          => rejection.asJsonObject
         case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
@@ -274,4 +283,19 @@ object SchemaRejection {
 
   implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
 
+  implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
+    HttpResponseFields {
+      case RevisionNotFound(_, _)            => StatusCodes.NotFound
+      case TagNotFound(_)                    => StatusCodes.NotFound
+      case SchemaNotFound(_, _)              => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
+      case IncorrectRev(_, _)                => StatusCodes.Conflict
+      case ProjectContextRejection(rej)      => rej.status
+      case WrappedProjectRejection(rej)      => rej.status
+      case WrappedOrganizationRejection(rej) => rej.status
+      case SchemaEvaluationError(_)          => StatusCodes.InternalServerError
+      case UnexpectedInitialState(_)         => StatusCodes.InternalServerError
+      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
+      case _                                 => StatusCodes.BadRequest
+    }
 }

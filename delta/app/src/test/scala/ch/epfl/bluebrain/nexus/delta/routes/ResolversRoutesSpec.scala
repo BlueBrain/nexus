@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.sdk._
@@ -24,8 +24,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
@@ -35,8 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ResolversRoutesSpec extends BaseRouteSpec {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+  private val uuid = UUID.randomUUID()
 
   private val asAlice = addCredentials(OAuth2BearerToken(alice.subject))
   private val asBob   = addCredentials(OAuth2BearerToken(bob.subject))
@@ -50,15 +49,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
 
-  private val (orgs, projects) = {
-    implicit val subject: Subject = Identity.Anonymous
-    ProjectSetup
-      .init(
-        orgsToCreate = List(org),
-        projectsToCreate = List(project, project2)
-      )
-      .accepted
-  }
+  private val (orgs, projects) = (null, null)
 
   private val identities = IdentitiesDummy(
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm))),
@@ -98,8 +89,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
       }
 
-  private val resolvers =
-    ResolversDummy(orgs, projects, resolverContextResolution, (_, _) => IO.unit).accepted
+  private val resolvers = null
 
   private val aclCheck = AclSimpleCheck(
     (Anonymous, AclAddress.Root, Set(Permissions.events.read)),

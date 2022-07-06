@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.in
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -29,7 +29,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
@@ -194,13 +195,10 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
   "An ElasticSearchViewsQuery" should {
 
-    val (_, projects) =
-      ProjectSetup
-        .init(
-          orgsToCreate = List(project1.organizationLabel, project2.organizationLabel),
-          projectsToCreate = List(project1, project2)
-        )
-        .accepted
+    val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
+      List(project1, project2),
+      ProjectContextRejection
+    )
 
     val visitor = new ViewRefVisitor(fetch(_, _).map { view =>
       view.value match {
@@ -216,7 +214,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       fetch,
       visitor,
       aclCheck,
-      projects,
+      fetchContext,
       esClient
     )
 

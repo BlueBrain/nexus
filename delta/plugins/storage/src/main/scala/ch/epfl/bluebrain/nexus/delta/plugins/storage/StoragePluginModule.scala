@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesAggregate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileEvent, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.migration.RemoteStorageMigrationImpl
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageStatsCollection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageRejection, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
@@ -36,8 +36,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -88,8 +89,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       (
           cfg: StoragePluginConfig,
           log: EventLog[Envelope[StorageEvent]],
-          orgs: Organizations,
-          projects: Projects,
+          fetchContext: FetchContext[ContextRejection],
           cache: StoragesCache,
           agg: StoragesAggregate,
           api: JsonLdApi,
@@ -103,8 +103,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           cfg.storages,
           log,
           contextResolution,
-          orgs,
-          projects,
+          fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
           cache,
           agg,
           serviceAccount
@@ -185,8 +184,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           log: EventLog[Envelope[FileEvent]],
           client: HttpClient @Id("storage"),
           aclCheck: AclCheck,
-          orgs: Organizations,
-          projects: Projects,
+          fetchContext: FetchContext[ContextRejection],
           storages: Storages,
           storagesStatistics: StoragesStatistics,
           agg: FilesAggregate,
@@ -194,7 +192,16 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(cfg.files, storageTypeConfig, log, aclCheck, orgs, projects, storages, storagesStatistics, agg)(
+        Files(
+          cfg.files,
+          storageTypeConfig,
+          log,
+          aclCheck,
+          fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+          storages,
+          storagesStatistics,
+          agg
+        )(
           client,
           uuidF,
           scheduler,

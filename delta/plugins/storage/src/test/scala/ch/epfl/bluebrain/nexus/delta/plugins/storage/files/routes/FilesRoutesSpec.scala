@@ -19,11 +19,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
@@ -52,15 +53,12 @@ class FilesRoutesSpec
   override protected def createActorSystem(): ActorSystem =
     ActorSystem("FilesRoutersSpec", AbstractDBSpec.config)
 
-  implicit private val subject: Subject = Identity.Anonymous
-
   implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
   private val identities      = IdentitiesDummy(caller)
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project)).accepted
+  private val fetchContext = FetchContextDummy(Map(project.ref -> project.context))
 
   private val s3Read        = Permission.unsafe("s3/read")
   private val s3Write       = Permission.unsafe("s3/write")
@@ -82,8 +80,8 @@ class FilesRoutesSpec
   implicit private val f: FusionConfig = fusionConfig
 
   private val aclCheck          = AclSimpleCheck().accepted
-  private val (files, storages) = FilesSetup.init(orgs, projs, aclCheck, stCfg)
-  private val routes            = Route.seal(FilesRoutes(stCfg, identities, aclCheck, orgs, projs, files, IndexingActionDummy()))
+  private val (files, storages) = FilesSetup.init(fetchContext, aclCheck, stCfg)
+  private val routes            = Route.seal(FilesRoutes(stCfg, identities, aclCheck, null, null, files, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)

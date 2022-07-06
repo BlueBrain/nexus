@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAut
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import akka.persistence.query.Sequence
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import io.circe.Printer
 import monix.bio.{IO, UIO}
 
@@ -35,8 +35,7 @@ import java.util.UUID
 
 class ResourcesRoutesSpec extends BaseRouteSpec {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
+  private val uuid = UUID.randomUUID()
 
   implicit private val subject: Subject = Identity.Anonymous
 
@@ -47,7 +46,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org          = Label.unsafe("myorg")
   private val am           = ApiMappings("nxv" -> nxv.base, "Person" -> schema.Person)
   private val projBase     = nxv.base
   private val project      = ProjectGen.resourceFor(
@@ -58,10 +56,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
 
-  private val (orgs, projs) =
-    ProjectSetup
-      .init(orgsToCreate = List(org), projectsToCreate = List(project.value))
-      .accepted
+  private val (orgs, projs) = (null, null)
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
@@ -82,19 +77,12 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val myId2Encoded = UrlUtils.encode(myId2.toString)
   private val payload      = jsonContentOf("resources/resource.json", "id" -> myId)
 
-  private val resourceResolution: ResourceResolution[Schema] =
+  val resourceResolution: ResourceResolution[Schema] =
     ResourceResolutionGen.singleInProject(projectRef, fetchSchema)
 
   private val aclCheck = AclSimpleCheck().accepted
 
-  private val resourcesDummy =
-    ResourcesDummy(
-      orgs,
-      projs,
-      resourceResolution,
-      (_, _) => IO.unit,
-      resolverContextResolution
-    ).accepted
+  private val resourcesDummy = null
   private val sseEventLog    = new SseEventLogDummy(
     List(
       Envelope(

@@ -5,9 +5,11 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
@@ -29,7 +31,13 @@ class ArchivesDecodingSpec
 
   implicit private val uuidF: UUIDF = UUIDF.random
 
-  private val project = ProjectGen.project(genString(), genString())
+  private val context = ProjectContext.unsafe(
+    ApiMappings.empty,
+    nxv.base,
+    nxv.base
+  )
+
+  private val ref = ProjectRef.unsafe(genString(), genString())
 
   "An ArchiveValue" should {
     val decoder = Archives.sourceDecoder
@@ -50,7 +58,7 @@ class ArchivesDecodingSpec
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
+        val (_, value) = decoder(context, source).accepted
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
           FileReference(Latest(fileId), None, None)
@@ -76,7 +84,7 @@ class ArchivesDecodingSpec
               ]
             }"""
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(context, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, None, None),
@@ -93,16 +101,16 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "ref": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": true
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
+        val (_, value) = decoder(context, source).accepted
         val expected   =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(SourceJson))
+          ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(SourceJson))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -115,17 +123,17 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "ref": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": false
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
+        val (_, value) = decoder(context, source).accepted
 
         val expected =
-          ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(CompactedJsonLd))
+          ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(CompactedJsonLd))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -146,16 +154,16 @@ class ArchivesDecodingSpec
                   {
                     "@type": "Resource",
                     "resourceId": $resourceId,
-                    "project": ${project.ref},
+                    "ref": $ref,
                     "path": "/a/b",
                     "rev": 1,
                     "format": $format
                   }
                 ]
               }"""
-          val (_, value) = decoder(project, source).accepted
+          val (_, value) = decoder(context, source).accepted
           val expected   =
-            ResourceReference(Revision(resourceId, 1L), Some(project.ref), Some(path), Some(expFormat))
+            ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(expFormat))
           value.resources shouldEqual NonEmptySet.of(expected)
         }
       }
@@ -170,14 +178,14 @@ class ArchivesDecodingSpec
                 {
                   "@type": "File",
                   "resourceId": $resourceId,
-                  "project": ${project.ref},
+                  "ref": $ref,
                   "path": "/a/b",
                   "tag": $tag
                 }
               ]
             }"""
-        val (_, value) = decoder(project, source).accepted
-        val expected   = FileReference(Tag(resourceId, tag), Some(project.ref), Some(path))
+        val (_, value) = decoder(context, source).accepted
+        val expected   = FileReference(Tag(resourceId, tag), Some(ref), Some(path))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -197,7 +205,7 @@ class ArchivesDecodingSpec
               ]
             }"""
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(context, source).accepted
         decodedId shouldEqual id
         value.resources shouldEqual NonEmptySet.of(
           ResourceReference(Latest(resourceId), None, Some(path), None)
@@ -231,7 +239,7 @@ class ArchivesDecodingSpec
         )
 
         forAll(list) { source =>
-          decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+          decoder(context, source).rejectedWith[InvalidJsonLdFormat]
         }
       }
 
@@ -333,7 +341,7 @@ class ArchivesDecodingSpec
         )
 
         forAll(list) { source =>
-          decoder(project, source).rejectedWith[DecodingFailed]
+          decoder(context, source).rejectedWith[DecodingFailed]
         }
       }
 
@@ -351,7 +359,7 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-        decoder(project, providedId, source).rejectedWith[UnexpectedArchiveId]
+        decoder(context, providedId, source).rejectedWith[UnexpectedArchiveId]
       }
 
       "parsing a source as an ExpandedJsonLd" in {
@@ -366,7 +374,7 @@ class ArchivesDecodingSpec
             }
           ]
         }"""
-        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        decoder(context, source).rejectedWith[InvalidJsonLdFormat]
       }
     }
   }

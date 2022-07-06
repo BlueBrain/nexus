@@ -3,23 +3,21 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileEvent, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesSetup, StoragesStatistics, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, AclSimpleCheck}
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Envelope
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues}
 import monix.execution.Scheduler
 
@@ -27,44 +25,24 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
   private val filesConfig = FilesConfig(aggregate, cacheIndexing)
 
   def init(
-      org: Label,
-      project: Project,
+      fetchContext: FetchContext[ContextRejection],
       storageTypeConfig: StorageTypeConfig
   )(implicit
       as: ActorSystem[Nothing],
       uuid: UUIDF,
-      subject: Subject,
       sc: Scheduler
   ): (Files, Storages) =
-    AclSimpleCheck().map(init(org, project, _, storageTypeConfig)).accepted
+    AclSimpleCheck().map(init(fetchContext, _, storageTypeConfig)).accepted
 
   def init(
-      org: Label,
-      project: Project,
-      aclCheck: AclCheck,
-      storageTypeConfig: StorageTypeConfig
-  )(implicit
-      as: ActorSystem[Nothing],
-      uuid: UUIDF,
-      subject: Subject,
-      sc: Scheduler
-  ): (Files, Storages) = {
-    for {
-      (orgs, projects) <- ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil)
-    } yield init(orgs, projects, aclCheck, storageTypeConfig)
-  }.accepted
-
-  def init(
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[ContextRejection],
       aclCheck: AclCheck,
       storageTypeConfig: StorageTypeConfig
   )(implicit as: ActorSystem[Nothing], uuid: UUIDF, sc: Scheduler): (Files, Storages) =
-    init(orgs, projects, aclCheck, StoragesStatisticsSetup.init(Map.empty), storageTypeConfig, allowedPerms: _*)
+    init(fetchContext, aclCheck, StoragesStatisticsSetup.init(Map.empty), storageTypeConfig, allowedPerms: _*)
 
   def init(
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[ContextRejection],
       aclCheck: AclCheck,
       storageStatistics: StoragesStatistics,
       storageTypeConfig: StorageTypeConfig,
@@ -73,9 +51,22 @@ trait FilesSetup extends IOValues with RemoteContextResolutionFixture with Confi
     implicit val httpClient: HttpClient = HttpClient()(httpClientConfig, as.classicSystem, sc)
     for {
       eventLog <- EventLog.postgresEventLog[Envelope[FileEvent]](EventLogUtils.toEnvelope).hideErrors
-      storages  = StoragesSetup.init(orgs, projects, storagePermissions.toSet, storageTypeConfig)
+      storages  = StoragesSetup.init(
+                    fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+                    storagePermissions.toSet,
+                    storageTypeConfig
+                  )
       agg      <- Files.aggregate(filesConfig.aggregate, ResourceIdCheck.alwaysAvailable)
-      files    <- Files(filesConfig, config, eventLog, aclCheck, orgs, projects, storages, storageStatistics, agg)
+      files    <- Files(
+                    filesConfig,
+                    config,
+                    eventLog,
+                    aclCheck,
+                    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+                    storages,
+                    storageStatistics,
+                    agg
+                  )
     } yield files -> storages
   }.accepted
 }

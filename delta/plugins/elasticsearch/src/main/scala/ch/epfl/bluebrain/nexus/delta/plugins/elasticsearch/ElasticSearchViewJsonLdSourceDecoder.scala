@@ -19,9 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSour
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -36,18 +37,19 @@ class ElasticSearchViewJsonLdSourceDecoder private (
     decoder: JsonLdSourceResolvingDecoder[ElasticSearchViewRejection, ElasticSearchViewFields]
 ) {
 
-  def apply(project: Project, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
   ): IO[ElasticSearchViewRejection, (Iri, ElasticSearchViewValue)] =
-    decoder(project, mapJsonToString(source)).map { case (iri, fields) =>
+    decoder(ref, context, mapJsonToString(source)).map { case (iri, fields) =>
       iri -> toValue(fields)
     }
 
-  def apply(project: Project, iri: Iri, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, iri: Iri, source: Json)(implicit
       caller: Caller
   ): IO[ElasticSearchViewRejection, ElasticSearchViewValue] =
     decoder(
-      project,
+      ref,
+      context,
       iri,
       mapJsonToString(source)
     ).map(toValue)

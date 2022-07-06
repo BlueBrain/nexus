@@ -121,16 +121,15 @@ trait Organizations {
   /**
     * Fetches the current active organization, rejecting if the organization does not exists or if it is deprecated
     */
-  def fetchActiveOrganization[R](
+  def fetchActiveOrganization(
       label: Label
-  )(implicit rejectionMapper: Mapper[OrganizationRejection, R]): IO[R, Organization] =
+  ): IO[OrganizationRejection, Organization] =
     fetch(label)
       .flatMap {
         case resource if resource.deprecated =>
           IO.raiseError(OrganizationIsDeprecated(label))
         case resource                        => IO.pure(resource.value)
       }
-      .mapError(rejectionMapper.to)
 
   /**
     * Fetches the current organization, rejecting if the organization does not exists

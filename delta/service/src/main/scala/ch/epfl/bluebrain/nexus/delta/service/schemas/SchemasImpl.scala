@@ -20,16 +20,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaState.Initial
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import fs2.Stream
@@ -39,8 +37,7 @@ import monix.bio.{IO, Task, UIO}
 final class SchemasImpl private (
     agg: SchemasAggregate,
     cache: SchemasCache,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[SchemaFetchRejection],
     schemaImports: SchemaImports,
     eventLog: EventLog[Envelope[SchemaEvent]],
     sourceParser: JsonLdSourceResolvingParser[SchemaRejection]
@@ -51,10 +48,10 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      (iri, compacted, expanded) <- sourceParser(project, source)
+      projectContext             <- fetchContext.onCreate(projectRef)
+      (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
       expandedResolved           <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      res                        <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), projectContext)
     } yield res
   }.named("createSchema", moduleType)
 
@@ -64,11 +61,11 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri                   <- expandIri(id, project)
-      (compacted, expanded) <- sourceParser(project, iri, source)
+      projectContext        <- fetchContext.onCreate(projectRef)
+      iri                   <- expandIri(id, projectContext)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), project)
+      res                   <- eval(CreateSchema(iri, projectRef, source, compacted, expandedResolved, caller.subject), projectContext)
     } yield res
   }.named("createSchema", moduleType)
 
@@ -79,11 +76,12 @@ final class SchemasImpl private (
       source: Json
   )(implicit caller: Caller): IO[SchemaRejection, SchemaResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri                   <- expandIri(id, project)
-      (compacted, expanded) <- sourceParser(project, iri, source)
+      projectContext        <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, projectContext)
+      (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
       expandedResolved      <- schemaImports.resolve(iri, projectRef, expanded.addType(nxv.Schema))
-      res                   <- eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), project)
+      res                   <-
+        eval(UpdateSchema(iri, projectRef, source, compacted, expandedResolved, rev, caller.subject), projectContext)
     } yield res
   }.named("updateSchema", moduleType)
 
@@ -95,9 +93,9 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri     <- expandIri(id, project)
-      res     <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), project)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      res            <- eval(TagSchema(iri, projectRef, tagRev, tag, rev, caller), projectContext)
     } yield res).named("tagSchema", moduleType)
 
   override def deleteTag(
@@ -107,7 +105,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
+      project <- fetchContext.onModify(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeleteSchemaTag(iri, projectRef, tag, rev, caller), project)
     } yield res).named("deleteSchemaTag", moduleType)
@@ -118,7 +116,7 @@ final class SchemasImpl private (
       rev: Long
   )(implicit caller: Subject): IO[SchemaRejection, SchemaResource] =
     (for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
+      project <- fetchContext.onModify(projectRef)
       iri     <- expandIri(id, project)
       res     <- eval(DeprecateSchema(iri, projectRef, rev, caller), project)
     } yield res).named("deprecateSchema", moduleType)
@@ -127,7 +125,7 @@ final class SchemasImpl private (
     id.asTag
       .fold(
         for {
-          project <- projects.fetchProject(projectRef)
+          project <- fetchContext.onRead(projectRef)
           iri     <- expandIri(id.value, project)
           state   <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
           cached  <-
@@ -143,19 +141,19 @@ final class SchemasImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[SchemaRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[SchemaEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(offset: Offset): Stream[Task, Envelope[SchemaEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -168,10 +166,10 @@ final class SchemasImpl private (
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Schemas.next)
       .mapError(RevisionNotFound(rev, _))
 
-  private def eval(cmd: SchemaCommand, project: Project): IO[SchemaRejection, SchemaResource] =
+  private def eval(cmd: SchemaCommand, projectContext: ProjectContext): IO[SchemaRejection, SchemaResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base)        = project.apiMappings -> project.base
+      (am, base)        = projectContext.apiMappings -> projectContext.base
       resource         <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id))
     } yield resource
 
@@ -220,8 +218,7 @@ object SchemasImpl {
     * Constructs a [[Schemas]] instance.
     */
   final def apply(
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[SchemaFetchRejection],
       schemaImports: SchemaImports,
       contextResolution: ResolverContextResolution,
       eventLog: EventLog[Envelope[SchemaEvent]],
@@ -237,8 +234,7 @@ object SchemasImpl {
     new SchemasImpl(
       agg,
       cache,
-      orgs,
-      projects,
+      fetchContext,
       schemaImports,
       eventLog,
       parser

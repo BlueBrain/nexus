@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
@@ -63,14 +64,11 @@ class ArchiveDownloadSpec
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
 
-  private val acls              = AclSimpleCheck(
-    (
-      subject,
-      AclAddress.Root,
-      Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
-    )
-  ).accepted
-  private val (files, storages) = FilesSetup.init(org, project, acls, cfg)
+  private val permissions       =
+    Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
+  private val aclCheck          = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
+  private val fetchContext      = FetchContextDummy(List(project))
+  private val (files, storages) = FilesSetup.init(fetchContext, aclCheck, cfg)
   private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted
 
@@ -103,7 +101,7 @@ class ArchiveDownloadSpec
     val id2 = iri"http://localhost/${genString()}"
     files.create(id2, Some(diskId), project.ref, entity(genString(100))).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), acls, files)
+    val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

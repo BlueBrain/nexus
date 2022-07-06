@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
@@ -92,16 +92,20 @@ trait BlazegraphViewsQuery {
 }
 
 object BlazegraphViewsQuery {
-  private[blazegraph] type FetchView    = (IdSegmentRef, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
-  private[blazegraph] type FetchProject = ProjectRef => IO[BlazegraphViewRejection, Project]
+  private[blazegraph] type FetchView = (IdSegmentRef, ProjectRef) => IO[BlazegraphViewRejection, ViewResource]
 
-  final def apply(aclCheck: AclCheck, views: BlazegraphViews, projects: Projects, client: SparqlQueryClient)(implicit
+  final def apply(
+      aclCheck: AclCheck,
+      views: BlazegraphViews,
+      fetchContext: FetchContext[BlazegraphViewRejection],
+      client: SparqlQueryClient
+  )(implicit
       config: ExternalIndexingConfig
   ): BlazegraphViewsQuery =
     apply(
       views.fetch,
       BlazegraphViewRefVisitor(views, config),
-      projects.fetchProject[BlazegraphViewRejection],
+      fetchContext,
       aclCheck,
       client
     )
@@ -109,7 +113,7 @@ object BlazegraphViewsQuery {
   private[blazegraph] def apply(
       fetchView: FetchView,
       visitor: ViewRefVisitor[BlazegraphViewRejection],
-      fetchProject: FetchProject,
+      fetchContext: FetchContext[BlazegraphViewRejection],
       aclCheck: AclCheck,
       client: SparqlQueryClient
   )(implicit config: ExternalIndexingConfig): BlazegraphViewsQuery =
@@ -148,7 +152,7 @@ object BlazegraphViewsQuery {
       ): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
         for {
           queryTemplate <- incomingQuery
-          p             <- fetchProject(projectRef)
+          p             <- fetchContext.onRead(projectRef)
           iri           <- expandIri(id, p)
           q              = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)
@@ -163,7 +167,7 @@ object BlazegraphViewsQuery {
       )(implicit caller: Caller, base: BaseUri): IO[BlazegraphViewRejection, SearchResults[SparqlLink]] =
         for {
           queryTemplate <- if (includeExternalLinks) outgoingWithExternalQuery else outgoingScopedQuery
-          p             <- fetchProject(projectRef)
+          p             <- fetchContext.onRead(projectRef)
           iri           <- expandIri(id, p)
           q              = SparqlQuery(replace(queryTemplate, iri, pagination))
           bindings      <- query(IriSegment(defaultViewId), projectRef, q, SparqlResultsJson)

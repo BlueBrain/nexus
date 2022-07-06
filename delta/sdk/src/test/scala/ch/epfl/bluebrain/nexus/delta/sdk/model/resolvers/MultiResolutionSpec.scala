@@ -4,20 +4,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResolverResolutionGen, ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResolverResolutionGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolverId, InvalidResolverResolution, WrappedProjectRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
@@ -67,12 +65,10 @@ class MultiResolutionSpec
         case _                          => IO.none
       }
 
-  private val project = ProjectGen.project("org", "project")
-
-  def fetchProject: ProjectRef => IO[ResolverRejection, Project] =
+  def fetchProject: ProjectRef => IO[ResolverRejection, ProjectContext] =
     (ref: ProjectRef) =>
       ref match {
-        case `projectRef` => IO.pure(project)
+        case `projectRef` => IO.pure(ProjectContext.unsafe(ApiMappings.empty, nxv.base, nxv.base))
         case _            => IO.raiseError(WrappedProjectRejection(ProjectNotFound(ref)))
       }
 

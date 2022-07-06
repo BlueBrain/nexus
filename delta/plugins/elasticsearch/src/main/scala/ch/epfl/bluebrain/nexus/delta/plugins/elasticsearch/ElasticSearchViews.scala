@@ -35,12 +35,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{Pipe, PipeConfig}
@@ -58,6 +56,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * ElasticSearchViews resource lifecycle operations.
@@ -66,8 +65,7 @@ final class ElasticSearchViews private (
     aggregate: ElasticSearchViewAggregate,
     eventLog: EventLog[Envelope[ElasticSearchViewEvent]],
     cache: ElasticSearchViewCache,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[ElasticSearchViewRejection],
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder
 )(implicit uuidF: UUIDF) {
 
@@ -105,9 +103,9 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), p)
+      pc  <- fetchContext.onCreate(project)
+      iri <- expandIri(id, pc)
+      res <- eval(CreateElasticSearchView(iri, project, value, value.toJson(iri), subject), pc)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -127,9 +125,9 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p            <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      (iri, value) <- sourceDecoder(p, source)
-      res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
+      pc           <- fetchContext.onCreate(project)
+      (iri, value) <- sourceDecoder(project, pc, source)
+      res          <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), pc)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -150,10 +148,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri   <- expandIri(id, p)
-      value <- sourceDecoder(p, iri, source)
-      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), p)
+      pc    <- fetchContext.onCreate(project)
+      iri   <- expandIri(id, pc)
+      value <- sourceDecoder(project, pc, iri, source)
+      res   <- eval(CreateElasticSearchView(iri, project, value, source, caller.subject), pc)
     } yield res
   }.named("createElasticSearchView", moduleType)
 
@@ -178,9 +176,9 @@ final class ElasticSearchViews private (
       value: ElasticSearchViewValue
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(UpdateElasticSearchView(iri, project, rev, value, value.toJson(iri), subject), pc)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -205,10 +203,10 @@ final class ElasticSearchViews private (
       source: Json
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri   <- expandIri(id, p)
-      value <- sourceDecoder(p, iri, source)
-      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), p)
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
+      value <- sourceDecoder(project, pc, iri, source)
+      res   <- eval(UpdateElasticSearchView(iri, project, rev, value, source, caller.subject), pc)
     } yield res
   }.named("updateElasticSearchView", moduleType)
 
@@ -236,9 +234,9 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(TagElasticSearchView(iri, project, tagRev, tag, rev, subject), pc)
     } yield res
   }.named("tagElasticSearchView", moduleType)
 
@@ -261,9 +259,9 @@ final class ElasticSearchViews private (
       rev: Long
   )(implicit subject: Subject): IO[ElasticSearchViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateElasticSearchView(iri, project, rev, subject), pc)
     } yield res
   }.named("deprecateElasticSearchView", moduleType)
 
@@ -279,13 +277,13 @@ final class ElasticSearchViews private (
     id.asTag
       .fold(
         for {
-          p               <- projects.fetchProject(project)
-          iri             <- expandIri(id.value, p)
+          pc              <- fetchContext.onRead(project)
+          iri             <- expandIri(id.value, pc)
           state           <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
           defaultMapping  <- defaultElasticsearchMapping
           defaultSettings <- defaultElasticsearchSettings
           res             <- IO.fromOption(
-                               state.toResource(p.apiMappings, p.base, defaultMapping, defaultSettings),
+                               state.toResource(pc.apiMappings, pc.base, defaultMapping, defaultSettings),
                                ViewNotFound(iri, project)
                              )
         } yield res
@@ -356,11 +354,12 @@ final class ElasticSearchViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
@@ -371,11 +370,12 @@ final class ElasticSearchViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for elasticsearch views. After emitting all known events it sleeps until new
@@ -386,11 +386,12 @@ final class ElasticSearchViews private (
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       organization: Label,
       offset: Offset
-  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+  ): IO[ElasticSearchViewRejection, Stream[Task, Envelope[ElasticSearchViewEvent]]] =
+    IO.pure(Stream.empty)
 
   /**
     * Retrieves the ordered collection of events for all ElasticSearchViews starting from the last known offset. The
@@ -414,16 +415,16 @@ final class ElasticSearchViews private (
 
   private def eval(
       cmd: ElasticSearchViewCommand,
-      project: Project
+      projectContext: ProjectContext
   ): IO[ElasticSearchViewRejection, ViewResource] =
     for {
       result          <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base)       = project.apiMappings -> project.base
+      (am, base)       = projectContext.apiMappings -> projectContext.base
       defaultMapping  <- defaultElasticsearchMapping
       defaultSettings <- defaultElasticsearchSettings
       resource        <- IO.fromOption(
                            result.state.toResource(am, base, defaultMapping, defaultSettings),
-                           UnexpectedInitialState(cmd.id, project.ref)
+                           UnexpectedInitialState(cmd.id, cmd.project)
                          )
       _               <- cache.put(cmd.project, cmd.id, resource)
     } yield resource
@@ -522,8 +523,7 @@ object ElasticSearchViews {
       contextResolution: ResolverContextResolution,
       cache: ElasticSearchViewCache,
       agg: ElasticSearchViewAggregate,
-      orgs: Organizations,
-      projects: Projects
+      fetchContext: FetchContext[ElasticSearchViewRejection]
   )(implicit
       api: JsonLdApi,
       uuidF: UUIDF,
@@ -533,7 +533,7 @@ object ElasticSearchViews {
 
     for {
       decoder <- Task.delay(ElasticSearchViewJsonLdSourceDecoder(uuidF, contextResolution))
-      views   <- Task.delay(new ElasticSearchViews(agg, eventLog, cache, orgs, projects, decoder))
+      views   <- Task.delay(new ElasticSearchViews(agg, eventLog, cache, fetchContext, decoder))
       _       <- deferred.complete(views)
       _       <- ElasticSearchViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views

@@ -14,13 +14,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
@@ -209,21 +207,10 @@ object StorageRejection {
       )
 
   /**
-    * Rejection returned when the associated project is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the project
+    * Signals a rejection caused when interacting with other APIs when fetching a resource
     */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends StorageFetchRejection(rejection.reason)
-
-  /**
-    * Rejection returned when the associated organization is invalid
-    *
-    * @param rejection
-    *   the rejection which occurred with the organization
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends StorageFetchRejection(rejection.reason)
+  final case class ProjectContextRejection(rejection: ContextRejection)
+      extends StorageFetchRejection("Something went wrong while interacting with another module.")
 
   /**
     * Signals a rejection caused by a failure to perform indexing.
@@ -252,14 +239,6 @@ object StorageRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit val storageProjectRejectionMapper: Mapper[ProjectRejection, StorageFetchRejection] = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
-    case value                                            => WrappedProjectRejection(value)
-  }
-
-  implicit val storageOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    (value: OrganizationRejection) => WrappedOrganizationRejection(value)
-
   implicit val storageIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
     (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
@@ -278,8 +257,7 @@ object StorageRejection {
           val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for storage '${cmd.id}' after '$t'"
           JsonObject(keywords.tpe -> "StorageEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case StorageNotAccessible(_, details)                     => obj.add("details", details.asJson)
-        case WrappedOrganizationRejection(rejection)              => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                   => rejection.asJsonObject
+        case ProjectContextRejection(rejection)                   => rejection.asJsonObject
         case InvalidJsonLdFormat(_, rdf)                          => obj.add("rdf", rdf.asJson)
         case IncorrectRev(provided, expected)                     => obj.add("provided", provided.asJson).add("expected", expected.asJson)
         case _: StorageNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
@@ -300,8 +278,7 @@ object StorageRejection {
       case DefaultStorageNotFound(_)         => StatusCodes.NotFound
       case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
+      case ProjectContextRejection(rej)      => rej.status
       case StorageNotAccessible(_, _)        => StatusCodes.BadRequest
       case InvalidEncryptionSecrets(_, _)    => StatusCodes.InternalServerError
       case StorageEvaluationError(_)         => StatusCodes.InternalServerError

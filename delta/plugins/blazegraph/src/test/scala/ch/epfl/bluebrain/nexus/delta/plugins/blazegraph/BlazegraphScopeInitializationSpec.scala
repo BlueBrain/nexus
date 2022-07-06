@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
@@ -38,14 +38,17 @@ class BlazegraphScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org               = Label.unsafe("org")
-  private val am                = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
-  private val projBase          = nxv.base
-  private val project           =
+  private val am       = ApiMappings("nxv" -> nxv.base, "Person" -> schemaorg.Person)
+  private val projBase = nxv.base
+  private val project  =
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-  implicit val baseUri: BaseUri = BaseUri.withoutPrefix("http://localhost")
 
-  val views: BlazegraphViews = BlazegraphViewsSetup.init(org, project, permissions.query)
+  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
+    List(project),
+    ProjectContextRejection
+  )
+
+  val views: BlazegraphViews = BlazegraphViewsSetup.init(fetchContext, permissions.query)
 
   "A BlazegraphScopeInitialization" should {
     val init = new BlazegraphScopeInitialization(views, sa)

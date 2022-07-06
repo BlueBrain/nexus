@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CompositeKeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverCommand.{CreateResolver, DeprecateResolver, TagResolver, UpdateResolver}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Initial
@@ -25,20 +25,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.DaemonStreamCoordinator
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -49,8 +45,7 @@ final class ResolversImpl private (
     agg: ResolversAggregate,
     eventLog: EventLog[Envelope[ResolverEvent]],
     index: ResolversCache,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[ResolverRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[ResolverRejection, ResolverValue]
 ) extends Resolvers {
 
@@ -59,9 +54,9 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p                    <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      (iri, resolverValue) <- sourceDecoder(p, source)
-      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
+      projectContext       <- fetchContext.onCreate(projectRef)
+      (iri, resolverValue) <- sourceDecoder(projectRef, projectContext, source)
+      res                  <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), projectContext)
     } yield res
   }.named("createResolver", moduleType)
 
@@ -71,10 +66,10 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri           <- expandIri(id, p)
-      resolverValue <- sourceDecoder(p, iri, source)
-      res           <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
+      projectContext <- fetchContext.onCreate(projectRef)
+      iri            <- expandIri(id, projectContext)
+      resolverValue  <- sourceDecoder(projectRef, projectContext, iri, source)
+      res            <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), projectContext)
     } yield res
   }.named("createResolver", moduleType)
 
@@ -84,10 +79,10 @@ final class ResolversImpl private (
       resolverValue: ResolverValue
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri   <- expandIri(id, p)
-      source = ResolverValue.generateSource(iri, resolverValue)
-      res   <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), p)
+      projectContext <- fetchContext.onCreate(projectRef)
+      iri            <- expandIri(id, projectContext)
+      source          = ResolverValue.generateSource(iri, resolverValue)
+      res            <- eval(CreateResolver(iri, projectRef, resolverValue, source, caller), projectContext)
     } yield res
   }.named("createResolver", moduleType)
 
@@ -98,10 +93,10 @@ final class ResolversImpl private (
       source: Json
   )(implicit caller: Caller): IO[ResolverRejection, ResolverResource] = {
     for {
-      p             <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri           <- expandIri(id, p)
-      resolverValue <- sourceDecoder(p, iri, source)
-      res           <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      resolverValue  <- sourceDecoder(projectRef, projectContext, iri, source)
+      res            <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), projectContext)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -114,10 +109,10 @@ final class ResolversImpl private (
       caller: Caller
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p     <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri   <- expandIri(id, p)
-      source = ResolverValue.generateSource(iri, resolverValue)
-      res   <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), p)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      source          = ResolverValue.generateSource(iri, resolverValue)
+      res            <- eval(UpdateResolver(iri, projectRef, resolverValue, source, rev, caller), projectContext)
     } yield res
   }.named("updateResolver", moduleType)
 
@@ -131,9 +126,9 @@ final class ResolversImpl private (
       subject: Identity.Subject
   ): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), p)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      res            <- eval(TagResolver(iri, projectRef, tagRev, tag, rev, subject), projectContext)
     } yield res
   }.named("tagResolver", moduleType)
 
@@ -143,9 +138,9 @@ final class ResolversImpl private (
       rev: Long
   )(implicit subject: Identity.Subject): IO[ResolverRejection, ResolverResource] = {
     for {
-      p   <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(DeprecateResolver(iri, projectRef, rev, subject), p)
+      projectContext <- fetchContext.onModify(projectRef)
+      iri            <- expandIri(id, projectContext)
+      res            <- eval(DeprecateResolver(iri, projectRef, rev, subject), projectContext)
     } yield res
   }.named("deprecateResolver", moduleType)
 
@@ -153,10 +148,13 @@ final class ResolversImpl private (
     id.asTag
       .fold(
         for {
-          project <- projects.fetchProject(projectRef)
-          iri     <- expandIri(id.value, project)
-          state   <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
-          res     <- IO.fromOption(state.toResource(project.apiMappings, project.base), ResolverNotFound(iri, projectRef))
+          projectContext <- fetchContext.onRead(projectRef)
+          iri            <- expandIri(id.value, projectContext)
+          state          <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
+          res            <- IO.fromOption(
+                              state.toResource(projectContext.apiMappings, projectContext.base),
+                              ResolverNotFound(iri, projectRef)
+                            )
         } yield res
       )(fetchBy(_, projectRef))
       .named("fetchResolver", moduleType)
@@ -186,19 +184,19 @@ final class ResolversImpl private (
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[ResolverRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(
       organization: Label,
       offset: Offset
   ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResolverEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+    IO.pure(Stream.empty)
 
   override def events(offset: Offset): Stream[Task, Envelope[ResolverEvent]] =
     eventLog.eventsByTag(moduleType, offset)
@@ -211,11 +209,11 @@ final class ResolversImpl private (
       .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resolvers.next)
       .mapError(RevisionNotFound(rev, _))
 
-  private def eval(cmd: ResolverCommand, project: Project): IO[ResolverRejection, ResolverResource] =
+  private def eval(cmd: ResolverCommand, projectContext: ProjectContext): IO[ResolverRejection, ResolverResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base)        = project.apiMappings -> project.base
-      res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, project.ref))
+      (am, base)        = projectContext.apiMappings -> projectContext.base
+      res              <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id, cmd.project))
       _                <- index.put(cmd.project, cmd.id, res)
     } yield res
 
@@ -298,8 +296,7 @@ object ResolversImpl {
   final def apply(
       config: ResolversConfig,
       eventLog: EventLog[Envelope[ResolverEvent]],
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[ResolverRejection],
       contextResolution: ResolverContextResolution,
       cache: ResolversCache,
       agg: ResolversAggregate
@@ -317,7 +314,7 @@ object ResolversImpl {
             contextResolution,
             uuidF
           )
-        new ResolversImpl(agg, eventLog, cache, orgs, projects, sourceDecoder)
+        new ResolversImpl(agg, eventLog, cache, fetchContext, sourceDecoder)
       }
       .tapEval(resolvers => startIndexing(config, eventLog, cache, resolvers))
 

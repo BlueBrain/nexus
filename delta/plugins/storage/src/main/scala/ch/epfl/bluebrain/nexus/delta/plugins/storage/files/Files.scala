@@ -37,10 +37,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
@@ -58,6 +56,7 @@ import monix.execution.Scheduler
 import retry.syntax.all._
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Operations for handling files
@@ -67,8 +66,7 @@ final class Files(
     aggregate: FilesAggregate,
     eventLog: EventLog[Envelope[FileEvent]],
     aclCheck: AclCheck,
-    orgs: Organizations,
-    projects: Projects,
+    fetchContext: FetchContext[FileRejection],
     storages: Storages,
     storagesStatistics: StoragesStatistics
 )(implicit config: StorageTypeConfig, client: HttpClient, uuidF: UUIDF, system: ClassicActorSystem) {
@@ -95,12 +93,12 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri                   <- generateId(project)
+      pc                    <- fetchContext.onCreate(projectRef)
+      iri                   <- generateId(pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), pc)
     } yield res
   }.named("createFile", moduleType)
 
@@ -123,12 +121,12 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri                   <- expandIri(id, project)
+      pc                    <- fetchContext.onCreate(projectRef)
+      iri                   <- expandIri(id, pc)
       _                     <- test(CreateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), project)
+      res                   <- eval(CreateFile(iri, projectRef, storageRef, storage.tpe, attributes, caller.subject), pc)
     } yield res
   }.named("createFile", moduleType)
 
@@ -154,9 +152,9 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri     <- generateId(project)
-      res     <- createLink(iri, project, storageId, filename, mediaType, path)
+      pc  <- fetchContext.onCreate(projectRef)
+      iri <- generateId(pc)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
     } yield res
   }.named("createLink", moduleType)
 
@@ -185,9 +183,9 @@ final class Files(
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithQuotas)
-      iri     <- expandIri(id, project)
-      res     <- createLink(iri, project, storageId, filename, mediaType, path)
+      pc  <- fetchContext.onCreate(projectRef)
+      iri <- expandIri(id, pc)
+      res <- createLink(iri, projectRef, pc, storageId, filename, mediaType, path)
     } yield res
   }.named("createLink", moduleType)
 
@@ -213,12 +211,12 @@ final class Files(
       entity: HttpEntity
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri                   <- expandIri(id, project)
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       attributes            <- extractFileAttributes(iri, entity, storage)
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), pc)
     } yield res
   }.named("updateFile", moduleType)
 
@@ -250,14 +248,14 @@ final class Files(
       rev: Long
   )(implicit caller: Caller): IO[FileRejection, FileResource] = {
     for {
-      project               <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri                   <- expandIri(id, project)
+      pc                    <- fetchContext.onModify(projectRef)
+      iri                   <- expandIri(id, pc)
       _                     <- test(UpdateFile(iri, projectRef, testStorageRef, testStorageType, testAttributes, rev, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      (storageRef, storage) <- fetchActiveStorage(storageId, projectRef, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), project)
+      res                   <- eval(UpdateFile(iri, projectRef, storageRef, storage.tpe, attributes, rev, caller.subject), pc)
     } yield res
   }.named("updateLink", moduleType)
 
@@ -286,9 +284,9 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri     <- expandIri(id, project)
-      res     <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), project)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(UpdateFileAttributes(iri, projectRef, mediaType, bytes, digest, rev, subject), pc)
     } yield res
   }.named("updateFileAttributes", moduleType)
 
@@ -337,9 +335,9 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri     <- expandIri(id, project)
-      res     <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), project)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(TagFile(iri, projectRef, tagRev, tag, rev, subject), pc)
     } yield res
   }.named("tagFile", moduleType)
 
@@ -362,9 +360,9 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri     <- expandIri(id, project)
-      res     <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject), project)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(DeleteFileTag(iri, projectRef, tag, rev, subject), pc)
     } yield res
   }.named("deleteFileTag", moduleType)
 
@@ -384,9 +382,9 @@ final class Files(
       rev: Long
   )(implicit subject: Subject): IO[FileRejection, FileResource] = {
     for {
-      project <- projects.fetchProject(projectRef, notDeprecatedOrDeletedWithEventQuotas)
-      iri     <- expandIri(id, project)
-      res     <- eval(DeprecateFile(iri, projectRef, rev, subject), project)
+      pc  <- fetchContext.onModify(projectRef)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateFile(iri, projectRef, rev, subject), pc)
     } yield res
   }.named("deprecateFile", moduleType)
 
@@ -426,10 +424,10 @@ final class Files(
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[FileRejection, FileResource] =
     id.asTag
       .fold(for {
-        p     <- projects.fetchProject(project)
-        iri   <- expandIri(id.value, p)
+        pc    <- fetchContext.onRead(project)
+        iri   <- expandIri(id.value, pc)
         state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
-        res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), FileNotFound(iri, project))
+        res   <- IO.fromOption(state.toResource(pc.apiMappings, pc.base), FileNotFound(iri, project))
       } yield res)(fetchBy(_, project))
       .named("fetchFile", moduleType)
 
@@ -449,11 +447,12 @@ final class Files(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
@@ -464,11 +463,12 @@ final class Files(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for storages. After emitting all known events it sleeps until new events are
@@ -479,11 +479,12 @@ final class Files(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       organization: Label,
       offset: Offset
-  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[FileEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+  ): IO[FileRejection, Stream[Task, Envelope[FileEvent]]] =
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for files. After emitting all known events it sleeps until new events are
@@ -497,26 +498,27 @@ final class Files(
 
   private def createLink(
       iri: Iri,
-      project: Project,
+      ref: ProjectRef,
+      pc: ProjectContext,
       storageId: Option[IdSegment],
       filename: Option[String],
       mediaType: Option[ContentType],
       path: Uri.Path
   )(implicit caller: Caller): IO[FileRejection, FileResource] =
     for {
-      _                     <- test(CreateFile(iri, project.ref, testStorageRef, testStorageType, testAttributes, caller.subject))
-      (storageRef, storage) <- fetchActiveStorage(storageId, project)
+      _                     <- test(CreateFile(iri, ref, testStorageRef, testStorageType, testAttributes, caller.subject))
+      (storageRef, storage) <- fetchActiveStorage(storageId, ref, pc)
       resolvedFilename      <- IO.fromOption(filename.orElse(path.lastSegment), InvalidFileLink(iri))
       description           <- FileDescription(resolvedFilename, mediaType)
       attributes            <- LinkFile(storage).apply(path, description).mapError(LinkRejection(iri, storage.id, _))
-      res                   <- eval(CreateFile(iri, project.ref, storageRef, storage.tpe, attributes, caller.subject), project)
+      res                   <- eval(CreateFile(iri, ref, storageRef, storage.tpe, attributes, caller.subject), pc)
     } yield res
 
-  private def eval(cmd: FileCommand, project: Project): IO[FileRejection, FileResource] =
+  private def eval(cmd: FileCommand, pc: ProjectContext): IO[FileRejection, FileResource] =
     for {
       evaluationResult <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
-      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
+      resourceOpt       = evaluationResult.state.toResource(pc.apiMappings, pc.base)
+      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, cmd.project))
     } yield res
 
   private def test(cmd: FileCommand) =
@@ -533,24 +535,23 @@ final class Files(
   private def identifier(project: ProjectRef, id: Iri): String =
     s"${project}_$id"
 
-  private def fetchActiveStorage(
-      storageIdOpt: Option[IdSegment],
-      project: Project
-  )(implicit caller: Caller): IO[FileRejection, (ResourceRef.Revision, Storage)] =
+  private def fetchActiveStorage(storageIdOpt: Option[IdSegment], ref: ProjectRef, pc: ProjectContext)(implicit
+      caller: Caller
+  ): IO[FileRejection, (ResourceRef.Revision, Storage)] =
     storageIdOpt match {
       case Some(storageId) =>
         for {
-          iri       <- expandStorageIri(storageId, project)
-          storage   <- storages.fetch(ResourceRef(iri), project.ref)
+          iri       <- expandStorageIri(storageId, pc)
+          storage   <- storages.fetch(ResourceRef(iri), ref)
           _         <- IO.when(storage.deprecated)(IO.raiseError(WrappedStorageRejection(StorageIsDeprecated(iri))))
           permission = storage.value.storageValue.writePermission
-          _         <- aclCheck.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
+          _         <- aclCheck.authorizeForOr(ref, permission)(AuthorizationFailed(ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
       case None            =>
         for {
-          storage   <- storages.fetchDefault(project.ref).mapError(WrappedStorageRejection)
+          storage   <- storages.fetchDefault(ref).mapError(WrappedStorageRejection)
           permission = storage.value.storageValue.writePermission
-          _         <- aclCheck.authorizeForOr(project.ref, permission)(AuthorizationFailed(project.ref, permission))
+          _         <- aclCheck.authorizeForOr(ref, permission)(AuthorizationFailed(ref, permission))
         } yield ResourceRef.Revision(storage.id, storage.rev) -> storage.value
     }
 
@@ -568,11 +569,11 @@ final class Files(
       attributes            <- SaveFile(storage).apply(description, source).mapError(SaveRejection(iri, storage.id, _))
     } yield attributes
 
-  private def expandStorageIri(segment: IdSegment, project: Project): IO[WrappedStorageRejection, Iri] =
-    Storages.expandIri(segment, project).mapError(WrappedStorageRejection)
+  private def expandStorageIri(segment: IdSegment, pc: ProjectContext): IO[WrappedStorageRejection, Iri] =
+    Storages.expandIri(segment, pc).mapError(WrappedStorageRejection)
 
-  private def generateId(project: Project)(implicit uuidF: UUIDF): UIO[Iri] =
-    uuidF().map(uuid => project.base.iri / uuid.toString)
+  private def generateId(pc: ProjectContext)(implicit uuidF: UUIDF): UIO[Iri] =
+    uuidF().map(uuid => pc.base.iri / uuid.toString)
 
 }
 
@@ -618,8 +619,7 @@ object Files {
       storageTypeConfig: StorageTypeConfig,
       eventLog: EventLog[Envelope[FileEvent]],
       aclCheck: AclCheck,
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[FileRejection],
       storages: Storages,
       storagesStatistics: StoragesStatistics,
       agg: FilesAggregate
@@ -634,7 +634,7 @@ object Files {
     for {
       files <-
         Task.delay(
-          new Files(FormDataExtractor.apply, agg, eventLog, aclCheck, orgs, projects, storages, storagesStatistics)
+          new Files(FormDataExtractor.apply, agg, eventLog, aclCheck, fetchContext, storages, storagesStatistics)
         )
       _     <- startDigestComputation(config.cacheIndexing, eventLog, files)
     } yield files

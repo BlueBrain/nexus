@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
@@ -22,18 +23,19 @@ import monix.bio.IO
 final class CompositeViewFieldsJsonLdSourceDecoder private (
     decoder: JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields]
 ) {
-  def apply(project: Project, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, source: Json)(implicit
       caller: Caller
   ): IO[CompositeViewRejection, (Iri, CompositeViewFields)] = {
-    decoder(project, mapJsonToString(source))
+    decoder(ref, context, mapJsonToString(source))
   }
 
-  def apply(project: Project, iri: Iri, source: Json)(implicit
+  def apply(ref: ProjectRef, context: ProjectContext, iri: Iri, source: Json)(implicit
       caller: Caller
   ): IO[CompositeViewRejection, CompositeViewFields] = {
 
     decoder(
-      project,
+      ref,
+      context,
       iri,
       mapJsonToString(source)
     )

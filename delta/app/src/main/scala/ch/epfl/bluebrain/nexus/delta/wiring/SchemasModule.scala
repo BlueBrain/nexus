@@ -18,9 +18,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
 import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -52,8 +54,7 @@ object SchemasModule extends ModuleDef {
   make[Schemas].from {
     (
         eventLog: EventLog[Envelope[SchemaEvent]],
-        organizations: Organizations,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         schemaImports: SchemaImports,
         api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
@@ -61,7 +62,14 @@ object SchemasModule extends ModuleDef {
         cache: SchemasCache,
         uuidF: UUIDF
     ) =>
-      SchemasImpl(organizations, projects, schemaImports, resolverContextResolution, eventLog, agg, cache)(api, uuidF)
+      SchemasImpl(
+        fetchContext.mapRejection(ProjectContextRejection),
+        schemaImports,
+        resolverContextResolution,
+        eventLog,
+        agg,
+        cache
+      )(api, uuidF)
   }
 
   make[SchemaImports].from {

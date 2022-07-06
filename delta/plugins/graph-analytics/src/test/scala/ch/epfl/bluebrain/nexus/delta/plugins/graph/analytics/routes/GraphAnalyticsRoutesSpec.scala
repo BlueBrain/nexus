@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGraph.{Edge, EdgePath, Node}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.WrappedProjectRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{ContextFixtures, GraphAnalytics}
@@ -21,9 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{ConfigFixtures, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectRejection, ProjectStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -66,14 +67,16 @@ class GraphAnalyticsRoutesSpec
   private val asAlice    = addCredentials(OAuth2BearerToken("alice"))
 
   private val aclCheck = AclSimpleCheck().accepted
+  private val project  = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
 
-  private val org            = Label.unsafe("org")
-  private val project        = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
-  private val (_, projects)  = ProjectSetup.init(org :: Nil, project :: Nil).accepted
+  private def projectNotFound(projectRef: ProjectRef) = ProjectContextRejection(
+    ContextRejection(ProjectNotFound(projectRef).asInstanceOf[ProjectRejection])
+  )
+
   private val graphAnalytics = new GraphAnalytics {
 
     override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
-      IO.raiseWhen(projectRef != project.ref)(WrappedProjectRejection(ProjectNotFound(projectRef)))
+      IO.raiseWhen(projectRef != project.ref)(projectNotFound(projectRef))
         .as(
           AnalyticsGraph(
             nodes = List(Node(schema.Person, "Person", 10), Node(schema + "Address", "Address", 5)),
@@ -82,7 +85,7 @@ class GraphAnalyticsRoutesSpec
         )
 
     override def properties(projectRef: ProjectRef, tpe: IdSegment): IO[GraphAnalyticsRejection, PropertiesStatistics] =
-      IO.raiseWhen(projectRef != project.ref)(WrappedProjectRejection(ProjectNotFound(projectRef)))
+      IO.raiseWhen(projectRef != project.ref)(projectNotFound(projectRef))
         .as(
           PropertiesStatistics(
             Metadata(schema.Person, "Person", 10),
@@ -100,7 +103,7 @@ class GraphAnalyticsRoutesSpec
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
   private val routes                              =
-    Route.seal(new GraphAnalyticsRoutes(identities, aclCheck, projects, graphAnalytics, graphAnalyticsProgress).routes)
+    Route.seal(new GraphAnalyticsRoutes(identities, aclCheck, null, graphAnalytics, graphAnalyticsProgress).routes)
 
   "graph analytics routes" when {
 

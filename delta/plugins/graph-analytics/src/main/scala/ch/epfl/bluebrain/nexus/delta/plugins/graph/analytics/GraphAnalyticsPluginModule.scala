@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingCoordinator.{GraphAnalyticsIndexingController, GraphAnalyticsIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing._
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -15,7 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
@@ -96,8 +98,12 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   }
 
   make[GraphAnalytics]
-    .fromEffect { (client: ElasticSearchClient, projects: Projects, config: GraphAnalyticsConfig) =>
-      GraphAnalytics(client, projects)(config.indexing, config.termAggregations)
+    .fromEffect {
+      (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
+        GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection))(
+          config.indexing,
+          config.termAggregations
+        )
     }
 
   make[ProgressesStatistics].named("graph-analytics").from {

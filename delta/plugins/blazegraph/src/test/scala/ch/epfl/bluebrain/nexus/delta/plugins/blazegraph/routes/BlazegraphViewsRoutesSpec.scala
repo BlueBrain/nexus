@@ -9,6 +9,7 @@ import akka.persistence.query.Sequence
 import akka.util.ByteString
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViewsSetup, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -29,11 +30,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -69,49 +69,39 @@ class BlazegraphViewsRoutesSpec
     with BlazegraphViewRoutesFixtures {
 
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem = system.toTyped
+  implicit private val typedSystem = system.toTyped
 
-  val uuid                      = UUID.randomUUID()
-  implicit val uuidF: UUIDF     = UUIDF.fixed(uuid)
-  implicit val sc: Scheduler    = Scheduler.global
-  val realm                     = Label.unsafe("myrealm")
-  val bob                       = User("Bob", realm)
-  implicit val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
-  implicit val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  private val identities        = IdentitiesDummy(caller)
-  private val asBob             = addCredentials(OAuth2BearerToken("bob"))
+  private val uuid                      = UUID.randomUUID()
+  implicit private val uuidF: UUIDF     = UUIDF.fixed(uuid)
+  implicit private val sc: Scheduler    = Scheduler.global
+  private val realm                     = Label.unsafe("myrealm")
+  private val bob                       = User("Bob", realm)
+  implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+  private val identities                = IdentitiesDummy(caller)
+  private val asBob                     = addCredentials(OAuth2BearerToken("bob"))
 
-  val indexingSource  = jsonContentOf("indexing-view-source.json")
-  val aggregateSource = jsonContentOf("aggregate-view-source.json")
+  val indexingSource          = jsonContentOf("indexing-view-source.json")
+  private val aggregateSource = jsonContentOf("aggregate-view-source.json")
 
   val updatedIndexingSource = indexingSource.mapObject(_.add("resourceTag", Json.fromString("v1.5")))
 
-  val indexingViewId = nxv + "indexing-view"
+  private val indexingViewId = nxv + "indexing-view"
 
-  val resource = nxv + "resource-incoming-outgoing"
-
-  val undefinedPermission = Permission.unsafe("not/defined")
-
-  val allowedPerms = Set(
+  private val allowedPerms = Set(
     permissions.query,
     permissions.read,
     permissions.write,
     events.read
   )
 
-  private val (orgs, projs) =
-    ProjectSetup
-      .init(
-        orgsToCreate = org :: orgDeprecated :: Nil,
-        projectsToCreate = project :: deprecatedProject :: projectWithDeprecatedOrg :: Nil,
-        projectsToDeprecate = deprecatedProject.ref :: Nil,
-        organizationsToDeprecate = orgDeprecated :: Nil
-      )
-      .accepted
+  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
+    Map(project.ref -> project.context),
+    Set(deprecatedProject.ref),
+    ProjectContextRejection
+  )
 
-  val viewRef = ViewRef(project.ref, indexingViewId)
-
-  implicit val ordering: JsonKeyOrdering          =
+  implicit private val ordering: JsonKeyOrdering  =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
@@ -144,7 +134,7 @@ class BlazegraphViewsRoutesSpec
   var restartedView: Option[(ProjectRef, Iri)] = None
 
   private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private val views                                    = BlazegraphViewsSetup.init(orgs, projs, allowedPerms)
+  private val views                                    = BlazegraphViewsSetup.init(fetchContext, allowedPerms)
 
   val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
@@ -161,7 +151,7 @@ class BlazegraphViewsRoutesSpec
         viewsQuery,
         identities,
         aclCheck,
-        projs,
+        null,
         statisticsProgress,
         restart,
         IndexingActionDummy()

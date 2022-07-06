@@ -15,11 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, JsonObject}
 import monix.bio.{IO, Task}
@@ -42,7 +42,7 @@ object GraphAnalytics {
 
   final def apply(
       client: ElasticSearchClient,
-      projects: Projects
+      fetchContext: FetchContext[GraphAnalyticsRejection]
   )(implicit indexingCfg: ExternalIndexingConfig, aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
     for {
       script <- scriptContent
@@ -75,7 +75,7 @@ object GraphAnalytics {
 
       override def relationships(projectRef: ProjectRef): IO[GraphAnalyticsRejection, AnalyticsGraph] =
         for {
-          _     <- projects.fetchProject[GraphAnalyticsRejection](projectRef)
+          _     <- fetchContext.onRead(projectRef)
           query <- relationshipsAggQuery
           stats <- client
                      .searchAs[AnalyticsGraph](QueryBuilder(query), idx(projectRef).value, Query.Empty)
@@ -95,10 +95,10 @@ object GraphAnalytics {
         }
 
         for {
-          project <- projects.fetchProject[GraphAnalyticsRejection](projectRef)
-          tpeIri  <- expandIri(tpe, project)
-          query   <- propertiesAggQueryFor(tpeIri)
-          stats   <- search(tpeIri, idx(projectRef), query)
+          pc     <- fetchContext.onRead(projectRef)
+          tpeIri <- expandIri(tpe, pc)
+          query  <- propertiesAggQueryFor(tpeIri)
+          stats  <- search(tpeIri, idx(projectRef), query)
         } yield stats
 
       }

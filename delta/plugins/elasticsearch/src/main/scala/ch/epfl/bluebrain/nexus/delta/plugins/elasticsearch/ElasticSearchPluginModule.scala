@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearc
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchIndexingCleanup, ElasticSearchIndexingCoordinator, ElasticSearchIndexingStream, ElasticSearchOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.metric.ProjectEventMetricsStream
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.IndexingElasticSearchView
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -31,8 +32,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController, OnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -174,8 +176,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           cache: ElasticSearchViewCache,
           agg: ElasticSearchViewAggregate,
           deferred: Deferred[Task, ElasticSearchViews],
-          orgs: Organizations,
-          projects: Projects,
+          fetchContext: FetchContext[ContextRejection],
           api: JsonLdApi,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
@@ -188,8 +189,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
           contextResolution,
           cache,
           agg,
-          orgs,
-          projects
+          fetchContext.mapRejection(ProjectContextRejection)
         )(
           api,
           uuidF,
@@ -205,13 +205,15 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchViewsQuery].from {
     (
         aclCheck: AclCheck,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         views: ElasticSearchViews,
         cache: ElasticSearchViewCache,
         client: ElasticSearchClient,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(aclCheck, projects, views, cache, client)(cfg.indexing)
+      ElasticSearchViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, cache, client)(
+        cfg.indexing
+      )
   }
 
   make[ProgressesStatistics].named("elasticsearch-statistics").from {
@@ -267,7 +269,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         resourcesToSchemaSet: Set[ResourceToSchemaMappings],
-        sseEventLog: SseEventLog @Id("view-sse"),
         fusionConfig: FusionConfig
     ) =>
       val resourceToSchema = resourcesToSchemaSet.foldLeft(ResourceToSchemaMappings.empty)(_ + _)
@@ -281,7 +282,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         progresses,
         indexingController.restart,
         resourceToSchema,
-        sseEventLog,
         indexingAction
       )(
         baseUri,

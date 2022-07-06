@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
@@ -20,7 +20,7 @@ import monix.bio.IO
   *   the resource resolution
   */
 final class MultiResolution(
-    fetchProject: ProjectRef => IO[ResolverRejection, Project],
+    fetchProject: ProjectRef => IO[ResolverRejection, ProjectContext],
     resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
 ) {
 
@@ -84,15 +84,15 @@ object MultiResolution {
 
   /**
     * Create a multi resolution instance
-    * @param projects
-    *   a project instance
+    * @param fetchContext
+    *   to fetch the project context
     * @param resourceResolution
     *   a resource resolution instance
     */
-  def apply[A](
-      projects: Projects,
+  def apply(
+      fetchContext: FetchContext[ResolverRejection],
       resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
   ): MultiResolution =
-    new MultiResolution(projects.fetchProject[ResolverRejection], resourceResolution)
+    new MultiResolution(fetchContext.onRead, resourceResolution)
 
 }

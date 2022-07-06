@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ViewNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.defaultViewId
@@ -11,7 +12,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ProjectSetup}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
+import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -40,11 +42,10 @@ class SearchScopeInitializationSpec
   implicit private val sa: ServiceAccount = ServiceAccount(User("nexus-sa", saRealm))
   implicit private val bob: Subject       = User("bob", usersRealm)
 
-  private val org     = Label.unsafe("myorg")
   private val project = ProjectGen.project("myorg", "myproject", base = nxv.base)
 
-  private val (orgs, projs)         = ProjectSetup.init(orgsToCreate = org :: Nil, projectsToCreate = project :: Nil).accepted
-  private val views: CompositeViews = initViews(orgs, projs).accepted
+  private val fetchContext          = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val views: CompositeViews = initViews(fetchContext).accepted
 
   private val indexingConfig =
     IndexingConfig(Set.empty, JsonObject.empty, None, SparqlConstructQuery.unsafe(""), ContextObject(JsonObject.empty))

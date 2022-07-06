@@ -1,23 +1,22 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects
 
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils.instant
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
+import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectMarkedForDeletion, ProjectUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.{IncorrectRev, ProjectAlreadyExists, ProjectIsDeprecated, ProjectIsMarkedForDeletion, ProjectNotFound, WrappedOrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.ProjectResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 import java.util.UUID
@@ -92,30 +91,12 @@ trait Projects {
   def fetch(ref: ProjectRef): IO[ProjectNotFound, ProjectResource]
 
   /**
-    * Fetches and validate the project, rejecting if the project does not exists or if it does not fulfill the passed
-    * ''options''.
-    *
-    * @param ref
-    *   the project reference
-    * @param options
-    *   the set of project options to be fulfilled
-    * @param rejectionMapper
-    *   allows to transform the ProjectRejection to a rejection fit for the caller
-    */
-  def fetchProject[R](ref: ProjectRef, options: Set[ProjectFetchOptions])(implicit
-      subject: Subject,
-      rejectionMapper: Mapper[ProjectRejection, R]
-  ): IO[R, Project]
-
-  /**
     * Fetches the current project, rejecting if the project does not exists.
     *
     * @param ref
     *   the project reference
-    * @param rejectionMapper
-    *   allows to transform the ProjectRejection to a rejection fit for the caller
     */
-  def fetchProject[R](ref: ProjectRef)(implicit rejectionMapper: Mapper[ProjectNotFound, R]): IO[R, Project]
+  def fetchProject(ref: ProjectRef): IO[ProjectNotFound, Project]
 
   /**
     * Fetches a project resource at a specific revision based on its reference.
@@ -225,7 +206,7 @@ object Projects {
   type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
   type FetchUuids         = ProjectRef => UIO[Option[(UUID, UUID)]]
 
-  implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject[ProjectNotFound](_)
+  implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject(_)
   implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)
   implicit def toFetchUuids(projects: Projects): FetchUuids                 =
     projects.fetch(_).redeem(_ => None, r => Some(r.value.organizationUuid -> r.value.uuid))
@@ -257,11 +238,10 @@ object Projects {
   private[delta] def evaluate(
       orgs: Organizations
   )(state: Option[ProjectState], command: ProjectCommand)(implicit
-      rejectionMapper: Mapper[OrganizationRejection, ProjectRejection],
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[ProjectRejection, ProjectEvent] = {
-    val f: FetchOrganization = label => orgs.fetchActiveOrganization(label)(rejectionMapper)
+    val f: FetchOrganization = label => orgs.fetchActiveOrganization(label).mapError(WrappedOrganizationRejection(_))
     evaluate(f)(state, command)
   }
 

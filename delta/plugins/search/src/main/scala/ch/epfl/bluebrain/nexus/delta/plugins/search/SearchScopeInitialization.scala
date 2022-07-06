@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.ElasticSearchProjectionFields
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ViewAlreadyExists, WrappedOrganizationRejection, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{ProjectContextRejection, ViewAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSourceFields.ProjectSourceFields
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.search.model.SearchConfig.IndexingConfig
@@ -59,10 +59,9 @@ final class SearchScopeInitialization(
       )
       .void
       .onErrorHandleWith {
-        case _: ViewAlreadyExists            => UIO.unit // nothing to do, view already exits
-        case _: WrappedProjectRejection      => UIO.unit // project is likely deprecated
-        case _: WrappedOrganizationRejection => UIO.unit // org is likely deprecated
-        case rej                             =>
+        case _: ViewAlreadyExists       => UIO.unit // nothing to do, view already exits
+        case _: ProjectContextRejection => UIO.unit // project or org are likely deprecated
+        case rej                        =>
           val str =
             s"Failed to create the search view for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))

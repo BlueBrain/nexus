@@ -16,9 +16,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
@@ -56,13 +58,15 @@ object ResourcesModule extends ModuleDef {
     (
         eventLog: EventLog[Envelope[ResourceEvent]],
         agg: ResourcesAggregate,
-        organizations: Organizations,
-        projects: Projects,
+        fetchContext: FetchContext[ContextRejection],
         api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
         uuidF: UUIDF
     ) =>
-      ResourcesImpl(organizations, projects, agg, resolverContextResolution, eventLog)(api, uuidF)
+      ResourcesImpl(fetchContext.mapRejection(ProjectContextRejection), agg, resolverContextResolution, eventLog)(
+        api,
+        uuidF
+      )
   }
 
   make[ResolverContextResolution].from {

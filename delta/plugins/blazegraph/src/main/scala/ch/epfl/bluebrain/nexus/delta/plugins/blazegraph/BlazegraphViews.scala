@@ -34,12 +34,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectFetchOptions._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectReferenceFinder, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
@@ -57,6 +55,7 @@ import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
 
 import java.util.UUID
+import scala.annotation.nowarn
 
 /**
   * Operations for handling Blazegraph views.
@@ -65,8 +64,7 @@ final class BlazegraphViews(
     agg: BlazegraphViewsAggregate,
     eventLog: EventLog[Envelope[BlazegraphViewEvent]],
     index: BlazegraphViewsCache,
-    projects: Projects,
-    orgs: Organizations,
+    fetchContext: FetchContext[BlazegraphViewRejection],
     sourceDecoder: JsonLdSourceResolvingDecoder[BlazegraphViewRejection, BlazegraphViewValue],
     createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
 ) {
@@ -81,9 +79,9 @@ final class BlazegraphViews(
     */
   def create(project: ProjectRef, source: Json)(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p                <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      (iri, viewValue) <- sourceDecoder(p, source)
-      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      pc               <- fetchContext.onCreate(project)
+      (iri, viewValue) <- sourceDecoder(project, pc, source)
+      res              <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), pc)
       _                <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
@@ -104,10 +102,10 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri       <- expandIri(id, p)
-      viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), p)
+      pc        <- fetchContext.onCreate(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
+      res       <- eval(CreateBlazegraphView(iri, project, viewValue, source, caller.subject), pc)
       _         <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
@@ -125,10 +123,10 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithQuotas)
-      iri   <- expandIri(id, p)
+      pc    <- fetchContext.onCreate(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
-      res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), p)
+      res   <- eval(CreateBlazegraphView(iri, project, view, source, subject), pc)
       _     <- createNamespace(res)
     } yield res
   }.named("createBlazegraphView", moduleType)
@@ -151,10 +149,10 @@ final class BlazegraphViews(
       source: Json
   )(implicit caller: Caller): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p         <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri       <- expandIri(id, p)
-      viewValue <- sourceDecoder(p, iri, source)
-      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), p)
+      pc        <- fetchContext.onModify(project)
+      iri       <- expandIri(id, pc)
+      viewValue <- sourceDecoder(project, pc, iri, source)
+      res       <- eval(UpdateBlazegraphView(iri, project, viewValue, rev, source, caller.subject), pc)
       _         <- createNamespace(res)
     } yield res
   }.named("updateBlazegraphView", moduleType)
@@ -175,10 +173,10 @@ final class BlazegraphViews(
       subject: Subject
   ): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p     <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri   <- expandIri(id, p)
+      pc    <- fetchContext.onModify(project)
+      iri   <- expandIri(id, pc)
       source = view.toJson(iri)
-      res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), p)
+      res   <- eval(UpdateBlazegraphView(iri, project, view, rev, source, subject), pc)
       _     <- createNamespace(res)
     } yield res
   }.named("updateBlazegraphView", moduleType)
@@ -205,9 +203,9 @@ final class BlazegraphViews(
       rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(TagBlazegraphView(iri, project, tagRev, tag, rev, subject), pc)
       _   <- createNamespace(res)
     } yield res
   }.named("tagBlazegraphView", moduleType)
@@ -228,9 +226,9 @@ final class BlazegraphViews(
       rev: Long
   )(implicit subject: Subject): IO[BlazegraphViewRejection, ViewResource] = {
     for {
-      p   <- projects.fetchProject(project, notDeprecatedOrDeletedWithEventQuotas)
-      iri <- expandIri(id, p)
-      res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), p)
+      pc  <- fetchContext.onModify(project)
+      iri <- expandIri(id, pc)
+      res <- eval(DeprecateBlazegraphView(iri, project, rev, subject), pc)
     } yield res
   }.named("deprecateBlazegraphView", moduleType)
 
@@ -249,10 +247,10 @@ final class BlazegraphViews(
     id.asTag
       .fold(
         for {
-          p     <- projects.fetchProject(project)
-          iri   <- expandIri(id.value, p)
+          pc    <- fetchContext.onRead(project)
+          iri   <- expandIri(id.value, pc)
           state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
-          res   <- IO.fromOption(state.toResource(p.apiMappings, p.base), ViewNotFound(iri, project))
+          res   <- IO.fromOption(state.toResource(pc.apiMappings, pc.base), ViewNotFound(iri, project))
         } yield res
       )(fetchBy(_, project))
       .named("fetchBlazegraphView", moduleType)
@@ -319,11 +317,12 @@ final class BlazegraphViews(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.currentProjectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
@@ -334,11 +333,12 @@ final class BlazegraphViews(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       organization: Label,
       offset: Offset
-  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.orgEvents(orgs, organization, moduleType, offset)
+  ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
@@ -349,11 +349,12 @@ final class BlazegraphViews(
     * @param offset
     *   the last seen event offset; it will not be emitted by the stream
     */
+  @nowarn("cat=unused")
   def events(
       projectRef: ProjectRef,
       offset: Offset
   ): IO[BlazegraphViewRejection, Stream[Task, Envelope[BlazegraphViewEvent]]] =
-    eventLog.projectEvents(projects, projectRef, moduleType, offset)
+    IO.pure(Stream.empty)
 
   /**
     * A non terminating stream of events for Blazegraph views. After emitting all known events it sleeps until new
@@ -365,11 +366,11 @@ final class BlazegraphViews(
   def events(offset: Offset): Stream[Task, Envelope[BlazegraphViewEvent]] =
     eventLog.eventsByTag(moduleType, offset)
 
-  private def eval(cmd: BlazegraphViewCommand, project: Project): IO[BlazegraphViewRejection, ViewResource] =
+  private def eval(cmd: BlazegraphViewCommand, project: ProjectContext): IO[BlazegraphViewRejection, ViewResource] =
     for {
       evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
       resourceOpt       = evaluationResult.state.toResource(project.apiMappings, project.base)
-      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, project.ref))
+      res              <- IO.fromOption(resourceOpt, UnexpectedInitialState(cmd.id, cmd.project))
       _                <- index.put(cmd.project, cmd.id, res)
     } yield res
 
@@ -603,8 +604,7 @@ object BlazegraphViews {
       cache: BlazegraphViewsCache,
       deferred: Deferred[Task, BlazegraphViews],
       agg: BlazegraphViewsAggregate,
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[BlazegraphViewRejection],
       client: BlazegraphClient
   )(implicit
       api: JsonLdApi,
@@ -621,7 +621,7 @@ object BlazegraphViews {
             .void
         case _                         => IO.unit
       }
-    apply(config, eventLog, contextResolution, cache, deferred, agg, orgs, projects, createNameSpace)
+    apply(config, eventLog, contextResolution, cache, deferred, agg, fetchContext, createNameSpace)
   }
 
   private[blazegraph] def apply(
@@ -631,8 +631,7 @@ object BlazegraphViews {
       cache: BlazegraphViewsCache,
       deferred: Deferred[Task, BlazegraphViews],
       agg: BlazegraphViewsAggregate,
-      orgs: Organizations,
-      projects: Projects,
+      fetchContext: FetchContext[BlazegraphViewRejection],
       createNamespace: ViewResource => IO[BlazegraphViewRejection, Unit]
   )(implicit
       api: JsonLdApi,
@@ -648,7 +647,7 @@ object BlazegraphViews {
                            uuidF
                          )
                        )
-      views          = new BlazegraphViews(agg, eventLog, cache, projects, orgs, sourceDecoder, createNamespace)
+      views          = new BlazegraphViews(agg, eventLog, cache, fetchContext, sourceDecoder, createNamespace)
       _             <- deferred.complete(views)
       _             <- BlazegraphViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
     } yield views

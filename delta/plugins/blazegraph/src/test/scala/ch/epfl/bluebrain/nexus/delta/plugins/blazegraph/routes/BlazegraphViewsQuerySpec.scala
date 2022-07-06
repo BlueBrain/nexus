@@ -6,11 +6,11 @@ import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespace
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.{FetchProject, FetchView}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.FetchView
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ViewIsDeprecated, ViewNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -27,12 +27,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
@@ -71,7 +70,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   implicit private val sc: Scheduler                          = Scheduler.global
   implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
   implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit val baseUri: BaseUri                               = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
@@ -148,10 +147,10 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     case (id, _)                                  => IO.raiseError(InvalidBlazegraphViewId(id.value.asString))
   }
 
-  private val projects: Map[ProjectRef, Project] = Map(project1.ref -> project1, project2.ref -> project2)
-
-  private val fetchProject: FetchProject = pRef =>
-    IO.fromEither(projects.get(pRef).toRight(WrappedProjectRejection(ProjectNotFound(pRef))))
+  private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
+    List(project1, project2),
+    ProjectContextRejection
+  )
 
   private def namedGraph(ntriples: NTriples): Uri = ntriples.rootNode.asIri.value.toUri.rightValue
 
@@ -203,7 +202,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).map { acls => BlazegraphViewsQuery(fetchView, visitor, fetchProject, acls, client) }.accepted
+    ).map { acls => BlazegraphViewsQuery(fetchView, visitor, fetchContext, acls, client) }.accepted
 
     "index triples" in {
       forAll(indexingViews) { v =>

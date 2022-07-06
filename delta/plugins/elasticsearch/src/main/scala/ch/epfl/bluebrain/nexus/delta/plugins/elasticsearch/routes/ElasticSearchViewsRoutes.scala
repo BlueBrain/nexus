@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
@@ -17,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{FetchProject, FetchUuids}
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -36,6 +34,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchR
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -65,8 +64,6 @@ import monix.execution.Scheduler
   *   the action to restart a view indexing process triggered by a client
   * @param resourcesToSchemas
   *   a collection of root resource segment with their corresponding schema
-  * @param sseEventLog
-  *   the global eventLog of all view events
   * @param index
   *   the indexing action on write operations
   */
@@ -80,7 +77,6 @@ final class ElasticSearchViewsRoutes(
     progresses: ProgressesStatistics,
     restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
-    sseEventLog: SseEventLog,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -104,8 +100,7 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val eventExchangeMapper = Mapper(ElasticSearchViews.eventExchangeValue(_))
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
-  implicit private val fetchProject: FetchProject    = projects
+  implicit private val fetchProject: FetchProject = projects
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
@@ -121,8 +116,8 @@ final class ElasticSearchViewsRoutes(
             get {
               operationName(s"$prefixSegment/views/events") {
                 authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventId { offset =>
-                    emit(sseEventLog.stream(offset))
+                  lastEventId { _ =>
+                    failWith(new IllegalStateException("TODO"))
                   }
                 }
               }
@@ -133,8 +128,8 @@ final class ElasticSearchViewsRoutes(
             get {
               operationName(s"$prefixSegment/views/{org}/events") {
                 authorizeFor(org, events.read).apply {
-                  lastEventId { offset =>
-                    emit(sseEventLog.stream(org, offset).leftWiden[ElasticSearchViewRejection])
+                  lastEventId { _ =>
+                    failWith(new IllegalStateException("TODO"))
                   }
                 }
               }
@@ -148,8 +143,8 @@ final class ElasticSearchViewsRoutes(
                   concat(
                     get {
                       authorizeFor(ref, events.read).apply {
-                        lastEventId { offset =>
-                          emit(sseEventLog.stream(ref, offset).leftWiden[ElasticSearchViewRejection])
+                        lastEventId { _ =>
+                          failWith(new IllegalStateException("TODO"))
                         }
                       }
                     },
@@ -446,7 +441,6 @@ object ElasticSearchViewsRoutes {
       progresses: ProgressesStatistics,
       restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
-      sseEventLog: SseEventLog,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -466,7 +460,6 @@ object ElasticSearchViewsRoutes {
       progresses,
       restartView,
       resourcesToSchemas,
-      sseEventLog,
       index
     ).routes
 }

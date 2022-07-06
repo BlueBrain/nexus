@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -19,18 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resour
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import monix.bio.IO
 
 import java.util.UUID
 
 class SchemasRoutesSpec extends BaseRouteSpec {
 
-  private val uuid                  = UUID.randomUUID()
-  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
-
-  implicit private val subject: Subject = Identity.Anonymous
+  private val uuid = UUID.randomUUID()
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
@@ -38,7 +34,6 @@ class SchemasRoutesSpec extends BaseRouteSpec {
 
   private val asAlice = addCredentials(OAuth2BearerToken("alice"))
 
-  private val org        = Label.unsafe("myorg")
   private val am         = ApiMappings("nxv" -> nxv.base, "schema" -> Vocabulary.schemas.shacl)
   private val projBase   = nxv.base
   private val project    = ProjectGen.resourceFor(
@@ -54,10 +49,9 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
 
-  private val (orgs, projs) =
-    ProjectSetup.init(orgsToCreate = List(org), projectsToCreate = List(project.value)).accepted
+  private val (orgs, projs) = (null, null)
 
-  private val schemaImports = new SchemaImports(
+  val schemaImports = new SchemaImports(
     (_, _, _) => IO.raiseError(ResourceResolutionReport()),
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
   )
@@ -76,13 +70,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
         aclCheck,
         orgs,
         projs,
-        SchemasDummy(
-          orgs,
-          projs,
-          schemaImports,
-          resolverContextResolution,
-          (_, _) => IO.unit
-        ).accepted,
+        null,
         IndexingActionDummy()
       )
     )

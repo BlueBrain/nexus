@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageNotFound, WrappedProjectRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageStatsCollection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.{IO, UIO}
@@ -40,8 +39,8 @@ object StoragesStatisticsSetup {
           project: ProjectRef
       ): IO[StorageRejection.StorageFetchRejection, StorageStatsCollection.StorageStatEntry] =
         for {
-          p    <- IO.fromOption(projectsMap.get(project), WrappedProjectRejection(ProjectNotFound(project)))
-          iri  <- Storages.expandIri(idSegment, p)
+          p    <- IO.fromOption(projectsMap.get(project), StorageNotFound(Iri.unsafe("changeme"), project))
+          iri  <- Storages.expandIri(idSegment, p.context)
           stat <- IO.fromOptionEval(get(project).map(_.get(iri)), StorageNotFound(iri, project))
         } yield stat
 

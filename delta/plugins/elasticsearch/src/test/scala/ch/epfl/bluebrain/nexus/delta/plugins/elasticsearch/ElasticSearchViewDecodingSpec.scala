@@ -7,15 +7,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -34,17 +33,11 @@ class ElasticSearchViewDecodingSpec
     with OptionValues
     with Fixtures {
 
-  private val project = Project(
-    label = Label.unsafe("proj"),
-    uuid = UUID.randomUUID(),
-    organizationLabel = Label.unsafe("org"),
-    organizationUuid = UUID.randomUUID(),
-    description = None,
-    apiMappings = ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
-    defaultApiMappings = ApiMappings.empty,
-    base = ProjectBase.unsafe(iri"http://localhost/v1/resources/org/proj/_/"),
-    vocab = iri"http://schema.org/",
-    markedForDeletion = false
+  private val ref     = ProjectRef.unsafe("org", "proj")
+  private val context = ProjectContext.unsafe(
+    ApiMappings("_" -> schemas.resources, "resource" -> schemas.resources),
+    iri"http://localhost/v1/resources/org/proj/_/",
+    iri"http://schema.org/"
   )
 
   implicit private val uuidF: UUIDF = UUIDF.fixed(UUID.randomUUID())
@@ -73,17 +66,17 @@ class ElasticSearchViewDecodingSpec
       "only its type and mapping is specified" in {
         val source      = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         val expected    = indexingView
-        val (id, value) = decoder(project, source).accepted
+        val (id, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
-        id.toString should startWith(project.base.iri.toString)
+        id.toString should startWith(context.base.iri.toString)
       }
       "all legacy fields are specified" in {
         val source      =
           json"""{
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
-                  "resourceSchemas": [ ${(project.vocab / "Person").toString} ],
-                  "resourceTypes": [ ${(project.vocab / "Person").toString} ],
+                  "resourceSchemas": [ ${(context.vocab / "Person").toString} ],
+                  "resourceTypes": [ ${(context.vocab / "Person").toString} ],
                   "resourceTag": "release",
                   "sourceAsText": false,
                   "includeMetadata": false,
@@ -95,8 +88,8 @@ class ElasticSearchViewDecodingSpec
         val expected    = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
-            FilterBySchema(Set(project.vocab / "Person")),
-            FilterByType(Set(project.vocab / "Person")),
+            FilterBySchema(Set(context.vocab / "Person")),
+            FilterByType(Set(context.vocab / "Person")),
             FilterDeprecated(),
             DiscardMetadata(),
             DefaultLabelPredicates()
@@ -106,7 +99,7 @@ class ElasticSearchViewDecodingSpec
           permission = Permission.unsafe("custom/permission"),
           context = None
         )
-        val (id, value) = decoder(project, source).accepted
+        val (id, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
         id shouldEqual iri"http://localhost/id"
       }
@@ -117,8 +110,8 @@ class ElasticSearchViewDecodingSpec
                   "@id": "http://localhost/id",
                   "@type": "ElasticSearchView",
                   "pipeline": [],
-                  "resourceSchemas": [ ${(project.vocab / "Person").toString} ],
-                  "resourceTypes": [ ${(project.vocab / "Person").toString} ],
+                  "resourceSchemas": [ ${(context.vocab / "Person").toString} ],
+                  "resourceTypes": [ ${(context.vocab / "Person").toString} ],
                   "resourceTag": "release",
                   "sourceAsText": false,
                   "includeMetadata": false,
@@ -135,7 +128,7 @@ class ElasticSearchViewDecodingSpec
           permission = Permission.unsafe("custom/permission"),
           context = None
         )
-        val (id, value) = decoder(project, source).accepted
+        val (id, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
         id shouldEqual iri"http://localhost/id"
       }
@@ -153,12 +146,12 @@ class ElasticSearchViewDecodingSpec
                       "name": "filterByType",
                       "description": "Keep only person type",
                       "config": {
-                        "types": [ ${(project.vocab / "Person").toString} ]
+                        "types": [ ${(context.vocab / "Person").toString} ]
                       }
                     }
                   ],
-                  "resourceSchemas": [ ${(project.vocab / "Schena").toString} ],
-                  "resourceTypes": [ ${(project.vocab / "Custom").toString} ],
+                  "resourceSchemas": [ ${(context.vocab / "Schena").toString} ],
+                  "resourceTypes": [ ${(context.vocab / "Custom").toString} ],
                   "resourceTag": "release",
                   "sourceAsText": false,
                   "includeMetadata": false,
@@ -170,13 +163,13 @@ class ElasticSearchViewDecodingSpec
         val expected    = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline =
-            List(FilterDeprecated(), FilterByType(Set(project.vocab / "Person")).description("Keep only person type")),
+            List(FilterDeprecated(), FilterByType(Set(context.vocab / "Person")).description("Keep only person type")),
           mapping = Some(mapping),
           settings = Some(settings),
           permission = Permission.unsafe("custom/permission"),
           context = None
         )
-        val (id, value) = decoder(project, source).accepted
+        val (id, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
         id shouldEqual iri"http://localhost/id"
       }
@@ -185,14 +178,14 @@ class ElasticSearchViewDecodingSpec
         val id       = iri"http://localhost/id"
         val source   = json"""{"@id": "http://localhost/id", "@type": "ElasticSearchView", "mapping": $mapping}"""
         val expected = indexingView
-        val value    = decoder(project, id, source).accepted
+        val value    = decoder(ref, context, id, source).accepted
         value shouldEqual expected
       }
       "an id is not provided, but one is expected" in {
         val id       = iri"http://localhost/id"
         val source   = json"""{"@type": "ElasticSearchView", "mapping": $mapping}"""
         val expected = indexingView
-        val value    = decoder(project, id, source).accepted
+        val value    = decoder(ref, context, id, source).accepted
         value shouldEqual expected
       }
     }
@@ -200,31 +193,31 @@ class ElasticSearchViewDecodingSpec
     "fail decoding from json-ld" when {
       "the mapping is invalid" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": false}"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
       }
       "the mapping is missing" in {
         val source = json"""{"@type": "ElasticSearchView"}"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
       }
       "the settings are invalid" in {
         val source = json"""{"@type": "ElasticSearchView", "settings": false}"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
       }
       "a default field has the wrong type" in {
         val source = json"""{"@type": "ElasticSearchView", "mapping": $mapping, "sourceAsText": 1}"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
       }
 
       "a pipe name is missing" in {
         val source =
           json"""{"@type": "ElasticSearchView", "pipeline": [{ "config": "my-config" }], "mapping": $mapping}"""
-        decoder(project, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
       }
 
       "the provided id did not match the expected one" in {
         val id     = iri"http://localhost/expected"
         val source = json"""{"@id": "http://localhost/provided", "@type": "ElasticSearchView", "mapping": $mapping}"""
-        decoder(project, id, source).rejectedWith[UnexpectedElasticSearchViewId]
+        decoder(ref, context, id, source).rejectedWith[UnexpectedElasticSearchViewId]
       }
       "there's no known type discriminator or both are present" in {
         val sources = List(
@@ -234,8 +227,8 @@ class ElasticSearchViewDecodingSpec
           json"""{"@type": ["ElasticSearchView", "AggregateElasticSearchView"], "mapping": $mapping}"""
         )
         forAll(sources) { source =>
-          decoder(project, source).rejectedWith[DecodingFailed]
-          decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
+          decoder(ref, context, source).rejectedWith[DecodingFailed]
+          decoder(ref, context, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
         }
       }
     }
@@ -263,7 +256,7 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1, viewRef2))
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
         decodedId shouldEqual iri"http://localhost/id"
       }
@@ -276,9 +269,9 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val (decodedId, value) = decoder(project, source).accepted
+        val (decodedId, value) = decoder(ref, context, source).accepted
         value shouldEqual expected
-        decodedId.toString should startWith(project.base.iri.toString)
+        decodedId.toString should startWith(context.base.iri.toString)
       }
       "an id is provided in the source and matches expectations" in {
         val id     = iri"http://localhost/id"
@@ -291,7 +284,7 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val value = decoder(project, id, source).accepted
+        val value = decoder(ref, context, id, source).accepted
         value shouldEqual expected
       }
       "an id is expected and the source does not contain one" in {
@@ -304,7 +297,7 @@ class ElasticSearchViewDecodingSpec
 
         val expected = AggregateElasticSearchViewValue(NonEmptySet.of(viewRef1))
 
-        val value = decoder(project, id, source).accepted
+        val value = decoder(ref, context, id, source).accepted
         value shouldEqual expected
       }
     }
@@ -315,8 +308,8 @@ class ElasticSearchViewDecodingSpec
                    "@type": "AggregateElasticSearchView",
                    "views": []
                  }"""
-        decoder(project, source).rejectedWith[DecodingFailed]
-        decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
+        decoder(ref, context, source).rejectedWith[DecodingFailed]
+        decoder(ref, context, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
       }
       "the view set contains an incorrect value" in {
         val source =
@@ -329,9 +322,9 @@ class ElasticSearchViewDecodingSpec
                      }
                    ]
                  }"""
-        decoder(project, source).rejectedWith[InvalidJsonLdFormat]
+        decoder(ref, context, source).rejectedWith[InvalidJsonLdFormat]
 
-        decoder(project, iri"http://localhost/id", source)
+        decoder(ref, context, iri"http://localhost/id", source)
           .rejectedWith[InvalidJsonLdFormat]
       }
       "there's no known type discriminator or both are present" in {
@@ -342,8 +335,8 @@ class ElasticSearchViewDecodingSpec
           json"""{"@type": ["ElasticSearchView", "AggregateElasticSearchView"], "views": [ $viewRef1Json ]}"""
         )
         forAll(sources) { source =>
-          decoder(project, source).rejectedWith[DecodingFailed]
-          decoder(project, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
+          decoder(ref, context, source).rejectedWith[DecodingFailed]
+          decoder(ref, context, iri"http://localhost/id", source).rejectedWith[DecodingFailed]
         }
       }
     }

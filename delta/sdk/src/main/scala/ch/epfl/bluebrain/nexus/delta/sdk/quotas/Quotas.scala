@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.quotas
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReached
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -25,7 +24,7 @@ trait Quotas {
     * @return
     *   Returns in the regular channel if no quotas have been reached or in the error channel otherwise
     */
-  def reachedForResources[R](ref: ProjectRef, subject: Subject)(implicit mapper: Mapper[QuotaReached, R]): IO[R, Unit]
+  def reachedForResources(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit]
 
   /**
     * Verify that the quotas for events on the current project haven't been reached.
@@ -35,6 +34,6 @@ trait Quotas {
     * @return
     *   Returns in the regular channel if no quotas have been reached or in the error channel otherwise
     */
-  def reachedForEvents[R](ref: ProjectRef, subject: Subject)(implicit mapper: Mapper[QuotaReached, R]): IO[R, Unit]
+  def reachedForEvents(ref: ProjectRef, subject: Subject): IO[QuotaReached, Unit]
 
 }

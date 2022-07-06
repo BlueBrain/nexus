@@ -94,12 +94,7 @@ trait SchemasBehaviors {
   val sourceUpdated = sourceNoId.replace("datatype" -> "xsd:integer", "xsd:double")
   val schemaUpdated = SchemaGen.schema(mySchema, project.ref, sourceUpdated)
 
-  lazy val projectSetup: UIO[(Organizations, Projects)] = ProjectSetup.init(
-    orgsToCreate = org :: orgDeprecated :: Nil,
-    organizationsToDeprecate = orgDeprecated :: Nil,
-    projectsToCreate = project :: projectDeprecated :: projectWithDeprecatedOrg :: Nil,
-    projectsToDeprecate = projectDeprecated.ref :: Nil
-  )
+  lazy val projectSetup: (Organizations, Projects) = (null, null)
 
   def create: UIO[Schemas]
 
