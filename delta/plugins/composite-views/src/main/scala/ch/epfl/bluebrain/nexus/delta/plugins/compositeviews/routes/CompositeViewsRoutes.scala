@@ -19,9 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -30,8 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
@@ -46,14 +45,14 @@ import monix.execution.Scheduler
 class CompositeViewsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    projects: Projects,
     views: CompositeViews,
     restartView: RestartView,
     restartProjections: RestartProjections,
     progresses: ProgressesStatistics,
     blazegraphQuery: BlazegraphQuery,
     elasticSearchQuery: ElasticSearchQuery,
-    deltaClient: DeltaClient
+    deltaClient: DeltaClient,
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     s: Scheduler,
@@ -68,6 +67,7 @@ class CompositeViewsRoutes(
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit private val offsetsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[ProjectionOffset]] =
     searchResultsJsonLdEncoder(ContextValue(contexts.offset))
@@ -76,10 +76,10 @@ class CompositeViewsRoutes(
     searchResultsJsonLdEncoder(ContextValue(contexts.statistics))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
       pathPrefix("views") {
         extractCaller { implicit caller =>
-          projectRef(projects).apply { implicit ref =>
+          resolveProjectRef.apply { implicit ref =>
             concat(
               //Create a view without id segment
               (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & operationName(
@@ -436,14 +436,14 @@ object CompositeViewsRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      projects: Projects,
       views: CompositeViews,
       restartView: RestartView,
       restartProjections: RestartProjections,
       progresses: ProgressesStatistics,
       blazegraphQuery: BlazegraphQuery,
       elasticSearchQuery: ElasticSearchQuery,
-      deltaClient: DeltaClient
+      deltaClient: DeltaClient,
+      schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       s: Scheduler,
@@ -454,13 +454,13 @@ object CompositeViewsRoutes {
     new CompositeViewsRoutes(
       identities,
       aclCheck,
-      projects,
       views,
       restartView,
       restartProjections,
       progresses,
       blazegraphQuery,
       elasticSearchQuery,
-      deltaClient
+      deltaClient,
+      schemeDirectives
     ).routes
 }

@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -29,15 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 import scala.annotation.nowarn
@@ -49,21 +47,18 @@ import scala.annotation.nowarn
   *   the identity module
   * @param aclCheck
   *   to check acls
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param files
   *   the files module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class FilesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    organizations: Organizations,
-    projects: Projects,
     files: Files,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -76,13 +71,14 @@ final class FilesRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   implicit private val eventExchangeMapper = Mapper(Files.eventExchangeValue(_))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("files", schemas.files)) {
       pathPrefix("files") {
         extractCaller { implicit caller =>
           concat(
@@ -99,7 +95,7 @@ final class FilesRoutes(
               }
             },
             // SSE files for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/files/{org}/events") {
                   authorizeFor(org, events.read).apply {
@@ -110,7 +106,7 @@ final class FilesRoutes(
                 }
               }
             },
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               concat(
                 // SSE files for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -260,9 +256,8 @@ object FilesRoutes {
       config: StorageTypeConfig,
       identities: Identities,
       aclCheck: AclCheck,
-      organizations: Organizations,
-      projects: Projects,
       files: Files,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -272,7 +267,7 @@ object FilesRoutes {
       fusionConfig: FusionConfig
   ): Route = {
     implicit val storageTypeConfig: StorageTypeConfig = config
-    new FilesRoutes(identities, aclCheck, organizations, projects, files, index).routes
+    new FilesRoutes(identities, aclCheck, files, schemeDirectives, index).routes
   }
 
   final case class LinkFile(filename: Option[String], mediaType: Option[ContentType], path: Path)

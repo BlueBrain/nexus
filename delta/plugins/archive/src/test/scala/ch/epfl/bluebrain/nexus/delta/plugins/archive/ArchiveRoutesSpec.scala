@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -38,7 +39,7 @@ import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import com.typesafe.config.Config
 import io.circe.Json
 import io.circe.parser.parse
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -111,15 +112,13 @@ class ArchiveRoutesSpec
     model.permissions.write
   )
 
-  private val asSubject     = addCredentials(OAuth2BearerToken("subject"))
+  private val asSubject     = addCredentials(OAuth2BearerToken("user"))
   private val asNoFilePerms = addCredentials(OAuth2BearerToken("nofileperms"))
   private val acceptMeta    = Accept(`application/ld+json`)
   private val acceptAll     = Accept(`*/*`)
 
-  private val fetchContext = FetchContextDummy(
-    Map(project.ref -> project.context),
-    Set(deprecatedProject.ref)
-  )
+  private val fetchContext    = FetchContextDummy(List(project))
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
   lazy val (routes, files) = {
     for {
@@ -141,7 +140,7 @@ class ArchiveRoutesSpec
       archives          <-
         Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
       identities         = IdentitiesDummy(caller, callerNoFilePerms)
-      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, null).routes)
+      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
     } yield (r, files)
   }.accepted
 
@@ -382,13 +381,6 @@ class ArchiveRoutesSpec
       Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("responses/decoding-failed.json")
-      }
-    }
-
-    "fail to create an archive in a deprecated project" in {
-      Post(s"/v1/archives/${deprecatedProject.ref}", archive.toEntity) ~> asSubject ~> acceptAll ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("responses/deprecated-project.json")
       }
     }
 

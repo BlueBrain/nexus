@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
@@ -115,9 +116,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        projects: Projects,
         graphAnalytics: GraphAnalytics,
         progresses: ProgressesStatistics @Id("graph-analytics"),
+        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -126,9 +127,9 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       new GraphAnalyticsRoutes(
         identities,
         aclCheck,
-        projects,
         graphAnalytics,
-        progresses
+        progresses,
+        schemeDirectives
       )(
         baseUri,
         s,

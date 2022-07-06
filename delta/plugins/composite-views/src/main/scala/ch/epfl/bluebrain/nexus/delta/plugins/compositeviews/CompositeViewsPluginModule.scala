@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -272,13 +273,13 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        projects: Projects,
         views: CompositeViews,
         indexingController: CompositeIndexingController,
         progresses: ProgressesStatistics @Id("composite-statistics"),
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
         deltaClient: DeltaClient,
+        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
@@ -288,14 +289,14 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       new CompositeViewsRoutes(
         identities,
         aclCheck,
-        projects,
         views,
         indexingController.restart,
         (iri, project, projections) => indexingController.restart(iri, project, Restart(PartialRestart(projections))),
         progresses,
         blazegraphQuery,
         elasticSearchQuery,
-        deltaClient
+        deltaClient,
+        schemeDirectives
       )(baseUri, s, cr, ordering, fusionConfig)
   }
 

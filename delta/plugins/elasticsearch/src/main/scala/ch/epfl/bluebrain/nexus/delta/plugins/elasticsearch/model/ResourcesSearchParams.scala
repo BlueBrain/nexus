@@ -4,7 +4,7 @@ import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{iriFromStringUnmarshaller, iriVocabFromStringUnmarshaller => iriUnmarshaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 
@@ -72,7 +72,7 @@ object ResourcesSearchParams {
       override val include: Boolean = false
     }
 
-    implicit def typeFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[Type] =
+    implicit def typeFromStringUnmarshaller(implicit pc: ProjectContext): FromStringUnmarshaller[Type] =
       Unmarshaller.withMaterializer[String, Type](implicit ec =>
         implicit mt => {
           case str if str.startsWith("-") => iriUnmarshaller.apply(str.drop(1)).map(iri => ExcludedType(iri.value))

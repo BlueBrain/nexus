@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -123,8 +124,7 @@ class ElasticSearchViewsRoutesSpec
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId deepMerge json"""{"includeDeprecated": false}"""
 
-  private val (orgs, projs) = (null, null)
-  private val allowedPerms  = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
+  private val allowedPerms = Set(esPermissions.write, esPermissions.read, esPermissions.query, events.read)
 
   private val fetchContext = FetchContextDummy[ElasticSearchViewRejection](
     Map(project.value.ref -> project.value.context),
@@ -153,19 +153,20 @@ class ElasticSearchViewsRoutesSpec
     )
   )
 
-  private val aclCheck    = AclSimpleCheck().accepted
-  private lazy val routes =
+  private val aclCheck        = AclSimpleCheck().accepted
+  private val groupDirectives =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+  private lazy val routes     =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
         aclCheck,
-        orgs,
-        projs,
         views,
         viewsQuery,
         statisticsProgress,
         restart,
         resourceToSchemaMapping,
+        groupDirectives,
         IndexingActionDummy()
       )
     )

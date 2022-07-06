@@ -13,11 +13,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -69,13 +70,13 @@ object ArchivePluginModule extends ModuleDef {
         archives: Archives,
         identities: Identities,
         aclCheck: AclCheck,
-        projects: Projects,
+        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         rcr: RemoteContextResolution @Id("aggregate"),
         jko: JsonKeyOrdering,
         sc: Scheduler
     ) =>
-      new ArchiveRoutes(archives, identities, aclCheck, projects)(baseUri, rcr, jko, sc)
+      new ArchiveRoutes(archives, identities, aclCheck, schemeDirectives)(baseUri, rcr, jko, sc)
   }
 
   many[PriorityRoute].add { (cfg: ArchivePluginConfig, routes: ArchiveRoutes) =>

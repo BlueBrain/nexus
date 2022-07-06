@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ResourcesRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -20,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.service.resources.{ResourceEventExchange, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
@@ -88,9 +89,8 @@ object ResourcesModule extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        organizations: Organizations,
-        projects: Projects,
         resources: Resources,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         sseEventLog: SseEventLog @Id("resources"),
         baseUri: BaseUri,
@@ -99,7 +99,7 @@ object ResourcesModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResourcesRoutes(identities, aclCheck, organizations, projects, resources, sseEventLog, indexingAction)(
+      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, sseEventLog, indexingAction)(
         baseUri,
         s,
         cr,

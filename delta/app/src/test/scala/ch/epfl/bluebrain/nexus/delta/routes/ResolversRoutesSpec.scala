@@ -11,15 +11,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, sche
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -48,8 +51,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     ProjectGen.project("org", "project", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
   private val project2           =
     ProjectGen.project("org", "project2", uuid = uuid, orgUuid = uuid, base = projBase, mappings = am)
-
-  private val (orgs, projects) = (null, null)
 
   private val identities = IdentitiesDummy(
     Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm))),
@@ -106,10 +107,15 @@ class ResolversRoutesSpec extends BaseRouteSpec {
     )
   )
 
-  private lazy val multiResolution = MultiResolution(projects, resolverResolution)
+  private val fetchContext    = FetchContextDummy(List(project, project2), ProjectContextRejection)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext)
+
+  private lazy val multiResolution = MultiResolution(fetchContext, resolverResolution)
 
   private lazy val routes =
-    Route.seal(ResolversRoutes(identities, aclCheck, orgs, projects, resolvers, multiResolution, IndexingActionDummy()))
+    Route.seal(
+      ResolversRoutes(identities, aclCheck, resolvers, multiResolution, groupDirectives, IndexingActionDummy())
+    )
 
   private def withId(id: String, payload: Json) =
     payload.deepMerge(Json.obj("@id" -> id.asJson))

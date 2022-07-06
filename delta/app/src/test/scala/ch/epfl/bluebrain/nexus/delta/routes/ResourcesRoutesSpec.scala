@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.JsonValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.{FetchResource, ResourceResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceResolutionGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -19,8 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceDeprecated, ResourceTagAdded}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -55,8 +58,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   private val schemaSource = jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata)
   private val schema1      = SchemaGen.schema(nxv + "myschema", project.value.ref, schemaSource.removeKeys(keywords.id))
   private val schema2      = SchemaGen.schema(schema.Person, project.value.ref, schemaSource.removeKeys(keywords.id))
-
-  private val (orgs, projs) = (null, null)
 
   val resolverContextResolution: ResolverContextResolution = new ResolverContextResolution(
     rcr,
@@ -96,10 +97,16 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     { case ev: ResourceEvent => JsonValue(ev).asInstanceOf[JsonValue.Aux[Event]] }
   )
 
-  private val routes =
-    Route.seal(ResourcesRoutes(identities, aclCheck, orgs, projs, resourcesDummy, sseEventLog, IndexingActionDummy()))
+  private val fetchContext    = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val groupDirectives =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
+  private val routes          =
+    Route.seal(
+      ResourcesRoutes(identities, aclCheck, resourcesDummy, groupDirectives, sseEventLog, IndexingActionDummy())
+    )
+
+  private val payloadUpdated = payload deepMerge json"""{"name": "Alice", "address": null}"""
 
   "A resource route" should {
 

@@ -101,7 +101,7 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "ref": $ref,
+                  "project": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": true
@@ -123,7 +123,7 @@ class ArchivesDecodingSpec
                 {
                   "@type": "Resource",
                   "resourceId": $resourceId,
-                  "ref": $ref,
+                  "project": $ref,
                   "path": "/a/b",
                   "rev": 1,
                   "originalSource": false
@@ -131,8 +131,7 @@ class ArchivesDecodingSpec
               ]
             }"""
         val (_, value) = decoder(context, source).accepted
-
-        val expected =
+        val expected   =
           ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(CompactedJsonLd))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
@@ -154,7 +153,7 @@ class ArchivesDecodingSpec
                   {
                     "@type": "Resource",
                     "resourceId": $resourceId,
-                    "ref": $ref,
+                    "project": $ref,
                     "path": "/a/b",
                     "rev": 1,
                     "format": $format
@@ -178,7 +177,7 @@ class ArchivesDecodingSpec
                 {
                   "@type": "File",
                   "resourceId": $resourceId,
-                  "ref": $ref,
+                  "project": $ref,
                   "path": "/a/b",
                   "tag": $tag
                 }

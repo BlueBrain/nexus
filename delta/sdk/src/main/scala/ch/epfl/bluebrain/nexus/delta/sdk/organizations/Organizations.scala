@@ -18,8 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
-import java.util.UUID
-
 /**
   * Operations pertaining to managing organizations.
   */
@@ -94,29 +92,6 @@ trait Organizations {
     *   the organization in a Resource representation, None otherwise
     */
   def fetchAt(label: Label, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource]
-
-  /**
-    * Fetch an organization at the current revision by uuid.
-    *
-    * @param uuid
-    *   the organization uuid
-    * @return
-    *   the organization in a Resource representation, None otherwise
-    */
-  def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource]
-
-  /**
-    * Fetch an organization at the passed revision by uuid.
-    *
-    * @param uuid
-    *   the organization uuid
-    * @param rev
-    *   the organization revision
-    * @return
-    *   the organization in a Resource representation, None otherwise
-    */
-  def fetchAt(uuid: UUID, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] =
-    fetch(uuid).flatMap(resource => fetchAt(resource.value.label, rev))
 
   /**
     * Fetches the current active organization, rejecting if the organization does not exists or if it is deprecated

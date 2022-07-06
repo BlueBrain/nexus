@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.{InvalidResolution, InvalidResolvedResourceId, InvalidResolverResolution, ProjectContextRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport.ResolverReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
@@ -90,7 +90,7 @@ object MultiResolution {
     *   a resource resolution instance
     */
   def apply(
-      fetchContext: FetchContext[ResolverRejection],
+      fetchContext: FetchContext[ProjectContextRejection],
       resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
   ): MultiResolution =
     new MultiResolution(fetchContext.onRead, resourceResolution)

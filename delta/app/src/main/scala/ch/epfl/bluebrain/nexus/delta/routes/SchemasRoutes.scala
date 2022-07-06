@@ -10,12 +10,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -25,12 +24,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -40,21 +39,18 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   verify the acls for users
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param schemas
   *   the schemas module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class SchemasRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    organizations: Organizations,
-    projects: Projects,
     schemas: Schemas,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -67,8 +63,9 @@ final class SchemasRoutes(
     with RdfMarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   implicit private val eventExchangeMapper = Mapper(Schemas.eventExchangeValue(_))
 
@@ -76,7 +73,7 @@ final class SchemasRoutes(
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("schemas", shacl)) {
       pathPrefix("schemas") {
         extractCaller { implicit caller =>
           concat(
@@ -93,7 +90,7 @@ final class SchemasRoutes(
               }
             },
             // SSE schemas for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/schemas/{org}/events") {
                   authorizeFor(org, events.read).apply {
@@ -104,7 +101,7 @@ final class SchemasRoutes(
                 }
               }
             },
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               concat(
                 // SSE schemas for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -230,9 +227,8 @@ object SchemasRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      orgs: Organizations,
-      projects: Projects,
       schemas: Schemas,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -240,6 +236,6 @@ object SchemasRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new SchemasRoutes(identities, aclCheck, orgs, projects, schemas, index).routes
+  ): Route = new SchemasRoutes(identities, aclCheck, schemas, schemeDirectives, index).routes
 
 }

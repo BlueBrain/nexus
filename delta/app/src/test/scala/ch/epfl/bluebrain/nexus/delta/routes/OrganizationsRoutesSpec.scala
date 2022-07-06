@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.OrganizationGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -37,13 +38,20 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     aclChecker.append,
     Set(orgsPermissions.write, orgsPermissions.read)
   )
-  private lazy val orgs  = OrganizationsImpl(Set(aopd), config, xas).accepted
+  private lazy val orgs  = OrganizationsImpl(Set(aopd), config, xas)
 
   private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
 
   private val identities = IdentitiesDummy(caller)
 
-  private lazy val routes = Route.seal(OrganizationsRoutes(identities, orgs, aclChecker))
+  private lazy val routes = Route.seal(
+    OrganizationsRoutes(
+      identities,
+      orgs,
+      aclChecker,
+      DeltaSchemeDirectives.onlyResolveOrgUuid(ioFromMap(fixedUuid -> org1.label))
+    )
+  )
 
   private val org1CreatedMeta = orgMetadata(org1.label, fixedUuid)
 

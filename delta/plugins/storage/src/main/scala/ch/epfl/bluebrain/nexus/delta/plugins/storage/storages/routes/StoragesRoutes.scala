@@ -17,9 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -29,13 +29,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -45,22 +44,19 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   how to check acls
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param storages
   *   the storages module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class StoragesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    organizations: Organizations,
-    projects: Projects,
     storages: Storages,
     storagesStatistics: StoragesStatistics,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -75,13 +71,14 @@ final class StoragesRoutes(
     with RdfMarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
-    (searchParams & types(projects)).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
+    (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
       StorageSearchParams(
         Some(projectRef),
         deprecated,
@@ -95,7 +92,7 @@ final class StoragesRoutes(
   }
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("storages", schemas.storage)) {
       pathPrefix("storages") {
         extractCaller { implicit caller =>
           concat(
@@ -112,7 +109,7 @@ final class StoragesRoutes(
               }
             },
             // SSE storages for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/storages/{org}/events") {
                   authorizeFor(org, events.read).apply {
@@ -123,7 +120,7 @@ final class StoragesRoutes(
                 }
               }
             },
-            projectRef(projects).apply { implicit ref =>
+            resolveProjectRef.apply { implicit ref =>
               concat(
                 // SSE storages for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -277,10 +274,9 @@ object StoragesRoutes {
       config: StoragesConfig,
       identities: Identities,
       aclCheck: AclCheck,
-      organizations: Organizations,
-      projects: Projects,
       storages: Storages,
       storagesStatistics: StoragesStatistics,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -291,7 +287,7 @@ object StoragesRoutes {
       fusionConfig: FusionConfig
   ): Route = {
     implicit val paginationConfig: PaginationConfig = config.pagination
-    new StoragesRoutes(identities, aclCheck, organizations, projects, storages, storagesStatistics, index).routes
+    new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, index).routes
   }
 
 }

@@ -11,11 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaImports
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverContextResolution, ResourceResolutionReport}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
@@ -49,8 +52,6 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   private val payloadNoId    = payload.removeKeys(keywords.id)
   private val payloadUpdated = payloadNoId.replace("datatype" -> "xsd:integer", "xsd:double")
 
-  private val (orgs, projs) = (null, null)
-
   val schemaImports = new SchemaImports(
     (_, _, _) => IO.raiseError(ResourceResolutionReport()),
     (_, _, _) => IO.raiseError(ResourceResolutionReport())
@@ -63,14 +64,17 @@ class SchemasRoutesSpec extends BaseRouteSpec {
 
   private lazy val aclCheck = AclSimpleCheck().accepted
 
-  private val routes =
+  private val fetchContext    = FetchContextDummy(List(project.value), ProjectContextRejection)
+  private val groupDirectives =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+
+  private val routes          =
     Route.seal(
       SchemasRoutes(
         identities,
         aclCheck,
-        orgs,
-        projs,
         null,
+        groupDirectives,
         IndexingActionDummy()
       )
     )

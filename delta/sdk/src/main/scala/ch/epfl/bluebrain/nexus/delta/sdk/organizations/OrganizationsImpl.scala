@@ -4,10 +4,9 @@ import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations.entityType
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.{OrganizationsLog, UUIDCache}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsImpl.OrganizationsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{OrganizationCommand, OrganizationEvent, OrganizationRejection, OrganizationState}
@@ -19,11 +18,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import monix.bio.{IO, UIO}
 
-import java.util.UUID
-
 final class OrganizationsImpl private (
     log: OrganizationsLog,
-    cache: UUIDCache,
     scopeInitializations: Set[ScopeInitialization]
 ) extends Organizations {
 
@@ -64,27 +60,8 @@ final class OrganizationsImpl private (
       .span("fetchOrganizationAt")
   }
 
-  override def fetch(uuid: UUID): IO[OrganizationNotFound, OrganizationResource] =
-    fetchFromCache(uuid).flatMap(fetch).span("fetchOrganizationByUuid")
-
-  override def fetchAt(uuid: UUID, rev: Int): IO[OrganizationRejection.NotFound, OrganizationResource] =
-    super.fetchAt(uuid, rev).span("fetchOrganizationAtByUuid")
-
-  private def fetchFromCache(uuid: UUID): IO[OrganizationNotFound, Label] =
-    cache.get(uuid).flatMap {
-      case None        =>
-        for {
-          orgs   <- log.currentStates(o => o.uuid -> o.label).compile.toList.hideErrors
-          _      <- cache.putAll(orgs.toMap)
-          cached <- cache.getOr(uuid, OrganizationNotFound(uuid))
-        } yield cached
-      case Some(label) => UIO.pure(label)
-    }
-
   private def eval(cmd: OrganizationCommand): IO[OrganizationRejection, OrganizationResource] =
-    log.evaluate(cmd.label, cmd).map(_._2.toResource).tapEval { r =>
-      cache.put(r.value.uuid, r.value.label)
-    }
+    log.evaluate(cmd.label, cmd).map(_._2.toResource)
 
   override def list(
       pagination: Pagination.FromPagination,
@@ -115,8 +92,6 @@ object OrganizationsImpl {
   type OrganizationsLog =
     GlobalEventLog[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection]
 
-  type UUIDCache = KeyValueStore[UUID, Label]
-
   def apply(
       scopeInitializations: Set[ScopeInitialization],
       config: OrganizationsConfig,
@@ -124,13 +99,10 @@ object OrganizationsImpl {
   )(implicit
       clock: Clock[UIO] = IO.clock,
       uuidf: UUIDF
-  ): UIO[Organizations] =
-    KeyValueStore.localLRU[UUID, Label](config.cache).map { cache =>
-      new OrganizationsImpl(
-        GlobalEventLog(Organizations.definition, config.eventLog, xas),
-        cache,
-        scopeInitializations
-      )
-    }
+  ): Organizations =
+    new OrganizationsImpl(
+      GlobalEventLog(Organizations.definition, config.eventLog, xas),
+      scopeInitializations
+    )
 
 }

@@ -11,15 +11,18 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.ProjectsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
+import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -69,6 +72,19 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
+  make[FetchContext[ContextRejection]].from { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+    FetchContext(organizations, projects, quotas)
+  }
+
+  make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
+    UUIDCache(config.projects.cache, config.organizations.cache, xas)
+  }
+
+  make[DeltaSchemeDirectives].from {
+    (fetchContext: FetchContext[ContextRejection], uuidCache: UUIDCache, s: Scheduler) =>
+      DeltaSchemeDirectives(fetchContext, uuidCache)(s)
+  }
+
   make[ProjectsRoutes].from {
     (
         config: AppConfig,
@@ -77,13 +93,14 @@ object ProjectsModule extends ModuleDef {
         projects: Projects,
         projectsStatistics: ProjectsStatistics,
         projectProvisioning: ProjectProvisioning,
+        schemeDirectives: DeltaSchemeDirectives,
         baseUri: BaseUri,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning)(
+      new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives)(
         baseUri,
         config.projects,
         s,

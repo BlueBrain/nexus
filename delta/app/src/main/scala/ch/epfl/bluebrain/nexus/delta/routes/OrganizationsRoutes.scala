@@ -8,11 +8,14 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
+import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
@@ -23,9 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationEvent, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -43,8 +43,15 @@ import scala.annotation.nowarn
   *   the organizations operations bundle
   * @param aclCheck
   *   verify the acl for users
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   */
-final class OrganizationsRoutes(identities: Identities, organizations: Organizations, aclCheck: AclCheck)(implicit
+final class OrganizationsRoutes(
+    identities: Identities,
+    organizations: Organizations,
+    aclCheck: AclCheck,
+    schemeDirectives: DeltaSchemeDirectives
+)(implicit
     baseUri: BaseUri,
     paginationConfig: PaginationConfig,
     s: Scheduler,
@@ -54,6 +61,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit val sseConverter: SseConverter[OrganizationEvent] = SseConverter(OrganizationEvent.sseEncoder)
 
@@ -95,7 +103,7 @@ final class OrganizationsRoutes(identities: Identities, organizations: Organizat
                 }
               }
             },
-            (orgLabel(organizations) & pathEndOrSingleSlash) { id =>
+            (resolveOrg & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/orgs/{label}") {
                 concat(
                   put {
@@ -157,13 +165,18 @@ object OrganizationsRoutes {
     * @return
     *   the [[Route]] for organizations
     */
-  def apply(identities: Identities, organizations: Organizations, aclCheck: AclCheck)(implicit
+  def apply(
+      identities: Identities,
+      organizations: Organizations,
+      aclCheck: AclCheck,
+      schemeDirectives: DeltaSchemeDirectives
+  )(implicit
       baseUri: BaseUri,
       paginationConfig: PaginationConfig,
       s: Scheduler,
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering
   ): Route =
-    new OrganizationsRoutes(identities, organizations, aclCheck).routes
+    new OrganizationsRoutes(identities, organizations, aclCheck, schemeDirectives).routes
 
 }

@@ -9,12 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -24,12 +23,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -39,12 +38,10 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   verify the acls for users
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param resources
   *   the resources module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param sseEventLog
   *   the global eventLog of all events
   * @param index
@@ -53,9 +50,8 @@ import monix.execution.Scheduler
 final class ResourcesRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    organizations: Organizations,
-    projects: Projects,
     resources: Resources,
+    schemeDirectives: DeltaSchemeDirectives,
     sseEventLog: SseEventLog,
     index: IndexingAction
 )(implicit
@@ -69,8 +65,9 @@ final class ResourcesRoutes(
     with RdfMarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private val resourceSchema = schemas.resources
 
@@ -97,7 +94,7 @@ final class ResourcesRoutes(
               }
             },
             // SSE resources for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
                   authorizeFor(org, events.read).apply {
@@ -108,7 +105,7 @@ final class ResourcesRoutes(
                 }
               }
             },
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               concat(
                 // SSE resources for all events belonging to a project
                 (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -294,9 +291,8 @@ object ResourcesRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      orgs: Organizations,
-      projects: Projects,
       resources: Resources,
+      projectsDirectives: DeltaSchemeDirectives,
       sseEventLog: SseEventLog,
       index: IndexingAction
   )(implicit
@@ -305,6 +301,6 @@ object ResourcesRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new ResourcesRoutes(identities, aclCheck, orgs, projects, resources, sseEventLog, index).routes
+  ): Route = new ResourcesRoutes(identities, aclCheck, resources, projectsDirectives, sseEventLog, index).routes
 
 }

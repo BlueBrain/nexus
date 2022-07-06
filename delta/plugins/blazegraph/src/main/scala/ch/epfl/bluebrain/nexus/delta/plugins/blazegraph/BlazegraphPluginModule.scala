@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -208,9 +209,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        projects: Projects,
         views: BlazegraphViews,
         viewsQuery: BlazegraphViewsQuery,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         progresses: ProgressesStatistics @Id("blazegraph-statistics"),
         indexingController: BlazegraphIndexingController,
@@ -226,9 +227,9 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
         viewsQuery,
         identities,
         aclCheck,
-        projects,
         progresses,
         indexingController.restart,
+        schemeDirectives,
         indexingAction
       )(
         baseUri,

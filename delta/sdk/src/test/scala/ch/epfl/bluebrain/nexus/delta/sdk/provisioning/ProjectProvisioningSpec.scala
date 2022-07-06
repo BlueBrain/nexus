@@ -67,7 +67,7 @@ class ProjectProvisioningSpec
     ApiMappings.empty,
     config,
     xas
-  ).accepted
+  )
 
   private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
 

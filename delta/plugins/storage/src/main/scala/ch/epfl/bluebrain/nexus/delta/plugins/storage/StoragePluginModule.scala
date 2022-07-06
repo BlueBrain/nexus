@@ -25,6 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
@@ -34,11 +35,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -121,10 +121,9 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         crypto: Crypto,
         identities: Identities,
         aclCheck: AclCheck,
-        organizations: Organizations,
-        projects: Projects,
         storages: Storages,
         storagesStatistics: StoragesStatistics,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
@@ -134,7 +133,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, aclCheck, organizations, projects, storages, storagesStatistics, indexingAction)(
+        new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, indexingAction)(
           baseUri,
           crypto,
           paginationConfig,
@@ -214,9 +213,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         cfg: StoragePluginConfig,
         identities: Identities,
         aclCheck: AclCheck,
-        organizations: Organizations,
-        projects: Projects,
         files: Files,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
         s: Scheduler,
@@ -225,7 +223,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         fusionConfig: FusionConfig
     ) =>
       val storageConfig = cfg.storages.storageTypeConfig
-      new FilesRoutes(identities, aclCheck, organizations, projects, files, indexingAction)(
+      new FilesRoutes(identities, aclCheck, files, schemeDirectives, indexingAction)(
         baseUri,
         storageConfig,
         s,

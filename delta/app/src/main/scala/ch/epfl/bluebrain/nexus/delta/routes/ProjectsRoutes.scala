@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -39,13 +39,18 @@ import monix.execution.Scheduler
   *   verify the acls for users
   * @param projects
   *   the projects module
+  * @param projectsStatistics
+  *   the statistics by project
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   */
 final class ProjectsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
     projects: Projects,
     projectsStatistics: ProjectsStatistics,
-    projectProvisioning: ProjectProvisioning
+    projectProvisioning: ProjectProvisioning,
+    schemeDirectives: DeltaSchemeDirectives
 )(implicit
     baseUri: BaseUri,
     config: ProjectsConfig,
@@ -57,6 +62,7 @@ final class ProjectsRoutes(
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit val sseConverter: SseConverter[ProjectEvent] = SseConverter(ProjectEvent.sseEncoder)
 
@@ -105,7 +111,7 @@ final class ProjectsRoutes(
                 }
               }
             },
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               concat(
                 operationName(s"$prefixSegment/projects/{org}/{project}") {
                   concat(
@@ -190,7 +196,8 @@ object ProjectsRoutes {
       aclCheck: AclCheck,
       projects: Projects,
       projectsStatistics: ProjectsStatistics,
-      projectProvisioning: ProjectProvisioning
+      projectProvisioning: ProjectProvisioning,
+      schemeDirectives: DeltaSchemeDirectives
   )(implicit
       baseUri: BaseUri,
       config: ProjectsConfig,
@@ -198,6 +205,7 @@ object ProjectsRoutes {
       cr: RemoteContextResolution,
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
-  ): Route = new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning).routes
+  ): Route =
+    new ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, projectProvisioning, schemeDirectives).routes
 
 }
