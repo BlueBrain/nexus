@@ -13,7 +13,7 @@ trait MonixBioAssertions { self: Assertions =>
 
   implicit class MonixBioAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location) {
 
-    def assert(expected: A): UIO[Unit] = io.attempt.map {
+    def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] = io.attempt.map {
       case Left(NonFatal(err)) =>
         val baos  = new ByteArrayOutputStream()
         err.printStackTrace(new PrintStream(baos))
@@ -30,7 +30,7 @@ trait MonixBioAssertions { self: Assertions =>
           s"""Error caught of type '${E.runtimeClass.getName}', expected a successful response
              |Message: ${err.toString}""".stripMargin
         )
-      case Right(a)            => assertEquals(a, expected)
+      case Right(a)            => assertEquals(a, expected, clue)
     }
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =

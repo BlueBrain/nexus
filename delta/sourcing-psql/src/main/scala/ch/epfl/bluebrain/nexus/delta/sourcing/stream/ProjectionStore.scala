@@ -65,10 +65,17 @@ trait ProjectionStore {
     *   an optional project reference
     * @param resourceId
     *   an optional resource id
-    * @return
     */
   def persistFn(name: String, project: Option[ProjectRef], resourceId: Option[Iri]): ProjectionOffset => UIO[Unit] =
     offset => save(name, project, resourceId, offset)
+
+  /**
+    * Absorbs the common arguments for a projection to have its [[ProjectionOffset]] read as a function of unit.
+    * @param name
+    *   the name of the projection
+    */
+  def readFn(name: String): () => UIO[ProjectionOffset] =
+    () => offset(name)
 
 }
 
