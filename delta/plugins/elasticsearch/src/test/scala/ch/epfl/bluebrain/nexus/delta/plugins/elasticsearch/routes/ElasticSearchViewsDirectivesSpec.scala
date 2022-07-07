@@ -7,17 +7,13 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchProject
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers, TestMatchers}
-import monix.bio.IO
-import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -33,15 +29,11 @@ class ElasticSearchViewsDirectivesSpec
     with Inspectors {
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
-  implicit private val sc: Scheduler    = Scheduler.global
 
-  private val mappings                            = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
-  private val vocab                               = iri"http://localhost/vocab/"
-  private val base                                = iri"http://localhost/base/"
-  implicit private val fetchProject: FetchProject = ref =>
-    IO.pure(
-      ProjectGen.project(ref.organization.value, ref.project.value, mappings = mappings, vocab = vocab, base = base)
-    )
+  private val mappings                    = ApiMappings("alias" -> (nxv + "alias"), "nxv" -> nxv.base)
+  private val base                        = iri"http://localhost/base/"
+  private val vocab                       = iri"http://localhost/vocab/"
+  implicit private val pc: ProjectContext = ProjectContext.unsafe(mappings, base, vocab)
 
   private val route: Route =
     get {
@@ -49,15 +41,14 @@ class ElasticSearchViewsDirectivesSpec
         (pathPrefix("sort") & sortList & pathEndOrSingleSlash) { list =>
           complete(list.values.map(_.toString).mkString(","))
         },
-        (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { ref =>
-          searchParameters(ref).apply {
+        (pathPrefix("search") & projectRef & pathEndOrSingleSlash) { _ =>
+          searchParameters.apply {
             case ResourcesSearchParams(id, deprecated, rev, createdBy, updatedBy, types, schema, q) =>
               complete(
                 s"'${id.mkString}','${deprecated.mkString}','${rev.mkString}','${createdBy.mkString}','${updatedBy.mkString}','${types
                   .mkString("|")
                   .mkString}','${schema.mkString}','${q.mkString}'"
               )
-
           }
         }
       )

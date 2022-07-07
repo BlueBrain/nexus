@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS public.global_states (
     PRIMARY KEY(type, id)
 );
 CREATE INDEX IF NOT EXISTS global_states_ordering_idx ON public.global_states USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS org_uuid_idx ON public.global_states((value->>'uuid')) WHERE type = 'organization';
 
 --
 -- Table for scoped events that belongs to a project
@@ -62,6 +63,7 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
     UNIQUE (org, project, tag, id)
 );
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);
+CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
 
 --
 -- Table for projection offsets

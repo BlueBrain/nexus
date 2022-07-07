@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdCon
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.QueryParamsUnmarshalling.{IriBase, IriVocab}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -28,6 +28,45 @@ trait QueryParamsUnmarshalling {
         case Left(err)  => throw new IllegalArgumentException(err)
       }
     }
+
+  /**
+    * Unmarsaller to transform a String to an IriBase
+    */
+  val iriBaseFromStringUnmarshallerNoExpansion: FromStringUnmarshaller[IriBase] =
+    iriFromStringUnmarshaller.map(IriBase)
+
+  /**
+    * Unmarsaller to transform a String to an IriVocab
+    */
+  implicit def iriVocabFromStringUnmarshaller(implicit pc: ProjectContext): FromStringUnmarshaller[IriVocab] =
+    expandIriFromStringUnmarshaller(useVocab = true).map(IriVocab)
+
+  /**
+    * Unmarsaller to transform a String to an IriBase
+    */
+  implicit def iriBaseFromStringUnmarshaller(implicit pc: ProjectContext): FromStringUnmarshaller[IriBase] =
+    expandIriFromStringUnmarshaller(useVocab = false).map(IriBase)
+
+  private def expandIriFromStringUnmarshaller(
+      useVocab: Boolean
+  )(implicit pc: ProjectContext): FromStringUnmarshaller[Iri] =
+    Unmarshaller.strict[String, Iri] { str =>
+      val ctx = context(pc.vocab, pc.base.iri, pc.apiMappings)
+      ctx.expand(str, useVocab = useVocab) match {
+        case Some(iri) => iri
+        case None      => throw new IllegalArgumentException(s"'$str' cannot be expanded to an Iri")
+
+      }
+    }
+
+  private def context(vocab: Iri, base: Iri, mappings: ApiMappings): JsonLdContext =
+    JsonLdContext(
+      ContextValue.empty,
+      base = Some(base),
+      vocab = Some(vocab),
+      prefixMappings = mappings.prefixMappings,
+      aliases = mappings.aliases
+    )
 
   /**
     * Unmarsaller to transform a String to Label
@@ -69,47 +108,10 @@ trait QueryParamsUnmarshalling {
     iriFromStringUnmarshaller.andThen(subjectFromIriUnmarshaller)
 
   /**
-    * Unmarsaller to transform a String to an IriVocab
-    */
-  implicit def iriVocabFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[IriVocab] =
-    iriFromStringUnmarshaller(useVocab = true).map(IriVocab)
-
-  /**
-    * Unmarsaller to transform a String to an IriBase
-    */
-  implicit def iriBaseFromStringUnmarshaller(implicit project: Project): FromStringUnmarshaller[IriBase] =
-    iriFromStringUnmarshaller(useVocab = false).map(IriBase)
-
-  /**
-    * Unmarsaller to transform a String to an IriBase
-    */
-  def iriBaseFromStringUnmarshallerNoExpansion: FromStringUnmarshaller[IriBase] =
-    iriFromStringUnmarshaller.map(IriBase)
-
-  private def iriFromStringUnmarshaller(useVocab: Boolean)(implicit project: Project): FromStringUnmarshaller[Iri] =
-    Unmarshaller.strict[String, Iri] { str =>
-      val ctx = context(project.vocab, project.base.iri, project.apiMappings)
-      ctx.expand(str, useVocab = useVocab) match {
-        case Some(iri) => iri
-        case None      => throw new IllegalArgumentException(s"'$str' cannot be expanded to an Iri")
-
-      }
-    }
-
-  /**
     * Unmarsaller to transform a String to an IdSegment
     */
   implicit val idSegmentFromStringUnmarshaller: FromStringUnmarshaller[IdSegment] =
     Unmarshaller.strict[String, IdSegment](IdSegment.apply)
-
-  private def context(vocab: Iri, base: Iri, mappings: ApiMappings): JsonLdContext =
-    JsonLdContext(
-      ContextValue.empty,
-      base = Some(base),
-      vocab = Some(vocab),
-      prefixMappings = mappings.prefixMappings,
-      aliases = mappings.aliases
-    )
 
   implicit val jsonFromStringUnmarshaller: FromStringUnmarshaller[Json] =
     Unmarshaller.strict[String, Json](parse(_).fold(throw _, identity))

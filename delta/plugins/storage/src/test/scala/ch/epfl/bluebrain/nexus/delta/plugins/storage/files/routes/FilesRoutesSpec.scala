@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -81,7 +82,11 @@ class FilesRoutesSpec
 
   private val aclCheck          = AclSimpleCheck().accepted
   private val (files, storages) = FilesSetup.init(fetchContext, aclCheck, stCfg)
-  private val routes            = Route.seal(FilesRoutes(stCfg, identities, aclCheck, null, null, files, IndexingActionDummy()))
+  private val groupDirectives   =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+
+  private val routes            =
+    Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
   private val s3IdRev   = ResourceRef.Revision(s3Id, 2)

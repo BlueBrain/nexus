@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
@@ -256,9 +257,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (
         identities: Identities,
         aclCheck: AclCheck,
-        orgs: Organizations,
-        projects: Projects,
         views: ElasticSearchViews,
+        schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
         progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
@@ -275,13 +275,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchViewsRoutes(
         identities,
         aclCheck,
-        orgs,
-        projects,
         views,
         viewsQuery,
         progresses,
         indexingController.restart,
         resourceToSchema,
+        schemeDirectives,
         indexingAction
       )(
         baseUri,

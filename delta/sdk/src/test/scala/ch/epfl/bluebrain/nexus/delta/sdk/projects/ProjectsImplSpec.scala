@@ -70,11 +70,8 @@ class ProjectsImplSpec
     case other           => IO.raiseError(WrappedOrganizationRejection(OrganizationNotFound(other)))
   }
 
-  private lazy val (scopeInitLog, projects) = {
-    for {
-      scopeInitLog <- ScopeInitializationLog()
-      projects     <- ProjectsImpl(fetchOrg, Set(scopeInitLog), defaultApiMappings, config, xas)
-    } yield (scopeInitLog, projects)
+  private lazy val (scopeInitLog, projects) = ScopeInitializationLog().map { scopeInitLog =>
+    scopeInitLog -> ProjectsImpl(fetchOrg, Set(scopeInitLog), defaultApiMappings, config, xas)
   }.accepted
 
   private val ref: ProjectRef        = ProjectRef.unsafe("org", "proj")
@@ -189,17 +186,9 @@ class ProjectsImplSpec
       projects.fetchProject(ref).accepted shouldEqual resource.value
     }
 
-    "fetch a project by uuid" in {
-      projects.fetch(uuid).accepted shouldEqual projects.fetch(ref).accepted
-    }
-
     "fetch a project at a given revision" in {
       projects.fetchAt(ref, 1).accepted shouldEqual
         resourceFor(projectFromRef(ref, uuid, orgUuid, markedForDeletion = false, payload), 1, subject)
-    }
-
-    "fetch a project by uuid at a given revision" in {
-      projects.fetchAt(uuid, 1).accepted shouldEqual projects.fetchAt(ref, 1).accepted
     }
 
     "fail fetching an unknown project" in {
@@ -215,28 +204,10 @@ class ProjectsImplSpec
         ProjectNotFound(ref)
     }
 
-    "fail fetching an unknown project by uuid" in {
-      projects.fetch(UUID.randomUUID()).rejectedWith[ProjectNotFound]
-    }
-
-    "fail fetching a project by uuid with the wrong orgUuid" in {
-      val unknownUuid = UUID.randomUUID()
-      projects.fetch(unknownUuid, uuid).rejectedWith[ProjectNotFound]
-    }
-
     "fail fetching an unknown project at a given revision" in {
       val ref = ProjectRef.unsafe("org", "unknown")
 
       projects.fetchAt(ref, 42).rejectedWith[ProjectNotFound]
-    }
-
-    "fail fetching an unknown project by uuid at a given revision" in {
-      projects.fetchAt(UUID.randomUUID(), 42).rejectedWith[ProjectNotFound]
-    }
-
-    "fail fetching a project by uuid with the wrong orgUuid at a given revision" in {
-      val unknownUuid = UUID.randomUUID()
-      projects.fetchAt(unknownUuid, uuid, 1).rejected shouldEqual ProjectNotFound(unknownUuid, uuid)
     }
 
     "list projects without filters nor pagination" in {

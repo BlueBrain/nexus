@@ -5,11 +5,10 @@ import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchParams, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.{entityType, FetchOrganization}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.{ProjectsLog, UUIDCache}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsImpl.ProjectsLog
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectCommand.{CreateProject, DeleteProject, DeprecateProject, UpdateProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
@@ -20,11 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import monix.bio.{IO, UIO}
 
-import java.util.UUID
-
 final class ProjectsImpl private (
     log: ProjectsLog,
-    cache: UUIDCache,
     scopeInitializations: Set[ScopeInitialization],
     override val defaultApiMappings: ApiMappings
 )(implicit base: BaseUri)
@@ -88,23 +84,6 @@ final class ProjectsImpl private (
 
   override def fetchProject(ref: ProjectRef): IO[ProjectNotFound, Project] = fetch(ref).map(_.value)
 
-  override def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource] =
-    fetchFromCache(uuid).flatMap(fetch)
-
-  override def fetchAt(uuid: UUID, rev: Int): IO[ProjectRejection.NotFound, ProjectResource] =
-    super.fetchAt(uuid, rev).span("fetchProjectAtByUuid")
-
-  private def fetchFromCache(uuid: UUID): IO[ProjectNotFound, ProjectRef] =
-    cache.get(uuid).flatMap {
-      case None        =>
-        for {
-          projects <- log.currentStates(Predicate.root, p => p.uuid -> p.project).compile.toList.hideErrors
-          _        <- cache.putAll(projects.toMap)
-          cached   <- cache.getOr(uuid, ProjectNotFound(uuid))
-        } yield cached
-      case Some(label) => UIO.pure(label)
-    }
-
   override def list(
       pagination: Pagination.FromPagination,
       params: SearchParams.ProjectSearchParams,
@@ -140,8 +119,6 @@ object ProjectsImpl {
   type ProjectsLog =
     ScopedEventLog[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection]
 
-  type UUIDCache = KeyValueStore[UUID, ProjectRef]
-
   /**
     * Constructs a [[Projects]] instance.
     */
@@ -155,13 +132,10 @@ object ProjectsImpl {
       base: BaseUri,
       clock: Clock[UIO],
       uuidF: UUIDF
-  ): UIO[Projects] =
-    KeyValueStore.localLRU[UUID, ProjectRef](config.cache).map { cache =>
-      new ProjectsImpl(
-        ScopedEventLog(Projects.definition(fetchAndValidateOrg), config.eventLog, xas),
-        cache,
-        scopeInitializations,
-        defaultApiMappings
-      )
-    }
+  ): Projects =
+    new ProjectsImpl(
+      ScopedEventLog(Projects.definition(fetchAndValidateOrg), config.eventLog, xas),
+      scopeInitializations,
+      defaultApiMappings
+    )
 }

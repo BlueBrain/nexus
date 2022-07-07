@@ -9,14 +9,12 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives.searchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -29,15 +27,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -47,22 +44,19 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   verify the acls for users
-  * @param organizations
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param resolvers
   *   the resolvers module
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class ResolversRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    organizations: Organizations,
-    projects: Projects,
     resolvers: Resolvers,
     multiResolution: MultiResolution,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -76,8 +70,9 @@ final class ResolversRoutes(
     with RdfMarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = projects
+  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
@@ -85,7 +80,7 @@ final class ResolversRoutes(
   implicit private val eventExchangeMapper = Mapper(Resolvers.eventExchangeValue(_))
 
   private def resolverSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[ResolverSearchParams] =
-    (searchParams & types(projects)).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
+    (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>
       val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
       ResolverSearchParams(
         Some(projectRef),
@@ -99,7 +94,7 @@ final class ResolversRoutes(
     }
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("resolvers", schemas.resolvers)) {
       pathPrefix("resolvers") {
         extractCaller { implicit caller =>
           concat(
@@ -116,7 +111,7 @@ final class ResolversRoutes(
               }
             },
             // SSE resolvers for all events belonging to an organization
-            (orgLabel(organizations) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+            (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
               get {
                 operationName(s"$prefixSegment/resolvers/{org}/events") {
                   authorizeFor(org, events.read).apply {
@@ -127,7 +122,7 @@ final class ResolversRoutes(
                 }
               }
             },
-            projectRef(projects).apply { implicit ref =>
+            resolveProjectRef.apply { implicit ref =>
               val projectAddress = ref
               val authorizeRead  = authorizeFor(projectAddress, Read)
               val authorizeEvent = authorizeFor(projectAddress, events.read)
@@ -283,10 +278,9 @@ object ResolversRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      organizations: Organizations,
-      projects: Projects,
       resolvers: Resolvers,
       multiResolution: MultiResolution,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -296,6 +290,6 @@ object ResolversRoutes {
       ordering: JsonKeyOrdering,
       fusionConfig: FusionConfig
   ): Route =
-    new ResolversRoutes(identities, aclCheck, organizations, projects, resolvers, multiResolution, index).routes
+    new ResolversRoutes(identities, aclCheck, resolvers, multiResolution, schemeDirectives, index).routes
 
 }

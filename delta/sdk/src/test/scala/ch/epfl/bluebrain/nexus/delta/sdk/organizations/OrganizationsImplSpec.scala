@@ -47,15 +47,8 @@ class OrganizationsImplSpec
   val label        = Label.unsafe("myorg")
   val label2       = Label.unsafe("myorg2")
 
-  private lazy val (scopeInitLog, orgs) = {
-    for {
-      scopeInitLog <- ScopeInitializationLog()
-      orgs         <- OrganizationsImpl(
-                        Set(scopeInitLog),
-                        config,
-                        xas
-                      )
-    } yield (scopeInitLog, orgs)
+  private lazy val (scopeInitLog, orgs) = ScopeInitializationLog().map { scopeInitLog =>
+    scopeInitLog -> OrganizationsImpl(Set(scopeInitLog), config, xas)
   }.accepted
 
   "Organizations implementation" should {
@@ -81,33 +74,17 @@ class OrganizationsImplSpec
         resourceFor(organization("myorg", uuid, description2), 3, subject, deprecated = true)
     }
 
-    "fetch an organization by uuid" in {
-      orgs.fetch(uuid).accepted shouldEqual orgs.fetch(label).accepted
-    }
-
     "fetch an organization at specific revision" in {
       orgs.fetchAt(label, 1).accepted shouldEqual
         resourceFor(organization("myorg", uuid, description), 1, subject)
-    }
-
-    "fetch an organization at specific revision by uuid" in {
-      orgs.fetchAt(uuid, 1).accepted shouldEqual orgs.fetchAt(label, 1).accepted
     }
 
     "fail fetching a non existing organization" in {
       orgs.fetch(Label.unsafe("non-existing")).rejectedWith[OrganizationNotFound]
     }
 
-    "fail fetching a non existing organization by uuid" in {
-      orgs.fetch(UUID.randomUUID()).rejectedWith[OrganizationNotFound]
-    }
-
     "fail fetching a non existing organization at specific revision" in {
       orgs.fetchAt(Label.unsafe("non-existing"), 1).rejectedWith[OrganizationNotFound]
-    }
-
-    "fail fetching a non existing organization at specific revision by uuid" in {
-      orgs.fetchAt(UUID.randomUUID(), 1).rejectedWith[OrganizationNotFound]
     }
 
     "create another organization" in {

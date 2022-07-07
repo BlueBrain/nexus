@@ -109,55 +109,6 @@ trait Projects {
   def fetchAt(ref: ProjectRef, rev: Int): IO[ProjectRejection.NotFound, ProjectResource]
 
   /**
-    * Fetches a project resource based on its uuid.
-    *
-    * @param uuid
-    *   the unique project identifier
-    */
-  def fetch(uuid: UUID): IO[ProjectNotFound, ProjectResource]
-
-  /**
-    * Fetch a project resource by its uuid and its organization uuid
-    *
-    * @param orgUuid
-    *   the unique organization identifier
-    * @param projectUuid
-    *   the unique project identifier
-    */
-  def fetch(orgUuid: UUID, projectUuid: UUID): IO[ProjectNotFound, ProjectResource] =
-    fetch(projectUuid).flatMap {
-      case res if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
-      case other                                        => IO.pure(other)
-    }
-
-  /**
-    * Fetches a project resource at a specific revision based on its uuid.
-    *
-    * @param uuid
-    *   the unique project identifier
-    * @param rev
-    *   the revision to be retrieved
-    */
-  def fetchAt(uuid: UUID, rev: Int): IO[ProjectRejection.NotFound, ProjectResource] =
-    fetch(uuid).flatMap(resource => fetchAt(resource.value.ref, rev))
-
-  /**
-    * Fetch a project resource by its uuid and its organization uuid
-    *
-    * @param orgUuid
-    *   the unique organization identifier
-    * @param projectUuid
-    *   the unique project identifier
-    * @param rev
-    *   the revision to be retrieved
-    */
-  def fetchAt(orgUuid: UUID, projectUuid: UUID, rev: Int): IO[ProjectRejection.NotFound, ProjectResource] =
-    fetchAt(projectUuid, rev).flatMap {
-      case res if res.value.organizationUuid != orgUuid => IO.raiseError(ProjectNotFound(orgUuid, projectUuid))
-      case other                                        => IO.pure(other)
-    }
-
-  /**
     * Lists all projects.
     *
     * @param pagination
@@ -201,20 +152,16 @@ trait Projects {
 
 object Projects {
 
-  type FetchOrganization  = Label => IO[ProjectRejection, Organization]
-  type FetchProject       = ProjectRef => IO[ProjectNotFound, Project]
-  type FetchProjectByUuid = UUID => IO[ProjectNotFound, Project]
-  type FetchUuids         = ProjectRef => UIO[Option[(UUID, UUID)]]
+  type FetchOrganization = Label => IO[ProjectRejection, Organization]
+  type FetchUuids        = ProjectRef => UIO[Option[(UUID, UUID)]]
 
-  implicit def toFetchProject(projects: Projects): FetchProject             = projects.fetchProject(_)
-  implicit def toFetchProjectByUuid(projects: Projects): FetchProjectByUuid = projects.fetch(_).map(_.value)
-  implicit def toFetchUuids(projects: Projects): FetchUuids                 =
+  implicit def toFetchUuids(projects: Projects): FetchUuids =
     projects.fetch(_).redeem(_ => None, r => Some(r.value.organizationUuid -> r.value.uuid))
 
   /**
     * The projects entity type.
     */
-  final val entityType: EntityType                                          = EntityType("project")
+  final val entityType: EntityType                          = EntityType("project")
 
   private[delta] def next(state: Option[ProjectState], event: ProjectEvent): Option[ProjectState] =
     (state, event) match {

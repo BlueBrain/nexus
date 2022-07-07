@@ -12,8 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
 
-import java.util.UUID
-
 /**
   * Enumeration of organization rejection types.
   *
@@ -46,9 +44,6 @@ object OrganizationRejection {
       extends NotFound(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   object OrganizationNotFound {
-    def apply(uuid: UUID): OrganizationNotFound =
-      new OrganizationNotFound(s"Organization with uuid '${uuid.toString.toLowerCase()}' not found.")
-
     def apply(label: Label): OrganizationNotFound =
       new OrganizationNotFound(s"Organization '$label' not found.")
   }

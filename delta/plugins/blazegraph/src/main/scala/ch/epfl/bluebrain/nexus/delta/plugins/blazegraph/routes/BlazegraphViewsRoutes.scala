@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives}
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -31,7 +31,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.semiauto.deriveEncoder
@@ -50,12 +49,12 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   to check the acls
-  * @param projects
-  *   the projects module
   * @param progresses
   *   the statistics of the progresses for the blazegraph views
   * @param restartView
   *   the action to restart a view indexing process triggered by a client
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
@@ -64,9 +63,9 @@ class BlazegraphViewsRoutes(
     viewsQuery: BlazegraphViewsQuery,
     identities: Identities,
     aclCheck: AclCheck,
-    projects: Projects,
     progresses: ProgressesStatistics,
     restartView: RestartView,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -82,6 +81,7 @@ class BlazegraphViewsRoutes(
     with BlazegraphViewsDirectives {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
@@ -92,11 +92,11 @@ class BlazegraphViewsRoutes(
   implicit private val eventExchangeMapper = Mapper(BlazegraphViews.eventExchangeValue(_))
 
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
       concat(
         pathPrefix("views") {
           extractCaller { implicit caller =>
-            projectRef(projects).apply { implicit ref =>
+            resolveProjectRef.apply { implicit ref =>
               // Create a view without id segment
               concat(
                 (post & entity(as[Json]) & noParameter("rev") & pathEndOrSingleSlash & indexingMode) { (source, mode) =>
@@ -262,7 +262,7 @@ class BlazegraphViewsRoutes(
         //Handle all other incoming and outgoing links
         pathPrefix(Segment) { segment =>
           extractCaller { implicit caller =>
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               // if we are on the path /resources/{org}/{proj}/ we need to consume the {schema} segment before consuming the {id}
               consumeIdSegmentIf(segment == "resources") {
                 idSegment { id =>
@@ -320,9 +320,9 @@ object BlazegraphViewsRoutes {
       viewsQuery: BlazegraphViewsQuery,
       identities: Identities,
       aclCheck: AclCheck,
-      projects: Projects,
       progresses: ProgressesStatistics,
       restartView: RestartView,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -337,9 +337,9 @@ object BlazegraphViewsRoutes {
       viewsQuery,
       identities,
       aclCheck,
-      projects,
       progresses,
       restartView,
+      schemeDirectives,
       index
     ).routes
   }

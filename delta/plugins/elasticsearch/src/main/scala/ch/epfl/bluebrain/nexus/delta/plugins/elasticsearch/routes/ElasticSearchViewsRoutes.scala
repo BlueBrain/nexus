@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -31,10 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchProject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -50,10 +47,6 @@ import monix.execution.Scheduler
   *   the identity module
   * @param aclCheck
   *   to check acls
-  * @param orgs
-  *   the organizations module
-  * @param projects
-  *   the projects module
   * @param views
   *   the elasticsearch views operations bundle
   * @param viewsQuery
@@ -64,19 +57,20 @@ import monix.execution.Scheduler
   *   the action to restart a view indexing process triggered by a client
   * @param resourcesToSchemas
   *   a collection of root resource segment with their corresponding schema
+  * @param schemeDirectives
+  *   directives related to orgs and projects
   * @param index
   *   the indexing action on write operations
   */
 final class ElasticSearchViewsRoutes(
     identities: Identities,
     aclCheck: AclCheck,
-    orgs: Organizations,
-    projects: Projects,
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
     restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
+    schemeDirectives: DeltaSchemeDirectives,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -91,6 +85,7 @@ final class ElasticSearchViewsRoutes(
     with RdfMarshalling {
 
   import baseUri.prefixSegment
+  import schemeDirectives._
 
   implicit private val viewStatisticEncoder: Encoder.AsObject[ProgressStatistics] =
     deriveEncoder[ProgressStatistics].mapJsonObject(_.add(keywords.tpe, "ViewStatistics".asJson))
@@ -100,10 +95,8 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val eventExchangeMapper = Mapper(ElasticSearchViews.eventExchangeValue(_))
 
-  implicit private val fetchProject: FetchProject = projects
-
   def routes: Route =
-    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri, projects)) {
+    (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
       concat(viewsRoutes, resourcesListings, genericResourcesRoutes)
     }
 
@@ -124,7 +117,7 @@ final class ElasticSearchViewsRoutes(
             }
           },
           // SSE views for all events belonging to an organization
-          (orgLabel(orgs) & pathPrefix("events") & pathEndOrSingleSlash) { org =>
+          (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
             get {
               operationName(s"$prefixSegment/views/{org}/events") {
                 authorizeFor(org, events.read).apply {
@@ -135,7 +128,7 @@ final class ElasticSearchViewsRoutes(
               }
             }
           },
-          projectRef(projects).apply { ref =>
+          resolveProjectRef.apply { ref =>
             concat(
               // SSE views for all events belonging to a project
               (pathPrefix("events") & pathEndOrSingleSlash) {
@@ -325,7 +318,7 @@ final class ElasticSearchViewsRoutes(
           (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/resources")) { org =>
             list(org)
           },
-          projectRef(projects).apply { ref =>
+          resolveProjectRef.apply { ref =>
             concat(
               // List all resources inside a project
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/resources/{org}/{project}")) {
@@ -356,7 +349,7 @@ final class ElasticSearchViewsRoutes(
             (label & pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}")) { org =>
               list(org, resourceSchema)
             },
-            projectRef(projects).apply { ref =>
+            resolveProjectRef.apply { ref =>
               // List all resources of type resourceSegment inside a project
               (pathEndOrSingleSlash & operationName(s"$prefixSegment/$resourceSegment/{org}/{project}")) {
                 list(ref, resourceSchema)
@@ -385,18 +378,21 @@ final class ElasticSearchViewsRoutes(
   private def list(ref: ProjectRef)(implicit caller: Caller): Route =
     list(ref, None)
 
-  private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route =
-    (get & searchParametersAndSortList(ref) & paginated & extractUri) { (params, sort, page, uri) =>
-      authorizeFor(ref, Read).apply {
-        implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
-          searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
+  private def list(ref: ProjectRef, schemaSegment: Option[IdSegment])(implicit caller: Caller): Route = {
+    projectContext(ref) { implicit pc =>
+      (get & searchParametersInProject & paginated & extractUri) { (params, sort, page, uri) =>
+        authorizeFor(ref, Read).apply {
+          implicit val searchJsonLdEncoder: JsonLdEncoder[SearchResults[JsonObject]] =
+            searchResultsJsonLdEncoder(ContextValue(contexts.searchMetadata), page, uri)
 
-        schemaSegment match {
-          case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, sort))
-          case None          => emit(viewsQuery.list(ref, page, params, sort))
+          schemaSegment match {
+            case Some(segment) => emit(viewsQuery.list(ref, segment, page, params, sort))
+            case None          => emit(viewsQuery.list(ref, page, params, sort))
+          }
         }
       }
     }
+  }
 
   private def list(schemaSegment: Option[IdSegment])(implicit caller: Caller): Route =
     (get & searchParametersAndSortList(baseUri) & paginated & extractUri) { (params, sort, page, uri) =>
@@ -434,13 +430,12 @@ object ElasticSearchViewsRoutes {
   def apply(
       identities: Identities,
       aclCheck: AclCheck,
-      orgs: Organizations,
-      projects: Projects,
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
       restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
+      schemeDirectives: DeltaSchemeDirectives,
       index: IndexingAction
   )(implicit
       baseUri: BaseUri,
@@ -453,13 +448,12 @@ object ElasticSearchViewsRoutes {
     new ElasticSearchViewsRoutes(
       identities,
       aclCheck,
-      orgs,
-      projects,
       views,
       viewsQuery,
       progresses,
       restartView,
       resourcesToSchemas,
+      schemeDirectives,
       index
     ).routes
 }

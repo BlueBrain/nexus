@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
@@ -25,7 +26,7 @@ import monix.execution.Scheduler
 object OrganizationsModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[Organizations].fromEffect {
+  make[Organizations].from {
     (
         config: AppConfig,
         scopeInitializations: Set[ScopeInitialization],
@@ -46,11 +47,12 @@ object OrganizationsModule extends ModuleDef {
         organizations: Organizations,
         cfg: AppConfig,
         aclCheck: AclCheck,
+        schemeDirectives: DeltaSchemeDirectives,
         s: Scheduler,
         cr: RemoteContextResolution @Id("aggregate"),
         ordering: JsonKeyOrdering
     ) =>
-      new OrganizationsRoutes(identities, organizations, aclCheck)(
+      new OrganizationsRoutes(identities, organizations, aclCheck, schemeDirectives)(
         cfg.http.baseUri,
         cfg.organizations.pagination,
         s,

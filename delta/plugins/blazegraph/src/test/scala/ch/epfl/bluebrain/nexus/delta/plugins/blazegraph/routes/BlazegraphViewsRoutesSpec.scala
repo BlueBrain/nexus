@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -79,7 +80,7 @@ class BlazegraphViewsRoutesSpec
   implicit private val caller: Caller   = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
   private val identities                = IdentitiesDummy(caller)
-  private val asBob                     = addCredentials(OAuth2BearerToken("bob"))
+  private val asBob                     = addCredentials(OAuth2BearerToken("Bob"))
 
   val indexingSource          = jsonContentOf("indexing-view-source.json")
   private val aggregateSource = jsonContentOf("aggregate-view-source.json")
@@ -143,17 +144,18 @@ class BlazegraphViewsRoutesSpec
     Map("resource-incoming-outgoing" -> linksResults)
   )
 
-  private val aclCheck = AclSimpleCheck().accepted
-  private val routes   =
+  private val aclCheck        = AclSimpleCheck().accepted
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+  private val routes          =
     Route.seal(
       BlazegraphViewsRoutes(
         views,
         viewsQuery,
         identities,
         aclCheck,
-        null,
         statisticsProgress,
         restart,
+        groupDirectives,
         IndexingActionDummy()
       )
     )

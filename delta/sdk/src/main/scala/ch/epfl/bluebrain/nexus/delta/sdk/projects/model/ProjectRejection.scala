@@ -13,11 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-
-import java.util.UUID
 
 /**
   * Enumeration of Project rejection types.
@@ -50,20 +47,7 @@ object ProjectRejection {
     * Signals that an operation on a project cannot be performed due to the fact that the referenced project does not
     * exist.
     */
-  final case class ProjectNotFound private (override val reason: String) extends NotFound(reason)
-  object ProjectNotFound {
-    def apply(uuid: UUID): ProjectNotFound                       =
-      ProjectNotFound(s"Project with uuid '${uuid.toString.toLowerCase()}' not found.")
-    def apply(orgUuid: UUID, projectUuid: UUID): ProjectNotFound =
-      ProjectNotFound(
-        s"Project with uuid '${projectUuid.toString.toLowerCase()}' under organization: '${orgUuid.toString.toLowerCase()}' not found."
-      )
-    def apply(projectRef: ProjectRef): ProjectNotFound           =
-      ProjectNotFound(s"Project '$projectRef' not found.")
-
-    def apply(projectRef: ProjectRef, tag: UserTag): ProjectNotFound =
-      ProjectNotFound(s"Project '$projectRef' with tag '$tag' not found.")
-  }
+  final case class ProjectNotFound(projectRef: ProjectRef) extends NotFound(s"Project '$projectRef' not found.")
 
   /**
     * Signals that the current project is expected to be deleted but it isn't
@@ -86,13 +70,8 @@ object ProjectRejection {
   /**
     * Signals and attempt to update/deprecate a project that is already deprecated.
     */
-  final case class ProjectIsDeprecated private (override val reason: String) extends ProjectRejection(reason)
-  object ProjectIsDeprecated {
-    def apply(uuid: UUID): ProjectIsDeprecated             =
-      ProjectIsDeprecated(s"Project with uuid '${uuid.toString.toLowerCase()}' is deprecated.")
-    def apply(projectRef: ProjectRef): ProjectIsDeprecated =
-      ProjectIsDeprecated(s"Project '$projectRef' is deprecated.")
-  }
+  final case class ProjectIsDeprecated(projectRef: ProjectRef)
+      extends ProjectRejection(s"Project '$projectRef' is deprecated.")
 
   /**
     * Signals and attempt to update/deprecate/delete a project that is already marked for deletion.

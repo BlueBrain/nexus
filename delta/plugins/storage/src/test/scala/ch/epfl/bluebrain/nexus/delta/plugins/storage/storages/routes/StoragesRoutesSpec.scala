@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -108,10 +109,13 @@ class StoragesRoutesSpec
     )
   )
 
-  private val storages = StoragesSetup.init(fetchContext, perms)
-  private val routes   =
+  private val storages        = StoragesSetup.init(fetchContext, perms)
+  private val groupDirectives =
+    DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
+
+  private val routes          =
     Route.seal(
-      StoragesRoutes(cfg, identities, aclCheck, null, null, storages, storageStatistics, IndexingActionDummy())
+      StoragesRoutes(cfg, identities, aclCheck, storages, storageStatistics, groupDirectives, IndexingActionDummy())
     )
 
   "Storage routes" should {

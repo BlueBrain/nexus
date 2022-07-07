@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceMarshalling
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
@@ -87,7 +88,7 @@ class CompositeViewsRoutesSpec
   val bob                     = User("Bob", realm)
   implicit val caller: Caller = Caller(bob, Set(bob, Group("mygroup", realm), Authenticated(realm)))
   private val identities      = IdentitiesDummy(caller)
-  private val asBob           = addCredentials(OAuth2BearerToken("bob"))
+  private val asBob           = addCredentials(OAuth2BearerToken("Bob"))
 
   val undefinedPermission = Permission.unsafe("not/defined")
   val allowedPerms        = Set(
@@ -147,7 +148,9 @@ class CompositeViewsRoutesSpec
   private val responseQueryProjection  = NTriples("queryProjection", BNode.random)
   private val responseQueryProjections = NTriples("queryProjections", BNode.random)
 
-  private val fetchContext          = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val fetchContext    = FetchContextDummy[CompositeViewRejection](List(project), ProjectContextRejection)
+  private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
+
   private val views: CompositeViews = initViews(fetchContext).accepted
 
   private val blazegraphQuery = new BlazegraphQueryDummy(
@@ -177,14 +180,14 @@ class CompositeViewsRoutesSpec
       CompositeViewsRoutes(
         identities,
         aclCheck,
-        null,
         views,
         restart,
         restartProjection,
         statisticsProgress,
         blazegraphQuery,
         elasticSearchQuery,
-        deltaClient
+        deltaClient,
+        groupDirectives
       )
     )
 

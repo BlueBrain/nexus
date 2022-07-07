@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -103,7 +104,15 @@ class GraphAnalyticsRoutesSpec
   implicit val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
   private val routes                              =
-    Route.seal(new GraphAnalyticsRoutes(identities, aclCheck, null, graphAnalytics, graphAnalyticsProgress).routes)
+    Route.seal(
+      new GraphAnalyticsRoutes(
+        identities,
+        aclCheck,
+        graphAnalytics,
+        graphAnalyticsProgress,
+        DeltaSchemeDirectives.empty
+      ).routes
+    )
 
   "graph analytics routes" when {
 

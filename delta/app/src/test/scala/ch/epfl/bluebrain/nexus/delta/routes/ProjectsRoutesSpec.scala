@@ -8,6 +8,7 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen.defaultApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -64,7 +65,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
 
   private val ref = ProjectRef.unsafe("org1", "proj")
 
-  // Creating the org instance and injecting some data in it
   private def fetchOrg: FetchOrganization = {
     case `org1`     => UIO.pure(Organization(org1, orgUuid, None))
     case `usersOrg` => UIO.pure(Organization(usersOrg, orgUuid, None))
@@ -94,9 +94,18 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
     case _     => UIO.none
   }
 
-  private lazy val projects     = ProjectsImpl(fetchOrg, Set.empty, defaultApiMappings, projectsConfig, xas).accepted
+  private lazy val projects     = ProjectsImpl(fetchOrg, Set.empty, defaultApiMappings, projectsConfig, xas)
   private lazy val provisioning = ProjectProvisioning(aclCheck.append, projects, provisioningConfig)
-  private lazy val routes       = Route.seal(ProjectsRoutes(identities, aclCheck, projects, projectsStatistics, provisioning))
+  private lazy val routes       = Route.seal(
+    ProjectsRoutes(
+      identities,
+      aclCheck,
+      projects,
+      projectsStatistics,
+      provisioning,
+      DeltaSchemeDirectives.onlyResolveProjUuid(ioFromMap(projectUuid -> ref))
+    )
+  )
 
   val desc  = "Project description"
   val base  = "https://localhost/base/"
@@ -367,20 +376,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
           "provided" -> 42L,
           "current"  -> 3L
         )
-      }
-    }
-
-    "fetch a project by uuid if orgUuid doesn't match" in {
-      val unknown = UUID.randomUUID()
-      forAll(Seq(s"/v1/projects/$unknown/$projectUuid", s"/v1/projects/$unknown/$projectUuid?rev=1")) { path =>
-        Get(path) ~> routes ~> check {
-          status shouldEqual StatusCodes.NotFound
-          response.asJson shouldEqual jsonContentOf(
-            "/projects/errors/orguuid-no-match.json",
-            "orgUuid"  -> unknown,
-            "projUuid" -> projectUuid
-          )
-        }
       }
     }
 
