@@ -38,13 +38,21 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
   private def waitForNElements(count: Int, duration: FiniteDuration): Task[List[SuccessElem[String]]] =
     queue.dequeue.take(count.toLong).compile.toList.timeout(duration).map(_.getOrElse(Nil))
 
+  private def currentElements: Task[List[SuccessElem[String]]] =
+    queue.tryDequeueChunk1(Int.MaxValue).map {
+      case Some(value) => value.toList
+      case None        => Nil
+    }
+
   private val emptyConfig = ExpandedJsonLd.unsafe(BNode.random, JsonObject.empty)
 
   private val evensPipe              = (Evens.reference, emptyConfig)
   private val oddsPipe               = (Odds.reference, emptyConfig)
   private val intToStringPipe        = (IntToString.reference, emptyConfig)
   private val logPipe                = (Log.reference, emptyConfig)
+  //noinspection SameParameterValue
   private def timesNPipe(times: Int) = (TimesN.reference, TimesNConfig(times).toJsonLd)
+  //noinspection SameParameterValue
   private def failNPipe(every: Int)  = (FailEveryN.reference, FailEveryNConfig(every).toJsonLd)
 
   test("Fail to compile SourceChain when source.Out does not match pipe.In") {
@@ -202,7 +210,8 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     for {
       persistCallCountRef <- Ref.of[Task, (Int, ProjectionOffset)]((0, ProjectionOffset.empty))
       persistFn            = (po: ProjectionOffset) => persistCallCountRef.update { case (i, _) => (i + 1, po) }
-      projection          <- compiled.persistOffset(persistFn, 5.millis).start(offset)
+      readFn               = () => persistCallCountRef.get.map { case (_, po) => po }
+      projection          <- compiled.persistOffset(persistFn, readFn, 5.millis).start(offset)
       _                   <- waitForNElements(10, 50.millis)
       _                   <- projection.stop()
       value               <- persistCallCountRef.get
@@ -213,6 +222,46 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
                                offset,
                                "The offsets observed by the persist fn should be different than the initial."
                              )
+    } yield ()
+  }
+
+  test("Stop the projection if the last written offset differs from the current read offset") {
+    val sources  = NonEmptyChain(
+      SourceChain(
+        Naturals.reference,
+        iri"https://naturals",
+        NaturalsConfig(10, 20.millis).toJsonLd,
+        Chain()
+      )
+    )
+    val pipes    = NonEmptyChain(
+      PipeChain(
+        iri"https://log",
+        NonEmptyChain(intToStringPipe, logPipe)
+      )
+    )
+    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
+    val compiled = defined.compile(registry).rightValue
+    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(2L))
+
+    for {
+      persistRef <- Ref.of[Task, ProjectionOffset](ProjectionOffset.empty)
+      persistFn   = (po: ProjectionOffset) => persistRef.set(po)
+      readFn      = () => persistRef.get
+      projection <- compiled.persistOffset(persistFn, readFn, 5.millis).start(offset)
+      _          <- waitForNElements(1, 50.millis)
+      _          <- Task.sleep(5.millis)
+      observed   <- persistRef.get
+      _           = assertNotEquals(
+                      observed,
+                      offset,
+                      "The offsets observed by the persist fn should be different than the initial."
+                    )
+      _          <- persistRef.set(ProjectionOffset.empty)
+      _          <- Task.sleep(10.millis)
+      _          <- projection.isRunning.assert(false, "The projection should have stopped")
+      elems      <- currentElements
+      _           = assert(elems.size < 9, "Projection should have stopped before the end")
     } yield ()
   }
 

@@ -42,24 +42,36 @@ final case class CompiledProjection private[stream] (
     copy(streamF = offset => streamF(offset).through(Passivation(inactiveInterval, checkInterval)))
 
   /**
-    * Transforms this projection such that it persists the observed offsets at regular intervals.
+    * Transforms this projection such that it persists the observed offsets at regular intervals. For each tick defined
+    * by the interval the last known written offset is compared with the offset read; if there are differences the
+    * current offset is not written and the projection is stopped. Additionally, the offset is persisted only if the
+    * offset reported by the projection is different from the last known written offset.
     * @param store
     *   the store to use for persisting offsets
     * @param interval
     *   the interval at which the offset should be persisted if there are differences
     */
   def persistOffset(store: ProjectionStore, interval: FiniteDuration): CompiledProjection =
-    persistOffset(store.persistFn(name, project, resourceId), interval)
+    persistOffset(store.persistFn(name, project, resourceId), store.readFn(name), interval)
 
   /**
-    * Transforms this projection such that it persists the observed offsets at regular intervals.
+    * Transforms this projection such that it persists the observed offsets at regular intervals. For each tick defined
+    * by the interval the last known written offset is compared with the offset read; if there are differences the
+    * current offset is not written and the projection is stopped. Additionally, the offset is persisted only if the
+    * offset reported by the projection is different from the last known written offset.
     * @param persistOffsetFn
     *   the fn to persist an offset
+    * @param readOffsetFn
+    *   the fn to read the persisted offset
     * @param interval
     *   the interval at which the offset should be persisted if there are differences
     */
-  def persistOffset(persistOffsetFn: ProjectionOffset => Task[Unit], interval: FiniteDuration): CompiledProjection =
-    copy(streamF = offset => streamF(offset).through(PersistOffset(offset, interval, persistOffsetFn)))
+  def persistOffset(
+      persistOffsetFn: ProjectionOffset => Task[Unit],
+      readOffsetFn: () => Task[ProjectionOffset],
+      interval: FiniteDuration
+  ): CompiledProjection =
+    copy(streamF = offset => streamF(offset).through(PersistOffset(offset, interval, persistOffsetFn, readOffsetFn)))
 
   /**
     * Starts the projection from the provided offset. The stream is executed in the background and can be interacted
@@ -74,7 +86,7 @@ final case class CompiledProjection private[stream] (
       offsetRef   <- Ref[Task].of(offset)
       finaliseRef <- Ref[Task].of(false)
       signal      <- SignallingRef[Task, Boolean](false)
-      // TODO handle failures with restarts, passivate after
+      // TODO handle failures with restarts
       fiber       <- streamF
                        .apply(offset)
                        .evalTap { elem =>
