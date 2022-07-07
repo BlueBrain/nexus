@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResourceGen, SchemaGen}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
@@ -12,9 +12,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.{CrossPro
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverEvent, ResolverType}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceTagAdded, ResourceTagDeleted, ResourceUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent.{SchemaCreated, SchemaDeprecated, SchemaTagAdded, SchemaTagDeleted, SchemaUpdated}
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.EventSerializerBehaviours
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
@@ -63,11 +60,6 @@ class EventSerializerSpec
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").accepted
     )
   val resource                              = ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
-  val scheme = SchemaGen.schema(
-    myId,
-    projectRef,
-    jsonContentOf("resources/schema.json").addContext(contexts.shacl, contexts.schemasMetadata) deepMerge json"""{"@id": "$myId"}"""
-  )
 
   val inProjectValue: InProjectValue = InProjectValue(Priority.unsafe(42))
   val crossProjectValue1: CrossProjectValue = CrossProjectValue(
@@ -157,54 +149,6 @@ class EventSerializerSpec
       subject
     ) -> jsonContentOf("/serialization/resolver-deprecated.json")
   )
-
-  val schemasMapping: Map[SchemaEvent, Json] = Map(
-    SchemaCreated(
-      myId,
-      projectRef,
-      scheme.source,
-      scheme.compacted,
-      scheme.expanded,
-      1L,
-      instant,
-      subject
-    ) -> jsonContentOf("/serialization/schema-created.json"),
-    SchemaUpdated(
-      myId,
-      projectRef,
-      scheme.source,
-      scheme.compacted,
-      scheme.expanded,
-      2L,
-      instant,
-      subject
-    ) -> jsonContentOf("/serialization/schema-updated.json"),
-    SchemaTagAdded(
-      myId,
-      projectRef,
-      1L,
-      UserTag.unsafe("mytag"),
-      3L,
-      instant,
-      subject
-    ) -> jsonContentOf("/serialization/schema-tagged.json"),
-    SchemaTagDeleted(
-      myId,
-      projectRef,
-      UserTag.unsafe("mytag"),
-      3L,
-      instant,
-      subject
-    ) -> jsonContentOf("/serialization/schema-tag-deleted.json"),
-    SchemaDeprecated(
-      myId,
-      projectRef,
-      4L,
-      instant,
-      subject
-    ) -> jsonContentOf("/serialization/schema-deprecated.json")
-  )
-
   val resourcesMapping: Map[ResourceEvent, Json] = Map(
     ResourceCreated(
       myId,
@@ -265,7 +209,4 @@ class EventSerializerSpec
   "An EventSerializer" should behave like jsonToEventDeserializer("resolver", resolversMapping)
   "An EventSerializer" should behave like eventToJsonSerializer("resource", resourcesMapping)
   "An EventSerializer" should behave like jsonToEventDeserializer("resource", resourcesMapping)
-  "An EventSerializer" should behave like eventToJsonSerializer("schema", schemasMapping)
-  "An EventSerializer" should behave like jsonToEventDeserializer("schema", schemasMapping)
-
 }

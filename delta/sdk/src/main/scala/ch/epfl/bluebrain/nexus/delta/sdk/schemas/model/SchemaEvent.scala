@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
+package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
@@ -7,15 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -23,7 +25,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of schema event states
   */
-sealed trait SchemaEvent extends ProjectScopedEvent {
+sealed trait SchemaEvent extends ScopedEvent {
 
   /**
     * @return
@@ -67,7 +69,7 @@ object SchemaEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: NonEmptyList[ExpandedJsonLd],
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends SchemaEvent
@@ -98,7 +100,7 @@ object SchemaEvent {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: NonEmptyList[ExpandedJsonLd],
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends SchemaEvent
@@ -124,9 +126,9 @@ object SchemaEvent {
   final case class SchemaTagAdded(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends SchemaEvent
@@ -151,7 +153,7 @@ object SchemaEvent {
       id: Iri,
       project: ProjectRef,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends SchemaEvent
@@ -173,45 +175,59 @@ object SchemaEvent {
   final case class SchemaDeprecated(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends SchemaEvent
 
-  private val context = ContextValue(contexts.metadata, contexts.shacl)
+  @nowarn("cat=unused")
+  val serializer: Serializer[Iri, SchemaEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
+    import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
+    implicit val configuration: Configuration = Serializer.circeConfiguration
+
+    implicit val coder: Codec.AsObject[SchemaEvent] = deriveConfiguredCodec[SchemaEvent]
+    Serializer(_.id)
+  }
 
   @nowarn("cat=unused")
-  implicit private val config: Configuration = Configuration.default
-    .withDiscriminator(keywords.tpe)
-    .copy(transformMemberNames = {
-      case "id"      => nxv.schemaId.prefix
-      case "source"  => nxv.source.prefix
-      case "project" => nxv.project.prefix
-      case "rev"     => nxv.rev.prefix
-      case "instant" => nxv.instant.prefix
-      case "subject" => nxv.eventSubject.prefix
-      case other     => other
-    })
+  val sseEncoder: SseEncoder[SchemaEvent] = new SseEncoder[SchemaEvent] {
 
-  @nowarn("cat=unused")
-  implicit private val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
+    private val context = ContextValue(contexts.metadata, contexts.shacl)
 
-  @nowarn("cat=unused")
-  implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
+    @nowarn("cat=unused")
+    implicit private val config: Configuration = Configuration.default
+      .withDiscriminator(keywords.tpe)
+      .copy(transformMemberNames = {
+        case "id"      => nxv.schemaId.prefix
+        case "source"  => nxv.source.prefix
+        case "project" => nxv.project.prefix
+        case "rev"     => nxv.rev.prefix
+        case "instant" => nxv.instant.prefix
+        case "subject" => nxv.eventSubject.prefix
+        case other     => other
+      })
 
-  @nowarn("cat=unused")
-  implicit def schemaEventEncoder(implicit base: BaseUri): Encoder.AsObject[SchemaEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-    implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
-    Encoder.encodeJsonObject.contramapObject { event =>
-      deriveConfiguredEncoder[SchemaEvent]
-        .encodeObject(event)
-        .remove("compacted")
-        .remove("expanded")
-        .add(nxv.constrainedBy.prefix, schemas.shacl.asJson)
-        .add(nxv.types.prefix, Set(nxv.Schema).asJson)
-        .add(nxv.resourceId.prefix, event.id.asJson)
-        .add(keywords.context, context.value)
+    @nowarn("cat=unused")
+    implicit private val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
+
+    @nowarn("cat=unused")
+    implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
+
+    override def apply(implicit base: BaseUri): Encoder.AsObject[SchemaEvent] = {
+      implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
+      implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
+      Encoder.encodeJsonObject.contramapObject { event =>
+        deriveConfiguredEncoder[SchemaEvent]
+          .encodeObject(event)
+          .remove("compacted")
+          .remove("expanded")
+          .add(nxv.constrainedBy.prefix, schemas.shacl.asJson)
+          .add(nxv.types.prefix, Set(nxv.Schema).asJson)
+          .add(nxv.resourceId.prefix, event.id.asJson)
+          .add(keywords.context, context.value)
+      }
     }
   }
 }

@@ -278,7 +278,7 @@ object Projects {
   }
 
   /**
-    * Entity definition for [[Organization]]
+    * Entity definition for [[Projects]]
     */
   def definition(fetchAndValidateOrg: FetchOrganization)(implicit
       clock: Clock[UIO],

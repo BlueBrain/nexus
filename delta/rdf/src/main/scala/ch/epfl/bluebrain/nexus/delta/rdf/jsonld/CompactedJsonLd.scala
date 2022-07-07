@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, RdfError}
 import io.circe.syntax._
-import io.circe.{Json, JsonObject}
+import io.circe.{Decoder, DecodingFailure, Encoder, Json, JsonObject}
 import monix.bio.IO
 
 /**
@@ -134,5 +134,16 @@ object CompactedJsonLd {
     */
   final def unsafe(rootId: IriOrBNode, contextValue: ContextValue, compacted: JsonObject): CompactedJsonLd =
     CompactedJsonLd(rootId, contextValue, compacted)
+
+  object Database {
+    implicit final val compactedEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
+    implicit final val compactedDecoder: Decoder[CompactedJsonLd] =
+      Decoder.instance { hc =>
+        for {
+          id  <- hc.up.get[Iri]("id")
+          obj <- hc.value.asObject.toRight(DecodingFailure("Expected Json Object", hc.history))
+        } yield CompactedJsonLd.unsafe(id, hc.value.topContextValueOrEmpty, obj.remove(keywords.context))
+      }
+  }
 
 }

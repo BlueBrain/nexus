@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
-import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -13,19 +12,15 @@ import ch.epfl.bluebrain.nexus.delta.routes.SchemasRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.service.schemas.SchemasImpl.{SchemasAggregate, SchemasCache}
-import ch.epfl.bluebrain.nexus.delta.service.schemas.{SchemaEventExchange, SchemasImpl}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasConfig, SchemasImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -36,40 +31,24 @@ import monix.execution.Scheduler
 object SchemasModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[SchemaEvent]]].fromEffect { databaseEventLog[SchemaEvent](_, _) }
-
-  make[SchemasCache].fromEffect { (config: AppConfig) => SchemasImpl.cache(config.schemas) }
-
-  make[SchemasAggregate].fromEffect {
-    (
-        config: AppConfig,
-        resourceIdCheck: ResourceIdCheck,
-        api: JsonLdApi,
-        as: ActorSystem[Nothing],
-        clock: Clock[UIO]
-    ) =>
-      SchemasImpl.aggregate(config.schemas.aggregate, resourceIdCheck)(api, as, clock)
-  }
-
   make[Schemas].from {
     (
-        eventLog: EventLog[Envelope[SchemaEvent]],
         fetchContext: FetchContext[ContextRejection],
         schemaImports: SchemaImports,
         api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
-        agg: SchemasAggregate,
-        cache: SchemasCache,
+        config: SchemasConfig,
+        xas: Transactors,
+        clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
       SchemasImpl(
         fetchContext.mapRejection(ProjectContextRejection),
         schemaImports,
         resolverContextResolution,
-        eventLog,
-        agg,
-        cache
-      )(api, uuidF)
+        config,
+        xas
+      )(api, clock, uuidF)
   }
 
   make[SchemaImports].from {
@@ -123,12 +102,4 @@ object SchemasModule extends ModuleDef {
   many[PriorityRoute].add { (route: SchemasRoutes) =>
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
-
-  many[ReferenceExchange].add { (schemas: Schemas) =>
-    Schemas.referenceExchange(schemas)
-  }
-
-  make[SchemaEventExchange]
-  many[EventExchange].ref[SchemaEventExchange]
-  many[EventExchange].named("resources").ref[SchemaEventExchange]
 }

@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.implicits._
 import doobie.postgres.sqlstate
@@ -43,7 +43,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     * @param notFound
     *   if no state is found, fails with this rejection
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] = stateOr[R](ref, id, Latest, notFound)
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S]
 
   /**
     * Get the state for the entity with the given __id__ at the given __tag__ in the given project
@@ -55,8 +55,10 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     *   the tag
     * @param notFound
     *   if no state is found, fails with this rejection
+    * @param tagNotFound
+    *   if no state is found with the provided tag, fails with this rejection
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, tag: Tag, notFound: => R): IO[R, S]
+  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, tag: Tag, notFound: => R, tagNotFound: => R): IO[R, S]
 
   /**
     * Get the state for the entity with the given __id__ at the given __revision__ in the given project
@@ -187,11 +189,15 @@ object ScopedEventLog {
       xas: Transactors
   ): ScopedEventLog[Id, S, Command, E, Rejection] = new ScopedEventLog[Id, S, Command, E, Rejection] {
 
+    override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
+      stateStore.get(ref, id).mapError(_ => notFound)
+
     override def stateOr[R <: Rejection](ref: ProjectRef,
                                          id: Id,
                                          tag: Tag,
-                                         notFound: => R): IO[R, S] = stateStore.get(ref, id, tag).flatMap {
-      IO.fromOption(_, notFound)
+                                         notFound: => R, tagNotFound: => R): IO[R, S] = stateStore.get(ref, id, tag).mapError {
+      case UnknownState => notFound
+      case TagNotFound  => tagNotFound
     }
 
     override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S] =
@@ -218,7 +224,7 @@ object ScopedEventLog {
       }
 
       stateMachine
-        .evaluate(stateStore.get(ref, id), command, maxDuration)
+        .evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
         .tapEval { case (event, state) =>
           for {
             tagQuery      <- saveTag(event, state)
@@ -244,7 +250,7 @@ object ScopedEventLog {
     }
 
     override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine.evaluate(stateStore.get(ref, id), command, maxDuration)
+      stateMachine.evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
 
     override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] = eventStore.currentEvents(predicate, offset)
 
