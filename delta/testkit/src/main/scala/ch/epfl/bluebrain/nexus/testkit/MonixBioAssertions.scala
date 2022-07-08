@@ -11,7 +11,15 @@ import scala.util.control.NonFatal
 
 trait MonixBioAssertions { self: Assertions =>
 
-  implicit class MonixBioAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location) {
+  implicit class UioAssertionsOps[A](uio: UIO[A])(implicit loc: Location) {
+    def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] =
+      uio.map(assertEquals(_, expected, clue))
+
+    def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
+      uio.timeout(timeout).assertSome(expected)
+  }
+
+  implicit class IoAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location) {
 
     def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] = io.attempt.map {
       case Left(NonFatal(err)) =>

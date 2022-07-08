@@ -1,45 +1,43 @@
-package ch.epfl.bluebrain.nexus.delta.service.resources
+package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import akka.actor.typed.ActorSystem
-import akka.persistence.query.Offset
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.ResourceResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
-import ch.epfl.bluebrain.nexus.delta.sdk.Resources._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingParser
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceCommand._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Initial
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources.{entityType, expandIri}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesImpl.ResourcesLog
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceCommand._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidResourceId, ProjectContextRejection, ResourceFetchRejection, ResourceNotFound, RevisionNotFound, TagNotFound}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.service.resources.ResourcesImpl.ResourcesAggregate
 import ch.epfl.bluebrain.nexus.delta.sourcing._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor._
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import fs2.Stream
 import io.circe.Json
-import monix.bio.{IO, Task, UIO}
+import monix.bio.{IO, UIO}
 
 final class ResourcesImpl private (
-    agg: ResourcesAggregate,
-    fetchContext: FetchContext[ResourceFetchRejection],
-    eventLog: EventLog[Envelope[ResourceEvent]],
+    log: ResourcesLog,
+    fetchContext: FetchContext[ProjectContextRejection],
     sourceParser: JsonLdSourceResolvingParser[ResourceRejection]
 ) extends Resources {
+
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   override def create(
       projectRef: ProjectRef,
@@ -52,7 +50,7 @@ final class ResourcesImpl private (
       (iri, compacted, expanded) <- sourceParser(projectRef, projectContext, source)
       res                        <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
     } yield res
-  }.named("createResource", moduleType)
+  }.span("createResource")
 
   override def create(
       id: IdSegment,
@@ -67,13 +65,13 @@ final class ResourcesImpl private (
       (compacted, expanded) <- sourceParser(projectRef, projectContext, iri, source)
       res                   <- eval(CreateResource(iri, projectRef, schemeRef, source, compacted, expanded, caller), projectContext)
     } yield res
-  }.named("createResource", moduleType)
+  }.span("createResource")
 
   override def update(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long,
+      rev: Int,
       source: Json
   )(implicit caller: Caller): IO[ResourceRejection, DataResource] = {
     for {
@@ -84,105 +82,94 @@ final class ResourcesImpl private (
       res                   <-
         eval(UpdateResource(iri, projectRef, schemeRefOpt, source, compacted, expanded, rev, caller), projectContext)
     } yield res
-  }.named("updateResource", moduleType)
+  }.span("updateResource")
 
   override def tag(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: UserTag,
-      tagRev: Long,
-      rev: Long
+      tagRev: Int,
+      rev: Int
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(TagResource(iri, projectRef, schemeRefOpt, tagRev, tag, rev, caller), projectContext)
-    } yield res).named("tagResource", moduleType)
+    } yield res).span("tagResource")
 
   override def deleteTag(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
       tag: UserTag,
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(DeleteResourceTag(iri, projectRef, schemeRefOpt, tag, rev, caller), projectContext)
-    } yield res).named("deleteResourceTag", moduleType)
+    } yield res).span("deleteResourceTag")
 
   override def deprecate(
       id: IdSegment,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment],
-      rev: Long
+      rev: Int
   )(implicit caller: Subject): IO[ResourceRejection, DataResource] =
     (for {
       projectContext <- fetchContext.onModify(projectRef)
       iri            <- expandIri(id, projectContext)
       schemeRefOpt   <- expandResourceRef(schemaOpt, projectContext)
       res            <- eval(DeprecateResource(iri, projectRef, schemeRefOpt, rev, caller), projectContext)
-    } yield res).named("deprecateResource", moduleType)
+    } yield res).span("deprecateResource")
 
   override def fetch(
       id: IdSegmentRef,
       projectRef: ProjectRef,
       schemaOpt: Option[IdSegment]
-  ): IO[ResourceFetchRejection, DataResource] =
-    id.asTag.fold(
-      for {
-        projectContext       <- fetchContext.onRead(projectRef)
-        iri                  <- expandIri(id.value, projectContext)
-        schemeRefOpt         <- expandResourceRef(schemaOpt, projectContext)
-        state                <- id.asRev.fold(currentState(projectRef, iri))(id => stateAt(projectRef, iri, id.rev))
-        resourceOpt           = state.toResource(projectContext.apiMappings, projectContext.base)
-        resourceSameSchemaOpt = validateSameSchema(resourceOpt, schemeRefOpt)
-        res                  <- IO.fromOption(resourceSameSchemaOpt, ResourceNotFound(iri, projectRef, schemeRefOpt))
-      } yield res
-    )(fetchBy(_, projectRef, schemaOpt))
+  ): IO[ResourceFetchRejection, DataResource] = {
+    for {
+      pc           <- fetchContext.onRead(projectRef)
+      iri          <- expandIri(id.value, pc)
+      schemaRefOpt <- expandResourceRef(schemaOpt, pc)
+      notFound      = ResourceNotFound(iri, projectRef, schemaRefOpt)
+      state        <- id match {
+                        case Latest(_)        => log.stateOr(projectRef, iri, notFound)
+                        case Revision(_, rev) =>
+                          log.stateOr(projectRef, iri, rev.toInt, notFound, RevisionNotFound)
+                        case Tag(_, tag)      =>
+                          log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
+                      }
+      _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound)
+    } yield state.toResource(pc.apiMappings, pc.base)
+  }.span("fetchResource")
 
   override def events(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
+  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
     IO.pure(Stream.empty)
 
   override def currentEvents(
       projectRef: ProjectRef,
       offset: Offset
-  ): IO[ResourceRejection, Stream[Task, Envelope[ResourceEvent]]] =
+  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
     IO.pure(Stream.empty)
 
   override def events(
       organization: Label,
       offset: Offset
-  ): IO[WrappedOrganizationRejection, Stream[Task, Envelope[ResourceEvent]]] =
+  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
     IO.pure(Stream.empty)
 
-  override def events(offset: Offset): Stream[Task, Envelope[ResourceEvent]] =
-    eventLog.eventsByTag(moduleType, offset)
+  override def events(offset: Offset): EnvelopeStream[Iri, ResourceEvent] =
+    log.events(Predicate.root, offset)
 
-  private def currentState(projectRef: ProjectRef, iri: Iri): IO[ResourceFetchRejection, ResourceState] =
-    agg.state(identifier(projectRef, iri))
-
-  private def stateAt(projectRef: ProjectRef, iri: Iri, rev: Long) =
-    eventLog
-      .fetchStateAt(persistenceId(moduleType, identifier(projectRef, iri)), rev, Initial, Resources.next)
-      .mapError(RevisionNotFound(rev, _))
-
-  private def eval(cmd: ResourceCommand, projectContext: ProjectContext): IO[ResourceRejection, DataResource] =
-    for {
-      evaluationResult <- agg.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base)        = projectContext.apiMappings -> projectContext.base
-      resource         <- IO.fromOption(evaluationResult.state.toResource(am, base), UnexpectedInitialState(cmd.id))
-    } yield resource
-
-  private def identifier(projectRef: ProjectRef, id: Iri): String =
-    s"${projectRef}_$id"
+  private def eval(cmd: ResourceCommand, pc: ProjectContext): IO[ResourceRejection, DataResource] =
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
 
   private def expandResourceRef(segment: IdSegment, context: ProjectContext): IO[InvalidResourceId, ResourceRef] =
     IO.fromOption(
@@ -198,72 +185,37 @@ final class ResourcesImpl private (
       case None         => IO.none
       case Some(schema) => expandResourceRef(schema, context).map(Some.apply)
     }
-
-  private def validateSameSchema(resourceOpt: Option[DataResource], schemaOpt: Option[ResourceRef]) =
-    resourceOpt match {
-      case Some(value) if schemaOpt.forall(_.iri == value.schema.iri) => Some(value)
-      case _                                                          => None
-    }
-
 }
 
 object ResourcesImpl {
 
-  type ResourcesAggregate =
-    Aggregate[String, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
-
-  def aggregate(
-      config: AggregateConfig,
-      resourceResolution: ResourceResolution[Schema],
-      resourceIdCheck: ResourceIdCheck
-  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] =
-    aggregate(
-      config,
-      resourceResolution,
-      (project, id) => resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    )
-
-  private def aggregate(
-      config: AggregateConfig,
-      resourceResolution: ResourceResolution[Schema],
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit api: JsonLdApi, as: ActorSystem[Nothing], clock: Clock[UIO]): UIO[ResourcesAggregate] = {
-    val definition = PersistentEventDefinition(
-      entityType = moduleType,
-      initialState = Initial,
-      next = Resources.next,
-      evaluate = Resources.evaluate(resourceResolution, idAvailability),
-      tagger = (_: ResourceEvent) => Set.empty,
-      snapshotStrategy = config.snapshotStrategy.strategy,
-      stopStrategy = config.stopStrategy.persistentStrategy
-    )
-
-    ShardedAggregate.persistentSharded(
-      definition = definition,
-      config = config.processor
-    )
-  }
+  type ResourcesLog =
+    ScopedEventLog[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection]
 
   /**
     * Constructs a [[Resources]] instance.
     *
+    * @param resourceResolution
+    *   resolutions of schemas
     * @param fetchContext
     *   to fetch the project context
     * @param contextResolution
     *   the context resolver
-    * @param eventLog
-    *   the event log for [[ResourceEvent]]
+    * @param config
+    *   the resources config
+    * @param xas
+    *   the database context
     */
   final def apply(
-      fetchContext: FetchContext[ResourceFetchRejection],
-      agg: ResourcesAggregate,
+      resourceResolution: ResourceResolution[Schema],
+      fetchContext: FetchContext[ProjectContextRejection],
       contextResolution: ResolverContextResolution,
-      eventLog: EventLog[Envelope[ResourceEvent]]
-  )(implicit api: JsonLdApi, uuidF: UUIDF = UUIDF.random): Resources =
+      config: ResourcesConfig,
+      xas: Transactors
+  )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF = UUIDF.random): Resources =
     new ResourcesImpl(
-      agg,
+      ScopedEventLog(Resources.definition(resourceResolution), config.eventLog, xas),
       fetchContext,
-      eventLog,
       JsonLdSourceResolvingParser[ResourceRejection](contextResolution, uuidF)
     )
 

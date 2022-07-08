@@ -6,22 +6,19 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.DataResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceState.Current
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{Resource, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import io.circe.Json
-import org.scalatest.OptionValues
 
 import java.time.Instant
 
-object ResourceGen extends OptionValues with IOValues {
+object ResourceGen extends IOValues {
 
   // We put a lenient api for schemas otherwise the api checks data types before the actual schema validation process
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
@@ -32,14 +29,14 @@ object ResourceGen extends OptionValues with IOValues {
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
       types: Set[Iri] = Set.empty,
-      tags: Map[UserTag, Long] = Map.empty,
-      rev: Long = 1L,
+      tags: Tags = Tags.empty,
+      rev: Int = 1,
       deprecated: Boolean = false,
       subject: Subject = Anonymous
-  )(implicit resolution: RemoteContextResolution): Current = {
+  )(implicit resolution: RemoteContextResolution): ResourceState = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
-    Current(
+    ResourceState(
       id,
       project,
       project,
@@ -63,7 +60,7 @@ object ResourceGen extends OptionValues with IOValues {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[UserTag, Long] = Map.empty
+      tags: Tags = Tags.empty
   )(implicit resolution: RemoteContextResolution): Resource = {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
@@ -75,8 +72,8 @@ object ResourceGen extends OptionValues with IOValues {
       project: ProjectRef,
       source: Json,
       schema: ResourceRef = Latest(schemas.resources),
-      tags: Map[UserTag, Long] = Map.empty,
-      rev: Long = 1L,
+      tags: Tags = Tags.empty,
+      rev: Int = 1,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,
       am: ApiMappings = ApiMappings.empty,
@@ -85,7 +82,7 @@ object ResourceGen extends OptionValues with IOValues {
     val expanded  = ExpandedJsonLd(source).accepted.replaceId(id)
     val compacted = expanded.toCompacted(source.topContextValueOrEmpty).accepted
     Resource(id, project, tags, schema, source, compacted, expanded)
-    Current(
+    ResourceState(
       id,
       project,
       project,
@@ -101,19 +98,19 @@ object ResourceGen extends OptionValues with IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base)).value
+    ).toResource(am, ProjectBase.unsafe(base))
   }
 
   def resourceFor(
       resource: Resource,
       types: Set[Iri] = Set.empty,
-      rev: Long = 1L,
+      rev: Int = 1,
       subject: Subject = Anonymous,
       deprecated: Boolean = false,
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): DataResource =
-    Current(
+    ResourceState(
       resource.id,
       resource.project,
       resource.project,
@@ -129,6 +126,6 @@ object ResourceGen extends OptionValues with IOValues {
       subject,
       Instant.EPOCH,
       subject
-    ).toResource(am, ProjectBase.unsafe(base)).value
+    ).toResource(am, ProjectBase.unsafe(base))
 
 }

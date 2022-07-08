@@ -50,7 +50,7 @@ object ResolversModule extends ModuleDef {
         as: ActorSystem[Nothing],
         clock: Clock[UIO]
     ) =>
-      ResolversImpl.aggregate(config.resources.aggregate, cache, resourceIdCheck)(as, clock)
+      ResolversImpl.aggregate(config.resolvers.aggregate, cache, resourceIdCheck)(as, clock)
   }
 
   make[Resolvers].fromEffect {

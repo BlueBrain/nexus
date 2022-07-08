@@ -6,14 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, ElasticSearchClient, IndexLabel}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.ResourceParser
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.EventStream
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.GraphElement.{NewFileElement, ResourceElement}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.{EventStream, GraphElement}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileCreated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent.{ResourceCreated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Envelope, Event}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -22,10 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStream.ProgressS
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewIndex
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionProgress.NoProgress
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{Projection, ProjectionProgress, SuccessMessage}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import fs2.Stream
 import io.circe.JsonObject
 import io.circe.literal._
@@ -88,14 +87,15 @@ final class GraphAnalyticsIndexingStream(
       .flatMap { case (progress, stream) =>
         stream
           .map(_.toMessage)
-          .collectSomeValue {
+          .collectSomeValue[GraphElement] {
             // To update potential relationships pointing to this file
-            case f: FileCreated     => Some(NewFileElement(f.id))
+            case f: FileCreated => Some(NewFileElement(f.id))
             // To create / update the resource in the graph and update potential relationships pointing to it
-            case c: ResourceCreated => Some(ResourceElement(c.id, c.rev))
-            case u: ResourceUpdated => Some(ResourceElement(u.id, u.rev))
+            // TODO: Uncomment when migrating graph-analytics plugin
+            //            case c: ResourceCreated => Some(ResourceElement(c.id, c.rev))
+            //            case u: ResourceUpdated => Some(ResourceElement(u.id, u.rev))
             // We don't care about other events
-            case _                  => None
+            case _              => None
           }
           .groupWithin(config.maxBatchSize, config.maxTimeWindow)
           .evalMap { chunk =>
