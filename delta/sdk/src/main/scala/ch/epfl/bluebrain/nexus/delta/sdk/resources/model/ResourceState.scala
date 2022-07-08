@@ -17,9 +17,6 @@ import java.time.Instant
 import scala.annotation.nowarn
 
 /**
-  * Enumeration of resource states.
-  */
-/**
   * A resource active state.
   *
   * @param id
