@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.resources
+package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
 
 /**
@@ -24,6 +24,12 @@ sealed trait ResourceCommand extends Product with Serializable {
     *   the resource identifier
     */
   def id: Iri
+
+  /**
+    * the last known revision of the resource
+    * @return
+    */
+  def rev: Int
 
   /**
     * @return
@@ -63,6 +69,8 @@ object ResourceCommand {
       caller: Caller
   ) extends ResourceCommand {
 
+    override def rev: Int = 0
+
     def subject: Subject = caller.subject
   }
 
@@ -93,7 +101,7 @@ object ResourceCommand {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: ExpandedJsonLd,
-      rev: Long,
+      rev: Int,
       caller: Caller
   ) extends ResourceCommand {
     def subject: Subject = caller.subject
@@ -121,9 +129,9 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ResourceCommand
 
@@ -148,7 +156,7 @@ object ResourceCommand {
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ResourceCommand
 
@@ -170,7 +178,7 @@ object ResourceCommand {
       id: Iri,
       project: ProjectRef,
       schemaOpt: Option[ResourceRef],
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ResourceCommand
 }

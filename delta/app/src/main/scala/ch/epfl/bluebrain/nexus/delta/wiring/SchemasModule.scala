@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
+import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -19,8 +20,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverContextResoluti
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasConfig, SchemasImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -37,7 +39,7 @@ object SchemasModule extends ModuleDef {
         schemaImports: SchemaImports,
         api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
-        config: SchemasConfig,
+        config: AppConfig,
         xas: Transactors,
         clock: Clock[UIO],
         uuidF: UUIDF
@@ -46,7 +48,7 @@ object SchemasModule extends ModuleDef {
         fetchContext.mapRejection(ProjectContextRejection),
         schemaImports,
         resolverContextResolution,
-        config,
+        config.schemas,
         xas
       )(api, clock, uuidF)
   }

@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceResolutionGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -54,7 +54,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
     value = Resource(
       nxv + "example1",
       project,
-      Map.empty,
+      Tags.empty,
       Latest(nxv + "schema"),
       Json.obj(keywords.context -> context),
       CompactedJsonLd.empty,

@@ -1,16 +1,16 @@
-package ch.epfl.bluebrain.nexus.delta.config
+package ch.epfl.bluebrain.nexus.delta.sdk.resources
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.AggregateConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
 /**
   * Configuration for the Resources module.
   *
-  * @param aggregate
-  *   configuration of the underlying aggregate
+  * @param eventLog
+  *   configuration of the event log
   */
-final case class ResourcesConfig(aggregate: AggregateConfig)
+final case class ResourcesConfig(eventLog: EventLogConfig)
 
 object ResourcesConfig {
   implicit final val resourcesConfigReader: ConfigReader[ResourcesConfig] =

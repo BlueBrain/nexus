@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -31,7 +31,6 @@ class EventSerializer extends SerializerWithStringManifest {
 
   override def manifest(o: AnyRef): String = o match {
     case _: ResolverEvent => resolverEventManifest
-    case _: ResourceEvent => resourceEventManifest
     case _                => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
@@ -43,7 +42,6 @@ class EventSerializer extends SerializerWithStringManifest {
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case `resolverEventManifest` => parseAndDecode[ResolverEvent](bytes, manifest)
-    case `resourceEventManifest` => parseAndDecode[ResourceEvent](bytes, manifest)
     case _                       => throw new IllegalArgumentException(s"Unknown manifest '$manifest'")
   }
 
@@ -58,7 +56,6 @@ class EventSerializer extends SerializerWithStringManifest {
 object EventSerializer {
 
   final val resolverEventManifest: String = Resolvers.moduleType
-  final val resourceEventManifest: String = Resources.moduleType
 
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)

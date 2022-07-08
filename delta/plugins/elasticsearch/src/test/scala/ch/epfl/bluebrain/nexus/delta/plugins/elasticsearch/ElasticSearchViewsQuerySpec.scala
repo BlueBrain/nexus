@@ -178,7 +178,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     (0 until 3).map { idx =>
       val resource = ResourceGen.resource(view.id / idx.toString, view.value.project, Json.obj())
       ResourceGen
-        .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx.toLong)
+        .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx)
         .copy(createdAt = Instant.EPOCH.plusSeconds(idx.toLong))
         .toCompactedJsonLd
         .accepted

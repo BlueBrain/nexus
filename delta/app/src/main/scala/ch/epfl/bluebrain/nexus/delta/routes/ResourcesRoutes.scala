@@ -18,17 +18,18 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resources.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{InvalidJsonLdFormat, InvalidSchemaRejection, ResourceNotFound}
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
+
+import scala.annotation.nowarn
 
 /**
   * The resource routes
@@ -51,7 +52,7 @@ final class ResourcesRoutes(
     aclCheck: AclCheck,
     resources: Resources,
     schemeDirectives: DeltaSchemeDirectives,
-    sseEventLog: SseEventLog,
+    @nowarn("cat=unused") sseEventLog: SseEventLog,
     index: IndexingAction
 )(implicit
     baseUri: BaseUri,
@@ -65,8 +66,6 @@ final class ResourcesRoutes(
 
   import baseUri.prefixSegment
   import schemeDirectives._
-
-  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
 
   private val resourceSchema = schemas.resources
 
@@ -83,8 +82,8 @@ final class ResourcesRoutes(
               get {
                 operationName(s"$prefixSegment/resources/events") {
                   authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventId { offset =>
-                      emit(sseEventLog.stream(offset))
+                    lastEventId { _ =>
+                      failWith(new IllegalStateException("TODO: Handle with SSE"))
                     }
                   }
                 }
@@ -95,8 +94,8 @@ final class ResourcesRoutes(
               get {
                 operationName(s"$prefixSegment/resources/{org}/events") {
                   authorizeFor(org, events.read).apply {
-                    lastEventId { offset =>
-                      emit(sseEventLog.stream(org, offset).leftWiden[ResourceRejection])
+                    lastEventId { _ =>
+                      failWith(new IllegalStateException("TODO: Handle with SSE"))
                     }
                   }
                 }
@@ -110,8 +109,8 @@ final class ResourcesRoutes(
                     concat(
                       get {
                         authorizeFor(ref, events.read).apply {
-                          lastEventId { offset =>
-                            emit(sseEventLog.stream(ref, offset).leftWiden[ResourceRejection])
+                          lastEventId { _ =>
+                            failWith(new IllegalStateException("TODO: Handle with SSE"))
                           }
                         }
                       },
@@ -160,7 +159,7 @@ final class ResourcesRoutes(
                               // Create or update a resource
                               put {
                                 authorizeFor(ref, Write).apply {
-                                  (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                                  (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                     case (None, source)      =>
                                       // Create a resource with schema and id segments
                                       emit(
@@ -184,7 +183,7 @@ final class ResourcesRoutes(
                                 }
                               },
                               // Deprecate a resource
-                              (delete & parameter("rev".as[Long])) { rev =>
+                              (delete & parameter("rev".as[Int])) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   emit(
                                     resources
@@ -224,22 +223,22 @@ final class ResourcesRoutes(
                           }
                         },
                         // Tag a resource
-                        (pathPrefix("tags")) {
+                        pathPrefix("tags") {
                           operationName(s"$prefixSegment/resources/{org}/{project}/{schema}/{id}/tags") {
                             concat(
                               // Fetch a resource tags
                               (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                                val tagsIO = resources.fetch(id, ref, schemaOpt).map(res => Tags(res.value.tags))
+                                val tagsIO = resources.fetch(id, ref, schemaOpt).map(_.value.tags)
                                 emit(tagsIO.leftWiden[ResourceRejection].rejectWhen(wrongJsonOrNotFound))
                               },
                               // Tag a resource
-                              (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
+                              (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                                 authorizeFor(ref, Write).apply {
                                   entity(as[Tag]) { case Tag(tagRev, tag) =>
                                     emit(
                                       Created,
                                       resources
-                                        .tag(id, ref, schemaOpt, tag, tagRev, rev)
+                                        .tag(id, ref, schemaOpt, tag, tagRev.toInt, rev)
                                         .tapEval(index(ref, _, mode))
                                         .map(_.void)
                                         .rejectWhen(wrongJsonOrNotFound)
@@ -248,7 +247,7 @@ final class ResourcesRoutes(
                                 }
                               },
                               // Delete a tag
-                              (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                              (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
                                 ref,
                                 Write
                               )) { (tag, rev) =>
