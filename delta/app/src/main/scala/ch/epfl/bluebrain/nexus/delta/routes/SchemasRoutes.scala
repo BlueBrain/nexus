@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schemas.shacl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
@@ -14,22 +13,22 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.schemas.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.SchemaNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaEvent, SchemaRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
 import io.circe.{Json, Printer}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -65,9 +64,7 @@ final class SchemasRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
-
-  implicit private val eventExchangeMapper = Mapper(Schemas.eventExchangeValue(_))
+  implicit val sseConverter: SseConverter[SchemaEvent] = SseConverter(SchemaEvent.sseEncoder)
 
   implicit private def resourceFAJsonLdEncoder[A: JsonLdEncoder]: JsonLdEncoder[ResourceF[A]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.schemasMetadata))
@@ -82,7 +79,7 @@ final class SchemasRoutes(
               get {
                 operationName(s"$prefixSegment/schemas/events") {
                   authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventId { offset =>
+                    lastEventIdNew { offset =>
                       emit(schemas.events(offset))
                     }
                   }
@@ -94,7 +91,7 @@ final class SchemasRoutes(
               get {
                 operationName(s"$prefixSegment/schemas/{org}/events") {
                   authorizeFor(org, events.read).apply {
-                    lastEventId { offset =>
+                    lastEventIdNew { offset =>
                       emit(schemas.events(org, offset).leftWiden[SchemaRejection])
                     }
                   }
@@ -108,7 +105,7 @@ final class SchemasRoutes(
                   get {
                     operationName(s"$prefixSegment/schemas/{org}/{project}/events") {
                       authorizeFor(ref, events.read).apply {
-                        lastEventId { offset =>
+                        lastEventIdNew { offset =>
                           emit(schemas.events(ref, offset))
                         }
                       }
@@ -131,7 +128,7 @@ final class SchemasRoutes(
                           // Create or update a schema
                           put {
                             authorizeFor(ref, Write).apply {
-                              (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, source)      =>
                                   // Create a schema with id segment
                                   emit(
@@ -145,7 +142,7 @@ final class SchemasRoutes(
                             }
                           },
                           // Deprecate a schema
-                          (delete & parameter("rev".as[Long])) { rev =>
+                          (delete & parameter("rev".as[Int])) { rev =>
                             authorizeFor(ref, Write).apply {
                               emit(
                                 schemas
@@ -179,27 +176,27 @@ final class SchemasRoutes(
                         }
                       }
                     },
-                    (pathPrefix("tags")) {
+                    pathPrefix("tags") {
                       operationName(s"$prefixSegment/schemas/{org}/{project}/{id}/tags") {
                         concat(
                           // Fetch a schema tags
                           (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                            val tagsIO = schemas.fetch(id, ref).map(res => Tags(res.value.tags))
+                            val tagsIO = schemas.fetch(id, ref).map(_.value.tags)
                             emit(tagsIO.leftWiden[SchemaRejection].rejectOn[SchemaNotFound])
                           },
                           // Tag a schema
-                          (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
+                          (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
-                                  schemas.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                  schemas.tag(id, ref, tag, tagRev.toInt, rev).tapEval(index(ref, _, mode)).map(_.void)
                                 )
                               }
                             }
                           },
                           // Delete a tag
-                          (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                          (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
                             ref,
                             Write
                           )) { (tag, rev) =>

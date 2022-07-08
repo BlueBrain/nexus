@@ -20,7 +20,7 @@ trait UUIDCache {
   def orgLabel(uuid: UUID): UIO[Option[Label]]
 
   /**
-    * Fetches an project reference from an uuid
+    * Fetches a project reference from an uuid
     */
   def projectRef(uuid: UUID): UIO[Option[ProjectRef]]
 

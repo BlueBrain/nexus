@@ -274,15 +274,8 @@ class BlazegraphPluginModule(priority: Int) extends ModuleDef {
     BlazegraphViews.referenceExchange(views)
   }
 
-  many[IndexingAction].add {
-    (
-        client: BlazegraphClient @Id("blazegraph-query-client"),
-        cache: BlazegraphViewsCache,
-        config: BlazegraphViewsConfig,
-        baseUri: BaseUri,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      new BlazegraphIndexingAction(client, cache, config.indexing)(cr, baseUri)
+  many[IndexingAction].addValue {
+    new BlazegraphIndexingAction()
   }
 
   make[BlazegraphViewEventExchange]

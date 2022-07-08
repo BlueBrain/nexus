@@ -6,13 +6,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.EncryptionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.PermissionsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}

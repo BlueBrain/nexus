@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe.Codec
+import io.circe.{Codec, Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 
@@ -121,7 +121,13 @@ object ProjectState {
   @nowarn("cat=unused")
   val serializer: Serializer[ProjectRef, ProjectState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
-    implicit val configuration: Configuration        = Serializer.circeConfiguration
+    implicit val configuration: Configuration = Serializer.circeConfiguration
+
+    implicit val apiMappingsDecoder: Decoder[ApiMappings]          =
+      Decoder.decodeMap[String, Iri].map(ApiMappings(_))
+    implicit val apiMappingsEncoder: Encoder.AsObject[ApiMappings] =
+      Encoder.encodeMap[String, Iri].contramapObject(_.value)
+
     implicit val coder: Codec.AsObject[ProjectState] = deriveConfiguredCodec[ProjectState]
     Serializer(_.project)
   }

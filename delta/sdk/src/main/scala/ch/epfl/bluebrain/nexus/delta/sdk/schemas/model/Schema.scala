@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
+package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -10,9 +10,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import monix.bio.IO
@@ -37,7 +36,7 @@ import monix.bio.IO
 final case class Schema(
     id: Iri,
     project: ProjectRef,
-    tags: Map[UserTag, Long],
+    tags: Tags,
     source: Json,
     compacted: CompactedJsonLd,
     expanded: NonEmptyList[ExpandedJsonLd]

@@ -7,15 +7,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import com.typesafe.config.ConfigFactory
 import io.altoo.akka.serialization.kryo.KryoSerializer
-import io.circe.Json
 import org.apache.jena.iri.{IRI, IRIFactory}
 import org.scalatest.TryValues
 import org.scalatest.matchers.should.Matchers
@@ -39,15 +35,6 @@ class KryoSerializerInitSpec
   private val expanded = ExpandedJsonLd(jsonContentOf("/kryo/expanded.json")).accepted
   private val graph    = Graph(expanded).rightValue
   private val iri      = iri"http://nexus.example.com/john-doé"
-
-  private val schema = Schema(
-    iri,
-    ProjectRef.unsafe("org", "proj"),
-    Map.empty,
-    Json.obj(),
-    expanded.toCompacted(ContextValue.empty).accepted,
-    NonEmptyList.of(expanded)
-  )
 
   "A Path Kryo serialization" should {
     "succeed" in {
@@ -141,23 +128,6 @@ class KryoSerializerInitSpec
       val deserialized = serialization.deserialize(serialized.get, iri.getClass)
       deserialized.isSuccess shouldEqual true
       deserialized.success.value shouldEqual iri
-    }
-  }
-
-  "A Schema Kryo serialization" should {
-    "succeed" in {
-      // Find the Serializer for it
-      val serializer = serialization.findSerializerFor(schema)
-      serializer.getClass.equals(classOf[KryoSerializer]) shouldEqual true
-
-      // Check serialization/deserialization
-      val serialized = serialization.serialize(schema)
-      serialized.isSuccess shouldEqual true
-
-      val deserialized       = serialization.deserialize(serialized.get, schema.getClass)
-      deserialized.isSuccess shouldEqual true
-      val deserializedSchema = deserialized.success.value
-      deserializedSchema shouldEqual schema
     }
   }
 }

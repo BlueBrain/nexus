@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, PullRequest}
 import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
@@ -68,7 +69,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("get state 1") {
-    store.get(project1, id1).assertSome(state1)
+    store.get(project1, id1).assert(state1)
   }
 
   test("Save state 1 and state 3 with user tag successfully") {
@@ -114,7 +115,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.save(updatedState1).transact(xas.write)
       _ <- assertCount(6)
-      _ <- store.get(project1, id1).assertSome(updatedState1)
+      _ <- store.get(project1, id1).assert(updatedState1)
     } yield ()
   }
 
@@ -126,7 +127,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.delete(project2, id1, customTag).transact(xas.write)
       _ <- assertCount(5)
-      _ <- store.get(project2, id1, customTag).assertNone
+      _ <- store.get(project2, id1, customTag).error(TagNotFound)
     } yield ()
   }
 
@@ -138,7 +139,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
     for {
       _ <- store.delete(project1, id2, Latest).transact(xas.write)
       _ <- assertCount(4)
-      _ <- store.get(project1, id2).assertNone
+      _ <- store.get(project1, id2).error(UnknownState)
     } yield ()
   }
 

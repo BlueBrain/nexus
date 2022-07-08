@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
+package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.Json
 
 /**
@@ -24,6 +24,12 @@ sealed trait SchemaCommand extends Product with Serializable {
     *   the schema identifier
     */
   def id: Iri
+
+  /**
+    * the last known revision of the schema
+    * @return
+    */
+  def rev: Int
 
   /**
     * @return
@@ -58,7 +64,9 @@ object SchemaCommand {
       compacted: CompactedJsonLd,
       expanded: NonEmptyList[ExpandedJsonLd],
       subject: Subject
-  ) extends SchemaCommand
+  ) extends SchemaCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command that signals the intent to update an existing schema.
@@ -84,7 +92,7 @@ object SchemaCommand {
       source: Json,
       compacted: CompactedJsonLd,
       expanded: NonEmptyList[ExpandedJsonLd],
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends SchemaCommand
 
@@ -107,9 +115,9 @@ object SchemaCommand {
   final case class TagSchema(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends SchemaCommand
 
@@ -131,7 +139,7 @@ object SchemaCommand {
       id: Iri,
       project: ProjectRef,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends SchemaCommand
 
@@ -150,7 +158,7 @@ object SchemaCommand {
   final case class DeprecateSchema(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends SchemaCommand
 }

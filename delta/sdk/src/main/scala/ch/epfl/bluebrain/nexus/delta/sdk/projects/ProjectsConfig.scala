@@ -10,7 +10,7 @@ import pureconfig.generic.semiauto._
   * Configuration for the Projects module.
   *
   * @param eventLog
-  *   configuration of the underlying aggregate
+  *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
   * @param cache

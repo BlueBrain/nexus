@@ -1,18 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.sdk
+package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
+import ch.epfl.bluebrain.nexus.delta.sdk.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.Resource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaRejection.InvalidSchemaResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.InvalidSchemaResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.Fixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues, TestHelpers}
 import monix.bio.IO
 import org.scalatest.OptionValues
@@ -51,7 +51,7 @@ class SchemaImportsSpec
         Schema(
           iri"$neuroshapes/commons/entity",
           projectRef,
-          Map.empty,
+          Tags.empty,
           entitySource,
           entityExpandedSchema.toCompacted(entitySource.topContextValueOrEmpty).accepted,
           NonEmptyList.of(

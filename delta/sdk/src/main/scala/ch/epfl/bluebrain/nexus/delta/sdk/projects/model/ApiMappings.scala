@@ -53,5 +53,4 @@ object ApiMappings {
 
   implicit val apiMappingsDecoder: Decoder[ApiMappings] =
     Decoder.decodeList[Mapping].map(list => ApiMappings(list.map(m => m.prefix -> m.namespace).toMap))
-
 }

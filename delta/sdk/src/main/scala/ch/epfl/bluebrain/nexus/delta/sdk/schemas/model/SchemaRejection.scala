@@ -1,9 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.model.schemas
+package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -11,22 +10,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ValidationReport
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.IndexingActionFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.{InvalidJsonLdRejection, UnexpectedId}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{ResolverResolutionRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of schema rejection types.
@@ -52,7 +45,7 @@ object SchemaRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends SchemaFetchRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
@@ -174,7 +167,7 @@ object SchemaRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends SchemaRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the schema may have been updated since last seen."
       )
@@ -186,26 +179,9 @@ object SchemaRejection {
       extends SchemaFetchRejection("Something went wrong while interacting with another module.")
 
   /**
-    * Signals a rejection caused when interacting with the projects API
-    */
-  final case class WrappedProjectRejection(rejection: ProjectRejection) extends SchemaFetchRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused when interacting with the organizations API
-    */
-  final case class WrappedOrganizationRejection(rejection: OrganizationRejection)
-      extends SchemaFetchRejection(rejection.reason)
-
-  /**
     * Signals a rejection caused when interacting with the resolvers resolution API
     */
   final case class WrappedResolverResolutionRejection(rejection: ResolverResolutionRejection)
-      extends SchemaRejection(rejection.reason)
-
-  /**
-    * Signals a rejection caused by a failure to perform indexing.
-    */
-  final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends SchemaRejection(rejection.reason)
 
   /**
@@ -214,20 +190,7 @@ object SchemaRejection {
   final case class InvalidJsonLdFormat(idOpt: Option[Iri], rdfError: RdfError)
       extends SchemaRejection(s"Schema${idOpt.fold("")(id => s" '$id'")} has invalid JSON-LD payload.")
 
-  /**
-    * Rejection returned when the returned state is the initial state after a Schemas.evaluation plus a Schemas.next
-    * Note: This should never happen since the evaluation method already guarantees that the next function returns a
-    * current
-    */
-  final case class UnexpectedInitialState(id: Iri)
-      extends SchemaRejection(s"Unexpected initial state for schema '$id'.")
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class SchemaEvaluationError(err: EvaluationError) extends SchemaRejection("Unexpected evaluation error")
-
-  implicit def schemasRejectionEncoder(implicit C: ClassTag[SchemaCommand]): Encoder.AsObject[SchemaRejection] = {
+  implicit val schemasRejectionEncoder: Encoder.AsObject[SchemaRejection] = {
     def importsAsJson(imports: Map[ResourceRef, ResourceResolutionReport]) =
       Json.fromValues(
         imports.map { case (ref, report) =>
@@ -239,15 +202,7 @@ object SchemaRejection {
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject.empty.add(keywords.tpe, tpe.asJson).add("reason", r.reason.asJson)
       r match {
-        case SchemaEvaluationError(EvaluationFailure(C(cmd), _))                              =>
-          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for schema '${cmd.id}'"
-          JsonObject(keywords.tpe -> "SchemaEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case SchemaEvaluationError(EvaluationTimeout(C(cmd), t))                              =>
-          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for schema '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "SchemaEvaluationTimeout".asJson, "reason" -> reason.asJson)
         case ProjectContextRejection(rejection)                                               => rejection.asJsonObject
-        case WrappedOrganizationRejection(rejection)                                          => rejection.asJsonObject
-        case WrappedProjectRejection(rejection)                                               => rejection.asJsonObject
         case SchemaShaclEngineRejection(_, details)                                           => obj.add("details", details.asJson)
         case InvalidJsonLdFormat(_, rdf)                                                      => obj.add("rdf", rdf.asJson)
         case InvalidSchema(_, report)                                                         => obj.addContext(contexts.shacl).add("details", report.json)
@@ -270,32 +225,14 @@ object SchemaRejection {
     case JsonLdRejection.InvalidJsonLdFormat(id, rdfError) => InvalidJsonLdFormat(id, rdfError)
   }
 
-  implicit val schemaProjectRejectionMapper: Mapper[ProjectRejection, SchemaFetchRejection] = {
-    case ProjectRejection.WrappedOrganizationRejection(r) => WrappedOrganizationRejection(r)
-    case value                                            => WrappedProjectRejection(value)
-  }
-
-  implicit val schemaOrgRejectionMapper: Mapper[OrganizationRejection, WrappedOrganizationRejection] =
-    WrappedOrganizationRejection.apply
-
-  implicit val schemaIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
-    (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, SchemaRejection] = SchemaEvaluationError.apply
-
   implicit val responseFieldsSchemas: HttpResponseFields[SchemaRejection] =
     HttpResponseFields {
-      case RevisionNotFound(_, _)            => StatusCodes.NotFound
-      case TagNotFound(_)                    => StatusCodes.NotFound
-      case SchemaNotFound(_, _)              => StatusCodes.NotFound
-      case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
-      case IncorrectRev(_, _)                => StatusCodes.Conflict
-      case ProjectContextRejection(rej)      => rej.status
-      case WrappedProjectRejection(rej)      => rej.status
-      case WrappedOrganizationRejection(rej) => rej.status
-      case SchemaEvaluationError(_)          => StatusCodes.InternalServerError
-      case UnexpectedInitialState(_)         => StatusCodes.InternalServerError
-      case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
-      case _                                 => StatusCodes.BadRequest
+      case RevisionNotFound(_, _)       => StatusCodes.NotFound
+      case TagNotFound(_)               => StatusCodes.NotFound
+      case SchemaNotFound(_, _)         => StatusCodes.NotFound
+      case ResourceAlreadyExists(_, _)  => StatusCodes.Conflict
+      case IncorrectRev(_, _)           => StatusCodes.Conflict
+      case ProjectContextRejection(rej) => rej.status
+      case _                            => StatusCodes.BadRequest
     }
 }

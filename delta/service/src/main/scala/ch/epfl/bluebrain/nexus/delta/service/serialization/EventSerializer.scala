@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{IdentityResolution, ResolverEvent, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.schemas.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.service.serialization.EventSerializer._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
@@ -33,21 +32,18 @@ class EventSerializer extends SerializerWithStringManifest {
   override def manifest(o: AnyRef): String = o match {
     case _: ResolverEvent => resolverEventManifest
     case _: ResourceEvent => resourceEventManifest
-    case _: SchemaEvent   => schemaEventManifest
     case _                => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case e: ResolverEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case e: ResourceEvent => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-    case e: SchemaEvent   => e.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
     case _                => throw new IllegalArgumentException(s"Unknown event type '${o.getClass.getCanonicalName}'")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case `resolverEventManifest` => parseAndDecode[ResolverEvent](bytes, manifest)
     case `resourceEventManifest` => parseAndDecode[ResourceEvent](bytes, manifest)
-    case `schemaEventManifest`   => parseAndDecode[SchemaEvent](bytes, manifest)
     case _                       => throw new IllegalArgumentException(s"Unknown manifest '$manifest'")
   }
 
@@ -63,7 +59,6 @@ object EventSerializer {
 
   final val resolverEventManifest: String = Resolvers.moduleType
   final val resourceEventManifest: String = Resources.moduleType
-  final val schemaEventManifest: String   = Schemas.moduleType
 
   implicit final private val configuration: Configuration =
     Configuration.default.withDiscriminator(keywords.tpe)
@@ -90,6 +85,4 @@ object EventSerializer {
 
   implicit final val resolverEvent: Codec.AsObject[ResolverEvent]      = deriveConfiguredCodec[ResolverEvent]
   implicit final val resourceEventCodec: Codec.AsObject[ResourceEvent] = deriveConfiguredCodec[ResourceEvent]
-  implicit final val schemaEventCodec: Codec.AsObject[SchemaEvent]     = deriveConfiguredCodec[SchemaEvent]
-
 }

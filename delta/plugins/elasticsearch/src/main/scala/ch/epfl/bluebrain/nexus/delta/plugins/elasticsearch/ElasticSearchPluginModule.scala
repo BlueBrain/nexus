@@ -348,16 +348,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     ElasticSearchViews.referenceExchange(elasticSearchViews)
   }
 
-  many[IndexingAction].add {
-    (
-        client: ElasticSearchClient,
-        cache: ElasticSearchViewCache,
-        pipeConfig: PipeConfig,
-        config: ElasticSearchViewsConfig,
-        baseUri: BaseUri,
-        cr: RemoteContextResolution @Id("aggregate")
-    ) =>
-      new ElasticSearchIndexingAction(client, cache, pipeConfig, config)(cr, baseUri)
+  many[IndexingAction].addValue {
+    new ElasticSearchIndexingAction()
   }
 
   make[ElasticSearchViewEventExchange]
