@@ -20,6 +20,8 @@ object Tags {
 
   def apply(value: (UserTag, Int)): Tags = Tags(Map(value))
 
+  def apply(first: (UserTag, Int), values: (UserTag, Int)*): Tags = Tags(Map(first) ++ values)
+
   implicit val tagsDecoder: Decoder[Tags]          =
     Decoder.decodeMap[UserTag, Int].map(Tags(_))
   implicit val tagsEncoder: Encoder.AsObject[Tags] =

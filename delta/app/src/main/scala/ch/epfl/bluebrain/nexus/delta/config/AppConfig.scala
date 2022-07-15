@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.AutomaticProvisioningConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.QuotasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}

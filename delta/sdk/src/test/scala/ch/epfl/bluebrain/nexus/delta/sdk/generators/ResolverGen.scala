@@ -3,22 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.Resolver.InProjectResolver
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverState.Current
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverValue.InProjectValue
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{Priority, ResolverValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.InProjectResolver
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.InProjectValue
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Priority, ResolverState, ResolverValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, IOValues}
 import io.circe.Json
-import org.scalatest.OptionValues
 
 import java.time.Instant
 
-object ResolverGen extends OptionValues with IOValues with CirceLiteral {
+object ResolverGen {
 
   /**
     * Generate an in-project resolver
@@ -33,7 +30,7 @@ object ResolverGen extends OptionValues with IOValues with CirceLiteral {
       project,
       InProjectValue(Priority.unsafe(priority)),
       Json.obj(),
-      Map.empty
+      Tags.empty
     )
 
   /**
@@ -44,14 +41,25 @@ object ResolverGen extends OptionValues with IOValues with CirceLiteral {
       project: Project,
       value: ResolverValue,
       source: Json,
-      tags: Map[UserTag, Long] = Map.empty,
-      rev: Long = 1L,
+      tags: Tags = Tags.empty,
+      rev: Int = 1,
       subject: Subject = Anonymous,
       deprecated: Boolean = false
   ): ResolverResource =
-    Current(id: Iri, project.ref, value, source, tags, rev, deprecated, Instant.EPOCH, subject, Instant.EPOCH, subject)
+    ResolverState(
+      id: Iri,
+      project.ref,
+      value,
+      source,
+      tags,
+      rev,
+      deprecated,
+      Instant.EPOCH,
+      subject,
+      Instant.EPOCH,
+      subject
+    )
       .toResource(project.apiMappings, project.base)
-      .value
 
   /**
     * Generate a valid json source from resolver id and value

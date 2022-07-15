@@ -2,12 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResolution.Fetch
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ResolverNotFound
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.Fetch
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import monix.bio.{IO, UIO}
 
 object ResolverResolutionGen {
