@@ -184,7 +184,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
                         e
                     }
       _           = assertEquals(elemsOfLog2.size, 4, "Exactly 4 elements should pass through log2")
-      _          <- projection.offset().assert(expectedOffset)
+      _          <- projection.offset.assert(expectedOffset)
     } yield ()
   }
 
@@ -260,6 +260,8 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       _          <- persistRef.set(ProjectionOffset.empty)
       _          <- Task.sleep(10.millis)
       _          <- projection.isRunning.assert(false, "The projection should have stopped")
+      status     <- projection.executionStatus
+      _           = assertEquals(status.isStopped, true, status)
       elems      <- currentElements
       _           = assert(elems.size < 9, "Projection should have stopped before the end")
     } yield ()
@@ -270,7 +272,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       SourceChain(
         Naturals.reference,
         iri"https://naturals",
-        NaturalsConfig(10, 1.second).toJsonLd,
+        NaturalsConfig(10, 2.second).toJsonLd,
         Chain()
       )
     )
@@ -282,12 +284,41 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
     val compiled = defined.compile(registry).rightValue
+    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(9L))
     for {
       projection <- compiled.passivate(100.millis, 5.millis).start()
-      _          <- waitForNElements(10, 50.millis)
-      _          <- projection.isRunning.assert(true)
+      _          <- waitForNElements(9, 50.millis)
+      _          <- projection.executionStatus.assert(ExecutionStatus.Running(offset))
       _          <- Task.sleep(500.millis)
       _          <- projection.isRunning.assert(false)
+      _          <- projection.executionStatus.assert(ExecutionStatus.Passivated(offset))
+    } yield ()
+  }
+
+  test("Projections finishing naturally should yield status Completed") {
+    val sources  = NonEmptyChain(
+      SourceChain(
+        Naturals.reference,
+        iri"https://naturals",
+        NaturalsConfig(10, 0.millis).toJsonLd,
+        Chain()
+      )
+    )
+    val pipes    = NonEmptyChain(
+      PipeChain(
+        iri"https://log",
+        NonEmptyChain(intToStringPipe, logPipe)
+      )
+    )
+    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
+    val compiled = defined.compile(registry).rightValue
+    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(10L))
+    for {
+      projection <- compiled.start()
+      _          <- waitForNElements(10, 50.millis)
+      _          <- Task.sleep(50.millis)
+      _          <- projection.isRunning.assert(false)
+      _          <- projection.executionStatus.assert(ExecutionStatus.Completed(offset))
     } yield ()
   }
 }

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -19,7 +20,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param resourceId
   *   an optional resource id associated with the projection
   * @param streamF
-  *   a fn that produces a stream given a starting offset
+  *   a fn that produces a stream given a starting offset, a status reference and a stop signal
   * @see
   *   [[ProjectionDef]]
   */
@@ -27,8 +28,12 @@ final case class CompiledProjection private[stream] (
     name: String,
     project: Option[ProjectRef],
     resourceId: Option[Iri],
-    streamF: ProjectionOffset => Stream[Task, Elem[Unit]]
+    streamF: ProjectionOffset => Ref[Task, ExecutionStatus] => SignallingRef[Task, Boolean] => Stream[Task, Elem[Unit]]
 ) {
+
+  // TODO: add docs
+  def supervise(supervisor: Supervisor, executionStrategy: ExecutionStrategy): Task[Unit] =
+    supervisor.supervise(this, executionStrategy)
 
   /**
     * Transforms this projection such that is passivates gracefully when it becomes idle. A projection is considered
@@ -39,7 +44,13 @@ final case class CompiledProjection private[stream] (
     *   how frequent to check if the projection becomes idle
     */
   def passivate(inactiveInterval: FiniteDuration, checkInterval: FiniteDuration): CompiledProjection =
-    copy(streamF = offset => streamF(offset).through(Passivation(inactiveInterval, checkInterval)))
+    copy(streamF =
+      offset =>
+        status =>
+          signal =>
+            streamF(offset)(status)(signal)
+              .through(Passivation(inactiveInterval, checkInterval, status, () => signal.set(true)))
+    )
 
   /**
     * Transforms this projection such that it persists the observed offsets at regular intervals. For each tick defined
@@ -71,7 +82,13 @@ final case class CompiledProjection private[stream] (
       readOffsetFn: () => Task[ProjectionOffset],
       interval: FiniteDuration
   ): CompiledProjection =
-    copy(streamF = offset => streamF(offset).through(PersistOffset(offset, interval, persistOffsetFn, readOffsetFn)))
+    copy(streamF =
+      offset =>
+        status =>
+          signal =>
+            streamF(offset)(status)(signal)
+              .through(PersistOffset(offset, interval, persistOffsetFn, readOffsetFn, status, () => signal.set(true)))
+    )
 
   /**
     * Starts the projection from the provided offset. The stream is executed in the background and can be interacted
@@ -83,22 +100,41 @@ final case class CompiledProjection private[stream] (
     */
   def start(offset: ProjectionOffset): Task[Projection] =
     for {
-      offsetRef   <- Ref[Task].of(offset)
-      finaliseRef <- Ref[Task].of(false)
-      signal      <- SignallingRef[Task, Boolean](false)
-      // TODO handle failures with restarts
-      fiber       <- streamF
-                       .apply(offset)
-                       .evalTap { elem =>
-                         offsetRef.getAndUpdate(current => current.add(elem.ctx, elem.offset))
-                       }
-                       .interruptWhen(signal)
-                       .onFinalizeWeak(finaliseRef.set(true))
-                       .compile
-                       .drain
-                       .start
-      fiberRef    <- Ref[Task].of(fiber)
-    } yield new Projection(name, offsetRef, signal, finaliseRef, fiberRef)
+      status     <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Running(offset))
+      projection <- start(offset, status)
+    } yield projection
+
+  /**
+    * Starts the projection from the provided offset. The stream is executed in the background and can be interacted
+    * with using the [[Projection]] methods.
+    * @param offset
+    *   the offset to be used for starting the projection
+    * @param status
+    *   a reference to hold the status of the projection
+    * @return
+    *   the materialized running [[Projection]]
+    */
+  def start(offset: ProjectionOffset, status: Ref[Task, ExecutionStatus]): Task[Projection] =
+    for {
+      signal   <- SignallingRef[Task, Boolean](false)
+      stream    = streamF
+                    .apply(offset)(status)(signal)
+                    .evalTap { elem =>
+                      status.update(_.updateOffset(current => current.add(elem.ctx, elem.offset)))
+                    }
+                    .interruptWhen(signal)
+                    .onFinalizeCaseWeak {
+                      case ExitCase.Error(th) => status.update(_.failed(th))
+                      case ExitCase.Completed => Task.unit // streams stopped through a signal still finish as Completed
+                      case ExitCase.Canceled  => Task.unit // the status is updated by the logic that cancels the stream
+                    }
+                    .compile
+                    .drain
+      // update status to Running at the beginning and to Completed at the end if it's still running
+      task      = status.update(_.running) >> stream >> status.update(s => if (s.isRunning) s.completed else s)
+      fiber    <- task.start
+      fiberRef <- Ref[Task].of(fiber)
+    } yield new Projection(name, status, signal, fiberRef)
 
   /**
     * Starts the projection from the beginning. The stream is executed in the background and can be interacted with
@@ -108,4 +144,15 @@ final case class CompiledProjection private[stream] (
     */
   def start(): Task[Projection] =
     start(ProjectionOffset.empty)
+
+  /**
+    * Starts the projection from the beginning. The stream is executed in the background and can be interacted with
+    * using the [[Projection]] methods.
+    * @param status
+    *   a reference to hold the status of the projection
+    * @return
+    *   the materialized running [[Projection]]
+    */
+  def start(status: Ref[Task, ExecutionStatus]): Task[Projection] =
+    start(ProjectionOffset.empty, status)
 }

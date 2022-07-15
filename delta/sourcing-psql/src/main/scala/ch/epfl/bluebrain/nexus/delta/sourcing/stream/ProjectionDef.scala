@@ -58,5 +58,5 @@ final case class ProjectionDef(
       mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
       compiledPipes   <- pipes.traverse(pc => pc.compile(registry).map(pipe => (pc.id, pipe)))
       source          <- mergedSources.broadcastThrough(compiledPipes)
-    } yield CompiledProjection(name, project, resourceId, source.apply)
+    } yield CompiledProjection(name, project, resourceId, offset => _ => _ => source.apply(offset))
 }

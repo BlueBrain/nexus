@@ -9,12 +9,10 @@ import monix.bio.{Fiber, Task}
   *
   * @param name
   *   the name of the projection
-  * @param offset
-  *   the last observed [[ProjectionOffset]]
+  * @param status
+  *   the projection execution status
   * @param signal
   *   a signal to stop the projection
-  * @param finalised
-  *   whether the projection has finalised
   * @param fiber
   *   the projection fiber
   * @see
@@ -22,24 +20,31 @@ import monix.bio.{Fiber, Task}
   */
 final class Projection private[stream] (
     val name: String,
-    offset: Ref[Task, ProjectionOffset],
+    status: Ref[Task, ExecutionStatus],
     signal: SignallingRef[Task, Boolean],
-    finalised: Ref[Task, Boolean],
     fiber: Ref[Task, Fiber[Throwable, Unit]]
 ) {
 
   /**
     * @return
-    *   a hash value for this projection to be used for balancing projections across nodes
+    *   the current execution status of this projection
     */
-  def hash: Int = name.hashCode
+  def executionStatus: Task[ExecutionStatus] =
+    status.get
+
+  /**
+    * @return
+    *   the last observed offset of this projection
+    */
+  def offset: Task[ProjectionOffset] =
+    executionStatus.map(_.offset)
 
   /**
     * @return
     *   true if the projection is still running, false otherwise
     */
   def isRunning: Task[Boolean] =
-    finalised.get.map(finalised => !finalised)
+    status.get.map(_.isRunning)
 
   /**
     * Stops the projection. Has no effect if the projection is already stopped.
@@ -47,14 +52,8 @@ final class Projection private[stream] (
   def stop(): Task[Unit] =
     for {
       f <- fiber.get
+      _ <- status.update(_.stopped)
       _ <- signal.set(true)
       _ <- f.join
     } yield ()
-
-  /**
-    * @return
-    *   the last observed offset of this projection
-    */
-  def offset(): Task[ProjectionOffset] =
-    offset.get
 }
