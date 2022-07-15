@@ -89,19 +89,13 @@ final class ProjectsImpl private (
       params: SearchParams.ProjectSearchParams,
       ordering: Ordering[ProjectResource]
   ): UIO[SearchResults.UnscoredSearchResults[ProjectResource]] =
-    log
-      .currentStates(params.organization.fold(Predicate.root)(Predicate.Org), _.toResource(defaultApiMappings))
-      .evalFilter(params.matches)
-      .compile
-      .toList
-      .hideErrors
-      .map { resources =>
-        SearchResults(
-          resources.size.toLong,
-          resources.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
-        )
-      }
-      .span("listProjects")
+    SearchResults(
+      log
+        .currentStates(params.organization.fold(Predicate.root)(Predicate.Org), _.toResource(defaultApiMappings))
+        .evalFilter(params.matches),
+      pagination,
+      ordering
+    ).span("listProjects")
 
   override def currentEvents(offset: Offset): EnvelopeStream[ProjectRef, ProjectEvent] =
     log.currentEvents(Predicate.root, offset)

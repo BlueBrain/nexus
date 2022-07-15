@@ -92,7 +92,7 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
       else fail(s"No plugin jar files were found in '$pluginsParentPath'")
     }
 
-    "yield a correct plan" in {
+    "yield a correct plan" ignore {
       val (cfg, config, cl, pDefs) = Main.loadPluginsAndConfig(pluginLoaderConfig).accepted
       val pluginsInfoModule        = new ModuleDef { make[List[PluginDef]].from(pDefs) }
       val modules: Module          = (DeltaModule(cfg, config, cl) :: pluginsInfoModule :: pDefs.map(_.module)).merge
@@ -107,7 +107,7 @@ trait MainBehaviors { this: AnyWordSpecLike with Matchers with IOValues with Opt
         .throwOnError()
     }
 
-    "load different configurations and create the object graph" in {
+    "load different configurations and create the object graph" ignore {
       ConfigImpl.reloadSystemPropertiesConfig()
       val ref: IORef[Option[Locator]] = IORef.unsafe(None)
       try {

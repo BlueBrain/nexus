@@ -19,9 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
@@ -29,11 +27,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.resolvers.{read => Read, write => Write}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchUuids
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ResolverNotFound
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{MultiResolutionResult, Resolver, ResolverRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{MultiResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
-import monix.bio.{IO, UIO}
+import monix.bio.IO
 import monix.execution.Scheduler
 
 /**
@@ -71,8 +71,6 @@ final class ResolversRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
-
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.resolversMetadata))
 
@@ -100,8 +98,8 @@ final class ResolversRoutes(
               get {
                 operationName(s"$prefixSegment/resolvers/events") {
                   authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventId { offset =>
-                      emit(resolvers.events(offset))
+                    lastEventId { _ =>
+                      failWith(new IllegalStateException("TODO: Handle with SSE"))
                     }
                   }
                 }
@@ -112,8 +110,8 @@ final class ResolversRoutes(
               get {
                 operationName(s"$prefixSegment/resolvers/{org}/events") {
                   authorizeFor(org, events.read).apply {
-                    lastEventId { offset =>
-                      emit(resolvers.events(org, offset).leftWiden[ResolverRejection])
+                    lastEventId { _ =>
+                      failWith(new IllegalStateException("TODO: Handle with SSE"))
                     }
                   }
                 }
@@ -130,8 +128,8 @@ final class ResolversRoutes(
                   get {
                     operationName(s"$prefixSegment/resolvers/{org}/{project}/events") {
                       authorizeEvent {
-                        lastEventId { offset =>
-                          emit(resolvers.events(ref, offset))
+                        lastEventId { _ =>
+                          failWith(new IllegalStateException("TODO: Handle with SSE"))
                         }
                       }
                     }
@@ -166,7 +164,7 @@ final class ResolversRoutes(
                         concat(
                           put {
                             authorizeWrite {
-                              (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                              (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                                 case (None, payload)      =>
                                   // Create a resolver with an id segment
                                   emit(
@@ -179,7 +177,7 @@ final class ResolversRoutes(
                               }
                             }
                           },
-                          (delete & parameter("rev".as[Long])) { rev =>
+                          (delete & parameter("rev".as[Int])) { rev =>
                             authorizeWrite {
                               // Deprecate a resolver
                               emit(
@@ -216,15 +214,18 @@ final class ResolversRoutes(
                         concat(
                           // Fetch a resolver tags
                           (get & idSegmentRef(id) & authorizeRead) { id =>
-                            emit(resolvers.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ResolverNotFound])
+                            emit(resolvers.fetch(id, ref).map(_.value.tags).rejectOn[ResolverNotFound])
                           },
                           // Tag a resolver
-                          (post & parameter("rev".as[Long])) { rev =>
+                          (post & parameter("rev".as[Int])) { rev =>
                             authorizeWrite {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
-                                  resolvers.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                  resolvers
+                                    .tag(id, ref, tag, tagRev.toInt, rev)
+                                    .tapEval(index(ref, _, mode))
+                                    .map(_.void)
                                 )
                               }
                             }

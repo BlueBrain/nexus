@@ -68,21 +68,12 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       pagination: Pagination.FromPagination,
       params: SearchParams.RealmSearchParams,
       ordering: Ordering[RealmResource]
-  ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] = {
-    log
-      .currentStates(_.toResource)
-      .evalFilter(params.matches)
-      .compile
-      .toList
-      .hideErrors
-      .map { resources =>
-        SearchResults(
-          resources.size.toLong,
-          resources.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
-        )
-      }
-      .span("listRealms")
-  }
+  ): UIO[SearchResults.UnscoredSearchResults[RealmResource]] =
+    SearchResults(
+      log.currentStates(_.toResource).evalFilter(params.matches),
+      pagination,
+      ordering
+    ).span("listRealms")
 
   override def events(offset: Offset): EnvelopeStream[Label, RealmEvent] =
     log.events(offset)
