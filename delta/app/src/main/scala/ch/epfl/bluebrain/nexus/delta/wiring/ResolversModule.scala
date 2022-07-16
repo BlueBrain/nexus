@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -13,19 +13,14 @@ import ch.epfl.bluebrain.nexus.delta.routes.ResolversRoutes
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.ResolverRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.model.resolvers.{MultiResolution, ResolverContextResolution, ResolverEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.ResolversImpl.{ResolversAggregate, ResolversCache}
-import ch.epfl.bluebrain.nexus.delta.service.resolvers.{ResolverEventExchange, ResolversImpl}
-import ch.epfl.bluebrain.nexus.delta.service.utils.ResolverScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -36,48 +31,22 @@ import monix.execution.Scheduler
 object ResolversModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[EventLog[Envelope[ResolverEvent]]].fromEffect { databaseEventLog[ResolverEvent](_, _) }
-
-  make[ResolversCache].from { (config: AppConfig, as: ActorSystem[Nothing]) =>
-    ResolversImpl.cache(config.resolvers)(as)
-  }
-
-  make[ResolversAggregate].fromEffect {
-    (
-        config: AppConfig,
-        cache: ResolversCache,
-        resourceIdCheck: ResourceIdCheck,
-        as: ActorSystem[Nothing],
-        clock: Clock[UIO]
-    ) =>
-      ResolversImpl.aggregate(config.resources.aggregate, cache, resourceIdCheck)(as, clock)
-  }
-
   make[Resolvers].fromEffect {
     (
-        config: AppConfig,
-        eventLog: EventLog[Envelope[ResolverEvent]],
         fetchContext: FetchContext[ContextRejection],
-        cache: ResolversCache,
-        agg: ResolversAggregate,
-        api: JsonLdApi,
         resolverContextResolution: ResolverContextResolution,
-        as: ActorSystem[Nothing],
-        uuidF: UUIDF,
-        scheduler: Scheduler
+        config: AppConfig,
+        xas: Transactors,
+        api: JsonLdApi,
+        clock: Clock[UIO],
+        uuidF: UUIDF
     ) =>
       ResolversImpl(
-        config.resolvers,
-        eventLog,
         fetchContext.mapRejection(ProjectContextRejection),
         resolverContextResolution,
-        cache,
-        agg
-      )(api, uuidF, scheduler, as)
-  }
-
-  many[ProjectReferenceFinder].add { (resolvers: Resolvers) =>
-    Resolvers.projectReferenceFinder(resolvers)
+        config.resolvers,
+        xas
+      )(api, clock, uuidF)
   }
 
   make[MultiResolution].from {
@@ -139,12 +108,4 @@ object ResolversModule extends ModuleDef {
   many[PriorityRoute].add { (route: ResolversRoutes) =>
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
-
-  many[ReferenceExchange].add { (resolvers: Resolvers, baseUri: BaseUri) =>
-    Resolvers.referenceExchange(resolvers)(baseUri)
-  }
-
-  make[ResolverEventExchange]
-  many[EventExchange].ref[ResolverEventExchange]
-  many[EventExchange].named("resources").ref[ResolverEventExchange]
 }

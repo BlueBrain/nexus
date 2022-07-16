@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed, RevisionNotFound, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestCommand, PullRequestEvent, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -96,7 +96,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
       _ <- eventLog.evaluate(proj, id, Tag(id, proj, 2, 1)).assert((tagged, state2))
       _ <- eventStore.history(proj, id).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assert(state2)
-      _ <- eventLog.stateOr(proj, id, tag, NotFound).assert(state1)
+      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).assert(state1)
     } yield ()
   }
 
@@ -117,7 +117,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   }
 
   test("Check that the tagged state has been successfully removed after") {
-    eventLog.stateOr(proj, id, tag, NotFound).error(NotFound)
+    eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).error(NotFound)
   }
 
   test("Reject a command and persist nothing") {

@@ -6,17 +6,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClientConfig, HttpClientWorth
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import org.scalatest.OptionValues
 
 import scala.concurrent.duration._
 
-trait ConfigFixtures extends OptionValues {
+trait ConfigFixtures {
 
-  def cacheConfig = CacheConfig(10, 5.minutes)
+  def cacheConfig: CacheConfig = CacheConfig(10, 5.minutes)
 
-  def queryConfig = QueryConfig(5, RefreshStrategy.Stop)
+  def queryConfig: QueryConfig = QueryConfig(5, RefreshStrategy.Stop)
 
-  def eventLogConfig = EventLogConfig(queryConfig, 100.millis)
+  def eventLogConfig: EventLogConfig = EventLogConfig(queryConfig, 3.seconds)
 
   def pagination: PaginationConfig =
     PaginationConfig(

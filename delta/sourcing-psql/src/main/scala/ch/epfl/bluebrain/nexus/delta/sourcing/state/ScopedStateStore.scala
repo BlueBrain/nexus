@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, Serializer}
 import doobie._
@@ -15,7 +17,7 @@ import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
-import monix.bio.{Task, UIO}
+import monix.bio.IO
 
 /**
   * Allows to save/fetch [[ScopeState]] from the database
@@ -40,12 +42,12 @@ trait ScopedStateStore[Id, S <: ScopedState] {
   /**
     * Returns the latest state
     */
-  def get(ref: ProjectRef, id: Id): UIO[Option[S]] = get(ref, id, Latest)
+  def get(ref: ProjectRef, id: Id): IO[UnknownState, S]
 
   /**
     * Returns the state at the given tag
     */
-  def get(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]]
+  def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S]
 
   /**
     * Fetches latest states from the given type from the beginning.
@@ -152,6 +154,15 @@ trait ScopedStateStore[Id, S <: ScopedState] {
 
 object ScopedStateStore {
 
+  private[sourcing] sealed trait StateNotFound extends Product with Serializable
+
+  private[sourcing] object StateNotFound {
+    sealed trait UnknownState extends StateNotFound
+    final case object UnknownState extends UnknownState
+    sealed trait TagNotFound extends StateNotFound
+    final case object TagNotFound extends TagNotFound
+  }
+
   def apply[Id, S <: ScopedState](
                                    tpe: EntityType,
                                    serializer: Serializer[Id, S],
@@ -205,19 +216,37 @@ object ScopedStateStore {
         }
     }
 
-    override def delete(ref: ProjectRef, id: Id, tag: Tag): doobie.ConnectionIO[Unit] =
+    override def delete(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Unit] =
       sql"""DELETE FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag""".stripMargin.update.run.void
 
-    override def get(ref: ProjectRef, id: Id, tag: Tag): UIO[Option[S]] =
+    private def getValue(ref: ProjectRef, id: Id, tag: Tag): ConnectionIO[Option[Json]] =
       sql"""SELECT value FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project}  AND id = $id AND tag = $tag"""
         .query[Json]
         .option
-        .transact(xas.read)
-        .hideErrors
-        .flatMap {
-          case Some(json) => Task.fromEither(json.as[S]).map(Some(_)).hideErrors
-          case None       => UIO.none
-        }
+
+    private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
+      sql"""SELECT id FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id LIMIT 1"""
+        .query[Id].option.map(_.isDefined)
+
+    override def get(ref: ProjectRef, id: Id): IO[UnknownState, S] =
+      getValue(ref, id, Latest).transact(xas.read)
+        .hideErrors.flatMap {
+        case Some(json) => IO.fromEither(json.as[S]).hideErrors
+        case None       => IO.raiseError(UnknownState)
+      }
+
+    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S] =
+      {
+        for {
+          value <- getValue(ref, id, tag)
+          exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
+        } yield value -> exists
+      }.transact(xas.read)
+        .hideErrors.flatMap {
+        case (Some(json), _) => IO.fromEither(json.as[S]).hideErrors
+        case (None, true) => IO.raiseError(TagNotFound)
+        case (None, false) => IO.raiseError(UnknownState)
+      }
 
     private def states(predicate: Predicate, tag: Tag, offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
       Envelope.stream(

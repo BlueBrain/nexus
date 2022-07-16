@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.kernel.{Mapper, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageRejection, StorageSearchParams}
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk._
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
@@ -74,8 +74,6 @@ final class StoragesRoutes(
   import schemeDirectives._
 
   implicit private val fetchProjectUuids: FetchUuids = _ => UIO.none
-
-  implicit private val eventExchangeMapper = Mapper(Storages.eventExchangeValue(_))
 
   private def storagesSearchParams(implicit projectRef: ProjectRef, caller: Caller): Directive1[StorageSearchParams] = {
     (searchParams & types).tmap { case (deprecated, rev, createdBy, updatedBy, types) =>

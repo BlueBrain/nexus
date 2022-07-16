@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.Parsi
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label.IllegalLabelFormat
 import doobie.Put
 import doobie.util.Get
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
 import scala.util.matching.Regex
 
@@ -46,6 +46,9 @@ object Tag {
 
     implicit final val userTagDecoder: Decoder[UserTag] =
       Decoder.decodeString.emap(str => UserTag(str).leftMap(_.message))
+
+    implicit val userTagKeyEncoder: KeyEncoder[UserTag] = KeyEncoder.encodeKeyString.contramap(_.toString)
+    implicit val userTagKeyDecoder: KeyDecoder[UserTag] = KeyDecoder.instance(UserTag(_).toOption)
 
     implicit final val userTagJsonLdDecoder: JsonLdDecoder[UserTag] =
       (cursor: ExpandedJsonLdCursor) =>

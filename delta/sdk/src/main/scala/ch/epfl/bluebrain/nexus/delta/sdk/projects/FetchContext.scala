@@ -138,7 +138,6 @@ object FetchContext {
       override def onRead(ref: ProjectRef): IO[ContextRejection, ProjectContext] =
         fetchProject(ref)
           .tapEval { p =>
-            println(p.value)
             IO.raiseWhen(p.value.markedForDeletion)(ProjectIsMarkedForDeletion(ref))
           }
           .bimap(ContextRejection(_), _.value.context)

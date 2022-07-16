@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.{Created, OK}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
-import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -92,8 +91,6 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
-
-  implicit private val eventExchangeMapper = Mapper(ElasticSearchViews.eventExchangeValue(_))
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {

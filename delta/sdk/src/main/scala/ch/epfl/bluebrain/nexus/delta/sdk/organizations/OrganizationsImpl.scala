@@ -68,19 +68,13 @@ final class OrganizationsImpl private (
       params: SearchParams.OrganizationSearchParams,
       ordering: Ordering[OrganizationResource]
   ): UIO[SearchResults.UnscoredSearchResults[OrganizationResource]] =
-    log
-      .currentStates(_.toResource)
-      .evalFilter(params.matches)
-      .compile
-      .toList
-      .hideErrors
-      .map { resources =>
-        SearchResults(
-          resources.size.toLong,
-          resources.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
-        )
-      }
-      .span("listOrganizations")
+    SearchResults(
+      log
+        .currentStates(_.toResource)
+        .evalFilter(params.matches),
+      pagination,
+      ordering
+    ).span("listOrganizations")
 
   override def currentEvents(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.currentEvents(offset)
 

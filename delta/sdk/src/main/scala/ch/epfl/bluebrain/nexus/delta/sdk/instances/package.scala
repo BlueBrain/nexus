@@ -6,6 +6,7 @@ package object instances
     extends OffsetJsonLdInstances
     with CredentialsInstances
     with IdentityInstances
+    with IriInstances
     with ProjectRefInstances
     with TripleInstances
     with UriInstances
