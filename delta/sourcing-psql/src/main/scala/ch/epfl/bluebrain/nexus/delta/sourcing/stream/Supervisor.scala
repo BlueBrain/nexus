@@ -3,28 +3,76 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import cats.effect.concurrent.{Ref, Semaphore}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import fs2.Stream
+import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task}
 
-// TODO: add docs and tests
+import scala.concurrent.duration.FiniteDuration
+
+/**
+  * Supervises the execution of projections based on a defined [[ExecutionStrategy]] that describes whether projections
+  * should be executed on all the nodes or a single node and whether offsets should be persisted.
+  *
+  * It monitors and restarts automatically projections that have stopped or failed.
+  *
+  * Projections that completed naturally are not restarted or cleaned up such that the status can be read.
+  *
+  * When the supervisor is stopped, all running projections are also stopped.
+  */
 trait Supervisor {
 
+  /**
+    * Supervises the execution of the provided `projection` using the provided `executionStrategy`. A second call to
+    * this method with a projection with the same name will cause the current projection to be stopped and replaced by
+    * the new one.
+    * @param projection
+    *   the projection to supervise
+    * @param executionStrategy
+    *   the strategy for the projection execution
+    * @see
+    *   [[Supervisor]]
+    */
   def supervise(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Unit]
 
+  /**
+    * Stops the projection with the provided `name` and removes it from supervision. It performs a noop if the
+    * projection does not exist.
+    * @param name
+    *   the name of the projection
+    */
   def unSupervise(name: String): Task[Unit]
 
+  /**
+    * Returns the status of the projection with the provided `name`, if a projection with such name exists.
+    * @param name
+    *   the name of the projection
+    */
+  def status(name: String): Task[Option[ExecutionStatus]]
+
+  /**
+    * Stops all running projections without removing them from supervision.
+    */
   def stop(): Task[Unit]
 
 }
 
 object Supervisor {
 
+  /**
+    * Constructs a new [[Supervisor]] instance using the provided `store` and `cfg`.
+    * @param store
+    *   the projection store for handling offsets
+    * @param cfg
+    *   the projection configuration
+    */
   def apply(store: ProjectionStore, cfg: ProjectionConfig): Task[Supervisor] =
     for {
       semaphore      <- Semaphore[Task](1L)
       mapRef         <- Ref.of[Task, Map[String, Supervised]](Map.empty)
-      supervision    <- supervisionTask(semaphore, mapRef).start
+      signal         <- SignallingRef[Task, Boolean](false)
+      supervision    <- supervisionTask(semaphore, mapRef, signal, cfg.supervisionCheckInterval).start
       supervisionRef <- Ref.of[Task, Fiber[Throwable, Unit]](supervision)
-    } yield new Impl(store, cfg, semaphore, mapRef, supervisionRef)
+    } yield new Impl(store, cfg, semaphore, mapRef, signal, supervisionRef)
 
   private case class Supervised(
       definition: CompiledProjection,
@@ -42,14 +90,42 @@ object Supervisor {
     stop = Task.unit
   )
 
-  // TODO: implement supervision logic (traverse and handle failures, stops etc.)
-  private def supervisionTask(semaphore: Semaphore[Task], mapRef: Ref[Task, Map[String, Supervised]]): Task[Unit] = ???
+  private def supervisionTask(
+      semaphore: Semaphore[Task],
+      mapRef: Ref[Task, Map[String, Supervised]],
+      signal: SignallingRef[Task, Boolean],
+      interval: FiniteDuration
+  ): Task[Unit] =
+    Stream
+      .awakeEvery[Task](interval)
+      .evalMap(_ => mapRef.get)
+      .flatMap(map => Stream.iterable(map.values))
+      .evalMap { supervised =>
+        supervised.control.status.flatMap {
+          case ExecutionStatus.Ignored                                   => Task.unit
+          case ExecutionStatus.Pending(_)                                => Task.unit
+          case ExecutionStatus.Running(_)                                => Task.unit
+          case ExecutionStatus.Passivated(_)                             => Task.unit
+          case ExecutionStatus.Completed(_)                              => Task.unit
+          case ExecutionStatus.Stopped(_) | ExecutionStatus.Failed(_, _) =>
+            // TODO: add a restart delay for failed projections
+            semaphore.withPermit {
+              supervised.task.flatMap { control =>
+                mapRef.update(map => map + (supervised.definition.name -> supervised.copy(control = control)))
+              }
+            }
+        }
+      }
+      .interruptWhen(signal)
+      .compile
+      .drain
 
   private class Impl(
       store: ProjectionStore,
       cfg: ProjectionConfig,
       semaphore: Semaphore[Task],
       mapRef: Ref[Task, Map[String, Supervised]],
+      signal: SignallingRef[Task, Boolean],
       supervisionFiberRef: Ref[Task, Fiber[Throwable, Unit]]
   ) extends Supervisor {
 
@@ -82,13 +158,22 @@ object Supervisor {
         } yield ()
       }
 
+    override def status(name: String): Task[Option[ExecutionStatus]] =
+      mapRef.get.flatMap { map =>
+        map.get(name) match {
+          case Some(value) => value.control.status.map(Option.apply)
+          case None        => Task.pure(None)
+        }
+      }
+
     override def stop(): Task[Unit] =
       for {
+        _     <- signal.set(true)
         fiber <- supervisionFiberRef.get
-        _     <- fiber.cancel
         _     <- fiber.join
-        map   <- mapRef.get
-        _     <- map.values.toList.traverse(_.control.stop)
+        _     <- semaphore.withPermit {
+                   mapRef.get.flatMap(map => map.values.toList.traverse(_.control.stop))
+                 }
       } yield ()
 
     private def controlTask(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Control] =

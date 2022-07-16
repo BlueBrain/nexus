@@ -31,7 +31,17 @@ final case class CompiledProjection private[stream] (
     streamF: ProjectionOffset => Ref[Task, ExecutionStatus] => SignallingRef[Task, Boolean] => Stream[Task, Elem[Unit]]
 ) {
 
-  // TODO: add docs
+  /**
+    * Supervises the execution of the provided `projection` using the provided `executionStrategy`. A second call to
+    * this method with a projection with the same name will cause the current projection to be stopped and replaced by
+    * the new one.
+    * @param supervisor
+    *   the projection supervisor
+    * @param executionStrategy
+    *   the strategy for the projection execution
+    * @see
+    *   [[Supervisor]]
+    */
   def supervise(supervisor: Supervisor, executionStrategy: ExecutionStrategy): Task[Unit] =
     supervisor.supervise(this, executionStrategy)
 

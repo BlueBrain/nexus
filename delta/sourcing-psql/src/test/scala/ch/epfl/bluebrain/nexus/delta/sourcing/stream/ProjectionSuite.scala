@@ -2,124 +2,84 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.data.{Chain, NonEmptyChain}
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailEveryN.FailEveryNConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.TimesN.TimesNConfig
 import ch.epfl.bluebrain.nexus.testkit.{CollectionAssertions, EitherAssertions, MonixBioSuite}
-import fs2.concurrent.Queue
-import io.circe.JsonObject
 import monix.bio.Task
 
 import scala.concurrent.duration._
 
-class ProjectionSuite extends MonixBioSuite with EitherAssertions with CollectionAssertions {
-  val queue: Queue[Task, SuccessElem[String]] = Queue.unbounded[Task, SuccessElem[String]].runSyncUnsafe()
-  val registry: ReferenceRegistry             = new ReferenceRegistry()
-  registry.register(Naturals)
-  registry.register(Strings)
-  registry.register(Evens)
-  registry.register(Odds)
-  registry.register(TimesN)
-  registry.register(FailEveryN)
-  registry.register(IntToString)
-  registry.register(Log(queue))
+class ProjectionSuite extends MonixBioSuite with ProjectionFixture with EitherAssertions with CollectionAssertions {
 
-  override def beforeEach(context: BeforeEach): Unit = {
-    super.beforeEach(context)
-    val _ = queue.tryDequeueChunk1(Int.MaxValue).runSyncUnsafe()
-  }
-
-  private def waitForNElements(count: Int, duration: FiniteDuration): Task[List[SuccessElem[String]]] =
-    queue.dequeue.take(count.toLong).compile.toList.timeout(duration).map(_.getOrElse(Nil))
-
-  private def currentElements: Task[List[SuccessElem[String]]] =
-    queue.tryDequeueChunk1(Int.MaxValue).map {
-      case Some(value) => value.toList
-      case None        => Nil
-    }
-
-  private val emptyConfig = ExpandedJsonLd.unsafe(BNode.random, JsonObject.empty)
-
-  private val evensPipe              = (Evens.reference, emptyConfig)
-  private val oddsPipe               = (Odds.reference, emptyConfig)
-  private val intToStringPipe        = (IntToString.reference, emptyConfig)
-  private val logPipe                = (Log.reference, emptyConfig)
-  //noinspection SameParameterValue
-  private def timesNPipe(times: Int) = (TimesN.reference, TimesNConfig(times).toJsonLd)
-  //noinspection SameParameterValue
-  private def failNPipe(every: Int)  = (FailEveryN.reference, FailEveryNConfig(every).toJsonLd)
-
-  test("Fail to compile SourceChain when source.Out does not match pipe.In") {
+  projections.test("Fail to compile SourceChain when source.Out does not match pipe.In") { ctx =>
     SourceChain(
       Naturals.reference,
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
-      Chain(logPipe)
-    ).compile(registry).assertLeft()
+      Chain(ctx.logPipe)
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile SourceChain when pipe.Out does not match pipe.In") {
+  projections.test("Fail to compile SourceChain when pipe.Out does not match pipe.In") { ctx =>
     SourceChain(
       Naturals.reference,
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
-      Chain(evensPipe, logPipe)
-    ).compile(registry).assertLeft()
+      Chain(ctx.evensPipe, ctx.logPipe)
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile PipeChain when pipe.Out does not match pipe.In") {
+  projections.test("Fail to compile PipeChain when pipe.Out does not match pipe.In") { ctx =>
     PipeChain(
       iri"https://fail",
-      NonEmptyChain(evensPipe, logPipe)
-    ).compile(registry).assertLeft()
+      NonEmptyChain(ctx.evensPipe, ctx.logPipe)
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile PipeChain when reference is not found in registry") {
+  projections.test("Fail to compile PipeChain when reference is not found in registry") { ctx =>
     PipeChain(
       iri"https://fail",
-      NonEmptyChain((PipeRef.unsafe("unknown"), emptyConfig))
-    ).compile(registry).assertLeft()
+      NonEmptyChain((PipeRef.unsafe("unknown"), ctx.emptyConfig))
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile SourceChain when reference is not found in registry") {
+  projections.test("Fail to compile SourceChain when reference is not found in registry") { ctx =>
     SourceChain(
       SourceRef.unsafe("unknown"),
       iri"https://fail",
       NaturalsConfig(10, 2.second).toJsonLd,
       Chain.empty
-    ).compile(registry).assertLeft()
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile SourceChain when configuration cannot be decoded") {
+  projections.test("Fail to compile SourceChain when configuration cannot be decoded") { ctx =>
     SourceChain(
       Naturals.reference,
       iri"https://fail",
       ExpandedJsonLd.empty,
       Chain.empty
-    ).compile(registry).assertLeft()
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile PipeChain when configuration cannot be decoded") {
+  projections.test("Fail to compile PipeChain when configuration cannot be decoded") { ctx =>
     PipeChain(
       iri"https://fail",
-      NonEmptyChain(TimesN.reference -> emptyConfig, intToStringPipe, logPipe)
-    ).compile(registry).assertLeft()
+      NonEmptyChain(TimesN.reference -> ctx.emptyConfig, ctx.intToStringPipe, ctx.logPipe)
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("Fail to compile PipeChain when the terminal type is not Unit") {
+  projections.test("Fail to compile PipeChain when the terminal type is not Unit") { ctx =>
     PipeChain(
       iri"https://fail",
-      NonEmptyChain(intToStringPipe)
-    ).compile(registry).assertLeft()
+      NonEmptyChain(ctx.intToStringPipe)
+    ).compile(ctx.registry).assertLeft()
   }
 
-  test("All elements emitted by the sources should pass through the defined pipes") {
+  projections.test("All elements emitted by the sources should pass through the defined pipes") { ctx =>
     // tests that multiple sources are merged correctly
     // tests that elements are correctly broadcast across multiple pipes
     // tests that offsets are passed to the sources
@@ -130,27 +90,27 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
         Naturals.reference,
         iri"https://evens",
         NaturalsConfig(10, 2.second).toJsonLd,
-        Chain(evensPipe, timesNPipe(2))
+        Chain(ctx.evensPipe, ctx.timesNPipe(2))
       ),
       SourceChain(
         Naturals.reference,
         iri"https://odds",
         NaturalsConfig(7, 2.second).toJsonLd,
-        Chain(oddsPipe)
+        Chain(ctx.oddsPipe)
       )
     )
     val pipes    = NonEmptyChain(
       PipeChain(
         iri"https://log",
-        NonEmptyChain(timesNPipe(2), intToStringPipe, logPipe)
+        NonEmptyChain(ctx.timesNPipe(2), ctx.intToStringPipe, ctx.logPipe)
       ),
       PipeChain(
         iri"https://log2",
-        NonEmptyChain(intToStringPipe, failNPipe(2), logPipe)
+        NonEmptyChain(ctx.intToStringPipe, ctx.failNPipe(2), ctx.logPipe)
       )
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(registry).rightValue
+    val compiled = defined.compile(ctx.registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://evens", iri"https://log"), Offset.at(1L))
 
     // evens chain should emit before stop: 2*2, 4*2, 6*2, 8*2
@@ -169,8 +129,8 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
 
     for {
       projection <- compiled.start(offset)
-      elements   <- waitForNElements(11, 500.millis)
-      empty      <- waitForNElements(1, 50.millis)
+      elements   <- ctx.waitForNElements(11, 500.millis)
+      empty      <- ctx.waitForNElements(1, 50.millis)
       _           = assertEquals(empty.size, 0, "No other elements should be found after the first 11")
       _          <- projection.isRunning.assert(true)
       _          <- projection.stop()
@@ -188,7 +148,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     } yield ()
   }
 
-  test("Persist the current offset at regular intervals") {
+  projections.test("Persist the current offset at regular intervals") { ctx =>
     val sources  = NonEmptyChain(
       SourceChain(
         Naturals.reference,
@@ -200,11 +160,11 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     val pipes    = NonEmptyChain(
       PipeChain(
         iri"https://log",
-        NonEmptyChain(intToStringPipe, logPipe)
+        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
       )
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(registry).rightValue
+    val compiled = defined.compile(ctx.registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(2L))
 
     for {
@@ -212,7 +172,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       persistFn            = (po: ProjectionOffset) => persistCallCountRef.update { case (i, _) => (i + 1, po) }
       readFn               = () => persistCallCountRef.get.map { case (_, po) => po }
       projection          <- compiled.persistOffset(persistFn, readFn, 5.millis).start(offset)
-      _                   <- waitForNElements(10, 50.millis)
+      _                   <- ctx.waitForNElements(10, 50.millis)
       _                   <- projection.stop()
       value               <- persistCallCountRef.get
       (count, observed)    = value
@@ -225,7 +185,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     } yield ()
   }
 
-  test("Stop the projection if the last written offset differs from the current read offset") {
+  projections.test("Stop the projection if the last written offset differs from the current read offset") { ctx =>
     val sources  = NonEmptyChain(
       SourceChain(
         Naturals.reference,
@@ -237,11 +197,11 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     val pipes    = NonEmptyChain(
       PipeChain(
         iri"https://log",
-        NonEmptyChain(intToStringPipe, logPipe)
+        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
       )
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(registry).rightValue
+    val compiled = defined.compile(ctx.registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(2L))
 
     for {
@@ -249,7 +209,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       persistFn   = (po: ProjectionOffset) => persistRef.set(po)
       readFn      = () => persistRef.get
       projection <- compiled.persistOffset(persistFn, readFn, 5.millis).start(offset)
-      _          <- waitForNElements(1, 50.millis)
+      _          <- ctx.waitForNElements(1, 50.millis)
       _          <- Task.sleep(5.millis)
       observed   <- persistRef.get
       _           = assertNotEquals(
@@ -262,12 +222,12 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
       _          <- projection.isRunning.assert(false, "The projection should have stopped")
       status     <- projection.executionStatus
       _           = assertEquals(status.isStopped, true, status)
-      elems      <- currentElements
+      elems      <- ctx.currentElements
       _           = assert(elems.size < 9, "Projection should have stopped before the end")
     } yield ()
   }
 
-  test("Passivate a projection after becoming idle") {
+  projections.test("Passivate a projection after becoming idle") { ctx =>
     val sources  = NonEmptyChain(
       SourceChain(
         Naturals.reference,
@@ -279,15 +239,15 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     val pipes    = NonEmptyChain(
       PipeChain(
         iri"https://log",
-        NonEmptyChain(intToStringPipe, logPipe)
+        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
       )
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(registry).rightValue
+    val compiled = defined.compile(ctx.registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(9L))
     for {
       projection <- compiled.passivate(100.millis, 5.millis).start()
-      _          <- waitForNElements(9, 50.millis)
+      _          <- ctx.waitForNElements(9, 50.millis)
       _          <- projection.executionStatus.assert(ExecutionStatus.Running(offset))
       _          <- Task.sleep(500.millis)
       _          <- projection.isRunning.assert(false)
@@ -295,7 +255,7 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     } yield ()
   }
 
-  test("Projections finishing naturally should yield status Completed") {
+  projections.test("Projections finishing naturally should yield status Completed") { ctx =>
     val sources  = NonEmptyChain(
       SourceChain(
         Naturals.reference,
@@ -307,15 +267,15 @@ class ProjectionSuite extends MonixBioSuite with EitherAssertions with Collectio
     val pipes    = NonEmptyChain(
       PipeChain(
         iri"https://log",
-        NonEmptyChain(intToStringPipe, logPipe)
+        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
       )
     )
     val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(registry).rightValue
+    val compiled = defined.compile(ctx.registry).rightValue
     val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(10L))
     for {
       projection <- compiled.start()
-      _          <- waitForNElements(10, 50.millis)
+      _          <- ctx.waitForNElements(10, 50.millis)
       _          <- Task.sleep(50.millis)
       _          <- projection.isRunning.assert(false)
       _          <- projection.executionStatus.assert(ExecutionStatus.Completed(offset))
