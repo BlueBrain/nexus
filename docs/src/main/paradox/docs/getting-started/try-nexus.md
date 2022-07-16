@@ -79,7 +79,7 @@ pip install git+https://github.com/BlueBrain/nexus-forge.git@<branch-name>
 To avoid any issues, install @link:[Jupyter](https://jupyter.org/){ open=new } in your environment.
 
 ```bash
-pip install jupyterlab
+pip install jupyter
 ```
 
 You will need the @link:[Allen SDK](https://allensdk.readthedocs.io/en/latest/index.html){ open=new } to get data from their database.
