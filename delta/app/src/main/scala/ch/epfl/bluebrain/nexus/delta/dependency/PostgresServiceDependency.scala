@@ -1,9 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.service.database
+package ch.epfl.bluebrain.nexus.delta.dependency
 
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.PostgresConfig
 import doobie.implicits._
 import monix.bio.UIO
 
@@ -11,7 +11,7 @@ import monix.bio.UIO
   * Describes the postgres [[ServiceDependency]] providing a way to extract the [[ServiceDescription]] from a ''select
   * version();'' SQL command
   */
-class PostgresServiceDependency(config: PostgresConfig) extends ServiceDependency {
+class PostgresServiceDependency(xas: Transactors) extends ServiceDependency {
 
   private val regex                                        = "( ?PostgreSQL )([^ ]+)(.*)".r
   private val serviceName                                  = Name.unsafe("postgres")
@@ -19,7 +19,7 @@ class PostgresServiceDependency(config: PostgresConfig) extends ServiceDependenc
     sql"select version()"
       .query[String]
       .to[List]
-      .transact(config.transactor)
+      .transact(xas.read)
       .map {
         case versionString :: _ =>
           versionString match {
