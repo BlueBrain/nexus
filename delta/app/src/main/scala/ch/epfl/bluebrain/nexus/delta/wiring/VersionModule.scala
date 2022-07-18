@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
-import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.dependency.PostgresServiceDependency
+import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.VersionRoutes
@@ -10,8 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.{PriorityRoute, ServiceDependency}
-import ch.epfl.bluebrain.nexus.delta.service.database.{CassandraServiceDependency, PostgresServiceDependency}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -21,11 +20,8 @@ import monix.execution.Scheduler
 // $COVERAGE-OFF$
 object VersionModule extends ModuleDef {
 
-  many[ServiceDependency].add { (cfg: AppConfig, system: ActorSystem[Nothing]) =>
-    cfg.database.flavour match {
-      case Postgres  => new PostgresServiceDependency(cfg.database.postgres)
-      case Cassandra => new CassandraServiceDependency()(system)
-    }
+  many[ServiceDependency].add { (xas: Transactors) =>
+    new PostgresServiceDependency(xas)
   }
 
   make[VersionRoutes].from {
