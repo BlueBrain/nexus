@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, Rou
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
-import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader
+import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
@@ -55,7 +55,7 @@ object Main extends BIOApp {
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
       _                             <- KamonMonitoring.initialize(config)
       modules                       <- UIO.delay(DeltaModule(cfg, config, cl))
-      (plugins, locator)            <- plugin.WiringInitializer(modules, pluginDefs).handleError
+      (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
       _                             <- preStart(locator).handleError
       _                             <- bootstrap(locator, plugins).handleError
     } yield ()
