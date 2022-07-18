@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.IndexingActionDummy
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
@@ -22,7 +23,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionRepor
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, SchemasConfig, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import monix.bio.IO
 

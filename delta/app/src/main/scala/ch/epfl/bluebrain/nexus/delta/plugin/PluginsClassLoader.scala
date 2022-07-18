@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.plugin
+package ch.epfl.bluebrain.nexus.delta.plugin
 
 import java.net.URL
 import scala.annotation.tailrec

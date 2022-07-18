@@ -11,14 +11,14 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, Rou
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
+import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader
+import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
-import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
-import ch.epfl.bluebrain.nexus.delta.service.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.cors
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -55,7 +55,7 @@ object Main extends BIOApp {
       (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
       _                             <- KamonMonitoring.initialize(config)
       modules                       <- UIO.delay(DeltaModule(cfg, config, cl))
-      (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
+      (plugins, locator)            <- plugin.WiringInitializer(modules, pluginDefs).handleError
       _                             <- preStart(locator).handleError
       _                             <- bootstrap(locator, plugins).handleError
     } yield ()
@@ -158,14 +158,6 @@ object Main extends BIOApp {
             locator.get[RemoteStorageMigration].run(baseUri)
           }
           .runSyncUnsafe()
-      }
-
-      sys.env.get("DELETE_PERSISTENCE_IDS").foreach { persistenceIds =>
-        DeletePersistenceIds.delete(persistenceIds.split(",").toSeq)
-      }
-
-      if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
-        RepairTagViews.repair
       }
 
       logger.info("Booting up service....")

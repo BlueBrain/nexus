@@ -1,11 +1,11 @@
-package ch.epfl.bluebrain.nexus.delta.service.plugin
+package ch.epfl.bluebrain.nexus.delta.plugin
 
-import cats.implicits._
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, MultiplePluginDefClassesFound, PluginLoadErrors}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import com.typesafe.scalalogging.Logger
 import io.github.classgraph.ClassGraph
 import monix.bio.{IO, UIO}

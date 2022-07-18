@@ -1,6 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.plugin
-
-import java.nio.file.Path
+package ch.epfl.bluebrain.nexus.delta.plugin
 
 import ch.epfl.bluebrain.nexus.delta.testplugin.ClassLoaderTestClassImpl
 import ch.epfl.bluebrain.nexus.testkit.ShouldMatchers.convertToAnyShouldWrapper
@@ -9,6 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.nio.file.Path
 import scala.io.Source
 
 class PluginClassLoaderSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {

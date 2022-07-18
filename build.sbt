@@ -431,7 +431,6 @@ lazy val service = project
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies ++= Seq(
-      classgraph,
       nimbusJoseJwt,
       akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
@@ -452,15 +451,15 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(service, testkit % "test->compile", sdkTestkit % "test->compile;test->test")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
+  .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(
-      akkaDistributedData,
       akkaHttpCors,
       akkaSlf4j,
+      classgraph,
       logback,
       akkaHttpTestKit  % Test,
-      akkaTestKitTyped % Test,
       scalaTest        % Test
     ),
     addCompilerPlugin(betterMonadicFor),

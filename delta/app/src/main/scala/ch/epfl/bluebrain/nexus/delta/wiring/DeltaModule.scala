@@ -28,7 +28,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.wiring.ViewsModule
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
@@ -173,7 +172,6 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(VersionModule)
   include(QuotasModule)
   include(EventsModule)
-  include(ViewsModule)
 }
 
 object DeltaModule {

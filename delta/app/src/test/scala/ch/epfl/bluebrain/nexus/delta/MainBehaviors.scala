@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.delta
 
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.server.Route
+import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
-import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
 import ch.epfl.bluebrain.nexus.testkit.{IORef, IOValues}
 import com.typesafe.config.impl.ConfigImpl

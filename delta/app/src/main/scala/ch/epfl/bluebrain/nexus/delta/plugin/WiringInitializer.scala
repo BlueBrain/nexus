@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.service.plugin
+package ch.epfl.bluebrain.nexus.delta.plugin
 
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
