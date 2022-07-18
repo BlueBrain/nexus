@@ -1,9 +1,9 @@
-package ch.epfl.bluebrain.nexus.delta.service.plugin
+package ch.epfl.bluebrain.nexus.delta.plugin
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.service.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
@@ -29,7 +29,7 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
 
       pluginsDef.head.priority shouldEqual 10
       Get("/test-plugin") ~> route.route ~> check {
-        responseAs[String] shouldEqual "test,test2"
+        responseAs[String] shouldEqual "http://localhost"
       }
     }
 
