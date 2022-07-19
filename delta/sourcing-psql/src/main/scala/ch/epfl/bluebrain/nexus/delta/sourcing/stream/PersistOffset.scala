@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.concurrent.Ref
-import fs2.concurrent.SignallingRef
 import fs2.{Pipe, Stream}
 import monix.bio.{Task, UIO}
 
@@ -16,9 +15,9 @@ object PersistOffset {
     * Constructs an fs2.Pipe that observes and stores the ProjectionOffset at regular intervals given a persist
     * function. It runs a separate stream concurrently that is awoken at the specified interval; for every tick the last
     * written offset is compared to the last observed offset. If there are any differences, the provided
-    * `persistOffsetFn` is called with the new offset. At the same tick, the current persisted value is compared to
-    * the last known written value. If there are any differences the assumption is that the projection requires
-    * a restart so the projection is stopped.
+    * `persistOffsetFn` is called with the new offset. At the same tick, the current persisted value is compared to the
+    * last known written value. If there are any differences the assumption is that the projection requires a restart so
+    * the projection is stopped.
     *
     * @param initial
     *   the initial offset (last written and last observed)
@@ -28,6 +27,10 @@ object PersistOffset {
     *   a fn that persists a provided offset
     * @param readOffsetFn
     *   a fn that reads the persisted offset
+    * @param status
+    *   a reference to the execution status of the projection
+    * @param stopFn
+    *   a fn that stops the stream
     * @tparam A
     *   the underlying element value
     */
@@ -35,21 +38,22 @@ object PersistOffset {
       initial: ProjectionOffset,
       interval: FiniteDuration,
       persistOffsetFn: ProjectionOffset => Task[Unit],
-      readOffsetFn: () => Task[ProjectionOffset]
+      readOffsetFn: () => Task[ProjectionOffset],
+      status: Ref[Task, ExecutionStatus],
+      stopFn: () => Task[Unit]
   ): Pipe[Task, Elem[A], Elem[A]] = { stream =>
     for {
       lastObservedRef <- Stream.eval(Ref.of[Task, ProjectionOffset](initial))
       lastWrittenRef  <- Stream.eval(Ref.of[Task, ProjectionOffset](initial))
-      signal          <- Stream.eval(SignallingRef[Task, Boolean](false))
       _               <- Stream.eval(lastObservedRef.get.flatMap(persistOffsetFn)) // write at least once at the beginning
       both            <- stream
                            .evalTap(elem => lastObservedRef.update(_.add(elem.ctx, elem.offset)))
-                           .interruptWhen(signal)
                            .concurrently(
                              persistOffsetStream(
                                persistOffsetFn,
                                readOffsetFn,
-                               signal,
+                               stopFn,
+                               status,
                                interval,
                                lastObservedRef,
                                lastWrittenRef
@@ -61,7 +65,8 @@ object PersistOffset {
   private def persistOffsetStream(
       persistOffsetFn: ProjectionOffset => Task[Unit],
       readOffsetFn: () => Task[ProjectionOffset],
-      signal: SignallingRef[Task, Boolean],
+      stopFn: () => Task[Unit],
+      status: Ref[Task, ExecutionStatus],
       interval: FiniteDuration,
       lastObservedRef: Ref[Task, ProjectionOffset],
       lastWrittenRef: Ref[Task, ProjectionOffset]
@@ -71,7 +76,7 @@ object PersistOffset {
         lastObserved  <- lastObservedRef.get
         lastWritten   <- lastWrittenRef.get
         actualWritten <- readOffsetFn()
-        _             <- if (actualWritten != lastWritten) signal.set(true)
+        _             <- if (actualWritten != lastWritten) status.update(_.stopped) >> stopFn()
                          else if (lastObserved != lastWritten)
                            persistOffsetFn.apply(lastObserved) >> lastWrittenRef.set(lastObserved)
                          else UIO.unit

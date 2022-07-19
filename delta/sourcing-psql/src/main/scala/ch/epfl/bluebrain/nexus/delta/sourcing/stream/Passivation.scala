@@ -20,15 +20,24 @@ object Passivation {
     *   the interval after which when no additional elements are observed the stream is considered idle
     * @param checkInterval
     *   how frequently to check if a stream becomes idle
+    * @param status
+    *   a reference to the execution status of the projection
+    * @param stopFn
+    *   a fn that stops the stream
     */
-  def apply[A](inactiveInterval: FiniteDuration, checkInterval: FiniteDuration): Pipe[Task, Elem[A], Elem[A]] =
+  def apply[A](
+      inactiveInterval: FiniteDuration,
+      checkInterval: FiniteDuration,
+      status: Ref[Task, ExecutionStatus],
+      stopFn: () => Task[Unit]
+  ): Pipe[Task, Elem[A], Elem[A]] =
     stream =>
       Stream
         .eval(createRef)
         .flatMap { ref =>
           stream
             .evalTap(_ => updateRefTs(ref))
-            .interruptWhen(checkRefStream(ref, inactiveInterval, checkInterval))
+            .concurrently(checkRefStream(ref, status, stopFn, inactiveInterval, checkInterval))
         }
 
   private def nowInMillis: UIO[Long] =
@@ -45,14 +54,19 @@ object Passivation {
 
   private def checkRefStream(
       ref: Ref[Task, Long],
+      status: Ref[Task, ExecutionStatus],
+      stopFn: () => Task[Unit],
       inactiveInterval: FiniteDuration,
       checkInterval: FiniteDuration
-  ): Stream[Task, Boolean] =
-    Stream.awakeEvery[Task](checkInterval).evalMap { _ =>
+  ): Stream[Task, FiniteDuration] =
+    Stream.awakeEvery[Task](checkInterval).evalTap { _ =>
       for {
         lastElemTs <- ref.get
         currentTs  <- nowInMillis
-      } yield currentTs - lastElemTs > inactiveInterval.toMillis
+        shouldStop  = currentTs - lastElemTs > inactiveInterval.toMillis
+        _          <- if (shouldStop) status.update(_.passivated) >> stopFn()
+                      else Task.unit
+      } yield ()
     }
 
 }
