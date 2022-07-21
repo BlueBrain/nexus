@@ -21,14 +21,15 @@ import scala.concurrent.duration._
   * To delete orphan namespaces until it is a scheduled in some way
   */
 @DoNotDiscover
-class DeleteOrphanNamespacesSpec  extends TestKit(ActorSystem("DeleteOrphanNamespacesSpec"))
-  with AnyWordSpecLike
-  with Matchers
-  with IOValues
-  with ConfigFixtures {
+class DeleteOrphanNamespacesSpec
+    extends TestKit(ActorSystem("DeleteOrphanNamespacesSpec"))
+    with AnyWordSpecLike
+    with Matchers
+    with IOValues
+    with ConfigFixtures {
 
-  implicit private val httpCfg: HttpClientConfig    = httpClientConfig
-  implicit private val sc: Scheduler                = Scheduler.global
+  implicit private val httpCfg: HttpClientConfig = httpClientConfig
+  implicit private val sc: Scheduler             = Scheduler.global
 
   private val endpoint = Uri("???")
   private val username = "???"
@@ -39,10 +40,15 @@ class DeleteOrphanNamespacesSpec  extends TestKit(ActorSystem("DeleteOrphanNames
   "Deleting orphan namespaces" should {
 
     "delete existing namespaces" in {
-      val result = client.listOutdatedNamespaces().flatMap(_.value.toList
-        .traverse { n =>
-          client.deleteNamespace(n).tapEval { b => UIO.delay(println(s"$n -> $b"))}
-        } ).accepted
+      val result = client
+        .listOutdatedNamespaces()
+        .flatMap(
+          _.value.toList
+            .traverse { n =>
+              client.deleteNamespace(n).tapEval { b => UIO.delay(println(s"$n -> $b")) }
+            }
+        )
+        .accepted
       println(result.size)
     }
   }

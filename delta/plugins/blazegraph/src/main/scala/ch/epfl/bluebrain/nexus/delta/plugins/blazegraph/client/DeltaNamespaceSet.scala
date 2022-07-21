@@ -20,7 +20,7 @@ object DeltaNamespaceSet {
     hc.downField("results").get[List[Json]]("bindings").map { bindings =>
       val namespaces = bindings.mapFilter { b =>
         for {
-          _ <- b.hcursor.downField("predicate").get[Iri]("value").toOption.filter(_ == namespacePredicate)
+          _     <- b.hcursor.downField("predicate").get[Iri]("value").toOption.filter(_ == namespacePredicate)
           value <- b.hcursor.downField("object").get[String]("value").toOption.filterNot(_ == defaultNameSpace)
         } yield value
       }

@@ -4,9 +4,7 @@ import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class DeltaNamespaceSetSpec extends AnyWordSpecLike with EitherValuable
-  with Matchers
-  with TestHelpers {
+class DeltaNamespaceSetSpec extends AnyWordSpecLike with EitherValuable with Matchers with TestHelpers {
 
   "Delta namespaces" should {
     val response = jsonContentOf("namespace-list.json")

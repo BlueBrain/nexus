@@ -166,7 +166,9 @@ class BlazegraphClientSpec(docker: BlazegraphDocker)
       client.createNamespace("delta_003_2").accepted shouldEqual true
       client.createNamespace("delta_003_3").accepted shouldEqual true
 
-      client.listOutdatedNamespaces().accepted shouldEqual DeltaNamespaceSet(Set("delta_002_1", "delta_003_1", "delta_003_2"))
+      client.listOutdatedNamespaces().accepted shouldEqual DeltaNamespaceSet(
+        Set("delta_002_1", "delta_003_1", "delta_003_2")
+      )
     }
 
     "create a new named graph" in {

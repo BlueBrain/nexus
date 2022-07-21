@@ -135,7 +135,11 @@ class BlazegraphClient(
     * @return
     */
   def listNamespaces(): IO[SparqlClientError, DeltaNamespaceSet] =
-    client.fromJsonTo[DeltaNamespaceSet](Get(endpoint / "namespace").withHeaders(Accept(`application/json`)).withHttpCredentials).mapError(WrappedHttpClientError)
+    client
+      .fromJsonTo[DeltaNamespaceSet](
+        Get(endpoint / "namespace").withHeaders(Accept(`application/json`)).withHttpCredentials
+      )
+      .mapError(WrappedHttpClientError)
 
   /**
     * Returns outdated namepaces (aka namespaces with an revision which is not the latest one)
@@ -147,18 +151,18 @@ class BlazegraphClient(
         .filter(_ > 0)
         .map(namespace.splitAt)
         .flatMap { case (prefix, revision) =>
-          revision.toIntOption.map { prefix -> _}
+          revision.toIntOption.map { prefix -> _ }
         }
 
     listNamespaces().map { namespaces =>
       val (toDelete, _) = namespaces.value.foldLeft((Set.empty[String], Map.empty[String, Int])) {
         case ((toDelete, maxRev), namespace) =>
           revisionedNamespace(namespace) match {
-            case Some((prefix, rev)) if maxRev.get(prefix).exists(_ > rev)  =>
+            case Some((prefix, rev)) if maxRev.get(prefix).exists(_ > rev) =>
               (toDelete + namespace, maxRev)
-            case Some((prefix, rev)) =>
-              (toDelete ++ maxRev.get(prefix).map{r => s"$prefix$r"}, maxRev + (prefix -> rev))
-            case None => (toDelete, maxRev)
+            case Some((prefix, rev))                                       =>
+              (toDelete ++ maxRev.get(prefix).map { r => s"$prefix$r" }, maxRev + (prefix -> rev))
+            case None                                                      => (toDelete, maxRev)
           }
       }
       DeltaNamespaceSet(toDelete)
