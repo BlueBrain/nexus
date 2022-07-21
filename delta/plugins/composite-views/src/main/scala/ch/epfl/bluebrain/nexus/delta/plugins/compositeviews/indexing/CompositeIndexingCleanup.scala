@@ -22,7 +22,7 @@ class CompositeIndexingCleanup(
 ) extends IndexingCleanup[CompositeView] {
 
   override def apply(view: ViewIndex[CompositeView]): UIO[Unit] =
-    blazeClient.deleteNamespace(view.index).attempt.void >>
+    blazeClient.deleteNamespace(view.index).absorb.onErrorRestartIf(_ => true).attempt.void >>
       IO.traverse(view.value.projections.value) {
         case p: ElasticSearchProjection => esClient.deleteIndex(idx(p, view)).attempt.void
         case p: SparqlProjection        => blazeClient.deleteNamespace(ns(p, view)).attempt.void
