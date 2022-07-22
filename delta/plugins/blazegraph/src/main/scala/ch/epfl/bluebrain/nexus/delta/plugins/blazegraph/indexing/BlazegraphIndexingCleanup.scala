@@ -17,6 +17,8 @@ class BlazegraphIndexingCleanup(
   override def apply(view: ViewIndex[IndexingBlazegraphView]): UIO[Unit] =
     client
       .deleteNamespace(view.index)
+      .absorb
+      .onErrorRestartIf(_ => true)
       .attempt
       .void >> cache.remove(view.projectionId) >> projection.delete(view.projectionId).attempt.void
 }
