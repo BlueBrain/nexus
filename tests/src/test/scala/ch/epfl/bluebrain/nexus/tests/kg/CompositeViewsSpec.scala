@@ -155,7 +155,7 @@ class CompositeViewsSpec extends BaseSpec {
       Task
         .sleep(10.seconds)
         .runSyncUnsafe()
-      resetAndWait
+      resetAndWait()
     }
 
     "reject creating a composite view with remote source endpoint with a wrong suffix" in {
@@ -270,7 +270,7 @@ class CompositeViewsSpec extends BaseSpec {
     }
 
     "waiting for data to be indexed" in
-      resetAndWait
+      resetAndWait()
   }
 
   "searching the projections with more data" should {
@@ -301,9 +301,57 @@ class CompositeViewsSpec extends BaseSpec {
     }
   }
 
-  private def waitForView() = {
+  "includeContext is set to true" should {
+    def jerryToken = tokensMap.get(Jerry).credentials.token()
+
+    "create a composite view" in {
+      val view = jsonContentOf(
+        "/kg/views/composite/composite-view-include-context.json",
+        replacements(
+          Jerry,
+          "org"            -> orgId,
+          "org2"           -> orgId,
+          "remoteEndpoint" -> "http://delta:8080/v1",
+          "token"          -> jerryToken
+        ): _*
+      )
+
+      deltaClient.put[Json](s"/views/$orgId/bands/composite-ctx", view, Jerry) { (json, response) =>
+        if (response.status == StatusCodes.Created) succeed
+        else fail(s"""The system returned an unexpected status code.
+                     |Expected: ${StatusCodes.Created}
+                     |Actual: ${response.status}
+                     |Json Response:
+                     |${json.spaces2}
+                     |""".stripMargin)
+      }
+    }
+
+    "wait for data to be indexed after creation" in {
+      Task
+        .sleep(10.seconds)
+        .runSyncUnsafe()
+      resetAndWait("composite-ctx")
+    }
+
+    "find all bands with context" in {
+      waitForView("composite-ctx")
+      eventually {
+        deltaClient
+          .post[Json](s"/views/$orgId/bands/composite-ctx/projections/bands/_search", sortAscendingById, Jerry) {
+            (json, response) =>
+              response.status shouldEqual StatusCodes.OK
+              val actual   = Json.fromValues(hitsSource.getAll(json))
+              val expected = jsonContentOf("/kg/views/composite/bands-results2-include-context.json")
+              actual should equalIgnoreArrayOrder(expected)
+          }
+      }
+    }
+  }
+
+  private def waitForView(viewId: String = "composite") = {
     eventually {
-      deltaClient.get[Json](s"/views/$orgId/bands/composite/projections/_/statistics", Jerry) { (json, response) =>
+      deltaClient.get[Json](s"/views/$orgId/bands/$viewId/projections/_/statistics", Jerry) { (json, response) =>
         val stats = root._results.each.as[Stats].getAll(json)
         logger.debug(s"Response: ${response.status} with ${stats.size} stats")
         stats.foreach { stat =>
@@ -320,19 +368,19 @@ class CompositeViewsSpec extends BaseSpec {
     succeed
   }
 
-  private def resetView =
-    deltaClient.delete[Json](s"/views/$orgId/bands/composite/projections/_/offset", Jerry) { (_, response) =>
+  private def resetView(viewId: String) =
+    deltaClient.delete[Json](s"/views/$orgId/bands/$viewId/projections/_/offset", Jerry) { (_, response) =>
       logger.info(s"Resetting view responded with ${response.status}")
       response.status shouldEqual StatusCodes.OK
     }
 
-  private def resetAndWait = {
+  private def resetAndWait(viewId: String = "composite") = {
     logger.info("Waiting for view to be indexed")
-    waitForView()
+    waitForView(viewId)
     logger.info("Resetting offsets")
-    resetView.runSyncUnsafe()
+    resetView(viewId).runSyncUnsafe()
     logger.info("Waiting for view to be indexed again")
-    waitForView()
+    waitForView(viewId)
   }
 
   "Delete composite views" should {
