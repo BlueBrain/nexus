@@ -110,12 +110,12 @@ object CompositeViewProjection {
       resourceTag: Option[TagLabel],
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
+      includeContext: Boolean = false,
       permission: Permission,
       indexGroup: Option[IndexGroup],
       mapping: JsonObject,
       settings: Option[JsonObject] = None,
-      context: ContextObject,
-      includeContext: Boolean = false
+      context: ContextObject
   ) extends CompositeViewProjection {
 
     override def tpe: ProjectionType                              = ElasticSearchProjectionType

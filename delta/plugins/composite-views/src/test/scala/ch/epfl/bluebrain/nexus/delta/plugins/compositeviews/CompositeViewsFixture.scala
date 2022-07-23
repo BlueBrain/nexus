@@ -131,12 +131,12 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
     None,
     false,
     false,
+    false,
     permissions.query,
     None,
     JsonObject(),
     Some(JsonObject()),
-    ContextObject(JsonObject.empty),
-    false
+    ContextObject(JsonObject.empty)
   )
   val blazegraphProjection = SparqlProjection(
     iri"http://example.com/blazegraph-projection",

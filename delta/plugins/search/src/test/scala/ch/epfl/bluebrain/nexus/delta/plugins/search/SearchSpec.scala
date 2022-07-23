@@ -93,12 +93,12 @@ class SearchSpec
         None,
         false,
         false,
+        false,
         permissions.query,
         Some(IndexGroup.unsafe("search")),
         mappings,
         None,
-        ContextObject(JsonObject()),
-        false
+        ContextObject(JsonObject())
       )
     ),
     None,
