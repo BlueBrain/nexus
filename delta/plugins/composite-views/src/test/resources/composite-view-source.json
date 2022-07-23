@@ -64,6 +64,7 @@
       "resourceTypes": [
       ],
       "includeDeprecated": false,
+      "includeContext": false,
       "includeMetadata": false,
       "permission": "views/query",
       "@type": "ElasticSearchProjection"

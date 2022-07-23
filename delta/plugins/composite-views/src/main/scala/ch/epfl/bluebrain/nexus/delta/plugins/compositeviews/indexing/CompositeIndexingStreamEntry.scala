@@ -26,7 +26,8 @@ final case class CompositeIndexingStreamEntry(
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue = ctx
+      context: ContextValue = ctx,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] = data match {
     case TagNotFound(id)        => delete(id, index).map(Some(_))
     case resource: IndexingData =>
@@ -37,7 +38,8 @@ final case class CompositeIndexingStreamEntry(
           includeMetadata,
           includeDeprecated,
           sourceAsText,
-          context
+          context,
+          includeContext
         )
       else if (containsSchema(resource, resourceSchemas))
         delete(resource.id, index).map(Some.apply)
@@ -57,10 +59,11 @@ final case class CompositeIndexingStreamEntry(
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue
+      context: ContextValue,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] = {
     if (resource.deprecated && !includeDeprecated) delete(resource.id, idx).map(Some.apply)
-    else index(resource, idx, includeMetadata, sourceAsText, context)
+    else index(resource, idx, includeMetadata, sourceAsText, context, includeContext)
   }
 
   /**
@@ -77,9 +80,10 @@ final case class CompositeIndexingStreamEntry(
       idx: IndexLabel,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue = ctx
+      context: ContextValue = ctx,
+      includeContext: Boolean
   ): Task[Option[ElasticSearchBulk]] =
-    toDocument(resource, includeMetadata, sourceAsText, context).map { doc =>
+    toDocument(resource, includeMetadata, sourceAsText, context, includeContext).map { doc =>
       Option.when(!doc.isEmpty())(ElasticSearchBulk.Index(idx, resource.id.toString, doc))
     }
 
@@ -95,29 +99,45 @@ final case class CompositeIndexingStreamEntry(
   def containsTypes[A](resource: IndexingData, resourceTypes: Set[Iri]): Boolean =
     resourceTypes.isEmpty || resourceTypes.intersect(resource.types).nonEmpty
 
+  /**
+    * Controls whether the JSON-LD context is preserved in the document that is indexed by ES.
+    */
+  private def handleCtxInclusion(json: Json, ctx: ContextValue, includeCtx: Boolean): Json =
+    if (includeCtx)
+      json
+        .removeAllKeys(keywords.context)
+        .deepMerge(ctx.contextObj.asJson) // remove any existing context before setting the context
+    else json.removeAllKeys(keywords.context)
+
   private def toDocument(
       resource: IndexingData,
       includeMetadata: Boolean,
       sourceAsText: Boolean,
-      context: ContextValue
+      context: ContextValue,
+      includeContext: Boolean
   ): Task[Json] = {
+
     val predGraph = resource.graph
     val metaGraph = resource.metadataGraph
     val graph     = if (includeMetadata) predGraph ++ metaGraph else predGraph
+
     if (sourceAsText)
       graph
         .add(nxv.originalSource.iri, resource.source.noSpaces)
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
-    else if (resource.source.isEmpty())
+        .map(json => handleCtxInclusion(json, context, includeContext))
+    else if (resource.source.isEmpty()) {
       graph
         .toCompactedJsonLd(context)
         .map(_.obj.asJson)
-    else
+        .map(json => handleCtxInclusion(json, context, includeContext))
+    } else
       (graph -- graph.rootTypesGraph)
         .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
         .toCompactedJsonLd(context)
-        .map(ld => mergeJsonLd(resource.source, ld.json).removeAllKeys(keywords.context))
+        .map(ld => mergeJsonLd(resource.source, ld.json))
+        .map(json => handleCtxInclusion(json, context, includeContext))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =

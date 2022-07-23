@@ -92,6 +92,7 @@ class ElasticSearchQuerySpec
       None,
       false,
       false,
+      false,
       permission,
       None,
       JsonObject.empty,
