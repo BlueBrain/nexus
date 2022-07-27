@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import akka.actor.typed.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfigOld, DatabaseFlavour}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import doobie.Query0
 import doobie.implicits._
@@ -39,7 +39,7 @@ class PostgresDatabaseDefinitionSpec(docker: PostgresSpecs)
 
   "A Postgres Database definition" should {
     "be initialized" in {
-      val dbConfig = DatabaseConfig(
+      val dbConfig = DatabaseConfigOld(
         DatabaseFlavour.Postgres,
         docker.postgresConfig,
         null,

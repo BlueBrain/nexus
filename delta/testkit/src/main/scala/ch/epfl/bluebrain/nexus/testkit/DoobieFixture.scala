@@ -1,11 +1,8 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresContainer
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker.{PostgresPassword, PostgresUser}
-import doobie._
-import doobie.implicits._
 import monix.execution.Scheduler
 import munit.Suite
 
@@ -14,7 +11,7 @@ import scala.jdk.DurationConverters._
 
 trait DoobieFixture extends TestHelpers { self: Suite =>
 
-  private def loadDDL(path: String): Fragment = Fragment.const0(contentOf(path))
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   val doobie: Fixture[Transactors] = new Fixture[Transactors]("doobie") {
 
@@ -31,9 +28,7 @@ trait DoobieFixture extends TestHelpers { self: Suite =>
       container.start()
       xas =
         Transactors.sharedFrom(container.getHost, container.getMappedPort(5432), "postgres", "postgres").runSyncUnsafe()
-      val createTables          = loadDDL("/scripts/schema.ddl").update.run
-      val dropTables            = loadDDL("/scripts/drop-tables.ddl").update.run
-      (dropTables, createTables).mapN(_ + _).transact(xas.write).void.runSyncUnsafe()
+      (xas.execDDL("/scripts/drop-tables.ddl") >> xas.execDDL("/scripts/schema.ddl")).runSyncUnsafe()
     }
 
     override def afterAll(): Unit = {

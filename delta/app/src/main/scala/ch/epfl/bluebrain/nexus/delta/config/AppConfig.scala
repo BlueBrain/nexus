@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.config
 
+import ch.epfl.bluebrain.nexus.delta.kernel.database.DatabaseConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApiConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
@@ -15,7 +16,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures
@@ -32,8 +32,6 @@ import java.nio.charset.StandardCharsets.UTF_8
   *   the service description
   * @param http
   *   the http config
-  * @param cluster
-  *   the cluster config
   * @param database
   *   the database config
   * @param jsonLdApi
@@ -64,7 +62,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 final case class AppConfig(
     description: DescriptionConfig,
     http: HttpConfig,
-    cluster: ClusterConfig,
     database: DatabaseConfig,
     jsonLdApi: JsonLdApiConfig,
     identities: CacheConfig,
@@ -113,19 +110,13 @@ object AppConfig {
                                      ConfigFactory.parseFile(new File(p), parseOptions)
                                    })
       defaultConfig             <- UIO.delay(ConfigFactory.parseResources("default.conf", parseOptions))
-      (default, _)              <- merge(externalConfig, defaultConfig)
-      file                       = default.database.flavour match {
-                                     case DatabaseFlavour.Postgres  => "application-postgresql.conf"
-                                     case DatabaseFlavour.Cassandra => "application-cassandra.conf"
-                                   }
-      config                    <- UIO.delay(ConfigFactory.parseResources(file, parseOptions))
       pluginConfigs              = pluginsConfigPaths.map { string =>
                                      ConfigFactory.parseReader(
                                        new InputStreamReader(accClassLoader.getResourceAsStream(string), UTF_8),
                                        parseOptions
                                      )
                                    }
-      (appConfig, mergedConfig) <- merge(externalConfig :: config :: pluginConfigs: _*)
+      (appConfig, mergedConfig) <- merge(externalConfig :: defaultConfig :: pluginConfigs: _*)
     } yield (appConfig, mergedConfig)
   }
 

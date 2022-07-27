@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSession
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClasspathResourceUtils.{ioContentOf => resourceFrom}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfig, PostgresConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfigOld, PostgresConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.utils.CassandraUtils
 import com.typesafe.scalalogging.Logger
 import doobie.implicits._
@@ -26,7 +26,7 @@ sealed trait DatabaseDefinitions {
 object DatabaseDefinitions {
   private val logger: Logger = Logger[DatabaseDefinitions.type]
 
-  def apply(config: DatabaseConfig)(implicit system: ActorSystem[Nothing]): Task[DatabaseDefinitions] =
+  def apply(config: DatabaseConfigOld)(implicit system: ActorSystem[Nothing]): Task[DatabaseDefinitions] =
     config.flavour match {
       case Postgres  => Task.delay(postgres(config.postgres.transactor, config.postgres))
       case Cassandra => CassandraUtils.session.map(s => cassandra(s, config.cassandra))

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfigOld
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -23,7 +23,7 @@ class JiraPluginModule(priority: Int) extends ModuleDef {
   make[JiraConfig].from { JiraConfig.load(_) }
 
   make[JiraClient].fromEffect {
-    (databaseConfig: DatabaseConfig, jiraConfig: JiraConfig, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    (databaseConfig: DatabaseConfigOld, jiraConfig: JiraConfig, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
       TokenStore(databaseConfig, as, clock).flatMap { cache =>
         JiraClient(cache, jiraConfig)
       }

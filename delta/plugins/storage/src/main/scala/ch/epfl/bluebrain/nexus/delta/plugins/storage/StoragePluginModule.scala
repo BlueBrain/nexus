@@ -40,7 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfigOld
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import com.typesafe.config.Config
@@ -148,7 +148,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   make[EventLog[Envelope[FileEvent]]].fromEffect { databaseEventLog[FileEvent](_, _) }
 
   make[Projection[StorageStatsCollection]].fromEffect {
-    (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
+    (database: DatabaseConfigOld, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
       Projection(database, StorageStatsCollection.empty, system, clock)
   }
 
@@ -290,7 +290,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
 
   if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
-    make[RemoteStorageMigration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfig) =>
+    make[RemoteStorageMigration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfigOld) =>
       RemoteStorageMigrationImpl(as, databaseConfig.cassandra)
     )
   }

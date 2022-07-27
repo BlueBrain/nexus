@@ -21,7 +21,7 @@ import scala.annotation.nowarn
   * @param denyCleanup
   *   When set to false, allow to delete projects and resources
   */
-final case class DatabaseConfig(
+final case class DatabaseConfigOld(
     flavour: DatabaseFlavour,
     postgres: PostgresConfig,
     cassandra: CassandraConfig,
@@ -29,12 +29,12 @@ final case class DatabaseConfig(
     denyCleanup: Boolean
 )
 
-object DatabaseConfig {
+object DatabaseConfigOld {
 
   @nowarn("cat=unused")
-  implicit final val databaseConfigReader: ConfigReader[DatabaseConfig] = {
+  implicit final val databaseConfigReader: ConfigReader[DatabaseConfigOld] = {
     implicit val postgresConfigReader: ConfigReader[PostgresConfig]   = deriveReader[PostgresConfig]
     implicit val cassandraConfigReader: ConfigReader[CassandraConfig] = deriveReader[CassandraConfig]
-    deriveReader[DatabaseConfig]
+    deriveReader[DatabaseConfigOld]
   }
 }

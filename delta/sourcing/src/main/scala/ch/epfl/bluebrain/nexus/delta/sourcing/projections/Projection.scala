@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfig, PostgresConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{CassandraConfig, DatabaseConfigOld, PostgresConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.cassandra.CassandraProjection
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.postgres.PostgresProjection
 import fs2.Stream
@@ -95,7 +95,7 @@ object Projection {
     * Create a projection according to the database configuration
     */
   def apply[A: Decoder: Encoder](
-      config: DatabaseConfig,
+      config: DatabaseConfigOld,
       empty: => A,
       system: ActorSystem[Nothing],
       clock: Clock[UIO]

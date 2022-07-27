@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.dependency
 
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sdk.ServiceDependency
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name

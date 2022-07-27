@@ -1,17 +1,19 @@
 package ch.epfl.bluebrain.nexus.testkit
 
-import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
-import doobie._
-import doobie.implicits._
 import monix.execution.Scheduler
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 
-trait DoobieScalaTestFixture extends AnyWordSpecLike with BeforeAndAfterAll with PostgresDocker with TestHelpers {
+trait DoobieScalaTestFixture
+    extends AnyWordSpecLike
+    with BeforeAndAfterAll
+    with PostgresDocker
+    with TestHelpers
+    with IOValues {
 
-  private def loadDDL(path: String): Fragment = Fragment.const0(contentOf(path))
+  implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
   var xas: Transactors = _
 
@@ -20,9 +22,7 @@ trait DoobieScalaTestFixture extends AnyWordSpecLike with BeforeAndAfterAll with
     super.beforeAll()
     xas =
       Transactors.sharedFrom(container.getHost, container.getMappedPort(5432), "postgres", "postgres").runSyncUnsafe()
-    val createTables          = loadDDL("/scripts/schema.ddl").update.run
-    val dropTables            = loadDDL("/scripts/drop-tables.ddl").update.run
-    (dropTables, createTables).mapN(_ + _).transact(xas.write).void.runSyncUnsafe()
+    (xas.execDDL("/scripts/drop-tables.ddl") >> xas.execDDL("/scripts/schema.ddl")).runSyncUnsafe()
   }
 
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -31,7 +31,7 @@ import monix.execution.Scheduler
 object ResolversModule extends ModuleDef {
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[Resolvers].fromEffect {
+  make[Resolvers].from {
     (
         fetchContext: FetchContext[ContextRejection],
         resolverContextResolution: ResolverContextResolution,
@@ -49,16 +49,16 @@ object ResolversModule extends ModuleDef {
       )(api, clock, uuidF)
   }
 
+  // TODO fix with the same approach as indexing / SSE
   make[MultiResolution].from {
     (
         aclCheck: AclCheck,
         fetchContext: FetchContext[ContextRejection],
-        resolvers: Resolvers,
-        exchanges: Set[ReferenceExchange]
+        resolvers: Resolvers
     ) =>
       MultiResolution(
         fetchContext.mapRejection(ProjectContextRejection),
-        ResolverResolution(aclCheck, resolvers, exchanges.toList)
+        ResolverResolution(aclCheck, resolvers, null)
       )
   }
 
