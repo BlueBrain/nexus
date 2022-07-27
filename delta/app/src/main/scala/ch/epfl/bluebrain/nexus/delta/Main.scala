@@ -4,15 +4,14 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
-import akka.cluster.Cluster
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
-import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
+import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
@@ -136,64 +135,56 @@ object Main extends BIOApp {
     }
   }
 
-  private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] =
-    Task.delay {
-      implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
-      implicit val scheduler: Scheduler   = locator.get[Scheduler]
-      implicit val cfg: AppConfig         = locator.get[AppConfig]
-      val logger                          = locator.get[Logger]
-      val cluster                         = Cluster(as)
+  private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] = {
+    implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
+    implicit val scheduler: Scheduler   = locator.get[Scheduler]
+    implicit val cfg: AppConfig         = locator.get[AppConfig]
+    val logger                          = locator.get[Logger]
 
-      if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
-        Task
-          .fromEither {
-            for {
-              str     <- sys.env
-                           .get("MIGRATION_REMOTE_STORAGE")
-                           .toRight(new IllegalArgumentException("'MIGRATION_REMOTE_STORAGE' must be defined"))
-              baseUri <- Try(Uri(str)).toEither.flatMap(BaseUri(_))
-            } yield baseUri
-          }
-          .flatMap { baseUri =>
-            locator.get[RemoteStorageMigration].run(baseUri)
-          }
-          .runSyncUnsafe()
-      }
-
-      logger.info("Booting up service....")
-
-      val binding = Task
-        .fromFutureLike(
-          Task.delay(
-            Http()
-              .newServerAt(
-                cfg.http.interface,
-                cfg.http.port
-              )
-              .bindFlow(RouteResult.routeToFlow(routes(locator)))
-          )
-        )
-        .flatMap { binding =>
-          Task.delay(logger.infoN("Bound to {}:{}", binding.localAddress.getHostString, binding.localAddress.getPort))
+    if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
+      Task
+        .fromEither {
+          for {
+            str     <- sys.env
+                         .get("MIGRATION_REMOTE_STORAGE")
+                         .toRight(new IllegalArgumentException("'MIGRATION_REMOTE_STORAGE' must be defined"))
+            baseUri <- Try(Uri(str)).toEither.flatMap(BaseUri(_))
+          } yield baseUri
         }
-        .onErrorRecoverWith { th =>
-          Task.delay(
-            logger.error(
-              s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
-              th
-            )
-          ) >> Task
-            .traverse(plugins)(_.stop())
-            .timeout(30.seconds) >> KamonMonitoring.terminate >> terminateActorSystem()
+        .flatMap { baseUri =>
+          locator.get[RemoteStorageMigration].run(baseUri)
         }
-
-      cluster.registerOnMemberUp {
-        logger.info(" === Cluster is LIVE === ")
-        binding.runAsyncAndForget
-      }
-
-      cluster.joinSeedNodes(cfg.cluster.seedList)
+        .runSyncUnsafe()
     }
+
+    logger.info("Booting up service....")
+
+    Task
+      .fromFutureLike(
+        Task.delay(
+          Http()
+            .newServerAt(
+              cfg.http.interface,
+              cfg.http.port
+            )
+            .bindFlow(RouteResult.routeToFlow(routes(locator)))
+        )
+      )
+      .flatMap { binding =>
+        Task.delay(logger.infoN("Bound to {}:{}", binding.localAddress.getHostString, binding.localAddress.getPort))
+      }
+      .onErrorRecoverWith { th =>
+        th.printStackTrace()
+        Task.delay(
+          logger.error(
+            s"Failed to perform an http binding on ${cfg.http.interface}:${cfg.http.port}",
+            th
+          )
+        ) >> Task
+          .traverse(plugins)(_.stop())
+          .timeout(30.seconds) >> KamonMonitoring.terminate >> terminateActorSystem()
+      }
+  }
 
   private def terminateActorSystem()(implicit as: ActorSystemClassic): Task[Unit] =
     Task.deferFuture(as.terminate()).timeout(15.seconds) >> Task.unit

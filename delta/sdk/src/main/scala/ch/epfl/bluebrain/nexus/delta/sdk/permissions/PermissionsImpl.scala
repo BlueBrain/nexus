@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 
 import cats.effect.Clock
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.PermissionsResource
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{entityId, entityType}

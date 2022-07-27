@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 import akka.actor.typed.ActorSystem
 import akka.persistence.cassandra.cleanup.Cleanup
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfigOld
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
 import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor
 import com.typesafe.scalalogging.Logger
@@ -38,13 +38,13 @@ object DatabaseCleanup {
 
   private val logger: Logger = Logger[DatabaseCleanup.type]
 
-  def apply(config: DatabaseConfig)(implicit system: ActorSystem[Nothing]): DatabaseCleanup =
+  def apply(config: DatabaseConfigOld)(implicit system: ActorSystem[Nothing]): DatabaseCleanup =
     config.flavour match {
       case Postgres  => postgres(config)
       case Cassandra => cassandra(new Cleanup(system.classicSystem))
     }
 
-  private[sourcing] def postgres(config: DatabaseConfig): DatabaseCleanup =
+  private[sourcing] def postgres(config: DatabaseConfigOld): DatabaseCleanup =
     new DatabaseCleanup {
 
       override def deleteAll(moduleType: String, project: String, ids: Seq[String]): Task[Unit] = {

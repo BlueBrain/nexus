@@ -9,6 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -18,21 +19,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.IndexingAction.AggregateIndexingAction
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescription
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour.{Cassandra, Postgres}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{DatabaseConfig, DatabaseFlavour}
-import ch.epfl.bluebrain.nexus.delta.sourcing.persistenceid.PersistenceIdCheck
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
-import ch.epfl.bluebrain.nexus.delta.sourcing.{DatabaseCleanup, DatabaseDefinitions, EventLog}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -49,27 +43,25 @@ import org.slf4j.{Logger, LoggerFactory}
   *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
-
   make[AppConfig].from(appCfg)
   make[Config].from(config)
-  make[DatabaseConfig].fromEffect { (definition: DatabaseDefinitions) =>
-    definition.initialize.as(appCfg.database)
-  }
   make[FusionConfig].from { appCfg.fusion }
   make[ProjectsConfig].from { appCfg.projects }
-  make[DatabaseFlavour].from { (dbConfig: DatabaseConfig) => dbConfig.flavour }
   make[BaseUri].from { appCfg.http.baseUri }
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
 
+  make[Transactors].fromEffect {
+    Transactors.init(appCfg.database).use(Task.delay(_))
+  }
+
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/metadata.json"))
 
-  make[IndexingAction].named("aggregate").from { (internal: Set[IndexingAction]) =>
-    AggregateIndexingAction(internal.toSeq)
-  }
+  // TODO Change back when views are migrated
+  make[IndexingAction].named("aggregate").fromValue { AggregateIndexingAction(List.empty) }
 
   make[RemoteContextResolution].named("aggregate").fromEffect { (otherCtxResolutions: Set[RemoteContextResolution]) =>
     for {
@@ -124,40 +116,12 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       .withExposedHeaders(List(Location.name))
   )
 
-  make[DatabaseDefinitions].fromEffect((config: AppConfig, system: ActorSystem[Nothing]) =>
-    DatabaseDefinitions(config.database)(system)
-  )
-
-  make[DatabaseCleanup].from { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
-    DatabaseCleanup(config)(system)
-  }
-
-  make[EventLog[Envelope[Event]]].fromEffect { databaseEventLog[Event](_, _) }
-  make[EventLog[Envelope[ProjectScopedEvent]]].fromEffect { databaseEventLog[ProjectScopedEvent](_, _) }
-
-  make[Projection[Unit]].fromEffect { (database: DatabaseConfig, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-    Projection(database, (), system, clock)
-  }
-
   many[ScopeInitialization].add { (acls: Acls, serviceAccount: ServiceAccount) =>
     OwnerPermissionsScopeInitialization(acls, appCfg.permissions.ownerPermissions, serviceAccount)
   }
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
     pluginsRoutes.toVector.sorted.map(_.route)
-  }
-
-  make[PersistenceIdCheck].fromEffect { (config: DatabaseConfig, system: ActorSystem[Nothing]) =>
-    if (config.verifyIdUniqueness)
-      config.flavour match {
-        case Postgres  => PersistenceIdCheck.postgres(config.postgres)
-        case Cassandra => PersistenceIdCheck.cassandra(config.cassandra)(system)
-      }
-    else Task.delay(PersistenceIdCheck.skipPersistenceIdCheck)
-  }
-
-  make[ResourceIdCheck].fromValue {
-    ResourceIdCheck.alwaysAvailable
   }
 
   include(PermissionsModule)

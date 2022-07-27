@@ -420,29 +420,6 @@ lazy val sdkViews = project
     Test / fork           := true
   )
 
-lazy val service = project
-  .in(file("delta/service"))
-  .settings(
-    name       := "delta-service",
-    moduleName := "delta-service"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk, sdkViews, sdkTestkit % "test->compile;test->test", testkit % "test->compile")
-  .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
-  .settings(
-    libraryDependencies ++= Seq(
-      nimbusJoseJwt,
-      akkaSlf4j        % Test,
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      h2               % Test,
-      logback          % Test,
-      scalaTest        % Test
-    ),
-    addCompilerPlugin(betterMonadicFor),
-    Test / fork          := true
-  )
-
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -451,7 +428,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile", sdkViews)
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(
@@ -459,8 +436,8 @@ lazy val app = project
       akkaSlf4j,
       classgraph,
       logback,
-      akkaHttpTestKit  % Test,
-      scalaTest        % Test
+      akkaHttpTestKit % Test,
+      scalaTest       % Test
     ),
     addCompilerPlugin(betterMonadicFor),
     run / fork            := true,
@@ -840,7 +817,7 @@ lazy val plugins = project
 lazy val delta = project
   .in(file("delta"))
   .settings(shared, compilation, noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, service, app, plugins)
+  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 

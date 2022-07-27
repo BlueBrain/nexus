@@ -16,8 +16,7 @@ services:
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",
                   "./bin/delta-app",
-                  "-Xmx4G",
-                  "-Dapp.cluster.remote-interface=delta" ]
+                  "-Xmx4G" ]
     ports:
       - 8080:8080
     volumes:
@@ -32,9 +31,8 @@ services:
 #      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest
-#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta:25520", "--", "./bin/delta-app",
-#                 "-Xmx4G",
-#                 "-Dapp.cluster.remote-interface=delta2" ]
+#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta:8080", "--", "./bin/delta-app",
+#                 "-Xmx4G" ]
 #    ports:
 #      - 8081:8080
 #    volumes:
@@ -49,9 +47,8 @@ services:
 #      DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
 #      KAMON_ENABLED: "false"
 #    image: bluebrain/nexus-delta:latest
-#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta2:25520", "--", "./bin/delta-app",
-#                 "-Xmx4G",
-#                 "-Dapp.cluster.remote-interface=delta3" ]
+#    entrypoint: ["bin/wait-for-it.sh", "-s", "-t", "0", "delta2:8080", "--", "./bin/delta-app",
+#                 "-Xmx4G" ]
 #    ports:
 #      - 8082:8080
 #    volumes:
@@ -95,7 +92,7 @@ services:
       - 9999:9999
 
   postgres:
-    image: library/postgres:12.2
+    image: library/postgres:14.3
     environment:
       POSTGRES_USER: "postgres"
       POSTGRES_PASSWORD: "postgres"

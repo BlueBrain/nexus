@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.wiring
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.Main.pluginsMaxPriority
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -24,7 +24,7 @@ import monix.execution.Scheduler
 object PermissionsModule extends ModuleDef {
   implicit private val classLoader = getClass.getClassLoader
 
-  make[Permissions].fromEffect { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
+  make[Permissions].from { (cfg: AppConfig, xas: Transactors, clock: Clock[UIO]) =>
     PermissionsImpl(
       cfg.permissions,
       xas
