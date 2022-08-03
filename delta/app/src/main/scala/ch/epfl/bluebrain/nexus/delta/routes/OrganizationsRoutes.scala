@@ -10,10 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.OrganizationsRoutes.OrganizationInput
 import ch.epfl.bluebrain.nexus.delta.sdk.OrganizationResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -23,9 +22,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationEvent, OrganizationRejection}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.{Organization, OrganizationRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -63,8 +61,6 @@ final class OrganizationsRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit val sseConverter: SseConverter[OrganizationEvent] = SseConverter(OrganizationEvent.sseEncoder)
-
   private def orgsSearchParams(implicit caller: Caller): Directive1[OrganizationSearchParams] =
     (searchParams & parameter("label".?)).tmap { case (deprecated, rev, createdBy, updatedBy, label) =>
       val fetchAllCached = aclCheck.fetchAll.memoizeOnSuccess
@@ -92,16 +88,6 @@ final class OrganizationsRoutes(
 
                   emit(organizations.list(pagination, params, order).widen[SearchResults[OrganizationResource]])
                 }
-            },
-            // SSE organizations
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/orgs/events") {
-                authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventIdNew { offset =>
-                    emit(organizations.events(offset))
-                  }
-                }
-              }
             },
             (resolveOrg & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/orgs/{label}") {

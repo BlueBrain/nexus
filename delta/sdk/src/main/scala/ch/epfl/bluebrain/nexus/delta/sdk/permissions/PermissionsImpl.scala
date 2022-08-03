@@ -12,8 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 final class PermissionsImpl private (
@@ -63,12 +62,6 @@ final class PermissionsImpl private (
 
   override def delete(rev: Int)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource] =
     eval(DeletePermissions(rev, caller)).span("deletePermissions")
-
-  override def events(offset: Offset): EnvelopeStream[Label, PermissionsEvent] =
-    log.events(offset)
-
-  override def currentEvents(offset: Offset): EnvelopeStream[Label, PermissionsEvent] =
-    log.currentEvents(offset)
 
   private def eval(cmd: PermissionsCommand): IO[PermissionsRejection, PermissionsResource] =
     log.evaluate(entityId, cmd).map(_._2.toResource(minimum))

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.IndexingActionDummy
@@ -88,7 +88,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
         aclCheck,
         ResourcesImpl(resourceResolution, fetchContext, resolverContextResolution, config, xas),
         DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef)),
-        null,
         IndexingActionDummy()
       )
     )
@@ -365,46 +364,6 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       Get("/v1/resources/myorg/myproject/_/myid2?tag=mytag") ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf("/errors/tag-not-found.json", "tag" -> "mytag")
-      }
-    }
-
-    "fail to get the events stream without events/read permission" ignore {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-
-      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
-      forAll(List("/v1/resources/events", "/v1/resources/myorg/events", "/v1/resources/myorg/myproject/events")) {
-        endpoint =>
-          Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-          }
-      }
-    }
-
-    "get the events stream" ignore {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      forAll(
-        List(
-          "/v1/resources/events",
-          "/v1/resources/myorg/events",
-          s"/v1/resources/$uuid/events",
-          "/v1/resources/myorg/myproject/events",
-          s"/v1/resources/$uuid/$uuid/events"
-        )
-      ) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          chunksStream.asString(2).strip shouldEqual contentOf("/resources/eventstream-0-2.txt", "uuid" -> uuid).strip
-        }
-      }
-    }
-
-    "check access to SSEs" ignore {
-      Head("/v1/resources/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
       }
     }
 

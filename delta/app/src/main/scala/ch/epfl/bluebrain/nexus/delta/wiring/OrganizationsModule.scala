@@ -13,8 +13,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
-import ch.epfl.bluebrain.nexus.delta.sdk.model.MetadataContextValue
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{Organizations, OrganizationsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -60,6 +62,8 @@ object OrganizationsModule extends ModuleDef {
         ordering
       )
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => OrganizationEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/organizations-metadata.json"))
 

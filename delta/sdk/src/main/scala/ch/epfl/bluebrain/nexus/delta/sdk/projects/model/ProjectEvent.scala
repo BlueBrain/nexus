@@ -7,12 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.ProjectCreated
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -220,32 +221,40 @@ object ProjectEvent {
     Serializer(_.project)
   }
 
-  @nowarn("cat=unused")
-  val sseEncoder: SseEncoder[ProjectEvent] = new SseEncoder[ProjectEvent] {
-    private val context = ContextValue(contexts.metadata, contexts.projects)
+  def sseEncoder(implicit base: BaseUri): SseEncoder[ProjectEvent] =
+    new SseEncoder[ProjectEvent] {
 
-    implicit private val config: Configuration = Configuration.default
-      .withDiscriminator(keywords.tpe)
-      .copy(transformMemberNames = {
-        case "label"             => nxv.label.prefix
-        case "uuid"              => nxv.uuid.prefix
-        case "organizationLabel" => nxv.organizationLabel.prefix
-        case "organizationUuid"  => nxv.organizationUuid.prefix
-        case "rev"               => nxv.rev.prefix
-        case "instant"           => nxv.instant.prefix
-        case "subject"           => nxv.eventSubject.prefix
-        case other               => other
-      })
+      override val databaseDecoder: Decoder[ProjectEvent] = serializer.codec
 
-    override def apply(implicit base: BaseUri): Encoder.AsObject[ProjectEvent] = {
-      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
-      Encoder.encodeJsonObject.contramapObject { event =>
-        deriveConfiguredEncoder[ProjectEvent]
-          .encodeObject(event)
-          .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
-          .add(nxv.resourceId.prefix, ResourceUris.project(event.project).accessUri.asJson)
-          .add(keywords.context, context.value)
+      override def entityType: EntityType = Projects.entityType
+
+      override val selectors: Set[Label] = Set(Label.unsafe("projects"), resourcesSelector)
+
+      @nowarn("cat=unused")
+      override val sseEncoder: Encoder.AsObject[ProjectEvent] = {
+        val context = ContextValue(contexts.metadata, contexts.projects)
+
+        implicit val config: Configuration = Configuration.default
+          .withDiscriminator(keywords.tpe)
+          .copy(transformMemberNames = {
+            case "label"             => nxv.label.prefix
+            case "uuid"              => nxv.uuid.prefix
+            case "organizationLabel" => nxv.organizationLabel.prefix
+            case "organizationUuid"  => nxv.organizationUuid.prefix
+            case "rev"               => nxv.rev.prefix
+            case "instant"           => nxv.instant.prefix
+            case "subject"           => nxv.eventSubject.prefix
+            case other               => other
+          })
+
+        implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
+        Encoder.encodeJsonObject.contramapObject[ProjectEvent] { event =>
+          deriveConfiguredEncoder[ProjectEvent]
+            .encodeObject(event)
+            .add("_projectId", ResourceUris.project(event.project).accessUri.asJson)
+            .add(nxv.resourceId.prefix, ResourceUris.project(event.project).accessUri.asJson)
+            .add(keywords.context, context.value)
+        }
       }
     }
-  }
 }

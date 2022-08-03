@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.sdk.ResolverResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
@@ -22,8 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -189,57 +188,6 @@ trait Resolvers {
       ordering: Ordering[ResolverResource]
   ): UIO[UnscoredSearchResults[ResolverResource]] =
     list(pagination, params.copy(project = Some(projectRef)), ordering)
-
-  /**
-    * A terminating stream of events for resolvers. It finishes the stream after emitting all known events.
-    *
-    * @param projectRef
-    *   the project reference where the resolver belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]]
-
-  /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param projectRef
-    *   the project reference where the resolver belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]]
-
-  /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param organization
-    *   the organization label reference where the resolver belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      organization: Label,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]]
-
-  /**
-    * A non terminating stream of events for resolvers. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset): EnvelopeStream[Iri, ResolverEvent]
-
 }
 
 object Resolvers {

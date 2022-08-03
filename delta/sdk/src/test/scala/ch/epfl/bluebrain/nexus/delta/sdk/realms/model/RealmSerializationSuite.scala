@@ -1,18 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import io.circe.Json
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers {
+class RealmSerializationSuite extends SerializationSuite {
+
+  private val sseEncoder = RealmEvent.sseEncoder
 
   val rev              = 1
   val instant: Instant = Instant.EPOCH
@@ -33,7 +36,7 @@ class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers 
   val revocationEndpoint: Uri                = Uri("http://localhost:8080/revocation")
   val endSessionEndpoint: Uri                = Uri("http://localhost:8080/logout")
 
-  val realmMapping: Map[RealmEvent, Json] = Map(
+  private val realmMapping = Map(
     RealmCreated(
       label = realm,
       rev = rev,
@@ -51,7 +54,7 @@ class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers 
       endSessionEndpoint = Some(endSessionEndpoint),
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/realms/realm-created.json"),
+    ) -> loadEvents("realms", "realm-created.json"),
     RealmUpdated(
       label = realm,
       rev = rev,
@@ -69,24 +72,26 @@ class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers 
       endSessionEndpoint = Some(endSessionEndpoint),
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/realms/realm-updated.json"),
+    ) -> loadEvents("realms", "realm-updated.json"),
     RealmDeprecated(
       label = realm,
       rev = rev,
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/realms/realm-deprecated.json")
+    ) -> loadEvents("realms", "realm-deprecated.json")
   )
 
-  realmMapping.foreach { case (event, json) =>
+  realmMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(RealmEvent.serializer.codec(event), json)
+      assertEquals(RealmEvent.serializer.codec(event), database)
     }
-  }
 
-  realmMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(RealmEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(RealmEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 
@@ -114,11 +119,11 @@ class RealmSerializationSuite extends FunSuite with Assertions with TestHelpers 
 
   private val jsonState = jsonContentOf("/realms/realm-state.json")
 
-  test(s"Correctly serialize an OrganizationState") {
+  test(s"Correctly serialize an RealmState") {
     assertEquals(RealmState.serializer.codec(state), jsonState)
   }
 
-  test(s"Correctly deserialize an OrganizationState") {
+  test(s"Correctly deserialize an RealmState") {
     assertEquals(RealmState.serializer.codec.decodeJson(jsonState), Right(state))
   }
 

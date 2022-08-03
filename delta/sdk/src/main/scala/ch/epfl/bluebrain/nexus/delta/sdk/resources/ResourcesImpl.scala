@@ -25,9 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import fs2.Stream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -146,27 +144,6 @@ final class ResourcesImpl private (
       _            <- IO.raiseWhen(schemaRefOpt.exists(_.iri != state.schema.iri))(notFound)
     } yield state.toResource(pc.apiMappings, pc.base)
   }.span("fetchResource")
-
-  override def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
-    IO.pure(Stream.empty)
-
-  override def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(
-      organization: Label,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(offset: Offset): EnvelopeStream[Iri, ResourceEvent] =
-    log.events(Predicate.root, offset)
 
   private def eval(cmd: ResourceCommand, pc: ProjectContext): IO[ResourceRejection, DataResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))

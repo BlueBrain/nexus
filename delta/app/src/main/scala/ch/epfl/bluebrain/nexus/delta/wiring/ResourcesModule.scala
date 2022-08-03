@@ -19,9 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers, ResourceResolution}
+import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.{Resources, ResourcesImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -75,7 +77,7 @@ object ResourcesModule extends ModuleDef {
         ordering: JsonKeyOrdering,
         fusionConfig: FusionConfig
     ) =>
-      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, null, indexingAction)(
+      new ResourcesRoutes(identities, aclCheck, resources, schemeDirectives, indexingAction)(
         baseUri,
         s,
         cr,
@@ -83,6 +85,8 @@ object ResourcesModule extends ModuleDef {
         fusionConfig
       )
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => ResourceEvent.sseEncoder(base) }
 
   many[ApiMappings].add(Resources.mappings)
 

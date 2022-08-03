@@ -6,16 +6,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
+import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax.EncoderOps
-import io.circe.{Codec, Encoder}
+import io.circe.{Codec, Decoder, Encoder}
 
 import java.time.Instant
 import java.util.UUID
@@ -131,21 +132,27 @@ object OrganizationEvent {
   }
 
   @nowarn("cat=unused")
-  val sseEncoder: SseEncoder[OrganizationEvent] = new SseEncoder[OrganizationEvent] {
-    private val context = ContextValue(contexts.metadata, contexts.organizations)
+  def sseEncoder(implicit base: BaseUri): SseEncoder[OrganizationEvent] = new SseEncoder[OrganizationEvent] {
 
-    implicit private val config: Configuration = Configuration.default
-      .withDiscriminator(keywords.tpe)
-      .copy(transformMemberNames = {
-        case "label"   => nxv.label.prefix
-        case "uuid"    => nxv.uuid.prefix
-        case "rev"     => nxv.rev.prefix
-        case "instant" => nxv.instant.prefix
-        case "subject" => nxv.eventSubject.prefix
-        case other     => other
-      })
+    override val databaseDecoder: Decoder[OrganizationEvent] = serializer.codec
 
-    override def apply(implicit base: BaseUri): Encoder.AsObject[OrganizationEvent] = {
+    override def entityType: EntityType = Organizations.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("orgs"))
+
+    override val sseEncoder: Encoder.AsObject[OrganizationEvent] = {
+      val context = ContextValue(contexts.metadata, contexts.organizations)
+
+      implicit val config: Configuration            = Configuration.default
+        .withDiscriminator(keywords.tpe)
+        .copy(transformMemberNames = {
+          case "label"   => nxv.label.prefix
+          case "uuid"    => nxv.uuid.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case other     => other
+        })
       implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[OrganizationEvent]

@@ -218,7 +218,7 @@ class ProjectionSuite extends MonixBioSuite with ProjectionFixture with EitherAs
                       "The offsets observed by the persist fn should be different than the initial."
                     )
       _          <- persistRef.set(ProjectionOffset.empty)
-      _          <- Task.sleep(10.millis)
+      _          <- Task.sleep(100.millis)
       _          <- projection.isRunning.assert(false, "The projection should have stopped")
       status     <- projection.executionStatus
       _           = assertEquals(status.isStopped, true, status)

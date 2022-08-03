@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import doobie.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
@@ -27,9 +26,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{Prio
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import fs2.Stream
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
+import doobie.implicits._
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -173,27 +171,6 @@ final class ResolversImpl private (
       ordering
     ).span("listResolvers")
   }
-
-  override def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(
-      organization: Label,
-      offset: Offset
-  ): IO[ResolverRejection, EnvelopeStream[Iri, ResolverEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(offset: Offset): EnvelopeStream[Iri, ResolverEvent] =
-    Stream.empty
 
   private def eval(cmd: ResolverCommand, pc: ProjectContext): IO[ResolverRejection, ResolverResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))

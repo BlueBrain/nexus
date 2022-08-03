@@ -12,7 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, MetadataContextValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.{Permissions, PermissionsImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -42,6 +44,8 @@ object PermissionsModule extends ModuleDef {
         ordering: JsonKeyOrdering
     ) => new PermissionsRoutes(identities, permissions, aclCheck)(baseUri, s, cr, ordering)
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => PermissionsEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/permissions-metadata.json"))
 

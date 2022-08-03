@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.RealmsConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures
@@ -76,6 +77,7 @@ final case class AppConfig(
     resources: ResourcesConfig,
     schemas: SchemasConfig,
     serviceAccount: ServiceAccountConfig,
+    sse: SseConfig,
     encryption: EncryptionConfig,
     fusion: FusionConfig
 )

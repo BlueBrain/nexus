@@ -1,31 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.SchemaGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.Json
-import monix.execution.Scheduler
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class SchemaSerializationSuite extends FunSuite with Assertions with CirceLiteral with TestHelpers {
-
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-  implicit private val s: Scheduler    = Scheduler.global
-
-  implicit private val res: RemoteContextResolution =
-    RemoteContextResolution.fixed(
-      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").runSyncUnsafe(),
-      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").runSyncUnsafe()
-    )
+class SchemaSerializationSuite extends SerializationSuite {
 
   private val instant: Instant = Instant.EPOCH
   private val realm: Label     = Label.unsafe("myrealm")

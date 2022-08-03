@@ -30,6 +30,8 @@ class FetchContextDummy private (
 
 object FetchContextDummy {
 
+  val empty = new FetchContextDummy(Map.empty, Set.empty, Set.empty)
+
   def apply(
       expected: Map[ProjectRef, ProjectContext],
       rejectOnCreateOrModify: Set[ProjectRef]

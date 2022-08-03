@@ -1,0 +1,20 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/resolvers.json"
+  ],
+  "@type": "ResolverTagAdded",
+  "tag": "mytag",
+  "targetRev": 1,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/resolvers.json",
+  "_instant": "1970-01-01T00:00:00Z",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_resolverId": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/myId",
+  "_rev": 3,
+  "_subject": "http://localhost/v1/realms/myrealm/users/username",
+  "_types": [
+    "https://bluebrain.github.io/nexus/vocabulary/Resolver",
+    "https://bluebrain.github.io/nexus/vocabulary/InProject"
+  ]
+}

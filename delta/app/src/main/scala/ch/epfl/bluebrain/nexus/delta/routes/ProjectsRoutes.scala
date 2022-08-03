@@ -9,10 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -21,12 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ProjectSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{Projects, ProjectsConfig, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.IO
 import monix.execution.Scheduler
@@ -64,8 +62,6 @@ final class ProjectsRoutes(
   import baseUri.prefixSegment
   import schemeDirectives._
 
-  implicit val sseConverter: SseConverter[ProjectEvent] = SseConverter(ProjectEvent.sseEncoder)
-
   implicit val paginationConfig: PaginationConfig = config.pagination
 
   private def projectsSearchParams(implicit caller: Caller): Directive1[ProjectSearchParams] =
@@ -99,16 +95,6 @@ final class ProjectsRoutes(
                   searchResultsJsonLdEncoder(Project.context, pagination, uri)
 
                 emit(projects.list(pagination, params, order).widen[SearchResults[ProjectResource]])
-              }
-            },
-            // SSE projects
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/projects/events") {
-                authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventIdNew { offset =>
-                    emit(projects.events(offset))
-                  }
-                }
               }
             },
             resolveProjectRef.apply { ref =>

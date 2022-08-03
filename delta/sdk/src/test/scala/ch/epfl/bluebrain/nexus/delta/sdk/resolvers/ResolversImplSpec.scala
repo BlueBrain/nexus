@@ -5,6 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResolverGen.{resolverResourceFor, sourceFrom, sourceWithoutId}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
@@ -15,16 +16,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearc
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{DecodingFailed, IncorrectRev, InvalidIdentities, InvalidResolverId, NoIdentities, PriorityAlreadyExists, ProjectContextRejection, ResolverIsDeprecated, ResolverNotFound, ResourceAlreadyExists, RevisionNotFound, TagNotFound, UnexpectedResolverId}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -776,72 +774,6 @@ class ResolversImplSpec
         )
       }
 
-    }
-
-    "getting events" should {
-      val allEvents = SSEUtils.extract(
-        (nxv + "in-project", ResolverCreated, 1L),
-        (nxv + "cross-project", ResolverCreated, 1L),
-        (nxv + "in-project-payload", ResolverCreated, 1L),
-        (nxv + "cross-project-payload", ResolverCreated, 1L),
-        (nxv + "in-project-both", ResolverCreated, 1L),
-        (nxv + "cross-project-both", ResolverCreated, 1L),
-        (nxv + uuid.toString, ResolverCreated, 1L),
-        (nxv + "in-project-from-value", ResolverCreated, 1L),
-        (nxv + "cross-project-from-value", ResolverCreated, 1L),
-        (nxv + "in-project", ResolverUpdated, 1L),
-        (nxv + "cross-project", ResolverUpdated, 1L),
-        (nxv + "in-project-from-value", ResolverUpdated, 1L),
-        (nxv + "cross-project-from-value", ResolverUpdated, 1L),
-        (nxv + "in-project", ResolverTagAdded, 1L),
-        (nxv + "cross-project", ResolverTagAdded, 1L),
-        (nxv + "in-project", ResolverDeprecated, 1L),
-        (nxv + "cross-project", ResolverDeprecated, 1L)
-      )
-
-      "get all events" ignore {
-        val streams = List(
-          resolvers.events(Offset.Start),
-          resolvers.events(org, Offset.Start).accepted,
-          resolvers.events(projectRef, Offset.Start).accepted
-        )
-        forAll(streams) { stream =>
-          val events = stream
-            .map { e => (e.value.id, e.valueClass, e.offset) }
-            .take(17L)
-            .compile
-            .toList
-            .accepted
-          events shouldEqual allEvents
-        }
-      }
-
-      "get events from offset 2" ignore {
-        val streams = List(
-          resolvers.events(Offset.at(2)),
-          resolvers.events(org, Offset.at(2)).accepted,
-          resolvers.events(projectRef, Offset.at(2)).accepted
-        )
-        forAll(streams) { stream =>
-          val events = stream
-            .map { e => (e.value.id, e.valueClass, e.offset) }
-            .take(15)
-            .compile
-            .toList
-            .accepted
-          events shouldEqual allEvents.drop(2)
-        }
-      }
-
-      "reject if project does not exist" ignore {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-        resolvers.events(projectRef, Offset.Start).rejected
-      }
-
-      "reject if organization does not exist" ignore {
-        val org = Label.unsafe("other")
-        resolvers.events(org, Offset.Start).rejected
-      }
     }
   }
 

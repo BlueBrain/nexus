@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project, Root}
@@ -134,13 +132,6 @@ class AclsRoutesSpec extends BaseRouteSpec {
           response.asJson shouldEqual aclMetadata(address, rev = 2L, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
-      }
-    }
-
-    "get the events stream" in {
-      Get("/v1/acls/events") ~> asUser ~> Accept(`*/*`) ~> routes ~> check {
-        mediaType shouldBe `text/event-stream`
-        response.asString.strip shouldEqual contentOf("/acls/eventstream.txt").strip
       }
     }
 

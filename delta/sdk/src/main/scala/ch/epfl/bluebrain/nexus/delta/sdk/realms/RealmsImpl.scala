@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 final class RealmsImpl private (log: RealmsLog) extends Realms {
@@ -74,12 +73,6 @@ final class RealmsImpl private (log: RealmsLog) extends Realms {
       pagination,
       ordering
     ).span("listRealms")
-
-  override def events(offset: Offset): EnvelopeStream[Label, RealmEvent] =
-    log.events(offset)
-
-  override def currentEvents(offset: Offset): EnvelopeStream[Label, RealmEvent] =
-    log.currentEvents(offset)
 }
 
 object RealmsImpl {

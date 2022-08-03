@@ -1,0 +1,32 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/realms.json"
+  ],
+  "@type": "RealmCreated",
+  "acceptedAudiences": [
+    "audience"
+  ],
+  "logo": "http://localhost:8080/logo.png",
+  "name": "name",
+  "openIdConfig": "http://localhost:8080/.wellknown",
+  "_authorizationEndpoint": "http://localhost:8080/authorize",
+  "_endSessionEndpoint": "http://localhost:8080/logout",
+  "_grantTypes": [
+    "deviceCode",
+    "password",
+    "clientCredentials",
+    "refreshToken",
+    "authorizationCode",
+    "implicit"
+  ],
+  "_instant": "1970-01-01T00:00:00Z",
+  "_issuer": "http://localhost:8080/issuer",
+  "_label": "myrealm",
+  "_realmId": "http://localhost/v1/realms/myrealm",
+  "_rev": 1,
+  "_revocationEndpoint": "http://localhost:8080/revocation",
+  "_subject": "http://localhost/v1/realms/myrealm/users/username",
+  "_tokenEndpoint": "http://localhost:8080/token",
+  "_userInfoEndpoint": "http://localhost:8080/userinfo"
+}

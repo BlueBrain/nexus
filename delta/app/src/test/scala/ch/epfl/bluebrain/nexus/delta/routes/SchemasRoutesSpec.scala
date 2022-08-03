@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.IndexingActionDummy
@@ -339,33 +339,6 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       Get("/v1/schemas/myorg/myproject/myid2?tag=mytag&rev=1") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual jsonContentOf("/errors/tag-and-rev-error.json")
-      }
-    }
-
-    "fail to get the events stream without events/read permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      forAll(List("/v1/schemas/events", "/v1/schemas/myorg/events", "/v1/schemas/myorg/myproject/events")) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("2") ~> routes ~> check {
-          response.status shouldEqual StatusCodes.Forbidden
-          response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        }
-      }
-    }
-
-    "get the events stream with an offset" ignore {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      forAll(
-        List(
-          "/v1/schemas/events",
-          "/v1/schemas/myorg/events",
-          s"/v1/schemas/$uuid/events",
-          "/v1/schemas/myorg/myproject/events"
-        )
-      ) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("1") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/schemas/eventstream-2-6.txt", "uuid" -> uuid).strip
-        }
       }
     }
 

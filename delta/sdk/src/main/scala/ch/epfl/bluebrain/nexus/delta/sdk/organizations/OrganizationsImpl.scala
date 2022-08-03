@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.{OrganizationResource, ScopeInitialization}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import monix.bio.{IO, UIO}
 
 final class OrganizationsImpl private (
@@ -75,10 +74,6 @@ final class OrganizationsImpl private (
       pagination,
       ordering
     ).span("listOrganizations")
-
-  override def currentEvents(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.currentEvents(offset)
-
-  override def events(offset: Offset): EnvelopeStream[Label, OrganizationEvent] = log.events(offset)
 }
 
 object OrganizationsImpl {

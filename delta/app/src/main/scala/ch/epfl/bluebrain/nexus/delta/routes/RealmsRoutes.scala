@@ -9,22 +9,21 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput
 import ch.epfl.bluebrain.nexus.delta.routes.RealmsRoutes.RealmInput._
+import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.Realms
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmEvent, RealmRejection}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
+import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.{Realm, RealmRejection}
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -44,7 +43,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
 
   import baseUri.prefixSegment
 
-  implicit val sseConverter: SseConverter[RealmEvent]           = SseConverter(RealmEvent.sseEncoder)
   private def realmsSearchParams: Directive1[RealmSearchParams] =
     searchParams.tmap { case (deprecated, rev, createdBy, updatedBy) =>
       RealmSearchParams(None, deprecated, rev, createdBy, updatedBy)
@@ -66,18 +64,6 @@ class RealmsRoutes(identities: Identities, realms: Realms, aclCheck: AclCheck)(i
                     emit(realms.list(pagination, params, order).widen[SearchResults[RealmResource]])
                   }
                 }
-            },
-            // SSE realms
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              get {
-                operationName(s"$prefixSegment/realms/events") {
-                  authorizeFor(AclAddress.Root, events.read).apply {
-                    lastEventIdNew { offset =>
-                      emit(realms.events(offset))
-                    }
-                  }
-                }
-              }
             },
             (label & pathEndOrSingleSlash) { id =>
               operationName(s"$prefixSegment/realms/{label}") {

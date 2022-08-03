@@ -23,12 +23,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{ProjectC
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{SchemaCommand, SchemaEvent, SchemaRejection, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Json
 import monix.bio.{IO, UIO}
-import fs2.Stream
 
 final class SchemasImpl private (
     log: SchemasLog,
@@ -131,27 +129,6 @@ final class SchemasImpl private (
                }
     } yield state.toResource(pc.apiMappings, pc.base)
   }.span("fetchSchema")
-
-  override def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(
-      organization: Label,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]] =
-    IO.pure(Stream.empty)
-
-  override def events(offset: Offset): EnvelopeStream[Iri, SchemaEvent] =
-    Stream.empty
 
   private def eval(cmd: SchemaCommand, pc: ProjectContext): IO[SchemaRejection, SchemaResource] =
     log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))

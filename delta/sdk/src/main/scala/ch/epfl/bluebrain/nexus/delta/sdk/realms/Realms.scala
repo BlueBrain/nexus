@@ -14,8 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, 
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
@@ -118,23 +117,6 @@ trait Realms {
       params: RealmSearchParams,
       ordering: Ordering[RealmResource]
   ): UIO[UnscoredSearchResults[RealmResource]]
-
-  /**
-    * A non terminating stream of events for realms. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset = Offset.Start): EnvelopeStream[Label, RealmEvent]
-
-  /**
-    * The current realm events. The stream stops after emitting all known events.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[Label, RealmEvent]
 }
 
 object Realms {

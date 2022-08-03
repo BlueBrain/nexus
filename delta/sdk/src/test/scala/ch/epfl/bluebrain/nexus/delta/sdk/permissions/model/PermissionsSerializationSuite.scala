@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent.{PermissionsAppended, PermissionsDeleted, PermissionsReplaced, PermissionsSubtracted}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import io.circe.Json
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class PermissionsSerializationSuite extends FunSuite with Assertions with TestHelpers {
+class PermissionsSerializationSuite extends SerializationSuite {
+
+  private val sseEncoder = PermissionsEvent.sseEncoder
 
   val instant: Instant         = Instant.EPOCH
   val rev: Int                 = 1
@@ -18,22 +20,24 @@ class PermissionsSerializationSuite extends FunSuite with Assertions with TestHe
   val subject: Subject         = User("username", realm)
   val anonymous: Subject       = Anonymous
 
-  val permissionsMapping: Map[PermissionsEvent, Json] = Map(
-    PermissionsAppended(rev, permSet, instant, subject)   -> jsonContentOf("/permissions/permissions-appended.json"),
-    PermissionsSubtracted(rev, permSet, instant, subject) -> jsonContentOf("/permissions/permissions-subtracted.json"),
-    PermissionsReplaced(rev, permSet, instant, subject)   -> jsonContentOf("/permissions/permissions-replaced.json"),
-    PermissionsDeleted(rev, instant, anonymous)           -> jsonContentOf("/permissions/permissions-deleted.json")
+  private val permissionsMapping = Map(
+    PermissionsAppended(rev, permSet, instant, subject)   -> loadEvents("permissions", "permissions-appended.json"),
+    PermissionsSubtracted(rev, permSet, instant, subject) -> loadEvents("permissions", "permissions-subtracted.json"),
+    PermissionsReplaced(rev, permSet, instant, subject)   -> loadEvents("permissions", "permissions-replaced.json"),
+    PermissionsDeleted(rev, instant, anonymous)           -> loadEvents("permissions", "permissions-deleted.json")
   )
 
-  permissionsMapping.foreach { case (event, json) =>
+  permissionsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(PermissionsEvent.serializer.codec(event), json)
+      assertEquals(PermissionsEvent.serializer.codec(event), database)
     }
-  }
 
-  permissionsMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(PermissionsEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(PermissionsEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 

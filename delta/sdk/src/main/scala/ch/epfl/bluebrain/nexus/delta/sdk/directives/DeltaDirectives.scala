@@ -3,11 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
+import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.persistence.query.{NoOffset, Offset => AkkaOffset, Sequence, TimeBasedUUID}
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.Response.{Complete, Reject}
@@ -18,13 +17,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-
-import java.util.UUID
-import scala.util.Try
 
 object DeltaDirectives extends DeltaDirectives
 
@@ -57,14 +52,7 @@ trait DeltaDirectives extends UriDirectives {
   /**
     * Completes the current Route with the provided conversion to SSEs
     */
-  def emit(response: ResponseToSse): Route =
-    response()
-
-  /**
-    * Completes the current Route with the provided conversion to SSEs
-    */
-  def emit(response: ResponseToSseNew): Route =
-    response()
+  def emit(response: ResponseToSse): Route = response()
 
   /**
     * Completes the current Route with the provided conversion to Json-LD
@@ -97,43 +85,6 @@ trait DeltaDirectives extends UriDirectives {
     */
   def discardEntityAndForceEmit(status: StatusCode, response: ResponseToJsonLdDiscardingEntity): Route =
     response(Some(status))
-
-  /**
-    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
-    * result in an [[MalformedHeaderRejection]].
-    */
-  def lastEventId: Directive1[AkkaOffset] = {
-    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
-      case Some(value) =>
-        val timeBasedUUID = Try(TimeBasedUUID(UUID.fromString(value.id))).toOption
-        val sequence      = value.id.toLongOption.map(Sequence)
-        timeBasedUUID orElse sequence match {
-          case Some(value) => provide(value)
-          case None        =>
-            val msg =
-              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
-            reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
-        }
-      case None        => provide(NoOffset)
-    }
-  }
-
-  /**
-    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[NoOffset]]. An invalid value will
-    * result in an [[MalformedHeaderRejection]].
-    */
-  def lastEventIdNew: Directive1[Offset] =
-    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
-      case Some(value) =>
-        value.id.toLongOption match {
-          case None    =>
-            val msg =
-              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
-            reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
-          case Some(o) => provide(Offset.at(o))
-        }
-      case None        => provide(Offset.Start)
-    }
 
   /**
     * Helper method to convert the error channel of the IO to a [[CustomAkkaRejection]] whenever the passed ''filter''

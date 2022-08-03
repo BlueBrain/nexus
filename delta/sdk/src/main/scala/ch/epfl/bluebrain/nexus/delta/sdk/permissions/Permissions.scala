@@ -7,8 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
@@ -108,23 +107,6 @@ trait Permissions {
     *   the new resource or a description of why the change was rejected
     */
   def delete(rev: Int)(implicit caller: Subject): IO[PermissionsRejection, PermissionsResource]
-
-  /**
-    * A non terminating stream of events for permissions. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset = Offset.Start): EnvelopeStream[Label, PermissionsEvent]
-
-  /**
-    * The current permissions events. The stream stops after emitting all known events.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(offset: Offset = Offset.Start): EnvelopeStream[Label, PermissionsEvent]
 }
 
 object Permissions {

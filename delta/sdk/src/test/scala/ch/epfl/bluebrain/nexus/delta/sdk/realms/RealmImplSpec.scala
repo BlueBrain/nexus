@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen.{realm, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
@@ -9,12 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchPa
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
-import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound, UnsuccessfulOpenIdConfigResponse}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
@@ -209,56 +207,6 @@ class RealmImplSpec
     "fail to deprecate an already deprecated realm" in {
       realms.deprecate(github, 3).rejectedWith[RealmAlreadyDeprecated]
     }
-
-    val allEvents = SSEUtils.extract(
-      (github, RealmCreated, 1L),
-      (github, RealmUpdated, 2L),
-      (github, RealmDeprecated, 3L),
-      (gitlab, RealmCreated, 4L)
-    )
-
-    "get the different events from start" in {
-      val events = realms
-        .events()
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .take(4L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different current events from start" in {
-      val events = realms
-        .currentEvents()
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different events from offset 2" in {
-      val events = realms
-        .events(Offset.at(2L))
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .take(2L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
-    }
-
-    "get the different current events from offset 2" in {
-      val events = realms
-        .currentEvents(Offset.at(2L))
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
-    }
-
   }
 
 }

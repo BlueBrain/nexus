@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.IndexingActionDummy
@@ -23,7 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{MultiResolution, ResolverContextResolution, ResolverResolution, ResolversConfig, ResolversImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
@@ -713,29 +712,6 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         ) { request =>
           request ~> check {
             status shouldEqual StatusCodes.Forbidden
-          }
-        }
-      }
-    }
-
-    "getting the events" should {
-
-      "succeed from the given offset" ignore {
-        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events")
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-            mediaType shouldBe `text/event-stream`
-            response.asString.strip shouldEqual contentOf("resolvers/eventstream-2-14.txt", "uuid" -> uuid).strip
-          }
-        }
-      }
-
-      "fail to get event stream without permission" ignore {
-        val endpoints = List("/v1/resolvers/events", "/v1/resolvers/org/events", "/v1/resolvers/org/project/events")
-        forAll(endpoints) { endpoint =>
-          Get(endpoint) ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> asBob ~> routes ~> check {
-            response.status shouldEqual StatusCodes.Forbidden
-            response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
           }
         }
       }

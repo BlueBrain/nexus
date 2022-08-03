@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclEngine
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -177,57 +176,6 @@ trait Schemas {
     fetch(resourceRef, projectRef).flatMap(res =>
       IO.raiseWhen(res.deprecated)(rejectionMapper.to(SchemaIsDeprecated(resourceRef.original))).as(res.value)
     )
-
-  /**
-    * A terminating stream of events for schemas. It finishes the stream after emitting all known events.
-    *
-    * @param projectRef
-    *   the project reference where the schema belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]]
-
-  /**
-    * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param projectRef
-    *   the project reference where the schema belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]]
-
-  /**
-    * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param organization
-    *   the organization label reference where the schema belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      organization: Label,
-      offset: Offset
-  ): IO[SchemaRejection, EnvelopeStream[Iri, SchemaEvent]]
-
-  /**
-    * A non terminating stream of events for schemas. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset): EnvelopeStream[Iri, SchemaEvent]
-
 }
 
 object Schemas {
