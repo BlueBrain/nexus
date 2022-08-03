@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
@@ -461,23 +460,6 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
             fetchProjRev3.removeKeys("@context")
           )
         )
-      }
-    }
-
-    "fail to get the events stream without events/read permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-    }
-
-    "get the events stream with an offset" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Get("/v1/projects/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("1") ~> routes ~> check {
-        mediaType shouldBe `text/event-stream`
-        response.asString.strip shouldEqual
-          contentOf("/projects/eventstream-1-4.txt", "projectUuid" -> projectUuid, "orgUuid" -> orgUuid).strip
       }
     }
 

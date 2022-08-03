@@ -1,16 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.organizations.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import io.circe.Json
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 import java.util.UUID
 
-class OrganizationSerializationSuite extends FunSuite with Assertions with TestHelpers {
+class OrganizationSerializationSuite extends SerializationSuite {
+
+  private val sseEncoder = OrganizationEvent.sseEncoder
 
   val realm: Label        = Label.unsafe("myrealm")
   val subject: Subject    = User("username", realm)
@@ -20,25 +22,29 @@ class OrganizationSerializationSuite extends FunSuite with Assertions with TestH
   val instant: Instant    = Instant.EPOCH
   val rev                 = 1
 
-  val orgsEventMapping: Map[OrganizationEvent, Json] = Map(
-    OrganizationCreated(org, orgUuid, 1, Some(description), instant, subject) -> jsonContentOf(
-      "/organizations/org-created.json"
+  private val orgsEventMapping = Map(
+    OrganizationCreated(org, orgUuid, 1, Some(description), instant, subject) -> loadEvents(
+      "organizations",
+      "org-created.json"
     ),
-    OrganizationUpdated(org, orgUuid, 1, Some(description), instant, subject) -> jsonContentOf(
-      "/organizations/org-updated.json"
+    OrganizationUpdated(org, orgUuid, 1, Some(description), instant, subject) -> loadEvents(
+      "organizations",
+      "org-updated.json"
     ),
-    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> jsonContentOf("/organizations/org-deprecated.json")
+    OrganizationDeprecated(org, orgUuid, 1, instant, subject)                 -> loadEvents("organizations", "org-deprecated.json")
   )
 
-  orgsEventMapping.foreach { case (event, json) =>
+  orgsEventMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(OrganizationEvent.serializer.codec(event), json)
+      assertEquals(OrganizationEvent.serializer.codec(event), database)
     }
-  }
 
-  orgsEventMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(OrganizationEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(OrganizationEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse.decodeJson(database).assertRight(SseData(ClassUtils.simpleName(event), None, sse))
     }
   }
 

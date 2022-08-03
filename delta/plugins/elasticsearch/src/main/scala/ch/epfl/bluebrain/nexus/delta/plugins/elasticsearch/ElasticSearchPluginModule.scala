@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
@@ -221,17 +220,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
     (cache: ProgressesCache @Id("elasticsearch-progresses"), projectsStatistics: ProjectsStatistics) =>
       new ProgressesStatistics(cache, projectsStatistics.get)
   }
-
-  make[SseEventLog]
-    .named("view-sse")
-    .from(
-      (
-          eventLog: EventLog[Envelope[Event]],
-          orgs: Organizations,
-          projects: Projects,
-          exchanges: Set[EventExchange] @Id("view")
-      ) => SseEventLog(eventLog, orgs, projects, exchanges, ElasticSearchViews.moduleTag)
-    )
 
   make[ProjectEventMetricsStream].fromEffect {
     (

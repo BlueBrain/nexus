@@ -1,8 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.MediaRanges.`*/*`
-import akka.http.scaladsl.model.MediaTypes.`text/event-stream`
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
@@ -14,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, realms => realmsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{realms => realmsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.UnsuccessfulOpenIdConfigResponse
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.{RealmsConfig, RealmsImpl}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
@@ -225,21 +223,6 @@ class RealmsRoutesSpec extends BaseRouteSpec {
       Delete("/v1/realms/gitlab?rev=1") ~> addCredentials(OAuth2BearerToken("alice")) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson should equalIgnoreArrayOrder(gitlabDeprecatedMeta)
-      }
-    }
-
-    "fail to get the events stream without events/read permission" in {
-      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("4") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("errors/authorization-failed.json")
-      }
-    }
-
-    "get the events stream with an offset" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      Get("/v1/realms/events") ~> Accept(`*/*`) ~> `Last-Event-ID`("2") ~> routes ~> check {
-        mediaType shouldBe `text/event-stream`
-        response.asString.strip shouldEqual contentOf("/realms/eventstream-2-4.txt").strip
       }
     }
   }

@@ -3,21 +3,17 @@ package ch.epfl.bluebrain.nexus.delta.sdk.permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.PermissionsGen.minimum
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsEvent.{PermissionsAppended, PermissionsDeleted, PermissionsReplaced, PermissionsSubtracted}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.{CannotAppendEmptyCollection, CannotDeleteMinimumCollection, CannotReplaceWithEmptyCollection, CannotSubtractEmptyCollection, CannotSubtractFromMinimumCollection, CannotSubtractUndefinedPermissions, IncorrectRev, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Identity, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.execution.Scheduler
 import org.scalatest.CancelAfterFailure
 import org.scalatest.matchers.should.Matchers
 
-import java.time.Instant
 import scala.concurrent.duration._
 
 class PermissionsImplSpec
@@ -128,60 +124,6 @@ class PermissionsImplSpec
     "return none for unknown rev" in {
       permissions.fetchAt(9999).rejected shouldEqual RevisionNotFound(9999, 5)
     }
-    "return all the current events" in {
-      permissions.currentEvents().compile.toVector.accepted.map(_.value) shouldEqual Vector(
-        PermissionsAppended(1, Set(perm1), Instant.EPOCH, subject),
-        PermissionsSubtracted(2, Set(perm1), Instant.EPOCH, subject),
-        PermissionsAppended(3, Set(perm1, perm2), Instant.EPOCH, subject),
-        PermissionsReplaced(4, Set(perm3, perm4), Instant.EPOCH, subject),
-        PermissionsDeleted(5, Instant.EPOCH, subject)
-      )
-    }
-
-    "return some of the current events" in {
-      // format: off
-      val envelopes = permissions.currentEvents(Offset.at(2)).compile.toVector.accepted
-      envelopes shouldEqual Vector(
-        Envelope(entityType, entityId, 3, PermissionsAppended(3, Set(perm1, perm2), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(3L)),
-        Envelope(entityType, entityId, 4, PermissionsReplaced(4, Set(perm3, perm4), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(4L)),
-        Envelope(entityType, entityId, 5, PermissionsDeleted(5, Instant.EPOCH, subject), Instant.EPOCH, Offset.at(5L))
-      )
-      // format: on
-    }
-
-    "return a complete non terminating stream of events" in {
-      val envelopes = for {
-        fiber     <- permissions.events().take(6L).compile.toVector.start
-        _         <- permissions.append(Set(perm1, perm2), 5)
-        collected <- fiber.join
-      } yield collected
-      envelopes.accepted.map(_.value) shouldEqual Vector(
-        PermissionsAppended(1, Set(perm1), Instant.EPOCH, subject),
-        PermissionsSubtracted(2, Set(perm1), Instant.EPOCH, subject),
-        PermissionsAppended(3, Set(perm1, perm2), Instant.EPOCH, subject),
-        PermissionsReplaced(4, Set(perm3, perm4), Instant.EPOCH, subject),
-        PermissionsDeleted(5, Instant.EPOCH, subject),
-        PermissionsAppended(6, Set(perm1, perm2), Instant.EPOCH, subject)
-      )
-    }
-
-    "return a partial non terminating stream of events" in {
-      val envelopes = for {
-        fiber     <- permissions.events(Offset.at(2L)).take(5L).compile.toVector.start
-        _         <- permissions.append(Set(perm3), 6)
-        collected <- fiber.join
-      } yield collected
-        // format: off
-        envelopes.accepted shouldEqual Vector(
-          Envelope(entityType, entityId, 3, PermissionsAppended(3, Set(perm1, perm2), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(3L)),
-          Envelope(entityType, entityId, 4, PermissionsReplaced(4, Set(perm3, perm4), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(4L)),
-          Envelope(entityType, entityId, 5, PermissionsDeleted(5, Instant.EPOCH, subject), Instant.EPOCH, Offset.at(5L)),
-          Envelope(entityType, entityId, 6, PermissionsAppended(6, Set(perm1, perm2), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(6L)),
-          Envelope(entityType, entityId, 7, PermissionsAppended(7, Set(perm3), Instant.EPOCH, subject), Instant.EPOCH, Offset.at(7L))
-        )
-        // format: on
-    }
-
   }
 
 }

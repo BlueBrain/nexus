@@ -8,16 +8,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptyList}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -182,42 +183,41 @@ object SchemaEvent {
 
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, SchemaEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
 
     implicit val coder: Codec.AsObject[SchemaEvent] = deriveConfiguredCodec[SchemaEvent]
     Serializer(_.id)
   }
 
-  @nowarn("cat=unused")
-  val sseEncoder: SseEncoder[SchemaEvent] = new SseEncoder[SchemaEvent] {
+  def sseEncoder(implicit base: BaseUri): SseEncoder[SchemaEvent] = new SseEncoder[SchemaEvent] {
 
-    private val context = ContextValue(contexts.metadata, contexts.shacl)
+    override val databaseDecoder: Decoder[SchemaEvent] = serializer.codec
 
-    @nowarn("cat=unused")
-    implicit private val config: Configuration = Configuration.default
-      .withDiscriminator(keywords.tpe)
-      .copy(transformMemberNames = {
-        case "id"      => nxv.schemaId.prefix
-        case "source"  => nxv.source.prefix
-        case "project" => nxv.project.prefix
-        case "rev"     => nxv.rev.prefix
-        case "instant" => nxv.instant.prefix
-        case "subject" => nxv.eventSubject.prefix
-        case other     => other
-      })
+    override def entityType: EntityType = Schemas.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("schemas"), resourcesSelector)
 
     @nowarn("cat=unused")
-    implicit private val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
-
-    @nowarn("cat=unused")
-    implicit private val expandedJsonLdEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
-
-    override def apply(implicit base: BaseUri): Encoder.AsObject[SchemaEvent] = {
-      implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-      implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
+    override val sseEncoder: Encoder.AsObject[SchemaEvent] = {
+      val context                                                   = ContextValue(contexts.metadata, contexts.shacl)
+      implicit val config: Configuration                            = Configuration.default
+        .withDiscriminator(keywords.tpe)
+        .copy(transformMemberNames = {
+          case "id"      => nxv.schemaId.prefix
+          case "source"  => nxv.source.prefix
+          case "project" => nxv.project.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case other     => other
+        })
+      implicit val compactedJsonLdEncoder: Encoder[CompactedJsonLd] = Encoder.instance(_.json)
+      implicit val expandedJsonLdEncoder: Encoder[ExpandedJsonLd]   = Encoder.instance(_.json)
+      implicit val subjectEncoder: Encoder[Subject]                 = IriEncoder.jsonEncoder[Subject]
+      implicit val projectRefEncoder: Encoder[ProjectRef]           = IriEncoder.jsonEncoder[ProjectRef]
       Encoder.encodeJsonObject.contramapObject { event =>
         deriveConfiguredEncoder[SchemaEvent]
           .encodeObject(event)

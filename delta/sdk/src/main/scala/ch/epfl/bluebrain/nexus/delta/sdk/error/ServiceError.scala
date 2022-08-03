@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -40,6 +41,11 @@ object ServiceError {
 
   final case class IndexingFailed(override val reason: String, override val resource: ResourceF[Unit])
       extends IndexingActionFailed(reason, resource)
+
+  /**
+    * Signals that the SSE label can't be found
+    */
+  final case class UnknownSseLabel(label: Label) extends ServiceError(s"The SSE label $label is unknown.")
 
   @nowarn("cat=unused")
   implicit def serviceErrorEncoder(implicit baseUri: BaseUri): Encoder.AsObject[ServiceError] = {

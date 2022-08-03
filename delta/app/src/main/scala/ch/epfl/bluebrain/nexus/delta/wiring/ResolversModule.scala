@@ -19,8 +19,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -86,6 +88,8 @@ object ResolversModule extends ModuleDef {
         fusionConfig
       )
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => ResolverEvent.sseEncoder(base) }
 
   make[ResolverScopeInitialization]
   many[ScopeInitialization].ref[ResolverScopeInitialization]

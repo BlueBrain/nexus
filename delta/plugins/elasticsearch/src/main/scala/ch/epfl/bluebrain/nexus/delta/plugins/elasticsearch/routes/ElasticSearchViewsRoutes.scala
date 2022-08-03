@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.http.scaladsl.model.StatusCodes.{Created, OK}
+import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
@@ -30,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -100,206 +98,163 @@ final class ElasticSearchViewsRoutes(
   private val viewsRoutes: Route =
     pathPrefix("views") {
       extractCaller { implicit caller =>
-        concat(
-          // SSE views for all events
-          (pathPrefix("events") & pathEndOrSingleSlash) {
-            get {
-              operationName(s"$prefixSegment/views/events") {
-                authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventId { _ =>
-                    failWith(new IllegalStateException("TODO"))
-                  }
-                }
-              }
-            }
-          },
-          // SSE views for all events belonging to an organization
-          (resolveOrg & pathPrefix("events") & pathEndOrSingleSlash) { org =>
-            get {
-              operationName(s"$prefixSegment/views/{org}/events") {
-                authorizeFor(org, events.read).apply {
-                  lastEventId { _ =>
-                    failWith(new IllegalStateException("TODO"))
-                  }
-                }
-              }
-            }
-          },
-          resolveProjectRef.apply { ref =>
-            concat(
-              // SSE views for all events belonging to a project
-              (pathPrefix("events") & pathEndOrSingleSlash) {
-                operationName(s"$prefixSegment/views/{org}/{project}/events") {
-                  concat(
-                    get {
-                      authorizeFor(ref, events.read).apply {
-                        lastEventId { _ =>
-                          failWith(new IllegalStateException("TODO"))
-                        }
-                      }
-                    },
-                    (head & authorizeFor(ref, events.read)) {
-                      complete(OK)
-                    }
+        resolveProjectRef.apply { ref =>
+          concat(
+            (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
+              // Create an elasticsearch view without id segment
+              (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
+                authorizeFor(ref, Write).apply {
+                  emit(
+                    Created,
+                    views
+                      .create(ref, source)
+                      .tapEval(index(ref, _, mode))
+                      .mapValue(_.metadata)
+                      .rejectWhen(decodingFailedOrViewNotFound)
                   )
                 }
-              },
-              (pathEndOrSingleSlash & operationName(s"$prefixSegment/views/{org}/{project}")) {
-                // Create an elasticsearch view without id segment
-                (post & pathEndOrSingleSlash & noParameter("rev") & entity(as[Json]) & indexingMode) { (source, mode) =>
-                  authorizeFor(ref, Write).apply {
-                    emit(
-                      Created,
-                      views
-                        .create(ref, source)
-                        .tapEval(index(ref, _, mode))
-                        .mapValue(_.metadata)
-                        .rejectWhen(decodingFailedOrViewNotFound)
+              }
+            },
+            (idSegment & indexingMode) { (id, mode) =>
+              concat(
+                pathEndOrSingleSlash {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
+                    concat(
+                      // Create or update an elasticsearch view
+                      put {
+                        authorizeFor(ref, Write).apply {
+                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            case (None, source)      =>
+                              // Create an elasticsearch view with id segment
+                              emit(
+                                Created,
+                                views
+                                  .create(id, ref, source)
+                                  .tapEval(index(ref, _, mode))
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                            case (Some(rev), source) =>
+                              // Update a view
+                              emit(
+                                views
+                                  .update(id, ref, rev, source)
+                                  .tapEval(index(ref, _, mode))
+                                  .mapValue(_.metadata)
+                                  .rejectWhen(decodingFailedOrViewNotFound)
+                              )
+                          }
+                        }
+                      },
+                      // Deprecate an elasticsearch view
+                      (delete & parameter("rev".as[Long])) { rev =>
+                        authorizeFor(ref, Write).apply {
+                          emit(
+                            views
+                              .deprecate(id, ref, rev)
+                              .tapEval(index(ref, _, mode))
+                              .mapValue(_.metadata)
+                              .rejectWhen(decodingFailedOrViewNotFound)
+                          )
+                        }
+                      },
+                      // Fetch an elasticsearch view
+                      (get & idSegmentRef(id)) { id =>
+                        emitOrFusionRedirect(
+                          ref,
+                          id,
+                          authorizeFor(ref, Read).apply {
+                            emit(views.fetch(id, ref).rejectOn[ViewNotFound])
+                          }
+                        )
+                      }
                     )
                   }
-                }
-              },
-              (idSegment & indexingMode) { (id, mode) =>
-                concat(
-                  pathEndOrSingleSlash {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}") {
-                      concat(
-                        // Create or update an elasticsearch view
-                        put {
-                          authorizeFor(ref, Write).apply {
-                            (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
-                              case (None, source)      =>
-                                // Create an elasticsearch view with id segment
-                                emit(
-                                  Created,
-                                  views
-                                    .create(id, ref, source)
-                                    .tapEval(index(ref, _, mode))
-                                    .mapValue(_.metadata)
-                                    .rejectWhen(decodingFailedOrViewNotFound)
-                                )
-                              case (Some(rev), source) =>
-                                // Update a view
-                                emit(
-                                  views
-                                    .update(id, ref, rev, source)
-                                    .tapEval(index(ref, _, mode))
-                                    .mapValue(_.metadata)
-                                    .rejectWhen(decodingFailedOrViewNotFound)
-                                )
-                            }
-                          }
-                        },
-                        // Deprecate an elasticsearch view
-                        (delete & parameter("rev".as[Long])) { rev =>
-                          authorizeFor(ref, Write).apply {
+                },
+                // Fetch an elasticsearch view statistics
+                (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
+                    authorizeFor(ref, Read).apply {
+                      emit(
+                        views
+                          .fetchIndexingView(id, ref)
+                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
+                          .rejectWhen(decodingFailedOrViewNotFound)
+                      )
+                    }
+                  }
+                },
+                // Manage an elasticsearch view offset
+                (pathPrefix("offset") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
+                    concat(
+                      // Fetch an elasticsearch view offset
+                      (get & authorizeFor(ref, Read)) {
+                        emit(
+                          views
+                            .fetchIndexingView(id, ref)
+                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
+                      },
+                      // Remove an elasticsearch view offset (restart the view)
+                      (delete & authorizeFor(ref, Write)) {
+                        emit(
+                          views
+                            .fetchIndexingView(id, ref)
+                            .flatMap { v => restartView(v.id, v.value.project) }
+                            .as(NoOffset)
+                            .rejectWhen(decodingFailedOrViewNotFound)
+                        )
+                      }
+                    )
+                  }
+                },
+                // Query an elasticsearch view
+                (pathPrefix("_search") & post & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
+                    (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
+                      emit(viewsQuery.query(id, ref, query, qp))
+                    }
+                  }
+                },
+                // Fetch an elasticsearch view original source
+                (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
+                    authorizeFor(ref, Read).apply {
+                      emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
+                    }
+                  }
+                },
+                (pathPrefix("tags") & pathEndOrSingleSlash) {
+                  operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
+                    concat(
+                      // Fetch an elasticsearch view tags
+                      (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
+                        emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
+                      },
+                      // Tag an elasticsearch view
+                      (post & parameter("rev".as[Long])) { rev =>
+                        authorizeFor(ref, Write).apply {
+                          entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
+                              Created,
                               views
-                                .deprecate(id, ref, rev)
+                                .tag(id, ref, tag, tagRev, rev)
                                 .tapEval(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)
                             )
                           }
-                        },
-                        // Fetch an elasticsearch view
-                        (get & idSegmentRef(id)) { id =>
-                          emitOrFusionRedirect(
-                            ref,
-                            id,
-                            authorizeFor(ref, Read).apply {
-                              emit(views.fetch(id, ref).rejectOn[ViewNotFound])
-                            }
-                          )
                         }
-                      )
-                    }
-                  },
-                  // Fetch an elasticsearch view statistics
-                  (pathPrefix("statistics") & get & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/statistics") {
-                      authorizeFor(ref, Read).apply {
-                        emit(
-                          views
-                            .fetchIndexingView(id, ref)
-                            .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
-                            .rejectWhen(decodingFailedOrViewNotFound)
-                        )
                       }
-                    }
-                  },
-                  // Manage an elasticsearch view offset
-                  (pathPrefix("offset") & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/offset") {
-                      concat(
-                        // Fetch an elasticsearch view offset
-                        (get & authorizeFor(ref, Read)) {
-                          emit(
-                            views
-                              .fetchIndexingView(id, ref)
-                              .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
-                              .rejectWhen(decodingFailedOrViewNotFound)
-                          )
-                        },
-                        // Remove an elasticsearch view offset (restart the view)
-                        (delete & authorizeFor(ref, Write)) {
-                          emit(
-                            views
-                              .fetchIndexingView(id, ref)
-                              .flatMap { v => restartView(v.id, v.value.project) }
-                              .as(NoOffset)
-                              .rejectWhen(decodingFailedOrViewNotFound)
-                          )
-                        }
-                      )
-                    }
-                  },
-                  // Query an elasticsearch view
-                  (pathPrefix("_search") & post & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/_search") {
-                      (extractQueryParams & entity(as[JsonObject])) { (qp, query) =>
-                        emit(viewsQuery.query(id, ref, query, qp))
-                      }
-                    }
-                  },
-                  // Fetch an elasticsearch view original source
-                  (pathPrefix("source") & get & pathEndOrSingleSlash & idSegmentRef(id)) { id =>
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/source") {
-                      authorizeFor(ref, Read).apply {
-                        emit(views.fetch(id, ref).map(_.value.source).rejectOn[ViewNotFound])
-                      }
-                    }
-                  },
-                  (pathPrefix("tags") & pathEndOrSingleSlash) {
-                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/tags") {
-                      concat(
-                        // Fetch an elasticsearch view tags
-                        (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                          emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
-                        },
-                        // Tag an elasticsearch view
-                        (post & parameter("rev".as[Long])) { rev =>
-                          authorizeFor(ref, Write).apply {
-                            entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(
-                                Created,
-                                views
-                                  .tag(id, ref, tag, tagRev, rev)
-                                  .tapEval(index(ref, _, mode))
-                                  .mapValue(_.metadata)
-                                  .rejectWhen(decodingFailedOrViewNotFound)
-                              )
-                            }
-                          }
-                        }
-                      )
-                    }
+                    )
                   }
-                )
-              }
-            )
-          }
-        )
+                }
+              )
+            }
+          )
+        }
       }
     }
 

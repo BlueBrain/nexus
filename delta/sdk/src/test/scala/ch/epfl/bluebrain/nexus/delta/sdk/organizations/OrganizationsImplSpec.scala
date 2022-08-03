@@ -8,12 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.OrganizationSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
-import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationEvent.{OrganizationCreated, OrganizationDeprecated, OrganizationUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{IncorrectRev, OrganizationAlreadyExists, OrganizationIsDeprecated, OrganizationNotFound, RevisionNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, SSEUtils, ScopeInitializationLog}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, ScopeInitializationLog}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -109,55 +107,6 @@ class OrganizationsImplSpec
         UnscoredSearchResults(2L, Vector(UnscoredResultEntry(result1), UnscoredResultEntry(result2)))
       orgs.list(FromPagination(0, 10), filter, order).accepted shouldEqual
         UnscoredSearchResults(1L, Vector(UnscoredResultEntry(result1)))
-    }
-
-    val allEvents = SSEUtils.extract(
-      (label, OrganizationCreated, 1L),
-      (label, OrganizationUpdated, 2L),
-      (label, OrganizationDeprecated, 3L),
-      (label2, OrganizationCreated, 4L)
-    )
-
-    "get the different events from start" in {
-      val events = orgs
-        .events()
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .take(4L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different events from offset 2" in {
-      val events = orgs
-        .events(Offset.at(2L))
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .take(2L)
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
-    }
-
-    "get the different current events from start" in {
-      val events = orgs
-        .currentEvents()
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents
-    }
-
-    "get the different current events from offset 2" in {
-      val events = orgs
-        .currentEvents(Offset.at(2L))
-        .map { e => (e.value.label, e.valueClass, e.offset) }
-        .compile
-        .toList
-
-      events.accepted shouldEqual allEvents.drop(2)
     }
 
     "fail to fetch an organization on nonexistent revision" in {

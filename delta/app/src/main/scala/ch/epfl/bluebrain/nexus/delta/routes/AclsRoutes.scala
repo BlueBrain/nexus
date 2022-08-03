@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes.PatchAcl._
 import ch.epfl.bluebrain.nexus.delta.routes.AclsRoutes._
+import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Organization, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddressFilter.{AnyOrganization, AnyOrganizationAnyProject, AnyProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclRejection.AclNotFound
@@ -21,6 +22,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.{AclCheck, Acls}
 import ch.epfl.bluebrain.nexus.delta.sdk.circe.CirceUnmarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives._
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfRejectionHandler.{malformedQueryParamEncoder, malformedQueryParamResponseFields}
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{QueryParamsUnmarshalling, RdfRejectionHandler}
@@ -28,11 +30,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, events}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
-import ch.epfl.bluebrain.nexus.delta.sdk.AclResource
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import io.circe._
 import io.circe.generic.extras.Configuration
@@ -58,8 +57,6 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
     MalformedQueryParamRejection("rev", "rev and ancestors query parameters cannot be present simultaneously.")
 
   import baseUri.prefixSegment
-
-  implicit val sseConverter: SseConverter[AclEvent] = SseConverter(AclEvent.sseEncoder)
 
   implicit private val aclsSearchJsonLdEncoder: JsonLdEncoder[SearchResults[AclResource]] =
     searchResultsJsonLdEncoder(Acl.context)
@@ -104,16 +101,6 @@ class AclsRoutes(identities: Identities, acls: Acls, aclCheck: AclCheck)(implici
       pathPrefix("acls") {
         extractCaller { implicit caller =>
           concat(
-            // SSE ACLs
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              authorizeFor(AclAddress.Root, events.read).apply {
-                operationName(s"$prefixSegment/acls/events") {
-                  lastEventIdNew { offset =>
-                    emit(acls.events(offset))
-                  }
-                }
-              }
-            },
             extractAclAddress { address =>
               parameter("rev" ? 0) { rev =>
                 operationName(s"$prefixSegment/acls${address.string}") {

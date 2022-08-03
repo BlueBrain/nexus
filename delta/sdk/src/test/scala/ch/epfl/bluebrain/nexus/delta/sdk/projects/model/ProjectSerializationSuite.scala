@@ -1,17 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.projects.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import io.circe.Json
-import munit.{Assertions, FunSuite}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 
 import java.time.Instant
 import java.util.UUID
 
-class ProjectSerializationSuite extends FunSuite with Assertions with TestHelpers {
+class ProjectSerializationSuite extends SerializationSuite {
+
+  private val sseEncoder = ProjectEvent.sseEncoder
 
   private val instant: Instant = Instant.EPOCH
   private val rev: Int         = 1
@@ -29,7 +31,7 @@ class ProjectSerializationSuite extends FunSuite with Assertions with TestHelper
   private val base: PrefixIri          = PrefixIri.unsafe(schemas.base)
   private val vocab: PrefixIri         = PrefixIri.unsafe(nxv.base)
 
-  val projectsMapping: Map[ProjectEvent, Json] = Map(
+  private val projectsMapping = Map(
     ProjectCreated(
       label = proj,
       uuid = projUuid,
@@ -42,7 +44,7 @@ class ProjectSerializationSuite extends FunSuite with Assertions with TestHelper
       vocab = vocab,
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/projects/project-created.json"),
+    ) -> loadEvents("projects", "project-created.json"),
     ProjectUpdated(
       label = proj,
       uuid = projUuid,
@@ -55,7 +57,7 @@ class ProjectSerializationSuite extends FunSuite with Assertions with TestHelper
       vocab = vocab,
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/projects/project-updated.json"),
+    ) -> loadEvents("projects", "project-updated.json"),
     ProjectDeprecated(
       label = proj,
       uuid = projUuid,
@@ -64,18 +66,22 @@ class ProjectSerializationSuite extends FunSuite with Assertions with TestHelper
       rev = rev,
       instant = instant,
       subject = subject
-    ) -> jsonContentOf("/projects/project-deprecated.json")
+    ) -> loadEvents("projects", "project-deprecated.json")
   )
 
-  projectsMapping.foreach { case (event, json) =>
+  projectsMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(ProjectEvent.serializer.codec(event), json)
+      assertEquals(ProjectEvent.serializer.codec(event), database)
     }
-  }
 
-  projectsMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(ProjectEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(ProjectEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse
+        .decodeJson(database)
+        .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
     }
   }
 

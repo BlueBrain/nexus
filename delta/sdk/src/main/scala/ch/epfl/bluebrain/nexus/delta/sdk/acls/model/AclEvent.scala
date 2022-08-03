@@ -3,18 +3,19 @@ package ch.epfl.bluebrain.nexus.delta.sdk.acls.model
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.acls.Acls
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceUris}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax.EncoderOps
-import io.circe.{Codec, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -118,8 +119,8 @@ object AclEvent {
 
   @nowarn("cat=unused")
   val serializer: Serializer[AclAddress, AclEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import Acl.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration    = Serializer.circeConfiguration
     implicit val coder: Codec.AsObject[AclEvent] = Codec.AsObject.from(
       deriveConfiguredDecoder[AclEvent],
@@ -130,12 +131,17 @@ object AclEvent {
     Serializer(_.address)
   }
 
-  @nowarn("cat=unused")
-  val sseEncoder: SseEncoder[AclEvent] = new SseEncoder[AclEvent] {
-    private val context = ContextValue(contexts.metadata, contexts.acls)
-    override def apply(implicit base: BaseUri): Encoder.AsObject[AclEvent] = {
-      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
+  def sseEncoder(implicit base: BaseUri): SseEncoder[AclEvent] = new SseEncoder[AclEvent] {
 
+    override val databaseDecoder: Decoder[AclEvent] = serializer.codec
+
+    override def entityType: EntityType = Acls.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("acls"))
+
+    @nowarn("cat=unused")
+    override val sseEncoder: Encoder.AsObject[AclEvent] = {
+      val context                        = ContextValue(contexts.metadata, contexts.acls)
       implicit val config: Configuration = Configuration.default
         .withDiscriminator(keywords.tpe)
         .copy(transformMemberNames = {
@@ -145,6 +151,8 @@ object AclEvent {
           case "rev"     => nxv.rev.prefix
           case other     => other
         })
+
+      implicit val subjectEncoder: Encoder[Subject] = IriEncoder.jsonEncoder[Subject]
 
       implicit val aclEncoder: Encoder[Acl] =
         Encoder.instance { acl =>

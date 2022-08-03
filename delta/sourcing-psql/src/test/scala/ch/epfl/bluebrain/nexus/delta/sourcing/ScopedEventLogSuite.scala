@@ -117,7 +117,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   }
 
   test("Check that the tagged state has been successfully removed after") {
-    eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).error(NotFound)
+    eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).error(TagNotFound)
   }
 
   test("Reject a command and persist nothing") {

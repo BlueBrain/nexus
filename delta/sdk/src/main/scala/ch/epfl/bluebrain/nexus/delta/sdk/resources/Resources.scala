@@ -26,7 +26,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -194,56 +193,6 @@ trait Resources {
       projectRef: ProjectRef
   )(implicit rejectionMapper: Mapper[ResourceFetchRejection, R]): IO[R, DataResource] =
     fetch(IdSegmentRef(resourceRef), projectRef, None).mapError(rejectionMapper.to)
-
-  /**
-    * A terminating stream of events for resources. It finishes the stream after emitting all known events.
-    *
-    * @param projectRef
-    *   the project reference where the resource belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]]
-
-  /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param projectRef
-    *   the project reference where the resource belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]]
-
-  /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param organization
-    *   the organization label reference where the resource belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(
-      organization: Label,
-      offset: Offset
-  ): IO[ResourceRejection, EnvelopeStream[Iri, ResourceEvent]]
-
-  /**
-    * A non terminating stream of events for resources. After emitting all known events it sleeps until new events are
-    * recorded.
-    *
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  def events(offset: Offset): EnvelopeStream[Iri, ResourceEvent]
 }
 
 object Resources {

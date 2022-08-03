@@ -1,20 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.{ProvidedIdentities, UseCurrentCaller}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent.{ResolverCreated, ResolverDeprecated, ResolverTagAdded, ResolverUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{JsonAssertions, TestHelpers}
 import io.circe.Json
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class ResolverSerializationSuite extends FunSuite with Assertions with JsonAssertions with TestHelpers {
+class ResolverSerializationSuite extends SerializationSuite {
+
+  private val sseEncoder = ResolverEvent.sseEncoder
 
   val instant: Instant = Instant.EPOCH
   val rev: Long        = 1L
@@ -44,7 +47,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
     UseCurrentCaller
   )
 
-  val resolversMapping: Map[ResolverEvent, Json] = Map(
+  private val resolversMapping = Map(
     ResolverCreated(
       myId,
       projectRef,
@@ -53,7 +56,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       1,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-in-project-created.json"),
+    ) -> loadEvents("resolvers", "resolver-in-project-created.json"),
     ResolverCreated(
       myId,
       projectRef,
@@ -62,7 +65,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       1,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-cross-project-created-1.json"),
+    ) -> loadEvents("resolvers", "resolver-cross-project-created-1.json"),
     ResolverCreated(
       myId,
       projectRef,
@@ -71,7 +74,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       1,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-cross-project-created-2.json"),
+    ) -> loadEvents("resolvers", "resolver-cross-project-created-2.json"),
     ResolverUpdated(
       myId,
       projectRef,
@@ -80,7 +83,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       2,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-in-project-updated.json"),
+    ) -> loadEvents("resolvers", "resolver-in-project-updated.json"),
     ResolverUpdated(
       myId,
       projectRef,
@@ -89,7 +92,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       2,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-cross-project-updated-1.json"),
+    ) -> loadEvents("resolvers", "resolver-cross-project-updated-1.json"),
     ResolverUpdated(
       myId,
       projectRef,
@@ -98,7 +101,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       2,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-cross-project-updated-2.json"),
+    ) -> loadEvents("resolvers", "resolver-cross-project-updated-2.json"),
     ResolverTagAdded(
       myId,
       projectRef,
@@ -108,7 +111,7 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       3,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-tagged.json"),
+    ) -> loadEvents("resolvers", "resolver-tagged.json"),
     ResolverDeprecated(
       myId,
       projectRef,
@@ -116,16 +119,22 @@ class ResolverSerializationSuite extends FunSuite with Assertions with JsonAsser
       4,
       instant,
       subject
-    ) -> jsonContentOf("/resolvers/resolver-deprecated.json")
+    ) -> loadEvents("resolvers", "resolver-deprecated.json")
   )
 
-  resolversMapping.foreach { case (event, json) =>
+  resolversMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      ResolverEvent.serializer.codec(event).equalsIgnoreArrayOrder(json)
+      ResolverEvent.serializer.codec(event).equalsIgnoreArrayOrder(database)
     }
 
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(ResolverEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(ResolverEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse
+        .decodeJson(database)
+        .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
     }
   }
 

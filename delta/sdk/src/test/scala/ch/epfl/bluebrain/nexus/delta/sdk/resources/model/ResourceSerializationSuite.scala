@@ -1,26 +1,23 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resources.model
 
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema, schemas}
+import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ResourceGen
 import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Revision
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
-import io.circe.Json
-import monix.execution.Scheduler
-import munit.{Assertions, FunSuite}
 
 import java.time.Instant
 
-class ResourceSerializationSuite extends FunSuite with Assertions with CirceLiteral with TestHelpers {
+class ResourceSerializationSuite extends SerializationSuite {
 
-  implicit private val cl: ClassLoader = getClass.getClassLoader
-  implicit private val s: Scheduler    = Scheduler.global
+  private val sseEncoder = ResourceEvent.sseEncoder
 
   val instant: Instant       = Instant.EPOCH
   val realm: Label           = Label.unsafe("myrealm")
@@ -30,15 +27,10 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
   val projectRef: ProjectRef = ProjectRef(org, proj)
   val myId: IriOrBNode.Iri   = nxv + "myId"
 
-  implicit def res: RemoteContextResolution      =
-    RemoteContextResolution.fixed(
-      contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").runSyncUnsafe(),
-      contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").runSyncUnsafe()
-    )
-  val resource: Resource                         =
+  val resource: Resource       =
     ResourceGen.resource(myId, projectRef, jsonContentOf("resources/resource.json", "id" -> myId))
 
-  val resourcesMapping: Map[ResourceEvent, Json] = Map(
+  private val resourcesMapping = Map(
     ResourceCreated(
       myId,
       projectRef,
@@ -51,7 +43,7 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
       1,
       instant,
       subject
-    ) -> jsonContentOf("/resources/resource-created.json"),
+    ) -> loadEvents("resources", "resource-created.json"),
     ResourceUpdated(
       myId,
       projectRef,
@@ -64,7 +56,7 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
       2,
       instant,
       subject
-    ) -> jsonContentOf("/resources/resource-updated.json"),
+    ) -> loadEvents("resources", "resource-updated.json"),
     ResourceTagAdded(
       myId,
       projectRef,
@@ -74,7 +66,7 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
       3,
       instant,
       subject
-    ) -> jsonContentOf("/resources/resource-tagged.json"),
+    ) -> loadEvents("resources", "resource-tagged.json"),
     ResourceDeprecated(
       myId,
       projectRef,
@@ -82,7 +74,7 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
       4,
       instant,
       subject
-    ) -> jsonContentOf("/resources/resource-deprecated.json"),
+    ) -> loadEvents("resources", "resource-deprecated.json"),
     ResourceTagDeleted(
       myId,
       projectRef,
@@ -91,18 +83,22 @@ class ResourceSerializationSuite extends FunSuite with Assertions with CirceLite
       5,
       instant,
       subject
-    ) -> jsonContentOf("/resources/resource-tag-deleted.json")
+    ) -> loadEvents("resources", "resource-tag-deleted.json")
   )
 
-  resourcesMapping.foreach { case (event, json) =>
+  resourcesMapping.foreach { case (event, (database, sse)) =>
     test(s"Correctly serialize ${event.getClass.getName}") {
-      assertEquals(ResourceEvent.serializer.codec(event), json)
+      assertEquals(ResourceEvent.serializer.codec(event), database)
     }
-  }
 
-  resourcesMapping.foreach { case (event, json) =>
     test(s"Correctly deserialize ${event.getClass.getName}") {
-      assertEquals(ResourceEvent.serializer.codec.decodeJson(json), Right(event))
+      assertEquals(ResourceEvent.serializer.codec.decodeJson(database), Right(event))
+    }
+
+    test(s"Correctly serialize ${event.getClass.getName} as an SSE") {
+      sseEncoder.toSse
+        .decodeJson(database)
+        .assertRight(SseData(ClassUtils.simpleName(event), Some(ProjectRef(org, proj)), sse))
     }
   }
 

@@ -19,10 +19,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -109,6 +110,8 @@ object ProjectsModule extends ModuleDef {
         fusionConfig
       )
   }
+
+  many[SseEncoder[_]].add { base: BaseUri => ProjectEvent.sseEncoder(base) }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/projects-metadata.json"))
 

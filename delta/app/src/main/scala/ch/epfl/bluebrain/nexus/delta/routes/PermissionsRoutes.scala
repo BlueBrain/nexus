@@ -19,9 +19,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, permissions => permissionsPerms}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.{Permission, PermissionsEvent}
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConverter
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{permissions => permissionsPerms}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.syntax._
@@ -50,8 +49,6 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
     with CirceUnmarshalling {
 
   import baseUri.prefixSegment
-
-  implicit val sseConverter: SseConverter[PermissionsEvent] = SseConverter(PermissionsEvent.sseEncoder)
 
   implicit private val resourceFUnitJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] =
     ResourceF.resourceFAJsonLdEncoder(ContextValue(contexts.permissionsMetadata))
@@ -109,16 +106,6 @@ final class PermissionsRoutes(identities: Identities, permissions: Permissions, 
                     }
                   }
                 )
-              }
-            },
-            // SSE permissions
-            (pathPrefix("events") & pathEndOrSingleSlash) {
-              operationName(s"$prefixSegment/permissions/events") {
-                authorizeFor(AclAddress.Root, events.read).apply {
-                  lastEventIdNew { offset =>
-                    emit(permissions.events(offset))
-                  }
-                }
               }
             }
           )

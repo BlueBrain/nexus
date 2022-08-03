@@ -7,16 +7,17 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Codec, Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -160,33 +161,36 @@ object ResolverEvent {
 
   @nowarn("cat=unused")
   val serializer: Serializer[Iri, ResolverEvent] = {
-    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database._
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                      = Serializer.circeConfiguration
     implicit val resolverValueCodec: Codec.AsObject[ResolverValue] = deriveConfiguredCodec[ResolverValue]
     implicit val coder: Codec.AsObject[ResolverEvent]              = deriveConfiguredCodec[ResolverEvent]
     Serializer(_.id)
   }
 
-  @nowarn("cat=unused")
-  val sseEncoder: SseEncoder[ResolverEvent] = new SseEncoder[ResolverEvent] {
+  def sseEncoder(implicit base: BaseUri): SseEncoder[ResolverEvent] = new SseEncoder[ResolverEvent] {
 
-    private val context = ContextValue(contexts.metadata, contexts.resolvers)
+    override val databaseDecoder: Decoder[ResolverEvent] = serializer.codec
+
+    override def entityType: EntityType = Resolvers.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("resolvers"), resourcesSelector)
 
     @nowarn("cat=unused")
-    implicit private val config: Configuration = Configuration.default
-      .withDiscriminator(keywords.tpe)
-      .copy(transformMemberNames = {
-        case "id"      => nxv.resolverId.prefix
-        case "source"  => nxv.source.prefix
-        case "project" => nxv.project.prefix
-        case "rev"     => nxv.rev.prefix
-        case "instant" => nxv.instant.prefix
-        case "subject" => nxv.eventSubject.prefix
-        case other     => other
-      })
-
-    override def apply(implicit base: BaseUri): Encoder.AsObject[ResolverEvent] = {
+    override val sseEncoder: Encoder.AsObject[ResolverEvent] = {
+      val context                                               = ContextValue(contexts.metadata, contexts.resolvers)
+      implicit val config: Configuration                        = Configuration.default
+        .withDiscriminator(keywords.tpe)
+        .copy(transformMemberNames = {
+          case "id"      => nxv.resolverId.prefix
+          case "source"  => nxv.source.prefix
+          case "project" => nxv.project.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case other     => other
+        })
       implicit val subjectEncoder: Encoder[Subject]             = IriEncoder.jsonEncoder[Subject]
       implicit val identityEncoder: Encoder.AsObject[Identity]  = Identity.Database.identityCodec
       implicit val resolverValueEncoder: Encoder[ResolverValue] = Encoder.instance[ResolverValue](_ => Json.Null)
@@ -195,6 +199,7 @@ object ResolverEvent {
         deriveConfiguredEncoder[ResolverEvent]
           .encodeObject(event)
           .remove("tpe")
+          .remove("value")
           .add(nxv.types.prefix, event.tpe.types.asJson)
           .add(nxv.constrainedBy.prefix, schemas.resolvers.asJson)
           .add(nxv.resourceId.prefix, event.id.asJson)
