@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 
 class SelectPredicatesSpec extends PipeBaseSpec {
 
-  "Include by schema" should {
+  "Include by schema" ignore {
 
     "reject an invalid config" in {
       SelectPredicates.pipe.parseAndRun(Some(ExpandedJsonLd.empty), sampleData)

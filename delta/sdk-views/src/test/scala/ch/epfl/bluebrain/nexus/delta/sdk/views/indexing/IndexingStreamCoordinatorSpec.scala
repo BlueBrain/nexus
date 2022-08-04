@@ -22,12 +22,13 @@ import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
 
 import scala.collection.concurrent
 import scala.collection.mutable.{Set => MutableSet}
 import scala.concurrent.duration._
 
+@DoNotDiscover
 class IndexingStreamCoordinatorSpec
     extends ScalaTestWithActorTestKit(
       ConfigFactory.load().resolve()
