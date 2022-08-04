@@ -206,6 +206,7 @@ object StorageValue {
     }
   }
 
+  @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
   def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
     implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
@@ -218,7 +219,7 @@ object StorageValue {
     }
 
     implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
-      Decoder.decodeString.map(str => Secret(crypto.decrypt(str).get))
+      Decoder.decodeString.emapTry(str => crypto.decrypt(str).map(Secret(_)))
 
     implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
 
