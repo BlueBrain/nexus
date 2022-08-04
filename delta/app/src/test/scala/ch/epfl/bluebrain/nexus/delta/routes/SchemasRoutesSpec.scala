@@ -357,13 +357,13 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   }
 
   private def schemaMetadata(
-                                  ref: ProjectRef,
-                                  id: Iri,
-                                  rev: Long = 1L,
-                                  deprecated: Boolean = false,
-                                  createdBy: Subject = Anonymous,
-                                  updatedBy: Subject = Anonymous
-                                ): Json =
+      ref: ProjectRef,
+      id: Iri,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "schemas/schema-route-metadata-response.json",
       "project"    -> ref,

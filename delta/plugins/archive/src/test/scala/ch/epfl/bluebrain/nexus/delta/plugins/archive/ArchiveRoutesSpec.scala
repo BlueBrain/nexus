@@ -4,7 +4,7 @@ import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.alpakka.file.scaladsl.Archive
@@ -122,26 +122,26 @@ class ArchiveRoutesSpec
   private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
-  private val files: Files = null
-  private val  storages: Storages = null
+  private val files: Files       = null
+  private val storages: Storages = null
 
   lazy val routes = {
     for {
-      aclCheck          <- AclSimpleCheck(
-                             (subject, AclAddress.Root, allowedPerms.toSet),
-                             (
-                               subjectNoFilePerms,
-                               AclAddress.Root,
-                               allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
-                             )
-                           )
-      storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-      _                 <- storages.create(diskId, projectRef, storageJson)
-      archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
-      archives          <-
+      aclCheck       <- AclSimpleCheck(
+                          (subject, AclAddress.Root, allowedPerms.toSet),
+                          (
+                            subjectNoFilePerms,
+                            AclAddress.Root,
+                            allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
+                          )
+                        )
+      storageJson     = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+      _              <- storages.create(diskId, projectRef, storageJson)
+      archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+      archives       <-
         Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
-      identities         = IdentitiesDummy(caller, callerNoFilePerms)
-      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
+      identities      = IdentitiesDummy(caller, callerNoFilePerms)
+      r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
     } yield r
   }.accepted
 

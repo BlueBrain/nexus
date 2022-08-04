@@ -80,9 +80,9 @@ class StorageSerializationSuite extends SerializationSuite with StorageFixtures 
   }
 
   private val statesMapping = VectorMap(
-    (dId, diskVal, diskFieldsJson)  -> jsonContentOf("/storages/storage-disk-state.json"),
-    (s3Id, s3Val ,s3FieldsJson)  -> jsonContentOf("/storages/storage-s3-state.json"),
-    (rdId , remoteVal, remoteFieldsJson)  -> jsonContentOf("/storages/storage-remote-state.json")
+    (dId, diskVal, diskFieldsJson)      -> jsonContentOf("/storages/storage-disk-state.json"),
+    (s3Id, s3Val, s3FieldsJson)         -> jsonContentOf("/storages/storage-s3-state.json"),
+    (rdId, remoteVal, remoteFieldsJson) -> jsonContentOf("/storages/storage-remote-state.json")
   ).map { case ((id, value, source), v) =>
     StorageState(
       id,

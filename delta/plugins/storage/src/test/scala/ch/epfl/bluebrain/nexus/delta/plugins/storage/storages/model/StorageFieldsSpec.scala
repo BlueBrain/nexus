@@ -48,7 +48,15 @@ class StorageFieldsSpec
 
       "be created from Json-LD without optional values" in {
         val jsonNoDefaults =
-          json.removeKeys("readPermission", "writePermission", "maxFileSize", "endpoint", "accessKey", "secretKey", "region")
+          json.removeKeys(
+            "readPermission",
+            "writePermission",
+            "maxFileSize",
+            "endpoint",
+            "accessKey",
+            "secretKey",
+            "region"
+          )
         sourceDecoder(pc, jsonNoDefaults).accepted._2 shouldEqual
           S3StorageFields(default = true, "mybucket", None, None, None, None, None, None, None)
       }

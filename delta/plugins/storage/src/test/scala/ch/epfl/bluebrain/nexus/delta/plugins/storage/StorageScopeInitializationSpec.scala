@@ -63,7 +63,7 @@ class StorageScopeInitializationSpec
       serviceAccount
     ).accepted
 
-    lazy val  init = new StorageScopeInitialization(storages, sa)
+    lazy val init = new StorageScopeInitialization(storages, sa)
 
     "create a default storage on newly created project" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]

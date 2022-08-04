@@ -229,12 +229,12 @@ class RealmsRoutesSpec extends BaseRouteSpec {
   }
 
   def realmMetadata(
-                     label: Label,
-                     rev: Int = 1,
-                     deprecated: Boolean = false,
-                     createdBy: Subject = Anonymous,
-                     updatedBy: Subject = Anonymous
-                   ): Json =
+      label: Label,
+      rev: Int = 1,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "realms/realm-route-metadata-response.json",
       "rev"        -> rev,

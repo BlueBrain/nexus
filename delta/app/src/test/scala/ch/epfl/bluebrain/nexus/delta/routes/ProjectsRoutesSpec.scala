@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejection.{OrganizationIsDeprecated, OrganizationNotFound}
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, resources, projects => projectsPermissions}
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, projects => projectsPermissions, resources}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects.FetchOrganization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
@@ -518,17 +518,17 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
   }
 
   def projectMetadata(
-                       ref: ProjectRef,
-                       label: String,
-                       uuid: UUID,
-                       organizationLabel: String,
-                       organizationUuid: UUID,
-                       rev: Long = 1L,
-                       deprecated: Boolean = false,
-                       markedForDeletion: Boolean = false,
-                       createdBy: Subject = Anonymous,
-                       updatedBy: Subject = Anonymous
-                     ): Json =
+      ref: ProjectRef,
+      label: String,
+      uuid: UUID,
+      organizationLabel: String,
+      organizationUuid: UUID,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      markedForDeletion: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "projects/project-route-metadata-response.json",
       "project"           -> ref,

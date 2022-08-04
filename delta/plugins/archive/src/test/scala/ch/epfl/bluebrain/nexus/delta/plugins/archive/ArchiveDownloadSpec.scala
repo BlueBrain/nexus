@@ -64,13 +64,13 @@ class ArchiveDownloadSpec
 //    disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
 //  )
 
-  private val permissions       =
+  private val permissions        =
     Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
-  private val aclCheck          = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
+  private val aclCheck           = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
   //private val fetchContext      = FetchContextDummy(List(project))
-  private val files: Files = null
-  private val  storages: Storages = null
-  private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+  private val files: Files       = null
+  private val storages: Storages = null
+  private val storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {

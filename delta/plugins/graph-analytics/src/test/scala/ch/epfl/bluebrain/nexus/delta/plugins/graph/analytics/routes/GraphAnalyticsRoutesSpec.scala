@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGrap
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{ContextFixtures, GraphAnalytics, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, ContextFixtures, GraphAnalytics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -35,10 +35,7 @@ import org.scalatest.CancelAfterFailure
 import java.time.Instant
 import java.util.UUID
 
-class GraphAnalyticsRoutesSpec
-    extends BaseRouteSpec
-    with CancelAfterFailure
-    with ContextFixtures {
+class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure with ContextFixtures {
 
   // TODO: sort out how we handle this in tests
   implicit override val rcr: RemoteContextResolution =
@@ -83,14 +80,14 @@ class GraphAnalyticsRoutesSpec
         )
   }
 
-  private val viewsProgressesCache                =
+  private val viewsProgressesCache   =
     KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
-  private val graphAnalyticsProgress              = new ProgressesStatistics(
+  private val graphAnalyticsProgress = new ProgressesStatistics(
     viewsProgressesCache,
     ioFromMap(project.ref -> ProjectStatistics(10, 10, Instant.EPOCH))
   )
 
-  private val routes                              =
+  private val routes =
     Route.seal(
       new GraphAnalyticsRoutes(
         identities,

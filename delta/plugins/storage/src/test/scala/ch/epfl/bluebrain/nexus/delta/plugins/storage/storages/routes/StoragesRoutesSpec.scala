@@ -108,7 +108,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
 
   private val cfg = StoragesConfig(eventLogConfig, pagination, config)
 
-  private lazy val storages         = Storages(
+  private lazy val storages    = Storages(
     fetchContext,
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
     IO.pure(perms),

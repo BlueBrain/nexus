@@ -380,15 +380,15 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
   }
 
   def resourceMetadata(
-                        ref: ProjectRef,
-                        id: Iri,
-                        schema: Iri,
-                        tpe: String,
-                        rev: Long = 1L,
-                        deprecated: Boolean = false,
-                        createdBy: Subject = Anonymous,
-                        updatedBy: Subject = Anonymous
-                      ): Json =
+      ref: ProjectRef,
+      id: Iri,
+      schema: Iri,
+      tpe: String,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "resources/resource-route-metadata-response.json",
       "project"     -> ref,

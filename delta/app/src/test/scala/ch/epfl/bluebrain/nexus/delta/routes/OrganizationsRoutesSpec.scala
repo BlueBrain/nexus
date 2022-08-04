@@ -231,13 +231,13 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   }
 
   def orgMetadata(
-                   label: Label,
-                   uuid: UUID,
-                   rev: Long = 1L,
-                   deprecated: Boolean = false,
-                   createdBy: Subject = Anonymous,
-                   updatedBy: Subject = Anonymous
-                 ): Json =
+      label: Label,
+      uuid: UUID,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "organizations/org-route-metadata-response.json",
       "rev"        -> rev,

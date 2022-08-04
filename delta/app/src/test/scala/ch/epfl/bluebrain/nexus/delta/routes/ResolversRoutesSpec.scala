@@ -830,14 +830,14 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   }
 
   def resolverMetadata(
-                        id: Iri,
-                        resolverType: ResolverType,
-                        projectRef: ProjectRef,
-                        rev: Long = 1L,
-                        deprecated: Boolean = false,
-                        createdBy: Subject = Anonymous,
-                        updatedBy: Subject = Anonymous
-                      ) =
+      id: Iri,
+      resolverType: ResolverType,
+      projectRef: ProjectRef,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ) =
     jsonContentOf(
       "resolvers/resolver-route-metadata-response.json",
       "project"    -> projectRef,

@@ -29,10 +29,10 @@ trait MinioDocker extends BeforeAndAfterAll { this: Suite =>
 }
 
 object MinioDocker {
-  val RootUser   = "my_key"
-  val RootPassword   = "my_secret_key"
-  val VirtualHost = "my-domain.com"
-  val Region      = "eu-central-1"
+  val RootUser     = "my_key"
+  val RootPassword = "my_secret_key"
+  val VirtualHost  = "my-domain.com"
+  val Region       = "eu-central-1"
 
   final case class MinioHostConfig(host: String, port: Int) {
     def endpoint: String = s"http://$VirtualHost:$port"

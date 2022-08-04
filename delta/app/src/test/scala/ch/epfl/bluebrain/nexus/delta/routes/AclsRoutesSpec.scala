@@ -358,12 +358,12 @@ class AclsRoutesSpec extends BaseRouteSpec {
   }
 
   def aclMetadata(
-                   address: AclAddress,
-                   rev: Long = 1L,
-                   deprecated: Boolean = false,
-                   createdBy: Subject = Anonymous,
-                   updatedBy: Subject = Anonymous
-                 ): Json =
+      address: AclAddress,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
     jsonContentOf(
       "acls/acl-route-metadata-response.json",
       "rev"        -> rev,
