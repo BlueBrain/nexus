@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 
 class DataConstructQuerySpec extends PipeBaseSpec {
 
-  "DataConstructQuery" should {
+  "DataConstructQuery" ignore {
 
     "reject an invalid config" in {
       DataConstructQuery.pipe.parseAndRun(Some(ExpandedJsonLd.empty), sampleData).rejected

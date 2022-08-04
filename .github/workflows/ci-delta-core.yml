@@ -47,19 +47,11 @@ jobs:
             kernel/test \
             rdf/test \
             sdk/test \
-            sdkTestkit/test \
-            sdkViews/test \
-            service/test \
-            sourcing/test \
             sourcingPsql/test \
             testkit/test \
             app/coverageReport \
             kernel/coverageReport \
             rdf/coverageReport \
             sdk/coverageReport \
-            sdkTestkit/coverageReport \
-            sdkViews/coverageReport \
-            service/coverageReport \
-            sourcing/coverageReport \
             sourcingPsql/coverageReport \
             testkit/coverageReport

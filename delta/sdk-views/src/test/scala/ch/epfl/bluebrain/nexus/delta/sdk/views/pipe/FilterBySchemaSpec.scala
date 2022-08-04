@@ -8,11 +8,11 @@ class FilterBySchemaSpec extends PipeBaseSpec {
 
   private val schema = nxv + "Schema"
 
-  private val validatedData = sampleData.copy(
-    schema = ResourceRef.Latest(schema)
-  )
+  "Filtering by schema" ignore {
 
-  "Filtering by schema" should {
+    val validatedData = sampleData.copy(
+      schema = ResourceRef.Latest(schema)
+    )
 
     "reject an invalid config" in {
       FilterBySchema.pipe.parseAndRun(Some(ExpandedJsonLd.empty), validatedData).rejected

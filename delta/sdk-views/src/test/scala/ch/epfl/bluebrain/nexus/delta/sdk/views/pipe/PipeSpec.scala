@@ -45,7 +45,7 @@ class PipeSpec extends PipeBaseSpec {
     }
   }
 
-  "Running pipelines" should {
+  "Running pipelines" ignore {
 
     "succeed if all definitions are valid" in {
       val result = Pipe
