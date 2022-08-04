@@ -5,7 +5,6 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
 import cats.effect.ExitCode
 import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
@@ -15,7 +14,6 @@ import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
@@ -25,12 +23,10 @@ import com.typesafe.config.Config
 import com.typesafe.scalalogging.{Logger => Logging}
 import izumi.distage.model.Locator
 import monix.bio.{BIOApp, IO, Task, UIO}
-import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 import pureconfig.error.ConfigReaderFailures
 
 import scala.concurrent.duration.DurationInt
-import scala.util.Try
 
 object Main extends BIOApp {
 
@@ -137,25 +133,8 @@ object Main extends BIOApp {
 
   private def bootstrap(locator: Locator, plugins: List[Plugin]): Task[Unit] = {
     implicit val as: ActorSystemClassic = locator.get[ActorSystem[Nothing]].toClassic
-    implicit val scheduler: Scheduler   = locator.get[Scheduler]
     implicit val cfg: AppConfig         = locator.get[AppConfig]
     val logger                          = locator.get[Logger]
-
-    if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
-      Task
-        .fromEither {
-          for {
-            str     <- sys.env
-                         .get("MIGRATION_REMOTE_STORAGE")
-                         .toRight(new IllegalArgumentException("'MIGRATION_REMOTE_STORAGE' must be defined"))
-            baseUri <- Try(Uri(str)).toEither.flatMap(BaseUri(_))
-          } yield baseUri
-        }
-        .flatMap { baseUri =>
-          locator.get[RemoteStorageMigration].run(baseUri)
-        }
-        .runSyncUnsafe()
-    }
 
     logger.info("Booting up service....")
 

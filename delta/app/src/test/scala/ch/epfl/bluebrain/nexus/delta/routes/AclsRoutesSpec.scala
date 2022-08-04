@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{acls => aclsPermissions, _}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{EventLogConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
@@ -355,4 +356,21 @@ class AclsRoutesSpec extends BaseRouteSpec {
     }
 
   }
+
+  def aclMetadata(
+                   address: AclAddress,
+                   rev: Long = 1L,
+                   deprecated: Boolean = false,
+                   createdBy: Subject = Anonymous,
+                   updatedBy: Subject = Anonymous
+                 ): Json =
+    jsonContentOf(
+      "acls/acl-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "path"       -> address,
+      "project"    -> (if (address == AclAddress.Root) "" else address)
+    )
 }

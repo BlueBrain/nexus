@@ -9,6 +9,7 @@
     "accessKey" : "O2vOp16ah21Fk/B0OucyxQ==",
     "secretKey" : "dqO3PR6kLOCFNBk9I6zsZQ==",
     "readPermission" : "s3/read",
+    "region": "eu-west-1",
     "writePermission" : "s3/write",
     "maxFileSize" : 41,
     "@type" : "S3StorageValue"
@@ -21,6 +22,7 @@
     "bucket" : "mybucket",
     "endpoint" : "http://localhost",
     "readPermission" : "s3/read",
+    "region": "eu-west-1",
     "writePermission" : "s3/write",
     "maxFileSize" : 51
   },

@@ -15,7 +15,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.{OrganizationsConfig, OrganizationsImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.{events, orgs => orgsPermissions}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.OwnerPermissionsScopeInitialization
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.Json
 
@@ -228,4 +229,22 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
       }
     }
   }
+
+  def orgMetadata(
+                   label: Label,
+                   uuid: UUID,
+                   rev: Long = 1L,
+                   deprecated: Boolean = false,
+                   createdBy: Subject = Anonymous,
+                   updatedBy: Subject = Anonymous
+                 ): Json =
+    jsonContentOf(
+      "organizations/org-route-metadata-response.json",
+      "rev"        -> rev,
+      "deprecated" -> deprecated,
+      "createdBy"  -> createdBy.asIri,
+      "updatedBy"  -> updatedBy.asIri,
+      "label"      -> label,
+      "uuid"       -> uuid
+    )
 }

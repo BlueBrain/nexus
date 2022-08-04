@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -44,7 +44,7 @@ sealed trait Storage extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[UserTag, Long]
+  def tags: Tags
 
   /**
     * @return
@@ -84,7 +84,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: DiskStorageValue,
-      tags: Map[UserTag, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default
@@ -105,7 +105,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: S3StorageValue,
-      tags: Map[UserTag, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
 
@@ -130,7 +130,7 @@ object Storage {
       id: Iri,
       project: ProjectRef,
       value: RemoteDiskStorageValue,
-      tags: Map[UserTag, Long],
+      tags: Tags,
       source: Secret[Json]
   ) extends Storage {
     override val default: Boolean           = value.default

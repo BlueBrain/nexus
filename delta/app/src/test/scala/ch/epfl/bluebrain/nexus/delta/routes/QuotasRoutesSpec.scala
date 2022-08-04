@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ServiceAccountConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectsStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.{QuotasConfig, QuotasImpl}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import monix.bio.UIO

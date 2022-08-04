@@ -7,30 +7,36 @@ import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, FilesSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteFixtures, RouteHelpers}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
+import io.circe.Json
+import org.scalatest._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{BeforeAndAfterAll, CancelAfterFailure, Inspectors, OptionValues}
 import slick.jdbc.JdbcBackend
 
+@DoNotDiscover
 class FilesRoutesSpec
     extends RouteHelpers
     with Matchers
@@ -77,15 +83,15 @@ class FilesRoutesSpec
       diskWrite
     )
 
-  private val stCfg                    = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
-  implicit private val f: FusionConfig = fusionConfig
+  private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val aclCheck          = AclSimpleCheck().accepted
-  private val (files, storages) = FilesSetup.init(fetchContext, aclCheck, stCfg)
-  private val groupDirectives   =
+  private val aclCheck           = AclSimpleCheck().accepted
+  private val files: Files       = null
+  private val storages: Storages = null
+  private val groupDirectives    =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  private val routes            =
+  private val routes             =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
@@ -130,7 +136,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storage" -> dId)
+          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
       }
     }
 
@@ -169,7 +175,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file2?storage=not-exist", entity()) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/storage/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+          jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
       }
     }
 
@@ -203,7 +209,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storage" -> dId)
+          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
       }
     }
 
@@ -219,7 +225,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1?rev=3&storage=not-exist", entity("other.txt")) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/storage/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
+          jsonContentOf("/storages/errors/not-found.json", "id" -> (nxv + "not-exist"), "proj" -> projectRef)
       }
     }
 
@@ -438,7 +444,6 @@ class FilesRoutesSpec
         response.header[Location].value.uri shouldEqual Uri("https://bbp.epfl.ch/nexus/web/org/project/resources/file1")
       }
     }
-
   }
 
   private var db: JdbcBackend.Database = null
@@ -453,4 +458,42 @@ class FilesRoutesSpec
     AbstractDBSpec.afterAll(db)
     super.afterAll()
   }
+}
+
+object FilesRoutesSpec extends TestHelpers with RouteFixtures {
+
+  def fileMetadata(
+      ref: ProjectRef,
+      id: Iri,
+      attributes: FileAttributes,
+      storage: ResourceRef.Revision,
+      storageType: StorageType = StorageType.DiskStorage,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous,
+      label: Option[String] = None
+  )(implicit baseUri: BaseUri): Json =
+    jsonContentOf(
+      "file/file-route-metadata-response.json",
+      "project"     -> ref,
+      "id"          -> id,
+      "rev"         -> rev,
+      "storages"    -> storage.iri,
+      "storageType" -> storageType,
+      "storageRev"  -> storage.rev,
+      "bytes"       -> attributes.bytes,
+      "digest"      -> attributes.digest.asInstanceOf[ComputedDigest].value,
+      "algorithm"   -> attributes.digest.asInstanceOf[ComputedDigest].algorithm,
+      "filename"    -> attributes.filename,
+      "mediaType"   -> attributes.mediaType,
+      "origin"      -> attributes.origin,
+      "uuid"        -> attributes.uuid,
+      "deprecated"  -> deprecated,
+      "createdBy"   -> createdBy.asIri,
+      "updatedBy"   -> updatedBy.asIri,
+      "type"        -> storageType,
+      "label"       -> label.fold(lastSegment(id))(identity)
+    )
+
 }

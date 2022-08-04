@@ -35,6 +35,11 @@
         "@value": "s3/read"
       }
     ],
+    "https://bluebrain.github.io/nexus/vocabulary/region": [
+      {
+        "@value": "eu-west-1"
+      }
+    ],
     "https://bluebrain.github.io/nexus/vocabulary/writePermission": [
       {
         "@value": "s3/write"

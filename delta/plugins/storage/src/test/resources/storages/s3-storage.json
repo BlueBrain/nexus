@@ -9,6 +9,7 @@
   "accessKey": "accessKey",
   "secretKey": "secretKey",
   "readPermission": "s3/read",
+  "region": "eu-west-1",
   "writePermission": "s3/write",
   "maxFileSize": 51
 }

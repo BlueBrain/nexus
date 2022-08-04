@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import akka.actor
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.FilesAggregate
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
@@ -10,15 +12,14 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileEvent, Fil
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileEventExchange, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.{StoragesAggregate, StoragesCache}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.migration.RemoteStorageMigrationImpl
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageRejection, StorageStatsCollection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.schemas.{storage => storagesSchemaId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageEventExchange, Storages, StoragesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -31,7 +32,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.migration.RemoteStorageMigration
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
@@ -40,9 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseConfigOld
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -59,8 +57,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
 
   make[StorageTypeConfig].from { cfg: StoragePluginConfig => cfg.storages.storageTypeConfig }
 
-  make[EventLog[Envelope[StorageEvent]]].fromEffect { databaseEventLog[StorageEvent](_, _) }
-
   make[HttpClient].named("storage").from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
     def defaultHttpClientConfig = HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
     HttpClient()(
@@ -70,48 +66,38 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     )
   }
 
-  make[StoragesCache].from { (cfg: StoragePluginConfig, as: ActorSystem[Nothing]) => Storages.cache(cfg.storages)(as) }
-
-  make[StoragesAggregate].fromEffect {
-    (
-        config: StoragePluginConfig,
-        resourceIdCheck: ResourceIdCheck,
-        permissions: Permissions,
-        crypto: Crypto,
-        client: HttpClient @Id("storage"),
-        as: ActorSystem[Nothing],
-        clock: Clock[UIO]
-    ) => Storages.aggregate(config.storages, resourceIdCheck, permissions.fetchPermissionSet, crypto)(client, as, clock)
-  }
-
   make[Storages]
     .fromEffect {
       (
-          cfg: StoragePluginConfig,
-          log: EventLog[Envelope[StorageEvent]],
           fetchContext: FetchContext[ContextRejection],
-          cache: StoragesCache,
-          agg: StoragesAggregate,
-          api: JsonLdApi,
-          uuidF: UUIDF,
           contextResolution: ResolverContextResolution,
-          as: ActorSystem[Nothing],
-          scheduler: Scheduler,
-          serviceAccount: ServiceAccount
+          permissions: Permissions,
+          crypto: Crypto,
+          xas: Transactors,
+          cfg: StoragePluginConfig,
+          serviceAccount: ServiceAccount,
+          api: JsonLdApi,
+          client: HttpClient @Id("storage"),
+          clock: Clock[UIO],
+          uuidF: UUIDF,
+          as: ActorSystem[Nothing]
       ) =>
+        implicit val classicAs: actor.ActorSystem         = as.classicSystem
+        implicit val storageTypeConfig: StorageTypeConfig = cfg.storages.storageTypeConfig
+        implicit val c: HttpClient                        = client
         Storages(
-          cfg.storages,
-          log,
-          contextResolution,
           fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
-          cache,
-          agg,
+          contextResolution,
+          permissions.fetchPermissionSet,
+          StorageAccess.apply(_, _),
+          crypto,
+          xas,
+          cfg.storages,
           serviceAccount
         )(
           api,
-          uuidF,
-          scheduler,
-          as
+          clock,
+          uuidF
         )
     }
 
@@ -122,7 +108,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         storages: Storages,
-        storagesStatistics: StoragesStatistics,
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         baseUri: BaseUri,
@@ -133,7 +118,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     ) =>
       {
         val paginationConfig: PaginationConfig = cfg.storages.pagination
-        new StoragesRoutes(identities, aclCheck, storages, storagesStatistics, schemeDirectives, indexingAction)(
+        new StoragesRoutes(identities, aclCheck, storages, null, schemeDirectives, indexingAction)(
           baseUri,
           crypto,
           paginationConfig,
@@ -146,29 +131,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[EventLog[Envelope[FileEvent]]].fromEffect { databaseEventLog[FileEvent](_, _) }
-
-  make[Projection[StorageStatsCollection]].fromEffect {
-    (database: DatabaseConfigOld, system: ActorSystem[Nothing], clock: Clock[UIO]) =>
-      Projection(database, StorageStatsCollection.empty, system, clock)
-  }
-
-  make[StoragesStatistics].fromEffect {
-    (
-        files: Files,
-        storages: Storages,
-        projection: Projection[StorageStatsCollection],
-        eventLog: EventLog[Envelope[FileEvent]],
-        cfg: StoragePluginConfig,
-        uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
-    ) =>
-      StoragesStatistics(files, storages, projection, eventLog.eventsByTag(Files.moduleType, _), cfg.storages)(
-        uuidF,
-        as,
-        sc
-      )
-  }
 
   make[FilesAggregate].fromEffect {
     (cfg: StoragePluginConfig, resourceIdCheck: ResourceIdCheck, as: ActorSystem[Nothing], clock: Clock[UIO]) =>
@@ -185,7 +147,6 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           aclCheck: AclCheck,
           fetchContext: FetchContext[ContextRejection],
           storages: Storages,
-          storagesStatistics: StoragesStatistics,
           agg: FilesAggregate,
           uuidF: UUIDF,
           as: ActorSystem[Nothing],
@@ -198,7 +159,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           aclCheck,
           fetchContext.mapRejection(FileRejection.ProjectContextRejection),
           storages,
-          storagesStatistics,
+          null,
           agg
         )(
           client,
@@ -276,22 +237,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
     PriorityRoute(priority, fileRoutes.routes, requiresStrictEntity = false)
   }
 
-  many[ReferenceExchange].add { (storages: Storages, crypto: Crypto) =>
-    Storages.referenceExchange(storages)(crypto)
-  }
-
   many[ReferenceExchange].add { (files: Files, config: StorageTypeConfig) =>
     Files.referenceExchange(files)(config)
   }
 
-  make[StorageEventExchange]
   make[FileEventExchange]
-  many[EventExchange].ref[StorageEventExchange].ref[FileEventExchange]
-  many[EventExchange].named("resources").ref[StorageEventExchange].ref[FileEventExchange]
-
-  if (sys.env.contains("MIGRATION_REMOTE_STORAGE")) {
-    make[RemoteStorageMigration].fromEffect((as: ActorSystem[Nothing], databaseConfig: DatabaseConfigOld) =>
-      RemoteStorageMigrationImpl(as, databaseConfig.cassandra)
-    )
-  }
+  many[EventExchange].named("resources").ref[FileEventExchange]
 }

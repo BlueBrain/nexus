@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePat
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.SaveFileRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
@@ -46,7 +47,7 @@ class DiskStorageSaveFileSpec
     val iri     = iri"http://localhost/disk"
     val project = ProjectRef.unsafe("org", "project")
     val value   = DiskStorageValue(default = true, DigestAlgorithm.default, volume, read, write, Some(100), 10)
-    val storage = DiskStorage(iri, project, value, Map.empty, Secret(Json.obj()))
+    val storage = DiskStorage(iri, project, value, Tags.empty, Secret(Json.obj()))
     val uuid    = UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc")
     val content = "file content"
     val entity  = HttpEntity(content)

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, OAuth2BearerToken}
+import akka.http.scaladsl.model.headers.{OAuth2BearerToken, `Last-Event-ID`}
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.model.{MediaTypes, StatusCodes}
 import akka.http.scaladsl.server.Route
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.ProjectNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog.ServerSentEventStream
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset

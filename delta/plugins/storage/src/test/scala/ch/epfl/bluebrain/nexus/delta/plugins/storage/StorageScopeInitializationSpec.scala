@@ -2,31 +2,36 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{Storages, StoragesConfig}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.DiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues, TestHelpers}
+import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 
 class StorageScopeInitializationSpec
-    extends AbstractDBSpec
+    extends DoobieScalaTestFixture
     with Matchers
     with IOValues
     with IOFixedClock
     with RemoteContextResolutionFixture
     with ConfigFixtures
     with TestHelpers {
+
+  private val serviceAccount: ServiceAccount = ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
 
   private val uuid                   = UUID.randomUUID()
   implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
@@ -46,10 +51,19 @@ class StorageScopeInitializationSpec
     ProjectContextRejection
   )
 
-  private val storages = StoragesSetup.init(fetchContext, allowedPerms.toSet)
-
   "A StorageScopeInitialization" should {
-    val init = new StorageScopeInitialization(storages, sa)
+    lazy val storages = Storages(
+      fetchContext,
+      new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
+      IO.pure(allowedPerms.toSet),
+      (_, _) => IO.unit,
+      crypto,
+      xas,
+      StoragesConfig(eventLogConfig, pagination, config),
+      serviceAccount
+    ).accepted
+
+    lazy val  init = new StorageScopeInitialization(storages, sa)
 
     "create a default storage on newly created project" in {
       storages.fetch(nxv + "diskStorageDefault", project.ref).rejectedWith[StorageNotFound]
