@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.utils.RouteFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -49,6 +49,7 @@ import slick.jdbc.JdbcBackend
 
 import java.nio.file.{Files => JFiles}
 import java.util.UUID
+import scala.annotation.nowarn
 
 class ArchiveRoutesSpec
     extends AnyWordSpecLike
@@ -98,6 +99,7 @@ class ArchiveRoutesSpec
   implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
   implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
 
+  @nowarn("cat=unused")
   private val cfg            = config.copy(
     disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
   )
@@ -120,28 +122,27 @@ class ArchiveRoutesSpec
   private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
-  lazy val (routes, files) = {
+  private val files: Files       = null
+  private val storages: Storages = null
+
+  lazy val routes = {
     for {
-      aclCheck          <- AclSimpleCheck(
-                             (subject, AclAddress.Root, allowedPerms.toSet),
-                             (
-                               subjectNoFilePerms,
-                               AclAddress.Root,
-                               allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
-                             )
-                           )
-      (files, storages) <-
-        IO.delay(
-          FilesSetup.init(fetchContext, aclCheck, StoragesStatisticsSetup.init(Map.empty), cfg, allowedPerms: _*)
-        )
-      storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-      _                 <- storages.create(diskId, projectRef, storageJson)
-      archiveDownload    = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
-      archives          <-
+      aclCheck       <- AclSimpleCheck(
+                          (subject, AclAddress.Root, allowedPerms.toSet),
+                          (
+                            subjectNoFilePerms,
+                            AclAddress.Root,
+                            allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
+                          )
+                        )
+      storageJson     = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+      _              <- storages.create(diskId, projectRef, storageJson)
+      archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+      archives       <-
         Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
-      identities         = IdentitiesDummy(caller, callerNoFilePerms)
-      r                  = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
-    } yield (r, files)
+      identities      = IdentitiesDummy(caller, callerNoFilePerms)
+      r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
+    } yield r
   }.accepted
 
   private def archiveMetadata(
@@ -276,7 +277,7 @@ class ArchiveRoutesSpec
           val attr      = attributes()
           val diskIdRev = ResourceRef.Revision(diskId, 1)
           val metadata  =
-            RouteFixtures.fileMetadata(
+            FilesRoutesSpec.fileMetadata(
               projectRef,
               fileId,
               attr,

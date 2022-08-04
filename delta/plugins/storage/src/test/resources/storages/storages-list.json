@@ -29,6 +29,7 @@
       "endpoint": "http://localhost",
       "maxFileSize": 51,
       "readPermission": "s3/read",
+      "region" : "eu-west-1",
       "writePermission": "s3/write"
     },
     {

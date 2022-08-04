@@ -4,22 +4,26 @@ import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.s3
 import akka.stream.alpakka.s3.{ApiVersion, MemoryBufferType}
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import io.circe.Encoder
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
+import io.circe.{Codec, Decoder, Encoder}
 import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
+import java.nio.file.Path
 import scala.annotation.nowarn
+import scala.util.Try
 
 sealed trait StorageValue extends Product with Serializable {
 
@@ -201,4 +205,25 @@ object StorageValue {
       deriveConfiguredEncoder[StorageValue].encodeObject(storage).add(keywords.tpe, storage.tpe.iri.asJson)
     }
   }
+
+  @SuppressWarnings(Array("TryGet"))
+  @nowarn("cat=unused")
+  def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec.AsObject[StorageValue] = {
+    implicit val pathEncoder: Encoder[Path]     = Encoder.encodeString.contramap(_.toString)
+    implicit val pathDecoder: Decoder[Path]     = Decoder.decodeString.emapTry(str => Try(Path.of(str)))
+    implicit val regionEncoder: Encoder[Region] = Encoder.encodeString.contramap(_.toString)
+    implicit val regionDecoder: Decoder[Region] = Decoder.decodeString.map(Region.of)
+
+    implicit val stringSecretEncryptEncoder: Encoder[Secret[String]] = Encoder.encodeString.contramap {
+      case Secret(value) => crypto.encrypt(value).get
+    }
+
+    implicit val stringSecretEncryptDecoder: Decoder[Secret[String]] =
+      Decoder.decodeString.emapTry(str => crypto.decrypt(str).map(Secret(_)))
+
+    implicit val digestCodec: Codec.AsObject[Digest] = deriveConfiguredCodec[Digest]
+
+    deriveConfiguredCodec[StorageValue]
+  }
+
 }

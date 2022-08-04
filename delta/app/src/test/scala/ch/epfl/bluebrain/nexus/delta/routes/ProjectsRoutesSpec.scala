@@ -20,7 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.Wrapped
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{ProjectsConfig, ProjectsImpl, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.{AutomaticProvisioningConfig, ProjectProvisioning}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Json
 import monix.bio.{IO, UIO}
@@ -515,4 +516,30 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
       }
     }
   }
+
+  def projectMetadata(
+      ref: ProjectRef,
+      label: String,
+      uuid: UUID,
+      organizationLabel: String,
+      organizationUuid: UUID,
+      rev: Long = 1L,
+      deprecated: Boolean = false,
+      markedForDeletion: Boolean = false,
+      createdBy: Subject = Anonymous,
+      updatedBy: Subject = Anonymous
+  ): Json =
+    jsonContentOf(
+      "projects/project-route-metadata-response.json",
+      "project"           -> ref,
+      "rev"               -> rev,
+      "deprecated"        -> deprecated,
+      "markedForDeletion" -> markedForDeletion,
+      "createdBy"         -> createdBy.asIri,
+      "updatedBy"         -> updatedBy.asIri,
+      "label"             -> label,
+      "uuid"              -> uuid,
+      "organization"      -> organizationLabel,
+      "organizationUuid"  -> organizationUuid
+    )
 }

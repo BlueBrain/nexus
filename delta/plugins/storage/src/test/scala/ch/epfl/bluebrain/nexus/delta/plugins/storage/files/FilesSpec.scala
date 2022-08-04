@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejec
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, StoragesStatisticsSetup}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
@@ -41,6 +41,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{DoNotDiscover, Inspectors}
 
 import java.time.Instant
+import scala.annotation.nowarn
 
 @DoNotDiscover
 class FilesSpec(docker: RemoteStorageDocker)
@@ -249,6 +250,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     val otherRead  = Permission.unsafe("other/read")
     val otherWrite = Permission.unsafe("other/write")
 
+    @nowarn("cat=unused")
     val allowedPerms = Set(
       diskFields.readPermission.value,
       diskFields.writePermission.value,
@@ -259,6 +261,7 @@ class FilesSpec(docker: RemoteStorageDocker)
     val remoteId  = nxv + "remote"
     val remoteRev = ResourceRef.Revision(iri"$remoteId?rev=1", remoteId, 1)
 
+    @nowarn("cat=unused")
     val fetchContext = FetchContextDummy(
       Map(project.ref -> project.context),
       Set(deprecatedProject.ref)
@@ -270,15 +273,18 @@ class FilesSpec(docker: RemoteStorageDocker)
       (alice, AclAddress.Project(projectRef), Set(otherRead, otherWrite))
     ).accepted
 
+    @nowarn("cat=unused")
     val cfg = config.copy(
       disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path),
       remoteDisk = Some(config.remoteDisk.value.copy(defaultMaxFileSize = 500))
     )
 
-    val storageStatistics =
+    @nowarn("cat=unused")
+    val storageStatistics  =
       StoragesStatisticsSetup.init(Map(project -> Map(diskId -> StorageStatEntry(10L, 100L, Some(Instant.EPOCH)))))
 
-    val (files, storages) = FilesSetup.init(fetchContext, aclCheck, storageStatistics, cfg, allowedPerms.toSeq: _*)
+    val files: Files       = null
+    val storages: Storages = null
 
     "creating a file" should {
 

@@ -25,6 +25,12 @@ sealed trait StorageCommand extends Product with Serializable {
   def id: Iri
 
   /**
+    * the last known revision of the storage
+    * @return
+    */
+  def rev: Int
+
+  /**
     * @return
     *   the identity associated to this command
     */
@@ -53,7 +59,9 @@ object StorageCommand {
       fields: StorageFields,
       source: Secret[Json],
       subject: Subject
-  ) extends StorageCommand
+  ) extends StorageCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command to update an existing storage
@@ -76,7 +84,7 @@ object StorageCommand {
       project: ProjectRef,
       fields: StorageFields,
       source: Secret[Json],
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends StorageCommand
 
@@ -96,7 +104,7 @@ object StorageCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class TagStorage(id: Iri, project: ProjectRef, targetRev: Long, tag: UserTag, rev: Long, subject: Subject)
+  final case class TagStorage(id: Iri, project: ProjectRef, targetRev: Int, tag: UserTag, rev: Int, subject: Subject)
       extends StorageCommand
 
   /**
@@ -111,6 +119,6 @@ object StorageCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends StorageCommand
+  final case class DeprecateStorage(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends StorageCommand
 
 }

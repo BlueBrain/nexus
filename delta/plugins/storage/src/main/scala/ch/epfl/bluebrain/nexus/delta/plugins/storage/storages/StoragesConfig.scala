@@ -2,15 +2,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
 import cats.implicits.toBifunctorOps
-import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, SaveProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import pureconfig.ConvertHelpers.{catchReadError, optF}
 import pureconfig.error.{CannotConvert, ConfigReaderFailures, ConvertFailure, FailureReason}
 import pureconfig.generic.auto._
@@ -21,25 +20,16 @@ import scala.annotation.nowarn
 /**
   * Configuration for the Storages module.
   *
-  * @param aggregate
-  *   configuration of the underlying aggregate
-  * @param keyValueStore
-  *   configuration of the underlying key/value store
+  * @param eventLog
+  *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
-  * @param cacheIndexing
-  *   configuration of the cache indexing process
-  * @param persistProgressConfig
-  *   configuration for the persistence of progress of projections
   * @param storageTypeConfig
   *   configuration of each of the storage types
   */
 final case class StoragesConfig(
-    aggregate: AggregateConfig,
-    keyValueStore: KeyValueStoreConfig,
+    eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig,
-    persistProgressConfig: SaveProgressConfig,
     storageTypeConfig: StorageTypeConfig
 )
 
@@ -49,26 +39,18 @@ object StoragesConfig {
   implicit val storageConfigReader: ConfigReader[StoragesConfig] =
     ConfigReader.fromCursor { cursor =>
       for {
-        obj                   <- cursor.asObjectCursor
-        aggregateCursor       <- obj.atKey("aggregate")
-        aggregate             <- ConfigReader[AggregateConfig].from(aggregateCursor)
-        kvStoreCursor         <- obj.atKey("key-value-store")
-        kvStore               <- ConfigReader[KeyValueStoreConfig].from(kvStoreCursor)
-        paginationCursor      <- obj.atKey("pagination")
-        pagination            <- ConfigReader[PaginationConfig].from(paginationCursor)
-        indexingCursor        <- obj.atKey("cache-indexing")
-        indexing              <- ConfigReader[CacheIndexingConfig].from(indexingCursor)
-        persistProgressCursor <- obj.atKey("persist-progress-config")
-        persistProgress       <- ConfigReader[SaveProgressConfig].from(persistProgressCursor)
-        storageType           <- ConfigReader[StorageTypeConfig].from(cursor)
-      } yield StoragesConfig(aggregate, kvStore, pagination, indexing, persistProgress, storageType)
+        obj              <- cursor.asObjectCursor
+        eventLogCursor   <- obj.atKey("event-log")
+        eventLog         <- ConfigReader[EventLogConfig].from(eventLogCursor)
+        paginationCursor <- obj.atKey("pagination")
+        pagination       <- ConfigReader[PaginationConfig].from(paginationCursor)
+        storageType      <- ConfigReader[StorageTypeConfig].from(cursor)
+      } yield StoragesConfig(eventLog, pagination, storageType)
     }
 
   /**
     * The configuration of each of the storage types
     *
-    * @param encryption
-    *   configuration for storages derived from a password and its salt
     * @param disk
     *   configuration for the disk storage
     * @param amazon

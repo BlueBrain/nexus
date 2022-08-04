@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.concurrent.Eventually
@@ -25,6 +25,7 @@ class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)
     extends TestKit(ActorSystem("RemoteDiskStorageAccessSpec"))
     with AnyWordSpecLike
     with Matchers
+    with EitherValuable
     with IOValues
     with TestHelpers
     with Eventually

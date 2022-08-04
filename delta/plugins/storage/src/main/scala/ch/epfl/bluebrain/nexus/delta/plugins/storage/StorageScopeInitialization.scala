@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.Storages.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageFields.DiskStorageFields
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{defaultStorageId, Storages}
@@ -23,7 +25,9 @@ import monix.bio.{IO, UIO}
   */
 class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAccount) extends ScopeInitialization {
 
-  private val logger: Logger          = Logger[StorageScopeInitialization]
+  private val logger: Logger                                = Logger[StorageScopeInitialization]
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
+
   implicit private val caller: Caller = serviceAccount.caller
 
   private val defaultValue: DiskStorageFields = DiskStorageFields(
@@ -47,7 +51,7 @@ class StorageScopeInitialization(storages: Storages, serviceAccount: ServiceAcco
             s"Failed to create the default DiskStorage for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("createDefaultStorage", Storages.moduleType)
+      .span("createDefaultStorage")
 
   override def onOrganizationCreation(
       organization: Organization,

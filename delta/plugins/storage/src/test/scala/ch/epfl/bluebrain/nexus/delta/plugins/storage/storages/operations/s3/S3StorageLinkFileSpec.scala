@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSou
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.FetchFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.s3.MinioSpec._
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.IOValues
@@ -60,15 +61,15 @@ class S3StorageLinkFileSpec(docker: MinioDocker)
       algorithm = DigestAlgorithm.default,
       bucket = "bucket3",
       endpoint = Some(docker.hostConfig.endpoint),
-      accessKey = Some(Secret(AccessKey)),
-      secretKey = Some(Secret(SecretKey)),
+      accessKey = Some(Secret(RootUser)),
+      secretKey = Some(Secret(RootPassword)),
       region = Some(Region.EU_CENTRAL_1),
       readPermission = read,
       writePermission = write,
       maxFileSize = 20
     )
     createBucket(storageValue).hideErrors.accepted
-    storage = S3Storage(iri, project, storageValue, Map.empty, Secret(Json.obj()))
+    storage = S3Storage(iri, project, storageValue, Tags.empty, Secret(Json.obj()))
     attributes = FileAttributes(
       uuid,
       s"http://bucket3.$VirtualHost:${docker.hostConfig.port}/org/project/8/0/4/9/b/a/9/0/myfile.txt",

@@ -10,9 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{Aut
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, Dot, ExpandedJsonLd, NQuads, NTriples, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.RemoteContextResolutionFixture
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files, FilesSetup}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
@@ -21,11 +21,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label}
 import io.circe.syntax.EncoderOps
 import monix.execution.Scheduler
 import org.scalatest.concurrent.ScalaFutures
@@ -35,6 +34,7 @@ import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
+// TODO review when migrating the archives plugin
 class ArchiveDownloadSpec
     extends AbstractDBSpec
     with ScalaFutures
@@ -60,16 +60,17 @@ class ArchiveDownloadSpec
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  private val cfg = config.copy(
-    disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
-  )
+//  private val cfg = config.copy(
+//    disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
+//  )
 
-  private val permissions       =
+  private val permissions        =
     Set(Permissions.resources.read, diskFields.readPermission.value, diskFields.writePermission.value)
-  private val aclCheck          = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
-  private val fetchContext      = FetchContextDummy(List(project))
-  private val (files, storages) = FilesSetup.init(fetchContext, aclCheck, cfg)
-  private val storageJson       = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
+  private val aclCheck           = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
+  //private val fetchContext      = FetchContextDummy(List(project))
+  private val files: Files       = null
+  private val storages: Storages = null
+  private val storageJson        = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
   storages.create(diskId, projectRef, storageJson).accepted
 
   private def archiveMapOf(source: AkkaSource): Map[String, String] = {

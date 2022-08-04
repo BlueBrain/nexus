@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, schemas}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{contexts, schemas, Storages}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -11,14 +12,16 @@ import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -26,7 +29,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Storage event types.
   */
-sealed trait StorageEvent extends ProjectScopedEvent {
+sealed trait StorageEvent extends ScopedEvent {
 
   /**
     * @return
@@ -68,7 +71,7 @@ object StorageEvent {
       project: ProjectRef,
       value: StorageValue,
       source: Secret[Json],
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends StorageEvent {
@@ -96,7 +99,7 @@ object StorageEvent {
       project: ProjectRef,
       value: StorageValue,
       source: Secret[Json],
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends StorageEvent {
@@ -127,9 +130,9 @@ object StorageEvent {
       id: Iri,
       project: ProjectRef,
       tpe: StorageType,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends StorageEvent
@@ -154,43 +157,66 @@ object StorageEvent {
       id: Iri,
       project: ProjectRef,
       tpe: StorageType,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends StorageEvent
 
-  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.storages)
-
   @nowarn("cat=unused")
-  implicit private val config: Configuration = Configuration.default
-    .withDiscriminator(keywords.tpe)
-    .copy(transformMemberNames = {
-      case "id"      => "_storageId"
-      case "source"  => nxv.source.prefix
-      case "project" => nxv.project.prefix
-      case "rev"     => nxv.rev.prefix
-      case "instant" => nxv.instant.prefix
-      case "subject" => nxv.eventSubject.prefix
-      case other     => other
-    })
+  def serializer(crypto: Crypto): Serializer[Iri, StorageEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration = Serializer.circeConfiguration
 
-  @nowarn("cat=unused")
-  @SuppressWarnings(Array("OptionGet"))
-  implicit def storageEventEncoder(implicit baseUri: BaseUri, crypto: Crypto): Encoder.AsObject[StorageEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]                = IriEncoder.jsonEncoder[Subject]
-    implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
     implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
       Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
-    implicit val projectRefEncoder: Encoder[ProjectRef]          = IriEncoder.jsonEncoder[ProjectRef]
 
-    Encoder.encodeJsonObject.contramapObject { event =>
-      deriveConfiguredEncoder[StorageEvent]
-        .encodeObject(event)
-        .remove("tpe")
-        .add(nxv.types.prefix, event.tpe.types.asJson)
-        .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
-        .add(nxv.resourceId.prefix, event.id.asJson)
-        .add(keywords.context, context.value)
+    implicit val jsonSecretDecryptDecoder: Decoder[Secret[Json]] =
+      Decoder.decodeJson.emap(Storage.decryptSource(_, crypto).toEither.leftMap(_.getMessage))
+
+    implicit val storageValueCodec: Codec.AsObject[StorageValue] = StorageValue.databaseCodec(crypto)
+    implicit val coder: Codec.AsObject[StorageEvent]             = deriveConfiguredCodec[StorageEvent]
+    Serializer(_.id)
+  }
+
+  def sseEncoder(crypto: Crypto)(implicit base: BaseUri): SseEncoder[StorageEvent] = new SseEncoder[StorageEvent] {
+    override val databaseDecoder: Decoder[StorageEvent] = serializer(crypto).codec
+
+    override def entityType: EntityType = Storages.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("storages"), resourcesSelector)
+
+    @nowarn("cat=unused")
+    override val sseEncoder: Encoder.AsObject[StorageEvent] = {
+      val context = ContextValue(Vocabulary.contexts.metadata, contexts.storages)
+
+      implicit val config: Configuration = Configuration.default
+        .withDiscriminator(keywords.tpe)
+        .copy(transformMemberNames = {
+          case "id"      => "_storageId"
+          case "source"  => nxv.source.prefix
+          case "project" => nxv.project.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case other     => other
+        })
+
+      implicit val subjectEncoder: Encoder[Subject]                = IriEncoder.jsonEncoder[Subject]
+      implicit val storageValueEncoder: Encoder[StorageValue]      = Encoder.instance[StorageValue](_ => Json.Null)
+      implicit val jsonSecretEncryptEncoder: Encoder[Secret[Json]] =
+        Encoder.encodeJson.contramap(Storage.encryptSourceUnsafe(_, crypto))
+      implicit val projectRefEncoder: Encoder[ProjectRef]          = IriEncoder.jsonEncoder[ProjectRef]
+
+      Encoder.encodeJsonObject.contramapObject { event =>
+        deriveConfiguredEncoder[StorageEvent]
+          .encodeObject(event)
+          .remove("tpe")
+          .remove("value")
+          .add(nxv.types.prefix, event.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schemas.storage.asJson)
+          .add(nxv.resourceId.prefix, event.id.asJson)
+          .add(keywords.context, context.value)
+      }
     }
   }
 }

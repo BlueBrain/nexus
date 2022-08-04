@@ -15,6 +15,7 @@ import scala.annotation.nowarn
   * @param tag
   *   the tag name
   */
+// TODO change rev to int
 final case class Tag(rev: Long, tag: UserTag)
 
 object Tag {

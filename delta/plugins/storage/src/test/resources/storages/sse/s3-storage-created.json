@@ -3,27 +3,28 @@
     "https://bluebrain.github.io/nexus/contexts/metadata.json",
     "https://bluebrain.github.io/nexus/contexts/storages.json"
   ],
-  "_storageId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
-  "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
-  "_project": "http://localhost/v1/projects/org/project",
-  "_source": {
-    "secretKey": "CtDXqfq6P2/FdfD+TwvxPw==",
-    "accessKey": "6vofRq7nZ+348+z57v/PFA==",
-    "@type": "S3Storage",
-    "default": true,
-    "bucket": "mybucket",
-    "endpoint": "http://localhost",
-    "readPermission": "s3/read",
-    "writePermission": "s3/write",
-    "maxFileSize": 51
-  },
-  "_rev": 1,
+  "@type": "StorageCreated",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
   "_instant": "1970-01-01T00:00:00Z",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_resourceId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
+  "_rev": 1,
+  "_source": {
+    "@type": "S3Storage",
+    "accessKey": "O2vOp16ah21Fk/B0OucyxQ==",
+    "bucket": "mybucket",
+    "default": true,
+    "endpoint": "http://localhost",
+    "maxFileSize": 51,
+    "readPermission": "s3/read",
+    "region": "eu-west-1",
+    "secretKey": "dqO3PR6kLOCFNBk9I6zsZQ==",
+    "writePermission": "s3/write"
+  },
+  "_storageId": "https://bluebrain.github.io/nexus/vocabulary/s3-storage",
   "_subject": "http://localhost/v1/realms/myrealm/users/username",
   "_types": [
     "https://bluebrain.github.io/nexus/vocabulary/Storage",
     "https://bluebrain.github.io/nexus/vocabulary/S3Storage"
-  ],
-  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/storages.json",
-  "@type": "StorageCreated"
+  ]
 }
