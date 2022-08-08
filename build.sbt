@@ -665,11 +665,11 @@ lazy val storagePlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
-      kamonAkkaHttp   % Provided,
-      akkaSlf4j       % Test,
+      kamonAkkaHttp    % Provided,
+      akkaSlf4j        % Test,
       akkaTestKitTyped % Test,
-      akkaHttpTestKit % Test,
-      logback         % Test
+      akkaHttpTestKit  % Test,
+      logback          % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",
