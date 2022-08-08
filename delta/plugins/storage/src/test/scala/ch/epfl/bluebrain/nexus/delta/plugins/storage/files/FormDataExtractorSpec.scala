@@ -38,7 +38,8 @@ class FormDataExtractorSpec
       val entity =
         Multipart
           .FormData(
-            Multipart.FormData.BodyPart("file", HttpEntity(`text/plain(UTF-8)`, content), Map("filename" -> "file.txt"))
+            Multipart.FormData
+              .BodyPart("file", HttpEntity(`text/plain(UTF-8)`, content), Map("filename" -> "file.txt"))
           )
           .toEntity()
 

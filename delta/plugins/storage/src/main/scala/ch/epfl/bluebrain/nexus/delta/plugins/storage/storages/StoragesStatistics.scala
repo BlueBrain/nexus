@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.{StorageFetchRejection, StorageNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageStatsCollection.StorageStatEntry
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -25,9 +25,25 @@ trait StoragesStatistics {
     */
   def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry]
 
-  /**
-    * Remove the statistics for the given project
-    */
-  def remove(project: ProjectRef): UIO[Unit]
+}
+
+// TODO implements storage statistics
+object StoragesStatistics {
+
+  def apply(): StoragesStatistics = new StoragesStatistics {
+
+    override def get(): UIO[StorageStatsCollection] = UIO.pure(StorageStatsCollection.empty)
+
+    /**
+      * Retrieve the current statistics for storages in the given project
+      */
+    override def get(project: ProjectRef): UIO[Map[Iri, StorageStatEntry]] = UIO.pure(Map.empty)
+
+    /**
+      * Retrieve the current statistics for the given project
+      */
+    override def get(idSegment: IdSegment, project: ProjectRef): IO[StorageFetchRejection, StorageStatEntry] =
+      IO.raiseError(StorageNotFound(Iri.unsafe(""), project))
+  }
 
 }

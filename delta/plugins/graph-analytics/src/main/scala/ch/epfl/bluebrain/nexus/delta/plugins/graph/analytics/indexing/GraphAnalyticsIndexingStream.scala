@@ -8,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearch
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.ResourceParser
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.GraphElement.{NewFileElement, ResourceElement}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.{EventStream, GraphElement}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.FileCreated
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.nxvFile
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -89,13 +88,13 @@ final class GraphAnalyticsIndexingStream(
           .map(_.toMessage)
           .collectSomeValue[GraphElement] {
             // To update potential relationships pointing to this file
-            case f: FileCreated => Some(NewFileElement(f.id))
+            //case f: FileCreated => Some(NewFileElement(f.id))
             // To create / update the resource in the graph and update potential relationships pointing to it
             // TODO: Uncomment when migrating graph-analytics plugin
             //            case c: ResourceCreated => Some(ResourceElement(c.id, c.rev))
             //            case u: ResourceUpdated => Some(ResourceElement(u.id, u.rev))
             // We don't care about other events
-            case _              => None
+            _ => None
           }
           .groupWithin(config.maxBatchSize, config.maxTimeWindow)
           .evalMap { chunk =>
