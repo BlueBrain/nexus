@@ -653,8 +653,8 @@ lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % Provided,
-    sdkTestkit % "test->compile;test->test"
+    sdk     % "provided->compile;test->test",
+    testkit % "test->compile"
   )
   .settings(
     name                       := "delta-storage-plugin",
@@ -665,12 +665,11 @@ lazy val storagePlugin = project
         ExclusionRule(organization = "com.typesafe.akka", name = "akka-http_2.13"),
         ExclusionRule(organization = "org.slf4j", name = "slf4j-api")
       ),
-      kamonAkkaHttp   % Provided,
-      akkaSlf4j       % Test,
-      akkaHttpTestKit % Test,
-      h2              % Test,
-      logback         % Test,
-      scalaTest       % Test
+      kamonAkkaHttp    % Provided,
+      akkaSlf4j        % Test,
+      akkaTestKitTyped % Test,
+      akkaHttpTestKit  % Test,
+      logback          % Test
     ),
     buildInfoKeys              := Seq[BuildInfoKey](version),
     buildInfoPackage           := "ch.epfl.bluebrain.nexus.delta.plugins.storage",

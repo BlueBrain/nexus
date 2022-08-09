@@ -43,8 +43,6 @@ object StoragesStatisticsSetup {
           iri  <- Storages.expandIri(idSegment, p.context)
           stat <- IO.fromOptionEval(get(project).map(_.get(iri)), StorageNotFound(iri, project))
         } yield stat
-
-      override def remove(project: ProjectRef): UIO[Unit] = UIO.delay(projectsMap.remove(project)).void
     }
 
 }

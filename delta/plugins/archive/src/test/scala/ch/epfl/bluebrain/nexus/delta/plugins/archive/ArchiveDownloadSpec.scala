@@ -34,7 +34,7 @@ import java.nio.file.{Files => JFiles}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
-// TODO review when migrating the archives plugin
+// TODO update when migrating the archives plugin
 class ArchiveDownloadSpec
     extends AbstractDBSpec
     with ScalaFutures
@@ -102,7 +102,8 @@ class ArchiveDownloadSpec
     val id2 = iri"http://localhost/${genString()}"
     files.create(id2, Some(diskId), project.ref, entity(genString(100))).accepted
 
-    val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+    //val archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+    val archiveDownload = new ArchiveDownloadImpl(List.empty, aclCheck, files)
 
     "provide a tar for both resources and files" in {
       val value    = ArchiveValue.unsafe(

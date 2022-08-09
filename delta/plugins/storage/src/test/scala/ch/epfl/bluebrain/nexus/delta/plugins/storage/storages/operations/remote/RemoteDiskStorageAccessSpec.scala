@@ -7,18 +7,18 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgori
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageNotAccessible
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue.RemoteDiskStorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions._
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
 import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues, TestHelpers}
 import monix.execution.Scheduler
-import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, DoNotDiscover}
 
 @DoNotDiscover
 class RemoteDiskStorageAccessSpec(docker: RemoteStorageDocker)

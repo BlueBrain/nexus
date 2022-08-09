@@ -122,6 +122,7 @@ class ArchiveRoutesSpec
   private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
+  // TODO Update when migrating archives plugin
   private val files: Files       = null
   private val storages: Storages = null
 
@@ -137,7 +138,9 @@ class ArchiveRoutesSpec
                         )
       storageJson     = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
       _              <- storages.create(diskId, projectRef, storageJson)
-      archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+      // TODO Update when migrating archives plugin
+      //archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
+      archiveDownload = new ArchiveDownloadImpl(List.empty, aclCheck, files)
       archives       <-
         Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)

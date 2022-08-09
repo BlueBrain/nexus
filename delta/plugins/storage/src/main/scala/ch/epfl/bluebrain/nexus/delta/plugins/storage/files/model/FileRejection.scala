@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Rejection
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageRejection.StorageFetchRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection
@@ -24,12 +23,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.httpResponseFieldsSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Encoder, JsonObject}
-
-import scala.reflect.ClassTag
 
 /**
   * Enumeration of File rejection types.
@@ -54,7 +50,7 @@ object FileRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends FileRejection(s"Revision requested '$provided' not found, last known revision is '$current'.")
 
   /**
@@ -126,7 +122,7 @@ object FileRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends FileRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the file may have been updated since last seen."
       )
@@ -263,52 +259,32 @@ object FileRejection {
   final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends FileRejection(rejection.reason)
 
-  /**
-    * Rejection returned when the returned state is the initial state after a Files.evaluation plus a Files.next Note:
-    * This should never happen since the evaluation method already guarantees that the next function returns a current
-    */
-  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
-      extends FileRejection(s"Unexpected initial state for file '$id' of project '$project'.")
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class FileEvaluationError(err: EvaluationError) extends FileRejection("Unexpected evaluation error")
-
   implicit val fileStorageFetchRejectionMapper: Mapper[StorageFetchRejection, WrappedStorageRejection] =
     WrappedStorageRejection.apply
 
   implicit val fileIndexingActionRejectionMapper: Mapper[IndexingActionFailed, WrappedIndexingActionRejection] =
     (value: IndexingActionFailed) => WrappedIndexingActionRejection(value)
 
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, FileRejection] = FileEvaluationError.apply
-
-  implicit def fileRejectionEncoder(implicit C: ClassTag[FileCommand]): Encoder.AsObject[FileRejection] =
+  implicit val fileRejectionEncoder: Encoder.AsObject[FileRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r.loggedDetails.foreach(loggedDetails => logger.error(s"${r.reason}. Details '$loggedDetails'"))
       r match {
-        case FileEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason = s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for file '${cmd.id}'"
-          JsonObject(keywords.tpe -> "FileEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case FileEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason = s"Timeout while evaluating the command '${simpleName(cmd)}' for file '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "FileEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case WrappedAkkaRejection(rejection)                   => rejection.asJsonObject
-        case WrappedStorageRejection(rejection)                => rejection.asJsonObject
-        case SaveRejection(_, _, rejection)                    =>
+        case WrappedAkkaRejection(rejection)           => rejection.asJsonObject
+        case WrappedStorageRejection(rejection)        => rejection.asJsonObject
+        case SaveRejection(_, _, rejection)            =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchRejection(_, _, rejection)                   =>
+        case FetchRejection(_, _, rejection)           =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case FetchAttributesRejection(_, _, rejection)         =>
+        case FetchAttributesRejection(_, _, rejection) =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case LinkRejection(_, _, rejection)                    =>
+        case LinkRejection(_, _, rejection)            =>
           obj.add(keywords.tpe, ClassUtils.simpleName(rejection).asJson).add("details", rejection.loggedDetails.asJson)
-        case ProjectContextRejection(rejection)                => rejection.asJsonObject
-        case IncorrectRev(provided, expected)                  => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case _: FileNotFound                                   => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                 => obj
+        case ProjectContextRejection(rejection)        => rejection.asJsonObject
+        case IncorrectRev(provided, expected)          => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case _: FileNotFound                           => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                         => obj
       }
     }
 
@@ -330,8 +306,6 @@ object FileRejection {
       case SaveRejection(_, _, SaveFileRejection.ResourceAlreadyExists(_)) => (StatusCodes.Conflict, Seq.empty)
       case FetchRejection(_, _, _)                                         => (StatusCodes.InternalServerError, Seq.empty)
       case SaveRejection(_, _, _)                                          => (StatusCodes.InternalServerError, Seq.empty)
-      case FileEvaluationError(_)                                          => (StatusCodes.InternalServerError, Seq.empty)
-      case UnexpectedInitialState(_, _)                                    => (StatusCodes.InternalServerError, Seq.empty)
       case WrappedIndexingActionRejection(_)                               => (StatusCodes.InternalServerError, Seq.empty)
       case AuthorizationFailed(_, _)                                       => (StatusCodes.Forbidden, Seq.empty)
       case _                                                               => (StatusCodes.BadRequest, Seq.empty)

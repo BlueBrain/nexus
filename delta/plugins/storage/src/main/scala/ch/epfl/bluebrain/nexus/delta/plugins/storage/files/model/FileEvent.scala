@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model
 
 import akka.http.scaladsl.model.ContentType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{contexts, Files}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -11,17 +9,20 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.instances._
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -29,7 +30,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of File event types.
   */
-sealed trait FileEvent extends ProjectScopedEvent {
+sealed trait FileEvent extends ScopedEvent {
 
   /**
     * @return
@@ -71,7 +72,7 @@ object FileEvent {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends FileEvent
@@ -102,7 +103,7 @@ object FileEvent {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends FileEvent
@@ -135,7 +136,7 @@ object FileEvent {
       mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends FileEvent
@@ -161,9 +162,9 @@ object FileEvent {
   final case class FileTagAdded(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends FileEvent
@@ -188,7 +189,7 @@ object FileEvent {
       id: Iri,
       project: ProjectRef,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends FileEvent
@@ -206,52 +207,69 @@ object FileEvent {
     * @param subject
     *   the subject creating this event
     */
-  final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Long, instant: Instant, subject: Subject)
+  final case class FileDeprecated(id: Iri, project: ProjectRef, rev: Int, instant: Instant, subject: Subject)
       extends FileEvent
 
-  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.files)
-
-  private val metadataKeys: Set[String] =
-    Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
-
   @nowarn("cat=unused")
-  implicit private val circeConfig: Configuration = Configuration.default
-    .withDiscriminator(keywords.tpe)
-    .copy(transformMemberNames = {
-      case "id"                                  => "_fileId"
-      case "subject"                             => nxv.eventSubject.prefix
-      case field if metadataKeys.contains(field) => s"_$field"
-      case other                                 => other
-    })
-
-  @nowarn("cat=unused")
-  implicit def fileEventEncoder(implicit baseUri: BaseUri, config: StorageTypeConfig): Encoder.AsObject[FileEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
-    implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
-
-    Encoder.encodeJsonObject.contramapObject { event =>
-      val storageAndType                    = event match {
-        case created: FileCreated => Some(created.storage -> created.storageType)
-        case updated: FileUpdated => Some(updated.storage -> updated.storageType)
-        case _                    => None
-      }
-      implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
-
-      val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
-        Json.obj(
-          keywords.id           -> storage.iri.asJson,
-          keywords.tpe          -> tpe.toString.asJson,
-          nxv.rev.prefix        -> storage.rev.asJson,
-          nxv.resourceId.prefix -> storage.iri.asJson
-        )
-      }
-      deriveConfiguredEncoder[FileEvent]
-        .encodeObject(event)
-        .remove("storage")
-        .remove("storageType")
-        .addIfExists("_storage", storageJsonOpt)
-        .add(nxv.resourceId.prefix, event.id.asJson)
-        .add(keywords.context, context.value)
-    }
+  val serializer: Serializer[Iri, FileEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration                        = Serializer.circeConfiguration
+    implicit val digestCodec: Codec.AsObject[Digest]                 =
+      deriveConfiguredCodec[Digest]
+    implicit val fileAttributesCodec: Codec.AsObject[FileAttributes] =
+      deriveConfiguredCodec[FileAttributes]
+    implicit val coder: Codec.AsObject[FileEvent]                    = deriveConfiguredCodec[FileEvent]
+    Serializer(_.id)
   }
+
+  def sseEncoder(implicit base: BaseUri, @nowarn("cat=unused") config: StorageTypeConfig): SseEncoder[FileEvent] =
+    new SseEncoder[FileEvent] {
+      override val databaseDecoder: Decoder[FileEvent] = serializer.codec
+
+      override def entityType: EntityType = Files.entityType
+
+      override val selectors: Set[Label] = Set(Label.unsafe("files"), resourcesSelector)
+
+      @nowarn("cat=unused")
+      override val sseEncoder: Encoder.AsObject[FileEvent] = {
+        val context                                         = ContextValue(Vocabulary.contexts.metadata, contexts.files)
+        val metadataKeys: Set[String]                       =
+          Set("subject", "types", "source", "project", "rev", "instant", "digest", "mediaType", "attributes", "bytes")
+        implicit val circeConfig: Configuration             = Configuration.default
+          .withDiscriminator(keywords.tpe)
+          .copy(transformMemberNames = {
+            case "id"                                  => "_fileId"
+            case "subject"                             => nxv.eventSubject.prefix
+            case field if metadataKeys.contains(field) => s"_$field"
+            case other                                 => other
+          })
+        implicit val subjectEncoder: Encoder[Subject]       = IriEncoder.jsonEncoder[Subject]
+        implicit val projectRefEncoder: Encoder[ProjectRef] = IriEncoder.jsonEncoder[ProjectRef]
+
+        Encoder.encodeJsonObject.contramapObject { event =>
+          val storageAndType                    = event match {
+            case created: FileCreated => Some(created.storage -> created.storageType)
+            case updated: FileUpdated => Some(updated.storage -> updated.storageType)
+            case _                    => None
+          }
+          implicit val storageType: StorageType = storageAndType.map(_._2).getOrElse(StorageType.DiskStorage)
+
+          val storageJsonOpt = storageAndType.map { case (storage, tpe) =>
+            Json.obj(
+              keywords.id           -> storage.iri.asJson,
+              keywords.tpe          -> tpe.toString.asJson,
+              nxv.rev.prefix        -> storage.rev.asJson,
+              nxv.resourceId.prefix -> storage.iri.asJson
+            )
+          }
+          deriveConfiguredEncoder[FileEvent]
+            .encodeObject(event)
+            .remove("storage")
+            .remove("storageType")
+            .addIfExists("_storage", storageJsonOpt)
+            .add(nxv.resourceId.prefix, event.id.asJson)
+            .add(keywords.context, context.value)
+        }
+      }
+    }
 }

@@ -88,7 +88,7 @@ class GraphAnalyticsIndexingStreamSpec(val docker: ElasticSearchDocker)
 //            resourceEvent(resource1, project, 2),
             otherEvent,
 //            resourceEvent(resource2, project, 1),
-            fileEvent(file1, project, 1L),
+//            fileEvent(file1, project, 1),
             otherEvent
 //            resourceEvent(resource1, project, 4),
 //            resourceEvent(resource2, project, 3)
@@ -192,7 +192,7 @@ class GraphAnalyticsIndexingStreamSpec(val docker: ElasticSearchDocker)
         Anonymous
       )
 
-  def fileEvent(id: Iri, project: ProjectRef, rev: Long): FileEvent = {
+  def fileEvent(id: Iri, project: ProjectRef, rev: Int): FileEvent = {
     val fileAttributes = FileAttributes(
       UUID.randomUUID(),
       "http://localhost/file.txt",

@@ -15,14 +15,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageValue
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.AkkaSourceHelpers
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageFileRejection.MoveFileRejection.FileNotFound
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.permissions.{read, write}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.remotestorage.RemoteStorageDocker
+import ch.epfl.bluebrain.nexus.testkit.{EitherValuable, IOValues}
 import io.circe.Json
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers

@@ -26,6 +26,12 @@ sealed trait FileCommand extends Product with Serializable {
   def id: Iri
 
   /**
+    * the last known revision of the file
+    * @return
+    */
+  def rev: Int
+
+  /**
     * @return
     *   the identity associated to this command
     */
@@ -57,7 +63,9 @@ object FileCommand {
       storageType: StorageType,
       attributes: FileAttributes,
       subject: Subject
-  ) extends FileCommand
+  ) extends FileCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command to update an existing file
@@ -81,7 +89,7 @@ object FileCommand {
       storage: ResourceRef.Revision,
       storageType: StorageType,
       attributes: FileAttributes,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends FileCommand
 
@@ -109,7 +117,7 @@ object FileCommand {
       mediaType: Option[ContentType],
       bytes: Long,
       digest: Digest,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends FileCommand
 
@@ -129,7 +137,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Long, tag: UserTag, rev: Long, subject: Subject)
+  final case class TagFile(id: Iri, project: ProjectRef, targetRev: Int, tag: UserTag, rev: Int, subject: Subject)
       extends FileCommand
 
   /**
@@ -146,7 +154,7 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: UserTag, rev: Long, subject: Subject)
+  final case class DeleteFileTag(id: Iri, project: ProjectRef, tag: UserTag, rev: Int, subject: Subject)
       extends FileCommand
 
   /**
@@ -161,5 +169,5 @@ object FileCommand {
     * @param subject
     *   the identity associated to this command
     */
-  final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Long, subject: Subject) extends FileCommand
+  final case class DeprecateFile(id: Iri, project: ProjectRef, rev: Int, subject: Subject) extends FileCommand
 }

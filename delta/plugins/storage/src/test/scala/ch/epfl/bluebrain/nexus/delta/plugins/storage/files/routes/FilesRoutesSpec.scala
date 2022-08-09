@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes
 
-import akka.actor.ActorSystem
+import akka.actor.typed
 import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges._
 import akka.http.scaladsl.model.MediaTypes.`text/html`
@@ -8,57 +8,44 @@ import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAut
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec.fileMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{permissions, FileFixtures, Files, FilesConfig}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageRejection, StorageType}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{permissions => storagesPermissions, StorageFixtures, Storages, StoragesConfig, StoragesStatisticsSetup}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingActionDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{Caller, ServiceAccount}
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.{RouteFixtures, RouteHelpers}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.{BaseRouteSpec, RouteFixtures}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.Json
+import monix.bio.IO
+import monix.execution.Scheduler
 import org.scalatest._
-import org.scalatest.matchers.should.Matchers
-import slick.jdbc.JdbcBackend
 
 @DoNotDiscover
-class FilesRoutesSpec
-    extends RouteHelpers
-    with Matchers
-    with CirceLiteral
-    with CirceEq
-    with IOFixedClock
-    with IOValues
-    with OptionValues
-    with TestMatchers
-    with Inspectors
-    with CancelAfterFailure
-    with RouteFixtures
-    with StorageFixtures
-    with ConfigFixtures
-    with BeforeAndAfterAll
-    with FileFixtures {
+class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with StorageFixtures with FileFixtures {
 
+  implicit private val sc: Scheduler                   = Scheduler.global
   import akka.actor.typed.scaladsl.adapter._
-  implicit val typedSystem = system.toTyped
-
-  override protected def createActorSystem(): ActorSystem =
-    ActorSystem("FilesRoutersSpec", AbstractDBSpec.config)
+  implicit val typedSystem: typed.ActorSystem[Nothing] = system.toTyped
+  implicit val httpClient: HttpClient                  = HttpClient()(httpClientConfig, system, sc)
 
   implicit private val caller = Caller(alice, Set(alice, Anonymous, Authenticated(realm), Group("group", realm)))
   private val identities      = IdentitiesDummy(caller)
@@ -85,13 +72,33 @@ class FilesRoutesSpec
 
   private val stCfg = config.copy(disk = config.disk.copy(defaultMaxFileSize = 1000, allowedVolumes = Set(path)))
 
-  private val aclCheck           = AclSimpleCheck().accepted
-  private val files: Files       = null
-  private val storages: Storages = null
-  private val groupDirectives    =
+  private val storageStatistics =
+    StoragesStatisticsSetup.init(Map.empty)
+
+  private val aclCheck        = AclSimpleCheck().accepted
+  lazy val storages: Storages = Storages(
+    fetchContext.mapRejection(StorageRejection.ProjectContextRejection),
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport())),
+    IO.pure(allowedPerms.toSet),
+    (_, _) => IO.unit,
+    crypto,
+    xas,
+    StoragesConfig(eventLogConfig, pagination, config),
+    ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
+  ).accepted
+  lazy val files: Files       = Files(
+    fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+    aclCheck,
+    storages,
+    storageStatistics,
+    xas,
+    config,
+    FilesConfig(eventLogConfig)
+  )
+  private val groupDirectives =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
 
-  private val routes             =
+  private lazy val routes     =
     Route.seal(FilesRoutes(stCfg, identities, aclCheck, files, groupDirectives, IndexingActionDummy()))
 
   private val diskIdRev = ResourceRef.Revision(dId, 1)
@@ -136,7 +143,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
       }
     }
 
@@ -160,14 +167,14 @@ class FilesRoutesSpec
     "reject the creation of a file which already exists" in {
       Put("/v1/files/org/proj/file1", entity()) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        response.asJson shouldEqual jsonContentOf("/file/errors/already-exists.json", "id" -> file1)
+        response.asJson shouldEqual jsonContentOf("/files/errors/already-exists.json", "id" -> file1)
       }
     }
 
     "reject the creation of a file that is too large" in {
       Put("/v1/files/org/proj/file-too-large", randomEntity(filename = "large-file.txt", 1100)) ~> routes ~> check {
         status shouldEqual StatusCodes.PayloadTooLarge
-        response.asJson shouldEqual jsonContentOf("/file/errors/file-too-large.json")
+        response.asJson shouldEqual jsonContentOf("/files/errors/file-too-large.json")
       }
     }
 
@@ -209,7 +216,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1?rev=3", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         response.asJson shouldEqual
-          jsonContentOf("file/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
+          jsonContentOf("files/errors/unsupported-operation.json", "id" -> file1, "storages" -> dId)
       }
     }
 
@@ -217,7 +224,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/myid10?rev=1", entity("other.txt")) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual
-          jsonContentOf("/file/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "org/proj")
+          jsonContentOf("/files/errors/not-found.json", "id" -> (nxv + "myid10"), "proj" -> "org/proj")
       }
     }
 
@@ -233,7 +240,7 @@ class FilesRoutesSpec
       Put("/v1/files/org/proj/file1?rev=10", entity("other.txt")) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/file/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
+          jsonContentOf("/files/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -263,7 +270,7 @@ class FilesRoutesSpec
     "reject the deprecation of a already deprecated file" in {
       Delete(s"/v1/files/org/proj/$uuid?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        response.asJson shouldEqual jsonContentOf("/file/errors/file-deprecated.json", "id" -> generatedId)
+        response.asJson shouldEqual jsonContentOf("/files/errors/file-deprecated.json", "id" -> generatedId)
       }
     }
 
@@ -445,19 +452,6 @@ class FilesRoutesSpec
       }
     }
   }
-
-  private var db: JdbcBackend.Database = null
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
 }
 
 object FilesRoutesSpec extends TestHelpers with RouteFixtures {
@@ -475,7 +469,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       label: Option[String] = None
   )(implicit baseUri: BaseUri): Json =
     jsonContentOf(
-      "file/file-route-metadata-response.json",
+      "files/file-route-metadata-response.json",
       "project"     -> ref,
       "id"          -> id,
       "rev"         -> rev,

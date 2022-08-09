@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Decoder
@@ -99,7 +99,7 @@ final class FilesRoutes(
                     operationName(s"$prefixSegment/files/{org}/{project}/{id}") {
                       concat(
                         (put & pathEndOrSingleSlash) {
-                          parameters("rev".as[Long].?, "storage".as[IdSegment].?) {
+                          parameters("rev".as[Int].?, "storage".as[IdSegment].?) {
                             case (None, storage)      =>
                               concat(
                                 // Link a file with id segment
@@ -134,7 +134,7 @@ final class FilesRoutes(
                           }
                         },
                         // Deprecate a file
-                        (delete & parameter("rev".as[Long])) { rev =>
+                        (delete & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
                             emit(files.deprecate(id, ref, rev).tapEval(index(ref, _, mode)).rejectOn[FileNotFound])
                           }
@@ -155,18 +155,18 @@ final class FilesRoutes(
                       concat(
                         // Fetch a file tags
                         (get & idSegmentRef(id) & pathEndOrSingleSlash & authorizeFor(ref, Read)) { id =>
-                          emit(fetchMetadata(id, ref).map(res => Tags(res.value.tags)).rejectOn[FileNotFound])
+                          emit(fetchMetadata(id, ref).map(_.value.tags).rejectOn[FileNotFound])
                         },
                         // Tag a file
-                        (post & parameter("rev".as[Long]) & pathEndOrSingleSlash) { rev =>
+                        (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
+                              emit(Created, files.tag(id, ref, tag, tagRev.toInt, rev).tapEval(index(ref, _, mode)))
                             }
                           }
                         },
                         // Delete a tag
-                        (tagLabel & delete & parameter("rev".as[Long]) & pathEndOrSingleSlash & authorizeFor(
+                        (tagLabel & delete & parameter("rev".as[Int]) & pathEndOrSingleSlash & authorizeFor(
                           ref,
                           Write
                         )) { (tag, rev) =>
