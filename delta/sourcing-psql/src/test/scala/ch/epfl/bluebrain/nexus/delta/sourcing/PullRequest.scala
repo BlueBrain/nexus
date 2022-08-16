@@ -119,8 +119,8 @@ object PullRequest {
   sealed trait PullRequestRejection extends Product with Serializable
 
   object PullRequestRejection {
-    final case object NotFound                 extends PullRequestRejection
-    final case object TagNotFound                 extends PullRequestRejection
+    final case object NotFound                                                extends PullRequestRejection
+    final case object TagNotFound                                             extends PullRequestRejection
     final case class RevisionNotFound(provided: Int, current: Int)            extends PullRequestRejection
     final case class AlreadyExists(id: Label, project: ProjectRef)            extends PullRequestRejection
     final case class PullRequestAlreadyClosed(id: Label, project: ProjectRef) extends PullRequestRejection

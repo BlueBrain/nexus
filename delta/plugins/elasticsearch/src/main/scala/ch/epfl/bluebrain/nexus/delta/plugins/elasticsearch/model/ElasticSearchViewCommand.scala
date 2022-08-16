@@ -25,6 +25,12 @@ sealed trait ElasticSearchViewCommand extends Product with Serializable {
 
   /**
     * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
+
+  /**
+    * @return
     *   the identity associated with this command
     */
   def subject: Subject
@@ -52,7 +58,9 @@ object ElasticSearchViewCommand {
       value: ElasticSearchViewValue,
       source: Json,
       subject: Subject
-  ) extends ElasticSearchViewCommand
+  ) extends ElasticSearchViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of an ElasticSearch view.
@@ -73,7 +81,7 @@ object ElasticSearchViewCommand {
   final case class UpdateElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       value: ElasticSearchViewValue,
       source: Json,
       subject: Subject
@@ -94,7 +102,7 @@ object ElasticSearchViewCommand {
   final case class DeprecateElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ElasticSearchViewCommand
 
@@ -117,9 +125,9 @@ object ElasticSearchViewCommand {
   final case class TagElasticSearchView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends ElasticSearchViewCommand
 }

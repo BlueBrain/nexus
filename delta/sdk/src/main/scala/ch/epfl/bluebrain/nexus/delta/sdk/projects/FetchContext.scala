@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.{Encoder, JsonObject}
-import monix.bio.IO
+import monix.bio.{IO, UIO}
+
+import scala.collection.concurrent
 
 /**
   * Define the rules to fetch project context for read and write operations
@@ -49,6 +51,25 @@ trait FetchContext[R] { self =>
     *   the current user
     */
   def onModify(ref: ProjectRef)(implicit subject: Subject): IO[R, ProjectContext]
+
+  /**
+    * Cache onRead operations to avoid unnecessary queries during batch operations like listings
+    * @return
+    *   a new instance caching onRead calls
+    */
+  def cacheOnReads: FetchContext[R] = new FetchContext[R] {
+
+    private val cache: concurrent.Map[ProjectRef, ProjectContext] = new concurrent.TrieMap
+
+    override def defaultApiMappings: ApiMappings = self.defaultApiMappings
+
+    override def onRead(ref: ProjectRef): IO[R, ProjectContext] =
+      IO.fromOption(cache.get(ref)).onErrorFallbackTo(self.onRead(ref).tapEval { pc => UIO.delay(cache.put(ref, pc)) })
+
+    override def onCreate(ref: ProjectRef)(implicit subject: Subject): IO[R, ProjectContext] = self.onCreate(ref)
+
+    override def onModify(ref: ProjectRef)(implicit subject: Subject): IO[R, ProjectContext] = self.onCreate(ref)
+  }
 
   /**
     * Map the rejection to another one

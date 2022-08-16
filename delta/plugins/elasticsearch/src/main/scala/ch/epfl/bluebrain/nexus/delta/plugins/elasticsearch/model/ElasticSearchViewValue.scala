@@ -24,7 +24,10 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     */
   def tpe: ElasticSearchViewType
 
-  def toJson(iri: Iri): Json = this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
+  def toJson(iri: Iri): Json = {
+    import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
+    this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
+  }
 
 }
 
@@ -78,21 +81,24 @@ object ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.AggregateElasticSearch
   }
 
-  @nowarn("cat=unused")
-  implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
-    import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
-    implicit val config: Configuration = Configuration(
-      transformMemberNames = identity,
-      transformConstructorNames = {
-        case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
-        case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
-        case other                             => other
-      },
-      useDefaults = false,
-      discriminator = Some(keywords.tpe),
-      strictDecoding = false
-    )
-    deriveConfiguredEncoder[ElasticSearchViewValue]
+  object Source {
+    @nowarn("cat=unused")
+    implicit final val elasticSearchViewValueEncoder: Encoder.AsObject[ElasticSearchViewValue] = {
+      import io.circe.generic.extras.Configuration
+      import io.circe.generic.extras.semiauto._
+      implicit val config: Configuration = Configuration(
+        transformMemberNames = identity,
+        transformConstructorNames = {
+          case "IndexingElasticSearchViewValue"  => ElasticSearchViewType.ElasticSearch.toString
+          case "AggregateElasticSearchViewValue" => ElasticSearchViewType.AggregateElasticSearch.toString
+          case other                             => other
+        },
+        useDefaults = false,
+        discriminator = Some(keywords.tpe),
+        strictDecoding = false
+      )
+      deriveConfiguredEncoder[ElasticSearchViewValue]
+    }
   }
+
 }

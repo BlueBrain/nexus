@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution.logger
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverResolution.ResourceResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
@@ -71,6 +72,14 @@ final class ResolverContextResolution(
 object ResolverContextResolution {
 
   private val logger: Logger = Logger[ResolverContextResolution]
+
+  /**
+    * Constructs a [[ResolverContextResolution]] that will only resolve static resources
+    * @param rcr
+    *   a previously defined 'RemoteContextResolution'
+    */
+  def apply(rcr: RemoteContextResolution): ResolverContextResolution =
+    new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
 
   /**
     * Constructs a [[ResolverContextResolution]]

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.http.scaladsl.model.Uri
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.ElasticSearchViewCache
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView, FetchViews}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
@@ -13,12 +12,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => Proje
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.IndexedVisitedView
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
@@ -180,9 +178,9 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     visitor: ViewRefVisitor[ElasticSearchViewRejection],
     aclCheck: AclCheck,
     fetchContext: FetchContext[ElasticSearchViewRejection],
-    client: ElasticSearchClient
-)(implicit config: ExternalIndexingConfig)
-    extends ElasticSearchViewsQuery {
+    client: ElasticSearchClient,
+    prefix: String
+) extends ElasticSearchViewsQuery {
 
   override def list(
       pagination: Pagination,
@@ -227,7 +225,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       accessibleIndices <- aclCheck.mapFilter[IndexingViewResource, String](
                              views,
                              v => ProjectAcl(v.value.project) -> permissions.read,
-                             v => ElasticSearchViews.index(v, config)
+                             v => ElasticSearchViews.index(v, prefix)
                            )
       search            <- client
                              .search(params, accessibleIndices, Uri.Query.Empty)(pagination, sort)
@@ -260,7 +258,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       schemeRef      <- expandResourceRef(schema, projectContext)
       p               = params.withSchema(schemeRef)
       search         <- client
-                          .search(p, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
+                          .search(p, ElasticSearchViews.index(view, prefix), Uri.Query.Empty)(pagination, sort)
                           .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -273,7 +271,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     for {
       view   <- fetchDefaultView(project)
       search <- client
-                  .search(params, ElasticSearchViews.index(view, config), Uri.Query.Empty)(pagination, sort)
+                  .search(params, ElasticSearchViews.index(view, prefix), Uri.Query.Empty)(pagination, sort)
                   .mapError(WrappedElasticSearchClientError)
     } yield search
 
@@ -289,7 +287,7 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
           for {
             _      <- aclCheck.authorizeForOr(v.project, v.permission)(AuthorizationFailed)
             _      <- IO.raiseWhen(view.deprecated)(ViewIsDeprecated(v.id))
-            index   = ElasticSearchViews.index(view.as(v), config)
+            index   = ElasticSearchViews.index(view.as(v), prefix)
             search <- client.search(query, Set(index), qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
           } yield search
         case v: AggregateElasticSearchView =>
@@ -339,22 +337,17 @@ object ElasticSearchViewsQuery {
       aclCheck: AclCheck,
       fetchContext: FetchContext[ElasticSearchViewRejection],
       views: ElasticSearchViews,
-      cache: ElasticSearchViewCache,
-      client: ElasticSearchClient
-  )(implicit
-      config: ExternalIndexingConfig
+      client: ElasticSearchClient,
+      prefix: String
   ): ElasticSearchViewsQuery =
     new ElasticSearchViewsQueryImpl(
-      () =>
-        cache.values.map(_.collect {
-          case r @ ResourceF(`defaultViewId`, _, _, _, _, _, _, _, _, _, v: IndexingElasticSearchView) =>
-            r.as(v)
-        }),
+      () => UIO.pure(Seq.empty),
       views.fetchIndexingView(defaultViewId, _),
       views.fetch,
-      ElasticSearchViewRefVisitor(views, config),
+      ElasticSearchViewRefVisitor(views, prefix),
       aclCheck,
       fetchContext,
-      client
+      client,
+      prefix
     )
 }

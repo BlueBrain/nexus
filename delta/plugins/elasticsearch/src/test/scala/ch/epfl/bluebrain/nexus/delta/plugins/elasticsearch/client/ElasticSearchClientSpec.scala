@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.ScoredResultEn
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.ScoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, Sort, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.JsonObject
@@ -30,7 +29,6 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     with AnyWordSpecLike
     with Matchers
     with ElasticSearchClientSetup
-    with ConfigFixtures
     with EitherValuable
     with CirceLiteral
     with TestHelpers

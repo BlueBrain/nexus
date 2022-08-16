@@ -26,8 +26,8 @@ sealed trait ResourceCommand extends Product with Serializable {
   def id: Iri
 
   /**
-    * the last known revision of the resource
     * @return
+    *   the last known revision of the resource
     */
   def rev: Int
 

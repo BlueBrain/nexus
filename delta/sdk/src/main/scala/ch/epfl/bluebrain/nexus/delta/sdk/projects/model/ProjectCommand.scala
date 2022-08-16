@@ -15,8 +15,8 @@ sealed trait ProjectCommand extends Product with Serializable {
   def ref: ProjectRef
 
   /**
-    * the last known revision of the project
     * @return
+    *   the last known revision of the project
     */
   def rev: Int
 

@@ -115,7 +115,11 @@ object ScopedEventStore {
         }
       }
 
-      private def events(predicate: Predicate,offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
+      private def events(
+          predicate: Predicate,
+          offset: Offset,
+          strategy: RefreshStrategy
+      ): Stream[Task, Envelope[Id, E]] =
         Envelope.stream(
           offset,
           (o: Offset) =>
@@ -127,9 +131,11 @@ object ScopedEventStore {
           xas
         )
 
-      override def currentEvents(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] = events(predicate, offset, RefreshStrategy.Stop)
+      override def currentEvents(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] =
+        events(predicate, offset, RefreshStrategy.Stop)
 
-      override def events(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] = events(predicate, offset, config.refreshInterval)
+      override def events(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] =
+        events(predicate, offset, config.refreshInterval)
 
     }
 }

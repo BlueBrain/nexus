@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -123,7 +123,7 @@ final class ElasticSearchViewsRoutes(
                       // Create or update an elasticsearch view
                       put {
                         authorizeFor(ref, Write).apply {
-                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create an elasticsearch view with id segment
                               emit(
@@ -147,7 +147,7 @@ final class ElasticSearchViewsRoutes(
                         }
                       },
                       // Deprecate an elasticsearch view
-                      (delete & parameter("rev".as[Long])) { rev =>
+                      (delete & parameter("rev".as[Int])) { rev =>
                         authorizeFor(ref, Write).apply {
                           emit(
                             views
@@ -231,16 +231,16 @@ final class ElasticSearchViewsRoutes(
                     concat(
                       // Fetch an elasticsearch view tags
                       (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                        emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
+                        emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
                       },
                       // Tag an elasticsearch view
-                      (post & parameter("rev".as[Long])) { rev =>
+                      (post & parameter("rev".as[Int])) { rev =>
                         authorizeFor(ref, Write).apply {
                           entity(as[Tag]) { case Tag(tagRev, tag) =>
                             emit(
                               Created,
                               views
-                                .tag(id, ref, tag, tagRev, rev)
+                                .tag(id, ref, tag, tagRev.toInt, rev)
                                 .tapEval(index(ref, _, mode))
                                 .mapValue(_.metadata)
                                 .rejectWhen(decodingFailedOrViewNotFound)

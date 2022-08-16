@@ -154,20 +154,21 @@ trait ScopedStateStore[Id, S <: ScopedState] {
 
 object ScopedStateStore {
 
-  private[sourcing] sealed trait StateNotFound extends Product with Serializable
+  sealed private[sourcing] trait StateNotFound extends Product with Serializable
 
   private[sourcing] object StateNotFound {
-    sealed trait UnknownState extends StateNotFound
+    sealed trait UnknownState      extends StateNotFound
     final case object UnknownState extends UnknownState
-    sealed trait TagNotFound extends StateNotFound
-    final case object TagNotFound extends TagNotFound
+    sealed trait TagNotFound       extends StateNotFound
+    final case object TagNotFound  extends TagNotFound
   }
 
   def apply[Id, S <: ScopedState](
-                                   tpe: EntityType,
-                                   serializer: Serializer[Id, S],
-                                   config: QueryConfig,
-                                   xas: Transactors)(implicit getId: Get[Id], putId: Put[Id]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
+      tpe: EntityType,
+      serializer: Serializer[Id, S],
+      config: QueryConfig,
+      xas: Transactors
+  )(implicit getId: Get[Id], putId: Put[Id]): ScopedStateStore[Id, S] = new ScopedStateStore[Id, S] {
 
     import serializer._
 
@@ -186,6 +187,7 @@ object ScopedStateStore {
                       |  tag,
                       |  rev,
                       |  value,
+                      |  deprecated,
                       |  instant
                       | )
                       | VALUES (
@@ -196,6 +198,7 @@ object ScopedStateStore {
                       |  $tag,
                       |  ${state.rev},
                       |  ${state.asJson},
+                      |  ${state.deprecated},
                       |  ${state.updatedAt}
                       | )
             """.stripMargin) { _ =>
@@ -203,6 +206,7 @@ object ScopedStateStore {
                  | UPDATE scoped_states SET
                  |  rev = ${state.rev},
                  |  value = ${state.asJson},
+                 |  deprecated = ${state.deprecated},
                  |  instant = ${state.updatedAt},
                  |  ordering = (select nextval('scoped_states_ordering_seq'))
                  | WHERE
@@ -226,29 +230,33 @@ object ScopedStateStore {
 
     private def exists(ref: ProjectRef, id: Id): ConnectionIO[Boolean] =
       sql"""SELECT id FROM scoped_states WHERE type = $tpe AND org = ${ref.organization} AND project = ${ref.project} AND id = $id LIMIT 1"""
-        .query[Id].option.map(_.isDefined)
+        .query[Id]
+        .option
+        .map(_.isDefined)
 
     override def get(ref: ProjectRef, id: Id): IO[UnknownState, S] =
-      getValue(ref, id, Latest).transact(xas.read)
-        .hideErrors.flatMap {
+      getValue(ref, id, Latest).transact(xas.read).hideErrors.flatMap {
         case Some(json) => IO.fromEither(json.as[S]).hideErrors
         case None       => IO.raiseError(UnknownState)
       }
 
-    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S] =
-      {
-        for {
-          value <- getValue(ref, id, tag)
-          exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
-        } yield value -> exists
-      }.transact(xas.read)
-        .hideErrors.flatMap {
-        case (Some(json), _) => IO.fromEither(json.as[S]).hideErrors
-        case (None, true) => IO.raiseError(TagNotFound)
-        case (None, false) => IO.raiseError(UnknownState)
-      }
+    override def get(ref: ProjectRef, id: Id, tag: Tag): IO[StateNotFound, S] = {
+      for {
+        value  <- getValue(ref, id, tag)
+        exists <- value.fold(exists(ref, id))(_ => true.pure[ConnectionIO])
+      } yield value -> exists
+    }.transact(xas.read).hideErrors.flatMap {
+      case (Some(json), _) => IO.fromEither(json.as[S]).hideErrors
+      case (None, true)    => IO.raiseError(TagNotFound)
+      case (None, false)   => IO.raiseError(UnknownState)
+    }
 
-    private def states(predicate: Predicate, tag: Tag, offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
+    private def states(
+        predicate: Predicate,
+        tag: Tag,
+        offset: Offset,
+        strategy: RefreshStrategy
+    ): EnvelopeStream[Id, S] =
       Envelope.stream(
         offset,
         (o: Offset) =>
@@ -260,9 +268,11 @@ object ScopedStateStore {
         xas
       )
 
-    override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] = states(predicate, tag, offset, RefreshStrategy.Stop)
+    override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
+      states(predicate, tag, offset, RefreshStrategy.Stop)
 
-    override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] = states(predicate, tag, offset, config.refreshInterval)
+    override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
+      states(predicate, tag, offset, config.refreshInterval)
   }
 
 }

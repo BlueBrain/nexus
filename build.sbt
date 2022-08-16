@@ -525,8 +525,7 @@ lazy val elasticsearchPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk        % "provided;test->test",
-    sdkViews   % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdkViews   % "provided;test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
@@ -653,7 +652,7 @@ lazy val storagePlugin = project
   .in(file("delta/plugins/storage"))
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk     % "provided->compile;test->test",
+    sdk     % "provided;test->test",
     testkit % "test->compile"
   )
   .settings(

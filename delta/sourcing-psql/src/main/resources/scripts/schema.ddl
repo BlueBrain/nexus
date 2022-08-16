@@ -53,14 +53,15 @@ CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events US
 --
 CREATE TABLE IF NOT EXISTS public.scoped_states(
     ordering BIGSERIAL,
-    type     text         NOT NULL,
-    org      text         NOT NULL,
-    project  text         NOT NULL,
-    id       text         NOT NULL,
-    tag      text         NOT NULL,
-    rev      integer      NOT NULL,
-    value    JSONB        NOT NULL,
-    instant  timestamptz  NOT NULL,
+    type       text         NOT NULL,
+    org        text         NOT NULL,
+    project    text         NOT NULL,
+    id         text         NOT NULL,
+    tag        text         NOT NULL,
+    rev        integer      NOT NULL,
+    value      JSONB        NOT NULL,
+    deprecated boolean      NOT NULL,
+    instant    timestamptz  NOT NULL,
     PRIMARY KEY(type, org, project, tag, id),
     UNIQUE (org, project, tag, id)
 );
