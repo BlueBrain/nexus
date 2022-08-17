@@ -1,20 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewState, ElasticSearchViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
-import org.scalatest.OptionValues
 
 import java.time.Instant
 import java.util.UUID
 
-object ElasticSearchViewGen extends OptionValues {
+object ElasticSearchViewGen {
 
   def resourceFor(
       id: Iri,
@@ -22,15 +20,27 @@ object ElasticSearchViewGen extends OptionValues {
       value: ElasticSearchViewValue,
       uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
-      tags: Map[UserTag, Long] = Map.empty,
+      tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): ViewResource =
-    Current(id, project, uuid, value, source, tags, rev, deprecated, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
+    ElasticSearchViewState(
+      id,
+      project,
+      uuid,
+      value,
+      source,
+      tags,
+      rev,
+      deprecated,
+      Instant.EPOCH,
+      createdBy,
+      Instant.EPOCH,
+      updatedBy
+    )
       .toResource(am, ProjectBase.unsafe(base), JsonObject.empty, JsonObject.empty)
-      .value
 }

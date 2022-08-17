@@ -6,16 +6,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, defaultViewId, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, SourceAsText}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
-import monix.execution.Scheduler
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
@@ -23,19 +23,19 @@ import org.scalatest.{Inspectors, OptionValues}
 import java.util.UUID
 
 class ElasticSearchScopeInitializationSpec
-    extends AbstractDBSpec
+    extends DoobieScalaTestFixture
     with AnyWordSpecLike
     with Matchers
     with Inspectors
     with IOValues
     with OptionValues
+    with EitherValuable
     with TestHelpers
     with ConfigFixtures
     with Fixtures {
 
-  private val uuid                   = UUID.randomUUID()
-  implicit private val uuidF: UUIDF  = UUIDF.fixed(uuid)
-  implicit private val sc: Scheduler = Scheduler.global
+  private val uuid                  = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   private val saRealm: Label              = Label.unsafe("service-accounts")
   private val usersRealm: Label           = Label.unsafe("users")
@@ -55,11 +55,16 @@ class ElasticSearchScopeInitializationSpec
     ProjectContextRejection
   )
 
-  private val views: ElasticSearchViews =
-    ElasticSearchViewsSetup.init(fetchContext, queryPermissions)
+  private lazy val views: ElasticSearchViews = ElasticSearchViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    eventLogConfig,
+    xas
+  ).accepted
 
   "An ElasticSearchScopeInitialization" should {
-    val init = new ElasticSearchScopeInitialization(views, sa)
+    lazy val init = new ElasticSearchScopeInitialization(views, sa)
 
     "create a default ElasticSearchView on a newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]

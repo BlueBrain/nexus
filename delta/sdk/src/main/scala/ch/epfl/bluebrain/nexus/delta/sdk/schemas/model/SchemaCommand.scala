@@ -26,8 +26,8 @@ sealed trait SchemaCommand extends Product with Serializable {
   def id: Iri
 
   /**
-    * the last known revision of the schema
     * @return
+    *   the last known revision of the schema
     */
   def rev: Int
 

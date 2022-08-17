@@ -3,12 +3,10 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.kernel.CacheIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
@@ -26,16 +24,12 @@ import scala.concurrent.duration._
   *   the credentials to authenticate to the Elasticsearch endpoint
   * @param client
   *   configuration of the Elasticsearch client
-  * @param aggregate
-  *   configuration of the underlying aggregate
-  * @param keyValueStore
-  *   configuration of the underlying key/value store
+  * @param eventLog
+  *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
-  * @param cacheIndexing
-  *   configuration of the cache indexing process
-  * @param indexing
-  *   configuration of the external indexing process
+  * @param prefix
+  *   prefix for indices
   * @param maxViewRefs
   *   configuration of the maximum number of view references allowed on an aggregated view
   * @param idleTimeout
@@ -49,11 +43,9 @@ final case class ElasticSearchViewsConfig(
     base: Uri,
     credentials: Option[BasicHttpCredentials],
     client: HttpClientConfig,
-    aggregate: AggregateConfig,
-    keyValueStore: KeyValueStoreConfig,
+    eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig,
-    indexing: ExternalIndexingConfig,
+    prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,

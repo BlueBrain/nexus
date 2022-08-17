@@ -25,8 +25,8 @@ sealed trait ResolverCommand extends Product with Serializable {
   def id: Iri
 
   /**
-    * the last known revision of the resource
     * @return
+    *   the last known revision of the resolver
     */
   def rev: Int
 

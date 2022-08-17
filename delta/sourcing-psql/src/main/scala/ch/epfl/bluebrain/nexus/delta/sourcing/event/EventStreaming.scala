@@ -12,20 +12,18 @@ import doobie.implicits._
 
 object EventStreaming {
 
-  def fetchAll[A](predicate: Predicate,
-                  types: List[EntityType],
-                  offset: Offset,
-                  config: QueryConfig,
-                  xas: Transactors)(implicit md: MultiDecoder[A]): EnvelopeStream[String, A] = {
-    val nel = NonEmptyList.fromList(types)
+  def fetchAll[A](predicate: Predicate, types: List[EntityType], offset: Offset, config: QueryConfig, xas: Transactors)(
+      implicit md: MultiDecoder[A]
+  ): EnvelopeStream[String, A] = {
+    val nel                     = NonEmptyList.fromList(types)
     def globalEvents(o: Offset) =
       fr"SELECT type, id, value, rev, instant, ordering FROM global_events" ++
-        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types)}, o.asFragment) ++
+        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types) }, o.asFragment) ++
         fr"ORDER BY ordering" ++
         fr"LIMIT ${config.batchSize}"
     def scopedEvents(o: Offset) =
       fr"SELECT type, id, value, rev, instant, ordering FROM scoped_events" ++
-        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types)}, predicate.asFragment, o.asFragment) ++
+        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types) }, predicate.asFragment, o.asFragment) ++
         fr"ORDER BY ordering" ++
         fr"LIMIT ${config.batchSize}"
 
@@ -37,9 +35,8 @@ object EventStreaming {
             fr"(${globalEvents(o)}) UNION ALL (${scopedEvents(o)})" ++
               fr"ORDER BY ordering" ++
               fr"LIMIT ${config.batchSize}"
-          case _ => scopedEvents(o)
-        }
-        ,
+          case _    => scopedEvents(o)
+        },
       config.refreshInterval,
       xas
     )

@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
@@ -30,12 +31,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResult
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -46,7 +45,7 @@ import monix.bio.{IO, UIO}
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -62,16 +61,17 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     with CancelAfterFailure
     with Inspectors
     with ElasticSearchClientSetup
+    with OptionValues
     with ConfigFixtures
     with IOValues
     with Eventually
     with Fixtures {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  private val page = FromPagination(0, 100)
+  private val prefix = "prefix"
+  private val page   = FromPagination(0, 100)
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -203,7 +203,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     val visitor = new ViewRefVisitor(fetch(_, _).map { view =>
       view.value match {
         case v: IndexingElasticSearchView  =>
-          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, index(v.uuid, view.rev, externalConfig))
+          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, index(v.uuid, view.rev.toInt, prefix))
         case v: AggregateElasticSearchView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
       }
     })
@@ -215,12 +215,13 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       visitor,
       aclCheck,
       fetchContext,
-      esClient
+      esClient,
+      prefix
     )
 
     "index documents" in {
       val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
-        val index   = IndexLabel.unsafe(ElasticSearchViews.index(v, externalConfig))
+        val index   = IndexLabel.unsafe(ElasticSearchViews.index(v, prefix))
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(v).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

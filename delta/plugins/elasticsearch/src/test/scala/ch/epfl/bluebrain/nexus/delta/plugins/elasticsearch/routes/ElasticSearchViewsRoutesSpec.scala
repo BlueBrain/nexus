@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.MediaTypes.{`text/event-stream`, `text/html`}
-import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept, Location, OAuth2BearerToken}
+import akka.http.scaladsl.model.MediaTypes.`text/html`
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
@@ -11,14 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViewsSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts.search
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -35,8 +33,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectStatistics}
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
@@ -44,17 +44,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, Project
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
+import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
-import slick.jdbc.JdbcBackend
 
 import java.time.Instant
 import java.util.UUID
 
 class ElasticSearchViewsRoutesSpec
     extends RouteHelpers
+    with DoobieScalaTestFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -71,9 +71,6 @@ class ElasticSearchViewsRoutesSpec
 
   import akka.actor.typed.scaladsl.adapter._
   implicit val typedSystem = system.toTyped
-
-  override protected def createActorSystem(): ActorSystem =
-    ActorSystem("ElasticSearchRoutersSpec", AbstractDBSpec.config)
 
   private val uuid                  = UUID.randomUUID()
   implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
@@ -131,12 +128,8 @@ class ElasticSearchViewsRoutesSpec
     ProjectContextRejection
   )
 
-  private val views = ElasticSearchViewsSetup.init(fetchContext, allowedPerms)
-
   private val now       = Instant.now()
   private val nowMinus5 = now.minusSeconds(5)
-
-  private val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
   var restartedView: Option[(ProjectRef, Iri)] = None
 
@@ -153,10 +146,27 @@ class ElasticSearchViewsRoutesSpec
     )
   )
 
-  private val aclCheck        = AclSimpleCheck().accepted
-  private val groupDirectives =
+  private val aclCheck                       = AclSimpleCheck().accepted
+  private val groupDirectives                =
     DeltaSchemeDirectives(fetchContext, ioFromMap(uuid -> projectRef.organization), ioFromMap(uuid -> projectRef))
-  private lazy val routes     =
+
+  private lazy val views: ElasticSearchViews = ElasticSearchViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    ValidateElasticSearchView(
+      PipeConfig.coreConfig.rightValue,
+      UIO.pure(allowedPerms),
+      (_, _, _) => IO.unit,
+      "prefix",
+      xas
+    ),
+    eventLogConfig,
+    xas
+  ).accepted
+
+  private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
+
+  private lazy val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
         identities,
@@ -564,36 +574,6 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    "fail to get the events stream without events/read permission" in {
-      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-
-      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-      }
-
-      Get("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.Forbidden
-        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
-      }
-    }
-
-    "get the events stream" in {
-      aclCheck.append(AclAddress.Root, Anonymous -> Set(events.read)).accepted
-      val endpoints = List("/v1/views/events", "/v1/views/myorg/events", "/v1/views/myorg/myproject/events")
-      forAll(endpoints) { endpoint =>
-        Get(endpoint) ~> `Last-Event-ID`("0") ~> routes ~> check {
-          mediaType shouldBe `text/event-stream`
-          response.asString.strip shouldEqual contentOf("/routes/eventstream-0-2.txt", "uuid" -> uuid).strip
-        }
-      }
-    }
-
-    "check access to SSEs" in {
-      Head("/v1/views/myorg/myproject/events") ~> routes ~> check {
-        response.status shouldEqual StatusCodes.OK
-      }
-    }
-
     "redirect to fusion for the latest version if the Accept header is set to text/html" in {
       Get("/v1/views/myorg/myproject/myid") ~> Accept(`text/html`) ~> routes ~> check {
         response.status shouldEqual StatusCodes.SeeOther
@@ -646,17 +626,4 @@ class ElasticSearchViewsRoutesSpec
 
   private def lastSegment(iri: Iri) =
     iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
-
-  private var db: JdbcBackend.Database = null
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
 }

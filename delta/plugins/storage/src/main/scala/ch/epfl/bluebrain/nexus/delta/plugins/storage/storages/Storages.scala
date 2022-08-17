@@ -314,7 +314,7 @@ final class Storages private (
     val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
     SearchResults(
       log.currentStates(predicate, identity(_)).evalMapFilter[Task, StorageResource] { state =>
-        fetchContext
+        fetchContext.cacheOnReads
           .onRead(state.project)
           .redeemWith(
             _ => UIO.none,

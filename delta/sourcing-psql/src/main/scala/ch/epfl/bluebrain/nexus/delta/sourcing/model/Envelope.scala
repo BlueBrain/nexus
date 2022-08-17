@@ -82,9 +82,10 @@ object Envelope {
       }
     }
 
-  def multipleStream[Id, Value](offset: Offset, query: Offset => Fragment, strategy: RefreshStrategy, xas: Transactors)(implicit
-                                                                                                                @nowarn("cat=unused") get: Get[Id],
-                                                                                                                multiDecoder: MultiDecoder[Value]
+  def multipleStream[Id, Value](offset: Offset, query: Offset => Fragment, strategy: RefreshStrategy, xas: Transactors)(
+      implicit
+      @nowarn("cat=unused") get: Get[Id],
+      multiDecoder: MultiDecoder[Value]
   ): EnvelopeStream[Id, Value] =
     Stream.unfoldChunkEval[Task, Offset, Envelope[Id, Value]](offset) { currentOffset =>
       query(currentOffset).query[(EntityType, Id, Json, Int, Instant, Long)].to[List].transact(xas.streaming).flatMap {

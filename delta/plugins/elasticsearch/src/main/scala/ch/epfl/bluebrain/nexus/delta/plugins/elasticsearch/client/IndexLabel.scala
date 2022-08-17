@@ -79,6 +79,6 @@ object IndexLabel {
     * @param rev
     *   the view revision
     */
-  final def fromView(prefix: String, uuid: UUID, rev: Long): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
+  final def fromView(prefix: String, uuid: UUID, rev: Int): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
 
 }

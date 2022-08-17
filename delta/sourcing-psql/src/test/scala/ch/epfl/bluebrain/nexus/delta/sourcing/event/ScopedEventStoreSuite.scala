@@ -53,7 +53,6 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val envelope5 = Envelope(PullRequest.entityType, id1, 1, event5, Instant.EPOCH, Offset.at(5L))
   private val envelope6 = Envelope(PullRequest.entityType, id3, 1, event6, Instant.EPOCH, Offset.at(6L))
 
-
   private def assertCount = sql"select count(*) from scoped_events".query[Int].unique.transact(xas.read).assert(6)
 
   test("Save events") {
@@ -86,7 +85,9 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   }
 
   test("Fetch all current events from the beginning") {
-    store.currentEvents(Predicate.Root, Offset.Start).assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
+    store
+      .currentEvents(Predicate.Root, Offset.Start)
+      .assert(envelope1, envelope2, envelope3, envelope4, envelope5, envelope6)
   }
 
   test("Fetch current events for `org` from offset 2") {
@@ -108,6 +109,5 @@ class ScopedEventStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   test(s"Fetch current events for `$project1` from the beginning") {
     store.events(Predicate.Project(project1), Offset.Start).assert(envelope1, envelope2, envelope3, envelope4)
   }
-
 
 }

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.store
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, PullRequest}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Predicate, PullRequest}
 import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
 import doobie.implicits._
 
@@ -50,12 +50,12 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
   private val state3 = PullRequestActive(id1, project2, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val state4 = PullRequestActive(id4, project3, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
 
-  private val envelope1 = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(1L))
-  private val envelope2 = Envelope(PullRequest.entityType, id2, 1, state2, Instant.EPOCH, Offset.at(2L))
-  private val envelope3 = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(3L))
-  private val envelope4 = Envelope(PullRequest.entityType, id4, 1, state4, Instant.EPOCH, Offset.at(4L))
-  private val envelope1Tagged = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(5L))
-  private val envelope3Tagged = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(6L))
+  private val envelope1        = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(1L))
+  private val envelope2        = Envelope(PullRequest.entityType, id2, 1, state2, Instant.EPOCH, Offset.at(2L))
+  private val envelope3        = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(3L))
+  private val envelope4        = Envelope(PullRequest.entityType, id4, 1, state4, Instant.EPOCH, Offset.at(4L))
+  private val envelope1Tagged  = Envelope(PullRequest.entityType, id1, 1, state1, Instant.EPOCH, Offset.at(5L))
+  private val envelope3Tagged  = Envelope(PullRequest.entityType, id1, 1, state3, Instant.EPOCH, Offset.at(6L))
   private val envelopeUpdated1 = Envelope(PullRequest.entityType, id1, 2, updatedState1, Instant.EPOCH, Offset.at(7L))
 
   private def assertCount(expected: Int) =
@@ -133,6 +133,30 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
 
   test(s"Fetch all states from the beginning for tag `$customTag` after deletion of `state3`") {
     store.states(Predicate.Root, customTag).assert(envelope1Tagged)
+  }
+
+  test("Check that the given ids does exist") {
+    EntityCheck
+      .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
+        entityType,
+        Set(project1 -> id1, project1 -> id2),
+        identity(_),
+        xas
+      )
+      .assert(())
+  }
+
+  test("Check that the non existing ids are returned") {
+    val unknowns: Set[(ProjectRef, Label)] =
+      Set(project1 -> Label.unsafe("xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
+    EntityCheck
+      .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
+        entityType,
+        Set(project1 -> id1, project1 -> id2) ++ unknowns,
+        identity(_),
+        xas
+      )
+      .error(unknowns)
   }
 
   test("Delete state 2 successfully") {

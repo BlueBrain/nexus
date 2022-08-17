@@ -68,12 +68,18 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     *   the entity identifier
     * @param rev
     *   the revision
-    *  @param notFound
+    * @param notFound
     *   if no state is found, fails with this rejection
-    *@param invalidRevision
+    * @param invalidRevision
     *   if the revision of the resulting state does not match with the one provided
     */
-  def stateOr[R <: Rejection](ref: ProjectRef, id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S]
+  def stateOr[R <: Rejection](
+      ref: ProjectRef,
+      id: Id,
+      rev: Int,
+      notFound: => R,
+      invalidRevision: (Int, Int) => R
+  ): IO[R, S]
 
   /**
     * Evaluates the argument __command__ in the context of entity identified by __id__.
@@ -165,10 +171,10 @@ object ScopedEventLog {
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
-                                                                         definition: EntityDefinition[Id, S, Command, E, Rejection],
-                                                                         config: EventLogConfig,
-                                                                         xas: Transactors
-                                                                       )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+      definition: EntityDefinition[Id, S, Command, E, Rejection],
+      config: EventLogConfig,
+      xas: Transactors
+  )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
@@ -192,15 +198,24 @@ object ScopedEventLog {
     override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
       stateStore.get(ref, id).mapError(_ => notFound)
 
-    override def stateOr[R <: Rejection](ref: ProjectRef,
-                                         id: Id,
-                                         tag: Tag,
-                                         notFound: => R, tagNotFound: => R): IO[R, S] = stateStore.get(ref, id, tag).mapError {
+    override def stateOr[R <: Rejection](
+        ref: ProjectRef,
+        id: Id,
+        tag: Tag,
+        notFound: => R,
+        tagNotFound: => R
+    ): IO[R, S] = stateStore.get(ref, id, tag).mapError {
       case UnknownState => notFound
       case TagNotFound  => tagNotFound
     }
 
-    override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, rev: Int, notFound: => R, invalidRevision: (Int, Int) => R): IO[R, S] =
+    override def stateOr[R <: Rejection](
+        ref: ProjectRef,
+        id: Id,
+        rev: Int,
+        notFound: => R,
+        invalidRevision: (Int, Int) => R
+    ): IO[R, S] =
       stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
         case Some(s) if s.rev == rev => IO.pure(s)
         case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
@@ -252,15 +267,19 @@ object ScopedEventLog {
     override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
       stateMachine.evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
 
-    override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] = eventStore.currentEvents(predicate, offset)
+    override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+      eventStore.currentEvents(predicate, offset)
 
-    override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] = eventStore.events(predicate, offset)
+    override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+      eventStore.events(predicate, offset)
 
-    override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] = stateStore.currentStates(predicate, offset)
+    override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+      stateStore.currentStates(predicate, offset)
 
-    override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] = currentStates(predicate, offset).map { s =>
-      f(s.value)
-    }
+    override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] =
+      currentStates(predicate, offset).map { s =>
+        f(s.value)
+      }
   }
 
 }
