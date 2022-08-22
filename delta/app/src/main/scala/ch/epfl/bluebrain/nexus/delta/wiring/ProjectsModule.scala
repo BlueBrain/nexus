@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -44,7 +44,7 @@ object ProjectsModule extends ModuleDef {
     ApiMappingsCollection(mappings)
   }
 
-  make[Projects].from {
+  make[Projects].fromEffect {
     (
         config: AppConfig,
         organizations: Organizations,
@@ -55,6 +55,7 @@ object ProjectsModule extends ModuleDef {
         clock: Clock[UIO],
         uuidF: UUIDF
     ) =>
+      Task.pure(
       ProjectsImpl(
         organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
         scopeInitializations,
@@ -62,6 +63,7 @@ object ProjectsModule extends ModuleDef {
         config.projects,
         xas
       )(baseUri, clock, uuidF)
+      )
   }
 
   make[ProjectsStatistics].fromEffect { (xas: Transactors, config: ProjectsConfig) =>
@@ -73,8 +75,8 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext[ContextRejection]].from { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-    FetchContext(organizations, projects, quotas)
+  make[FetchContext[ContextRejection]].fromEffect { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+    Task.pure(FetchContext(organizations, projects, quotas))
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>
