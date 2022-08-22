@@ -904,7 +904,7 @@ object CompositeViews {
   ): CompositeViewProjectionId =
     projection match {
       case p: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev))
+        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev.toInt))
       case p: SparqlProjection        =>
         CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
     }
