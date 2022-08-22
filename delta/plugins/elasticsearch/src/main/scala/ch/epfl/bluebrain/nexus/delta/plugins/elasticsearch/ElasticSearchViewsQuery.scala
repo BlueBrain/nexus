@@ -214,11 +214,10 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
     for {
       view              <- viewStore.fetchDefaultViews(predicate)
       accessibleIndices <- aclFilter(view)
-      search            <- {
+      search            <-
         client
           .search(params, accessibleIndices, Uri.Query.Empty)(pagination, sort)
           .mapError(WrappedElasticSearchClientError)
-      }
     } yield search
 
   override def list(

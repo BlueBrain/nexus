@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.State
 import doobie.{Get, Put}
 
 /**
-  * Defines the required information to be able to handle an entity
+  * Defines the required information to be able to handle an scoped entity
   * @param tpe
   *   the entity type
   * @param stateMachine

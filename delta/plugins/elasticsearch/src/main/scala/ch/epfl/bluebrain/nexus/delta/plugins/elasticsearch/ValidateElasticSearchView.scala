@@ -64,9 +64,9 @@ object ValidateElasticSearchView {
         missing => InvalidViewReferences(missing.map { case (p, id) => ViewRef(p, id) }),
         xas
       ) >> value.views.value.toList
-        .foldLeftM(0) { (acc, ref) =>
+        .foldLeftM(value.views.value.size) { (acc, ref) =>
           EntityDependencyStore.recursiveList(ref.project, ref.viewId, xas).map { r =>
-            acc + r.size + 1
+            acc + r.size
           }
         }
         .flatMap { totalRefs =>

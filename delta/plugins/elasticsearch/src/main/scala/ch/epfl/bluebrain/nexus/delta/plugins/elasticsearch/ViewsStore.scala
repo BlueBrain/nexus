@@ -79,7 +79,8 @@ object ViewsStore {
           Some(fr"type = $entityType"),
           predicate.asFragment,
           Some(fr"tag = ${Tag.Latest.value}"),
-          Some(fr"id = $defaultViewId")
+          Some(fr"id = $defaultViewId"),
+          Some(fr"deprecated = false")
         ))
         .query[Json]
         .to[List]
