@@ -35,7 +35,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, Predicate, ScopedEventLog, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -549,7 +549,9 @@ object Storages {
       access: StorageAccess,
       fetchPermissions: UIO[Set[Permission]],
       crypto: Crypto
-  )(implicit clock: Clock[UIO]): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
+  )(implicit
+      clock: Clock[UIO]
+  ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(access, fetchPermissions, config, crypto), next),

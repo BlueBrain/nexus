@@ -607,7 +607,9 @@ object Files {
   /**
     * Entity definition for [[Files]]
     */
-  def definition(implicit clock: Clock[UIO]): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
+  def definition(implicit
+      clock: Clock[UIO]
+  ): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
     ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate, next),

@@ -38,12 +38,12 @@ trait MonixBioAssertions { self: Assertions =>
       {
         case Error(NonFatal(err)) =>
           exceptionHandler(err)
-        case Error(err) =>
+        case Error(err)           =>
           fail(
             s"""Error caught of type '${E.runtimeClass.getName}', expected a successful response
                |Message: ${err.toString}""".stripMargin
           )
-        case Termination(err) => exceptionHandler(err)
+        case Termination(err)     => exceptionHandler(err)
       },
       a => assertEquals(a, expected, clue)
     )
