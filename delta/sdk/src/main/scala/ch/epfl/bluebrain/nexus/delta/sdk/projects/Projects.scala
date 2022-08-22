@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 import java.util.UUID
@@ -283,8 +283,8 @@ object Projects {
   def definition(fetchAndValidateOrg: FetchOrganization)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
-  ): EntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
-    EntityDefinition.untagged(
+  ): ScopedEntityDefinition[ProjectRef, ProjectState, ProjectCommand, ProjectEvent, ProjectRejection] =
+    ScopedEntityDefinition.untagged(
       entityType,
       StateMachine(None, evaluate(fetchAndValidateOrg), next),
       ProjectEvent.serializer,

@@ -21,25 +21,32 @@ trait MonixBioAssertions { self: Assertions =>
 
   implicit class IoAssertionsOps[E, A](io: IO[E, A])(implicit E: ClassTag[E], loc: Location) {
 
-    def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] = io.attempt.map {
-      case Left(NonFatal(err)) =>
-        val baos  = new ByteArrayOutputStream()
-        err.printStackTrace(new PrintStream(baos))
-        val stack = new String(baos.toByteArray)
-        fail(
-          s"""Error caught of type '${err.getClass.getName}', expected a successful response
-             |Message: ${err.toString}
-             |Stack:
-             |$stack""".stripMargin,
-          err
-        )
-      case Left(err)           =>
-        fail(
-          s"""Error caught of type '${E.runtimeClass.getName}', expected a successful response
-             |Message: ${err.toString}""".stripMargin
-        )
-      case Right(a)            => assertEquals(a, expected, clue)
+    private def exceptionHandler(err: Throwable) = {
+      val baos  = new ByteArrayOutputStream()
+      err.printStackTrace(new PrintStream(baos))
+      val stack = new String(baos.toByteArray)
+      fail(
+        s"""Error caught of type '${err.getClass.getName}', expected a successful response
+           |Message: ${err.getMessage}
+           |Stack:
+           |$stack""".stripMargin,
+        err
+      )
     }
+
+    def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] = io.redeemCause(
+      {
+        case Error(NonFatal(err)) =>
+          exceptionHandler(err)
+        case Error(err)           =>
+          fail(
+            s"""Error caught of type '${E.runtimeClass.getName}', expected a successful response
+               |Message: ${err.toString}""".stripMargin
+          )
+        case Termination(err)     => exceptionHandler(err)
+      },
+      a => assertEquals(a, expected, clue)
+    )
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)

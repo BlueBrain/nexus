@@ -20,9 +20,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.{Deco
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
+import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, DoobieScalaTestFixture, IOFixedClock, IOValues}
 import monix.bio.{IO, UIO}
 import org.scalatest.matchers.should.Matchers
@@ -117,6 +118,11 @@ class ResolversImplSpec
             .create(id, projectRef, payload)
             .accepted shouldEqual resolverResourceFor(id, project, value, payload, subject = bob.subject)
         }
+
+        // Dependency to the referenced project should have been saved
+        EntityDependencyStore.list(projectRef, nxv + "cross-project", xas).accepted shouldEqual Set(
+          EntityDependency(referencedProject, referencedProject.toString)
+        )
       }
 
       "succeed with the id only defined in the payload" in {

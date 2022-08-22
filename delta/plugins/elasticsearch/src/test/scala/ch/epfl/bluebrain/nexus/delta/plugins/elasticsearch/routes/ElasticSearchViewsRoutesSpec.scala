@@ -158,6 +158,7 @@ class ElasticSearchViewsRoutesSpec
       UIO.pure(allowedPerms),
       (_, _, _) => IO.unit,
       "prefix",
+      5,
       xas
     ),
     eventLogConfig,

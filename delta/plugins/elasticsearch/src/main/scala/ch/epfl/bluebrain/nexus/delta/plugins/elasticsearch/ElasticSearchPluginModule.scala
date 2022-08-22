@@ -67,6 +67,7 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         permissions,
         client: ElasticSearchClient,
         config.prefix,
+        config.maxViewRefs,
         xas
       )
   }
@@ -97,9 +98,18 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         views: ElasticSearchViews,
         client: ElasticSearchClient,
+        xas: Transactors,
+        baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig
     ) =>
-      ElasticSearchViewsQuery(aclCheck, fetchContext.mapRejection(ProjectContextRejection), views, client, cfg.prefix)
+      ElasticSearchViewsQuery(
+        aclCheck,
+        fetchContext.mapRejection(ProjectContextRejection),
+        views,
+        client,
+        cfg.prefix,
+        xas
+      )(baseUri)
   }
 
   make[ElasticSearchViewsRoutes].from {

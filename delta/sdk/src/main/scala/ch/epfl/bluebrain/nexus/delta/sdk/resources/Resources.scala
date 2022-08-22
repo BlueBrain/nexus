@@ -21,12 +21,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.ResourceRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidResource, InvalidResourceId, InvalidSchemaRejection, ReservedResourceId, ResourceAlreadyExists, ResourceFetchRejection, ResourceIsDeprecated, ResourceNotFound, ResourceShaclEngineRejection, RevisionNotFound, SchemaIsDeprecated, TagNotFound, UnexpectedResourceSchema}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.{ResourceCommand, ResourceEvent, ResourceRejection, ResourceState}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -373,8 +373,8 @@ object Resources {
   )(implicit
       api: JsonLdApi,
       clock: Clock[UIO]
-  ): EntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
-    EntityDefinition(
+  ): ScopedEntityDefinition[Iri, ResourceState, ResourceCommand, ResourceEvent, ResourceRejection] =
+    ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(resourceResolution), next),
       ResourceEvent.serializer,
@@ -389,6 +389,7 @@ object Resources {
           case _                     => None
         }
       ),
+      _ => None,
       onUniqueViolation = (id: Iri, c: ResourceCommand) =>
         c match {
           case c: CreateResource => ResourceAlreadyExists(id, c.project)

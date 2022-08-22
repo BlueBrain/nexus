@@ -3,17 +3,14 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import cats.syntax.traverse._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.index
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViewsQuery.{FetchDefaultView, FetchView}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidElasticSearchViewId, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ResourcesSearchParams.Type.{ExcludedType, IncludedType}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{query => queryPermissions}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -24,27 +21,24 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{SearchResults, SortList}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated, PipeConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherValuable, IOValues, TestHelpers}
 import io.circe.{Json, JsonObject}
-import monix.bio.{IO, UIO}
+import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
 
 import java.time.Instant
@@ -53,22 +47,22 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchViewsQuerySpec"))
-    with AnyWordSpecLike
+    with DoobieScalaTestFixture
     with Matchers
     with EitherValuable
     with CirceLiteral
-    with TestHelpers
     with CancelAfterFailure
     with Inspectors
     with ElasticSearchClientSetup
     with OptionValues
     with ConfigFixtures
-    with IOValues
     with Eventually
     with Fixtures {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
   implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
+
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   private val prefix = "prefix"
   private val page   = FromPagination(0, 100)
@@ -91,99 +85,56 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
   private val tpe1 = nxv + "Type1"
 
-  private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
-    resourceFor(
-      id,
-      project,
-      IndexingElasticSearchViewValue(
-        resourceTag = None,
-        pipeline = List(FilterDeprecated(), DiscardMetadata()),
-        mapping = None,
-        settings = None,
-        permission = permissions.query,
-        context = None
-      )
+  private val mappings = jsonObjectContentOf("mapping.json")
+
+  private val indexingView: IndexingElasticSearchViewValue =
+    IndexingElasticSearchViewValue(
+      resourceTag = None,
+      pipeline = List(FilterDeprecated(), DiscardMetadata()),
+      mapping = Some(mappings),
+      settings = None,
+      permission = queryPermission,
+      context = None
     )
-      .asInstanceOf[IndexingViewResource]
 
-  private def aggView(id: Iri, project: ProjectRef, refs: (Iri, ProjectRef)*): ResourceF[AggregateElasticSearchView] = {
-    val set      = refs.map { case (iri, p) => ViewRef(p, iri) }
-    val viewRefs = NonEmptySet.of(set.head, set.tail: _*)
-    resourceFor(id, project, AggregateElasticSearchViewValue(viewRefs))
-      .asInstanceOf[ResourceF[AggregateElasticSearchView]]
-  }
-
-  private val mappings            = jsonObjectContentOf("mapping.json")
-  private val defaultView         = indexingView(defaultViewId, project1.ref)
-  private val defaultView2        = indexingView(defaultViewId, project2.ref)
-  private val view1Proj1          = indexingView(nxv + "view1Proj1", project1.ref)
-  private val view2Proj1          = indexingView(nxv + "view2Proj1", project1.ref)
-  private val view1Proj2          = indexingView(nxv + "view1Proj2", project2.ref)
-  private val view2Proj2          = indexingView(nxv + "view2Proj2", project2.ref)
-  private val deprecatedViewProj1 = indexingView(nxv + "deprecatedViewProj1", project1.ref).copy(deprecated = true)
+  private val defaultView         = ViewRef(project1.ref, defaultViewId)
+  private val defaultView2        = ViewRef(project2.ref, defaultViewId)
+  private val view1Proj1          = ViewRef(project1.ref, nxv + "view1Proj1")
+  private val view2Proj1          = ViewRef(project1.ref, nxv + "view2Proj1")
+  private val view1Proj2          = ViewRef(project2.ref, nxv + "view1Proj2")
+  private val view2Proj2          = ViewRef(project2.ref, nxv + "view2Proj2")
+  private val deprecatedViewProj1 = ViewRef(project1.ref, nxv + "deprecatedViewProj1")
 
   // Aggregates all views of project1
-  private val aggView1Proj1 = aggView(
-    nxv + "aggView1Proj1",
-    project1.ref,
-    view1Proj1.id -> view1Proj1.value.project,
-    view2Proj1.id -> view2Proj1.value.project
+  private val aggView1Proj1      = ViewRef(project1.ref, nxv + "aggView1Proj1")
+  private val aggView1Proj1Views = AggregateElasticSearchViewValue(
+    NonEmptySet.of(view1Proj1, view2Proj1)
   )
+
   // Aggregates view1 of project2, references an aggregated view on project 2 and references the previous aggregate which aggregates all views of project1
-  private val aggView1Proj2 = aggView(
-    nxv + "aggView1Proj2",
-    project2.ref,
-    view1Proj2.id           -> view1Proj2.value.project,
-    (nxv + "aggView2Proj2") -> project2.ref,
-    aggView1Proj1.id        -> aggView1Proj1.value.project
+  private val aggView1Proj2      = ViewRef(project2.ref, nxv + "aggView1Proj2")
+  private val aggView1Proj2Views = AggregateElasticSearchViewValue(
+    NonEmptySet.of(view1Proj2, aggView1Proj1)
   )
 
   // Aggregates view2 of project2 and references aggView1Proj2
-  private val aggView2Proj2 = aggView(
-    nxv + "aggView2Proj2",
-    project2.ref,
-    view2Proj2.id    -> view2Proj2.value.project,
-    aggView1Proj2.id -> aggView1Proj2.value.project
+  private val aggView2Proj2      = ViewRef(project1.ref, nxv + "aggView1Proj2")
+  private val aggView2Proj2Views = AggregateElasticSearchViewValue(
+    NonEmptySet.of(view2Proj2, aggView1Proj2)
   )
 
-  private val indexingViews = List(defaultView, defaultView2, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
+  private val indexingViews: List[ViewRef] =
+    List(defaultView, defaultView2, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
 
-  private val views: Map[(Iri, ProjectRef), ViewResource] =
-    List(
-      view1Proj1,
-      view2Proj1,
-      view1Proj2,
-      view2Proj2,
-      aggView1Proj1,
-      aggView1Proj2,
-      aggView2Proj2,
-      deprecatedViewProj1
-    )
-      .map(v => ((v.id, v.value.project), v.asInstanceOf[ViewResource]))
-      .toMap
-
-  private val fetchDefault: FetchDefaultView = {
-    case p if p == project1.ref => UIO.pure(defaultView)
-    case p if p == project2.ref => UIO.pure(defaultView2)
-    case p                      => IO.raiseError(ViewNotFound(nxv + "other", p))
-  }
-
-  private val fetch: FetchView = {
-    case (IdSegmentRef.Latest(id: IriSegment), p) =>
-      IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
-    case (id, _)                                  => IO.raiseError(InvalidElasticSearchViewId(id.value.asString))
-  }
-
-  private def createDocuments(view: IndexingViewResource): Seq[Json] =
-    (0 until 3).map { idx =>
-      val resource = ResourceGen.resource(view.id / idx.toString, view.value.project, Json.obj())
+  private def createDocuments(view: ViewRef): UIO[Seq[Json]] =
+    (0 until 3).toList.traverse { idx =>
+      val resource = ResourceGen.resource(view.viewId / idx.toString, view.project, Json.obj())
       ResourceGen
         .resourceFor(resource, types = Set(nxv + idx.toString, tpe1), rev = idx)
         .copy(createdAt = Instant.EPOCH.plusSeconds(idx.toLong))
         .toCompactedJsonLd
-        .accepted
-        .json
-    }
+        .map(_.json)
+    }.hideErrors
 
   private def extractSources(json: Json) = {
     json.hcursor
@@ -200,36 +151,66 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       ProjectContextRejection
     )
 
-    val visitor = new ViewRefVisitor(fetch(_, _).map { view =>
-      view.value match {
-        case v: IndexingElasticSearchView  =>
-          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, index(v.uuid, view.rev.toInt, prefix))
-        case v: AggregateElasticSearchView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
-      }
-    })
+    lazy val views: ElasticSearchViews = ElasticSearchViews(
+      fetchContext,
+      ResolverContextResolution(rcr),
+      ValidateElasticSearchView(
+        PipeConfig.coreConfig.rightValue,
+        UIO.pure(Set(queryPermissions)),
+        esClient.createIndex(_, _, _).void,
+        "prefix",
+        10,
+        xas
+      ),
+      eventLogConfig,
+      xas
+    ).accepted
 
-    lazy val views = new ElasticSearchViewsQueryImpl(
-      () => UIO.pure(List(defaultView, defaultView2)),
-      fetchDefault,
-      fetch,
-      visitor,
+    lazy val viewsQuery = ElasticSearchViewsQuery(
       aclCheck,
       fetchContext,
+      views,
       esClient,
-      prefix
+      prefix,
+      xas
     )
 
-    "index documents" in {
-      val bulkSeq = indexingViews.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, v) =>
-        val index   = IndexLabel.unsafe(ElasticSearchViews.index(v, prefix))
-        esClient.createIndex(index, Some(mappings), None).accepted
-        val newBulk = createDocuments(v).zipWithIndex.map { case (json, idx) =>
-          ElasticSearchBulk.Index(index, idx.toString, json)
-        }
-        bulk ++ newBulk
-      }
-      esClient.bulk(bulkSeq).accepted
+    "create the indexing views views" in {
+      indexingViews.traverse { viewRef =>
+        views.create(viewRef.viewId, viewRef.project, indexingView)
+      }.accepted
     }
+
+    "create the deprecate view" in {
+      views.create(deprecatedViewProj1.viewId, deprecatedViewProj1.project, indexingView) >>
+        views.deprecate(deprecatedViewProj1.viewId, deprecatedViewProj1.project, 1)
+    }.accepted
+
+    "create the aggregate views" in {
+      views.create(aggView1Proj1.viewId, aggView1Proj1.project, aggView1Proj1Views) >>
+        views.create(aggView1Proj2.viewId, aggView1Proj2.project, aggView1Proj2Views) >>
+        views.create(aggView2Proj2.viewId, aggView2Proj2.project, aggView2Proj2Views)
+    }.accepted
+
+    "create the cycle between project2 aggregate views" in {
+      val newValue = AggregateElasticSearchViewValue(
+        NonEmptySet.of(view1Proj1, view2Proj1, aggView2Proj2)
+      )
+      views.update(aggView1Proj1.viewId, aggView1Proj1.project, 1, newValue).accepted
+    }
+
+    "index documents" in {
+      indexingViews
+        .foldLeftM(Seq.empty[ElasticSearchBulk]) { case (bulk, ref) =>
+          views.fetchIndexingView(ref.viewId, ref.project).flatMap { view =>
+            val index = IndexLabel.unsafe(ElasticSearchViews.index(view, prefix))
+            createDocuments(ref).map { docs =>
+              docs.map(ElasticSearchBulk.Index(index, genString(), _)) ++ bulk
+            }
+          }
+        }
+        .flatMap(esClient.bulk(_))
+    }.accepted
 
     "list all resources" in {
       val params    = List(
@@ -242,19 +223,19 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
           updatedBy = Some(Anonymous)
         )
       )
-      val expected1 = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
-      val expected2 = createDocuments(defaultView2).toSet[Json].map(_.asObject.value)
+      val expected1 = createDocuments(defaultView).accepted.toSet[Json].map(_.asObject.value)
+      val expected2 = createDocuments(defaultView2).accepted.toSet[Json].map(_.asObject.value)
       forAll(params) { filter =>
         eventually {
-          val result = views.list(page, filter, SortList.empty)(bob, baseUri).accepted
+          val result = viewsQuery.list(page, filter, SortList.empty)(bob).accepted
           result.sources.toSet shouldEqual expected1 ++ expected2
         }
         eventually {
-          val result = views.list(page, filter, SortList.empty)(alice, baseUri).accepted
+          val result = viewsQuery.list(page, filter, SortList.empty)(alice).accepted
           result.sources.toSet shouldEqual expected1
         }
         eventually {
-          val result = views.list(page, filter, SortList.empty)(anon, baseUri).accepted
+          val result = viewsQuery.list(page, filter, SortList.empty)(anon).accepted
           result.sources.toSet shouldEqual expected2
         }
       }
@@ -271,10 +252,10 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
           updatedBy = Some(Anonymous)
         )
       )
-      val expected = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
+      val expected = createDocuments(defaultView).accepted.toSet[Json].map(_.asObject.value)
       forAll(params) { filter =>
         eventually {
-          val result = views.list(project1.ref, page, filter, SortList.empty).accepted
+          val result = viewsQuery.list(project1.ref, page, filter, SortList.empty).accepted
           result.sources.toSet shouldEqual expected
         }
       }
@@ -292,7 +273,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
 
       val sort   = SortList.byCreationDateAndId
       val params = ResourcesSearchParams()
-      val result = views.list(project1.ref, pagination, params, sort).accepted
+      val result = viewsQuery.list(project1.ref, pagination, params, sort).accepted
       result.toCompactedJsonLd.accepted.json shouldEqual jsonContentOf("query/list-result.json")
     }
 
@@ -306,11 +287,11 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
           updatedBy = Some(Anonymous)
         )
       )
-      val expected = createDocuments(defaultView).toSet[Json].map(_.asObject.value)
+      val expected = createDocuments(defaultView).accepted.toSet[Json].map(_.asObject.value)
       forAll(params) { filter =>
         eventually {
           val result =
-            views.list(project1.ref, schemas.resources, page, filter, SortList.empty).accepted
+            viewsQuery.list(project1.ref, schemas.resources, page, filter, SortList.empty).accepted
           result.sources.toSet shouldEqual expected
         }
       }
@@ -324,52 +305,52 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
         ResourcesSearchParams(types = List(ExcludedType(nxv + "1"), ExcludedType(nxv + "2"))),
         ResourcesSearchParams(id = Some(defaultViewId / "0"), rev = Some(0), types = List(IncludedType(nxv + "0")))
       )
-      val expected = createDocuments(defaultView).head.asObject.value
+      val expected = createDocuments(defaultView).accepted.head.asObject.value
       forAll(params) { filter =>
-        val result = views.list(project1.ref, page, filter, SortList.empty).accepted
+        val result = viewsQuery.list(project1.ref, page, filter, SortList.empty).accepted
         result.sources shouldEqual List(expected)
       }
     }
 
     "query an indexed view" in eventually {
-      val proj   = view1Proj1.value.project
-      val result = views.query(view1Proj1.id, proj, JsonObject.empty, Query.Empty).accepted
-      extractSources(result) shouldEqual createDocuments(view1Proj1)
+      val proj   = view1Proj1.project
+      val result = viewsQuery.query(view1Proj1.viewId, proj, JsonObject.empty, Query.Empty).accepted
+      extractSources(result) shouldEqual createDocuments(view1Proj1).accepted
     }
 
     "query an indexed view without permissions" in eventually {
-      val proj = view1Proj1.value.project
-      views
-        .query(view1Proj1.id, proj, JsonObject.empty, Query.Empty)(anon)
+      val proj = view1Proj1.project
+      viewsQuery
+        .query(view1Proj1.viewId, proj, JsonObject.empty, Query.Empty)(anon)
         .rejectedWith[AuthorizationFailed]
     }
 
     "query a deprecated indexed view without permissions" in eventually {
-      val proj = deprecatedViewProj1.value.project
-      views
-        .query(deprecatedViewProj1.id, proj, JsonObject.empty, Query.Empty)
+      val proj = deprecatedViewProj1.project
+      viewsQuery
+        .query(deprecatedViewProj1.viewId, proj, JsonObject.empty, Query.Empty)
         .rejectedWith[ViewIsDeprecated]
     }
 
     "query an aggregated view" in eventually {
-      val proj   = aggView1Proj2.value.project
+      val proj   = aggView1Proj2.project
       val result =
-        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(bob).accepted
+        viewsQuery.query(aggView1Proj2.viewId, proj, jobj"""{"size": 100}""", Query.Empty)(bob).accepted
 
-      extractSources(result).toSet shouldEqual indexingViews.drop(2).flatMap(createDocuments).toSet
+      extractSources(result).toSet shouldEqual indexingViews.drop(2).flatMap(createDocuments(_).accepted).toSet
     }
 
     "query an aggregated view without permissions in some projects" in {
-      val proj   = aggView1Proj2.value.project
+      val proj   = aggView1Proj2.project
       val result =
-        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(alice).accepted
-      extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments).toSet
+        viewsQuery.query(aggView1Proj2.viewId, proj, jobj"""{"size": 100}""", Query.Empty)(alice).accepted
+      extractSources(result).toSet shouldEqual List(view1Proj1, view2Proj1).flatMap(createDocuments(_).accepted).toSet
     }
 
     "get no results if user has access to no projects" in {
-      val proj   = aggView1Proj2.value.project
+      val proj   = aggView1Proj2.project
       val result =
-        views.query(aggView1Proj2.id, proj, jobj"""{"size": 100}""", Query.Empty)(charlie).accepted
+        viewsQuery.query(aggView1Proj2.viewId, proj, jobj"""{"size": 100}""", Query.Empty)(charlie).accepted
       extractSources(result).toSet shouldEqual Set.empty
     }
   }

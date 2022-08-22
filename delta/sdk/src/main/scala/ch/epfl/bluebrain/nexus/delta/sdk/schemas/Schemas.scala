@@ -20,11 +20,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaCommand._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent._
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.{IncorrectRev, InvalidJsonLdFormat, InvalidSchema, InvalidSchemaId, ReservedSchemaId, ResourceAlreadyExists, RevisionNotFound, SchemaFetchRejection, SchemaIsDeprecated, SchemaNotFound, SchemaShaclEngineRejection, TagNotFound}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{ScopedEntityDefinition, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, UIO}
 
@@ -334,8 +334,8 @@ object Schemas {
   def definition(implicit
       api: JsonLdApi,
       clock: Clock[UIO]
-  ): EntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
-    EntityDefinition(
+  ): ScopedEntityDefinition[Iri, SchemaState, SchemaCommand, SchemaEvent, SchemaRejection] =
+    ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate, next),
       SchemaEvent.serializer,
@@ -350,6 +350,7 @@ object Schemas {
           case _                   => None
         }
       ),
+      _ => None,
       onUniqueViolation = (id: Iri, c: SchemaCommand) =>
         c match {
           case c: CreateSchema => ResourceAlreadyExists(id, c.project)

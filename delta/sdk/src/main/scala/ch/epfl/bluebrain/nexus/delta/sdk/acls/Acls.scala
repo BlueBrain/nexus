@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{IdentityRealm, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, EnvelopeStream, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 import java.time.Instant
@@ -326,8 +326,10 @@ object Acls {
   def definition(
       fetchPermissionSet: UIO[Set[Permission]],
       findUnknownRealms: Set[Label] => IO[UnknownRealms, Unit]
-  )(implicit clock: Clock[UIO] = IO.clock): EntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
-    EntityDefinition.untagged(
+  )(implicit
+      clock: Clock[UIO] = IO.clock
+  ): GlobalEntityDefinition[AclAddress, AclState, AclCommand, AclEvent, AclRejection] =
+    GlobalEntityDefinition(
       entityType,
       StateMachine(None, evaluate(fetchPermissionSet, findUnknownRealms), next),
       AclEvent.serializer,

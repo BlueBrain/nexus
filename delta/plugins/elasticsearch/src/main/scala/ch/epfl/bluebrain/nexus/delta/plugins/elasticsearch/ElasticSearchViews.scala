@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewType.{AggregateElasticSearch => ElasticSearchAggregate, ElasticSearch => ElasticSearchIndexing}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.AggregateElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -26,12 +27,12 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
@@ -255,7 +256,15 @@ final class ElasticSearchViews private (
     * @param project
     *   the view parent project
     */
-  def fetch(id: IdSegmentRef, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] = {
+  def fetch(id: IdSegmentRef, project: ProjectRef): IO[ElasticSearchViewRejection, ViewResource] =
+    fetchState(id, project).map { case (pc, state) =>
+      state.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings)
+    }
+
+  def fetchState(
+      id: IdSegmentRef,
+      project: ProjectRef
+  ): IO[ElasticSearchViewRejection, (ProjectContext, ElasticSearchViewState)] = {
     for {
       pc      <- fetchContext.onRead(project)
       iri     <- expandIri(id.value, pc)
@@ -267,7 +276,7 @@ final class ElasticSearchViews private (
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
-    } yield state.toResource(pc.apiMappings, pc.base, defaultElasticsearchMapping, defaultElasticsearchSettings)
+    } yield (pc, state)
   }.span("fetchElasticSearchView")
 
   /**
@@ -506,14 +515,14 @@ object ElasticSearchViews {
 
   def definition(
       validate: ValidateElasticSearchView
-  )(implicit clock: Clock[UIO], uuidF: UUIDF): EntityDefinition[
+  )(implicit clock: Clock[UIO], uuidF: UUIDF): ScopedEntityDefinition[
     Iri,
     ElasticSearchViewState,
     ElasticSearchViewCommand,
     ElasticSearchViewEvent,
     ElasticSearchViewRejection
   ] =
-    EntityDefinition(
+    ScopedEntityDefinition(
       entityType,
       StateMachine(
         None,
@@ -531,6 +540,13 @@ object ElasticSearchViews {
           None
         }
       ),
+      { s =>
+        s.value match {
+          case a: AggregateElasticSearchViewValue =>
+            Some(a.views.value.map { v => EntityDependency(v.project, v.viewId.toString) })
+          case _                                  => None
+        }
+      },
       onUniqueViolation = (id: Iri, c: ElasticSearchViewCommand) =>
         c match {
           case c: CreateElasticSearchView => ResourceAlreadyExists(id, c.project)

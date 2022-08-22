@@ -31,11 +31,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, Predicate, ScopedEventLog, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import com.typesafe.scalalogging.Logger
 import fs2.Stream
 import io.circe.Json
@@ -549,8 +549,10 @@ object Storages {
       access: StorageAccess,
       fetchPermissions: UIO[Set[Permission]],
       crypto: Crypto
-  )(implicit clock: Clock[UIO]): EntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
-    EntityDefinition(
+  )(implicit
+      clock: Clock[UIO]
+  ): ScopedEntityDefinition[Iri, StorageState, StorageCommand, StorageEvent, StorageRejection] =
+    ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate(access, fetchPermissions, config, crypto), next),
       StorageEvent.serializer(crypto),
@@ -564,6 +566,7 @@ object Storages {
           None
         }
       ),
+      _ => None,
       onUniqueViolation = (id: Iri, c: StorageCommand) =>
         c match {
           case c: CreateStorage => ResourceAlreadyExists(id, c.project)

@@ -126,7 +126,7 @@ trait GlobalEventLog[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection]
 object GlobalEventLog {
 
   def apply[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection](
-      definition: EntityDefinition[Id, S, Command, E, Rejection],
+      definition: GlobalEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
   )(implicit get: Get[Id], put: Put[Id]): GlobalEventLog[Id, S, Command, E, Rejection] =

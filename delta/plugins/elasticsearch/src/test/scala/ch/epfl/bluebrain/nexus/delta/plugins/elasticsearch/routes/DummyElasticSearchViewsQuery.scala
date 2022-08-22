@@ -7,11 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSe
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults, SortList}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.CirceLiteral._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -29,7 +28,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(SearchResults(1, List(listResponse)))
     else
@@ -40,7 +39,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(SearchResults(1, List(listResponse(schema))))
     else
@@ -51,7 +50,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(SearchResults(1, List(listResponse(org))))
     else
@@ -63,7 +62,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(SearchResults(1, List(listResponse(org, schema))))
     else
@@ -74,7 +73,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams)
       IO.pure(SearchResults(1, List(listResponse(project))))
     else
@@ -86,7 +85,7 @@ private[routes] class DummyElasticSearchViewsQuery(views: ElasticSearchViews) ex
       pagination: Pagination,
       params: ResourcesSearchParams,
       sort: SortList
-  )(implicit caller: Caller, baseUri: BaseUri): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     if (pagination == allowedPage && params == allowedSearchParams) {
       IO.pure(SearchResults(1, List(listResponse(project, schema))))
 
