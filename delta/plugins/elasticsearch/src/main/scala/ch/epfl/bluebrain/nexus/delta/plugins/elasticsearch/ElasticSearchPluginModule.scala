@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
@@ -32,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -54,22 +55,23 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
-  make[ValidateElasticSearchView].from {
+  make[ValidateElasticSearchView].fromEffect {
     (
-        pipeConfig: PipeConfig,
         permissions: Permissions,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
         xas: Transactors
     ) =>
-      ValidateElasticSearchView(
-        pipeConfig: PipeConfig,
-        permissions,
-        client: ElasticSearchClient,
-        config.prefix,
-        config.maxViewRefs,
-        xas
-      )
+      Task.fromEither(PipeConfig.coreConfig.leftMap(new IllegalStateException(_))).map { pipeConfig =>
+        ValidateElasticSearchView(
+          pipeConfig,
+          permissions,
+          client: ElasticSearchClient,
+          config.prefix,
+          config.maxViewRefs,
+          xas
+        )
+      }
   }
 
   make[ElasticSearchViews].fromEffect {
@@ -120,7 +122,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         schemeDirectives: DeltaSchemeDirectives,
         indexingAction: IndexingAction @Id("aggregate"),
         viewsQuery: ElasticSearchViewsQuery,
-        progresses: ProgressesStatistics @Id("elasticsearch-statistics"),
         baseUri: BaseUri,
         cfg: ElasticSearchViewsConfig,
         s: Scheduler,
@@ -135,7 +136,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         aclCheck,
         views,
         viewsQuery,
-        progresses,
+        // TODO add progress stats
+        null,
         // TODO add the way to restart ES views
         (_, _) => UIO.unit,
         resourceToSchema,

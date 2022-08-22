@@ -60,8 +60,6 @@ class MainSpec
     System.setProperty("plugins.archive.enabled", "false")
     System.setProperty("plugins.blazegraph.enabled", "false")
     System.setProperty("plugins.composite-views.enabled", "false")
-    System.setProperty("plugins.elasticsearch.enabled", "false")
-    System.setProperty("plugins.storage.enabled", "false")
 
     //TODO Enable these plugins again after migration
     System.setProperty("plugins.graph-analytics.enabled", "false")
@@ -85,8 +83,6 @@ class MainSpec
     System.clearProperty("plugins.archive.enabled")
     System.clearProperty("plugins.blazegraph.enabled")
     System.clearProperty("plugins.composite-views.enabled")
-    System.clearProperty("plugins.elasticsearch.enabled")
-    System.clearProperty("plugins.storage.enabled")
 
     System.clearProperty("plugins.graph-analytics.enabled.enabled")
     System.clearProperty("plugins.search.enabled")

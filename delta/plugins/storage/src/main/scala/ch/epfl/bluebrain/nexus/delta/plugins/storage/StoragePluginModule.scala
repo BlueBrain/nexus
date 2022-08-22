@@ -133,7 +133,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
   }
 
   make[Files]
-    .fromEffect {
+    .from {
       (
           cfg: StoragePluginConfig,
           storageTypeConfig: StorageTypeConfig,
