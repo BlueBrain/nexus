@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, T
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -607,8 +607,8 @@ object Files {
   /**
     * Entity definition for [[Files]]
     */
-  def definition(implicit clock: Clock[UIO]): EntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
-    EntityDefinition(
+  def definition(implicit clock: Clock[UIO]): ScopedEntityDefinition[Iri, FileState, FileCommand, FileEvent, FileRejection] =
+    ScopedEntityDefinition(
       entityType,
       StateMachine(None, evaluate, next),
       FileEvent.serializer,
@@ -623,6 +623,7 @@ object Files {
           case _                 => None
         }
       ),
+      _ => None,
       onUniqueViolation = (id: Iri, c: FileCommand) =>
         c match {
           case c: CreateFile => ResourceAlreadyExists(id, c.project)

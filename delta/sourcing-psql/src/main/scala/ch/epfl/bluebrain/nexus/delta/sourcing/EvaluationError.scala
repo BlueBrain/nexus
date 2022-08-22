@@ -7,7 +7,8 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Error that may occur when evaluating commands or replaying a state
   */
-sealed abstract class EvaluationError extends Exception with Product with Serializable { self =>
+sealed abstract class EvaluationError(message: String) extends Exception(message) with Product with Serializable {
+  self =>
   override def fillInStackTrace(): Throwable = self
 }
 
@@ -20,7 +21,8 @@ object EvaluationError {
     * @param event
     *   the event to apply
     */
-  final case class InvalidState[State, Event](state: Option[State], event: Event) extends EvaluationError
+  final case class InvalidState[State, Event](state: Option[State], event: Event)
+      extends EvaluationError(s"Applying the event $event on the original state $state resulted in an invalid state")
 
   /**
     * Error occurring when the evaluation of a command exceeds the defined timeout
@@ -29,7 +31,8 @@ object EvaluationError {
     * @param timeoutAfter
     *   the timeout that was applied
     */
-  final case class EvaluationTimeout[Command](command: Command, timeoutAfter: FiniteDuration) extends EvaluationError
+  final case class EvaluationTimeout[Command](command: Command, timeoutAfter: FiniteDuration)
+      extends EvaluationError(s"'$command' received a timeout after $timeoutAfter")
 
   /**
     * Error occurring when the evaluation of a command raised an error
@@ -41,7 +44,7 @@ object EvaluationError {
     *   the type of error that was raised
     */
   final case class EvaluationFailure[Command](command: Command, errorType: String, errorMessage: String)
-      extends EvaluationError
+      extends EvaluationError(s"'$command' failed with an error '$errorType' and a message $errorMessage")
 
   object EvaluationFailure {
 

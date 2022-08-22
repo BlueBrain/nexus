@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectR
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 /**
@@ -207,8 +207,8 @@ object Realms {
       openIdExists: (Label, Uri) => IO[RealmOpenIdConfigAlreadyExists, Unit]
   )(implicit
       clock: Clock[UIO]
-  ): EntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] =
-    EntityDefinition.untagged(
+  ): GlobalEntityDefinition[Label, RealmState, RealmCommand, RealmEvent, RealmRejection] =
+    GlobalEntityDefinition(
       entityType,
       StateMachine(None, evaluate(wellKnown, openIdExists), next),
       RealmEvent.serializer,

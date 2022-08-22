@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged}
@@ -11,10 +11,11 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, MonixBioSuite}
+import io.circe.Decoder
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -44,6 +45,7 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
   private val maxDuration = 100.millis
 
   private val id   = Label.unsafe("id")
+  private val id2  = Label.unsafe("id2")
   private val proj = ProjectRef.unsafe("org", "proj")
 
   private val opened = PullRequestCreated(id, proj, Instant.EPOCH, Anonymous)
@@ -56,7 +58,13 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
 
   private val tag = UserTag.unsafe("active")
 
-  private lazy val eventLog = ScopedEventLog(
+  private lazy val eventLog: ScopedEventLog[
+    Label,
+    PullRequestState,
+    PullRequestCommand,
+    PullRequestEvent,
+    PullRequest.PullRequestRejection
+  ] = ScopedEventLog(
     eventStore,
     stateStore,
     PullRequest.stateMachine,
@@ -71,15 +79,30 @@ class ScopedEventLogSuite extends MonixBioSuite with DoobieFixture {
         case _                    => None
       }
     ),
+    {
+      case s if s.id == id => Some(Set(EntityDependency(s.project, id2.toString)))
+      case _               => None
+    },
     maxDuration,
     xas
   )
 
   test("Evaluate successfully a command and store both event and state for an initial state") {
+    implicit val decoder: Decoder[PullRequestState] = PullRequestState.serializer.codec
+    val expectedDependencies                        = Set(EntityDependency(proj, id2.toString))
     for {
-      _ <- eventLog.evaluate(proj, id, Create(id, proj)).assert((opened, state1))
-      _ <- eventStore.history(proj, id).assert(opened)
-      _ <- eventLog.stateOr(proj, id, NotFound).assert(state1)
+      _        <- eventLog.evaluate(proj, id, Create(id, proj)).assert((opened, state1))
+      _        <- eventStore.history(proj, id).assert(opened)
+      _        <- eventLog.stateOr(proj, id, NotFound).assert(state1)
+      // Check dependency on id2
+      _        <- EntityDependencyStore.list(proj, id, xas).assert(expectedDependencies)
+      _        <- EntityDependencyStore.recursiveList(proj, id, xas).assert(expectedDependencies)
+      _        <- EntityDependencyStore.decodeList(proj, id, xas).assert(List.empty)
+      // Create state for id2
+      state1Id2 = state1.copy(id = id2)
+      _        <- eventLog.evaluate(proj, id2, Create(id2, proj)).map(_._2).assert(state1Id2)
+      _        <- eventLog.stateOr(proj, id2, NotFound).assert(state1Id2)
+      _        <- EntityDependencyStore.decodeList(proj, id, xas).assert(List(state1Id2))
     } yield ()
   }
 

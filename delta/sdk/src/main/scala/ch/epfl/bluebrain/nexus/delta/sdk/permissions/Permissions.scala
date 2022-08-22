@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.PermissionsRejection.
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 import java.time.Instant
@@ -296,9 +296,9 @@ object Permissions {
     */
   def definition(minimum: Set[Permission])(implicit
       clock: Clock[UIO] = IO.clock
-  ): EntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
+  ): GlobalEntityDefinition[Label, PermissionsState, PermissionsCommand, PermissionsEvent, PermissionsRejection] = {
     val initial = PermissionsState.initial(minimum)
-    EntityDefinition.untagged(
+    GlobalEntityDefinition(
       entityType,
       StateMachine(
         Some(initial),

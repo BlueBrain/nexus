@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDefinition.Tagger
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EnvelopeStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EnvelopeStream, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
@@ -171,7 +171,7 @@ object ScopedEventLog {
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
-      definition: EntityDefinition[Id, S, Command, E, Rejection],
+      definition: ScopedEntityDefinition[Id, S, Command, E, Rejection],
       config: EventLogConfig,
       xas: Transactors
   )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
@@ -181,6 +181,7 @@ object ScopedEventLog {
       definition.stateMachine,
       definition.onUniqueViolation,
       definition.tagger,
+      definition.extractDependencies,
       config.maxDuration,
       xas
     )
@@ -191,95 +192,103 @@ object ScopedEventLog {
       stateMachine: StateMachine[S, Command, E, Rejection],
       onUniqueViolation: (Id, Command) => Rejection,
       tagger: Tagger[E],
+      extractDependencies: S => Option[Set[EntityDependency]],
       maxDuration: FiniteDuration,
       xas: Transactors
-  ): ScopedEventLog[Id, S, Command, E, Rejection] = new ScopedEventLog[Id, S, Command, E, Rejection] {
+  )(implicit put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+    new ScopedEventLog[Id, S, Command, E, Rejection] {
 
-    override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
-      stateStore.get(ref, id).mapError(_ => notFound)
+      override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
+        stateStore.get(ref, id).mapError(_ => notFound)
 
-    override def stateOr[R <: Rejection](
-        ref: ProjectRef,
-        id: Id,
-        tag: Tag,
-        notFound: => R,
-        tagNotFound: => R
-    ): IO[R, S] = stateStore.get(ref, id, tag).mapError {
-      case UnknownState => notFound
-      case TagNotFound  => tagNotFound
-    }
-
-    override def stateOr[R <: Rejection](
-        ref: ProjectRef,
-        id: Id,
-        rev: Int,
-        notFound: => R,
-        invalidRevision: (Int, Int) => R
-    ): IO[R, S] =
-      stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
-        case Some(s) if s.rev == rev => IO.pure(s)
-        case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
-        case None                    => IO.raiseError(notFound)
+      override def stateOr[R <: Rejection](
+          ref: ProjectRef,
+          id: Id,
+          tag: Tag,
+          notFound: => R,
+          tagNotFound: => R
+      ): IO[R, S] = stateStore.get(ref, id, tag).mapError {
+        case UnknownState => notFound
+        case TagNotFound  => tagNotFound
       }
 
-    override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] = {
-
-      def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
-        tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
-          if (rev == state.rev)
-            UIO.pure(stateStore.save(state, tag))
-          else
-            stateMachine
-              .computeState(eventStore.history(ref, id, Some(rev)))
-              .map(_.fold(noop) { s => stateStore.save(s, tag) })
+      override def stateOr[R <: Rejection](
+          ref: ProjectRef,
+          id: Id,
+          rev: Int,
+          notFound: => R,
+          invalidRevision: (Int, Int) => R
+      ): IO[R, S] =
+        stateMachine.computeState(eventStore.history(ref, id, rev)).flatMap {
+          case Some(s) if s.rev == rev => IO.pure(s)
+          case Some(s)                 => IO.raiseError(invalidRevision(rev, s.rev))
+          case None                    => IO.raiseError(notFound)
         }
 
-      def deleteTag(event: E): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
-        stateStore.delete(ref, id, tag)
-      }
+      override def evaluate(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] = {
 
-      stateMachine
-        .evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
-        .tapEval { case (event, state) =>
-          for {
-            tagQuery      <- saveTag(event, state)
-            deleteTagQuery = deleteTag(event)
-            _             <- (
-                               eventStore.save(event) >>
-                                 stateStore.save(state) >>
-                                 tagQuery >> deleteTagQuery
-                             ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                               onUniqueViolation(id, command)
-                             }.transact(xas.write)
-                               .hideErrors
-          } yield ()
+        def saveTag(event: E, state: S): UIO[ConnectionIO[Unit]] =
+          tagger.tagWhen(event).fold(UIO.pure(noop)) { case (tag, rev) =>
+            if (rev == state.rev)
+              UIO.pure(stateStore.save(state, tag))
+            else
+              stateMachine
+                .computeState(eventStore.history(ref, id, Some(rev)))
+                .map(_.fold(noop) { s => stateStore.save(s, tag) })
+          }
+
+        def deleteTag(event: E): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
+          stateStore.delete(ref, id, tag)
         }
-        .redeemCauseWith(
-          {
-            case Error(rejection)                     => IO.raiseError(rejection)
-            case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
-            case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
-          },
-          r => IO.pure(r)
-        )
-    }
 
-    override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine.evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
+        def updateDependencies(state: S) =
+          extractDependencies(state).fold(noop) { dependencies =>
+            EntityDependencyStore.delete(ref, id) >> EntityDependencyStore.save(ref, id, dependencies)
+          }
 
-    override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
-      eventStore.currentEvents(predicate, offset)
-
-    override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
-      eventStore.events(predicate, offset)
-
-    override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
-      stateStore.currentStates(predicate, offset)
-
-    override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] =
-      currentStates(predicate, offset).map { s =>
-        f(s.value)
+        stateMachine
+          .evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
+          .tapEval { case (event, state) =>
+            for {
+              tagQuery      <- saveTag(event, state)
+              deleteTagQuery = deleteTag(event)
+              _             <- (
+                                 eventStore.save(event) >>
+                                   stateStore.save(state) >>
+                                   tagQuery >> deleteTagQuery >>
+                                   updateDependencies(state)
+                               ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                                 onUniqueViolation(id, command)
+                               }.transact(xas.write)
+                                 .hideErrors
+            } yield ()
+          }
+          .redeemCauseWith(
+            {
+              case Error(rejection)                     => IO.raiseError(rejection)
+              case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+              case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
+            },
+            r => IO.pure(r)
+          )
       }
-  }
+
+      override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
+        stateMachine.evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
+
+      override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+        eventStore.currentEvents(predicate, offset)
+
+      override def events(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
+        eventStore.events(predicate, offset)
+
+      override def currentStates(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+        stateStore.currentStates(predicate, offset)
+
+      override def currentStates[T](predicate: Predicate, offset: Offset, f: S => T): Stream[Task, T] =
+        currentStates(predicate, offset).map { s =>
+          f(s.value)
+        }
+    }
 
 }

@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.OrganizationRejecti
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDefinition, StateMachine}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{GlobalEntityDefinition, StateMachine}
 import monix.bio.{IO, UIO}
 
 /**
@@ -198,8 +198,8 @@ object Organizations {
   def definition(implicit
       clock: Clock[UIO] = IO.clock,
       uuidf: UUIDF
-  ): EntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] =
-    EntityDefinition.untagged(
+  ): GlobalEntityDefinition[Label, OrganizationState, OrganizationCommand, OrganizationEvent, OrganizationRejection] =
+    GlobalEntityDefinition(
       entityType,
       StateMachine(None, evaluate, next),
       OrganizationEvent.serializer,

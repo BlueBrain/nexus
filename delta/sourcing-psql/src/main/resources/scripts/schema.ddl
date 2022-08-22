@@ -69,6 +69,21 @@ CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states US
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
 
 --
+-- Table for entity dependencies
+--
+CREATE TABLE IF NOT EXISTS public.entity_dependencies(
+    org               text         NOT NULL,
+    project           text         NOT NULL,
+    id                text         NOT NULL,
+    target_org        text         NOT NULL,
+    target_project    text         NOT NULL,
+    target_id         text         NOT NULL,
+    PRIMARY KEY(org, project, id, target_org, target_project, target_id),
+    CHECK (org != target_org or project != target_project or id != target_id)
+);
+CREATE INDEX IF NOT EXISTS entity_dependencies_reverse_idx ON public.entity_dependencies(target_org, target_project, target_id);
+
+--
 -- Table for projection offsets
 --
 CREATE TABLE if NOT EXISTS public.projection_offsets(
