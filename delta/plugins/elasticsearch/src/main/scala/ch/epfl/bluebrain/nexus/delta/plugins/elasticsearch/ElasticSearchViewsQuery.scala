@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{AuthorizationFailed, InvalidResourceId, ViewIsDeprecated, ViewNotFound, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
@@ -15,7 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.{ViewRef, ViewsStore}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.{Json, JsonObject}
@@ -266,19 +266,17 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       project: ProjectRef,
       query: JsonObject,
       qp: Uri.Query
-  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] =
-    viewStore.fetch(id, project).flatMap {
-      case v: IndexingView  =>
-        for {
-          _      <- aclCheck.authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed)
-          search <- client.search(query, Set(v.index), qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
-        } yield search
-      case v: AggregateView =>
-        for {
-          indices <- aclFilter(v)
-          search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
-        } yield search
-    }
+  )(implicit caller: Caller): IO[ElasticSearchViewRejection, Json] = {
+    for {
+      view    <- viewStore.fetch(id, project)
+      indices <- view match {
+                   case v: IndexingView  =>
+                     aclCheck.authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed).as(Set(v.index))
+                   case v: AggregateView => aclFilter(v)
+                 }
+      search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
+    } yield search
+  }
 
   private def aclFilter(aggregate: AggregateView)(implicit caller: Caller) = aclCheck.mapFilter[IndexingView, String](
     aggregate.views,
@@ -321,21 +319,20 @@ object ElasticSearchViewsQuery {
         defaultViewId,
         views.fetchState(_, _).map(_._2),
         view =>
-          IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)) >>
-            IO.pure {
-              view.value match {
-                case _: AggregateElasticSearchViewValue =>
-                  Left(view.id)
-                case i: IndexingElasticSearchViewValue  =>
-                  Right(
-                    IndexingView(
-                      ViewRef(view.project, view.id),
-                      ElasticSearchViews.index(view.uuid, view.rev, prefix),
-                      i.permission
-                    )
+          IO.raiseWhen(view.deprecated)(ViewIsDeprecated(view.id)).as {
+            view.value match {
+              case _: AggregateElasticSearchViewValue =>
+                Left(view.id)
+              case i: IndexingElasticSearchViewValue  =>
+                Right(
+                  IndexingView(
+                    ViewRef(view.project, view.id),
+                    ElasticSearchViews.index(view.uuid, view.rev, prefix),
+                    i.permission
                   )
-              }
-            },
+                )
+            }
+          },
         xas
       ),
       aclCheck,

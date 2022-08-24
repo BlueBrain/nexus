@@ -2,8 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils.simpleName
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.{ClassUtils, ClasspathResourceError}
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlClientError
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError.ConversionError
@@ -19,14 +18,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdRejection.UnexpectedId
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.HttpResponseFields
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.AggregateResponse.{EvaluationError, EvaluationFailure, EvaluationTimeout}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, JsonObject}
-
-import scala.reflect.ClassTag
 
 sealed abstract class BlazegraphViewRejection(val reason: String) extends Product with Serializable
 
@@ -41,7 +37,7 @@ object BlazegraphViewRejection {
     * @param current
     *   the last known revision
     */
-  final case class RevisionNotFound(provided: Long, current: Long)
+  final case class RevisionNotFound(provided: Int, current: Int)
       extends BlazegraphViewRejection(
         s"Revision requested '$provided' not found, last known revision is '$current'."
       )
@@ -94,7 +90,7 @@ object BlazegraphViewRejection {
     * @param expected
     *   the expected revision
     */
-  final case class IncorrectRev(provided: Long, expected: Long)
+  final case class IncorrectRev(provided: Int, expected: Int)
       extends BlazegraphViewRejection(
         s"Incorrect revision '$provided' provided, expected '$expected', the view may have been updated since last seen."
       )
@@ -168,18 +164,10 @@ object BlazegraphViewRejection {
     * @param view
     *   the offending view reference
     */
-  final case class InvalidViewReference(view: ViewRef)
+  final case class InvalidViewReferences(views: Set[ViewRef])
       extends BlazegraphViewRejection(
-        s"The Blazegraph view reference with id '${view.viewId}' in project '${view.project}' does not exist or is deprecated."
+        s"At least one view reference does not exist or is deprecated."
       )
-
-  /**
-    * Rejection returned when the returned state is the initial state after a BlazegraphViews.evaluation plus a
-    * BlazegraphViews.next Note: This should never happen since the evaluation method already guarantees that the next
-    * function returns a current
-    */
-  final case class UnexpectedInitialState(id: Iri, project: ProjectRef)
-      extends BlazegraphViewRejection(s"Unexpected initial state for Blazegraph view '$id' of project '$project'.")
 
   /**
     * Rejection returned when attempting to interact with a blazegraph view providing an id that cannot be resolved to
@@ -213,22 +201,10 @@ object BlazegraphViewRejection {
   final case class WrappedBlazegraphClientError(error: SparqlClientError) extends BlazegraphViewRejection(error.reason)
 
   /**
-    * Signals a rejection caused by a failure to load resource from classpath
-    */
-  final case class WrappedClasspathResourceError(error: ClasspathResourceError)
-      extends BlazegraphViewRejection(error.toString)
-
-  /**
     * Signals a rejection caused by a failure to perform indexing.
     */
   final case class WrappedIndexingActionRejection(rejection: IndexingActionFailed)
       extends BlazegraphViewRejection(rejection.reason)
-
-  /**
-    * Rejection returned when attempting to evaluate a command but the evaluation failed
-    */
-  final case class BlazegraphViewEvaluationError(err: EvaluationError)
-      extends BlazegraphViewRejection("Unexpected evaluation error")
 
   /**
     * Rejection returned when too many view references are specified on an aggregated view.
@@ -251,37 +227,25 @@ object BlazegraphViewRejection {
     case JsonLdRejection.DecodingFailed(error)             => DecodingFailed(error)
   }
 
-  implicit private[plugins] def blazegraphViewRejectionEncoder(implicit
-      C: ClassTag[BlazegraphViewCommand]
-  ): Encoder.AsObject[BlazegraphViewRejection] =
+  implicit private[plugins] val blazegraphViewRejectionEncoder: Encoder.AsObject[BlazegraphViewRejection] =
     Encoder.AsObject.instance { r =>
       val tpe = ClassUtils.simpleName(r)
       val obj = JsonObject(keywords.tpe -> tpe.asJson, "reason" -> r.reason.asJson)
       r match {
-        case BlazegraphViewEvaluationError(EvaluationFailure(C(cmd), _)) =>
-          val reason =
-            s"Unexpected failure while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}'"
-          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationFailure".asJson, "reason" -> reason.asJson)
-        case BlazegraphViewEvaluationError(EvaluationTimeout(C(cmd), t)) =>
-          val reason =
-            s"Timeout while evaluating the command '${simpleName(cmd)}' for blazegraph view '${cmd.id}' after '$t'"
-          JsonObject(keywords.tpe -> "BlazegraphViewEvaluationTimeout".asJson, "reason" -> reason.asJson)
-        case ProjectContextRejection(rejection)                          => rejection.asJsonObject
-        case WrappedBlazegraphClientError(rejection)                     =>
+        case ProjectContextRejection(rejection)                  => rejection.asJsonObject
+        case WrappedBlazegraphClientError(rejection)             =>
           obj.add(keywords.tpe, "SparqlClientError".asJson).add("details", rejection.toString().asJson)
-        case IncorrectRev(provided, expected)                            => obj.add("provided", provided.asJson).add("expected", expected.asJson)
-        case InvalidJsonLdFormat(_, ConversionError(details, _))         => obj.add("details", details.asJson)
-        case InvalidJsonLdFormat(_, rdf)                                 => obj.add("rdf", rdf.asJson)
-        case _: ViewNotFound                                             => obj.add(keywords.tpe, "ResourceNotFound".asJson)
-        case _                                                           => obj
+        case IncorrectRev(provided, expected)                    => obj.add("provided", provided.asJson).add("expected", expected.asJson)
+        case InvalidViewReferences(views)                        => obj.add("views", views.asJson)
+        case InvalidJsonLdFormat(_, ConversionError(details, _)) => obj.add("details", details.asJson)
+        case InvalidJsonLdFormat(_, rdf)                         => obj.add("rdf", rdf.asJson)
+        case _: ViewNotFound                                     => obj.add(keywords.tpe, "ResourceNotFound".asJson)
+        case _                                                   => obj
       }
     }
 
   implicit final val blazegraphViewRejectionJsonLdEncoder: JsonLdEncoder[BlazegraphViewRejection] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.error))
-
-  implicit final val evaluationErrorMapper: Mapper[EvaluationError, BlazegraphViewRejection] =
-    BlazegraphViewEvaluationError.apply
 
   implicit val blazegraphViewHttpResponseFields: HttpResponseFields[BlazegraphViewRejection] =
     HttpResponseFields {
@@ -291,9 +255,6 @@ object BlazegraphViewRejection {
       case ResourceAlreadyExists(_, _)       => StatusCodes.Conflict
       case IncorrectRev(_, _)                => StatusCodes.Conflict
       case ProjectContextRejection(rej)      => rej.status
-      case UnexpectedInitialState(_, _)      => StatusCodes.InternalServerError
-      case WrappedClasspathResourceError(_)  => StatusCodes.InternalServerError
-      case BlazegraphViewEvaluationError(_)  => StatusCodes.InternalServerError
       case WrappedIndexingActionRejection(_) => StatusCodes.InternalServerError
       case AuthorizationFailed               => StatusCodes.Forbidden
       case _                                 => StatusCodes.BadRequest

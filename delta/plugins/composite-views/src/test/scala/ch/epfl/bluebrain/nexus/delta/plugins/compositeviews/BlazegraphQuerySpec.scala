@@ -171,7 +171,7 @@ class BlazegraphQuerySpec
   // projection namespaces
   private val blazeP1Ns     = CompositeViews.namespace(blazeProjection1, compositeView, 1, config.prefix)
   private val blazeP2Ns     = CompositeViews.namespace(blazeProjection2, compositeView, 1, config.prefix)
-  private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, config)
+  private val blazeCommonNs = BlazegraphViews.namespace(compositeView.uuid, 1, config.prefix)
 
   private val views              = new CompositeViewsDummy(compositeViewResource, deprecatedCompositeViewResource)
   private val responseCommonNs   = NTriples("blazeCommonNs", BNode.random)

@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, SourceAsText}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

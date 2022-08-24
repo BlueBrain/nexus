@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.persistence.query.Offset
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing.BlazegraphIndexingStreamEntry
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.RemoteSse
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.RemoteSourceClientConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource

@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -69,7 +69,7 @@ object BlazegraphViewValue {
     override val tpe: BlazegraphViewType = BlazegraphViewType.AggregateBlazegraphView
   }
 
-  implicit private[model] val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
+  implicit private val blazegraphViewValueEncoder: Encoder.AsObject[BlazegraphViewValue] = {
     import io.circe.generic.extras.Configuration
 
     implicit val config: Configuration = Configuration(

@@ -1,20 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewState.Current
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewValue, ViewResource}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue, ViewResource}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
-import org.scalatest.OptionValues
 
 import java.time.Instant
 import java.util.UUID
 
-object BlazegraphViewsGen extends OptionValues {
+object BlazegraphViewsGen {
 
   def resourceFor(
       id: Iri,
@@ -22,15 +20,27 @@ object BlazegraphViewsGen extends OptionValues {
       value: BlazegraphViewValue,
       uuid: UUID = UUID.randomUUID(),
       source: Json = Json.obj(),
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
-      tags: Map[UserTag, Long] = Map.empty,
+      tags: Tags = Tags.empty,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,
       am: ApiMappings = ApiMappings.empty,
       base: Iri = nxv.base
   ): ViewResource =
-    Current(id, project, uuid, value, source, tags, rev, deprecated, Instant.EPOCH, createdBy, Instant.EPOCH, updatedBy)
+    BlazegraphViewState(
+      id,
+      project,
+      uuid,
+      value,
+      source,
+      tags,
+      rev,
+      deprecated,
+      Instant.EPOCH,
+      createdBy,
+      Instant.EPOCH,
+      updatedBy
+    )
       .toResource(am, ProjectBase.unsafe(base))
-      .value
 }

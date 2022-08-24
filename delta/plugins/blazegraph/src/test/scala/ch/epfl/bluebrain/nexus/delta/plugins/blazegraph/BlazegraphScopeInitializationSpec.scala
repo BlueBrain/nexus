@@ -5,14 +5,16 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{Ag
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schema => schemaorg}
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.{AbstractDBSpec, ConfigFixtures}
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock, IOValues, TestHelpers}
+import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -20,7 +22,7 @@ import org.scalatest.matchers.should.Matchers
 import java.util.UUID
 
 class BlazegraphScopeInitializationSpec
-    extends AbstractDBSpec
+    extends DoobieScalaTestFixture
     with Matchers
     with Inspectors
     with IOFixedClock
@@ -48,10 +50,17 @@ class BlazegraphScopeInitializationSpec
     ProjectContextRejection
   )
 
-  val views: BlazegraphViews = BlazegraphViewsSetup.init(fetchContext, permissions.query)
+  private lazy val views: BlazegraphViews = BlazegraphViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    _ => UIO.unit,
+    eventLogConfig,
+    xas
+  ).accepted
 
   "A BlazegraphScopeInitialization" should {
-    val init = new BlazegraphScopeInitialization(views, sa)
+    lazy val init = new BlazegraphScopeInitialization(views, sa)
 
     "create a default SparqlView on newly created project" in {
       views.fetch(defaultViewId, project.ref).rejectedWith[ViewNotFound]

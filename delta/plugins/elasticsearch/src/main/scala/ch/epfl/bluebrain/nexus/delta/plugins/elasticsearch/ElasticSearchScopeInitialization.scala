@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultViewId, permissions}
@@ -26,8 +28,9 @@ import monix.bio.{IO, UIO}
 class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger                          = Logger[ElasticSearchScopeInitialization]
-  implicit private val serviceAccountSubject: Subject = serviceAccount.subject
+  private val logger: Logger                                = Logger[ElasticSearchScopeInitialization]
+  implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
@@ -51,7 +54,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
             s"Failed to create the default ElasticSearchView for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("createDefaultElasticSearchView", ElasticSearchViews.moduleType)
+      .span("createDefaultElasticSearchView")
 
   override def onOrganizationCreation(
       organization: Organization,

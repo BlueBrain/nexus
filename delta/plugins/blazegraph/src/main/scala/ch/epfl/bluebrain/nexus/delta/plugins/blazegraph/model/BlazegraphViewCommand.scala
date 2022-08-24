@@ -25,6 +25,12 @@ sealed trait BlazegraphViewCommand extends Product with Serializable {
 
   /**
     * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
+
+  /**
+    * @return
     *   the identity associated with this command
     */
   def subject: Subject
@@ -52,7 +58,9 @@ object BlazegraphViewCommand {
       value: BlazegraphViewValue,
       source: Json,
       subject: Subject
-  ) extends BlazegraphViewCommand
+  ) extends BlazegraphViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of a BlazegraphView.
@@ -74,7 +82,7 @@ object BlazegraphViewCommand {
       id: Iri,
       project: ProjectRef,
       value: BlazegraphViewValue,
-      rev: Long,
+      rev: Int,
       source: Json,
       subject: Subject
   ) extends BlazegraphViewCommand
@@ -91,7 +99,7 @@ object BlazegraphViewCommand {
     * @param subject
     *   the identity associated with this command
     */
-  final case class DeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Long, subject: Subject)
+  final case class DeprecateBlazegraphView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
       extends BlazegraphViewCommand
 
   /**
@@ -113,9 +121,9 @@ object BlazegraphViewCommand {
   final case class TagBlazegraphView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends BlazegraphViewCommand
 }

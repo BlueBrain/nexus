@@ -44,7 +44,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.Project
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectBase, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag

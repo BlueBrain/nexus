@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
-import akka.actor.ActorSystem
 import akka.http.scaladsl.model.MediaTypes.`text/html`
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
@@ -11,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{SparqlQueryClientDummy, SparqlResults}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViewsSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -19,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
@@ -33,8 +31,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -47,13 +46,13 @@ import monix.bio.UIO
 import monix.execution.Scheduler
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
-import slick.jdbc.JdbcBackend
 
 import java.time.Instant
 import java.util.UUID
 
 class BlazegraphViewsRoutesSpec
     extends RouteHelpers
+    with DoobieScalaTestFixture
     with Matchers
     with CirceLiteral
     with CirceEq
@@ -89,13 +88,6 @@ class BlazegraphViewsRoutesSpec
 
   private val indexingViewId = nxv + "indexing-view"
 
-  private val allowedPerms = Set(
-    permissions.query,
-    permissions.read,
-    permissions.write,
-    events.read
-  )
-
   private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
     Map(project.ref -> project.context),
     Set(deprecatedProject.ref),
@@ -125,7 +117,6 @@ class BlazegraphViewsRoutesSpec
     )
   )
 
-  implicit val externalIndexingConfig  = externalIndexing
   implicit val paginationConfig        = pagination
   implicit private val f: FusionConfig = fusionConfig
 
@@ -135,9 +126,16 @@ class BlazegraphViewsRoutesSpec
   var restartedView: Option[(ProjectRef, Iri)] = None
 
   private def restart(id: Iri, projectRef: ProjectRef) = UIO { restartedView = Some(projectRef -> id) }.void
-  private val views                                    = BlazegraphViewsSetup.init(fetchContext, allowedPerms)
+  private lazy val views                               = BlazegraphViews(
+    fetchContext,
+    ResolverContextResolution(rcr),
+    alwaysValidate,
+    _ => UIO.unit,
+    eventLogConfig,
+    xas
+  ).accepted
 
-  val viewsQuery = new BlazegraphViewsQueryDummy(
+  lazy val viewsQuery = new BlazegraphViewsQueryDummy(
     projectRef,
     new SparqlQueryClientDummy(),
     views,
@@ -146,7 +144,7 @@ class BlazegraphViewsRoutesSpec
 
   private val aclCheck        = AclSimpleCheck().accepted
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
-  private val routes          =
+  private lazy val routes     =
     Route.seal(
       BlazegraphViewsRoutes(
         views,
@@ -487,21 +485,4 @@ class BlazegraphViewsRoutesSpec
       }
     }
   }
-
-  private var db: JdbcBackend.Database = null
-
-  override protected def createActorSystem(): ActorSystem =
-    ActorSystem("BlazegraphViewsRoutesSpec", AbstractDBSpec.config)
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
-
 }
