@@ -58,11 +58,10 @@ class MainSpec
 
     //TODO Remove the lines where plugins are migrated
     System.setProperty("plugins.archive.enabled", "false")
-    System.setProperty("plugins.composite-views.enabled", "false")
 
     //TODO Enable these plugins again after migration
     System.setProperty("plugins.graph-analytics.enabled", "false")
-    System.setProperty("plugins.search.enabled", "false")
+    System.setProperty("plugins.search.enabled", "true")
     System.setProperty("plugins.search.indexing.resource-types", resourceTypesFile.toString)
     System.setProperty("plugins.search.indexing.mapping", mappingFile.toString)
     System.setProperty("plugins.search.indexing.query", queryFile.toString)
@@ -80,7 +79,6 @@ class MainSpec
     System.clearProperty("plugins.elasticsearch.credentials.password")
 
     System.clearProperty("plugins.archive.enabled")
-    System.clearProperty("plugins.composite-views.enabled")
 
     System.clearProperty("plugins.graph-analytics.enabled.enabled")
     System.clearProperty("plugins.search.enabled")
