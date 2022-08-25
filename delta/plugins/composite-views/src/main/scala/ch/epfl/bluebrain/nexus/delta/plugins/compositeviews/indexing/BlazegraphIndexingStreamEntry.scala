@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.indexing
+package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlWriteQuery

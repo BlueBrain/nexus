@@ -1,19 +1,18 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
+package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.View
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
-import doobie.postgres.circe.jsonb.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.views.View.{AggregateView, IndexingView}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityDependencyStore, Predicate, Serializer}
 import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
+import doobie.postgres.circe.jsonb.implicits._
 import io.circe.{Decoder, Json}
 import monix.bio.{IO, UIO}
 
@@ -22,7 +21,9 @@ trait ViewsStore[Rejection] {
   /**
     * Fetch the view with the given id in the given project and maps it to a view
     * @param id
+    *   the view identifier
     * @param project
+    *   the view
     * @return
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[Rejection, View]

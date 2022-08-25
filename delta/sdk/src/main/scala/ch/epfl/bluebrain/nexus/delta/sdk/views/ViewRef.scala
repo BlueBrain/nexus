@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.views.model
+package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder

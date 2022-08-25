@@ -56,13 +56,13 @@ object ProjectsModule extends ModuleDef {
         uuidF: UUIDF
     ) =>
       Task.pure(
-      ProjectsImpl(
-        organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
-        scopeInitializations,
-        mappings.merge,
-        config.projects,
-        xas
-      )(baseUri, clock, uuidF)
+        ProjectsImpl(
+          organizations.fetchActiveOrganization(_).mapError(WrappedOrganizationRejection),
+          scopeInitializations,
+          mappings.merge,
+          config.projects,
+          xas
+        )(baseUri, clock, uuidF)
       )
   }
 
@@ -75,8 +75,9 @@ object ProjectsModule extends ModuleDef {
       ProjectProvisioning(acls, projects, config.automaticProvisioning, serviceAccount)
   }
 
-  make[FetchContext[ContextRejection]].fromEffect { (organizations: Organizations, projects: Projects, quotas: Quotas) =>
-    Task.pure(FetchContext(organizations, projects, quotas))
+  make[FetchContext[ContextRejection]].fromEffect {
+    (organizations: Organizations, projects: Projects, quotas: Quotas) =>
+      Task.pure(FetchContext(organizations, projects, quotas))
   }
 
   make[UUIDCache].fromEffect { (config: AppConfig, xas: Transactors) =>

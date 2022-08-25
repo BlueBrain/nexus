@@ -319,7 +319,7 @@ final class ElasticSearchViews private (
     val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
     SearchResults(
       log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
-        fetchContext
+        fetchContext.cacheOnReads
           .onRead(state.project)
           .redeemWith(
             _ => UIO.none,
@@ -349,11 +349,6 @@ object ElasticSearchViews {
 
   final val entityType: EntityType = EntityType("elasticsearch")
 
-  /**
-    * The elasticsearch module type.
-    */
-  val moduleType: String = "elasticsearch"
-
   type ElasticsearchLog = ScopedEventLog[
     Iri,
     ElasticSearchViewState,
@@ -382,7 +377,7 @@ object ElasticSearchViews {
     * Constructs a projectionId for an elasticsearch view
     */
   def projectionId(uuid: UUID, rev: Int): ViewProjectionId =
-    ViewProjectionId(s"$moduleType-${uuid}_$rev")
+    ViewProjectionId(s"elasticsearch-${uuid}_$rev")
 
   /**
     * Constructs the index name for an Elasticsearch view

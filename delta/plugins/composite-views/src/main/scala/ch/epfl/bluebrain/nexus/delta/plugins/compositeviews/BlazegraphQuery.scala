@@ -119,7 +119,7 @@ object BlazegraphQuery {
           _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           permissions = viewRes.value.projections.value.map(_.permission)
           _          <- aclCheck.authorizeForEveryOr(project, permissions)(AuthorizationFailed)
-          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, config)
+          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev.toInt, config.prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 

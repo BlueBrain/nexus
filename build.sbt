@@ -524,8 +524,8 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkViews   % "provided;test->test"
+    sdk      % "provided;test->test",
+    sdkViews % "provided;test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
@@ -554,9 +554,8 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkViews   % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk      % "provided;test->test",
+    sdkViews % "provided;test->test"
   )
   .settings(
     name                       := "delta-blazegraph-plugin",

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.entityType
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{ProjectContextRejection, ResourceAlreadyExists}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.IndexingBlazegraphViewValue
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -25,8 +27,9 @@ import monix.bio.{IO, UIO}
 class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: ServiceAccount)
     extends ScopeInitialization {
 
-  private val logger: Logger                          = Logger[BlazegraphScopeInitialization]
-  implicit private val serviceAccountSubject: Subject = serviceAccount.subject
+  private val logger: Logger                                = Logger[BlazegraphScopeInitialization]
+  implicit private val serviceAccountSubject: Subject       = serviceAccount.subject
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   private val defaultValue: IndexingBlazegraphViewValue = IndexingBlazegraphViewValue(
     resourceSchemas = Set.empty,
@@ -49,7 +52,7 @@ class BlazegraphScopeInitialization(views: BlazegraphViews, serviceAccount: Serv
             s"Failed to create the default SparqlView for project '${project.ref}' due to '${rej.reason}'."
           UIO.delay(logger.error(str)) >> IO.raiseError(ScopeInitializationFailed(str))
       }
-      .named("createDefaultSparqlView", BlazegraphViews.moduleType)
+      .span("createDefaultSparqlView")
 
   override def onOrganizationCreation(
       organization: Organization,

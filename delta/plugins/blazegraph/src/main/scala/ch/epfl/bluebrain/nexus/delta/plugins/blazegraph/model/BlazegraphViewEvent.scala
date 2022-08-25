@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -8,14 +9,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.IriEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sdk.sse.{resourcesSelector, SseEncoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
+import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.{Codec, Decoder, Encoder, Json}
 
 import java.time.Instant
 import java.util.UUID
@@ -24,7 +27,7 @@ import scala.annotation.nowarn
 /**
   * Enumeration of Blazegraph view events.
   */
-sealed trait BlazegraphViewEvent extends ProjectScopedEvent {
+sealed trait BlazegraphViewEvent extends ScopedEvent {
 
   /**
     * @return
@@ -60,7 +63,7 @@ sealed trait BlazegraphViewEvent extends ProjectScopedEvent {
     * @return
     *   the revision that the event generates
     */
-  def rev: Long
+  def rev: Int
 
   /**
     * @return
@@ -98,7 +101,7 @@ object BlazegraphViewEvent {
       uuid: UUID,
       value: BlazegraphViewValue,
       source: Json,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends BlazegraphViewEvent {
@@ -129,7 +132,7 @@ object BlazegraphViewEvent {
       uuid: UUID,
       value: BlazegraphViewValue,
       source: Json,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends BlazegraphViewEvent {
@@ -163,9 +166,9 @@ object BlazegraphViewEvent {
       project: ProjectRef,
       tpe: BlazegraphViewType,
       uuid: UUID,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends BlazegraphViewEvent
@@ -193,42 +196,61 @@ object BlazegraphViewEvent {
       project: ProjectRef,
       tpe: BlazegraphViewType,
       uuid: UUID,
-      rev: Long,
+      rev: Int,
       instant: Instant,
       subject: Subject
   ) extends BlazegraphViewEvent
 
-  private val context = ContextValue(Vocabulary.contexts.metadata, contexts.blazegraph)
-
   @nowarn("cat=unused")
-  implicit private val config: Configuration = Configuration.default
-    .withDiscriminator(keywords.tpe)
-    .copy(transformMemberNames = {
-      case "id"      => "_viewId"
-      case "source"  => nxv.source.prefix
-      case "project" => nxv.project.prefix
-      case "rev"     => nxv.rev.prefix
-      case "instant" => nxv.instant.prefix
-      case "subject" => nxv.eventSubject.prefix
-      case "uuid"    => "_uuid"
-      case other     => other
-    })
+  val serializer: Serializer[Iri, BlazegraphViewEvent] = {
+    import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
+    implicit val configuration: Configuration               = Serializer.circeConfiguration
+    implicit val valueEncoder: Encoder[BlazegraphViewValue] =
+      deriveConfiguredEncoder[BlazegraphViewValue].mapJson(_.deepDropNullValues)
+    implicit val valueDecoder: Decoder[BlazegraphViewValue] =
+      deriveConfiguredDecoder[BlazegraphViewValue]
+    implicit val coder: Codec.AsObject[BlazegraphViewEvent] = deriveConfiguredCodec[BlazegraphViewEvent]
+    Serializer(_.id)
+  }
 
-  @nowarn("cat=unused")
-  implicit def blazegraphEventEncoder(implicit baseUri: BaseUri): Encoder.AsObject[BlazegraphViewEvent] = {
-    implicit val subjectEncoder: Encoder[Subject]               = IriEncoder.jsonEncoder[Subject]
-    implicit val viewValueEncoder: Encoder[BlazegraphViewValue] = Encoder.instance[BlazegraphViewValue](_ => Json.Null)
-    implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
-    implicit val projectRefEncoder: Encoder[ProjectRef]         = IriEncoder.jsonEncoder[ProjectRef]
+  def sseEncoder(implicit base: BaseUri): SseEncoder[BlazegraphViewEvent] = new SseEncoder[BlazegraphViewEvent] {
+    override val databaseDecoder: Decoder[BlazegraphViewEvent] = serializer.codec
 
-    Encoder.encodeJsonObject.contramapObject { event =>
-      deriveConfiguredEncoder[BlazegraphViewEvent]
-        .encodeObject(event)
-        .remove("tpe")
-        .add(nxv.types.prefix, event.tpe.types.asJson)
-        .add(nxv.constrainedBy.prefix, schema.iri.asJson)
-        .add(nxv.resourceId.prefix, event.id.asJson)
-        .add(keywords.context, context.value)
+    override def entityType: EntityType = BlazegraphViews.entityType
+
+    override val selectors: Set[Label] = Set(Label.unsafe("views"), resourcesSelector)
+
+    @nowarn("cat=unused")
+    override val sseEncoder: Encoder.AsObject[BlazegraphViewEvent] = {
+      val context                                                 = ContextValue(Vocabulary.contexts.metadata, contexts.blazegraph)
+      implicit val config: Configuration                          = Configuration.default
+        .withDiscriminator(keywords.tpe)
+        .copy(transformMemberNames = {
+          case "id"      => "_viewId"
+          case "source"  => nxv.source.prefix
+          case "project" => nxv.project.prefix
+          case "rev"     => nxv.rev.prefix
+          case "instant" => nxv.instant.prefix
+          case "subject" => nxv.eventSubject.prefix
+          case "uuid"    => "_uuid"
+          case other     => other
+        })
+      implicit val subjectEncoder: Encoder[Subject]               = IriEncoder.jsonEncoder[Subject]
+      implicit val viewValueEncoder: Encoder[BlazegraphViewValue] =
+        Encoder.instance[BlazegraphViewValue](_ => Json.Null)
+      implicit val viewTpeEncoder: Encoder[BlazegraphViewType]    = Encoder.instance[BlazegraphViewType](_ => Json.Null)
+      implicit val projectRefEncoder: Encoder[ProjectRef]         = IriEncoder.jsonEncoder[ProjectRef]
+
+      Encoder.encodeJsonObject.contramapObject { event =>
+        deriveConfiguredEncoder[BlazegraphViewEvent]
+          .encodeObject(event)
+          .remove("tpe")
+          .remove("value")
+          .add(nxv.types.prefix, event.tpe.types.asJson)
+          .add(nxv.constrainedBy.prefix, schema.iri.asJson)
+          .add(nxv.resourceId.prefix, event.id.asJson)
+          .add(keywords.context, context.value)
+      }
     }
   }
 }

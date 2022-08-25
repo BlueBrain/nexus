@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.{ViewIndex, ViewRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax._
@@ -41,7 +40,7 @@ sealed trait BlazegraphView extends Product with Serializable {
     * @return
     *   the tag -> rev mapping
     */
-  def tags: Map[UserTag, Long]
+  def tags: Tags
 
   /**
     * @return
@@ -101,32 +100,12 @@ object BlazegraphView {
       includeMetadata: Boolean,
       includeDeprecated: Boolean,
       permission: Permission,
-      tags: Map[UserTag, Long],
+      tags: Tags,
       source: Json
   ) extends BlazegraphView {
     override def metadata: Metadata = Metadata(Some(uuid))
 
     override def tpe: BlazegraphViewType = BlazegraphViewType.IndexingBlazegraphView
-  }
-
-  object IndexingBlazegraphView {
-
-    /**
-      * Create the view index from the [[IndexingBlazegraphView]]
-      */
-    def resourceToViewIndex(
-        res: IndexingViewResource,
-        config: BlazegraphViewsConfig
-    ): ViewIndex[IndexingBlazegraphView] = ViewIndex(
-      res.value.project,
-      res.id,
-      BlazegraphViews.projectionId(res),
-      BlazegraphViews.namespace(res, config.indexing),
-      res.rev,
-      res.deprecated,
-      res.value.resourceTag,
-      res.value
-    )
   }
 
   /**
@@ -147,7 +126,7 @@ object BlazegraphView {
       id: Iri,
       project: ProjectRef,
       views: NonEmptySet[ViewRef],
-      tags: Map[UserTag, Long],
+      tags: Tags,
       source: Json
   ) extends BlazegraphView {
     override def metadata: Metadata      = Metadata(None)

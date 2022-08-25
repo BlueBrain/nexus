@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
+package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
 
 /**
   * Describes a view independently of its backend for querying purposes

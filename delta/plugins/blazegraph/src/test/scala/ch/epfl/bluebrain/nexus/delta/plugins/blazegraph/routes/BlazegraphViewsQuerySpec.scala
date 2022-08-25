@@ -3,50 +3,43 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.namespace
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsQuery.FetchView
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponseType.SparqlNTriples
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.{BlazegraphClient, SparqlWriteQuery}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView.{AggregateBlazegraphView, IndexingBlazegraphView}
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, InvalidBlazegraphViewId, ProjectContextRejection, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection.{AuthorizationFailed, ProjectContextRejection, ViewIsDeprecated}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValue.{AggregateBlazegraphViewValue, IndexingBlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.SparqlLink.{SparqlExternalLink, SparqlResourceLink}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.{BlazegraphViews, BlazegraphViewsQuery, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.{Graph, NTriples}
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment.IriSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRefVisitor.VisitedView.{AggregatedVisitedView, IndexedVisitedView}
-import ch.epfl.bluebrain.nexus.delta.sdk.views.model.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.blazegraph.BlazegraphDocker
-import monix.bio.IO
 import monix.execution.Scheduler
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors}
+import org.scalatest.{CancelAfterFailure, DoNotDiscover, Inspectors, OptionValues}
 
 import java.time.Instant
 import scala.concurrent.duration._
@@ -54,9 +47,10 @@ import scala.concurrent.duration._
 @DoNotDiscover
 class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     extends TestKit(ActorSystem("BlazegraphViewsQuerySpec"))
-    with AnyWordSpecLike
+    with DoobieScalaTestFixture
     with Matchers
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with TestMatchers
@@ -64,13 +58,15 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     with Inspectors
     with ConfigFixtures
     with IOValues
+    with Fixtures
     with Eventually {
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private val sc: Scheduler                          = Scheduler.global
-  implicit private val httpConfig: HttpClientConfig           = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val sc: Scheduler                = Scheduler.global
+  implicit private val httpConfig: HttpClientConfig = HttpClientConfig(AlwaysGiveUp, HttpClientWorthRetry.never, true)
+  implicit private val baseUri: BaseUri             = BaseUri("http://localhost", Label.unsafe("v1"))
+
+  implicit private val uuidF: UUIDF = UUIDF.random
 
   private lazy val endpoint = docker.hostConfig.endpoint
   private lazy val client   = BlazegraphClient(HttpClient(), endpoint, None, 10.seconds)
@@ -84,68 +80,32 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   private val project2        = ProjectGen.project("org2", "proj2")
   private val queryPermission = Permission.unsafe("views/query")
 
-  private def indexingView(id: Iri, project: ProjectRef): IndexingViewResource =
-    resourceFor(id, project, IndexingBlazegraphViewValue()).asInstanceOf[IndexingViewResource]
-
-  private def aggView(id: Iri, project: ProjectRef, refs: (Iri, ProjectRef)*): ResourceF[AggregateBlazegraphView] = {
-    val set      = refs.map { case (iri, p) => ViewRef(p, iri) }
-    val viewRefs = NonEmptySet(set.head, set.tail.toSet)
-    resourceFor(id, project, AggregateBlazegraphViewValue(viewRefs)).asInstanceOf[ResourceF[AggregateBlazegraphView]]
-  }
-
-  private val defaultView         = indexingView(defaultViewId, project1.ref)
-  private val view1Proj1          = indexingView(nxv + "view1Proj1", project1.ref)
-  private val view2Proj1          = indexingView(nxv + "view2Proj1", project1.ref)
-  private val view1Proj2          = indexingView(nxv + "view1Proj2", project2.ref)
-  private val view2Proj2          = indexingView(nxv + "view2Proj2", project2.ref)
-  private val deprecatedViewProj1 = indexingView(nxv + "deprecatedViewProj1", project1.ref).copy(deprecated = true)
+  private val defaultView         = ViewRef(project1.ref, defaultViewId)
+  private val view1Proj1          = ViewRef(project1.ref, nxv + "view1Proj1")
+  private val view2Proj1          = ViewRef(project1.ref, nxv + "view2Proj1")
+  private val view1Proj2          = ViewRef(project2.ref, nxv + "view1Proj2")
+  private val view2Proj2          = ViewRef(project2.ref, nxv + "view2Proj2")
+  private val deprecatedViewProj1 = ViewRef(project1.ref, nxv + "deprecatedViewProj1")
 
   // Aggregates all views of project1
-  private val aggView1Proj1 = aggView(
-    nxv + "aggView1Proj1",
-    project1.ref,
-    view1Proj1.id -> view1Proj1.value.project,
-    view2Proj1.id -> view2Proj1.value.project
+  private val aggView1Proj1      = ViewRef(project1.ref, nxv + "aggView1Proj1")
+  private val aggView1Proj1Views = AggregateBlazegraphViewValue(
+    NonEmptySet.of(view1Proj1, view2Proj1)
   )
+
   // Aggregates view1 of project2, references an aggregated view on project 2 and references the previous aggregate which aggregates all views of project1
-  private val aggView1Proj2 = aggView(
-    nxv + "aggView1Proj2",
-    project2.ref,
-    view1Proj2.id           -> view1Proj2.value.project,
-    (nxv + "aggView2Proj2") -> project2.ref,
-    aggView1Proj1.id        -> aggView1Proj1.value.project
+  private val aggView1Proj2      = ViewRef(project2.ref, nxv + "aggView1Proj2")
+  private val aggView1Proj2Views = AggregateBlazegraphViewValue(
+    NonEmptySet.of(view1Proj2, aggView1Proj1)
   )
 
   // Aggregates view2 of project2 and references aggView1Proj2
-  private val aggView2Proj2 = aggView(
-    nxv + "aggView2Proj2",
-    project2.ref,
-    view2Proj2.id    -> view2Proj2.value.project,
-    aggView1Proj2.id -> aggView1Proj2.value.project
+  private val aggView2Proj2      = ViewRef(project2.ref, nxv + "aggView2Proj2")
+  private val aggView2Proj2Views = AggregateBlazegraphViewValue(
+    NonEmptySet.of(view2Proj2, aggView1Proj2)
   )
 
   private val indexingViews = List(defaultView, view1Proj1, view2Proj1, view1Proj2, view2Proj2)
-
-  private val views: Map[(Iri, ProjectRef), ViewResource] =
-    List(
-      defaultView,
-      view1Proj1,
-      view2Proj1,
-      view1Proj2,
-      view2Proj2,
-      aggView1Proj1,
-      aggView1Proj2,
-      aggView2Proj2,
-      deprecatedViewProj1
-    )
-      .map(v => ((v.id, v.value.project), v.asInstanceOf[ViewResource]))
-      .toMap
-
-  private val fetchView: FetchView = {
-    case (IdSegmentRef.Latest(id: IriSegment), p) =>
-      IO.fromEither(views.get(id.value -> p).toRight(ViewNotFound(id.value, p)))
-    case (id, _)                                  => IO.raiseError(InvalidBlazegraphViewId(id.value.asString))
-  }
 
   private val fetchContext = FetchContextDummy[BlazegraphViewRejection](
     List(project1, project2),
@@ -154,17 +114,17 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
 
   private def namedGraph(ntriples: NTriples): Uri = ntriples.rootNode.asIri.value.toUri.rightValue
 
-  private def createGraphs(view: IndexingViewResource): Seq[Graph] =
+  private def createGraphs(view: ViewRef): Seq[Graph] =
     (0 until 3).map { idx =>
-      Graph.empty(view.id / idx.toString).add(nxv.project.iri, view.value.project.toString)
+      Graph.empty(view.viewId / idx.toString).add(nxv.project.iri, view.project.toString)
     }
 
-  private def createNTriples(view: IndexingViewResource*): NTriples =
+  private def createNTriples(view: ViewRef*): NTriples =
     view.foldLeft(NTriples.empty) { (ntriples, view) =>
       createGraphs(view).foldLeft(ntriples)(_ ++ _.toNTriples.rightValue)
     }
 
-  private def createTriples(view: IndexingViewResource): Seq[NTriples] =
+  private def createTriples(view: ViewRef): Seq[NTriples] =
     createGraphs(view).map(_.toNTriples.rightValue)
 
   private def sparqlResourceLinkFor(resourceId: Iri, path: Iri) =
@@ -190,56 +150,82 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
   private val constructQuery = SparqlConstructQuery("CONSTRUCT {?s ?p ?o} WHERE { ?s ?p ?o }").rightValue
 
   "A BlazegraphViewsQuery" should {
-    val visitor = new ViewRefVisitor(fetchView(_, _).map { view =>
-      view.value match {
-        case v: IndexingBlazegraphView  =>
-          IndexedVisitedView(ViewRef(v.project, v.id), v.permission, namespace(v.uuid, view.rev, externalConfig))
-        case v: AggregateBlazegraphView => AggregatedVisitedView(ViewRef(v.project, v.id), v.views)
-      }
-    })
+    lazy val views = BlazegraphViews(
+      fetchContext,
+      ResolverContextResolution(rcr),
+      alwaysValidate,
+      client,
+      eventLogConfig,
+      "prefix",
+      xas
+    ).accepted
 
-    lazy val views = AclSimpleCheck(
+    lazy val viewsQuery = AclSimpleCheck(
       (alice.subject, AclAddress.Project(project1.ref), Set(queryPermission)),
       (bob.subject, AclAddress.Root, Set(queryPermission)),
       (Anonymous, AclAddress.Project(project2.ref), Set(queryPermission))
-    ).map { acls => BlazegraphViewsQuery(fetchView, visitor, fetchContext, acls, client) }.accepted
+    ).flatMap { acls => BlazegraphViewsQuery(acls, fetchContext, views, client, "prefix", xas) }.accepted
+
+    "create the indexing views" in {
+      indexingViews.traverse { v =>
+        views.create(v.viewId, v.project, IndexingBlazegraphViewValue())
+      }.accepted
+    }
+
+    "create the deprecate view" in {
+      views.create(deprecatedViewProj1.viewId, deprecatedViewProj1.project, IndexingBlazegraphViewValue()) >>
+        views.deprecate(deprecatedViewProj1.viewId, deprecatedViewProj1.project, 1)
+    }.accepted
+
+    "create the aggregate views" in {
+      views.create(aggView1Proj1.viewId, aggView1Proj1.project, aggView1Proj1Views) >>
+        views.create(aggView1Proj2.viewId, aggView1Proj2.project, aggView1Proj2Views) >>
+        views.create(aggView2Proj2.viewId, aggView2Proj2.project, aggView2Proj2Views)
+    }.accepted
+
+    "create the cycle between project2 aggregate views" in {
+      val newValue = AggregateBlazegraphViewValue(
+        NonEmptySet.of(view1Proj1, view2Proj1, aggView2Proj2)
+      )
+      views.update(aggView1Proj1.viewId, aggView1Proj1.project, 1, newValue).accepted
+    }
 
     "index triples" in {
-      forAll(indexingViews) { v =>
-        val index = BlazegraphViews.namespace(v, externalConfig)
-        client.createNamespace(index).accepted
-        val bulk  = createTriples(v).map { triples =>
-          SparqlWriteQuery.replace(namedGraph(triples), triples)
+      indexingViews.traverse { ref =>
+        views.fetchIndexingView(ref.viewId, ref.project).flatMap { view =>
+          val bulk = createTriples(ref).map { triples =>
+            SparqlWriteQuery.replace(namedGraph(triples), triples)
+          }
+          client.bulk(BlazegraphViews.namespace(view, "prefix"), bulk)
         }
-        client.bulk(index, bulk).accepted
-      }
+      }.accepted
     }
 
     "query an indexed view" in eventually {
-      val proj   = view1Proj1.value.project
-      val result = views.query(view1Proj1.id, proj, constructQuery, SparqlNTriples).accepted.value
+      val proj   = view1Proj1.project
+      val result = viewsQuery.query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples).accepted.value
       result.value should equalLinesUnordered(createNTriples(view1Proj1).value)
     }
 
     "query an indexed view without permissions" in eventually {
-      val proj = view1Proj1.value.project
-      views.query(view1Proj1.id, proj, constructQuery, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
+      val proj = view1Proj1.project
+      viewsQuery.query(view1Proj1.viewId, proj, constructQuery, SparqlNTriples)(anon).rejectedWith[AuthorizationFailed]
     }
 
     "query a deprecated indexed view" in eventually {
-      val proj = deprecatedViewProj1.value.project
-      views.query(deprecatedViewProj1.id, proj, constructQuery, SparqlNTriples).rejectedWith[ViewIsDeprecated]
+      val proj = deprecatedViewProj1.project
+      viewsQuery.query(deprecatedViewProj1.viewId, proj, constructQuery, SparqlNTriples).rejectedWith[ViewIsDeprecated]
     }
 
     "query an aggregated view" in eventually {
-      val proj   = aggView1Proj2.value.project
-      val result = views.query(aggView1Proj2.id, proj, constructQuery, SparqlNTriples)(bob).accepted.value
+      val proj   = aggView1Proj2.project
+      val result = viewsQuery.query(aggView1Proj2.viewId, proj, constructQuery, SparqlNTriples)(bob).accepted.value
       result.value should equalLinesUnordered(createNTriples(indexingViews.drop(1): _*).value)
     }
 
     "query an aggregated view without permissions in some projects" in {
-      val proj   = aggView1Proj2.value.project
-      val result = views.query(aggView1Proj2.id, proj, constructQuery, SparqlNTriples)(alice).accepted.value
+      val proj   = aggView1Proj2.project
+      val result = viewsQuery.query(aggView1Proj2.viewId, proj, constructQuery, SparqlNTriples)(alice).accepted.value
       result.value should equalLinesUnordered(createNTriples(view1Proj1, view2Proj1).value)
     }
 
@@ -253,12 +239,18 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
       val resource2Ntriples = NTriples(contentOf("sparql/resource2.ntriples"), resource2Id)
       val resource3Ntriples = NTriples(contentOf("sparql/resource3.ntriples"), resource3Id)
 
-      val defaultIndex = BlazegraphViews.namespace(defaultView, externalConfig)
-      client.replace(defaultIndex, resource1Id.toUri.rightValue, resource1Ntriples).accepted
-      client.replace(defaultIndex, resource2Id.toUri.rightValue, resource2Ntriples).accepted
-      client.replace(defaultIndex, resource3Id.toUri.rightValue, resource3Ntriples).accepted
+      {
+        for {
+          defaultIndex <- views.fetchIndexingView(defaultView.viewId, defaultView.project).map { v =>
+                            BlazegraphViews.namespace(v, "prefix")
+                          }
+          _            <- client.replace(defaultIndex, resource1Id.toUri.rightValue, resource1Ntriples)
+          _            <- client.replace(defaultIndex, resource2Id.toUri.rightValue, resource2Ntriples)
+          _            <- client.replace(defaultIndex, resource3Id.toUri.rightValue, resource3Ntriples)
+        } yield ()
+      }.accepted
 
-      views
+      viewsQuery
         .incoming(resource1Id, project1.ref, Pagination.OnePage)
         .accepted shouldEqual UnscoredSearchResults(
         2,
@@ -270,7 +262,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     }
 
     "query outgoing links" in {
-      views
+      viewsQuery
         .outgoing(resource1Id, project1.ref, Pagination.OnePage, includeExternalLinks = true)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         3,
@@ -283,7 +275,7 @@ class BlazegraphViewsQuerySpec(docker: BlazegraphDocker)
     }
 
     "query outgoing links excluding external" in {
-      views
+      viewsQuery
         .outgoing(resource1Id, project1.ref, Pagination.OnePage, includeExternalLinks = false)
         .accepted shouldEqual UnscoredSearchResults[SparqlLink](
         2,

@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults._
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
@@ -116,7 +116,7 @@ class BlazegraphViewsRoutes(
                       concat(
                         put {
                           authorizeFor(ref, Write).apply {
-                            (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                            (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                               case (None, source)      =>
                                 // Create a view with id segment
                                 emit(
@@ -139,7 +139,7 @@ class BlazegraphViewsRoutes(
                             }
                           }
                         },
-                        (delete & parameter("rev".as[Long])) { rev =>
+                        (delete & parameter("rev".as[Int])) { rev =>
                           // Deprecate a view
                           authorizeFor(ref, Write).apply {
                             emit(
@@ -220,16 +220,16 @@ class BlazegraphViewsRoutes(
                         concat(
                           // Fetch tags for a view
                           (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                            emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
+                            emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
                           },
                           // Tag a view
-                          (post & parameter("rev".as[Long])) { rev =>
+                          (post & parameter("rev".as[Int])) { rev =>
                             authorizeFor(ref, Write).apply {
                               entity(as[Tag]) { case Tag(tagRev, tag) =>
                                 emit(
                                   Created,
                                   views
-                                    .tag(id, ref, tag, tagRev, rev)
+                                    .tag(id, ref, tag, tagRev.toInt, rev)
                                     .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectOn[ViewNotFound]

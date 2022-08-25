@@ -1,13 +1,12 @@
-package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model
+package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, Secret}
+import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.config.BlazegraphViewsConfig.Credentials
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
-import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewsConfig.Credentials
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import com.typesafe.config.Config
 import pureconfig.error.FailureReason
 import pureconfig.generic.auto._
@@ -29,16 +28,12 @@ import scala.concurrent.duration._
   *   configuration of the query Blazegraph client
   * @param queryTimeout
   *   the Blazegraph query timeout
-  * @param aggregate
-  *   configuration of the underlying aggregate
-  * @param keyValueStore
-  *   configuration of the underlying key/value store
+  * @param eventLog
+  *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
-  * @param cacheIndexing
-  *   configuration of the cache indexing process
-  * @param indexing
-  *   configuration of the external indexing process
+  * @param prefix
+  *   prefix for namespaces
   * @param maxViewRefs
   *   configuration of the maximum number of view references allowed on an aggregated view
   * @param idleTimeout
@@ -50,11 +45,9 @@ final case class BlazegraphViewsConfig(
     indexingClient: HttpClientConfig,
     queryClient: HttpClientConfig,
     queryTimeout: Duration,
-    aggregate: AggregateConfig,
-    keyValueStore: KeyValueStoreConfig,
+    eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig,
-    indexing: ExternalIndexingConfig,
+    prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration
 )
