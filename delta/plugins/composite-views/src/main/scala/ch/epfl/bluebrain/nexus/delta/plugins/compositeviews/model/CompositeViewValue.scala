@@ -66,6 +66,7 @@ object CompositeViewValue {
     } yield CompositeViewValue(NonEmptySet(s.toSet), NonEmptySet(p.toSet), fields.rebuildStrategy)
   }
 
+  @SuppressWarnings(Array("TryGet"))
   @nowarn("cat=unused")
   def databaseCodec(crypto: Crypto)(implicit configuration: Configuration): Codec[CompositeViewValue] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
