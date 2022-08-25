@@ -1,9 +1,14 @@
 {
-  "@type": "CompositeViewUpdated",
+  "createdAt": "1970-01-01T00:00:00Z",
+  "createdBy": {
+    "@type": "User",
+    "realm": "myrealm",
+    "subject": "myuser"
+  },
+  "deprecated": false,
   "id": "http://example.com/composite-view",
-  "instant": "1970-01-01T00:00:00Z",
   "project": "myorg/myproj",
-  "rev": 2,
+  "rev": 1,
   "source": {
     "projections": [
       {
@@ -80,12 +85,16 @@
       }
     ]
   },
-  "subject": {
+  "tags": {
+    "mytag": 3
+  },
+  "updatedAt": "1970-01-01T00:00:00Z",
+  "updatedBy": {
     "@type": "User",
     "realm": "myrealm",
     "subject": "myuser"
   },
-  "uuid": "{{uuid}}",
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
     "projections": [
       {
@@ -99,7 +108,7 @@
         ],
         "resourceTypes": [
         ],
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       },
       {
         "@type": "ElasticSearchProjection",
@@ -118,7 +127,7 @@
         ],
         "settings": {
         },
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       }
     ],
     "rebuildStrategy": {
@@ -126,31 +135,6 @@
       "value": "1 minute"
     },
     "sources": [
-      {
-        "@type": "RemoteProjectSource",
-        "endpoint": "http://example.com/remote-endpoint",
-        "id": "http://example.com/remote-project-source",
-        "includeDeprecated": false,
-        "project": "org/remoteproject",
-        "resourceSchemas": [
-        ],
-        "resourceTypes": [
-        ],
-        "token": {
-          "value": "vv/MQBHmWaNm+TX/EigReQ=="
-        },
-        "uuid": "{{uuid}}"
-      },
-      {
-        "@type": "ProjectSource",
-        "id": "http://example.com/project-source",
-        "includeDeprecated": false,
-        "resourceSchemas": [
-        ],
-        "resourceTypes": [
-        ],
-        "uuid": "{{uuid}}"
-      },
       {
         "@type": "CrossProjectSource",
         "id": "http://example.com/cross-project-source",
@@ -165,7 +149,32 @@
         ],
         "resourceTypes": [
         ],
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
+      },
+      {
+        "@type": "RemoteProjectSource",
+        "endpoint": "http://example.com/remote-endpoint",
+        "id": "http://example.com/remote-project-source",
+        "includeDeprecated": false,
+        "project": "org/remoteproject",
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ],
+        "token": {
+          "value": "vv/MQBHmWaNm+TX/EigReQ=="
+        },
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
+      },
+      {
+        "@type": "ProjectSource",
+        "id": "http://example.com/project-source",
+        "includeDeprecated": false,
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ],
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       }
     ]
   }

@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SortList
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -75,16 +74,18 @@ object ElasticSearchQuery {
   final def apply(
       aclCheck: AclCheck,
       views: CompositeViews,
-      client: ElasticSearchClient
-  )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
-    apply(aclCheck, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty))
+      client: ElasticSearchClient,
+      prefix: String
+  ): ElasticSearchQuery =
+    apply(aclCheck, views.fetch, views.fetchElasticSearchProjection, client.search(_, _, _)(SortList.empty), prefix)
 
   private[compositeviews] def apply(
       aclCheck: AclCheck,
       fetchView: FetchView,
       fetchProjection: FetchProjection,
-      elasticSearchQuery: ElasticSearchClientQuery
-  )(implicit config: ExternalIndexingConfig): ElasticSearchQuery =
+      elasticSearchQuery: ElasticSearchClientQuery,
+      prefix: String
+  ): ElasticSearchQuery =
     new ElasticSearchQuery {
 
       override def query(
@@ -99,7 +100,7 @@ object ElasticSearchQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          index              = CompositeViews.index(projection, view, viewRes.rev, config.prefix).value
+          index              = CompositeViews.index(projection, view, viewRes.rev.toInt, prefix).value
           search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
@@ -127,7 +128,7 @@ object ElasticSearchQuery {
             view.projections.value.collect { case p: ElasticSearchProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.index(p, view, rev, config.prefix).value
+            p => CompositeViews.index(p, view, rev.toInt, prefix).value
           )
           .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }

@@ -1,17 +1,16 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config
 
-import ch.epfl.bluebrain.nexus.delta.kernel.{CacheIndexingConfig, RetryStrategyConfig}
+import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig.{RemoteSourceClientConfig, SourcesConfig}
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{AggregateConfig, ExternalIndexingConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import com.typesafe.config.Config
 import monix.bio.UIO
 import pureconfig.error.FailureReason
-import pureconfig.{ConfigReader, ConfigSource}
 import pureconfig.generic.auto._
 import pureconfig.generic.semiauto.deriveReader
+import pureconfig.{ConfigReader, ConfigSource}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -20,20 +19,14 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   *
   * @param sources
   *   the configuration of the composite views sources
+  * @param prefix
+  *   prefix for indices and namespaces
   * @param maxProjections
   *   maximum number of projections allowed
-  * @param aggregate
-  *   aggregate config
-  * @param keyValueStore
-  *   key value store config
+  * @param eventLog
+  *   configuration of the event log
   * @param pagination
   *   pagination config
-  * @param cacheIndexing
-  *   the cache indexing config
-  * @param elasticSearchIndexing
-  *   the Elasticsearch indexing config
-  * @param blazegraphIndexing
-  *   the Blazegraph indexing config
   * @param remoteSourceClient
   *   the HTTP client configuration for a remote source
   * @param minIntervalRebuild
@@ -43,13 +36,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
   */
 final case class CompositeViewsConfig(
     sources: SourcesConfig,
+    prefix: String,
     maxProjections: Int,
-    aggregate: AggregateConfig,
-    keyValueStore: KeyValueStoreConfig,
+    eventLog: EventLogConfig,
     pagination: PaginationConfig,
-    cacheIndexing: CacheIndexingConfig,
-    elasticSearchIndexing: ExternalIndexingConfig,
-    blazegraphIndexing: ExternalIndexingConfig,
     remoteSourceClient: RemoteSourceClientConfig,
     minIntervalRebuild: FiniteDuration,
     idleTimeout: FiniteDuration

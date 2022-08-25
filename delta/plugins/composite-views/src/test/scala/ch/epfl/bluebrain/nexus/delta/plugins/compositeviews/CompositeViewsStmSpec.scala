@@ -1,24 +1,21 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next, ValidateProjection, ValidateSource}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.ElasticSearchProjection
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.CrossProjectSource
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewState, CompositeViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import io.circe.Json
 import monix.bio.IO
-import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -28,23 +25,14 @@ class CompositeViewsStmSpec
     with Matchers
     with Inspectors
     with IOFixedClock
+    with OptionValues
     with IOValues
     with TestHelpers
     with CompositeViewsFixture {
   "A CompositeViews STM" when {
 
-    val validSource: ValidateSource                            = _ => IO.unit
-    val invalidSource: ValidateSource                          = {
-      case s: CrossProjectSource => IO.raiseError(CrossProjectSourceProjectNotFound(s))
-      case _                     => IO.unit
-    }
-    val validProjection: ValidateProjection                    = (_, _, _) => IO.unit
-    val invalidProjection: ValidateProjection                  = {
-      case (_: ElasticSearchProjection, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
-      case _                                  => IO.unit
-    }
-    val allIdsAvailable: IdAvailability[ResourceAlreadyExists] = (_, _) => IO.unit
-    val noIdsAvailable: IdAvailability[ResourceAlreadyExists]  = (p, id) => IO.raiseError(ResourceAlreadyExists(id, p))
+    val validView: ValidateCompositeView   = (_, _, _) => IO.unit
+    val invalidView: ValidateCompositeView = (_, _, _) => IO.raiseError(InvalidElasticSearchProjectionPayload(None))
 
     def current(
         id: Iri = id,
@@ -52,153 +40,134 @@ class CompositeViewsStmSpec
         uuid: UUID = uuid,
         value: CompositeViewValue = viewValue,
         source: Json = source,
-        tags: Map[UserTag, Long] = Map.empty,
-        rev: Long = 1L,
+        tags: Tags = Tags.empty,
+        rev: Int = 1,
         deprecated: Boolean = false,
         createdAt: Instant = epoch,
         createdBy: Subject = Anonymous,
         updatedAt: Instant = epoch,
         updatedBy: Subject = Anonymous
-    ): Current =
-      Current(id, project, uuid, value, source, tags, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
+    ): CompositeViewState =
+      CompositeViewState(
+        id,
+        project,
+        uuid,
+        value,
+        source,
+        tags,
+        rev,
+        deprecated,
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy
+      )
 
-    val eval = evaluate(validSource, validProjection, allIdsAvailable, 3, 2)(_, _)
+    val eval = evaluate(validView)(_, _)
 
     "evaluating the CreateCompositeView command" should {
       val cmd = CreateCompositeView(id, project.ref, viewFields, source, subject, project.base)
       "emit an CompositeViewCreated " in {
-        val expected = CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
-        eval(Initial, cmd).accepted shouldEqual expected
+        val expected = CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1, epoch, subject)
+        eval(None, cmd).accepted shouldEqual expected
       }
       "raise a ViewAlreadyExists rejection" in {
-        eval(current(), cmd).rejectedWith[ViewAlreadyExists]
-      }
-      "raise a ResourceAlreadyExists rejection" in {
-        val eval = evaluate(validSource, validProjection, noIdsAvailable, 3, 2)(_, _)
-        eval(Initial, cmd).rejected shouldEqual ResourceAlreadyExists(cmd.id, cmd.project)
+        eval(Some(current()), cmd).rejectedWith[ViewAlreadyExists]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(Initial, cmd)
-          .rejectedWith[InvalidElasticSearchProjectionPayload]
-      }
-      "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(Initial, cmd)
-          .rejectedWith[CrossProjectSourceProjectNotFound]
-      }
-
-      "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(Initial, cmd)
-          .rejectedWith[TooManySources]
-      }
-
-      "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(Initial, cmd)
-          .rejectedWith[TooManyProjections]
+        evaluate(invalidView)(None, cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
     }
 
     "evaluating the UpdateCompositeView command" should {
-      val cmd = UpdateCompositeView(id, project.ref, 1L, updatedFields, source, subject, project.base)
+      val cmd = UpdateCompositeView(id, project.ref, 1, updatedFields, source, subject, project.base)
       "emit an CompositeViewCreated " in {
-        val expected = CompositeViewUpdated(id, project.ref, uuid, updatedValue, source, 2L, epoch, subject)
-        eval(current(), cmd).accepted shouldEqual expected
+        val expected = CompositeViewUpdated(id, project.ref, uuid, updatedValue, source, 2, epoch, subject)
+        eval(Some(current()), cmd).accepted shouldEqual expected
       }
       "raise a IncorrectRev rejection" in {
-        eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
+        eval(Some(current()), cmd.copy(rev = 2)).rejectedWith[IncorrectRev]
       }
       "raise a ViewNotFound rejection" in {
-        eval(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(None, cmd).rejectedWith[ViewNotFound]
       }
       "raise an InvalidElasticSearchProjectionPayload rejection" in {
-        evaluate(validSource, invalidProjection, allIdsAvailable, 3, 2)(current(), cmd)
-          .rejectedWith[InvalidElasticSearchProjectionPayload]
-      }
-      "raise an InvalidSource rejection" in {
-        evaluate(invalidSource, validProjection, allIdsAvailable, 3, 2)(current(), cmd)
-          .rejectedWith[CrossProjectSourceProjectNotFound]
+        evaluate(invalidView)(Some(current()), cmd).rejectedWith[InvalidElasticSearchProjectionPayload]
       }
       "raise a ViewIsDeprecated rejection" in {
-        eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
-      }
-
-      "raise an TooManySources rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, 1, 2)(current(), cmd).rejectedWith[TooManySources]
-      }
-
-      "raise an TooManyProjections rejection" in {
-        evaluate(validSource, validProjection, allIdsAvailable, 3, 1)(current(), cmd).rejectedWith[TooManyProjections]
+        eval(Some(current(deprecated = true)), cmd).rejectedWith[ViewIsDeprecated]
       }
     }
 
     "evaluating the TagCompositeView command" should {
       val tag = UserTag.unsafe("tag")
-      val cmd = TagCompositeView(id, project.ref, 1L, tag, 1L, subject)
+      val cmd = TagCompositeView(id, project.ref, 1, tag, 1, subject)
       "emit an CompositeViewTagAdded" in {
-        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
-        eval(current(), cmd).accepted shouldEqual expected
+        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
+        eval(Some(current()), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
-        eval(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(None, cmd).rejectedWith[ViewNotFound]
       }
       "raise a IncorrectRev rejection" in {
-        eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
+        eval(Some(current()), cmd.copy(rev = 2)).rejectedWith[IncorrectRev]
       }
       "emit an CompositeViewTagAdded when deprecated" in {
-        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
-        eval(current(deprecated = true), cmd).accepted shouldEqual expected
+        val expected = CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
+        eval(Some(current(deprecated = true)), cmd).accepted shouldEqual expected
       }
       "raise a RevisionNotFound rejection for revisions higher that the current" in {
-        eval(current(), cmd.copy(targetRev = 2L)).rejectedWith[RevisionNotFound]
+        eval(Some(current()), cmd.copy(targetRev = 2)).rejectedWith[RevisionNotFound]
       }
     }
 
     "evaluating the DeprecateCompositeView command" should {
-      val cmd = DeprecateCompositeView(id, project.ref, 1L, subject)
+      val cmd = DeprecateCompositeView(id, project.ref, 1, subject)
       "emit an CompositeViewDeprecated" in {
-        val expected = CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
-        eval(current(), cmd).accepted shouldEqual expected
+        val expected = CompositeViewDeprecated(id, project.ref, uuid, 2, epoch, subject)
+        eval(Some(current()), cmd).accepted shouldEqual expected
       }
       "raise a ViewNotFound rejection" in {
-        eval(Initial, cmd).rejectedWith[ViewNotFound]
+        eval(None, cmd).rejectedWith[ViewNotFound]
       }
       "raise a IncorrectRev rejection" in {
-        eval(current(), cmd.copy(rev = 2L)).rejectedWith[IncorrectRev]
+        eval(Some(current()), cmd.copy(rev = 2)).rejectedWith[IncorrectRev]
       }
       "raise a ViewIsDeprecated rejection" in {
-        eval(current(deprecated = true), cmd).rejectedWith[ViewIsDeprecated]
+        eval(Some(current(deprecated = true)), cmd).rejectedWith[ViewIsDeprecated]
       }
     }
 
     "applying an CompositeViewCreated event" should {
       "discard the event for a Current state" in {
         next(
-          current(),
-          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
-        ) shouldEqual current()
+          Some(current()),
+          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1, epoch, subject)
+        ) shouldEqual None
       }
       "change the state" in {
         next(
-          Initial,
-          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1L, epoch, subject)
-        ) shouldEqual current(value = viewValue, createdBy = subject, updatedBy = subject)
+          None,
+          CompositeViewCreated(id, project.ref, uuid, viewValue, source, 1, epoch, subject)
+        ).value shouldEqual current(value = viewValue, createdBy = subject, updatedBy = subject)
       }
     }
 
     "applying an CompositeViewUpdated event" should {
-      "discard the event for an Initial state" in {
+      "discard the event for an None state" in {
         next(
-          Initial,
-          CompositeViewUpdated(id, project.ref, uuid, viewValue, source, 2L, epoch, subject)
-        ) shouldEqual Initial
+          None,
+          CompositeViewUpdated(id, project.ref, uuid, viewValue, source, 2, epoch, subject)
+        ) shouldEqual None
       }
       "change the state" in {
         next(
-          current(),
-          CompositeViewUpdated(id, project.ref, uuid, updatedValue, source2, 2L, epochPlus10, subject)
-        ) shouldEqual current(
+          Some(current()),
+          CompositeViewUpdated(id, project.ref, uuid, updatedValue, source2, 2, epochPlus10, subject)
+        ).value shouldEqual current(
           value = updatedValue,
           source = source2,
-          rev = 2L,
+          rev = 2,
           updatedAt = epochPlus10,
           updatedBy = subject
         )
@@ -208,33 +177,33 @@ class CompositeViewsStmSpec
     "applying an CompositeViewTagAdded event" should {
       val tag = UserTag.unsafe("tag")
 
-      "discard the event for an Initial state" in {
+      "discard the event for an None state" in {
         next(
-          Initial,
-          CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual Initial
+          None,
+          CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
+        ) shouldEqual None
       }
       "change the state" in {
         next(
-          current(),
-          CompositeViewTagAdded(id, project.ref, uuid, 1L, tag, 2L, epoch, subject)
-        ) shouldEqual current(tags = Map(tag -> 1L), rev = 2L, updatedBy = subject)
+          Some(current()),
+          CompositeViewTagAdded(id, project.ref, uuid, 1, tag, 2, epoch, subject)
+        ).value shouldEqual current(tags = Tags(tag -> 1), rev = 2, updatedBy = subject)
       }
 
     }
 
     "applying an CompositeViewDeprecated event" should {
-      "discard the event for an Initial state" in {
+      "discard the event for an None state" in {
         next(
-          Initial,
-          CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
-        ) shouldEqual Initial
+          None,
+          CompositeViewDeprecated(id, project.ref, uuid, 2, epoch, subject)
+        ) shouldEqual None
       }
       "change the state" in {
         next(
-          current(),
-          CompositeViewDeprecated(id, project.ref, uuid, 2L, epoch, subject)
-        ) shouldEqual current(deprecated = true, rev = 2L, updatedBy = subject)
+          Some(current()),
+          CompositeViewDeprecated(id, project.ref, uuid, 2, epoch, subject)
+        ).value shouldEqual current(deprecated = true, rev = 2, updatedBy = subject)
       }
     }
   }

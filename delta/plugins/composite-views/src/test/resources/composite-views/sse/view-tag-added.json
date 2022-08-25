@@ -1,0 +1,21 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/composite-views.json"
+  ],
+  "@type": "CompositeViewTagAdded",
+  "tag": "mytag",
+  "targetRev": 1,
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_instant": "1970-01-01T00:00:00Z",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_resourceId": "http://example.com/composite-view",
+  "_rev": 3,
+  "_subject": "http://localhost/v1/realms/myrealm/users/myuser",
+  "_types": [
+    "https://bluebrain.github.io/nexus/vocabulary/View",
+    "https://bluebrain.github.io/nexus/vocabulary/CompositeView"
+  ],
+  "_uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "_viewId": "http://example.com/composite-view"
+}

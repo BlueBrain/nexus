@@ -17,7 +17,7 @@ import scala.annotation.nowarn
   * @param instant
   *   the instant when the event was created
   */
-final case class RemoteSse(resourceId: Iri, rev: Long, instant: Instant)
+final case class RemoteSse(resourceId: Iri, rev: Int, instant: Instant)
 
 object RemoteSse {
 

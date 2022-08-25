@@ -32,6 +32,8 @@ object Offset {
     override def asFragment: Option[Fragment] = Some(fr"ordering > $value")
   }
 
+  val start: Offset = Start
+
   def at(value: Long): Offset = At(value)
 
   implicit val offsetOrder: Order[Offset] = Order.from {

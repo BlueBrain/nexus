@@ -1,76 +1,59 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import akka.actor.typed.ActorSystem
-import akka.persistence.query.Offset
 import cats.effect.Clock
-import cats.implicits._
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeViewsIndexing
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{AccessToken, CrossProjectSource, ProjectSource, RemoteProjectSource}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewState.{Current, Initial}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.CrossProjectSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
-import ch.epfl.bluebrain.nexus.delta.sdk._
-import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
-import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.{FromPagination, OnePage}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
-import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ProjectBase, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.SnapshotStrategy.NoSnapshot
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.EventSourceProcessor.persistenceId
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
-import ch.epfl.bluebrain.nexus.delta.sourcing.{Aggregate, EventLog, PersistentEventDefinition}
-import fs2.Stream
+import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
-import monix.execution.Scheduler
 
 import java.util.UUID
-import scala.annotation.nowarn
 
 /**
   * Composite views resource lifecycle operations.
   */
 final class CompositeViews private (
-    aggregate: CompositeViewsAggregate,
-    eventLog: EventLog[Envelope[CompositeViewEvent]],
-    cache: CompositeViewsCache,
+    log: CompositeViewsLog,
     fetchContext: FetchContext[CompositeViewRejection],
     sourceDecoder: CompositeViewFieldsJsonLdSourceDecoder
 )(implicit uuidF: UUIDF) {
+
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   /**
     * Create a new composite view with a generate id.
@@ -106,7 +89,7 @@ final class CompositeViews private (
       iri <- expandIri(id, pc)
       res <- eval(CreateCompositeView(iri, project, value, value.toJson(iri), subject, pc.base), pc)
     } yield res
-  }.named("createCompositeView", moduleType)
+  }.span("createCompositeView")
 
   /**
     * Creates a new composite from a json representation. If an identifier exists in the provided json it will be used;
@@ -125,7 +108,7 @@ final class CompositeViews private (
       (iri, value) <- sourceDecoder(project, pc, source)
       res          <- eval(CreateCompositeView(iri, project, value, source.removeAllKeys("token"), caller.subject, pc.base), pc)
     } yield res
-  }.named("createCompositeView", moduleType)
+  }.span("createCompositeView")
 
   /**
     * Creates a new composite from a json representation. If an identifier exists in the provided json it will be used
@@ -148,7 +131,7 @@ final class CompositeViews private (
       res       <-
         eval(CreateCompositeView(iri, project, viewValue, source.removeAllKeys("token"), caller.subject, pc.base), pc)
     } yield res
-  }.named("createCompositeView", moduleType)
+  }.span("createCompositeView")
 
   /**
     * Updates an existing composite view.
@@ -167,7 +150,7 @@ final class CompositeViews private (
   def update(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       value: CompositeViewFields
   )(implicit
       subject: Subject,
@@ -179,7 +162,7 @@ final class CompositeViews private (
       source = value.toJson(iri)
       res   <- eval(UpdateCompositeView(iri, project, rev, value, source, subject, pc.base), pc)
     } yield res
-  }.named("updateCompositeView", moduleType)
+  }.span("updateCompositeView")
 
   /**
     * Updates an existing composite view.
@@ -195,7 +178,7 @@ final class CompositeViews private (
     * @param caller
     *   the caller that initiated the action
     */
-  def update(id: IdSegment, project: ProjectRef, rev: Long, source: Json)(implicit
+  def update(id: IdSegment, project: ProjectRef, rev: Int, source: Json)(implicit
       caller: Caller
   ): IO[CompositeViewRejection, ViewResource] = {
     for {
@@ -208,7 +191,7 @@ final class CompositeViews private (
           pc
         )
     } yield res
-  }.named("updateCompositeView", moduleType)
+  }.span("updateCompositeView")
 
   /**
     * Applies a tag to an existing composite revision.
@@ -230,15 +213,15 @@ final class CompositeViews private (
       id: IdSegment,
       project: ProjectRef,
       tag: UserTag,
-      tagRev: Long,
-      rev: Long
+      tagRev: Int,
+      rev: Int
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
       res <- eval(TagCompositeView(iri, project, tagRev, tag, rev, subject), pc)
     } yield res
-  }.named("tagCompositeView", moduleType)
+  }.span("tagCompositeView")
 
   /**
     * Deprecates an existing composite view.
@@ -255,14 +238,14 @@ final class CompositeViews private (
   def deprecate(
       id: IdSegment,
       project: ProjectRef,
-      rev: Long
+      rev: Int
   )(implicit subject: Subject): IO[CompositeViewRejection, ViewResource] = {
     for {
       pc  <- fetchContext.onModify(project)
       iri <- expandIri(id, pc)
       res <- eval(DeprecateCompositeView(iri, project, rev, subject), pc)
     } yield res
-  }.named("deprecateCompositeView", moduleType)
+  }.span("deprecateCompositeView")
 
   /**
     * Retrieves a current composite view resource.
@@ -273,7 +256,27 @@ final class CompositeViews private (
     *   the view parent project
     */
   def fetch(id: IdSegmentRef, project: ProjectRef): IO[CompositeViewRejection, ViewResource] =
-    id.asTag.fold(fetchRevOrLatest(id, project).map(_._2))(fetchBy(_, project)).named("fetchCompositeView", moduleType)
+    fetchState(id, project).map { case (pc, state) =>
+      state.toResource(pc.apiMappings, pc.base)
+    }
+
+  def fetchState(
+      id: IdSegmentRef,
+      project: ProjectRef
+  ): IO[CompositeViewRejection, (ProjectContext, CompositeViewState)] = {
+    for {
+      pc      <- fetchContext.onRead(project)
+      iri     <- expandIri(id.value, pc)
+      notFound = ViewNotFound(iri, project)
+      state   <- id match {
+                   case Latest(_)        => log.stateOr(project, iri, notFound)
+                   case Revision(_, rev) =>
+                     log.stateOr(project, iri, rev.toInt, notFound, RevisionNotFound)
+                   case Tag(_, tag)      =>
+                     log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
+                 }
+    } yield (pc, state)
+  }.span("fetchCompositeView")
 
   /**
     * Retrieves a current composite view resource and its selected projection.
@@ -291,13 +294,13 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewProjectionResource]       =
     for {
-      (p, view)     <- fetchRevOrLatest(id, project)
+      (p, view)     <- fetchState(id, project)
       projectionIri <- expandIri(projectionId, p)
       projection    <- IO.fromOption(
                          view.value.projections.value.find(_.id == projectionIri),
                          ProjectionNotFound(view.id, projectionIri, project)
                        )
-    } yield view.map(_ -> projection)
+    } yield view.toResource(p.apiMappings, p.base).map(_ -> projection)
 
   /**
     * Retrieves a current composite view resource and its selected source.
@@ -315,13 +318,13 @@ final class CompositeViews private (
       project: ProjectRef
   ): IO[CompositeViewRejection, ViewSourceResource]           =
     for {
-      (p, view) <- fetchRevOrLatest(id, project)
+      (p, view) <- fetchState(id, project)
       sourceIri <- expandIri(sourceId, p)
       source    <- IO.fromOption(
                      view.value.sources.value.find(_.id == sourceIri),
                      SourceNotFound(view.id, sourceIri, project)
                    )
-    } yield view.map(_ -> source)
+    } yield view.toResource(p.apiMappings, p.base).map(_ -> source)
 
   /**
     * Retrieves a current composite view resource and its selected blazegraph projection.
@@ -369,17 +372,6 @@ final class CompositeViews private (
       )
     }
 
-  private def fetchBy(
-      id: IdSegmentRef.Tag,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, ViewResource] =
-    fetch(id.toLatest, project).flatMap { view =>
-      view.value.tags.get(id.tag) match {
-        case Some(rev) => fetch(id.toRev(rev), project).mapError(_ => TagNotFound(id.tag))
-        case None      => IO.raiseError(TagNotFound(id.tag))
-      }
-    }
-
   /**
     * Retrieves a list of CompositeViews using specific pagination, filter and ordering configuration.
     *
@@ -394,183 +386,79 @@ final class CompositeViews private (
       pagination: FromPagination,
       params: CompositeViewSearchParams,
       ordering: Ordering[ViewResource]
-  ): UIO[UnscoredSearchResults[ViewResource]] =
-    cache.values
-      .flatMap {
-        _.toList.filterA(params.matches).map { results =>
-          SearchResults(
-            results.size.toLong,
-            results.sorted(ordering).slice(pagination.from, pagination.from + pagination.size)
+  ): UIO[UnscoredSearchResults[ViewResource]] = {
+    val predicate = params.project.fold[Predicate](Predicate.Root)(ref => Predicate.Project(ref))
+    SearchResults(
+      log.currentStates(predicate, identity(_)).evalMapFilter[Task, ViewResource] { state =>
+        fetchContext.cacheOnReads
+          .onRead(state.project)
+          .redeemWith(
+            _ => UIO.none,
+            pc => {
+              val res = state.toResource(pc.apiMappings, pc.base)
+              params.matches(res).map(Option.when(_)(res))
+            }
           )
-        }
-      }
-      .named("listCompositeViews", moduleType)
-
-  /**
-    * A terminating stream of events for views. It finishes the stream after emitting all known events.
-    *
-    * @param projectRef
-    *   the project reference where the elasticsearch view belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  @nowarn("cat=unused")
-  def currentEvents(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    IO.pure(Stream.empty)
-
-  /**
-    * Retrieves the ordered collection of events for all composite views starting from the last known offset. The event
-    * corresponding to the provided offset will not be included in the results. The use of NoOffset implies the
-    * retrieval of all events.
-    *
-    * @param offset
-    *   the starting offset for the event log
-    */
-  def events(
-      offset: Offset
-  ): Stream[Task, Envelope[CompositeViewEvent]] = eventLog.eventsByTag(moduleType, offset)
-
-  /**
-    * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
-    * are recorded.
-    *
-    * @param projectRef
-    *   the project reference where the elasticsearch view belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  @nowarn("cat=unused")
-  def events(
-      projectRef: ProjectRef,
-      offset: Offset
-  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    IO.pure(Stream.empty)
-
-  /**
-    * A non terminating stream of events for composite views. After emitting all known events it sleeps until new events
-    * are recorded.
-    *
-    * @param organization
-    *   the organization label reference where the elasticsearch view belongs
-    * @param offset
-    *   the last seen event offset; it will not be emitted by the stream
-    */
-  @nowarn("cat=unused")
-  def events(
-      organization: Label,
-      offset: Offset
-  ): IO[CompositeViewRejection, Stream[Task, Envelope[CompositeViewEvent]]] =
-    IO.pure(Stream.empty)
-
-  private def stateAt(project: ProjectRef, iri: Iri, rev: Long) =
-    eventLog
-      .fetchStateAt(persistenceId(moduleType, identifier(project, iri)), rev, Initial, next)
-      .mapError(RevisionNotFound(rev, _))
-
-  private def currentState(project: ProjectRef, iri: Iri): IO[CompositeViewRejection, CompositeViewState] =
-    aggregate.state(identifier(project, iri))
-
-  private def fetchRevOrLatest(
-      id: IdSegmentRef,
-      project: ProjectRef
-  ): IO[CompositeViewRejection, (ProjectContext, ViewResource)] =
-    for {
-      pc    <- fetchContext.onRead(project)
-      iri   <- expandIri(id.value, pc)
-      state <- id.asRev.fold(currentState(project, iri))(id => stateAt(project, iri, id.rev))
-      res   <- IO.fromOption(state.toResource(pc.apiMappings, pc.base), ViewNotFound(iri, project))
-    } yield (pc, res)
+      },
+      pagination,
+      ordering
+    ).span("listCompositeViews")
+  }
 
   private def eval(
       cmd: CompositeViewCommand,
       pc: ProjectContext
   ): IO[CompositeViewRejection, ViewResource] =
-    for {
-      result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base) = pc.apiMappings -> pc.base
-      resource  <- IO.fromOption(result.state.toResource(am, base), UnexpectedInitialState(cmd.id, cmd.project))
-      _         <- cache.put(ViewRef(cmd.project, cmd.id), resource)
-    } yield resource
+    log.evaluate(cmd.project, cmd.id, cmd).map(_._2.toResource(pc.apiMappings, pc.base))
 
-  private def identifier(project: ProjectRef, id: Iri): String =
-    s"${project}_$id"
 }
 
 object CompositeViews {
 
-  type ValidateProjection = (CompositeViewProjection, UUID, Long) => IO[CompositeViewProjectionRejection, Unit]
-  type ValidateSource     = CompositeViewSource => IO[CompositeViewSourceRejection, Unit]
+  final val entityType: EntityType = EntityType("compositeviews")
 
-  type CompositeViewsAggregate =
-    Aggregate[String, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection]
-
-  type CompositeViewsCache = KeyValueStore[ViewRef, ViewResource]
+  type CompositeViewsLog = ScopedEventLog[
+    Iri,
+    CompositeViewState,
+    CompositeViewCommand,
+    CompositeViewEvent,
+    CompositeViewRejection
+  ]
 
   val expandIri: ExpandIri[InvalidCompositeViewId] = new ExpandIri(InvalidCompositeViewId.apply)
 
-  val moduleType: String = "compositeviews"
-
-  val moduleTag = "view"
-
-  /**
-    * Create a reference exchange from a [[CompositeViews]] instance
-    */
-  def referenceExchange(views: CompositeViews)(implicit base: BaseUri): ReferenceExchange = {
-    val fetch = (ref: ResourceRef, projectRef: ProjectRef) => views.fetch(IdSegmentRef(ref), projectRef)
-    ReferenceExchange[CompositeView](fetch(_, _), _.source)
-  }
-
-  /**
-    * Create a project reference finder for composite views
-    */
-  def projectReferenceFinder(views: CompositeViews): ProjectReferenceFinder =
-    (project: ProjectRef) => {
-      val params = CompositeViewSearchParams(
-        deprecated = Some(false),
-        filter = { c =>
-          UIO.pure(
-            c.project != project && c.sources.value.exists {
-              case crossProjectSource: CrossProjectSource =>
-                crossProjectSource.project == project
-              case _                                      => false
-            }
-          )
-        }
-      )
-      views.list(OnePage, params, ProjectReferenceFinder.ordering).map {
-        _.results.foldMap { r =>
-          ProjectReferenceMap.single(r.source.value.project, r.source.id)
-        }
-      }
-    }
-
   private[compositeviews] def next(
-      state: CompositeViewState,
+      state: Option[CompositeViewState],
       event: CompositeViewEvent
-  ): CompositeViewState = {
-    // format: off
-    def created(e: CompositeViewCreated): CompositeViewState = state match {
-      case Initial     => Current(e.id, e.project, e.uuid, e.value, e.source, Map.empty, e.rev, deprecated = false,  e.instant, e.subject, e.instant, e.subject)
-      case s: Current  => s
+  ): Option[CompositeViewState] = {
+
+    def created(e: CompositeViewCreated): Option[CompositeViewState] = Option.when(state.isEmpty) {
+      CompositeViewState(
+        e.id,
+        e.project,
+        e.uuid,
+        e.value,
+        e.source,
+        Tags.empty,
+        e.rev,
+        deprecated = false,
+        e.instant,
+        e.subject,
+        e.instant,
+        e.subject
+      )
     }
 
-    def updated(e: CompositeViewUpdated): CompositeViewState = state match {
-      case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
+    def updated(e: CompositeViewUpdated): Option[CompositeViewState] = state.map { s =>
+      s.copy(rev = e.rev, value = e.value, source = e.source, updatedAt = e.instant, updatedBy = e.subject)
     }
 
-    def tagAdded(e: CompositeViewTagAdded): CompositeViewState = state match {
-      case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
+    def tagAdded(e: CompositeViewTagAdded): Option[CompositeViewState] = state.map { s =>
+      s.copy(rev = e.rev, tags = s.tags + (e.tag -> e.targetRev), updatedAt = e.instant, updatedBy = e.subject)
     }
-    // format: on
 
-    def deprecated(e: CompositeViewDeprecated): CompositeViewState = state match {
-      case Initial    => Initial
-      case s: Current => s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
+    def deprecated(e: CompositeViewDeprecated): Option[CompositeViewState] = state.map { s =>
+      s.copy(rev = e.rev, deprecated = true, updatedAt = e.instant, updatedBy = e.subject)
     }
 
     event match {
@@ -582,98 +470,66 @@ object CompositeViews {
   }
 
   private[compositeviews] def evaluate(
-      validateSource: ValidateSource,
-      validateProjection: ValidateProjection,
-      idAvailability: IdAvailability[ResourceAlreadyExists],
-      maxSources: Int,
-      maxProjections: Int
-  )(
-      state: CompositeViewState,
-      cmd: CompositeViewCommand
-  )(implicit
+      validate: ValidateCompositeView
+  )(state: Option[CompositeViewState], cmd: CompositeViewCommand)(implicit
       clock: Clock[UIO],
       uuidF: UUIDF
   ): IO[CompositeViewRejection, CompositeViewEvent] = {
 
-    def validate(value: CompositeViewValue, uuid: UUID, rev: Long): IO[CompositeViewRejection, Unit] = for {
-      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.value.size, maxSources))
-      _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
-                      TooManyProjections(value.projections.value.size, maxProjections)
-                    )
-      allIds      = value.sources.value.toList.map(_.id) ++ value.projections.value.toList.map(_.id)
-      distinctIds = allIds.distinct
-      _          <- IO.raiseWhen(allIds.size != distinctIds.size)(DuplicateIds(allIds))
-      _          <- value.sources.value.toList.foldLeftM(())((_, s) => validateSource(s))
-      _          <- value.projections.value.toList.foldLeftM(())((_, s) => validateProjection(s, uuid, rev))
-
-    } yield ()
-
-    def fieldsToValue(
-        state: CompositeViewState,
-        fields: CompositeViewFields,
-        projectBase: ProjectBase
-    ): UIO[CompositeViewValue] = state match {
-      case Initial    =>
-        CompositeViewValue(fields, Map.empty, Map.empty, projectBase)
-      case s: Current =>
-        CompositeViewValue(
-          fields,
-          s.value.sources.value.map(s => s.id -> s.uuid).toMap,
-          s.value.projections.value.map(p => p.id -> p.uuid).toMap,
-          projectBase
-        )
-    }
-
     def create(c: CreateCompositeView) = state match {
-      case Initial =>
+      case None    =>
         for {
           t     <- IOUtils.instant
           u     <- uuidF()
-          value <- fieldsToValue(Initial, c.value, c.projectBase)
-          _     <- validate(value, u, 1)
-          _     <- idAvailability(c.project, c.id)
-        } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1L, t, c.subject)
-      case _       => IO.raiseError(ViewAlreadyExists(c.id, c.project))
+          value <- CompositeViewValue(c.value, Map.empty, Map.empty, c.projectBase)
+          _     <- validate(u, 1, value)
+        } yield CompositeViewCreated(c.id, c.project, u, value, c.source, 1, t, c.subject)
+      case Some(_) => IO.raiseError(ViewAlreadyExists(c.id, c.project))
     }
 
     def update(c: UpdateCompositeView) = state match {
-      case Initial                      =>
+      case None                      =>
         IO.raiseError(ViewNotFound(c.id, c.project))
-      case s: Current if s.rev != c.rev =>
+      case Some(s) if s.rev != c.rev =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated   =>
+      case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
-      case s: Current                   =>
+      case Some(s)                   =>
         for {
-          value <- fieldsToValue(s, c.value, c.projectBase)
-          newRev = s.rev + 1L
-          _     <- validate(value, s.uuid, newRev)
+          value <- CompositeViewValue(
+                     c.value,
+                     s.value.sources.value.map(source => source.id -> source.uuid).toMap,
+                     s.value.projections.value.map(projection => projection.id -> projection.uuid).toMap,
+                     c.projectBase
+                   )
+          newRev = s.rev + 1
+          _     <- validate(s.uuid, newRev, value)
           t     <- IOUtils.instant
         } yield CompositeViewUpdated(c.id, c.project, s.uuid, value, c.source, newRev, t, c.subject)
     }
 
     def tag(c: TagCompositeView) = state match {
-      case Initial                                                =>
+      case None                                               =>
         IO.raiseError(ViewNotFound(c.id, c.project))
-      case s: Current if s.rev != c.rev                           =>
+      case Some(s) if s.rev != c.rev                          =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if c.targetRev <= 0L || c.targetRev > s.rev =>
+      case Some(s) if c.targetRev <= 0 || c.targetRev > s.rev =>
         IO.raiseError(RevisionNotFound(c.targetRev, s.rev))
-      case s: Current                                             =>
+      case Some(s)                                            =>
         IOUtils.instant.map(
-          CompositeViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1L, _, c.subject)
+          CompositeViewTagAdded(c.id, c.project, s.uuid, c.targetRev, c.tag, s.rev + 1, _, c.subject)
         )
     }
 
     def deprecate(c: DeprecateCompositeView) = state match {
-      case Initial                      =>
+      case None                      =>
         IO.raiseError(ViewNotFound(c.id, c.project))
-      case s: Current if s.rev != c.rev =>
+      case Some(s) if s.rev != c.rev =>
         IO.raiseError(IncorrectRev(c.rev, s.rev))
-      case s: Current if s.deprecated   =>
+      case Some(s) if s.deprecated   =>
         IO.raiseError(ViewIsDeprecated(c.id))
-      case s: Current                   =>
-        IOUtils.instant.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1L, _, c.subject))
+      case Some(s)                   =>
+        IOUtils.instant.map(CompositeViewDeprecated(c.id, c.project, s.uuid, s.rev + 1, _, c.subject))
     }
 
     cmd match {
@@ -682,118 +538,6 @@ object CompositeViews {
       case c: TagCompositeView       => tag(c)
       case c: DeprecateCompositeView => deprecate(c)
     }
-  }
-
-  /**
-    * Constructs a new [[CompositeViews]] instance.
-    */
-  def apply(
-      config: CompositeViewsConfig,
-      eventLog: EventLog[Envelope[CompositeViewEvent]],
-      fetchContext: FetchContext[CompositeViewRejection],
-      cache: CompositeViewsCache,
-      agg: CompositeViewsAggregate,
-      contextResolution: ResolverContextResolution
-  )(implicit api: JsonLdApi, uuidF: UUIDF, as: ActorSystem[Nothing], sc: Scheduler): Task[CompositeViews] =
-    for {
-      sourceDecoder <- Task.delay(CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution)(api, config))
-      views          = new CompositeViews(agg, eventLog, cache, fetchContext, sourceDecoder)
-      _             <- CompositeViewsIndexing.populateCache(config.cacheIndexing.retry, views, cache)
-    } yield views
-
-  def aggregate(
-      config: CompositeViewsConfig,
-      projects: Projects,
-      aclCheck: AclCheck,
-      fetchPermissions: UIO[Set[Permission]],
-      resourceIdCheck: ResourceIdCheck,
-      client: ElasticSearchClient,
-      deltaClient: DeltaClient,
-      crypto: Crypto
-  )(implicit
-      as: ActorSystem[Nothing],
-      baseUri: BaseUri,
-      uuidF: UUIDF,
-      clock: Clock[UIO]
-  ): UIO[CompositeViewsAggregate] = {
-
-    def validateAcls(cpSource: CrossProjectSource): IO[CrossProjectSourceForbidden, Unit] =
-      aclCheck.authorizeForOr(cpSource.project, events.read, cpSource.identities)(CrossProjectSourceForbidden(cpSource))
-
-    def validateProject(cpSource: CrossProjectSource) = {
-      projects.fetch(cpSource.project).mapError(_ => CrossProjectSourceProjectNotFound(cpSource)).void
-    }
-
-    def validateCrypto(token: Option[AccessToken]): IO[InvalidEncryptionSecrets.type, Unit] = token match {
-      case Some(AccessToken(value)) =>
-        IO.fromEither(crypto.encrypt(value.value).flatMap(crypto.decrypt).toEither.void)
-          .mapError(_ => InvalidEncryptionSecrets)
-      case None                     => IO.unit
-    }
-
-    def validatePermission(permission: Permission) =
-      fetchPermissions.flatMap { perms =>
-        IO.when(!perms.contains(permission))(IO.raiseError(PermissionIsNotDefined(permission)))
-      }
-
-    def validateIndex(es: ElasticSearchProjection, index: IndexLabel) =
-      client
-        .createIndex(index, Some(es.mapping), es.settings)
-        .mapError {
-          case err: HttpClientStatusError => InvalidElasticSearchProjectionPayload(err.jsonBody)
-          case err                        => WrappedElasticSearchClientError(err)
-        }
-        .void
-
-    val checkRemoteEvent: RemoteProjectSource => IO[HttpClientError, Unit] = deltaClient.checkEvents
-
-    val validateSource: ValidateSource = {
-      case _: ProjectSource             => IO.unit
-      case cpSource: CrossProjectSource => validateAcls(cpSource) >> validateProject(cpSource)
-      case rs: RemoteProjectSource      =>
-        checkRemoteEvent(rs).mapError(InvalidRemoteProjectSource(rs, _)) >> validateCrypto(rs.token)
-    }
-
-    val validateProjection: ValidateProjection = {
-      case (sparql: SparqlProjection, _, _)         => validatePermission(sparql.permission)
-      case (es: ElasticSearchProjection, uuid, rev) =>
-        validatePermission(es.permission) >>
-          validateIndex(es, index(es, uuid, rev, config.elasticSearchIndexing.prefix))
-    }
-
-    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-
-    aggregate(config, validateSource, validateProjection, idAvailability)
-  }
-
-  private[compositeviews] def aggregate(
-      config: CompositeViewsConfig,
-      validateS: ValidateSource,
-      validateP: ValidateProjection,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit as: ActorSystem[Nothing], uuidF: UUIDF, clock: Clock[UIO]) = {
-
-    val definition = PersistentEventDefinition(
-      entityType = moduleType,
-      initialState = Initial,
-      next = next,
-      evaluate = evaluate(validateS, validateP, idAvailability, config.sources.maxSources, config.maxProjections),
-      tagger = (_: CompositeViewEvent) => Set.empty,
-      snapshotStrategy = NoSnapshot,
-      stopStrategy = config.aggregate.stopStrategy.persistentStrategy
-    )
-
-    ShardedAggregate.persistentSharded(
-      definition = definition,
-      config = config.aggregate.processor
-    )
-  }
-
-  def cache(config: CompositeViewsConfig)(implicit as: ActorSystem[Nothing]): CompositeViewsCache = {
-    implicit val cfg: KeyValueStoreConfig   = config.keyValueStore
-    val clock: (Long, ViewResource) => Long = (_, resource) => resource.rev
-    KeyValueStore.distributed(moduleType, clock)
   }
 
   /**
@@ -806,7 +550,7 @@ object CompositeViews {
     * @param sourceId
     *   the source Iri
     */
-  def sourceProjection(view: CompositeView, rev: Long, sourceId: Iri): Option[SourceProjectionId] =
+  def sourceProjection(view: CompositeView, rev: Int, sourceId: Iri): Option[SourceProjectionId] =
     view.sources.value.find(_.id == sourceId).map(sourceProjection(_, rev))
 
   /**
@@ -817,7 +561,7 @@ object CompositeViews {
     * @param rev
     *   the revision of the view
     */
-  def sourceProjection(source: CompositeViewSource, rev: Long): SourceProjectionId =
+  def sourceProjection(source: CompositeViewSource, rev: Int): SourceProjectionId =
     SourceProjectionId(s"${source.uuid}_$rev")
 
   /**
@@ -828,7 +572,7 @@ object CompositeViews {
     * @param rev
     *   the revision of the view
     */
-  def projectionIds(view: CompositeView, rev: Long): Set[(Iri, Iri, CompositeViewProjectionId)] =
+  def projectionIds(view: CompositeView, rev: Int): Set[(Iri, Iri, CompositeViewProjectionId)] =
     for {
       s <- view.sources.value
       p <- view.projections.value
@@ -847,7 +591,7 @@ object CompositeViews {
   def projectionIds(
       view: CompositeView,
       source: CompositeViewSource,
-      rev: Long
+      rev: Int
   ): Set[(Iri, CompositeViewProjectionId)] =
     view.projections.value.map(projection => projection.id -> projectionId(source, projection, rev))
 
@@ -864,7 +608,7 @@ object CompositeViews {
   def projectionIds(
       view: CompositeView,
       projection: CompositeViewProjection,
-      rev: Long
+      rev: Int
   ): Set[(Iri, CompositeViewProjectionId)] =
     view.sources.value.map(source => source.id -> projectionId(source, projection, rev))
 
@@ -881,7 +625,7 @@ object CompositeViews {
   def projectionId(
       source: CompositeViewSource,
       projection: CompositeViewProjection,
-      rev: Long
+      rev: Int
   ): CompositeViewProjectionId = {
     val sourceProjectionId = sourceProjection(source, rev)
     projectionId(sourceProjectionId, projection, rev)
@@ -900,11 +644,11 @@ object CompositeViews {
   def projectionId(
       sourceId: SourceProjectionId,
       projection: CompositeViewProjection,
-      rev: Long
+      rev: Int
   ): CompositeViewProjectionId =
     projection match {
       case p: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev.toInt))
+        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev))
       case p: SparqlProjection        =>
         CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
     }
@@ -921,10 +665,10 @@ object CompositeViews {
     * @param prefix
     *   the index prefix
     */
-  def index(projection: ElasticSearchProjection, view: CompositeView, rev: Long, prefix: String): IndexLabel =
+  def index(projection: ElasticSearchProjection, view: CompositeView, rev: Int, prefix: String): IndexLabel =
     index(projection, view.uuid, rev, prefix)
 
-  private def index(projection: ElasticSearchProjection, uuid: UUID, rev: Long, prefix: String): IndexLabel = {
+  def index(projection: ElasticSearchProjection, uuid: UUID, rev: Int, prefix: String): IndexLabel = {
     val completePrefix = projection.indexGroup.fold(prefix) { i => s"${prefix}_$i" }
     IndexLabel.unsafe(s"${completePrefix}_${uuid}_${projection.uuid}_$rev")
   }
@@ -941,6 +685,66 @@ object CompositeViews {
     * @param prefix
     *   the namespace prefix
     */
-  def namespace(projection: SparqlProjection, view: CompositeView, rev: Long, prefix: String): String =
+  def namespace(projection: SparqlProjection, view: CompositeView, rev: Int, prefix: String): String =
     s"${prefix}_${view.uuid}_${projection.uuid}_$rev"
+
+  def definition(validate: ValidateCompositeView, crypto: Crypto)(implicit
+      clock: Clock[UIO],
+      uuidF: UUIDF
+  ): ScopedEntityDefinition[Iri, CompositeViewState, CompositeViewCommand, CompositeViewEvent, CompositeViewRejection] =
+    ScopedEntityDefinition(
+      entityType,
+      StateMachine(None, evaluate(validate), next),
+      CompositeViewEvent.serializer(crypto),
+      CompositeViewState.serializer(crypto),
+      Tagger[CompositeViewEvent](
+        {
+          case r: CompositeViewTagAdded => Some(r.tag -> r.targetRev)
+          case _                        => None
+        },
+        { _ =>
+          None
+        }
+      ),
+      state =>
+        Some(
+          state.value.sources.value.foldLeft(Set.empty[EntityDependency]) {
+            case (acc, s: CrossProjectSource) => acc + EntityDependency(s.project, s.project.toString)
+            case (acc, _)                     => acc
+          }
+        ),
+      onUniqueViolation = (id: Iri, c: CompositeViewCommand) =>
+        c match {
+          case c: CompositeViewCommand => ResourceAlreadyExists(id, c.project)
+          case c                       => IncorrectRev(c.rev, c.rev + 1)
+        }
+    )
+
+  def apply(
+      fetchContext: FetchContext[CompositeViewRejection],
+      contextResolution: ResolverContextResolution,
+      validate: ValidateCompositeView,
+      crypto: Crypto,
+      config: CompositeViewsConfig,
+      xas: Transactors
+  )(implicit
+      api: JsonLdApi,
+      clock: Clock[UIO],
+      uuidF: UUIDF
+  ): Task[CompositeViews] =
+    Task
+      .delay(
+        CompositeViewFieldsJsonLdSourceDecoder(uuidF, contextResolution, config.minIntervalRebuild)
+      )
+      .map { sourceDecoder =>
+        new CompositeViews(
+          ScopedEventLog(
+            definition(validate, crypto),
+            config.eventLog,
+            xas
+          ),
+          fetchContext,
+          sourceDecoder
+        )
+      }
 }
