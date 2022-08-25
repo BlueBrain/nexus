@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -26,7 +27,6 @@ import io.circe.parser.decode
 import fs2._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import streamz.converter._
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -110,8 +110,7 @@ object DeltaClient {
       val uri =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "events"
 
-      EventSource(uri, send, initialLastEventId, retryDelay)
-        .toStream[Task](_ => ())
+      StreamConverter(EventSource(uri, send, initialLastEventId, retryDelay))
         .flatMap { sse =>
           val offset = sse.id.map(toOffset).getOrElse(Start)
 
