@@ -583,8 +583,7 @@ lazy val compositeViewsPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk                 % "provided;test->test",
-    sdkViews            % Provided,
-    sdkTestkit          % "test->compile;test->test",
+    sdkViews            % "provided;test->test",
     elasticsearchPlugin % "provided;test->test",
     blazegraphPlugin    % "provided;test->test"
   )
@@ -620,7 +619,6 @@ lazy val searchPlugin = project
   .dependsOn(
     sdk                  % "provided;test->test",
     sdkViews             % Provided,
-    sdkTestkit           % "test->compile;test->test",
     blazegraphPlugin     % "provided;test->compile;test->test",
     elasticsearchPlugin  % "provided;test->compile;test->test",
     compositeViewsPlugin % "provided;test->compile;test->test"

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
@@ -28,10 +27,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.RdfMarshalling
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.{Tag, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import io.circe.{Json, JsonObject}
@@ -98,7 +98,7 @@ class CompositeViewsRoutes(
                     concat(
                       put {
                         authorizeFor(ref, Write).apply {
-                          (parameter("rev".as[Long].?) & pathEndOrSingleSlash & entity(as[Json])) {
+                          (parameter("rev".as[Int].?) & pathEndOrSingleSlash & entity(as[Json])) {
                             case (None, source)      =>
                               // Create a view with id segment
                               emit(
@@ -120,7 +120,7 @@ class CompositeViewsRoutes(
                         }
                       },
                       //Deprecate a view
-                      (delete & parameter("rev".as[Long])) { rev =>
+                      (delete & parameter("rev".as[Int])) { rev =>
                         authorizeFor(ref, Write).apply {
                           emit(views.deprecate(id, ref, rev).mapValue(_.metadata).rejectOn[ViewNotFound])
                         }
@@ -142,15 +142,15 @@ class CompositeViewsRoutes(
                       concat(
                         // Fetch tags for a view
                         (get & idSegmentRef(id) & authorizeFor(ref, Read)) { id =>
-                          emit(views.fetch(id, ref).map(res => Tags(res.value.tags)).rejectOn[ViewNotFound])
+                          emit(views.fetch(id, ref).map(_.value.tags).rejectOn[ViewNotFound])
                         },
                         // Tag a view
-                        (post & parameter("rev".as[Long])) { rev =>
+                        (post & parameter("rev".as[Int])) { rev =>
                           authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                                views.tag(id, ref, tag, tagRev.toInt, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
                               )
                             }
                           }
@@ -208,7 +208,7 @@ class CompositeViewsRoutes(
                             (delete & authorizeFor(ref, Write)) {
                               emit(
                                 views.fetch(id, ref).flatMap { v =>
-                                  val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
+                                  val projectionIds = CompositeViews.projectionIds(v.value, v.rev.toInt).map(_._3)
                                   restartProjections(v.id, v.value.project, projectionIds) >> resetOffsets(v)
                                 }
                               )
@@ -239,7 +239,8 @@ class CompositeViewsRoutes(
                                   .fetchProjection(id, projectionId, ref)
                                   .flatMap { v =>
                                     val (view, projection) = v.value
-                                    val projectionIds      = CompositeViews.projectionIds(view, projection, v.rev).map(_._2)
+                                    val projectionIds      =
+                                      CompositeViews.projectionIds(view, projection, v.rev.toInt).map(_._2)
                                     restartProjections(v.id, ref, projectionIds) >> resetProjectionOffsets(v)
                                   }
                               )
@@ -339,11 +340,14 @@ class CompositeViewsRoutes(
       }
     }
 
-  private def fetchOffsets(viewRes: ViewResource) =
-    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(progresses.offset)
+  private def fetchOffsets(viewRes: ViewResource) = {
+    //TODO: migrate project statistics
+    val fetchOffset = (_: ProjectionId) => UIO.pure(Offset.Start)
+    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev.toInt))(fetchOffset)
+  }
 
   private def resetOffsets(viewRes: ViewResource) =
-    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(_ => UIO.pure(NoOffset))
+    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev.toInt))(_ => UIO.pure(Offset.Start))
 
   private def viewStatistics(viewRes: ViewResource) = {
     val entries = for {
@@ -384,28 +388,32 @@ class CompositeViewsRoutes(
       case source: RemoteProjectSource =>
         deltaClient
           .projectCount(source)
-          .flatMap(count => progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev)))
+          .flatMap(count =>
+            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
+          )
           .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
       case source: ProjectSource       =>
-        progresses.statistics(viewRes.value.project, CompositeViews.projectionId(source, projection, viewRes.rev))
+        progresses.statistics(viewRes.value.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
       case source: CrossProjectSource  =>
-        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev))
+        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
     }
     statsIO.map { stats => ProjectionStatistics(source.id, projection.id, stats) }
   }
 
   private def fetchProjectionOffsets(viewRes: ViewProjectionResource) = {
+    //TODO: migrate project statistics
+    val fetchOffset        = (_: ProjectionId) => UIO.pure(Offset.Start)
     val (view, projection) = viewRes.value
-    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
+    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev.toInt).map { case (sId, compositeProjectionId) =>
       (sId, projection.id, compositeProjectionId)
-    })(progresses.offset)
+    })(fetchOffset)
   }
 
   private def resetProjectionOffsets(viewRes: ViewProjectionResource) = {
     val (view, projection) = viewRes.value
-    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
+    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev.toInt).map { case (sId, compositeProjectionId) =>
       (sId, projection.id, compositeProjectionId)
-    })(_ => UIO.pure(NoOffset))
+    })(_ => UIO.pure(Offset.Start))
   }
 
   private def offsets(

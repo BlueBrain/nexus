@@ -2,40 +2,31 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews.{CompositeViewsAggregate, CompositeViewsCache}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.{DeltaClient, RemoteSse}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingCoordinator.{CompositeIndexingController, CompositeIndexingCoordinator}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.CompositeIndexingStream.PartialRestart
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.indexing.{CompositeIndexingCleanup, CompositeIndexingCoordinator, CompositeIndexingStream, RemoteIndexingSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeView, CompositeViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.contexts
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, JsonLdContext, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
 import ch.epfl.bluebrain.nexus.delta.sdk._
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
-import ch.epfl.bluebrain.nexus.delta.sdk.eventlog.EventLogUtils.databaseEventLog
 import ch.epfl.bluebrain.nexus.delta.sdk.fusion.FusionConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectReferenceFinder, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.IndexingStreamBehaviour.Restart
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingSource, IndexingStreamController}
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import distage.ModuleDef
 import izumi.distage.model.definition.Id
 import monix.bio.UIO
@@ -47,111 +38,59 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
 
   make[CompositeViewsConfig].fromEffect { cfg => CompositeViewsConfig.load(cfg) }
 
-  make[EventLog[Envelope[CompositeViewEvent]]].fromEffect { databaseEventLog[CompositeViewEvent](_, _) }
-
   make[DeltaClient].from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing], sc: Scheduler) =>
     val httpClient = HttpClient()(cfg.remoteSourceClient.http, as.classicSystem, sc)
     DeltaClient(httpClient, cfg.remoteSourceClient.retryDelay)(as, sc)
   }
 
-  make[CompositeViewsCache].from { (config: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
-    CompositeViews.cache(config)(as)
-  }
-
-  make[CompositeViewsAggregate].fromEffect {
+  make[ValidateCompositeView].from {
     (
-        config: CompositeViewsConfig,
-        projects: Projects,
         aclCheck: AclCheck,
+        projects: Projects,
         permissions: Permissions,
-        resourceIdCheck: ResourceIdCheck,
         client: ElasticSearchClient,
         deltaClient: DeltaClient,
         crypto: Crypto,
-        as: ActorSystem[Nothing],
-        baseUri: BaseUri,
-        uuidF: UUIDF,
-        clock: Clock[UIO]
+        config: CompositeViewsConfig,
+        baseUri: BaseUri
     ) =>
-      CompositeViews.aggregate(
-        config,
-        projects,
+      ValidateCompositeView(
         aclCheck,
+        projects,
         permissions.fetchPermissionSet,
-        resourceIdCheck,
         client,
         deltaClient,
-        crypto
-      )(
-        as,
-        baseUri,
-        uuidF,
-        clock
-      )
+        crypto,
+        config.prefix,
+        config.sources.maxSources,
+        config.maxProjections
+      )(baseUri)
   }
 
   make[CompositeViews].fromEffect {
     (
-        config: CompositeViewsConfig,
-        eventLog: EventLog[Envelope[CompositeViewEvent]],
         fetchContext: FetchContext[ContextRejection],
-        cache: CompositeViewsCache,
-        agg: CompositeViewsAggregate,
         contextResolution: ResolverContextResolution,
+        validate: ValidateCompositeView,
+        crypto: Crypto,
+        config: CompositeViewsConfig,
+        xas: Transactors,
         api: JsonLdApi,
         uuidF: UUIDF,
-        as: ActorSystem[Nothing],
-        sc: Scheduler
+        clock: Clock[UIO]
     ) =>
       CompositeViews(
-        config,
-        eventLog,
         fetchContext.mapRejection(ProjectContextRejection),
-        cache,
-        agg,
-        contextResolution
+        contextResolution,
+        validate,
+        crypto,
+        config,
+        xas
       )(
         api,
-        uuidF,
-        as,
-        sc
+        clock,
+        uuidF
       )
-  }
-
-  many[ProjectReferenceFinder].add { (views: CompositeViews) =>
-    CompositeViews.projectReferenceFinder(views)
-  }
-
-  make[IndexingSource].named("composite-source").from {
-    (
-        cfg: CompositeViewsConfig,
-        projects: Projects,
-        eventLog: EventLog[Envelope[Event]],
-        exchanges: Set[EventExchange]
-    ) =>
-      IndexingSource(
-        projects,
-        eventLog,
-        exchanges,
-        cfg.sources.maxBatchSize,
-        cfg.sources.maxTimeWindow,
-        cfg.sources.retry
-      )
-  }
-
-  make[ProgressesCache].named("composite-progresses").from { (cfg: CompositeViewsConfig, as: ActorSystem[Nothing]) =>
-    ProgressesStatistics.cache(
-      "composite-views-progresses"
-    )(as, cfg.keyValueStore)
-  }
-
-  make[ProgressesStatistics].named("composite-statistics").from {
-    (cache: ProgressesCache @Id("composite-progresses"), projectsStatistics: ProjectsStatistics) =>
-      new ProgressesStatistics(cache, projectsStatistics.get)
-  }
-
-  make[CompositeIndexingController].from { (as: ActorSystem[Nothing]) =>
-    new IndexingStreamController[CompositeView](CompositeViews.moduleType)(as)
   }
 
   make[MetadataPredicates].fromEffect {
@@ -163,82 +102,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
       JsonLdContext(listingsMetadataCtx.value)(api, cr, JsonLdOptions.defaults)
         .map(_.aliasesInv.keySet.map(Triple.predicate))
         .map(MetadataPredicates)
-  }
-
-  make[RemoteIndexingSource].from {
-    (deltaClient: DeltaClient, metadataPredicates: MetadataPredicates, config: CompositeViewsConfig) =>
-      RemoteIndexingSource(
-        deltaClient.events[RemoteSse],
-        deltaClient.resourceAsNQuads,
-        config.remoteSourceClient,
-        metadataPredicates
-      )
-  }
-
-  make[CompositeIndexingStream].from {
-    (
-        esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
-        projection: Projection[Unit],
-        deltaClient: DeltaClient,
-        indexingController: CompositeIndexingController,
-        projectsStatistics: ProjectsStatistics,
-        indexingSource: IndexingSource @Id("composite-source"),
-        remoteIndexingSource: RemoteIndexingSource,
-        cache: ProgressesCache @Id("composite-progresses"),
-        config: CompositeViewsConfig,
-        scheduler: Scheduler,
-        cr: RemoteContextResolution @Id("aggregate"),
-        base: BaseUri
-    ) =>
-      CompositeIndexingStream(
-        config,
-        esClient,
-        blazeClient,
-        deltaClient,
-        cache,
-        projectsStatistics,
-        indexingController,
-        projection,
-        indexingSource,
-        remoteIndexingSource
-      )(cr, base, scheduler)
-  }
-
-  make[CompositeIndexingCleanup].from {
-    (
-        esClient: ElasticSearchClient,
-        blazeClient: BlazegraphClient @Id("blazegraph-indexing-client"),
-        cache: ProgressesCache @Id("composite-progresses"),
-        projection: Projection[Unit],
-        config: CompositeViewsConfig
-    ) =>
-      new CompositeIndexingCleanup(
-        config.elasticSearchIndexing,
-        esClient,
-        config.blazegraphIndexing,
-        blazeClient,
-        cache,
-        projection
-      )
-  }
-
-  make[CompositeIndexingCoordinator].fromEffect {
-    (
-        views: CompositeViews,
-        indexingController: CompositeIndexingController,
-        indexingStream: CompositeIndexingStream,
-        indexingCleanup: CompositeIndexingCleanup,
-        config: CompositeViewsConfig,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler,
-        uuidF: UUIDF
-    ) =>
-      CompositeIndexingCoordinator(views, indexingController, indexingStream, indexingCleanup, config)(
-        uuidF,
-        as,
-        scheduler
-      )
   }
 
   many[MetadataContextValue].addEffect(MetadataContextValue.fromFile("contexts/composite-views-metadata.json"))
@@ -259,14 +122,12 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         views: CompositeViews,
         client: BlazegraphClient @Id("blazegraph-query-client"),
         cfg: CompositeViewsConfig
-    ) =>
-      BlazegraphQuery(aclCheck, views, client)(cfg.blazegraphIndexing)
-
+    ) => BlazegraphQuery(aclCheck, views, client, cfg.prefix)
   }
 
   make[ElasticSearchQuery].from {
     (aclCheck: AclCheck, views: CompositeViews, client: ElasticSearchClient, cfg: CompositeViewsConfig) =>
-      ElasticSearchQuery(aclCheck, views, client)(cfg.elasticSearchIndexing)
+      ElasticSearchQuery(aclCheck, views, client, cfg.prefix)
   }
 
   make[CompositeViewsRoutes].from {
@@ -274,8 +135,6 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities: Identities,
         aclCheck: AclCheck,
         views: CompositeViews,
-        indexingController: CompositeIndexingController,
-        progresses: ProgressesStatistics @Id("composite-statistics"),
         blazegraphQuery: BlazegraphQuery,
         elasticSearchQuery: ElasticSearchQuery,
         deltaClient: DeltaClient,
@@ -290,9 +149,10 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
         identities,
         aclCheck,
         views,
-        indexingController.restart,
-        (iri, project, projections) => indexingController.restart(iri, project, Restart(PartialRestart(projections))),
-        progresses,
+        // TODO add the way to restart composite views
+        (_, _) => UIO.unit,
+        (_, _, _) => UIO.unit,
+        null,
         blazegraphQuery,
         elasticSearchQuery,
         deltaClient,
@@ -303,13 +163,4 @@ class CompositeViewsPluginModule(priority: Int) extends ModuleDef {
   many[PriorityRoute].add { (route: CompositeViewsRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
-
-  many[ReferenceExchange].add { (views: CompositeViews, baseUri: BaseUri) =>
-    CompositeViews.referenceExchange(views)(baseUri)
-  }
-
-  make[CompositeViewEventExchange]
-  many[EventExchange].named("view").ref[CompositeViewEventExchange]
-  many[EventExchange].named("resources").ref[CompositeViewEventExchange]
-  many[EventExchange].ref[CompositeViewEventExchange]
 }

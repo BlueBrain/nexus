@@ -1,0 +1,95 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/metadata.json",
+    "https://bluebrain.github.io/nexus/contexts/composite-views.json"
+  ],
+  "@type": "CompositeViewCreated",
+  "_constrainedBy": "https://bluebrain.github.io/nexus/schemas/views.json",
+  "_instant": "1970-01-01T00:00:00Z",
+  "_project": "http://localhost/v1/projects/myorg/myproj",
+  "_resourceId": "http://example.com/composite-view",
+  "_rev": 1,
+  "_source": {
+    "projections": [
+      {
+        "@id": "http://example.com/blazegraph-projection",
+        "@type": "SparqlProjection",
+        "includeDeprecated": false,
+        "includeMetadata": false,
+        "permission": "views/query",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ]
+      },
+      {
+        "@id": "http://example.com/es-projection",
+        "@type": "ElasticSearchProjection",
+        "context": {
+        },
+        "includeDeprecated": false,
+        "includeMetadata": false,
+        "mapping": {
+        },
+        "permission": "views/query",
+        "query": "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}",
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ],
+        "settings": {
+        }
+      }
+    ],
+    "rebuildStrategy": {
+      "@type": "Interval",
+      "value": "1 minute"
+    },
+    "sources": [
+      {
+        "@id": "http://example.com/cross-project-source",
+        "@type": "CrossProjectEventStream",
+        "identities": [
+          {
+            "@id": "http://localhost/v1/anonymous",
+            "@type": "Anonymous"
+          }
+        ],
+        "includeDeprecated": false,
+        "project": "org/otherproject",
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ]
+      },
+      {
+        "@id": "http://example.com/remote-project-source",
+        "@type": "RemoteProjectEventStream",
+        "endpoint": "http://example.com/remote-endpoint",
+        "includeDeprecated": false,
+        "project": "org/remoteproject",
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ]
+      },
+      {
+        "@id": "http://example.com/project-source",
+        "@type": "ProjectEventStream",
+        "includeDeprecated": false,
+        "resourceSchemas": [
+        ],
+        "resourceTypes": [
+        ]
+      }
+    ]
+  },
+  "_subject": "http://localhost/v1/realms/myrealm/users/myuser",
+  "_types": [
+    "https://bluebrain.github.io/nexus/vocabulary/View",
+    "https://bluebrain.github.io/nexus/vocabulary/CompositeView"
+  ],
+  "_uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
+  "_viewId": "http://example.com/composite-view"
+}

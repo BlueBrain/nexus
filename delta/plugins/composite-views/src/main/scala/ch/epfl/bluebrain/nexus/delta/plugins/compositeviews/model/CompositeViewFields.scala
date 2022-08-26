@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -44,20 +43,18 @@ object CompositeViewFields {
   }
 
   @nowarn("cat=unused")
-  implicit final def compositeViewFieldsJsonLdDecoder(implicit
-      cfg: CompositeViewsConfig
-  ): JsonLdDecoder[CompositeViewFields] = {
+  final def jsonLdDecoder(minIntervalRebuild: FiniteDuration): JsonLdDecoder[CompositeViewFields] = {
     implicit val rebuildStrategyDecoder: JsonLdDecoder[RebuildStrategy] = {
       implicit val scopedFiniteDurationDecoder: JsonLdDecoder[FiniteDuration] =
         JsonLdDecoder.finiteDurationJsonLdDecoder.andThen { case (cursor, duration) =>
           Option
-            .when(duration.gteq(cfg.minIntervalRebuild))(duration)
+            .when(duration.gteq(minIntervalRebuild))(duration)
             .toRight(
               ParsingFailure(
                 "Duration",
                 duration.toString,
                 cursor.history,
-                s"duration must be greater than ${cfg.minIntervalRebuild}"
+                s"duration must be greater than $minIntervalRebuild"
               )
             )
         }

@@ -18,14 +18,13 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery.SparqlConstructQuery
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.testkit._
@@ -35,7 +34,7 @@ import monix.bio.UIO
 import org.scalatest.concurrent.Eventually
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{CancelAfterFailure, Inspectors}
+import org.scalatest.{CancelAfterFailure, Inspectors, OptionValues}
 
 import java.time.Instant
 import java.util.UUID
@@ -46,6 +45,7 @@ class SearchSpec
     with AnyWordSpecLike
     with Matchers
     with EitherValuable
+    with OptionValues
     with CirceLiteral
     with TestHelpers
     with CancelAfterFailure
@@ -61,8 +61,7 @@ class SearchSpec
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(6.seconds, 100.millis)
 
-  implicit private def externalConfig: ExternalIndexingConfig = externalIndexing
-  implicit private val baseUri: BaseUri                       = BaseUri("http://localhost", Label.unsafe("v1"))
+  implicit private val baseUri: BaseUri = BaseUri("http://localhost", Label.unsafe("v1"))
 
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
@@ -102,7 +101,7 @@ class SearchSpec
     ),
     None,
     UUID.randomUUID(),
-    Map.empty,
+    Tags.empty,
     Json.obj(),
     Instant.EPOCH
   )
@@ -141,12 +140,14 @@ class SearchSpec
       .rightValue
   }
 
+  private val prefix = "prefix"
+
   "Search" should {
-    lazy val search = Search(listViews, aclCheck, esClient, externalConfig)
+    lazy val search = Search(listViews, aclCheck, esClient, prefix)
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
-        val index   = CompositeViews.index(p.projection, p.view, p.rev, externalConfig.prefix)
+        val index   = CompositeViews.index(p.projection, p.view, p.rev.toInt, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

@@ -14,15 +14,15 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewFields, CompositeViewValue, TemplateSparqlConstructQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
+import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.testkit.EitherValuable
 import io.circe.{Json, JsonObject}
+import monix.bio.IO
 import monix.execution.Scheduler
 
 import java.time.Instant
@@ -30,12 +30,17 @@ import java.util.UUID
 import scala.concurrent.duration._
 
 trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
+
+  val crypto: Crypto = Crypto("changeme", "salt")
+
+  val alwaysValidate: ValidateCompositeView = (_, _, _) => IO.unit
+
   val query =
     TemplateSparqlConstructQuery(
       "prefix p: <http://localhost/>\nCONSTRUCT{ {resource_id} p:transformed ?v } WHERE { {resource_id} p:predicate ?v}"
     ).rightValue
 
-  val uuid                   = UUID.randomUUID()
+  val uuid                   = UUID.fromString("f8468909-a797-4b10-8b5f-000cba337bfa")
   implicit val uuidF: UUIDF  = UUIDF.fixed(uuid)
   implicit val sc: Scheduler = Scheduler.global
 
@@ -159,13 +164,10 @@ trait CompositeViewsFixture extends ConfigFixtures with EitherValuable {
 
   val config: CompositeViewsConfig = CompositeViewsConfig(
     SourcesConfig(1, 1.second, 3, ConstantStrategyConfig(1.second, 10)),
+    "prefix",
     3,
-    aggregate,
-    keyValueStore,
+    eventLogConfig,
     pagination,
-    cacheIndexing,
-    externalIndexing,
-    externalIndexing,
     RemoteSourceClientConfig(httpClientConfig, 1.second, 1, 500.milliseconds),
     1.minute,
     1.minute

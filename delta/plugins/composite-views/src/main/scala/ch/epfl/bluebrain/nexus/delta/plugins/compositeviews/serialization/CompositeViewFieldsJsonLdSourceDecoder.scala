@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization
 
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{contexts, CompositeViewFields, CompositeViewRejection}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonOpsSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceResolvingDecoder
@@ -14,6 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
 import io.circe.syntax._
 import monix.bio.IO
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Decoder for [[CompositeViewFields]] which maps some fields to string, before decoding to get around lack of support
@@ -49,10 +51,11 @@ final class CompositeViewFieldsJsonLdSourceDecoder private (
 
 object CompositeViewFieldsJsonLdSourceDecoder {
 
-  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution)(implicit
-      api: JsonLdApi,
-      cfg: CompositeViewsConfig
-  ): CompositeViewFieldsJsonLdSourceDecoder =
+  def apply(uuidF: UUIDF, contextResolution: ResolverContextResolution, minIntervalRebuild: FiniteDuration)(implicit
+      api: JsonLdApi
+  ): CompositeViewFieldsJsonLdSourceDecoder = {
+    implicit val compositeViewFieldsJsonLdDecoder: JsonLdDecoder[CompositeViewFields] =
+      CompositeViewFields.jsonLdDecoder(minIntervalRebuild)
     new CompositeViewFieldsJsonLdSourceDecoder(
       new JsonLdSourceResolvingDecoder[CompositeViewRejection, CompositeViewFields](
         contexts.compositeViews,
@@ -60,5 +63,6 @@ object CompositeViewFieldsJsonLdSourceDecoder {
         uuidF
       )
     )
+  }
 
 }

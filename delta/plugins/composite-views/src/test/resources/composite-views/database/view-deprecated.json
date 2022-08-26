@@ -1,7 +1,7 @@
 {
   "id": "http://example.com/composite-view",
   "project": "myorg/myproj",
-  "uuid": "{{uuid}}",
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "rev": 4,
   "instant": "1970-01-01T00:00:00Z",
   "subject": {

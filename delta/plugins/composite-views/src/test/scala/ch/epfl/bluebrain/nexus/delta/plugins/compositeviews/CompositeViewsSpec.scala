@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, TooManyProjections, TooManySources, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{IncorrectRev, ProjectContextRejection, RevisionNotFound, TagNotFound, ViewAlreadyExists, ViewIsDeprecated, ViewNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -10,32 +10,28 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.ProjectReferenceFinder.ProjectReferenceMap
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.AbstractDBSpec
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, IOFixedClock}
 import io.circe.Json
 import io.circe.syntax._
 import monix.execution.Scheduler
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{Inspectors, OptionValues}
 
 import java.time.Instant
 
 class CompositeViewsSpec
-    extends AbstractDBSpec
-    with AnyWordSpecLike
+    extends DoobieScalaTestFixture
     with Matchers
     with Inspectors
-    with IOValues
+    with IOFixedClock
     with OptionValues
-    with TestHelpers
-    with CompositeViewsSetup
-    with CompositeViewsFixture {
+    with CompositeViewsFixture
+    with Fixtures {
   private val realm                  = Label.unsafe("myrealm")
   implicit private val alice: Caller = Caller(User("Alice", realm), Set(User("Alice", realm), Group("users", realm)))
 
@@ -57,7 +53,14 @@ class CompositeViewsSpec
       ProjectContextRejection
     )
 
-    val compositeViews = initViews(fetchContext).accepted
+    lazy val compositeViews = CompositeViews(
+      fetchContext,
+      ResolverContextResolution(rcr),
+      alwaysValidate,
+      crypto,
+      config,
+      xas
+    ).accepted
 
     val viewSource        = jsonContentOf("composite-view-source.json")
     val viewSourceUpdated = jsonContentOf("composite-view-source-updated.json")
@@ -67,19 +70,19 @@ class CompositeViewsSpec
     def resourceFor(
         id: Iri,
         value: CompositeViewValue,
-        rev: Long = 1,
+        rev: Int = 1,
         deprecated: Boolean = false,
         createdAt: Instant = Instant.EPOCH,
         createdBy: Subject = alice.subject,
         updatedAt: Instant = Instant.EPOCH,
         updatedBy: Subject = alice.subject,
-        tags: Map[UserTag, Long] = Map.empty,
+        tags: Tags = Tags.empty,
         source: Json
     ): ViewResource = {
       ResourceF(
         id,
         ResourceUris("views", projectRef, id)(project.apiMappings, project.base),
-        rev,
+        rev.toLong,
         Set(nxv.View, compositeViewType),
         deprecated,
         createdAt,
@@ -124,48 +127,24 @@ class CompositeViewsSpec
       "view already exists" in {
         compositeViews.create(projectRef, viewSource).rejectedWith[ViewAlreadyExists]
       }
-      "there are too many sources" in {
-        val fields = viewFields.copy(
-          sources = NonEmptySet.of(
-            projectFields,
-            crossProjectFields,
-            remoteProjectFields,
-            projectFields.copy(id = Some(iri"http://example/other-source"))
-          )
-        )
-        compositeViews.create(iri"http://example.com/wrong", projectRef, fields).rejectedWith[TooManySources]
-      }
-
-      "there are too many projections" in {
-        val fields = viewFields.copy(
-          projections = NonEmptySet.of(
-            esProjectionFields,
-            blazegraphProjectionFields,
-            esProjectionFields.copy(id = Some(iri"http://example/other-source")),
-            esProjectionFields.copy(id = Some(iri"http://example/other-source-2"))
-          )
-        )
-        compositeViews.create(iri"http://example.com/wrong", projectRef, fields).rejectedWith[TooManyProjections]
-      }
-
     }
 
     "update a view" when {
       "using JSON source" in {
-        compositeViews.update(viewId, projectRef, 1L, viewSourceUpdated).accepted shouldEqual resourceFor(
+        compositeViews.update(viewId, projectRef, 1, viewSourceUpdated).accepted shouldEqual resourceFor(
           viewId,
           updatedValue,
           source = viewSourceUpdated.removeAllKeys("token"),
-          rev = 2L
+          rev = 2
         )
       }
 
       "using CompositeViewFields" in {
-        compositeViews.update(otherViewId, projectRef, 1L, updatedFields).accepted shouldEqual resourceFor(
+        compositeViews.update(otherViewId, projectRef, 1, updatedFields).accepted shouldEqual resourceFor(
           otherViewId,
           updatedValue,
           source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token"),
-          rev = 2L
+          rev = 2
         )
       }
 
@@ -173,44 +152,16 @@ class CompositeViewsSpec
 
     "reject updating a view" when {
       "rev provided is wrong " in {
-        compositeViews.update(viewId, projectRef, 1L, viewSourceUpdated).rejectedWith[IncorrectRev]
-      }
-      "view doesnt exist" in {
-        compositeViews
-          .update(iri"http://example.com/wrong", projectRef, 1L, viewSourceUpdated)
-          .rejectedWith[ViewNotFound]
-      }
-      "there are too many sources" in {
-        val fields = viewFields.copy(
-          sources = NonEmptySet.of(
-            projectFields,
-            crossProjectFields,
-            remoteProjectFields,
-            projectFields.copy(id = Some(iri"http://example/other-source"))
-          )
-        )
-        compositeViews.update(otherViewId, projectRef, 2L, fields).rejectedWith[TooManySources]
-      }
-
-      "there are too many projections" in {
-        val fields = viewFields.copy(
-          projections = NonEmptySet.of(
-            esProjectionFields,
-            blazegraphProjectionFields,
-            esProjectionFields.copy(id = Some(iri"http://example/other-source")),
-            esProjectionFields.copy(id = Some(iri"http://example/other-source-2"))
-          )
-        )
-        compositeViews.update(otherViewId, projectRef, 2L, fields).rejectedWith[TooManyProjections]
+        compositeViews.update(viewId, projectRef, 1, viewSourceUpdated).rejectedWith[IncorrectRev]
       }
     }
 
     "deprecate a view" in {
-      compositeViews.deprecate(otherViewId, projectRef, 2L).accepted shouldEqual resourceFor(
+      compositeViews.deprecate(otherViewId, projectRef, 2).accepted shouldEqual resourceFor(
         otherViewId,
         updatedValue,
         source = viewSourceUpdated.deepMerge(Json.obj("@id" -> otherViewId.asJson)).removeAllKeys("token"),
-        rev = 3L,
+        rev = 3,
         deprecated = true
       )
 
@@ -218,36 +169,36 @@ class CompositeViewsSpec
 
     "reject deprecating a view" when {
       "views is already deprecated" in {
-        compositeViews.deprecate(otherViewId, projectRef, 3L).rejectedWith[ViewIsDeprecated]
+        compositeViews.deprecate(otherViewId, projectRef, 3).rejectedWith[ViewIsDeprecated]
       }
       "incorrect revision is provided" in {
-        compositeViews.deprecate(otherViewId, projectRef, 2L).rejectedWith[IncorrectRev]
+        compositeViews.deprecate(otherViewId, projectRef, 2).rejectedWith[IncorrectRev]
       }
     }
 
     "tag a view" when {
       val tag = UserTag.unsafe("mytag")
       "view is not deprecated" in {
-        compositeViews.tag(viewId, projectRef, tag, 1L, 2L).accepted
+        compositeViews.tag(viewId, projectRef, tag, 1, 2).accepted
       }
 
       "view is deprecated" in {
-        compositeViews.tag(otherViewId, projectRef, tag, 1L, 3L).accepted
+        compositeViews.tag(otherViewId, projectRef, tag, 1, 3).accepted
       }
     }
 
     "reject tagging a view" when {
       "incorrect revision is provided" in {
         val tag = UserTag.unsafe("mytag2")
-        compositeViews.tag(viewId, projectRef, tag, 1L, 2L).rejectedWith[IncorrectRev]
+        compositeViews.tag(viewId, projectRef, tag, 1, 2).rejectedWith[IncorrectRev]
       }
       "view is deprecated" in {
         val tag = UserTag.unsafe("mytag3")
-        compositeViews.tag(otherViewId, projectRef, tag, 1L, 2L).rejectedWith[IncorrectRev]
+        compositeViews.tag(otherViewId, projectRef, tag, 1, 2).rejectedWith[IncorrectRev]
       }
       "target view is not found" in {
         val tag = UserTag.unsafe("mytag3")
-        compositeViews.tag(iri"http://example.com/wrong", projectRef, tag, 1L, 2L).rejectedWith[ViewNotFound]
+        compositeViews.tag(iri"http://example.com/wrong", projectRef, tag, 1, 2).rejectedWith[ViewNotFound]
       }
     }
 
@@ -257,8 +208,8 @@ class CompositeViewsSpec
           viewId,
           updatedValue,
           source = viewSourceUpdated.removeAllKeys("token"),
-          rev = 3L,
-          tags = Map(UserTag.unsafe("mytag") -> 1)
+          rev = 3,
+          tags = Tags(UserTag.unsafe("mytag") -> 1)
         )
       }
       "rev is provided" in {
@@ -288,14 +239,5 @@ class CompositeViewsSpec
         compositeViews.fetch(IdSegmentRef(viewId, tag), projectRef).rejectedWith[TagNotFound]
       }
     }
-
-    "finding references" should {
-
-      "get a reference on otherproject from project" in {
-        CompositeViews.projectReferenceFinder(compositeViews)(otherProject).accepted shouldEqual
-          ProjectReferenceMap.single(projectRef, viewId)
-      }
-    }
   }
-
 }

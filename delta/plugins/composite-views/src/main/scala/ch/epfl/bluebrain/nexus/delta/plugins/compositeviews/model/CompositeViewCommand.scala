@@ -26,6 +26,12 @@ sealed trait CompositeViewCommand extends Product with Serializable {
 
   /**
     * @return
+    *   the last known revision of the view
+    */
+  def rev: Int
+
+  /**
+    * @return
     *   the identity associated with this command
     */
   def subject: Subject
@@ -56,7 +62,9 @@ object CompositeViewCommand {
       source: Json,
       subject: Subject,
       projectBase: ProjectBase
-  ) extends CompositeViewCommand
+  ) extends CompositeViewCommand {
+    override def rev: Int = 0
+  }
 
   /**
     * Command for the update of a composite view.
@@ -79,7 +87,7 @@ object CompositeViewCommand {
   final case class UpdateCompositeView(
       id: Iri,
       project: ProjectRef,
-      rev: Long,
+      rev: Int,
       value: CompositeViewFields,
       source: Json,
       subject: Subject,
@@ -98,7 +106,7 @@ object CompositeViewCommand {
     * @param subject
     *   the identity associated with this command
     */
-  final case class DeprecateCompositeView(id: Iri, project: ProjectRef, rev: Long, subject: Subject)
+  final case class DeprecateCompositeView(id: Iri, project: ProjectRef, rev: Int, subject: Subject)
       extends CompositeViewCommand
 
   /**
@@ -120,9 +128,9 @@ object CompositeViewCommand {
   final case class TagCompositeView(
       id: Iri,
       project: ProjectRef,
-      targetRev: Long,
+      targetRev: Int,
       tag: UserTag,
-      rev: Long,
+      rev: Int,
       subject: Subject
   ) extends CompositeViewCommand
 

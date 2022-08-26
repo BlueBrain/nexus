@@ -150,8 +150,7 @@ object ElasticSearchView {
 
   @nowarn("cat=unused")
   implicit val elasticSearchViewEncoder: Encoder.AsObject[ElasticSearchView] = {
-    implicit val config: Configuration                    = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[UserTag, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
 
     // To keep retro-compatibility, we compute legacy fields from the view pipeline
     def encodeLegacyFields(v: ElasticSearchView) =

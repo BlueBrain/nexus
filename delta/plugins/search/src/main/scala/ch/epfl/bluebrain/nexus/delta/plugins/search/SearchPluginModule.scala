@@ -21,7 +21,7 @@ class SearchPluginModule(priority: Int) extends ModuleDef {
 
   make[Search].from {
     (compositeViews: CompositeViews, aclCheck: AclCheck, esClient: ElasticSearchClient, config: CompositeViewsConfig) =>
-      Search(compositeViews, aclCheck, esClient, config.elasticSearchIndexing)
+      Search(compositeViews, aclCheck, esClient, config.prefix)
   }
 
   make[SearchScopeInitialization].from {

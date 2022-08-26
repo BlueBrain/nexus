@@ -326,12 +326,12 @@ object BlazegraphViews {
     * Constructs a projectionId for a blazegraph view
     */
   def projectionId(view: IndexingViewResource): ViewProjectionId =
-    projectionId(view.value.uuid, view.rev)
+    projectionId(view.value.uuid, view.rev.toInt)
 
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(uuid: UUID, rev: Long): ViewProjectionId =
+  def projectionId(uuid: UUID, rev: Int): ViewProjectionId =
     ViewProjectionId(s"blazegraph-${uuid}_$rev")
 
   /**

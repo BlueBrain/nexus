@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.query.SparqlQuery
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import monix.bio.IO
 
@@ -91,21 +90,24 @@ object BlazegraphQuery {
   final def apply(
       aclCheck: AclCheck,
       views: CompositeViews,
-      client: SparqlClient
-  )(implicit config: ExternalIndexingConfig): BlazegraphQuery =
+      client: SparqlClient,
+      prefix: String
+  ): BlazegraphQuery =
     BlazegraphQuery(
       aclCheck,
       views.fetch,
       views.fetchBlazegraphProjection,
-      client: SparqlQueryClient
+      client,
+      prefix
     )
 
   private[compositeviews] def apply(
       aclCheck: AclCheck,
       fetchView: FetchView,
       fetchProjection: FetchProjection,
-      client: SparqlQueryClient
-  )(implicit config: ExternalIndexingConfig): BlazegraphQuery =
+      client: SparqlQueryClient,
+      prefix: String
+  ): BlazegraphQuery =
     new BlazegraphQuery {
 
       override def query[R <: SparqlQueryResponse](
@@ -119,7 +121,7 @@ object BlazegraphQuery {
           _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           permissions = viewRes.value.projections.value.map(_.permission)
           _          <- aclCheck.authorizeForEveryOr(project, permissions)(AuthorizationFailed)
-          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev.toInt, config.prefix)
+          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev.toInt, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -135,7 +137,7 @@ object BlazegraphQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          namespace          = CompositeViews.namespace(projection, view, viewRes.rev, config.prefix)
+          namespace          = CompositeViews.namespace(projection, view, viewRes.rev.toInt, prefix)
           result            <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -163,7 +165,7 @@ object BlazegraphQuery {
             view.projections.value.collect { case p: SparqlProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.namespace(p, view, rev, config.prefix)
+            p => CompositeViews.namespace(p, view, rev.toInt, prefix)
           )
           .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
     }

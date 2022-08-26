@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjectionFields.{ElasticSearchProjectionFields, SparqlProjectionFields}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{DecodingFailed, UnexpectedCompositeViewId}
@@ -51,13 +50,12 @@ class CompositeViewDecodingSpec
     nxv.base
   )
 
-  val uuid                                          = UUID.randomUUID()
-  implicit private val uuidF: UUIDF                 = UUIDF.fixed(uuid)
-  implicit private val config: CompositeViewsConfig = CompositeViewsFixture.config
+  val uuid                          = UUID.randomUUID()
+  implicit private val uuidF: UUIDF = UUIDF.fixed(uuid)
 
   val resolverContext: ResolverContextResolution =
     new ResolverContextResolution(rcr, (_, _, _) => IO.raiseError(ResourceResolutionReport()))
-  private val decoder                            = CompositeViewFieldsJsonLdSourceDecoder(uuidF, resolverContext)
+  private val decoder                            = CompositeViewFieldsJsonLdSourceDecoder(uuidF, resolverContext, 1.minute)
 
   val query1 =
     TemplateSparqlConstructQuery(

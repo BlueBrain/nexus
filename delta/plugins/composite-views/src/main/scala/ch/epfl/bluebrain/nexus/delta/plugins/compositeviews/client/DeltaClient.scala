@@ -6,7 +6,6 @@ import akka.http.scaladsl.model.ContentTypes.`application/json`
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes, Uri}
-import akka.persistence.query.{NoOffset, Offset, Sequence, TimeBasedUUID}
 import akka.stream.alpakka.sse.scaladsl.EventSource
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.RemoteProjectSource
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -17,20 +16,20 @@ import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.AuthToken
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.StreamConverter
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
 import io.circe.parser.decode
 import fs2._
 import monix.bio.{IO, Task, UIO}
 import monix.execution.Scheduler
-import streamz.converter._
 
-import java.util.UUID
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 
 /**
   * Collection of functions for interacting with a remote delta instance.
@@ -98,10 +97,8 @@ object DeltaClient {
 
     override def events[A: Decoder](source: RemoteProjectSource, offset: Offset): Stream[Task, (Offset, A)] = {
       val initialLastEventId = offset match {
-        case NoOffset             => None
-        case Sequence(value)      => Some(value.toString)
-        case TimeBasedUUID(value) => Some(value.toString)
-        case _                    => None
+        case Start            => None
+        case Offset.At(value) => Some(value.toString)
       }
 
       implicit val cred: Option[AuthToken] = token(source)
@@ -113,10 +110,9 @@ object DeltaClient {
       val uri =
         source.endpoint / "resources" / source.project.organization.value / source.project.project.value / "events"
 
-      EventSource(uri, send, initialLastEventId, retryDelay)
-        .toStream[Task](_ => ())
+      StreamConverter(EventSource(uri, send, initialLastEventId, retryDelay))
         .flatMap { sse =>
-          val offset = sse.id.map(toOffset).getOrElse(NoOffset)
+          val offset = sse.id.map(toOffset).getOrElse(Start)
 
           decode[A](sse.data) match {
             case Right(event) => Stream.emit(offset -> event)
@@ -147,8 +143,7 @@ object DeltaClient {
       source.token.map { token => AuthToken(token.value.value) }
 
     private def toOffset(id: String): Offset =
-      Try(TimeBasedUUID(UUID.fromString(id))).orElse(Try(Sequence(id.toLong))).getOrElse(NoOffset)
-
+      id.toLongOption.map(Offset.at).getOrElse(Start)
   }
 
   /**

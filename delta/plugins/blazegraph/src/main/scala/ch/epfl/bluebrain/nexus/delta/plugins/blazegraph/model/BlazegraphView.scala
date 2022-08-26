@@ -144,8 +144,7 @@ object BlazegraphView {
 
   @nowarn("cat=unused")
   implicit private val blazegraphViewsEncoder: Encoder.AsObject[BlazegraphView] = {
-    implicit val config: Configuration                    = Configuration.default.withDiscriminator(keywords.tpe)
-    implicit val encoderTags: Encoder[Map[UserTag, Long]] = Encoder.instance(_ => Json.Null)
+    implicit val config: Configuration = Configuration.default.withDiscriminator(keywords.tpe)
     Encoder.encodeJsonObject.contramapObject { v =>
       deriveConfiguredEncoder[BlazegraphView]
         .encodeObject(v)

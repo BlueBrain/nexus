@@ -9,6 +9,8 @@ import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 import munit.{Assertions, FunSuite}
 
+import scala.collection.immutable.VectorMap
+
 abstract class SerializationSuite
     extends FunSuite
     with Assertions
@@ -28,6 +30,11 @@ abstract class SerializationSuite
       contexts.shacl           -> ContextValue.fromFile("contexts/shacl.json").runSyncUnsafe(),
       contexts.schemasMetadata -> ContextValue.fromFile("contexts/schemas-metadata.json").runSyncUnsafe()
     )
+
+  def loadEvents[E](module: String, eventsToFile: (E, String)*): Map[E, (Json, JsonObject)] =
+    eventsToFile.foldLeft(VectorMap.empty[E, (Json, JsonObject)]) { case (acc, (event, fileName)) =>
+      acc + (event -> loadEvents(module, fileName))
+    }
 
   def loadEvents(module: String, fileName: String): (Json, JsonObject) =
     (jsonContentOf(s"/$module/database/$fileName"), jsonObjectContentOf(s"/$module/sse/$fileName"))

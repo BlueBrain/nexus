@@ -67,4 +67,18 @@ object StreamConverter {
       .mapMaterializedValue(_ => NotUsed)
   }
 
+  def apply[A](source: Graph[SourceShape[A], NotUsed])(implicit materializer: Materializer): Stream[Task, A] =
+    Stream.force {
+      Task.delay {
+        val subscriber = AkkaSource.fromGraph(source).toMat(AkkaSink.queue[A]())(Keep.right).run()
+        subscriberStream[A](subscriber)
+      }
+    }
+
+  private def subscriberStream[A](subscriber: SinkQueueWithCancel[A]): Stream[Task, A] = {
+    val pull   = Task.deferFuture(subscriber.pull())
+    val cancel = Task.delay(subscriber.cancel())
+    Stream.repeatEval(pull).unNoneTerminate.onFinalize(cancel)
+  }
+
 }

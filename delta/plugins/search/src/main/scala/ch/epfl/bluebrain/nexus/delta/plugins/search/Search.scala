@@ -11,7 +11,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress.{Project => ProjectAcl}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, UIO}
 
@@ -39,7 +38,7 @@ object Search {
       compositeViews: CompositeViews,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      indexingConfig: ExternalIndexingConfig
+      prefix: String
   ): Search = {
 
     val listProjections: ListProjections = () =>
@@ -59,7 +58,7 @@ object Search {
               } yield TargetProjection(esProjection, res.value, res.rev)
             }
         )
-    apply(listProjections, aclCheck, client, indexingConfig)
+    apply(listProjections, aclCheck, client, prefix)
   }
 
   /**
@@ -69,7 +68,7 @@ object Search {
       listProjections: ListProjections,
       aclCheck: AclCheck,
       client: ElasticSearchClient,
-      indexingConfig: ExternalIndexingConfig
+      prefix: String
   ): Search =
     new Search {
       override def query(payload: JsonObject, qp: Uri.Query)(implicit caller: Caller): IO[SearchRejection, Json] = {
@@ -78,7 +77,7 @@ object Search {
           accessibleIndices <- aclCheck.mapFilter[TargetProjection, String](
                                  allProjections,
                                  p => ProjectAcl(p.view.project) -> p.projection.permission,
-                                 p => CompositeViews.index(p.projection, p.view, p.rev, indexingConfig.prefix).value
+                                 p => CompositeViews.index(p.projection, p.view, p.rev.toInt, prefix).value
                                )
           results           <- client.search(payload, accessibleIndices, qp)().mapError(WrappedElasticSearchClientError)
         } yield results

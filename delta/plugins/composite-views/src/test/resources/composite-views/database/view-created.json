@@ -85,7 +85,7 @@
     "realm": "myrealm",
     "subject": "myuser"
   },
-  "uuid": "{{uuid}}",
+  "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa",
   "value": {
     "projections": [
       {
@@ -99,7 +99,7 @@
         ],
         "resourceTypes": [
         ],
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       },
       {
         "@type": "ElasticSearchProjection",
@@ -118,7 +118,7 @@
         ],
         "settings": {
         },
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       }
     ],
     "rebuildStrategy": {
@@ -139,7 +139,7 @@
         "token": {
           "value": "vv/MQBHmWaNm+TX/EigReQ=="
         },
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       },
       {
         "@type": "ProjectSource",
@@ -149,7 +149,7 @@
         ],
         "resourceTypes": [
         ],
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       },
       {
         "@type": "CrossProjectSource",
@@ -165,7 +165,7 @@
         ],
         "resourceTypes": [
         ],
-        "uuid": "{{uuid}}"
+        "uuid": "f8468909-a797-4b10-8b5f-000cba337bfa"
       }
     ]
   }
