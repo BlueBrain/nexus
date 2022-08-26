@@ -3,14 +3,18 @@ package ch.epfl.bluebrain.nexus.delta.plugins.jira
 import ch.epfl.bluebrain.nexus.delta.plugins.jira.OAuthToken.{AccessToken, RequestToken}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.User
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, ShouldMatchers, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit._
 import org.scalatest.OptionValues
-import org.scalatest.wordspec.AnyWordSpecLike
 
-trait TokenStoreSpec extends IOFixedClock with IOValues with OptionValues with TestHelpers with ShouldMatchers {
-  this: AnyWordSpecLike =>
+class TokenStoreSpec
+    extends DoobieScalaTestFixture
+    with IOFixedClock
+    with IOValues
+    with OptionValues
+    with TestHelpers
+    with ShouldMatchers {
 
-  def tokenStore: TokenStore
+  private lazy val tokenStore: TokenStore = TokenStore(xas, tablesAutocreate = true).accepted
 
   "A store" should {
 
