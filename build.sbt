@@ -715,8 +715,7 @@ lazy val projectDeletionPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-project-deletion-plugin",
@@ -771,8 +770,7 @@ lazy val jiraPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk        % "provided;test->test",
-    sdkTestkit % "test->compile;test->test"
+    sdk % "provided;test->test"
   )
   .settings(
     name                       := "delta-jira-plugin",

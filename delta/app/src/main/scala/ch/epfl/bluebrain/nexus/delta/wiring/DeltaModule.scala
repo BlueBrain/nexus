@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
 import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
-import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
@@ -45,6 +45,7 @@ import org.slf4j.{Logger, LoggerFactory}
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
   make[AppConfig].from(appCfg)
   make[Config].from(config)
+  make[DatabaseConfig].from(appCfg.database)
   make[FusionConfig].from { appCfg.fusion }
   make[ProjectsConfig].from { appCfg.projects }
   make[BaseUri].from { appCfg.http.baseUri }

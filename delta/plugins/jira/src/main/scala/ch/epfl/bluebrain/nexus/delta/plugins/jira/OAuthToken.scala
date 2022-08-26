@@ -42,7 +42,7 @@ object OAuthToken {
   final case class AccessToken(value: String) extends OAuthToken
 
   @nowarn("cat=unused")
-  implicit val oauthTokenEncoder: Codec.AsObject[OAuthToken] = {
+  implicit val oauthTokenCodec: Codec.AsObject[OAuthToken] = {
     implicit val cfg: Configuration = Configuration.default
     deriveConfiguredCodec[OAuthToken]
   }
