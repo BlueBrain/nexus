@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus, Plus}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -8,16 +9,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic
-import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
+import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class GlobalEventStoreSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions {
+class GlobalEventStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 

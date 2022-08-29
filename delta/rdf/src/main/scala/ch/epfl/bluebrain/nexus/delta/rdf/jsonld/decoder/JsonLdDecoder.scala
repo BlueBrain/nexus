@@ -54,6 +54,15 @@ trait JsonLdDecoder[A] { self =>
   }
 
   /**
+    * @tparam AA
+    *   the value supertype
+    * @return
+    *   a new decoder for a supertype of A
+    */
+  final def covary[AA >: A]: JsonLdDecoder[AA] =
+    map(identity)
+
+  /**
     * Chains a new decoder that uses this cursor and the decoded value to attempt to produce a new value. The cursor
     * retains its history for providing better error messages.
     *

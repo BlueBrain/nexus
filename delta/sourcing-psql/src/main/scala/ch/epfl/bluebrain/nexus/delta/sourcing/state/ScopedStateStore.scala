@@ -259,20 +259,20 @@ object ScopedStateStore {
     ): EnvelopeStream[Id, S] =
       Envelope.stream(
         offset,
-        (o: Offset) =>
-          fr"SELECT type, id, value, rev, instant, ordering FROM scoped_states" ++
-            Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), o.asFragment) ++
-            fr"ORDER BY ordering" ++
-            fr"LIMIT ${config.batchSize}",
-        strategy,
-        xas
+        offset =>
+          // format: off
+          sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_states
+               |${Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), offset.asFragment)}
+               |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
+        xas,
+        config.copy(refreshStrategy = strategy)
       )
 
     override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
       states(predicate, tag, offset, RefreshStrategy.Stop)
 
     override def states(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =
-      states(predicate, tag, offset, config.refreshInterval)
+      states(predicate, tag, offset, config.refreshStrategy)
   }
 
 }

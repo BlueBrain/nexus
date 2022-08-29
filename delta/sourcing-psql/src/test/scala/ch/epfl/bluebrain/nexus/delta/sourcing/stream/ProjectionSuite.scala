@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
-import ch.epfl.bluebrain.nexus.testkit.{CollectionAssertions, EitherAssertions, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.Task
 
 import scala.concurrent.duration._
 
-class ProjectionSuite extends MonixBioSuite with ProjectionFixture with EitherAssertions with CollectionAssertions {
+class ProjectionSuite extends BioSuite with ProjectionFixture {
 
   projections.test("Fail to compile SourceChain when source.Out does not match pipe.In") { ctx =>
     SourceChain(

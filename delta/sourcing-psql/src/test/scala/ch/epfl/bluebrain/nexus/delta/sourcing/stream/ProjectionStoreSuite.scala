@@ -7,11 +7,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.{SourceId, SourceIdPipeChainId}
-import ch.epfl.bluebrain.nexus.testkit.{CollectionAssertions, DoobieAssertions, DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import munit.AnyFixture
 
-class ProjectionStoreSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions with CollectionAssertions {
+class ProjectionStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 

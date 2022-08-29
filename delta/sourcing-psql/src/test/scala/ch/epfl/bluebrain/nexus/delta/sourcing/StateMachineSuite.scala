@@ -5,13 +5,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticEvent.{Minus,
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.ArithmeticRejection.NegativeTotal
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
-import ch.epfl.bluebrain.nexus.testkit.MonixBioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import fs2.Stream
 import monix.bio.UIO
 
 import scala.concurrent.duration._
 
-class StateMachineSuite extends MonixBioSuite {
+class StateMachineSuite extends BioSuite {
 
   private val stm = Arithmetic.stateMachine
 

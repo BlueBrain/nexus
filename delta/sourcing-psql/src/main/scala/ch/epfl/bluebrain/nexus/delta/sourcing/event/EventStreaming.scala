@@ -9,36 +9,40 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, Envel
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import doobie.Fragments
 import doobie.implicits._
+import io.circe.Json
 
 object EventStreaming {
 
-  def fetchAll[A](predicate: Predicate, types: List[EntityType], offset: Offset, config: QueryConfig, xas: Transactors)(
-      implicit md: MultiDecoder[A]
-  ): EnvelopeStream[String, A] = {
-    val nel                     = NonEmptyList.fromList(types)
-    def globalEvents(o: Offset) =
-      fr"SELECT type, id, value, rev, instant, ordering FROM global_events" ++
-        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types) }, o.asFragment) ++
-        fr"ORDER BY ordering" ++
-        fr"LIMIT ${config.batchSize}"
-    def scopedEvents(o: Offset) =
-      fr"SELECT type, id, value, rev, instant, ordering FROM scoped_events" ++
-        Fragments.whereAndOpt(nel.map { types => Fragments.in(fr"type", types) }, predicate.asFragment, o.asFragment) ++
-        fr"ORDER BY ordering" ++
-        fr"LIMIT ${config.batchSize}"
+  def fetchAll[A](
+      predicate: Predicate,
+      types: List[EntityType],
+      offset: Offset,
+      config: QueryConfig,
+      xas: Transactors
+  )(implicit md: MultiDecoder[A]): EnvelopeStream[String, A] = {
+    val typeIn = NonEmptyList.fromList(types).map { types => Fragments.in(fr"type", types) }
 
-    Envelope.multipleStream[String, A](
+    def globalEvents(o: Offset) =
+      fr"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
+           |${Fragments.whereAndOpt(typeIn, o.asFragment)}
+           |ORDER BY ordering""".stripMargin
+
+    def scopedEvents(o: Offset) =
+      fr"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
+           |${Fragments.whereAndOpt(typeIn, predicate.asFragment, o.asFragment)}
+           |ORDER BY ordering""".stripMargin
+
+    Envelope.streamA(
       offset,
-      (o: Offset) =>
+      offset =>
         predicate match {
           case Root =>
-            fr"(${globalEvents(o)}) UNION ALL (${scopedEvents(o)})" ++
-              fr"ORDER BY ordering" ++
-              fr"LIMIT ${config.batchSize}"
-          case _    => scopedEvents(o)
+            sql"""(${globalEvents(offset)}) UNION ALL (${scopedEvents(offset)})
+                 |ORDER BY ordering""".stripMargin.query[Envelope[String, Json]]
+          case _    => scopedEvents(offset).query[Envelope[String, Json]]
         },
-      config.refreshInterval,
-      xas
+      xas,
+      config
     )
   }
 

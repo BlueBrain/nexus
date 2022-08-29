@@ -7,10 +7,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions._
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.MonixBioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.IO
 
-class AclCheckSuite extends MonixBioSuite {
+class AclCheckSuite extends BioSuite {
 
   private val realm         = Label.unsafe("wonderland")
   private val authenticated = Authenticated(realm)

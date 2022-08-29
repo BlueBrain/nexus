@@ -107,20 +107,18 @@ object GlobalEventStore {
       }
 
       private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
-        Envelope.stream(
+        Envelope.stream[Id, E](
           offset,
-          (o: Offset) =>
-            fr"SELECT type, id, value, rev, instant, ordering FROM public.global_events" ++
-              Fragments.whereAndOpt(Some(fr"type = $tpe"), o.asFragment) ++
-              fr"ORDER BY ordering" ++
-              fr"LIMIT ${config.batchSize}",
-          strategy,
-          xas
+          offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
+                         |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
+                         |ORDER BY ordering""".stripMargin.query[Envelope[Id, E]],
+          xas,
+          config.copy(refreshStrategy = strategy)
         )
 
       override def currentEvents(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, RefreshStrategy.Stop)
 
-      override def events(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, config.refreshInterval)
+      override def events(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, config.refreshStrategy)
     }
 
 }

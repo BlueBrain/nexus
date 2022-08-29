@@ -1,13 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.testkit.MonixBioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import fs2.concurrent.Queue
 import monix.bio.Task
 
-trait ProjectionFixture { self: MonixBioSuite =>
+trait ProjectionFixture { self: BioSuite =>
 
-  val projections: FunFixture[ProjectionTestContext] = FunFixture[ProjectionTestContext](
+  val projections: FunFixture[ProjectionTestContext[String]] = FunFixture[ProjectionTestContext[String]](
     setup = { _ =>
       val queue    = Queue.unbounded[Task, SuccessElem[String]].runSyncUnsafe()
       val registry = new ReferenceRegistry()

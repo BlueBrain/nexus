@@ -91,6 +91,17 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def projectionOffset(current: ProjectionOffset): ProjectionOffset =
     current.add(ctx, offset)
+
+  /**
+    * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
+    * @param f
+    *   the mapping function
+    */
+  def map[B](f: A => B): Elem[B] = this match {
+    case e: SuccessElem[A] => e.copy(value = f(e.value))
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
 }
 
 object Elem {

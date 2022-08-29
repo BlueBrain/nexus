@@ -1,10 +1,10 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.bio
 
 import fs2.Stream
 import monix.bio.Task
 import munit.{Assertions, Location}
 
-import scala.concurrent.duration._
+import scala.concurrent.duration.DurationInt
 
 trait StreamAssertions { self: Assertions =>
 

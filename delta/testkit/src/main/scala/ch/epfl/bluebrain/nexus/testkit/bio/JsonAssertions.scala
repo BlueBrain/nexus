@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.bio
 
+import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject, Printer}
-import io.circe.syntax._
 import munit.{Assertions, Location}
 
 trait JsonAssertions { self: Assertions =>

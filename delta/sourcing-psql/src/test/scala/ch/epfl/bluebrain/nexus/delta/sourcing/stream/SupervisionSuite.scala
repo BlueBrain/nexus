@@ -10,21 +10,23 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
-import ch.epfl.bluebrain.nexus.testkit._
+import ch.epfl.bluebrain.nexus.testkit.TestHelpers
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import fs2.Stream
 import monix.bio.Task
+import munit.AnyFixture
 
 import scala.concurrent.duration._
 
 class SupervisionSuite
-    extends MonixBioSuite
+    extends BioSuite
     with ProjectionFixture
-    with DoobieFixture
-    with DoobieAssertions
-    with CollectionAssertions
-    with EitherAssertions {
+    with Doobie.Fixture
+    with Doobie.Assertions
+    with TestHelpers {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 

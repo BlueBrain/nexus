@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.QuotaRejection.QuotaReache
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.model.{Quota, QuotaRejection}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef}
-import ch.epfl.bluebrain.nexus.testkit.MonixBioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import monix.bio.IO
 
-class FetchContextSuite extends MonixBioSuite {
+class FetchContextSuite extends BioSuite {
 
   implicit private val subject: Subject = Identity.Anonymous
 

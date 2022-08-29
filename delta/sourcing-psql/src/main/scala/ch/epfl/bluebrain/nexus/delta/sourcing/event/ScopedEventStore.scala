@@ -122,20 +122,18 @@ object ScopedEventStore {
       ): Stream[Task, Envelope[Id, E]] =
         Envelope.stream(
           offset,
-          (o: Offset) =>
-            fr"SELECT type, id, value, rev, instant, ordering FROM public.scoped_events" ++
-              Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, o.asFragment) ++
-              fr"ORDER BY ordering" ++
-              fr"LIMIT ${config.batchSize}",
-          strategy,
-          xas
+          offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_events
+                         |${Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, offset.asFragment)}
+                         |ORDER BY ordering""".stripMargin.query[Envelope[Id, E]],
+          xas,
+          config.copy(refreshStrategy = strategy)
         )
 
       override def currentEvents(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] =
         events(predicate, offset, RefreshStrategy.Stop)
 
       override def events(predicate: Predicate, offset: Offset): Stream[Task, Envelope[Id, E]] =
-        events(predicate, offset, config.refreshInterval)
+        events(predicate, offset, config.refreshStrategy)
 
     }
 }

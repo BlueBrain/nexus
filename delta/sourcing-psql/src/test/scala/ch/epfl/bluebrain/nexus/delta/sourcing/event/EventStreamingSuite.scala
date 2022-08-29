@@ -12,15 +12,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Arithmetic, MultiDecoder, Predicate, PullRequest}
-import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
-import io.circe.Decoder
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
+import io.circe.Decoder
+import munit.AnyFixture
 
 import java.time.Instant
 
-class EventStreamingSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions {
+class EventStreamingSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 
