@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.testkit
+package ch.epfl.bluebrain.nexus.testkit.bio
 
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
@@ -9,7 +9,14 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-trait MonixBioAssertions { self: Assertions =>
+trait BioAssertions { self: Assertions =>
+
+  def assertIO[E, A, B](
+      obtained: IO[E, A],
+      returns: B,
+      clue: => Any = "values are not the same"
+  )(implicit loc: Location, ev: B <:< A): IO[E, Unit] =
+    obtained.flatMap(a => UIO(assertEquals(a, returns, clue)))
 
   implicit class UioAssertionsOps[A](uio: UIO[A])(implicit loc: Location) {
     def assert(expected: A, clue: Any = "values are not the same"): UIO[Unit] =
@@ -109,5 +116,3 @@ trait MonixBioAssertions { self: Assertions =>
   }
 
 }
-
-object MonixBioAssertions extends Assertions with MonixBioAssertions

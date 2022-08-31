@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.ProjectionOffsetRow
 import doobie._
 import doobie.implicits._
@@ -13,7 +14,6 @@ import fs2.Stream
 
 import java.time.Instant
 import java.util.concurrent.TimeUnit
-import scala.annotation.nowarn
 
 /**
   * Persistent operations for projections.
@@ -97,10 +97,6 @@ object ProjectionStore {
       }
     }
   }
-
-  @nowarn("cat=unused")
-  implicit private val iriGet: Get[Iri] = Get[String].temap(str => Iri.absolute(str))
-  implicit private val iriPut: Put[Iri] = Put[String].contramap(_.toString)
 
   def apply(xas: Transactors, config: QueryConfig): ProjectionStore =
     new ProjectionStore {

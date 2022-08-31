@@ -128,18 +128,16 @@ object GlobalStateStore {
     private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
       Envelope.stream(
         offset,
-        (o: Offset) =>
-          fr"SELECT type, id, value, rev, instant, ordering FROM public.global_states" ++
-            Fragments.whereAndOpt(Some(fr"type = $tpe"), o.asFragment) ++
-            fr"ORDER BY ordering" ++
-            fr"LIMIT ${config.batchSize}",
-        strategy,
-        xas
+        offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
+                       |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
+                       |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
+        xas,
+        config.copy(refreshStrategy = strategy)
       )
 
     override def currentStates(offset: Offset): EnvelopeStream[Id, S] = states(offset, RefreshStrategy.Stop)
 
-    override def states(offset: Offset): EnvelopeStream[Id, S] = states(offset, config.refreshInterval)
+    override def states(offset: Offset): EnvelopeStream[Id, S] = states(offset, config.refreshStrategy)
   }
 
 }

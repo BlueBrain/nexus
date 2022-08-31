@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.store
 
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestState, entityType}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
@@ -12,15 +12,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Predicate, PullRequest}
-import ch.epfl.bluebrain.nexus.testkit.{DoobieAssertions, DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
+import munit.AnyFixture
 
 import java.time.Instant
 import scala.concurrent.duration._
 
-class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with DoobieAssertions {
+class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 
@@ -140,7 +142,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
       .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
         entityType,
         Set(project1 -> id1, project1 -> id2),
-        identity(_),
+        identity,
         xas
       )
       .assert(())
@@ -153,7 +155,7 @@ class ScopedStateStoreSuite extends MonixBioSuite with DoobieFixture with Doobie
       .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
         entityType,
         Set(project1 -> id1, project1 -> id2) ++ unknowns,
-        identity(_),
+        identity,
         xas
       )
       .error(unknowns)

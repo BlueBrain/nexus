@@ -1,7 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Triple}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, Tag, Update}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
@@ -9,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{Pull
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe.Codec
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{UniformScopedState, UniformScopedStateEncoder}
+import io.circe.{Codec, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import monix.bio.IO
@@ -128,12 +131,62 @@ object PullRequest {
 
   sealed trait PullRequestState extends ScopedState {
     def id: Label
+    def project: ProjectRef
+    def rev: Int
+    def createdAt: Instant
+    def createdBy: Subject
+    def updatedAt: Instant
+    def updatedBy: Subject
 
     override def deprecated: Boolean = false
 
     override def schema: ResourceRef = Latest(schemas + "pull-request.json")
 
     override def types: Set[IriOrBNode.Iri] = Set(nxv + "PullRequest")
+
+    def graph(base: Iri): Graph = this match {
+      case _: PullRequestActive =>
+        Graph
+          .empty(base / id.value)
+          .add(
+            (Triple.subject(base / id.value), Triple.predicate(nxv + "status"), Triple.obj("active"))
+          )
+      case _: PullRequestClosed =>
+        Graph
+          .empty(base / id.value)
+          .add(
+            (Triple.subject(base / id.value), Triple.predicate(nxv + "status"), Triple.obj("closed"))
+          )
+    }
+
+    def metadataGraph(base: Iri): Graph = {
+      def subject(subject: Subject): Iri = subject match {
+        case Identity.Anonymous            => base / "anonymous"
+        case Identity.User(subject, realm) => base / "realms" / realm.value / "users" / subject
+      }
+      Graph
+        .empty(base / id.value)
+        .add(Triple.predicate(nxv.project.iri), Triple.obj(project.toString))
+        .add(Triple.predicate(nxv.rev.iri), Triple.obj(rev))
+        .add(Triple.predicate(nxv.deprecated.iri), Triple.obj(deprecated))
+        .add(Triple.predicate(nxv.createdAt.iri), Triple.obj(createdAt))
+        .add(Triple.predicate(nxv.createdBy.iri), Triple.obj(subject(createdBy)))
+        .add(Triple.predicate(nxv.updatedAt.iri), Triple.obj(updatedAt))
+        .add(Triple.predicate(nxv.updatedBy.iri), Triple.obj(subject(updatedBy)))
+    }
+
+    def source: Json = this match {
+      case _: PullRequestActive =>
+        Json.obj(
+          "@id"    -> Json.fromString(id.value),
+          "status" -> Json.fromString("active")
+        )
+      case _: PullRequestClosed =>
+        Json.obj(
+          "@id"    -> Json.fromString(id.value),
+          "status" -> Json.fromString("closed")
+        )
+    }
   }
 
   object PullRequestState {
@@ -166,6 +219,24 @@ object PullRequest {
       Serializer(_.id)
     }
 
+    def uniformScopedStateEncoder(base: Iri): UniformScopedStateEncoder[PullRequestState] =
+      UniformScopedStateEncoder.fromSerializer(
+        serializer,
+        entityType,
+        state =>
+          UniformScopedState(
+            PullRequest.entityType,
+            state.project,
+            base / state.id.value,
+            state.rev,
+            state.deprecated,
+            state.schema,
+            state.types,
+            state.graph(base),
+            state.metadataGraph(base),
+            state.source
+          )
+      )
   }
 
 }

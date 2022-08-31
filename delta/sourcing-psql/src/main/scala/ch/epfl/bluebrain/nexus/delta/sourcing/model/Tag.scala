@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import cats.syntax.all._
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
@@ -24,7 +24,17 @@ object Tag {
   sealed trait Latest extends Tag
 
   final case object Latest extends Latest {
-    override def value: String = "latest"
+    override val value: String = "latest"
+
+    implicit val latestTagJsonLdDecoder: JsonLdDecoder[Latest] =
+      (cursor: ExpandedJsonLdCursor) =>
+        cursor.get[String].flatMap {
+          case `value` => Right(Latest)
+          case other   => Left(ParsingFailure(s"Tag '$other' does not match expected value 'latest'"))
+        }
+
+    implicit val latestTagDecoder: Decoder[Latest] =
+      Decoder.decodeString.emap(str => if (str == "latest") Right(Latest) else Left("Expected 'latest' string"))
   }
 
   final case class UserTag private (value: String) extends Tag
@@ -61,4 +71,13 @@ object Tag {
   }
 
   implicit val tagPut: Put[Tag] = Put[String].contramap(_.value)
+
+  implicit val tagEncoder: Encoder[Tag] =
+    Encoder.encodeString.contramap(_.value)
+
+  implicit val tagDecoder: Decoder[Tag] =
+    Latest.latestTagDecoder or UserTag.userTagDecoder.map(identity[Tag])
+
+  implicit val tagJsonLdDecoder: JsonLdDecoder[Tag] =
+    Latest.latestTagJsonLdDecoder or UserTag.userTagJsonLdDecoder.covary[Tag]
 }

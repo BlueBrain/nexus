@@ -7,7 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri.unsafe
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.UriUtils
-import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
+import io.circe.{Codec, Decoder, Encoder, KeyDecoder, KeyEncoder}
 import org.apache.jena.iri.{IRI, IRIFactory}
 
 import java.util.UUID
@@ -349,6 +349,7 @@ object IriOrBNode {
 
     implicit final val iriDecoder: Decoder[Iri] = Decoder.decodeString.emap(apply)
     implicit final val iriEncoder: Encoder[Iri] = Encoder.encodeString.contramap(_.toString)
+    implicit final val iriCodec: Codec[Iri]     = Codec.from(iriDecoder, iriEncoder)
 
     implicit val iriKeyEncoder: KeyEncoder[Iri] = KeyEncoder.encodeKeyString.contramap(_.toString)
     implicit val iriKeyDecoder: KeyDecoder[Iri] = KeyDecoder.instance(absolute(_).toOption)

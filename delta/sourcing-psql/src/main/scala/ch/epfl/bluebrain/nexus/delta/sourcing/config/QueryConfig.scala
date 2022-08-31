@@ -10,10 +10,10 @@ import scala.concurrent.duration.FiniteDuration
   *
   * @param batchSize
   *   the maximum number of elements to fetch with one query
-  * @param refreshInterval
-  *   the time to wait before reexecuting the query when the rows have all been consumed
+  * @param refreshStrategy
+  *   complete the stream when all the rows have been consumed or delay and re-execute the query
   */
-final case class QueryConfig(batchSize: Int, refreshInterval: RefreshStrategy)
+final case class QueryConfig(batchSize: Int, refreshStrategy: RefreshStrategy)
 
 object QueryConfig {
   implicit final val queryConfig: ConfigReader[QueryConfig] =

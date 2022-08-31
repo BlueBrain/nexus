@@ -2,8 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import doobie.{Get, Put}
 import io.circe.{Decoder, Encoder, KeyDecoder, KeyEncoder}
 
@@ -46,6 +48,8 @@ object ProjectRef {
   implicit val projectRefKeyDecoder: KeyDecoder[ProjectRef] = KeyDecoder.instance(parse(_).toOption)
   implicit val projectRefDecoder: Decoder[ProjectRef]       = Decoder.decodeString.emap { parse }
 
+  implicit val projectRefJsonLdEncoder: JsonLdEncoder[ProjectRef] =
+    JsonLdEncoder.computeFromCirce(ContextValue.empty)
   implicit val projectRefJsonLdDecoder: JsonLdDecoder[ProjectRef] =
     (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { parse(_).leftMap { e => ParsingFailure(e) } }
 

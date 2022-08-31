@@ -1,16 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
-import cats.syntax.all._
+import cats.effect.ExitCase
+import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.MultiDecoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
 import doobie.postgres.implicits._
-import fs2.{Chunk, Stream}
+import doobie.util.query.Query0
+import fs2.Stream
 import io.circe.{Decoder, Json}
 import monix.bio.Task
 
@@ -47,75 +50,79 @@ final case class Envelope[Id, +Value](
 
 object Envelope {
 
-  def stream[Id, Value](offset: Offset, query: Offset => Fragment, strategy: RefreshStrategy, xas: Transactors)(implicit
-      @nowarn("cat=unused") get: Get[Id],
-      decoder: Decoder[Value]
-  ): EnvelopeStream[Id, Value] =
-    Stream.unfoldChunkEval[Task, Offset, Envelope[Id, Value]](offset) { currentOffset =>
-      query(currentOffset).query[(EntityType, Id, Json, Int, Instant, Long)].to[List].transact(xas.streaming).flatMap {
-        rows =>
-          Task
-            .fromEither(
-              rows
-                .traverse { case (entityType, id, value, rev, instant, offset) =>
-                  value.as[Value].map { event =>
-                    Envelope(
-                      entityType,
-                      id,
-                      rev,
-                      event,
-                      instant,
-                      Offset.At(offset)
-                    )
-                  }
-                }
-            )
-            .flatMap { envelopes =>
-              envelopes.lastOption.fold(
-                strategy match {
-                  case RefreshStrategy.Stop         => Task.none
-                  case RefreshStrategy.Delay(value) =>
-                    Task.sleep(value) >> Task.some((Chunk.empty[Envelope[Id, Value]], currentOffset))
-                }
-              ) { last => Task.some((Chunk.seq(envelopes), last.offset)) }
-            }
-      }
+  @nowarn("cat=unused")
+  implicit def envelopeRead[Id, Value](implicit g: Get[Id], s: Decoder[Value]): Read[Envelope[Id, Value]] = {
+    implicit val v: Get[Value] = pgDecoderGetT[Value]
+    Read[(EntityType, Id, Value, Int, Instant, Long)].map { case (tpe, id, value, rev, instant, offset) =>
+      Envelope(tpe, id, rev, value, instant, Offset.at(offset))
     }
+  }
 
-  def multipleStream[Id, Value](offset: Offset, query: Offset => Fragment, strategy: RefreshStrategy, xas: Transactors)(
-      implicit
-      @nowarn("cat=unused") get: Get[Id],
-      multiDecoder: MultiDecoder[Value]
-  ): EnvelopeStream[Id, Value] =
-    Stream.unfoldChunkEval[Task, Offset, Envelope[Id, Value]](offset) { currentOffset =>
-      query(currentOffset).query[(EntityType, Id, Json, Int, Instant, Long)].to[List].transact(xas.streaming).flatMap {
-        rows =>
-          Task
-            .fromEither(
-              rows
-                .traverse { case (entityType, id, value, rev, instant, offset) =>
-                  multiDecoder.decodeJson(entityType, value).map { event =>
-                    Envelope(
-                      entityType,
-                      id,
-                      rev,
-                      event,
-                      instant,
-                      Offset.At(offset)
-                    )
-                  }
-                }
-            )
-            .flatMap { envelopes =>
-              envelopes.lastOption.fold(
-                strategy match {
-                  case RefreshStrategy.Stop         => Task.none
-                  case RefreshStrategy.Delay(value) =>
-                    Task.sleep(value) >> Task.some((Chunk.empty[Envelope[Id, Value]], currentOffset))
-                }
-              ) { last => Task.some((Chunk.seq(envelopes), last.offset)) }
-            }
+  /**
+    * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
+    * defines if the stream will re-execute the query with a delay after all the results have been consumed. Failure to
+    * decode a stream element (from json to A) will drop the element silently.
+    *
+    * @param start
+    *   the start offset
+    * @param query
+    *   the query function for an offset
+    * @param xas
+    *   the transactor instances
+    * @param cfg
+    *   the query configuration
+    * @param md
+    *   a decoder collection indexed on the entity type for values of type A.
+    * @tparam A
+    *   the underlying value type
+    */
+  def streamA[A](
+      start: Offset,
+      query: Offset => Query0[Envelope[String, Json]],
+      xas: Transactors,
+      cfg: QueryConfig
+  )(implicit md: MultiDecoder[A]): EnvelopeStream[String, A] =
+    stream(start, query, xas, cfg)
+      .evalMapFilter { e =>
+        Task.pure(md.decodeJson(e.tpe, e.value).toOption.map(a => e.copy(value = a)))
       }
-    }
 
+  /**
+    * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
+    * defines if the stream will re-execute the query with a delay after all the results have been consumed.
+    * @param start
+    *   the start offset
+    * @param query
+    *   the query function for an offset
+    * @param xas
+    *   the transactor instances
+    * @param cfg
+    *   the query configuration
+    */
+  def stream[Id, Value](
+      start: Offset,
+      query: Offset => Query0[Envelope[Id, Value]],
+      xas: Transactors,
+      cfg: QueryConfig
+  ): EnvelopeStream[Id, Value] =
+    cfg.refreshStrategy match {
+      case RefreshStrategy.Stop         => query(start).streamWithChunkSize(cfg.batchSize).transact(xas.streaming)
+      case RefreshStrategy.Delay(delay) =>
+        Stream.eval(Ref.of[Task, Offset](start)).flatMap { ref =>
+          Stream
+            .eval(ref.get)
+            .flatMap { offset =>
+              query(offset)
+                .streamWithChunkSize(cfg.batchSize)
+                .transact(xas.streaming)
+                .evalTap { envelope => ref.set(envelope.offset) }
+                .onFinalizeCaseWeak {
+                  case ExitCase.Completed => Task.sleep(delay) // delay only for success
+                  case ExitCase.Error(_)  => Task.unit
+                  case ExitCase.Canceled  => Task.unit
+                }
+            }
+            .repeat
+        }
+    }
 }

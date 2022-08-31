@@ -4,7 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, EitherAssertions, JsonAssertions, TestHelpers}
+import ch.epfl.bluebrain.nexus.testkit.bio.{EitherAssertions, JsonAssertions}
+import ch.epfl.bluebrain.nexus.testkit.{CirceLiteral, TestHelpers}
 import io.circe.{Json, JsonObject}
 import monix.execution.Scheduler
 import munit.{Assertions, FunSuite}

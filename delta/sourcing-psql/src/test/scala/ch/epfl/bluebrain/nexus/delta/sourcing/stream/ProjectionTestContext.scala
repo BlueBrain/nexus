@@ -11,7 +11,7 @@ import monix.bio.Task
 
 import scala.concurrent.duration.FiniteDuration
 
-final case class ProjectionTestContext(registry: ReferenceRegistry, queue: Queue[Task, SuccessElem[String]]) {
+final case class ProjectionTestContext[A](registry: ReferenceRegistry, queue: Queue[Task, SuccessElem[A]]) {
 
   val emptyConfig: ExpandedJsonLd = ExpandedJsonLd.unsafe(BNode.random, JsonObject.empty)
 
@@ -22,10 +22,10 @@ final case class ProjectionTestContext(registry: ReferenceRegistry, queue: Queue
   def timesNPipe(times: Int): (PipeRef, ExpandedJsonLd) = (TimesN.reference, TimesNConfig(times).toJsonLd)
   def failNPipe(every: Int): (PipeRef, ExpandedJsonLd)  = (FailEveryN.reference, FailEveryNConfig(every).toJsonLd)
 
-  def waitForNElements(count: Int, duration: FiniteDuration): Task[List[SuccessElem[String]]] =
+  def waitForNElements(count: Int, duration: FiniteDuration): Task[List[SuccessElem[A]]] =
     queue.dequeue.take(count.toLong).compile.toList.timeout(duration).map(_.getOrElse(Nil))
 
-  def currentElements: Task[List[SuccessElem[String]]] =
+  def currentElements: Task[List[SuccessElem[A]]] =
     queue.tryDequeueChunk1(Int.MaxValue).map {
       case Some(value) => value.toList
       case None        => Nil

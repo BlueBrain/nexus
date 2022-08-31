@@ -12,18 +12,20 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
 import io.circe.Codec
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import munit.AnyFixture
 
 import java.time.Instant
 import scala.annotation.nowarn
 
-class ProjectsStatisticsSuite extends MonixBioSuite with DoobieFixture with ConfigFixtures {
+class ProjectsStatisticsSuite extends BioSuite with Doobie.Fixture with ConfigFixtures {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 

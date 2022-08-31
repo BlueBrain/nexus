@@ -9,13 +9,15 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.GlobalEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GlobalStateStore
-import ch.epfl.bluebrain.nexus.testkit.{DoobieFixture, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import munit.AnyFixture
 
 import scala.concurrent.duration._
 
-class GlobalEventLogSuite extends MonixBioSuite with DoobieFixture {
+class GlobalEventLogSuite extends BioSuite with Doobie.Fixture {
 
-  override def munitFixtures: Seq[Fixture[_]] = List(doobie)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 

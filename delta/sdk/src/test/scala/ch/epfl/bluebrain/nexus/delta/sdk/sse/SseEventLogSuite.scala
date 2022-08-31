@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, MonixBioSuite}
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
+import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import io.circe.JsonObject
 import io.circe.syntax.EncoderOps
 import monix.bio.UIO
@@ -14,7 +15,7 @@ import monix.bio.UIO
 import java.time.Instant
 import java.util.UUID
 
-class SseEventLogSuite extends MonixBioSuite with ConfigFixtures with IOFixedClock {
+class SseEventLogSuite extends BioSuite with ConfigFixtures with IOFixedClock {
 
   implicit private val jo: JsonKeyOrdering = JsonKeyOrdering.alphabetical
 
