@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

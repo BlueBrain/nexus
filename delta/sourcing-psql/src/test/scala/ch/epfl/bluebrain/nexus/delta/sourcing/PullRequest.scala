@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Triple}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, schemas}
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, Tag, Update}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
@@ -11,12 +12,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{Pull
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Identity, Label, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{UniformScopedState, UniformScopedStateEncoder}
-import io.circe.{Codec, Json}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
+import io.circe.{Codec, Json}
 import monix.bio.IO
 
 import java.time.Instant
@@ -148,15 +149,15 @@ object PullRequest {
       case _: PullRequestActive =>
         Graph
           .empty(base / id.value)
-          .add(
-            (Triple.subject(base / id.value), Triple.predicate(nxv + "status"), Triple.obj("active"))
-          )
+          .add(Vocabulary.rdf.tpe, nxv + "PullRequest")
+          .add(nxv + "status", "active")
+          .add(rdfs.label, "active")
       case _: PullRequestClosed =>
         Graph
           .empty(base / id.value)
-          .add(
-            (Triple.subject(base / id.value), Triple.predicate(nxv + "status"), Triple.obj("closed"))
-          )
+          .add(Vocabulary.rdf.tpe, nxv + "PullRequest")
+          .add(nxv + "status", "closed")
+          .add(rdfs.label, "closed")
     }
 
     def metadataGraph(base: Iri): Graph = {
@@ -166,25 +167,29 @@ object PullRequest {
       }
       Graph
         .empty(base / id.value)
-        .add(Triple.predicate(nxv.project.iri), Triple.obj(project.toString))
-        .add(Triple.predicate(nxv.rev.iri), Triple.obj(rev))
-        .add(Triple.predicate(nxv.deprecated.iri), Triple.obj(deprecated))
-        .add(Triple.predicate(nxv.createdAt.iri), Triple.obj(createdAt))
-        .add(Triple.predicate(nxv.createdBy.iri), Triple.obj(subject(createdBy)))
-        .add(Triple.predicate(nxv.updatedAt.iri), Triple.obj(updatedAt))
-        .add(Triple.predicate(nxv.updatedBy.iri), Triple.obj(subject(updatedBy)))
+        .add(nxv.project.iri, project.toString)
+        .add(nxv.rev.iri, rev)
+        .add(nxv.deprecated.iri, deprecated)
+        .add(nxv.createdAt.iri, createdAt)
+        .add(nxv.createdBy.iri, subject(createdBy))
+        .add(nxv.updatedAt.iri, updatedAt)
+        .add(nxv.updatedBy.iri, subject(updatedBy))
     }
 
     def source: Json = this match {
       case _: PullRequestActive =>
         Json.obj(
           "@id"    -> Json.fromString(id.value),
-          "status" -> Json.fromString("active")
+          "@type"  -> Json.fromString("PullRequest"),
+          "status" -> Json.fromString("active"),
+          "label"  -> Json.fromString("active")
         )
       case _: PullRequestClosed =>
         Json.obj(
           "@id"    -> Json.fromString(id.value),
-          "status" -> Json.fromString("closed")
+          "@type"  -> Json.fromString("PullRequest"),
+          "status" -> Json.fromString("closed"),
+          "label"  -> Json.fromString("closed")
         )
     }
   }

@@ -1,5 +1,6 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 
 import java.time.Instant
@@ -28,6 +29,16 @@ class FilterDeprecatedSuite extends BioSuite {
   )
   private val uniformState = PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state)
 
+  private val registry = new ReferenceRegistry
+  registry.register(FilterDeprecated)
+
+  def pipe: FilterDeprecated =
+    registry
+      .lookupA[FilterDeprecated.type](FilterDeprecated.reference)
+      .rightValue
+      .withJsonLdConfig(ExpandedJsonLd.empty)
+      .rightValue
+
   test("Drop deprecated elements") {
     val elem = SuccessElem(
       ElemCtx.SourceId(base),
@@ -39,9 +50,8 @@ class FilterDeprecatedSuite extends BioSuite {
       value = uniformState.copy(deprecated = true)
     )
 
-    FilterDeprecated.withConfig(()).apply(elem).assert(elem.dropped)
+    pipe(elem).assert(elem.dropped)
   }
-
   test("Preserve non-deprecated elements") {
     val elem = SuccessElem(
       ElemCtx.SourceId(base),
@@ -53,7 +63,6 @@ class FilterDeprecatedSuite extends BioSuite {
       value = uniformState
     )
 
-    FilterDeprecated.withConfig(()).apply(elem).assert(elem)
+    pipe(elem).assert(elem)
   }
-
 }

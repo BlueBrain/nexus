@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources
 
 import cats.data.{Chain, NonEmptyChain}
 import cats.effect.Resource
@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{ScopedStateStore, UniformScopedState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks.ScopedStateSource.StateSourceConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.ScopedStateSource.StateSourceConfig
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.bio.ResourceFixture.TaskFixture
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
