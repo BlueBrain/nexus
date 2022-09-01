@@ -1,7 +1,8 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullRequestActive
@@ -9,12 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import io.circe.Json
 
 import java.time.Instant
 
-class DiscardMetadataSuite extends BioSuite {
+class SourceAsTextSuite extends BioSuite {
 
   private val base         = iri"http://localhost"
   private val instant      = Instant.now()
@@ -29,8 +31,11 @@ class DiscardMetadataSuite extends BioSuite {
   )
   private val uniformState = PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state)
 
-  test("Discard metadata graph") {
-    val elem     = SuccessElem(
+  private val registry = new ReferenceRegistry
+  registry.register(SourceAsText)
+
+  test("Embed the source to the metadata graph") {
+    val elem             = SuccessElem(
       ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
@@ -39,9 +44,14 @@ class DiscardMetadataSuite extends BioSuite {
       offset = Offset.at(1L),
       value = uniformState
     )
-    val expected = elem.copy(value = uniformState.copy(metadataGraph = Graph.empty(base / "id")))
+    val newMetadataGraph = uniformState.metadataGraph.add(nxv.originalSource.iri, uniformState.source.noSpaces)
+    val expected         = elem.copy(value = uniformState.copy(metadataGraph = newMetadataGraph, source = Json.obj()))
 
-    DiscardMetadata.withConfig(()).apply(elem).assert(expected)
+    val pipe = registry
+      .lookupA[SourceAsText.type](SourceAsText.reference)
+      .rightValue
+      .withJsonLdConfig(ExpandedJsonLd.empty)
+      .rightValue
+    pipe(elem).assert(expected)
   }
-
 }

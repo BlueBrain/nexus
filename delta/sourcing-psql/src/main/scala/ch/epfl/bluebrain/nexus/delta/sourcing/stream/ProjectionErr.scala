@@ -122,6 +122,17 @@ object ProjectionErr {
   }
 
   /**
+    * A pipe definition can be looked up in the [[ReferenceRegistry]] using a reference. This error signals a failed
+    * lookup attempt for a pipe with a specific type.
+    *
+    * @param ref
+    *   the pipe reference
+    */
+  final case class CouldNotFindTypedPipeErr(ref: PipeRef, tpe: String) extends ProjectionErr {
+    override def reason: String = s"Unable to find pipe reference '${ref.label.value}' of expected type '$tpe'"
+  }
+
+  /**
     * Pipes in the terminal position require an Out type of Unit. This error signals that a [[PipeChain]] could not be
     * compiled because the requirement is not met.
     * @param self

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks
+package ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.{StateStreaming, UniformScopedState, UniformScopedStateEncoder}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.blocks.ScopedStateSource.StateSourceConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.ScopedStateSource.StateSourceConfig
 import fs2.Stream
 import io.circe.syntax.EncoderOps
 import io.circe.{Json, JsonObject}

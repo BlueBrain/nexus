@@ -298,7 +298,7 @@ class SupervisionSuite
       SourceChain(
         Naturals.reference,
         iri"https://naturals",
-        NaturalsConfig(10, 50.millis).toJsonLd,
+        NaturalsConfig(10, 100.millis).toJsonLd,
         Chain()
       )
     )
@@ -315,10 +315,10 @@ class SupervisionSuite
     supervisorResource.use { supervisor =>
       for {
         _     <- compiled.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems <- ctx.waitForNElements(1, 50.millis)
+        elems <- ctx.waitForNElements(1, 100.millis)
         _      = assert(elems.nonEmpty, "Should have observed at least an element")
         _     <- supervisor.unSupervise("naturals")
-        _     <- Task.sleep(50.millis)
+        _     <- Task.sleep(100.millis)
         elems <- ctx.currentElements
         _      = assert(elems.size < 9, "Should have observed less than 10 total elements")
         _     <- supervisor.status("naturals").assertNone
