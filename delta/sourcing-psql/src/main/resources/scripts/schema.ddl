@@ -1,6 +1,7 @@
 -- TODO: We may want to define a specific schema instead of using the public one
 
 CREATE SEQUENCE IF NOT EXISTS public.event_offset;
+CREATE SEQUENCE IF NOT EXISTS public.state_offset;
 
 --
 -- Event table for global events (ex: ACLs, permissions, orgs)
@@ -20,7 +21,7 @@ CREATE INDEX IF NOT EXISTS global_events_ordering_idx ON public.global_events US
 -- Table for global states (ex: ACLs, permissions, orgs)
 --
 CREATE TABLE IF NOT EXISTS public.global_states (
-    ordering BIGSERIAL,
+    ordering bigint      NOT NULL DEFAULT nextval('state_offset'),
     type     text        NOT NULL,
     id       text        NOT NULL,
     rev      integer     NOT NULL,
@@ -52,7 +53,7 @@ CREATE INDEX IF NOT EXISTS scoped_events_ordering_idx ON public.scoped_events US
 -- Table for scoped states that belongs to a project
 --
 CREATE TABLE IF NOT EXISTS public.scoped_states(
-    ordering BIGSERIAL,
+    ordering   bigint       NOT NULL DEFAULT nextval('state_offset'),
     type       text         NOT NULL,
     org        text         NOT NULL,
     project    text         NOT NULL,
@@ -67,6 +68,19 @@ CREATE TABLE IF NOT EXISTS public.scoped_states(
 );
 CREATE INDEX IF NOT EXISTS scoped_states_ordering_idx ON public.scoped_states USING BRIN (ordering);
 CREATE INDEX IF NOT EXISTS project_uuid_idx ON public.scoped_states((value->>'uuid')) WHERE type = 'project';
+
+CREATE TABLE IF NOT EXISTS public.scoped_tombstones(
+    ordering   bigint       NOT NULL DEFAULT nextval('state_offset'),
+    type       text         NOT NULL,
+    org        text         NOT NULL,
+    project    text         NOT NULL,
+    id         text         NOT NULL,
+    tag        text         NOT NULL,
+    diff       JSONB        NOT NULL,
+    instant    timestamptz  NOT NULL,
+    PRIMARY KEY(ordering)
+);
+CREATE INDEX IF NOT EXISTS scoped_tombstones_idx ON public.scoped_tombstones(org, project, tag, id);
 
 --
 -- Table for entity dependencies

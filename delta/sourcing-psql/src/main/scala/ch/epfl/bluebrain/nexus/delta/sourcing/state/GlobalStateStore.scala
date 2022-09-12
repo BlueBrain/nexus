@@ -102,7 +102,7 @@ object GlobalStateStore {
                |  rev = ${state.rev},
                |  value = ${state.asJson},
                |  instant = ${state.updatedAt},
-               |  ordering = (select nextval('global_states_ordering_seq'))
+               |  ordering = (select nextval('state_offset'))
                | WHERE
                |  type = $tpe AND
                |  id = $id

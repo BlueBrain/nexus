@@ -208,7 +208,7 @@ object ScopedStateStore {
                  |  value = ${state.asJson},
                  |  deprecated = ${state.deprecated},
                  |  instant = ${state.updatedAt},
-                 |  ordering = (select nextval('scoped_states_ordering_seq'))
+                 |  ordering = (select nextval('state_offset'))
                  | WHERE
                  |  type = $tpe AND
                  |  org = ${state.organization} AND

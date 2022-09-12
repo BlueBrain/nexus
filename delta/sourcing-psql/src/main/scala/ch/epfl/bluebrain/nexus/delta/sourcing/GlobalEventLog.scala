@@ -160,28 +160,32 @@ object GlobalEventLog {
       }
 
     override def evaluate(id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine
-        .evaluate(stateStore.get(id), command, maxDuration)
-        .tapEval { case (event, state) =>
-          (eventStore.save(event) >> stateStore.save(state))
-            .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-              onUniqueViolation(id, command)
-            }
-            .transact(xas.write)
-            .hideErrors
-            .flatMap(IO.fromEither)
-        }
-        .redeemCauseWith(
-          {
-            case Error(rejection)                     => IO.raiseError(rejection)
-            case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
-            case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
-          },
-          r => IO.pure(r)
-        )
+      stateStore.get(id).flatMap { current =>
+        stateMachine
+          .evaluate(current, command, maxDuration)
+          .tapEval { case (event, state) =>
+            (eventStore.save(event) >> stateStore.save(state))
+              .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                onUniqueViolation(id, command)
+              }
+              .transact(xas.write)
+              .hideErrors
+              .flatMap(IO.fromEither)
+          }
+          .redeemCauseWith(
+            {
+              case Error(rejection)                     => IO.raiseError(rejection)
+              case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+              case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
+            },
+            r => IO.pure(r)
+          )
+      }
 
     override def dryRun(id: Id, command: Command): IO[Rejection, (E, S)] =
-      stateMachine.evaluate(stateStore.get(id), command, maxDuration)
+      stateStore.get(id).flatMap { current =>
+        stateMachine.evaluate(current, command, maxDuration)
+      }
 
     override def currentEvents(offset: Offset): EnvelopeStream[Id, E] = eventStore.currentEvents(offset)
 

@@ -7,7 +7,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationTimeout, InvalidState}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import fs2.Stream
-import monix.bio.UIO
 
 import scala.concurrent.duration._
 
@@ -25,7 +24,7 @@ class StateMachineSuite extends BioSuite {
     (Some(current), Subtract(2)) -> (Minus(2, 2), Total(2, 2))
   ).foreach { case ((original, command), (event, newState)) =>
     test(s"Evaluate successfully state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      stm.evaluate(UIO.pure(original), command, maxDuration).assert((event, newState))
+      stm.evaluate(original, command, maxDuration).assert((event, newState))
     }
   }
 
@@ -34,16 +33,16 @@ class StateMachineSuite extends BioSuite {
     (Some(current), Subtract(5)) -> NegativeTotal(-1)
   ).foreach { case ((original, command), rejection) =>
     test(s"Evaluate and reject state ${original.map(s => s"rev:${s.rev}, value:${s.value}")} with command $command") {
-      stm.evaluate(UIO.pure(original), command, maxDuration).error(rejection)
+      stm.evaluate(original, command, maxDuration).error(rejection)
     }
   }
 
   test("Evaluate and get an RuntimeException with the expected message") {
-    stm.evaluate(UIO.pure(None), Boom("Game over"), maxDuration).terminated[RuntimeException]("Game over")
+    stm.evaluate(None, Boom("Game over"), maxDuration).terminated[RuntimeException]("Game over")
   }
 
   test("Evaluate and get a timeout error") {
-    stm.evaluate(UIO.pure(None), Never, maxDuration).terminated(EvaluationTimeout(Never, maxDuration))
+    stm.evaluate(None, Never, maxDuration).terminated(EvaluationTimeout(Never, maxDuration))
   }
 
   test("Compute state and get back the initial state from an empty stream of events") {

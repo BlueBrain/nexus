@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, Tag, Update}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, TagPR, Update}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -38,16 +38,16 @@ object PullRequest {
           }
         } { s =>
           (s, command) match {
-            case (_, Create(id, project))                                 => IO.raiseError(AlreadyExists(id, project))
-            case (_: PullRequestActive, Update(id, project, rev))         =>
+            case (_, Create(id, project))                                   => IO.raiseError(AlreadyExists(id, project))
+            case (_: PullRequestActive, Update(id, project, rev))           =>
               IO.pure(PullRequestUpdated(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_: PullRequestActive, Tag(id, project, rev, targetRev)) =>
+            case (_: PullRequestActive, TagPR(id, project, rev, targetRev)) =>
               IO.pure(PullRequestTagged(id, project, rev, targetRev, Instant.EPOCH, Anonymous))
-            case (_: PullRequestActive, Merge(id, project, rev))          =>
+            case (_: PullRequestActive, Merge(id, project, rev))            =>
               IO.pure(PullRequestMerged(id, project, rev, Instant.EPOCH, Anonymous))
-            case (_, Boom(_, _, message))                                 => IO.terminate(new RuntimeException(message))
-            case (_, _: Never)                                            => IO.never
-            case (_: PullRequestClosed, _)                                => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
+            case (_, Boom(_, _, message))                                   => IO.terminate(new RuntimeException(message))
+            case (_, _: Never)                                              => IO.never
+            case (_: PullRequestClosed, _)                                  => IO.raiseError(PullRequestAlreadyClosed(command.id, command.project))
           }
         },
       (state: Option[PullRequestState], event: PullRequestEvent) =>
@@ -77,10 +77,10 @@ object PullRequest {
   }
 
   object PullRequestCommand {
-    final case class Create(id: Label, project: ProjectRef)                        extends PullRequestCommand
-    final case class Update(id: Label, project: ProjectRef, rev: Int)              extends PullRequestCommand
-    final case class Tag(id: Label, project: ProjectRef, rev: Int, targetRev: Int) extends PullRequestCommand
-    final case class Merge(id: Label, project: ProjectRef, rev: Int)               extends PullRequestCommand
+    final case class Create(id: Label, project: ProjectRef)                          extends PullRequestCommand
+    final case class Update(id: Label, project: ProjectRef, rev: Int)                extends PullRequestCommand
+    final case class TagPR(id: Label, project: ProjectRef, rev: Int, targetRev: Int) extends PullRequestCommand
+    final case class Merge(id: Label, project: ProjectRef, rev: Int)                 extends PullRequestCommand
 
     final case class Boom(id: Label, project: ProjectRef, message: String) extends PullRequestCommand
     final case class Never(id: Label, project: ProjectRef)                 extends PullRequestCommand

@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.store
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{PullRequestState, entityType}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.{entityType, PullRequestState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
