@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchC
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ConfigureEsIndexingViews, ElasticSearchOnEventInstant, IndexToElasticSearch, UniformScopedStateToDocument}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewEvent, ElasticSearchViewState, contexts, logStatesDef, noopPipeDef, schema => viewsSchemaId}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, logStatesDef, noopPipeDef, schema => viewsSchemaId, ElasticSearchViewEvent, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
@@ -223,8 +223,8 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   many[UniformScopedStateEncoder[_]].add(
     new UniformScopedStateEncoder[ElasticSearchViewState] {
-      override val entityType: EntityType                                                  = ElasticSearchViews.entityType
-      override def databaseDecoder: Decoder[ElasticSearchViewState]                        = ElasticSearchViewState.serializer.codec
+      override val entityType: EntityType                           = ElasticSearchViews.entityType
+      override def databaseDecoder: Decoder[ElasticSearchViewState] = ElasticSearchViewState.serializer.codec
       override def toUniformScopedState(state: ElasticSearchViewState): Task[UniformScopedState] = {
         Task.pure(
           UniformScopedState(
@@ -252,7 +252,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[PipeDef].add {
-    (registry: LazyReferenceRegistry, supervisor: Supervisor, client: ElasticSearchClient, cfg: ElasticSearchViewsConfig) =>
+    (
+        registry: LazyReferenceRegistry,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        cfg: ElasticSearchViewsConfig
+    ) =>
       ConfigureEsIndexingViews(
         registry,
         supervisor,

@@ -82,7 +82,7 @@ package object model {
     .map(_.asJson)
     .memoize
 
-  val noopPipeDef: PipeDef = LogElement[UniformScopedState](Label.unsafe("uniform-scoped-state-noop"), _ => Task.unit)
-  val logStatesDef: PipeDef   =
+  val noopPipeDef: PipeDef  = LogElement[UniformScopedState](Label.unsafe("uniform-scoped-state-noop"), _ => Task.unit)
+  val logStatesDef: PipeDef =
     LogElement[ElasticSearchViewState](Label.unsafe("view-state-log"), e => Task.delay(println(e.value)))
 }

@@ -24,7 +24,6 @@ object StreamModule extends ModuleDef {
   many[PipeDef].add(SelectPredicates)
   many[PipeDef].add(DefaultLabelPredicates)
 
-
   make[ReferenceRegistry].from { (sources: Set[SourceDef], pipes: Set[PipeDef]) =>
     val registry = new ReferenceRegistry
     sources.foreach(registry.register)

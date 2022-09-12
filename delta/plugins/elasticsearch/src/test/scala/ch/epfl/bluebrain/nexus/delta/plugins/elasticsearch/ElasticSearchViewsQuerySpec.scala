@@ -176,7 +176,6 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       xas
     )
 
-
     "create the indexing views views" in {
       indexingViews.traverse { viewRef =>
         views.create(viewRef.viewId, viewRef.project, indexingView)

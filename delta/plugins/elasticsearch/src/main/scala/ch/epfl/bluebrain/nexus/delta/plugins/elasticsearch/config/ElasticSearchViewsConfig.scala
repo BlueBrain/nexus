@@ -39,7 +39,8 @@ import scala.concurrent.duration._
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
   * @param maxBatchSize
-  *   the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk request
+  *   the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk
+  *   request
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
