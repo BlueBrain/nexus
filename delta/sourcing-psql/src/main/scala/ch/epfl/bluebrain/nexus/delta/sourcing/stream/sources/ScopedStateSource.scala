@@ -29,6 +29,8 @@ import shapeless.Typeable
   *   the query configuration
   * @param xas
   *   the transactor instances
+  * @param decode
+  *   the state decoding fn
   */
 class ScopedStateSource(
     override val id: Iri,
