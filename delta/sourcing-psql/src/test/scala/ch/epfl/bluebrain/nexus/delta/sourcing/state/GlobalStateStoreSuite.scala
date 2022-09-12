@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sourcing.store
+package ch.epfl.bluebrain.nexus.delta.sourcing.state
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.Arithmetic.Total

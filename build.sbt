@@ -113,7 +113,7 @@ lazy val doobie               = Seq(
   doobiePostgres,
   "org.tpolecat" %% "doobie-hikari"         % doobieVersion,
   "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion,
-  "com.zaxxer" % "HikariCP" % "4.0.3" exclude("org.slf4j", "slf4j-api"),
+  "com.zaxxer"    % "HikariCP"              % "4.0.3" exclude ("org.slf4j", "slf4j-api")
 )
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version

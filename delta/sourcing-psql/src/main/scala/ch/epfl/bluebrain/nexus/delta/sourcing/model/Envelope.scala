@@ -82,17 +82,11 @@ object Envelope {
       xas: Transactors,
       cfg: QueryConfig
   )(implicit md: MultiDecoder[A]): EnvelopeStream[String, A] =
-    stream(start, query, xas, cfg)
-      // evalMapFilter re-chunks to 1, the following 2 statements does the same on chunks
-      .evalMapChunk(e => Task.pure(md.decodeJson(e.tpe, e.value).toOption.map(a => e.copy(value = a))))
-      .collect {
-        case Some(e) => e
-      }
+    streamFA(start, query, xas, cfg, (tpe, json) => Task.pure(md.decodeJson(tpe, json).toOption))
 
   /**
     * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
-    * defines if the stream will re-execute the query with a delay after all the results have been consumed. Failure to
-    * decode a stream element (from json to A) will drop the element silently.
+    * defines if the stream will re-execute the query with a delay after all the results have been consumed.
     *
     * @param start
     *   the start offset
@@ -102,8 +96,8 @@ object Envelope {
     *   the transactor instances
     * @param cfg
     *   the query configuration
-    * @param md
-    *   a decoder collection indexed on the entity type for values of type A.
+    * @param decode
+    *   a decode function
     * @tparam A
     *   the underlying value type
     */
@@ -115,11 +109,9 @@ object Envelope {
       decode: (EntityType, Json) => Task[Option[A]]
   ): EnvelopeStream[String, A] =
     stream(start, query, xas, cfg)
-      // evalMapFilter re-chunks to 1, the following 2 statements does the same but preserves the chunks
+      // evalMapFilter re-chunks to 1, the following 2 statements do the same but preserve the chunks
       .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
-      .collect {
-        case Some(e) => e
-      }
+      .collect { case Some(e) => e }
 
   /**
     * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
