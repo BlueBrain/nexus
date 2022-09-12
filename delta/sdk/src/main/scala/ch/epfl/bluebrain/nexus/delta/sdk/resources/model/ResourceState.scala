@@ -110,9 +110,7 @@ object ResourceState {
   }
 
   private val logger: Logger = Logger[ResourceState]
-  def resourceUniformScopedStateEncoder(
-      fetchContext: FetchContext[ContextRejection]
-  )(implicit
+  def resourceUniformScopedStateEncoder(fetchContext: FetchContext[ContextRejection])(implicit
       opts: JsonLdOptions,
       api: JsonLdApi,
       baseUri: BaseUri,

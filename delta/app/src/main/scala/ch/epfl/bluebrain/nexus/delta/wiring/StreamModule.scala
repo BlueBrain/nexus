@@ -9,6 +9,9 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DataConstructQuery, 
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.ScopedStateSource
 import izumi.distage.model.definition.ModuleDef
 
+/**
+  * Indexing specific wiring.
+  */
 object StreamModule extends ModuleDef {
 
   many[SourceDef].add((xas: Transactors, cfg: AppConfig, encoders: Set[UniformScopedStateEncoder[_]]) =>

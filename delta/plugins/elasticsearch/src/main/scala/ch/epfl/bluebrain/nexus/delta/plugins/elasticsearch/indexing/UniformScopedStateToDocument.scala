@@ -58,9 +58,9 @@ object UniformScopedStateToDocument {
   val label: Label = Label.unsafe("uniform-scoped-state-to-document")
 
   def apply(implicit cr: RemoteContextResolution): UniformScopedStateToDocumentDef =
-    new UniformScopedStateToDocumentDef()
+    new UniformScopedStateToDocumentDef
 
-  class UniformScopedStateToDocumentDef()(implicit cr: RemoteContextResolution) extends PipeDef {
+  class UniformScopedStateToDocumentDef(implicit cr: RemoteContextResolution) extends PipeDef {
     override type PipeType = UniformScopedStateToDocument
     override type Config   = UniformScopedStateToDocumentConfig
     override def configType: Typeable[UniformScopedStateToDocumentConfig]         = Typeable[UniformScopedStateToDocumentConfig]

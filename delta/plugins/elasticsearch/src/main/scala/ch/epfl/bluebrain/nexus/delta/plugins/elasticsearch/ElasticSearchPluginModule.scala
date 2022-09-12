@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchVi
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, logStatesDef, noopPipeDef, schema => viewsSchemaId, ElasticSearchViewEvent, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -30,14 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.{UniformScopedState, UniformScopedStateEncoder}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.UniformScopedStateEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry.LazyReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.StreamSource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeDef, ReferenceRegistry, SourceDef, Supervisor}
-import io.circe.{Decoder, Json}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -222,26 +220,9 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   }
 
   many[UniformScopedStateEncoder[_]].add(
-    new UniformScopedStateEncoder[ElasticSearchViewState] {
-      override val entityType: EntityType                           = ElasticSearchViews.entityType
-      override def databaseDecoder: Decoder[ElasticSearchViewState] = ElasticSearchViewState.serializer.codec
-      override def toUniformScopedState(state: ElasticSearchViewState): Task[UniformScopedState] = {
-        Task.pure(
-          UniformScopedState(
-            tpe = entityType,
-            project = state.project,
-            id = state.id,
-            rev = state.rev,
-            deprecated = state.deprecated,
-            schema = state.schema,
-            types = state.types,
-            graph = Graph.empty,
-            metadataGraph = Graph.empty,
-            source = Json.obj()
-          )
-        )
-      }
-    }
+    (fetch: FetchContext[ContextRejection], base: BaseUri, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ElasticSearchViewState
+        .elasticSearchViewUniformScopedStateEncoder(fetch)(JsonLdOptions.defaults, JsonLdJavaApi.lenient, base, rcr)
   )
 
   many[PipeDef].add(noopPipeDef)

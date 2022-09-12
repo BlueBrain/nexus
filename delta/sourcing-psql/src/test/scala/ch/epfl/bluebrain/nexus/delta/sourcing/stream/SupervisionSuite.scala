@@ -95,7 +95,7 @@ class SupervisionSuite
       SourceChain(
         Naturals.reference,
         iri"https://naturals",
-        NaturalsConfig(10, 0.millis).toJsonLd,
+        NaturalsConfig(10, 1.millis).toJsonLd,
         Chain()
       )
     )
@@ -115,9 +115,9 @@ class SupervisionSuite
         stopped  <- Ref.of[Task, Boolean](false)
         stopsOnce = stopOnceWhen(compiled, stopped, elem => elem.offset == Offset.at(4L))
         _        <- stopsOnce.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems    <- ctx.waitForNElements(11, 50.millis)
-        _         = assertEquals(11, elems.size, "Should have observed at 11 elements")
-        _        <- Task.sleep(50.millis)
+        elems    <- ctx.waitForNElements(11, 100.millis)
+        _         = assertEquals(elems.size, 11, "Should have observed at 11 elements")
+        _        <- Task.sleep(100.millis)
         elems    <- ctx.currentElements
         _         = assert(elems.size >= 3, "Should have observed at least another 3 elements")
         _        <- supervisor.status("naturals").assertSome(ExecutionStatus.Completed(offset))
@@ -130,7 +130,7 @@ class SupervisionSuite
       SourceChain(
         Naturals.reference,
         iri"https://naturals",
-        NaturalsConfig(10, 0.millis).toJsonLd,
+        NaturalsConfig(10, 1.millis).toJsonLd,
         Chain()
       )
     )
@@ -150,9 +150,9 @@ class SupervisionSuite
         failed   <- Ref.of[Task, Boolean](false)
         failsOnce = failOnceWhen(compiled, failed, elem => elem.offset == Offset.at(4L))
         _        <- failsOnce.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems    <- ctx.waitForNElements(15, 50.millis) // the log pipe sees already the 5L when 4L fails
-        _         = assert(elems.size == 15, "Should have observed exactly 14 elements")
-        _        <- Task.sleep(50.millis)
+        elems    <- ctx.waitForNElements(15, 100.millis) // the log pipe sees already the 5L when 4L fails
+        _         = assertEquals(elems.size, 15, "Should have observed exactly 14 elements")
+        _        <- Task.sleep(100.millis)
         elems    <- ctx.currentElements
         _         = assert(elems.isEmpty, "Should not observe any more elements")
         _        <- supervisor.status("naturals").assertSome(ExecutionStatus.Completed(offset))

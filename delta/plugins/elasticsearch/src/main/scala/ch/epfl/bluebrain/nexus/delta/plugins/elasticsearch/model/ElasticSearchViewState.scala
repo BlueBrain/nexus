@@ -1,18 +1,30 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
+import cats.implicits.toFunctorOps
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue._
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{model, ElasticSearchViews}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdOptions}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.rdf.syntax.jsonLdEncoderSyntax
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF, ResourceUris, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.{UniformScopedState, UniformScopedStateEncoder}
+import com.typesafe.scalalogging.Logger
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredCodec, deriveConfiguredDecoder, deriveConfiguredEncoder}
-import io.circe.{Codec, Decoder, Encoder, Json, JsonObject}
+import io.circe._
+import monix.bio.{Task, UIO}
 
 import java.time.Instant
 import java.util.UUID
@@ -134,4 +146,52 @@ object ElasticSearchViewState {
     implicit val codec: Codec.AsObject[ElasticSearchViewState]              = deriveConfiguredCodec[ElasticSearchViewState]
     Serializer(_.id)
   }
+
+  private val logger: Logger = Logger[ElasticSearchViewState]
+
+  def elasticSearchViewUniformScopedStateEncoder(fetchContext: FetchContext[ContextRejection])(implicit
+      opts: JsonLdOptions,
+      api: JsonLdApi,
+      baseUri: BaseUri,
+      rcr: RemoteContextResolution
+  ): UniformScopedStateEncoder[ElasticSearchViewState] =
+    UniformScopedStateEncoder(
+      ElasticSearchViews.entityType,
+      serializer.codec,
+      state =>
+        fetchContext
+          .mapRejection(ProjectContextRejection)
+          .onRead(state.project)
+          .onErrorHandleWith { rejection =>
+            val msg =
+              s"Unable to retrieve project context for resource '${state.project}/${state.id}', due to '${rejection.reason}'"
+            UIO.delay(logger.error(msg)) >> Task.raiseError(new IllegalArgumentException(msg))
+          }
+          .flatMap { ctx =>
+            val resourceEncoder = implicitly[JsonLdEncoder[ViewResource]]
+            for {
+              defaultMapping    <- defaultElasticsearchMapping
+              defaultSettings   <- defaultElasticsearchSettings
+              resource           = state.toResource(ctx.apiMappings, ctx.base, defaultMapping, defaultSettings)
+              id                 = resource.resolvedId
+              graph             <- resourceEncoder.graph(resource)
+              rootGraph          = graph.replaceRootNode(id)
+              resourceMetaGraph <- resource.void.toGraph
+              rootMetaGraph      = Graph.empty(id) ++ resourceMetaGraph
+              typesGraph         = rootMetaGraph.rootTypesGraph
+              finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
+            } yield UniformScopedState(
+              tpe = ElasticSearchViews.entityType,
+              project = state.project,
+              id = id,
+              rev = state.rev,
+              deprecated = state.deprecated,
+              schema = state.schema,
+              types = state.types,
+              graph = finalRootGraph,
+              metadataGraph = rootMetaGraph,
+              source = state.source
+            )
+          }
+    )
 }

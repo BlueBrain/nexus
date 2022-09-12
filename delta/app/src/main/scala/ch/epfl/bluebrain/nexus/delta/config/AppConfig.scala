@@ -58,6 +58,13 @@ object AppConfig {
   private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
   private val resolverOptions = ConfigResolveOptions.defaults()
 
+  /**
+    * Loads the application in two steps, wrapping the error type:
+    *
+    *   1. loads the default default.conf and identifies the database configuration
+    *
+    * 2. reloads the config using the selected database configuration and the plugin configurations
+    */
   def loadOrThrow(
       externalConfigPath: Option[String] = None,
       pluginsConfigPaths: List[String] = List.empty,
@@ -66,9 +73,11 @@ object AppConfig {
     load(externalConfigPath, pluginsConfigPaths, accClassLoader).mapError(AppConfigError.apply)
 
   /**
-    * Loads the application in two steps:<br/>
-    *   1. loads the default default.conf and identifies the database configuration<br/> 2. reloads the config using the
-    *      selected database configuration and the plugin configurations
+    * Loads the application in two steps:
+    *
+    *   1. loads the default default.conf and identifies the database configuration
+    *
+    * 2. reloads the config using the selected database configuration and the plugin configurations
     */
   def load(
       externalConfigPath: Option[String] = None,
