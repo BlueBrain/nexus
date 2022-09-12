@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.state
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
+import monix.bio.{IO, Task}
 
 /**
   * Encoder contract for scoped states.
@@ -29,15 +30,10 @@ abstract class UniformScopedStateEncoder[S <: ScopedState] {
     * @param state
     *   the state instance
     */
-  def toUniformScopedState(state: S): UniformScopedState
+  def toUniformScopedState(state: S): Task[UniformScopedState]
 
-  /**
-    * @return
-    *   derived decoder for scoped states S to UniformScopedState
-    */
-  def uniformScopedDecoder: Decoder[UniformScopedState] =
-    databaseDecoder.map(toUniformScopedState)
-
+  def decode(json: Json): Task[UniformScopedState] =
+    IO.fromEither(databaseDecoder.decodeJson(json)).flatMap(toUniformScopedState)
 }
 
 object UniformScopedStateEncoder {
@@ -56,12 +52,12 @@ object UniformScopedStateEncoder {
   def apply[S <: ScopedState](
       tpe: EntityType,
       dbDecoder: Decoder[S],
-      f: S => UniformScopedState
+      f: S => Task[UniformScopedState]
   ): UniformScopedStateEncoder[S] =
     new UniformScopedStateEncoder[S] {
-      override def entityType: EntityType                             = tpe
-      override def databaseDecoder: Decoder[S]                        = dbDecoder
-      override def toUniformScopedState(state: S): UniformScopedState = f(state)
+      override def entityType: EntityType                                   = tpe
+      override def databaseDecoder: Decoder[S]                              = dbDecoder
+      override def toUniformScopedState(state: S): Task[UniformScopedState] = f(state)
     }
 
   /**
@@ -78,6 +74,6 @@ object UniformScopedStateEncoder {
       tpe: EntityType,
       f: Value => UniformScopedState
   ): UniformScopedStateEncoder[Value] =
-    apply(tpe, s.codec, f)
+    apply(tpe, s.codec, f.andThen(Task.pure))
 
 }

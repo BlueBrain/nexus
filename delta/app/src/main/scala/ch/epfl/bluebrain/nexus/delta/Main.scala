@@ -6,13 +6,13 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.{ActorSystem => ActorSystemClassic}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route, RouteResult}
-import cats.effect.ExitCode
-import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, BuildInfo}
+import cats.effect.{ExitCode, Resource}
+import ch.epfl.bluebrain.nexus.delta.config.{AppConfig, AppConfigError, BuildInfo}
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMonitoring
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.plugin.{PluginsLoader, WiringInitializer}
 import ch.epfl.bluebrain.nexus.delta.sdk.PriorityRoute
-import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
+import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.PluginInitializationError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.StrictEntity
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.{Plugin, PluginDef}
@@ -22,9 +22,8 @@ import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.{Logger => Logging}
 import izumi.distage.model.Locator
-import monix.bio.{BIOApp, IO, Task, UIO}
+import monix.bio.{BIOApp, Task, UIO}
 import org.slf4j.{Logger, LoggerFactory}
-import pureconfig.error.ConfigReaderFailures
 
 import scala.concurrent.duration.DurationInt
 
@@ -41,32 +40,40 @@ object Main extends BIOApp {
     // TODO: disable this for now, but investigate why it happens
     System.setProperty("cats.effect.logNonDaemonThreadsOnExit", "false")
     val config = sys.env.get(pluginEnvVariable).fold(PluginLoaderConfig())(PluginLoaderConfig(_))
-    (start(_ => Task.unit, config) >> UIO.never).as(ExitCode.Success).attempt.map(_.fold(identity, identity))
+    start(config)
+      .use { _ =>
+        UIO.never
+      }
+      .as(ExitCode.Success)
+      .onErrorRecoverWith {
+        case e: PluginInitializationError => Task.delay(log.error(e.getMessage)).as(ExitCode.Error)
+        case e: AppConfigError            => Task.delay(log.error(e.getMessage)).as(ExitCode.Error)
+      }
+      .hideErrors
   }
 
-  private[delta] def start(preStart: Locator => Task[Unit], loaderConfig: PluginLoaderConfig): IO[ExitCode, Unit] =
+  private[delta] def start(loaderConfig: PluginLoaderConfig): Resource[Task, Locator] =
     for {
-      _                             <- UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'."))
-      (cfg, config, cl, pluginDefs) <- loadPluginsAndConfig(loaderConfig)
-      _                             <- KamonMonitoring.initialize(config)
-      modules                       <- UIO.delay(DeltaModule(cfg, config, cl))
-      (plugins, locator)            <- WiringInitializer(modules, pluginDefs).handleError
-      _                             <- preStart(locator).handleError
-      _                             <- bootstrap(locator, plugins).handleError
-    } yield ()
+      _                             <- Resource.eval(UIO.delay(log.info(s"Starting Nexus Delta version '${BuildInfo.version}'.")))
+      (cfg, config, cl, pluginDefs) <- Resource.eval(loadPluginsAndConfig(loaderConfig))
+      _                             <- Resource.eval(KamonMonitoring.initialize(config))
+      modules                        = DeltaModule(cfg, config, cl)
+      (plugins, locator)            <- WiringInitializer(modules, pluginDefs)
+      _                             <- Resource.eval(bootstrap(locator, plugins))
+    } yield locator
 
   private[delta] def loadPluginsAndConfig(
       config: PluginLoaderConfig
-  ): IO[ExitCode, (AppConfig, Config, ClassLoader, List[PluginDef])] =
+  ): Task[(AppConfig, Config, ClassLoader, List[PluginDef])] =
     for {
-      (classLoader, pluginDefs) <- PluginsLoader(config).load.handleError
+      (classLoader, pluginDefs) <- PluginsLoader(config).load
       _                         <- logPlugins(pluginDefs)
       enabledDefs                = pluginDefs.filter(_.enabled)
       _                         <- validatePriority(enabledDefs)
       _                         <- validateDifferentName(enabledDefs)
       configNames                = enabledDefs.map(_.configFileName)
-      (appConfig, mergedConfig) <-
-        AppConfig.load(sys.env.get(externalConfigEnvVariable), configNames, classLoader).handleError
+      cfgPathOpt                 = sys.env.get(externalConfigEnvVariable)
+      (appConfig, mergedConfig) <- AppConfig.loadOrThrow(cfgPathOpt, configNames, classLoader)
     } yield (appConfig, mergedConfig, classLoader, enabledDefs)
 
   private def logPlugins(pluginDefs: List[PluginDef]): UIO[Unit] = {
@@ -80,34 +87,30 @@ object Main extends BIOApp {
       }
   }
 
-  private def validatePriority(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
-    if (pluginsDef.map(_.priority).distinct.size != pluginsDef.size)
-      UIO.delay(
-        log.error(
-          "Several plugins have the same priority:" +
-            pluginsDef.map(p => s"name '${p.info.name}' priority '${p.priority}'").mkString(",")
-        )
-      ) >> IO.raiseError(ExitCode.Error)
-    else
-      pluginsDef.find(p => p.priority > pluginsMaxPriority || p.priority < pluginsMinPriority) match {
+  private def validatePriority(pluginsDef: List[PluginDef]): Task[Unit] =
+    Task.raiseWhen(pluginsDef.map(_.priority).distinct.size != pluginsDef.size)(
+      PluginInitializationError(
+        "Several plugins have the same priority:" + pluginsDef
+          .map(p => s"name '${p.info.name}' priority '${p.priority}'")
+          .mkString(",")
+      )
+    ) >>
+      (pluginsDef.find(p => p.priority > pluginsMaxPriority || p.priority < pluginsMinPriority) match {
         case Some(pluginDef) =>
-          UIO.delay(
-            log.error(
+          Task.raiseError(
+            PluginInitializationError(
               s"Plugin '$pluginDef' has a priority out of the allowed range [$pluginsMinPriority - $pluginsMaxPriority]"
             )
-          ) >>
-            IO.raiseError(ExitCode.Error)
-        case None            => IO.unit
-      }
+          )
+        case None            => Task.unit
+      })
 
-  private def validateDifferentName(pluginsDef: List[PluginDef]): IO[ExitCode, Unit] =
-    if (pluginsDef.map(_.info.name).distinct.size == pluginsDef.size) IO.unit
-    else
-      UIO.delay(
-        log.error(
-          s"Several plugins have the same name: ${pluginsDef.map(p => s"name '${p.info.name}'").mkString(",")}"
-        )
-      ) >> IO.raiseError(ExitCode.Error)
+  private def validateDifferentName(pluginsDef: List[PluginDef]): Task[Unit] =
+    Task.raiseWhen(pluginsDef.map(_.info.name).distinct.size != pluginsDef.size)(
+      PluginInitializationError(
+        s"Several plugins have the same name: ${pluginsDef.map(p => s"name '${p.info.name}'").mkString(",")}"
+      )
+    )
 
   private def routes(locator: Locator): Route = {
     import akka.http.scaladsl.server.Directives._
@@ -161,42 +164,7 @@ object Main extends BIOApp {
           )
         ) >> Task
           .traverse(plugins)(_.stop())
-          .timeout(30.seconds) >> KamonMonitoring.terminate >> terminateActorSystem()
-      }
-  }
-
-  private def terminateActorSystem()(implicit as: ActorSystemClassic): Task[Unit] =
-    Task.deferFuture(as.terminate()).timeout(15.seconds) >> Task.unit
-
-  implicit private def configReaderErrorHandler(failures: ConfigReaderFailures): UIO[ExitCode] = {
-    val lines =
-      "The application configuration failed to load, due to:" ::
-        failures.toList
-          .flatMap { f =>
-            f.origin match {
-              case Some(o) =>
-                val file = Option(o.filename()) orElse Option(o.url()).map(_.toString) orElse Option(o.resource())
-                file match {
-                  case Some(path) => f.description :: s"  file: $path" :: s"  line: ${o.lineNumber}" :: Nil
-                  case None       => f.description :: Nil
-                }
-              case None    => f.description :: Nil
-            }
-          }
-    UIO.delay(lines.foreach(log.error(_))) >> UIO.pure(ExitCode.Error)
-  }
-
-  implicit private def pluginErrorHandler(error: PluginError): UIO[ExitCode] =
-    UIO.delay(log.error(s"A plugin failed to be loaded due to: '${error.getMessage}'")) >> UIO.pure(ExitCode.Error)
-
-  implicit private def unexpectedErrorHandler(error: Throwable): UIO[ExitCode] =
-    UIO.delay(log.error(s"A plugin failed  due to: '${error.getMessage}'")) >> UIO.pure(ExitCode.Error)
-
-  implicit class IOHandleErrorSyntax[E, A](private val io: IO[E, A]) extends AnyVal {
-    def handleError(implicit f: E => UIO[ExitCode]): IO[ExitCode, A] =
-      io.attempt.flatMap {
-        case Left(value)  => f(value).flip
-        case Right(value) => IO.pure(value)
+          .timeout(30.seconds) >> KamonMonitoring.terminate
       }
   }
 }

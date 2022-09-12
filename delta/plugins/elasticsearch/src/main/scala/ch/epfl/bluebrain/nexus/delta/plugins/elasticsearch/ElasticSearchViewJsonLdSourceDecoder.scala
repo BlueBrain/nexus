@@ -24,6 +24,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
 import monix.bio.IO
@@ -84,7 +87,7 @@ object ElasticSearchViewJsonLdSourceDecoder {
 
     final case class IndexingElasticSearchViewFields(
         resourceTag: Option[UserTag] = None,
-        pipeline: Option[List[PipeDef]] = None,
+        pipeline: Option[List[PipeStep]] = None,
         mapping: JsonObject,
         settings: Option[JsonObject] = None,
         context: Option[ContextObject] = None,
@@ -142,12 +145,12 @@ object ElasticSearchViewJsonLdSourceDecoder {
     case i: LegacyIndexingElasticSearchViewFields =>
       // Translate legacy fields into a pipeline
       val pipeline = List(
-        i.resourceSchemas.nonEmpty -> FilterBySchema(i.resourceSchemas),
-        i.resourceTypes.nonEmpty   -> FilterByType(i.resourceTypes),
-        !i.includeDeprecated       -> FilterDeprecated(),
-        !i.includeMetadata         -> DiscardMetadata(),
-        true                       -> DefaultLabelPredicates(),
-        i.sourceAsText             -> SourceAsText()
+        i.resourceSchemas.nonEmpty -> PipeStep(FilterBySchema.label, FilterBySchemaConfig(i.resourceSchemas).toJsonLd),
+        i.resourceTypes.nonEmpty   -> PipeStep(FilterByType.label, FilterByTypeConfig(i.resourceTypes).toJsonLd),
+        !i.includeDeprecated       -> PipeStep.noConfig(FilterDeprecated.label),
+        !i.includeMetadata         -> PipeStep.noConfig(DiscardMetadata.label),
+        true                       -> PipeStep.noConfig(DefaultLabelPredicates.label),
+        i.sourceAsText             -> PipeStep.noConfig(SourceAsText.label)
       ).mapFilter { case (b, p) => Option.when(b)(p) }
 
       IndexingElasticSearchViewValue(

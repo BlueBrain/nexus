@@ -29,7 +29,8 @@ class FilterByTypeSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val uniformState = PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state)
+  private val uniformState =
+    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
 
   private val registry = new ReferenceRegistry
   registry.register(FilterByType)

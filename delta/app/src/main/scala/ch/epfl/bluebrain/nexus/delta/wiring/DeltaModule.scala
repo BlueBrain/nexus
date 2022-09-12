@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.stream.{Materializer, SystemMaterializer}
-import cats.effect.Clock
+import cats.effect.{Clock, Resource, Sync}
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.{DatabaseConfig, Transactors}
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -34,6 +34,8 @@ import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.concurrent.duration.DurationInt
+
 /**
   * Complete service wiring definitions.
   *
@@ -43,6 +45,8 @@ import org.slf4j.{Logger, LoggerFactory}
   *   the raw merged and resolved configuration
   */
 class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: ClassLoader) extends ModuleDef {
+  addImplicit[Sync[Task]]
+
   make[AppConfig].from(appCfg)
   make[Config].from(config)
   make[DatabaseConfig].from(appCfg.database)
@@ -53,8 +57,8 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[ServiceAccount].from { appCfg.serviceAccount.value }
   make[Crypto].from { appCfg.encryption.crypto }
 
-  make[Transactors].fromEffect {
-    Transactors.init(appCfg.database).use(Task.delay(_))
+  make[Transactors].fromResource {
+    Transactors.init(appCfg.database)
   }
 
   make[List[PluginDescription]].from { (pluginsDef: List[PluginDef]) => pluginsDef.map(_.info) }
@@ -94,13 +98,21 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
   )
-  make[ActorSystem[Nothing]].from(
-    ActorSystem[Nothing](
-      Behaviors.empty,
-      appCfg.description.fullName,
-      BootstrapSetup().withConfig(config).withClassloader(classLoader)
+  make[ActorSystem[Nothing]].fromResource {
+    val make    = Task.delay(
+      ActorSystem[Nothing](
+        Behaviors.empty,
+        appCfg.description.fullName,
+        BootstrapSetup().withConfig(config).withClassloader(classLoader)
+      )
     )
-  )
+    val release = (as: ActorSystem[Nothing]) => {
+      import akka.actor.typed.scaladsl.adapter._
+      Task.deferFuture(as.toClassic.terminate()).timeout(15.seconds).void
+    }
+    Resource.make(make)(release)
+  }
+
   make[Materializer].from((as: ActorSystem[Nothing]) => SystemMaterializer(as).materializer)
   make[Logger].from { LoggerFactory.getLogger("delta") }
   make[RejectionHandler].from {
@@ -137,6 +149,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(VersionModule)
   include(QuotasModule)
   include(EventsModule)
+  include(StreamModule)
 }
 
 object DeltaModule {

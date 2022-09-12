@@ -1,13 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated, PipeDef}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -27,6 +29,11 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
   def toJson(iri: Iri): Json = {
     import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.Source._
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
+  }
+
+  def asIndexingElasticSearchViewValue: Option[IndexingElasticSearchViewValue] = this match {
+    case v: IndexingElasticSearchViewValue => Some(v)
+    case _                                 => None
   }
 
 }
@@ -52,7 +59,7 @@ object ElasticSearchViewValue {
     */
   final case class IndexingElasticSearchViewValue(
       resourceTag: Option[UserTag],
-      pipeline: List[PipeDef],
+      pipeline: List[PipeStep],
       mapping: Option[JsonObject],
       settings: Option[JsonObject],
       context: Option[ContextObject],
@@ -66,7 +73,11 @@ object ElasticSearchViewValue {
     /**
       * Default pipeline to apply if none is present in the payload
       */
-    val defaultPipeline = List(FilterDeprecated(), DiscardMetadata(), DefaultLabelPredicates())
+    val defaultPipeline: List[PipeStep] = List(
+      PipeStep(FilterDeprecated.label, None, None),
+      PipeStep(DiscardMetadata.label, None, None),
+      PipeStep(DefaultLabelPredicates.label, None, None)
+    )
   }
 
   /**

@@ -38,6 +38,8 @@ import scala.concurrent.duration._
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
+  * @param maxBatchSize
+  *   the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk request
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -49,7 +51,8 @@ final case class ElasticSearchViewsConfig(
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,
-    maxIndexPathLength: Int
+    maxIndexPathLength: Int,
+    maxBatchSize: Int
 )
 
 object ElasticSearchViewsConfig {

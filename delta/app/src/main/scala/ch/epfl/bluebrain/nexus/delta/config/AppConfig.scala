@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolversConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.ResourcesConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.SchemasConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
 import com.typesafe.config.{Config, ConfigFactory, ConfigParseOptions, ConfigResolveOptions}
 import monix.bio.{IO, UIO}
 import pureconfig.error.ConfigReaderFailures
@@ -28,37 +29,6 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 /**
   * Main application configuration.
-  *
-  * @param description
-  *   the service description
-  * @param http
-  *   the http config
-  * @param database
-  *   the database config
-  * @param jsonLdApi
-  *   the json-ld api config
-  * @param identities
-  *   the identities config
-  * @param permissions
-  *   the permissions config
-  * @param realms
-  *   the realms config
-  * @param organizations
-  *   the organizations config
-  * @param acls
-  *   the ACLs config
-  * @param projects
-  *   the projects config
-  * @param resolvers
-  *   the resolvers config
-  * @param resources
-  *   the resources config
-  * @param schemas
-  *   the schemas config
-  * @param serviceAccount
-  *   the service account config
-  * @param encryption
-  *   the encryption config
   */
 final case class AppConfig(
     description: DescriptionConfig,
@@ -79,6 +49,7 @@ final case class AppConfig(
     serviceAccount: ServiceAccountConfig,
     sse: SseConfig,
     encryption: EncryptionConfig,
+    projections: ProjectionConfig,
     fusion: FusionConfig
 )
 
@@ -86,6 +57,13 @@ object AppConfig {
 
   private val parseOptions    = ConfigParseOptions.defaults().setAllowMissing(false)
   private val resolverOptions = ConfigResolveOptions.defaults()
+
+  def loadOrThrow(
+      externalConfigPath: Option[String] = None,
+      pluginsConfigPaths: List[String] = List.empty,
+      accClassLoader: ClassLoader = getClass.getClassLoader
+  ): IO[AppConfigError, (AppConfig, Config)] =
+    load(externalConfigPath, pluginsConfigPaths, accClassLoader).mapError(AppConfigError.apply)
 
   /**
     * Loads the application in two steps:<br/>

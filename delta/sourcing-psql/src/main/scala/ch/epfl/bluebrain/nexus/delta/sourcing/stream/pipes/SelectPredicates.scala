@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.{predicate, subject}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
@@ -44,7 +44,7 @@ object SelectPredicates extends PipeDef {
   override type Config   = SelectPredicatesConfig
   override def configType: Typeable[Config]                                 = Typeable[SelectPredicatesConfig]
   override def configDecoder: JsonLdDecoder[Config]                         = JsonLdDecoder[SelectPredicatesConfig]
-  override def label: Label                                                 = Label.unsafe("select-predicates")
+  override def label: Label                                                 = Label.unsafe("selectPredicates")
   override def withConfig(config: SelectPredicatesConfig): SelectPredicates = new SelectPredicates(config)
 
   final case class SelectPredicatesConfig(predicates: Set[Iri]) {
@@ -52,7 +52,7 @@ object SelectPredicates extends PipeDef {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          BNode.random,
+          nxv + label.value,
           JsonObject(
             (nxv + "predicates").toString -> Json.arr(predicates.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
           )

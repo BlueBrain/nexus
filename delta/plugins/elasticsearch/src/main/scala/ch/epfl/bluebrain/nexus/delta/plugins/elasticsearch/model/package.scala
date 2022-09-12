@@ -7,12 +7,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.UniformScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeDef
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.LogElement
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 
 package object model {
 
@@ -78,4 +81,8 @@ package object model {
     .logAndDiscardErrors("loading empty elasticsearch results")
     .map(_.asJson)
     .memoize
+
+  val noopPipeDef: PipeDef = LogElement[UniformScopedState](Label.unsafe("uniform-scoped-state-noop"), _ => Task.unit)
+  val logStatesDef: PipeDef   =
+    LogElement[ElasticSearchViewState](Label.unsafe("view-state-log"), e => Task.delay(println(e.value)))
 }

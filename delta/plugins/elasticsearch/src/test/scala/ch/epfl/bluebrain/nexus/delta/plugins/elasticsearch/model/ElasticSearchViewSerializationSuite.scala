@@ -11,10 +11,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import io.circe.Json
 
 import java.time.Instant
@@ -33,9 +36,10 @@ class ElasticSearchViewSerializationSuite extends SerializationSuite {
   private val indexingValue    = IndexingElasticSearchViewValue(
     Some(UserTag.unsafe("some.tag")),
     List(
-      FilterBySchema(Set(nxv + "some-schema")).description("Only keeping a specific schema"),
-      FilterByType(Set(nxv + "SomeType")),
-      SourceAsText()
+      PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv + "some-schema")).toJsonLd)
+        .description("Only keeping a specific schema"),
+      PipeStep(FilterByType.label, FilterByTypeConfig(Set(nxv + "SomeType")).toJsonLd),
+      PipeStep.noConfig(SourceAsText.label)
     ),
     Some(jobj"""{"properties": {}}"""),
     Some(jobj"""{"analysis": {}}"""),

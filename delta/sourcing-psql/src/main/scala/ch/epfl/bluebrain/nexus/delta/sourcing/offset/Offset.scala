@@ -14,6 +14,10 @@ sealed trait Offset extends Product with Serializable {
 
   def asFragment: Option[Fragment]
 
+  def ordering: Long = this match {
+    case Offset.Start     => 0L
+    case Offset.At(value) => value
+  }
 }
 
 object Offset {

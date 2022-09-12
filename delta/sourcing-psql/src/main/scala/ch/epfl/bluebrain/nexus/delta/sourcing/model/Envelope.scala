@@ -83,8 +83,42 @@ object Envelope {
       cfg: QueryConfig
   )(implicit md: MultiDecoder[A]): EnvelopeStream[String, A] =
     stream(start, query, xas, cfg)
-      .evalMapFilter { e =>
-        Task.pure(md.decodeJson(e.tpe, e.value).toOption.map(a => e.copy(value = a)))
+      // evalMapFilter re-chunks to 1, the following 2 statements does the same on chunks
+      .evalMapChunk(e => Task.pure(md.decodeJson(e.tpe, e.value).toOption.map(a => e.copy(value = a))))
+      .collect {
+        case Some(e) => e
+      }
+
+  /**
+    * Stream results for the provided query from the start offset. The refresh strategy in the query configuration
+    * defines if the stream will re-execute the query with a delay after all the results have been consumed. Failure to
+    * decode a stream element (from json to A) will drop the element silently.
+    *
+    * @param start
+    *   the start offset
+    * @param query
+    *   the query function for an offset
+    * @param xas
+    *   the transactor instances
+    * @param cfg
+    *   the query configuration
+    * @param md
+    *   a decoder collection indexed on the entity type for values of type A.
+    * @tparam A
+    *   the underlying value type
+    */
+  def streamFA[A](
+      start: Offset,
+      query: Offset => Query0[Envelope[String, Json]],
+      xas: Transactors,
+      cfg: QueryConfig,
+      decode: (EntityType, Json) => Task[Option[A]]
+  ): EnvelopeStream[String, A] =
+    stream(start, query, xas, cfg)
+      // evalMapFilter re-chunks to 1, the following 2 statements does the same but preserves the chunks
+      .evalMapChunk(e => decode(e.tpe, e.value).map(_.map(a => e.copy(value = a))))
+      .collect {
+        case Some(e) => e
       }
 
   /**
@@ -115,7 +149,7 @@ object Envelope {
               query(offset)
                 .streamWithChunkSize(cfg.batchSize)
                 .transact(xas.streaming)
-                .evalTap { envelope => ref.set(envelope.offset) }
+                .evalTapChunk { envelope => ref.set(envelope.offset) }
                 .onFinalizeCaseWeak {
                   case ExitCase.Completed => Task.sleep(delay) // delay only for success
                   case ExitCase.Error(_)  => Task.unit

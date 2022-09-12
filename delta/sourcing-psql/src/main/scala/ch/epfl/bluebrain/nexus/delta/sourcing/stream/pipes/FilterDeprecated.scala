@@ -32,6 +32,6 @@ object FilterDeprecated extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]               = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config]       = JsonLdDecoder[Unit]
-  override def label: Label                               = Label.unsafe("filter-deprecated")
+  override def label: Label                               = Label.unsafe("filterDeprecated")
   override def withConfig(config: Unit): FilterDeprecated = new FilterDeprecated
 }

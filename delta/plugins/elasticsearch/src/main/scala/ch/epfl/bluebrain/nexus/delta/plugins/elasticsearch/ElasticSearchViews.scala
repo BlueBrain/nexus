@@ -32,7 +32,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, EnvelopeStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
@@ -335,6 +336,9 @@ final class ElasticSearchViews private (
     ).span("listElasticSearchViews")
   }
 
+  def states(start: Offset): EnvelopeStream[Iri, ElasticSearchViewState] =
+    log.states(Predicate.Root, start)
+
   private def eval(
       cmd: ElasticSearchViewCommand,
       pc: ProjectContext
@@ -367,6 +371,13 @@ object ElasticSearchViews {
     */
   val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
 
+  def projectionName(state: ElasticSearchViewState): String =
+    projectionName(state.project, state.id, state.rev)
+
+  def projectionName(project: ProjectRef, id: Iri, rev: Int): String = {
+    s"elasticsearch-${project}-$id-$rev"
+  }
+
   /**
     * Constructs a projectionId for an elasticsearch view
     */
@@ -383,10 +394,10 @@ object ElasticSearchViews {
     * Constructs the index name for an Elasticsearch view
     */
   def index(view: IndexingViewResource, prefix: String): String =
-    index(view.value.uuid, view.rev.toInt, prefix)
+    index(view.value.uuid, view.rev.toInt, prefix).value
 
-  def index(uuid: UUID, rev: Int, prefix: String): String =
-    IndexLabel.fromView(prefix, uuid, rev).value
+  def index(uuid: UUID, rev: Int, prefix: String): IndexLabel =
+    IndexLabel.fromView(prefix, uuid, rev)
 
   def apply(
       fetchContext: FetchContext[ElasticSearchViewRejection],

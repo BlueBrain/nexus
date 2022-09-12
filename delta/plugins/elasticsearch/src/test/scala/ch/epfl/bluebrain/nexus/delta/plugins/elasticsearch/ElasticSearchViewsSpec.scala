@@ -18,11 +18,14 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{FilterBySchema, FilterByType, FilterDeprecated, PipeConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.EntityDependencyStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{FilterBySchema, FilterByType, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOFixedClock}
 import io.circe.Json
 import io.circe.literal._
@@ -140,7 +143,7 @@ class ElasticSearchViewsSpec
       fetchContext,
       ResolverContextResolution(rcr),
       ValidateElasticSearchView(
-        PipeConfig.coreConfig.rightValue,
+        registry,
         UIO.pure(Set(queryPermissions)),
         (_, _, _) => IO.unit,
         "prefix",
@@ -182,9 +185,9 @@ class ElasticSearchViewsSpec
         val value = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("tag")),
           List(
-            FilterBySchema(Set(iri"http://localhost/schema")),
-            FilterByType(Set(iri"http://localhost/type")),
-            FilterDeprecated()
+            PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(iri"http://localhost/schema")).toJsonLd),
+            PipeStep(FilterByType.label, FilterByTypeConfig(Set(iri"http://localhost/type")).toJsonLd),
+            PipeStep.noConfig(FilterDeprecated.label)
           ),
           mapping = Some(mapping),
           settings = None,

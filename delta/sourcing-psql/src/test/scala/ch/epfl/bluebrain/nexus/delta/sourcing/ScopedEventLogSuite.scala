@@ -183,4 +183,6 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
     eventLog.stateOr(proj, id, 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 3))
   }
 
+  test("Stream the current states")
+
 }

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import akka.EventByTagSettingsLoader
 import akka.persistence.cassandra.query.scaladsl.CassandraReadJournal
-import akka.persistence.jdbc.query.scaladsl.JdbcReadJournal
 import akka.persistence.query._
 import cats.effect.ExitCase
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.DatabaseFlavour
@@ -179,7 +178,7 @@ object EventLog {
   )(implicit as: ActorSystem[Nothing]): Task[EventLog[M]] = Task.delay {
     new AkkaEventLog(
       EventLogConfig.postgresql,
-      PersistenceQuery(as).readJournalFor[Journal](JdbcReadJournal.Identifier),
+      PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier),
       f
     )
   }

@@ -30,9 +30,10 @@ class SupervisionSuite
 
   private lazy val xas = doobie()
 
-  private lazy val store = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))
+  private val qc: QueryConfig = QueryConfig(10, RefreshStrategy.Stop)
+  private lazy val store      = ProjectionStore(xas, qc)
 
-  private val cfg = ProjectionConfig(3, 1, 10.millis, 10.millis)
+  private val cfg = ProjectionConfig(3, 1, 10.millis, 10.millis, qc)
 
   override def beforeEach(context: BeforeEach): Unit = {
     super.beforeEach(context)

@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.BNode
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -41,14 +40,14 @@ object DataConstructQuery extends PipeDef {
   override type Config   = DataConstructQueryConfig
   override def configType: Typeable[Config]                                     = Typeable[DataConstructQueryConfig]
   override def configDecoder: JsonLdDecoder[Config]                             = JsonLdDecoder[DataConstructQueryConfig]
-  override def label: Label                                                     = Label.unsafe("data-construct-query")
+  override def label: Label                                                     = Label.unsafe("dataConstructQuery")
   override def withConfig(config: DataConstructQueryConfig): DataConstructQuery = new DataConstructQuery(config)
 
   final case class DataConstructQueryConfig(query: SparqlConstructQuery) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          BNode.random,
+          nxv + label.value,
           JsonObject(
             (nxv + "query").toString -> Json.arr(Json.obj("@value" -> Json.fromString(query.value)))
           )

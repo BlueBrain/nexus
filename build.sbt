@@ -112,7 +112,8 @@ lazy val doobiePostgres       = "org.tpolecat"                 %% "doobie-postgr
 lazy val doobie               = Seq(
   doobiePostgres,
   "org.tpolecat" %% "doobie-hikari"         % doobieVersion,
-  "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion
+  "org.tpolecat" %% "doobie-postgres-circe" % doobieVersion,
+  "com.zaxxer" % "HikariCP" % "4.0.3" exclude("org.slf4j", "slf4j-api"),
 )
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version
@@ -279,7 +280,6 @@ lazy val sourcing = project
       circeGenericExtras,
       circeParser,
       distageCore,
-      doobiePostgres,
       fs2,
       fs2io,
       kryo,
@@ -289,7 +289,7 @@ lazy val sourcing = project
       akkaSlf4j              % Test,
       catsEffectLaws         % Test,
       logback                % Test
-    ) ++ akkaPersistenceJdbc,
+    ),
     Test / fork              := true
   )
 

@@ -29,10 +29,11 @@ import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DiscardMetadata, FilterDeprecated, PipeConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterDeprecated}
 import ch.epfl.bluebrain.nexus.testkit._
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import io.circe.{Json, JsonObject}
@@ -90,7 +91,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
   private val indexingView: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
-      pipeline = List(FilterDeprecated(), DiscardMetadata()),
+      pipeline = List(PipeStep.noConfig(FilterDeprecated.label), PipeStep.noConfig(DiscardMetadata.label)),
       mapping = Some(mappings),
       settings = None,
       permission = queryPermission,
@@ -155,7 +156,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       fetchContext,
       ResolverContextResolution(rcr),
       ValidateElasticSearchView(
-        PipeConfig.coreConfig.rightValue,
+        registry,
         UIO.pure(Set(queryPermissions)),
         esClient.createIndex(_, _, _).void,
         "prefix",
@@ -174,6 +175,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       prefix,
       xas
     )
+
 
     "create the indexing views views" in {
       indexingViews.traverse { viewRef =>

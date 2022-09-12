@@ -81,7 +81,7 @@ class ScopedStateSourceSuite extends BioSuite with Doobie.Fixture {
   }
 
   def uniform(state: PullRequestState): UniformScopedState =
-    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state)
+    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
 
   test("Save initial states") {
     for {

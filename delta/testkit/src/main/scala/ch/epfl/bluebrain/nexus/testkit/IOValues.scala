@@ -53,7 +53,7 @@ final class IOValuesOps[E, A](private val io: IO[E, A])(implicit E: ClassTag[E])
         val stack = new String(baos.toByteArray)
         fail(
           s"""Error caught of type '${err.getClass.getName}', expected a successful response
-             |Message: ${err.toString}
+             |Message: ${err.getMessage}
              |Stack:
              |$stack""".stripMargin,
           err

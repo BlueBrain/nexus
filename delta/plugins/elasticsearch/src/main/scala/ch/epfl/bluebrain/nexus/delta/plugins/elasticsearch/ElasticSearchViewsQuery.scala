@@ -327,7 +327,7 @@ object ElasticSearchViewsQuery {
                 Right(
                   IndexingView(
                     ViewRef(view.project, view.id),
-                    ElasticSearchViews.index(view.uuid, view.rev, prefix),
+                    ElasticSearchViews.index(view.uuid, view.rev, prefix).value,
                     i.permission
                   )
                 )
