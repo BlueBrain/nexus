@@ -32,6 +32,11 @@ abstract class UniformScopedStateEncoder[S <: ScopedState] {
     */
   def toUniformScopedState(state: S): Task[UniformScopedState]
 
+  /**
+    * Attempts to decode the json state into an [[UniformScopedState]].
+    * @param json
+    *   the state representation in json
+    */
   def decode(json: Json): Task[UniformScopedState] =
     IO.fromEither(databaseDecoder.decodeJson(json)).flatMap(toUniformScopedState)
 }

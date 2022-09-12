@@ -7,6 +7,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
@@ -79,6 +80,15 @@ class SupervisionSuite
               )
             }
     )
+
+  // get a name that hashcode modulo cluster size is equal to the node index
+  private def currentNodeIndexName: Task[String] = Stream
+    .repeatEval(Task.delay(genString()))
+    .filter(_.hashCode % cfg.clusterSize == cfg.nodeIndex)
+    .take(1)
+    .compile
+    .toList
+    .map(_.head)
 
   projections.test("Restart projections when they stop") { ctx =>
     val sources = NonEmptyChain(
@@ -235,13 +245,7 @@ class SupervisionSuite
 
     supervisorResource.use { supervisor =>
       for {
-        name    <- Stream // get a name that hashcode modulo cluster size is equal to the node index
-                     .repeatEval(Task.delay(genString()))
-                     .filter(_.hashCode % cfg.clusterSize == cfg.nodeIndex)
-                     .take(1)
-                     .compile
-                     .toList
-                     .map(_.head)
+        name    <- currentNodeIndexName
         defined  = ProjectionDef(name, None, None, sources, pipes)
         compiled = defined.compile(ctx.registry).rightValue
         _       <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = false))
@@ -269,13 +273,7 @@ class SupervisionSuite
 
     supervisorResource.use { supervisor =>
       for {
-        name    <- Stream // get a name that hashcode modulo cluster size is equal to the node index
-                     .repeatEval(Task.delay(genString()))
-                     .filter(_.hashCode % cfg.clusterSize == cfg.nodeIndex)
-                     .take(1)
-                     .compile
-                     .toList
-                     .map(_.head)
+        name    <- currentNodeIndexName
         defined  = ProjectionDef(name, None, None, sources, pipes)
         compiled = defined.compile(ctx.registry).rightValue
         initial  = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(5L))
@@ -323,6 +321,45 @@ class SupervisionSuite
         elems <- ctx.currentElements
         _      = assert(elems.size < 9, "Should have observed less than 10 total elements")
         _     <- supervisor.status("naturals").assertNone
+      } yield ()
+    }
+  }
+
+  projections.test("Run setup and teardown fns") { ctx =>
+    val sources = NonEmptyChain(
+      SourceChain(
+        Naturals.reference,
+        iri"https://naturals",
+        NaturalsConfig(10, 50.millis).toJsonLd,
+        Chain()
+      )
+    )
+    val pipes   = NonEmptyChain(
+      PipeChain(
+        iri"https://log",
+        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
+      )
+    )
+
+    supervisorResource.use { supervisor =>
+      for {
+        name       <- currentNodeIndexName
+        defined     = ProjectionDef(name, None, None, sources, pipes)
+        compiled    = defined.compile(ctx.registry).rightValue
+        initRef    <- Ref[Task].of(0)
+        incrementFn = initRef.update(_ + 1) // init task
+        decrementFn = initRef.update(_ - 1) // finalizer task
+        _          <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = true), incrementFn)
+        elems      <- ctx.waitForNElements(1, 50.millis)
+        _           = assert(elems.nonEmpty, "Should have observed at least an element")
+        _          <- initRef.get.assert(1)
+        _          <- Task.sleep(cfg.persistOffsetInterval + 50.millis) // wait for the offset to be persisted
+        offset     <- store.offset(name)
+        _           = assert(offset.toMap.exists { case (_, o) => o != Start }, "An offset should have been persisted")
+        _          <- supervisor.unSupervise(name, decrementFn, deleteOffset = true)
+        _          <- initRef.get.assert(0)
+        offset     <- store.offset(name)
+        _           = assert(offset.toMap.forall { case (_, o) => o == Start }, "Offset should have been deleted")
       } yield ()
     }
   }

@@ -65,9 +65,23 @@ trait Pipe { self =>
     */
   def apply(element: SuccessElem[In]): Task[Elem[Out]]
 
+  /**
+    * The chunk handling behaviour of pipes, defaulting to processing all elements in order as per the [[Pipe.apply]]
+    * logic. Pipes that perform batching should override the [[Pipe.chunkSize]] and [[Pipe.applyChunk]] functions to
+    * implement custom batching behaviour. Pipes that override this function should retain the element order.
+    *
+    * @param elements
+    *   the element chunk to process
+    * @return
+    *   a chunk of the same size with possibly failed or dropped elements of type Out
+    */
   def applyChunk(elements: Chunk[SuccessElem[In]]): Task[Chunk[Elem[Out]]] =
     elements.traverse(apply)
 
+  /**
+    * A predefined desired chunk size. Pipes that perform batching should override the [[Pipe.chunkSize]] and
+    * [[Pipe.applyChunk]] functions to implement custom batching behaviour.
+    */
   def chunkSize: Int = 1
 
   private[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
