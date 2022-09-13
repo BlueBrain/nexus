@@ -315,6 +315,7 @@ class SupervisionSuite
       for {
         _     <- compiled.supervise(supervisor, ExecutionStrategy.EveryNode)
         elems <- ctx.waitForNElements(1, 50.millis)
+        _      = assertEquals(elems.size, 1, s"Should have observed exactly one element")
         _     <- supervisor.unSupervise("naturals")
         _     <- supervisor.status("naturals").assertNone
         _      = assert(elems.nonEmpty, "Should have observed at least an element")
