@@ -316,11 +316,14 @@ class SupervisionSuite
         _     <- compiled.supervise(supervisor, ExecutionStrategy.EveryNode)
         elems <- ctx.waitForNElements(1, 50.millis)
         _     <- supervisor.unSupervise("naturals")
+        _     <- supervisor.status("naturals").assertNone
         _      = assert(elems.nonEmpty, "Should have observed at least an element")
         _     <- Task.sleep(300.millis)
         elems <- ctx.currentElements
-        _      = assert(elems.size < 9, "Should have observed less than 10 total elements")
-        _     <- supervisor.status("naturals").assertNone
+        _      = assert(
+                   elems.size < 9,
+                   s"Should have observed less than 10 total elements, but after the first there another ${elems.size}"
+                 )
       } yield ()
     }
   }
