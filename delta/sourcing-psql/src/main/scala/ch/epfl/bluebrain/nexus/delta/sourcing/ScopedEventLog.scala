@@ -2,20 +2,20 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.EvaluationError.{EvaluationFailure, EvaluationTimeout}
+import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EnvelopeStream, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
+import doobie._
 import doobie.implicits._
 import doobie.postgres.sqlstate
-import doobie.util.Put
-import doobie.{ConnectionIO, Get}
 import fs2.Stream
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, Task, UIO}
@@ -185,6 +185,7 @@ object ScopedEventLog {
       xas: Transactors
   )(implicit get: Get[Id], put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
     apply(
+      definition.tpe,
       ScopedEventStore(definition.tpe, definition.eventSerializer, config.queryConfig, xas),
       ScopedStateStore(definition.tpe, definition.stateSerializer, config.queryConfig, xas),
       definition.stateMachine,
@@ -196,6 +197,7 @@ object ScopedEventLog {
     )
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
+      entityType: EntityType,
       eventStore: ScopedEventStore[Id, E],
       stateStore: ScopedStateStore[Id, S],
       stateMachine: StateMachine[S, Command, E, Rejection],
@@ -204,7 +206,7 @@ object ScopedEventLog {
       extractDependencies: S => Option[Set[EntityDependency]],
       maxDuration: FiniteDuration,
       xas: Transactors
-  )(implicit put: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
+  )(implicit putId: Put[Id]): ScopedEventLog[Id, S, Command, E, Rejection] =
     new ScopedEventLog[Id, S, Command, E, Rejection] {
 
       override def stateOr[R <: Rejection](ref: ProjectRef, id: Id, notFound: => R): IO[R, S] =
@@ -246,8 +248,9 @@ object ScopedEventLog {
                 .map(_.fold(noop) { s => stateStore.save(s, tag) })
           }
 
-        def deleteTag(event: E): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
-          stateStore.delete(ref, id, tag)
+        def deleteTag(event: E, state: S): ConnectionIO[Unit] = tagger.untagWhen(event).fold(noop) { tag =>
+          stateStore.delete(ref, id, tag) >>
+            TombstoneStore.save(entityType, id, state, tag)
         }
 
         def updateDependencies(state: S) =
@@ -255,35 +258,40 @@ object ScopedEventLog {
             EntityDependencyStore.delete(ref, id) >> EntityDependencyStore.save(ref, id, dependencies)
           }
 
-        stateMachine
-          .evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
-          .tapEval { case (event, state) =>
-            for {
-              tagQuery      <- saveTag(event, state)
-              deleteTagQuery = deleteTag(event)
-              _             <- (
-                                 eventStore.save(event) >>
-                                   stateStore.save(state) >>
-                                   tagQuery >> deleteTagQuery >>
-                                   updateDependencies(state)
-                               ).attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
-                                 onUniqueViolation(id, command)
-                               }.transact(xas.write)
-                                 .hideErrors
+        def persist(event: E, original: Option[S], newState: S) =
+          saveTag(event, newState).flatMap { tagQuery =>
+            val queries = for {
+              _ <- TombstoneStore.save(entityType, id, original, newState)
+              _ <- eventStore.save(event)
+              _ <- stateStore.save(newState)
+              _ <- tagQuery
+              _ <- deleteTag(event, newState)
+              _ <- updateDependencies(newState)
             } yield ()
-          }
-          .redeemCauseWith(
-            {
-              case Error(rejection)                     => IO.raiseError(rejection)
-              case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
-              case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
-            },
-            r => IO.pure(r)
-          )
-      }
+            queries
+              .attemptSomeSqlState {
+                case sqlstate.class23.UNIQUE_VIOLATION => onUniqueViolation(id, command)
+              }.transact(xas.write).hideErrors
+          }.void
+
+        for {
+          originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
+          result        <- stateMachine.evaluate(originalState, command, maxDuration)
+          _             <- persist(result._1, originalState, result._2)
+        } yield result
+      }.redeemCauseWith(
+        {
+          case Error(rejection)                     => IO.raiseError(rejection)
+          case Termination(e: EvaluationTimeout[_]) => IO.terminate(e)
+          case Termination(e)                       => IO.terminate(EvaluationFailure(command, e))
+        },
+        r => IO.pure(r)
+      )
 
       override def dryRun(ref: ProjectRef, id: Id, command: Command): IO[Rejection, (E, S)] =
-        stateMachine.evaluate(stateStore.get(ref, id).redeem(_ => None, Some(_)), command, maxDuration)
+        stateStore.get(ref, id).redeem(_ => None, Some(_)).flatMap { state =>
+          stateMachine.evaluate(state, command, maxDuration)
+        }
 
       override def currentEvents(predicate: Predicate, offset: Offset): EnvelopeStream[Id, E] =
         eventStore.currentEvents(predicate, offset)

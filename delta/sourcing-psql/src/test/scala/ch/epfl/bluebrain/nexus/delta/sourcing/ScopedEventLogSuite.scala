@@ -11,12 +11,14 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, Envelope, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
+import doobie.implicits._
+import doobie.postgres.implicits._
 import fs2.concurrent.Queue
 import io.circe.Decoder
 import monix.bio.Task
@@ -70,6 +72,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
     PullRequestEvent,
     PullRequest.PullRequestRejection
   ] = ScopedEventLog(
+    PullRequest.entityType,
     eventStore,
     stateStore,
     PullRequest.stateMachine,
@@ -121,7 +124,7 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Tag and check that the state has also been successfully tagged as well") {
     for {
-      _ <- eventLog.evaluate(proj, id, Tag(id, proj, 2, 1)).assert((tagged, state2))
+      _ <- eventLog.evaluate(proj, id, TagPR(id, proj, 2, 1)).assert((tagged, state2))
       _ <- eventStore.history(proj, id).assert(opened, tagged)
       _ <- eventLog.stateOr(proj, id, NotFound).assert(state2)
       _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).assert(state1)
@@ -145,7 +148,15 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
   }
 
   test("Check that the tagged state has been successfully removed after") {
-    eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).error(TagNotFound)
+    val query = sql"""SELECT type, org, project, id, tag, instant FROM scoped_tombstones"""
+      .query[(EntityType, Label, Label, Label, Tag, Instant)]
+      .unique
+      .transact(xas.read)
+    for {
+      _ <- eventLog.stateOr(proj, id, tag, NotFound, TagNotFound).error(TagNotFound)
+      _ <- query.assert((PullRequest.entityType, proj.organization, proj.project, id, tag, Instant.EPOCH))
+    } yield ()
+
   }
 
   test("Reject a command and persist nothing") {

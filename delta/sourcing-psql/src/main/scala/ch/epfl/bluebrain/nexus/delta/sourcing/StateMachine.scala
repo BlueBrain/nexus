@@ -26,12 +26,12 @@ final class StateMachine[State, Command, Event, Rejection] private (
     * Fetches the current state and attempt to apply an incoming command on it
     */
   def evaluate(
-      getCurrent: UIO[Option[State]],
+      current: Option[State],
       command: Command,
       maxDuration: FiniteDuration
   ): IO[Rejection, (Event, State)] = {
+    val original = current.orElse(initialState)
     for {
-      original  <- getCurrent.map(_.orElse(initialState))
       evaluated <- evaluate(original, command).attempt
                      .timeoutWith(maxDuration, EvaluationTimeout(command, maxDuration))
                      .hideErrors

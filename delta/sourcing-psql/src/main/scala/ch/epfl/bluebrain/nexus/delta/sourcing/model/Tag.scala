@@ -37,6 +37,8 @@ object Tag {
       Decoder.decodeString.emap(str => if (str == "latest") Right(Latest) else Left("Expected 'latest' string"))
   }
 
+  val latest: Tag = Latest
+
   final case class UserTag private (value: String) extends Tag
 
   object UserTag {
