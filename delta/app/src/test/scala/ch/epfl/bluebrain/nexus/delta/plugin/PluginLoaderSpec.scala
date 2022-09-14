@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import com.typesafe.config.impl.ConfigImpl
 import izumi.distage.model.definition.ModuleDef
+import monix.bio.Task
 import monix.execution.Scheduler
 import monix.execution.Scheduler.Implicits.global
 import org.scalatest.matchers.should.Matchers
@@ -24,13 +25,15 @@ class PluginLoaderSpec extends AnyWordSpecLike with ScalatestRouteTest with Matc
     val config = PluginLoaderConfig("../plugins/test-plugin/target")
     "load plugins from .jar in a directory" in {
       val (_, pluginsDef) = PluginsLoader(config).load.accepted
-      val (_, locator)    = WiringInitializer(serviceModule, pluginsDef).accepted
-      val route           = locator.get[Set[PriorityRoute]].head
-
-      pluginsDef.head.priority shouldEqual 10
-      Get("/test-plugin") ~> route.route ~> check {
-        responseAs[String] shouldEqual "http://localhost"
-      }
+      WiringInitializer(serviceModule, pluginsDef).use { case (_, locator) =>
+        Task.delay {
+          val route = locator.get[Set[PriorityRoute]].head
+          pluginsDef.head.priority shouldEqual 10
+          Get("/test-plugin") ~> route.route ~> check {
+            responseAs[String] shouldEqual "http://localhost"
+          }
+        }
+      }.accepted
     }
 
     "load overriding priority" in {

@@ -102,6 +102,12 @@ sealed trait Elem[+A] extends Product with Serializable {
     case e: FailedElem     => e
     case e: DroppedElem    => e
   }
+
+  /**
+    * Discard the underlying element value if present.
+    */
+  def void: Elem[Unit] =
+    map(_ => ())
 }
 
 object Elem {

@@ -12,9 +12,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
 import ch.epfl.bluebrain.nexus.testkit.{DoobieScalaTestFixture, EitherValuable, IOValues, TestHelpers}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -73,7 +74,10 @@ class ElasticSearchScopeInitializationSpec
       resource.value match {
         case v: IndexingElasticSearchView  =>
           v.resourceTag shouldEqual None
-          v.pipeline shouldEqual List(DefaultLabelPredicates(), SourceAsText())
+          v.pipeline shouldEqual List(
+            PipeStep.noConfig(DefaultLabelPredicates.label),
+            PipeStep.noConfig(SourceAsText.label)
+          )
           v.mapping shouldEqual mapping
           v.settings shouldEqual settings
           v.permission shouldEqual queryPermissions

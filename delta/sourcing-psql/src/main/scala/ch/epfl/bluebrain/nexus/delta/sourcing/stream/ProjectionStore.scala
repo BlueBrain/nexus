@@ -4,8 +4,8 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.ProjectionOffsetRow
+import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._

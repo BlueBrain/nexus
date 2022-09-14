@@ -16,6 +16,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.testkit.{IOValues, TestHelpers}
 import io.circe.literal._
 import monix.bio.IO
@@ -89,11 +92,11 @@ class ElasticSearchViewDecodingSpec
         val expected    = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("release")),
           pipeline = List(
-            FilterBySchema(Set(context.vocab / "Person")),
-            FilterByType(Set(context.vocab / "Person")),
-            FilterDeprecated(),
-            DiscardMetadata(),
-            DefaultLabelPredicates()
+            PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(context.vocab / "Person")).toJsonLd),
+            PipeStep(FilterByType.label, FilterByTypeConfig(Set(context.vocab / "Person")).toJsonLd),
+            PipeStep.noConfig(FilterDeprecated.label),
+            PipeStep.noConfig(DiscardMetadata.label),
+            PipeStep.noConfig(DefaultLabelPredicates.label)
           ),
           mapping = Some(mapping),
           settings = Some(settings),
@@ -163,8 +166,11 @@ class ElasticSearchViewDecodingSpec
                 }"""
         val expected    = IndexingElasticSearchViewValue(
           resourceTag = Some(UserTag.unsafe("release")),
-          pipeline =
-            List(FilterDeprecated(), FilterByType(Set(context.vocab / "Person")).description("Keep only person type")),
+          pipeline = List(
+            PipeStep.noConfig(FilterDeprecated.label),
+            PipeStep(FilterByType.label, FilterByTypeConfig(Set(context.vocab / "Person")).toJsonLd)
+              .description("Keep only person type")
+          ),
           mapping = Some(mapping),
           settings = Some(settings),
           permission = Permission.unsafe("custom/permission"),

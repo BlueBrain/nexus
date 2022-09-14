@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -26,7 +26,7 @@ class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override def outType: Typeable[UniformScopedState] = Typeable[UniformScopedState]
 
   override def apply(element: SuccessElem[UniformScopedState]): Task[Elem[UniformScopedState]] =
-    if (config.schemas.isEmpty || config.schemas.contains(element.value.schema.iri)) Task.pure(element)
+    if (config.types.isEmpty || config.types.contains(element.value.schema.iri)) Task.pure(element)
     else Task.pure(element.dropped)
 
 }
@@ -39,16 +39,16 @@ object FilterBySchema extends PipeDef {
   override type Config   = FilterBySchemaConfig
   override def configType: Typeable[Config]                             = Typeable[FilterBySchemaConfig]
   override def configDecoder: JsonLdDecoder[Config]                     = JsonLdDecoder[FilterBySchemaConfig]
-  override def label: Label                                             = Label.unsafe("filter-by-schema")
+  override def label: Label                                             = Label.unsafe("filterBySchema")
   override def withConfig(config: FilterBySchemaConfig): FilterBySchema = new FilterBySchema(config)
 
-  final case class FilterBySchemaConfig(schemas: Set[Iri]) {
+  final case class FilterBySchemaConfig(types: Set[Iri]) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          BNode.random,
+          nxv + label.value,
           JsonObject(
-            (nxv + "schemas").toString -> Json.arr(schemas.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
+            (nxv + "types").toString -> Json.arr(types.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
           )
         )
       )

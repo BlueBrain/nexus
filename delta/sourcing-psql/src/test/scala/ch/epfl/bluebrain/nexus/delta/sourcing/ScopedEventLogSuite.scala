@@ -11,14 +11,17 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.ScopedEventStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, Label, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import doobie.implicits._
 import doobie.postgres.implicits._
+import fs2.concurrent.Queue
 import io.circe.Decoder
+import monix.bio.Task
 import munit.AnyFixture
 
 import java.time.Instant
@@ -192,6 +195,15 @@ class ScopedEventLogSuite extends BioSuite with Doobie.Fixture {
 
   test("Raise an error when providing a nonexistent revision") {
     eventLog.stateOr(proj, id, 10, NotFound, RevisionNotFound).error(RevisionNotFound(10, 3))
+  }
+
+  test("Stream continuously the current states") {
+    for {
+      queue <- Queue.unbounded[Task, Envelope[Label, PullRequestState]]
+      _     <- eventLog.states(Predicate.root, Offset.Start).through(queue.enqueue).compile.drain.timeout(500.millis)
+      elems <- queue.tryDequeueChunk1(Int.MaxValue).map(opt => opt.map(_.toList).getOrElse(Nil))
+      _      = elems.assertSize(2)
+    } yield ()
   }
 
 }

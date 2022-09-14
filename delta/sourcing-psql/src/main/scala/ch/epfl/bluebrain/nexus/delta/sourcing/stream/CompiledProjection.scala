@@ -46,6 +46,22 @@ final case class CompiledProjection private[stream] (
     supervisor.supervise(this, executionStrategy)
 
   /**
+    * Supervises the execution of the provided `projection` using the provided `executionStrategy`. A second call to
+    * this method with a projection with the same name will cause the current projection to be stopped and replaced by
+    * the new one.
+    * @param supervisor
+    *   the projection supervisor
+    * @param executionStrategy
+    *   the strategy for the projection execution
+    * @param init
+    *   an initialization fn for the start of the projection
+    * @see
+    *   [[Supervisor]]
+    */
+  def supervise(supervisor: Supervisor, executionStrategy: ExecutionStrategy, init: Task[Unit]): Task[Unit] =
+    supervisor.supervise(this, executionStrategy, init)
+
+  /**
     * Transforms this projection such that is passivates gracefully when it becomes idle. A projection is considered
     * idle when there are no elements that have been processed within the defined `inactiveInterval`.
     * @param inactiveInterval

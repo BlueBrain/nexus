@@ -32,7 +32,23 @@ trait Supervisor {
     * @see
     *   [[Supervisor]]
     */
-  def supervise(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Unit]
+  def supervise(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Unit] =
+    supervise(projection, executionStrategy, Task.unit)
+
+  /**
+    * Supervises the execution of the provided `projection` using the provided `executionStrategy`. A second call to
+    * this method with a projection with the same name will cause the current projection to be stopped and replaced by
+    * the new one.
+    * @param projection
+    *   the projection to supervise
+    * @param executionStrategy
+    *   the strategy for the projection execution
+    * @param init
+    *   an initialization task
+    * @see
+    *   [[Supervisor]]
+    */
+  def supervise(projection: CompiledProjection, executionStrategy: ExecutionStrategy, init: Task[Unit]): Task[Unit]
 
   /**
     * Stops the projection with the provided `name` and removes it from supervision. It performs a noop if the
@@ -40,7 +56,21 @@ trait Supervisor {
     * @param name
     *   the name of the projection
     */
-  def unSupervise(name: String): Task[Unit]
+  def unSupervise(name: String): Task[Unit] =
+    unSupervise(name, Task.unit, deleteOffset = false)
+
+  /**
+    * Stops the projection with the provided `name` and removes it from supervision. It performs a noop if the
+    * projection does not exist or it is not running on the current node. It executes the provided finalizer after the
+    * projection is stopped.
+    * @param name
+    *   the name of the projection
+    * @param finalizer
+    *   the finalizer to be executed after the projection is stopped
+    * @param deleteOffset
+    *   whether the persisted offset should be deleted from the projection store
+    */
+  def unSupervise(name: String, finalizer: Task[Unit], deleteOffset: Boolean): Task[Unit]
 
   /**
     * Returns the status of the projection with the provided `name`, if a projection with such name exists.
@@ -129,7 +159,11 @@ object Supervisor {
       supervisionFiberRef: Ref[Task, Fiber[Throwable, Unit]]
   ) extends Supervisor {
 
-    override def supervise(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Unit] =
+    override def supervise(
+        projection: CompiledProjection,
+        executionStrategy: ExecutionStrategy,
+        init: Task[Unit]
+    ): Task[Unit] =
       semaphore.withPermit {
         for {
           map       <- mapRef.get
@@ -139,19 +173,26 @@ object Supervisor {
                          case Some(value) => mapRef.update(_ - projection.name) >> value.control.stop
                          case None        => Task.unit
                        }
-          task       = controlTask(projection, executionStrategy)
+          task       = controlTask(projection, executionStrategy, init)
           control   <- task
           supervised = Supervised(projection, executionStrategy, task, control)
           _         <- mapRef.set(map + (projection.name -> supervised))
         } yield ()
       }
 
-    override def unSupervise(name: String): Task[Unit] =
+    override def unSupervise(name: String, finalizer: Task[Unit], deleteOffset: Boolean): Task[Unit] =
       semaphore.withPermit {
         for {
           map <- mapRef.get
           _   <- map.get(name) match {
-                   case Some(value) => value.control.stop
+                   case Some(value) =>
+                     if (!value.executionStrategy.shouldRun(name, cfg)) Task.unit
+                     else
+                       for {
+                         _ <- value.control.stop
+                         _ <- Task.when(value.executionStrategy.shouldPersist && deleteOffset)(store.delete(name))
+                         _ <- finalizer
+                       } yield ()
                    case None        => Task.unit
                  }
           _   <- mapRef.set(map - name)
@@ -176,18 +217,24 @@ object Supervisor {
                  }
       } yield ()
 
-    private def controlTask(projection: CompiledProjection, executionStrategy: ExecutionStrategy): Task[Control] =
+    private def controlTask(
+        projection: CompiledProjection,
+        executionStrategy: ExecutionStrategy,
+        init: Task[Unit]
+    ): Task[Control] =
       if (!executionStrategy.shouldRun(projection.name, cfg)) Task.pure(ignored)
       else if (executionStrategy.shouldPersist)
         for {
           offset    <- store.offset(projection.name)
           status    <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Pending(offset))
+          _         <- init
           reference <- projection.persistOffset(store, cfg.persistOffsetInterval).start(offset, status)
           control    = Control(status = status.get, stop = reference.stop())
         } yield control
       else
         for {
           status    <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Pending(ProjectionOffset.empty))
+          _         <- init
           reference <- projection.start(status)
           control    = Control(status.get, reference.stop())
         } yield control

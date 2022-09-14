@@ -1,11 +1,15 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, logStatesDef, noopPipeDef, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.UniformScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.{ScopedStateSource, StreamSource}
 import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.IO
 
@@ -51,6 +55,22 @@ trait Fixtures extends IOValues {
     Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json").accepted,
     Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json").accepted
   )
+
+  val registry: ReferenceRegistry = {
+    val r = new ReferenceRegistry
+    r.register(SourceAsText)
+    r.register(FilterDeprecated)
+    r.register(DefaultLabelPredicates)
+    r.register(DiscardMetadata)
+    r.register(FilterBySchema)
+    r.register(FilterByType)
+    r.register(DataConstructQuery)
+    r.register(SelectPredicates)
+    r.register(StreamSource[UniformScopedState](ScopedStateSource.label, _ => fs2.Stream.empty))
+    r.register(noopPipeDef)
+    r.register(logStatesDef)
+    r
+  }
 }
 
 object Fixtures extends Fixtures

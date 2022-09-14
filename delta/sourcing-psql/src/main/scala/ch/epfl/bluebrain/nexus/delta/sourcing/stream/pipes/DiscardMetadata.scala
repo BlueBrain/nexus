@@ -32,6 +32,6 @@ object DiscardMetadata extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]              = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config]      = JsonLdDecoder[Unit]
-  override def label: Label                              = Label.unsafe("discard-metadata")
+  override def label: Label                              = Label.unsafe("discardMetadata")
   override def withConfig(config: Unit): DiscardMetadata = new DiscardMetadata
 }
