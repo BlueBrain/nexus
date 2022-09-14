@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{ExpandedJsonLd, ExpandedJsonLdCursor}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 
@@ -21,20 +22,23 @@ import scala.annotation.nowarn
   * @param config
   *   the config to provide to the pipe
   */
-final case class PipeDef(name: String, description: Option[String], config: Option[ExpandedJsonLd]) {
+final case class PipeStep(name: Label, description: Option[String], config: Option[ExpandedJsonLd]) {
 
-  def description(value: String): PipeDef = copy(description = Some(value))
+  def description(value: String): PipeStep = copy(description = Some(value))
 
 }
 @nowarn("cat=unused")
-object PipeDef {
+object PipeStep {
+
+  def apply(name: Label, cfg: ExpandedJsonLd): PipeStep =
+    PipeStep(name, None, Some(cfg))
 
   /**
     * Create a pipe def without config
     * @param name
     *   the identifier of the pipe
     */
-  def noConfig(name: String): PipeDef = PipeDef(name, None, None)
+  def noConfig(name: Label): PipeStep = PipeStep(name, None, None)
 
   /**
     * Create a pipe with the provided config
@@ -43,29 +47,29 @@ object PipeDef {
     * @param config
     *   the config to apply
     */
-  def withConfig(name: String, config: ExpandedJsonLd): PipeDef = PipeDef(name, None, Some(config))
+  def withConfig(name: Label, config: ExpandedJsonLd): PipeStep = PipeStep(name, None, Some(config))
 
-  implicit val pipeDefEncoder: Encoder.AsObject[PipeDef] = {
+  implicit val pipeStepEncoder: Encoder.AsObject[PipeStep] = {
     implicit val expandedEncoder: Encoder[ExpandedJsonLd] = Encoder.instance(_.json)
-    deriveEncoder[PipeDef]
+    deriveEncoder[PipeStep]
   }
 
-  implicit val pipeDefDecoder: Decoder[PipeDef] = {
+  implicit val pipeStepDecoder: Decoder[PipeStep] = {
     implicit val expandedDecoder: Decoder[ExpandedJsonLd] =
       Decoder.decodeJson.emap(ExpandedJsonLd.expanded(_).leftMap(_.getMessage))
-    deriveDecoder[PipeDef].map {
-      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name)))
+    deriveDecoder[PipeStep].map {
+      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name.value)))
       case p                       => p
     }
   }
 
-  implicit val pipeDefJsonLdEncoder: JsonLdEncoder[PipeDef] =
+  implicit val pipeStepJsonLdEncoder: JsonLdEncoder[PipeStep] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.pipeline))
 
-  implicit val pipeDefJsonLdDecoder: JsonLdDecoder[PipeDef] = {
+  implicit val pipeStepJsonLdDecoder: JsonLdDecoder[PipeStep] = {
     implicit val expandedJsonLdDecoder: JsonLdDecoder[ExpandedJsonLd] = (cursor: ExpandedJsonLdCursor) => cursor.focus
-    deriveJsonLdDecoder[PipeDef].map {
-      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name)))
+    deriveJsonLdDecoder[PipeStep].map {
+      case p if p.config.isDefined => p.copy(config = p.config.map(_.copy(rootId = nxv + p.name.value)))
       case p                       => p
     }
   }

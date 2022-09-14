@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.PipeInOutMatchErr
-import fs2.Pull
+import com.typesafe.scalalogging.Logger
+import fs2.{Chunk, INothing, Pull, Stream}
 import monix.bio.Task
 import shapeless.Typeable
 
@@ -63,17 +65,47 @@ trait Pipe { self =>
     */
   def apply(element: SuccessElem[In]): Task[Elem[Out]]
 
+  /**
+    * The chunk handling behaviour of pipes, defaulting to processing all elements in order as per the [[Pipe.apply]]
+    * logic. Pipes that perform batching should override the [[Pipe.chunkSize]] and [[Pipe.applyChunk]] functions to
+    * implement custom batching behaviour. Pipes that override this function should retain the element order.
+    *
+    * @param elements
+    *   the element chunk to process
+    * @return
+    *   a chunk of the same size with possibly failed or dropped elements of type Out
+    */
+  def applyChunk(elements: Chunk[SuccessElem[In]]): Task[Chunk[Elem[Out]]] =
+    elements.traverse(apply)
+
+  /**
+    * A predefined desired chunk size. Pipes that perform batching should override the [[Pipe.chunkSize]] and
+    * [[Pipe.applyChunk]] functions to implement custom batching behaviour.
+    */
+  def chunkSize: Int = 1
+
   private[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Out]] = {
-    def go(s: fs2.Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
-      s.pull.uncons1.flatMap {
-        case Some((head, tail)) =>
-          partitionSuccess(head) match {
-            case Right(value) => Pull.eval(apply(value)).flatMap(Pull.output1) >> go(tail)
-            case Left(other)  => Pull.output1(other) >> go(tail)
+    // for normal application preserve the existing chunks, otherwise re-chunk to specific limit
+    def uncons(s: Stream[Task, Elem[In]]): Pull[Task, INothing, Option[(Chunk[Elem[In]], Stream[Task, Elem[In]])]] =
+      if (chunkSize != 1) s.pull.unconsLimit(chunkSize)
+      else s.pull.uncons
+
+    def go(s: Stream[Task, Elem[In]]): Pull[Task, Elem[Out], Unit] = {
+      uncons(s).flatMap {
+        case Some((chunk, tail)) =>
+          Pull.eval(logDebug(chunk)) >> {
+            val (ignored, successes) = partitionSuccess(chunk)
+            if (successes.isEmpty) Pull.output(ignored) >> go(tail)
+            else
+              Pull.eval(applyChunk(successes)).flatMap { results =>
+                val sorted = (results.toVector ++ ignored.toVector).sortBy(_.offset)
+                Pull.output(Chunk.vector(sorted))
+              } >> go(tail)
           }
-        case None               => Pull.done
+        case None                => Pull.done
       }
     }
+
     in => go(in).stream
   }
 
@@ -151,9 +183,35 @@ trait Pipe { self =>
       case _: SuccessElem[_]              => Right(element.asInstanceOf[SuccessElem[I]])
       case _: FailedElem | _: DroppedElem => Left(element.asInstanceOf[Elem[O]])
     }
+
+  private def partitionSuccess[I, O](elements: Chunk[Elem[I]]): (Chunk[Elem[O]], Chunk[SuccessElem[I]]) =
+    elements.partitionEither(elem => partitionSuccess(elem))
+
+  private def logDebug(elem: Elem[_]): Task[Unit] = {
+    def tail = elem match {
+      case e: SuccessElem[_] => s"Processing SuccessElem(ordering: ${e.offset.ordering})"
+      case e: FailedElem     => s"Skipping FailedElem(ordering: ${e.offset.ordering}, ${e.reason})"
+      case e: DroppedElem    => s"Skipping DroppedElem(ordering: ${e.offset.ordering})"
+    }
+    Task.delay(Pipe.logger.debug("{}[{} -> {}] {}", name, inType.describe, outType.describe, tail))
+  }
+
+  private def logDebug(elems: Chunk[Elem[_]]): Task[Unit] =
+    Task.delay(
+      Pipe.logger.debug(
+        "{}[{} -> {}] Processing chunk of size {} (ordering: {})",
+        name,
+        inType.describe,
+        outType.describe,
+        elems.size,
+        elems.map(_.offset.ordering).toVector.mkString(", ")
+      )
+    ) >> elems.traverse(logDebug).void
 }
 
 object Pipe {
+
+  private[stream] val logger: Logger = Logger[Pipe]
 
   type Aux[I, O] = Pipe {
     type In  = I

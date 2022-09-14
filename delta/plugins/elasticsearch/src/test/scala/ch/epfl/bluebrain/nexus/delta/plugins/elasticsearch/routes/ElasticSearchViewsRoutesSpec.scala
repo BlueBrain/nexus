@@ -35,7 +35,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
@@ -154,7 +153,7 @@ class ElasticSearchViewsRoutesSpec
     fetchContext,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
-      PipeConfig.coreConfig.rightValue,
+      registry,
       UIO.pure(allowedPerms),
       (_, _, _) => IO.unit,
       "prefix",

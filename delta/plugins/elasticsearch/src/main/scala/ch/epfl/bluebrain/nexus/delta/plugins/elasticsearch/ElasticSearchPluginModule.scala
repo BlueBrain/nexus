@@ -2,17 +2,16 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
 import akka.actor.typed.ActorSystem
 import cats.effect.Clock
-import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchOnEventInstant
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ConfigureEsIndexingViews, ElasticSearchOnEventInstant, IndexToElasticSearch, UniformScopedStateToDocument}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, logStatesDef, noopPipeDef, schema => viewsSchemaId, ElasticSearchViewEvent, ElasticSearchViewState}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi, JsonLdOptions}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
@@ -30,10 +29,13 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.UniformScopedStateEncoder
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry.LazyReferenceRegistry
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.sources.StreamSource
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeDef, ReferenceRegistry, SourceDef, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.{Task, UIO}
+import monix.bio.UIO
 import monix.execution.Scheduler
 
 /**
@@ -55,23 +57,22 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
       new ElasticSearchClient(client, cfg.base, cfg.maxIndexPathLength)(cfg.credentials, as.classicSystem)
   }
 
-  make[ValidateElasticSearchView].fromEffect {
+  make[ValidateElasticSearchView].from {
     (
+        registry: ReferenceRegistry,
         permissions: Permissions,
         client: ElasticSearchClient,
         config: ElasticSearchViewsConfig,
         xas: Transactors
     ) =>
-      Task.fromEither(PipeConfig.coreConfig.leftMap(new IllegalStateException(_))).map { pipeConfig =>
-        ValidateElasticSearchView(
-          pipeConfig,
-          permissions,
-          client: ElasticSearchClient,
-          config.prefix,
-          config.maxViewRefs,
-          xas
-        )
-      }
+      ValidateElasticSearchView(
+        registry,
+        permissions,
+        client: ElasticSearchClient,
+        config.prefix,
+        config.maxViewRefs,
+        xas
+      )
   }
 
   make[ElasticSearchViews].fromEffect {
@@ -214,4 +215,43 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 
+  many[SourceDef].add { views: ElasticSearchViews =>
+    StreamSource[ElasticSearchViewState](Label.unsafe("elasticsearch-view-states"), offset => views.states(offset))
+  }
+
+  many[UniformScopedStateEncoder[_]].add(
+    (fetch: FetchContext[ContextRejection], base: BaseUri, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ElasticSearchViewState
+        .elasticSearchViewUniformScopedStateEncoder(fetch)(JsonLdOptions.defaults, JsonLdJavaApi.lenient, base, rcr)
+  )
+
+  many[PipeDef].add(noopPipeDef)
+  many[PipeDef].add(logStatesDef)
+  many[PipeDef].add { cr: RemoteContextResolution @Id("aggregate") => UniformScopedStateToDocument(cr) }
+  many[PipeDef].add { (client: ElasticSearchClient, cfg: ElasticSearchViewsConfig) =>
+    IndexToElasticSearch(client, cfg.maxBatchSize)
+  }
+
+  many[PipeDef].add {
+    (
+        registry: LazyReferenceRegistry,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        cfg: ElasticSearchViewsConfig
+    ) =>
+      ConfigureEsIndexingViews(
+        registry,
+        supervisor,
+        createIndex = state =>
+          client
+            .createIndex(
+              ElasticSearchViews.index(state.uuid, state.rev, cfg.prefix),
+              state.value.asIndexingElasticSearchViewValue.flatMap(_.mapping),
+              state.value.asIndexingElasticSearchViewValue.flatMap(_.settings)
+            )
+            .void,
+        deleteIndex = state => client.deleteIndex(ElasticSearchViews.index(state.uuid, state.rev, cfg.prefix)).void,
+        prefix = cfg.prefix
+      )
+  }
 }

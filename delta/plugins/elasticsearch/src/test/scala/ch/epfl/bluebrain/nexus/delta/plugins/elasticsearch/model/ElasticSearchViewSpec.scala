@@ -11,6 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DiscardMetadata, FilterBySchema, FilterByType, FilterDeprecated, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterBySchema.FilterBySchemaConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
 import ch.epfl.bluebrain.nexus.testkit.{CirceEq, CirceLiteral, IOValues, TestHelpers}
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
@@ -35,8 +38,8 @@ class ElasticSearchViewSpec
   private val perm    = Permission.unsafe("views/query")
 
   "An IndexingElasticSearchView" should {
-    val uuid                                                     = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")
-    def indexingView(pipeline: List[PipeDef]): ElasticSearchView = IndexingElasticSearchView(
+    val uuid                                                      = UUID.fromString("f85d862a-9ec0-4b9a-8aed-2938d7ca9981")
+    def indexingView(pipeline: List[PipeStep]): ElasticSearchView = IndexingElasticSearchView(
       id,
       project,
       uuid,
@@ -52,12 +55,15 @@ class ElasticSearchViewSpec
     "be converted to compacted Json-LD" in {
       forAll(
         List(
-          FilterBySchema(Set(nxv.Schema)),
-          FilterByType(Set(nxv + "Morphology")),
-          SourceAsText().description("Formatting source as text")
-        )                                             -> "jsonld/indexing-view-compacted-1.json" ::
-          List(FilterDeprecated(), DiscardMetadata()) -> "jsonld/indexing-view-compacted-2.json" ::
-          List()                                      -> "jsonld/indexing-view-compacted-3.json" :: Nil
+          PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv.Schema)).toJsonLd),
+          PipeStep(FilterByType.label, FilterByTypeConfig(Set(nxv + "Morphology")).toJsonLd),
+          PipeStep.noConfig(SourceAsText.label).description("Formatting source as text")
+        )        -> "jsonld/indexing-view-compacted-1.json" ::
+          List(
+            PipeStep.noConfig(FilterDeprecated.label),
+            PipeStep.noConfig(DiscardMetadata.label)
+          )      -> "jsonld/indexing-view-compacted-2.json" ::
+          List() -> "jsonld/indexing-view-compacted-3.json" :: Nil
       ) { case (pipeline, expected) =>
         indexingView(pipeline).toCompactedJsonLd.accepted.json shouldEqual jsonContentOf(expected)
       }
@@ -65,9 +71,9 @@ class ElasticSearchViewSpec
     "be converted to expanded Json-LD" in {
       indexingView(
         List(
-          FilterBySchema(Set(nxv.Schema)),
-          FilterByType(Set(nxv + "Morphology")),
-          SourceAsText().description("Formatting source as text")
+          PipeStep(FilterBySchema.label, FilterBySchemaConfig(Set(nxv.Schema)).toJsonLd),
+          PipeStep(FilterByType.label, FilterByTypeConfig(Set(nxv + "Morphology")).toJsonLd),
+          PipeStep.noConfig(SourceAsText.label).description("Formatting source as text")
         )
       ).toExpandedJsonLd.accepted.json shouldEqual jsonContentOf("jsonld/indexing-view-expanded.json")
     }

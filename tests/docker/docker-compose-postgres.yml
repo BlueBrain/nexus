@@ -12,6 +12,7 @@ services:
       DELTA_PLUGINS: "/opt/docker/plugins/"
       DELTA_EXTERNAL_CONF: "/config/delta-postgres.conf"
       KAMON_ENABLED: "false"
+      LOG_LEVEL: "INFO"
     image: bluebrain/nexus-delta:latest
     entrypoint: [ "bin/wait-for-it.sh", "-s", "-t", "0", "postgres:5432", "--",
                   "bin/wait-for-it.sh", "-s", "-t", "0", "elasticsearch:9200", "--",

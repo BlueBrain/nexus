@@ -11,9 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.{DefaultLabelPredicates, SourceAsText}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}
 import com.typesafe.scalalogging.Logger
 import monix.bio.{IO, UIO}
 
@@ -35,7 +36,7 @@ class ElasticSearchScopeInitialization(views: ElasticSearchViews, serviceAccount
   private val defaultValue: IndexingElasticSearchViewValue =
     IndexingElasticSearchViewValue(
       resourceTag = None,
-      List(DefaultLabelPredicates(), SourceAsText()),
+      List(PipeStep.noConfig(DefaultLabelPredicates.label), PipeStep.noConfig(SourceAsText.label)),
       mapping = None,
       settings = None,
       context = None,

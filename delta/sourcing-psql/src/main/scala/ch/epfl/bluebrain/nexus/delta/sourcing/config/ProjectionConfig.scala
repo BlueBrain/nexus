@@ -18,12 +18,15 @@ import scala.concurrent.duration.FiniteDuration
   *   the interval when projection offsets are persisted if there are changes
   * @param supervisionCheckInterval
   *   the interval at which projections are checked
+  * @param query
+  *   a configuration for how to interact with the underlying store
   */
 final case class ProjectionConfig(
     clusterSize: Int,
     nodeIndex: Int,
     persistOffsetInterval: FiniteDuration,
-    supervisionCheckInterval: FiniteDuration
+    supervisionCheckInterval: FiniteDuration,
+    query: QueryConfig
 )
 
 object ProjectionConfig {

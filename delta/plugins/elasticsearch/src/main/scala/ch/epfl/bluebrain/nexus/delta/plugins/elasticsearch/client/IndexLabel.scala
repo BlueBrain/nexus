@@ -81,4 +81,10 @@ object IndexLabel {
     */
   final def fromView(prefix: String, uuid: UUID, rev: Int): IndexLabel = new IndexLabel(s"${prefix}_${uuid}_$rev")
 
+  implicit val indexLabelJsonLdDecoder: JsonLdDecoder[IndexLabel] =
+    (cursor: ExpandedJsonLdCursor) =>
+      cursor.get[String].flatMap {
+        IndexLabel(_).leftMap { e => ParsingFailure(e.getMessage) }
+      }
+
 }

@@ -36,6 +36,6 @@ object SourceAsText extends PipeDef {
   override type Config   = Unit
   override def configType: Typeable[Config]           = Typeable[Unit]
   override def configDecoder: JsonLdDecoder[Config]   = JsonLdDecoder[Unit]
-  override def label: Label                           = Label.unsafe("source-as-text")
+  override def label: Label                           = Label.unsafe("sourceAsText")
   override def withConfig(config: Unit): SourceAsText = new SourceAsText
 }

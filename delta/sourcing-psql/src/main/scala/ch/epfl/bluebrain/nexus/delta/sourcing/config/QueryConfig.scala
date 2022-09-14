@@ -22,8 +22,8 @@ object QueryConfig {
         obj             <- cursor.asObjectCursor
         batchSizeK      <- obj.atKey("batch-size")
         batchSize       <- ConfigReader[Int].from(batchSizeK)
-        refreshK        <- obj.atKey("refresh-interval")
-        refreshInterval <- ConfigReader[FiniteDuration].from(refreshK)
-      } yield QueryConfig(batchSize, RefreshStrategy.Delay(refreshInterval))
+        refreshK        <- obj.atKey("refresh-strategy")
+        refreshStrategy <- ConfigReader[FiniteDuration].from(refreshK)
+      } yield QueryConfig(batchSize, RefreshStrategy.Delay(refreshStrategy))
     }
 }

@@ -5,13 +5,16 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 /**
   * Enumeration of recoverable errors for projection/stream definitions and compositions.
   */
-sealed trait ProjectionErr extends Product with Serializable {
+sealed trait ProjectionErr extends Exception with Product with Serializable {
+  override def fillInStackTrace(): ProjectionErr = this
 
   /**
     * @return
     *   a human readable reason for which the error occurred
     */
   def reason: String
+
+  override def getMessage: String = reason
 }
 
 object ProjectionErr {

@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes
 
-import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -39,14 +39,14 @@ object FilterByType extends PipeDef {
   override type Config   = FilterByTypeConfig
   override def configType: Typeable[Config]                         = Typeable[FilterByTypeConfig]
   override def configDecoder: JsonLdDecoder[Config]                 = JsonLdDecoder[FilterByTypeConfig]
-  override def label: Label                                         = Label.unsafe("filter-by-type")
+  override def label: Label                                         = Label.unsafe("filterByType")
   override def withConfig(config: FilterByTypeConfig): FilterByType = new FilterByType(config)
 
   final case class FilterByTypeConfig(types: Set[Iri]) {
     def toJsonLd: ExpandedJsonLd = ExpandedJsonLd(
       Seq(
         ExpandedJsonLd.unsafe(
-          BNode.random,
+          nxv + label.value,
           JsonObject(
             (nxv + "types").toString -> Json.arr(types.toList.map(iri => Json.obj("@id" -> iri.asJson)): _*)
           )

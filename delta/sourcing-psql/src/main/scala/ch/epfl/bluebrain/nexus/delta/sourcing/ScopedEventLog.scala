@@ -164,6 +164,15 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
     *   the function to apply on each state
     */
   def currentStates[T](predicate: Predicate, f: S => T): Stream[Task, T] = currentStates(predicate, Offset.Start, f)
+
+  /**
+    * Stream the state changes continuously from the provided offset.
+    * @param predicate
+    *   to filter returned states
+    * @param offset
+    *   the start offset
+    */
+  def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S]
 }
 
 object ScopedEventLog {
@@ -289,6 +298,9 @@ object ScopedEventLog {
         currentStates(predicate, offset).map { s =>
           f(s.value)
         }
+
+      override def states(predicate: Predicate, offset: Offset): EnvelopeStream[Id, S] =
+        stateStore.states(predicate, offset)
     }
 
 }

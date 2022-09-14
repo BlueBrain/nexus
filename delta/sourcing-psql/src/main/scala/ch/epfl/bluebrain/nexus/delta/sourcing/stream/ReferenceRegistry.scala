@@ -37,3 +37,11 @@ final class ReferenceRegistry {
     val _ = pipes.put(definition.reference, definition)
   }
 }
+
+object ReferenceRegistry {
+
+  class LazyReferenceRegistry(rr: => ReferenceRegistry) {
+    lazy val value: ReferenceRegistry = rr
+  }
+
+}

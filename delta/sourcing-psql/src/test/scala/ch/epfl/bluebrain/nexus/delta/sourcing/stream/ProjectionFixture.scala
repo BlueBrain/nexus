@@ -11,7 +11,7 @@ trait ProjectionFixture { self: BioSuite =>
     setup = { _ =>
       val queue    = Queue.unbounded[Task, SuccessElem[String]].runSyncUnsafe()
       val registry = new ReferenceRegistry()
-      registry.register(Naturals)
+      registry.register(Naturals())
       registry.register(Strings)
       registry.register(Evens)
       registry.register(Odds)

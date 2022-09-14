@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.parser.parse
@@ -100,7 +101,7 @@ object ElasticSearchView {
       project: ProjectRef,
       uuid: UUID,
       resourceTag: Option[UserTag],
-      pipeline: List[PipeDef],
+      pipeline: List[PipeStep],
       mapping: JsonObject,
       settings: JsonObject,
       context: Option[ContextObject],
@@ -167,17 +168,25 @@ object ElasticSearchView {
           ).deepMerge(
             i.pipeline
               .foldLeft(JsonObject.empty) {
-                case (obj, pipeDef) if pipeDef.name == FilterBySchema.name   =>
-                  obj.add("resourceSchemas", FilterBySchema.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
-                case (obj, pipeDef) if pipeDef.name == FilterByType.name     =>
-                  obj.add("resourceTypes", FilterByType.extractTypes(pipeDef).getOrElse(Set.empty[Iri]).asJson)
-                case (obj, pipeDef) if pipeDef.name == SourceAsText.name     =>
+                case (obj, step) if step.name == FilterBySchema.label   =>
+                  step.config.fold(obj) { ldConfig =>
+                    FilterBySchema
+                      .configDecoder(ldConfig)
+                      .fold(_ => obj, cfg => obj.add("resourceSchemas", cfg.types.asJson))
+                  }
+                case (obj, step) if step.name == FilterByType.label     =>
+                  step.config.fold(obj) { ldConfig =>
+                    FilterByType
+                      .configDecoder(ldConfig)
+                      .fold(_ => obj, cfg => obj.add("resourceTypes", cfg.types.asJson))
+                  }
+                case (obj, step) if step.name == SourceAsText.label     =>
                   obj.add("sourceAsText", Json.True)
-                case (obj, pipeDef) if pipeDef.name == DiscardMetadata.name  =>
+                case (obj, step) if step.name == DiscardMetadata.label  =>
                   obj.add("includeMetadata", Json.False)
-                case (obj, pipeDef) if pipeDef.name == FilterDeprecated.name =>
+                case (obj, step) if step.name == FilterDeprecated.label =>
                   obj.add("includeDeprecated", Json.False)
-                case (obj, _)                                                =>
+                case (obj, _)                                           =>
                   obj
               }
           )

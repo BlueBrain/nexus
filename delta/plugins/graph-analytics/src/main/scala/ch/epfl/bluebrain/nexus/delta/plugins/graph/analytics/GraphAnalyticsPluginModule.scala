@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
 import akka.actor.typed.ActorSystem
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingCoordinator.{GraphAnalyticsIndexingController, GraphAnalyticsIndexingCoordinator}
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
@@ -20,7 +18,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.{IndexingStreamController, OnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -33,7 +31,7 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
 
   implicit private val classLoader: ClassLoader = getClass.getClassLoader
 
-  make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load(_) }
+  make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
   make[ProgressesCache].named("graph-analytics-progresses").from {
     (cfg: GraphAnalyticsConfig, as: ActorSystem[Nothing]) =>
@@ -68,10 +66,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  make[GraphAnalyticsIndexingController].from { (as: ActorSystem[Nothing]) =>
-    new IndexingStreamController[GraphAnalyticsView]("graph-analytics")(as)
-  }
-
   make[GraphAnalyticsIndexingCleanup].from {
     (
         client: ElasticSearchClient,
@@ -79,24 +73,6 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
         projection: Projection[Unit]
     ) =>
       new GraphAnalyticsIndexingCleanup(client, cache, projection)
-  }
-
-  make[GraphAnalyticsIndexingCoordinator].fromEffect {
-    (
-        projects: Projects,
-        indexingController: GraphAnalyticsIndexingController,
-        indexingCleanup: GraphAnalyticsIndexingCleanup,
-        indexingStream: GraphAnalyticsIndexingStream,
-        config: GraphAnalyticsConfig,
-        as: ActorSystem[Nothing],
-        scheduler: Scheduler,
-        uuidF: UUIDF
-    ) =>
-      GraphAnalyticsIndexingCoordinator(projects, indexingController, indexingStream, indexingCleanup, config)(
-        uuidF,
-        as,
-        scheduler
-      )
   }
 
   make[GraphAnalytics]

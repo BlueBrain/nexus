@@ -1,16 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta
 
-import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.wiring.DeltaModule
+import ch.epfl.bluebrain.nexus.testkit.IOValues
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker
 import ch.epfl.bluebrain.nexus.testkit.postgres.PostgresDocker._
-import ch.epfl.bluebrain.nexus.testkit.{IORef, IOValues}
 import com.typesafe.config.impl.ConfigImpl
-import izumi.distage.model.Locator
 import izumi.distage.model.definition.{Module, ModuleDef}
 import izumi.distage.model.plan.Roots
 import izumi.distage.planning.solver.PlanVerifier
@@ -118,17 +116,13 @@ class MainSpec
 
     "load different configurations and create the object graph" in {
       ConfigImpl.reloadSystemPropertiesConfig()
-      val ref: IORef[Option[Locator]] = IORef.unsafe(None)
-      try {
-        Main.start(locator => ref.set(Some(locator)), pluginLoaderConfig).acceptedWithTimeout(1.minute)
-        val locator = ref.get.accepted.value
-        // test wiring correctness
-        val _       = locator.get[Vector[Route]]
-      } finally {
-        val system = ref.get.accepted.value.get[ActorSystem[Nothing]]
-        system.terminate()
-        Task.fromFuture(system.whenTerminated).as(()).acceptedWithTimeout(20.seconds)
-      }
+      Main
+        .start(pluginLoaderConfig)
+        .use { locator =>
+          Task.delay(locator.get[Vector[Route]])
+        }
+        .void
+        .acceptedWithTimeout(1.minute)
     }
   }
 
