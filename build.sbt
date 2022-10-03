@@ -55,7 +55,6 @@ val scalaLoggingVersion             = "3.9.4"
 val scalateVersion                  = "1.9.6" // scala-parser-combinators_2.13:2.0.0 ... is selected over 1.1.2
 val scalaTestVersion                = "3.2.10"
 val slickVersion                    = "3.3.3"
-val streamzVersion                  = "0.12"
 val topBraidVersion                 = "1.3.2" // 1.4.1 fails to validate some test schemas
 val testContainersVersion           = "1.17.1"
 val uuidGeneratorVersion            = "4.0.1"
@@ -137,7 +136,6 @@ lazy val pureconfig           = "com.github.pureconfig"        %% "pureconfig"  
 lazy val scalaLogging         = "com.typesafe.scala-logging"   %% "scala-logging"            % scalaLoggingVersion
 lazy val scalate              = "org.scalatra.scalate"         %% "scalate-core"             % scalateVersion
 lazy val scalaTest            = "org.scalatest"                %% "scalatest"                % scalaTestVersion
-lazy val streamz              = "com.github.krasserm"          %% "streamz-converter"        % streamzVersion
 lazy val topBraidShacl        = "org.topbraid"                  % "shacl"                    % topBraidVersion
 lazy val testContainers       = "org.testcontainers"            % "testcontainers"           % testContainersVersion
 lazy val uuidGenerator        = "com.fasterxml.uuid"            % "java-uuid-generator"      % uuidGeneratorVersion
@@ -284,7 +282,6 @@ lazy val sourcing = project
       fs2io,
       kryo,
       monixBio,
-      streamz,
       akkaPersistenceTestKit % Test,
       akkaSlf4j              % Test,
       catsEffectLaws         % Test,
@@ -374,7 +371,6 @@ lazy val sdk = project
       kryo,
       monixBio,
       nimbusJoseJwt,
-      streamz,
       akkaTestKitTyped % Test,
       akkaHttpTestKit  % Test,
       munit            % Test,
