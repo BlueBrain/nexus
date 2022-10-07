@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 import akka.http.scaladsl.model.{HttpCharsets, MediaType}
 import cats.data.NonEmptyList
 import cats.implicits._
-import cats.Eq
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
 
@@ -28,21 +28,19 @@ object SparqlQueryResponseType {
 
   private val `text/plain(UTF-8)` = MediaType.textWithFixedCharset("plain", HttpCharsets.`UTF-8`, "nt", "txt")
 
-  implicit val mediaTypqEq: Eq[MediaType.WithFixedCharset] = Eq.fromUniversalEquals
-
   /**
     * Constructor helper that creates a [[SparqlQueryResponseType]] from the passed ''mediaType''
     */
   def fromMediaType(mediaType: MediaType): Option[SparqlQueryResponseType] = {
     mediaType match {
-      case mediaType: MediaType.WithFixedCharset =>
-        if (SparqlResultsJson.mediaTypes.contains_(mediaType)) Some(SparqlResultsJson)
-        else if (SparqlResultsXml.mediaTypes.contains_(mediaType)) Some(SparqlResultsXml)
-        else if (SparqlJsonLd.mediaTypes.contains_(mediaType)) Some(SparqlJsonLd)
-        else if (SparqlNTriples.mediaTypes.contains_(mediaType)) Some(SparqlNTriples)
-        else if (SparqlRdfXml.mediaTypes.contains_(mediaType)) Some(SparqlRdfXml)
+      case mediaTypeWfc: MediaType.WithFixedCharset =>
+        if (SparqlResultsJson.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlResultsJson)
+        else if (SparqlResultsXml.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlResultsXml)
+        else if (SparqlJsonLd.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlJsonLd)
+        else if (SparqlNTriples.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlNTriples)
+        else if (SparqlRdfXml.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlRdfXml)
         else None
-      case _                                     => None
+      case _                                        => None
     }
   }
 

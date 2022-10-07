@@ -11,3 +11,4 @@ package object instances
     with TripleInstances
     with UriInstances
     with SecretInstances
+    with MediaTypeInstances
