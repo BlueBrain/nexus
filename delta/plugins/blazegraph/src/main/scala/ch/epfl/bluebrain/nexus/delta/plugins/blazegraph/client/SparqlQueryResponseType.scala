@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client
 
 import akka.http.scaladsl.model.{HttpCharsets, MediaType}
+import cats.data.NonEmptyList
+import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryResponse._
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 
 /**
   * Enumeration of supported sparql query response types
@@ -30,12 +32,16 @@ object SparqlQueryResponseType {
     * Constructor helper that creates a [[SparqlQueryResponseType]] from the passed ''mediaType''
     */
   def fromMediaType(mediaType: MediaType): Option[SparqlQueryResponseType] = {
-    if (SparqlResultsJson.mediaTypes.value.contains(mediaType)) Some(SparqlResultsJson)
-    else if (SparqlResultsXml.mediaTypes.value.contains(mediaType)) Some(SparqlResultsXml)
-    else if (SparqlJsonLd.mediaTypes.value.contains(mediaType)) Some(SparqlJsonLd)
-    else if (SparqlNTriples.mediaTypes.value.contains(mediaType)) Some(SparqlNTriples)
-    else if (SparqlRdfXml.mediaTypes.value.contains(mediaType)) Some(SparqlRdfXml)
-    else None
+    mediaType match {
+      case mediaTypeWfc: MediaType.WithFixedCharset =>
+        if (SparqlResultsJson.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlResultsJson)
+        else if (SparqlResultsXml.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlResultsXml)
+        else if (SparqlJsonLd.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlJsonLd)
+        else if (SparqlNTriples.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlNTriples)
+        else if (SparqlRdfXml.mediaTypes.contains_(mediaTypeWfc)) Some(SparqlRdfXml)
+        else None
+      case _                                        => None
+    }
   }
 
   final case object SparqlResultsJson extends SparqlQueryResponseType {

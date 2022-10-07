@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema}

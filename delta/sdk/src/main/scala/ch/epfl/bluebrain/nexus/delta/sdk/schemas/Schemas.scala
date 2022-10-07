@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
+import cats.data.NonEmptyList
 import cats.effect.Clock
 import cats.implicits.toFoldableOps
 import ch.epfl.bluebrain.nexus.delta.kernel.Mapper
@@ -239,9 +240,8 @@ object Schemas {
   )(implicit api: JsonLdApi, clock: Clock[UIO]): IO[SchemaRejection, SchemaEvent] = {
 
     def toGraph(id: Iri, expanded: NonEmptyList[ExpandedJsonLd]) = {
-      val eitherGraph = toFoldableOps(expanded.value).foldM(Graph.empty)((acc, expandedEntry) =>
-        expandedEntry.toGraph.map(acc ++ (_: Graph))
-      )
+      val eitherGraph =
+        toFoldableOps(expanded).foldM(Graph.empty)((acc, expandedEntry) => expandedEntry.toGraph.map(acc ++ (_: Graph)))
       IO.fromEither(eitherGraph).mapError(err => InvalidJsonLdFormat(Some(id), err))
     }
 

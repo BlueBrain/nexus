@@ -414,7 +414,7 @@ object Resolvers {
         case _: InProjectValue    => None
         case c: CrossProjectValue =>
           Some(
-            c.projects.value.map { ref => EntityDependency(ref, ref.toString) }.toSet
+            c.projects.map { ref => EntityDependency(ref, ref.toString) }.toList.toSet
           )
       },
       onUniqueViolation = (id: Iri, c: ResolverCommand) =>
