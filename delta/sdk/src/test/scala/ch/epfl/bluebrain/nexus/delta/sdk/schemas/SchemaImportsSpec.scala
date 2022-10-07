@@ -1,10 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.Resolve
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
@@ -87,7 +88,7 @@ class SchemaImportsSpec
       val expanded = ExpandedJsonLd(json).accepted
       val result   = imports.resolve(parcellationlabel, projectRef, expanded).accepted
 
-      result.value.toSet shouldEqual
+      result.toList.toSet shouldEqual
         (resourceMap.take(1).values.map(_.expanded).toSet ++ Set(
           entityExpandedSchema,
           identifierExpandedSchema,

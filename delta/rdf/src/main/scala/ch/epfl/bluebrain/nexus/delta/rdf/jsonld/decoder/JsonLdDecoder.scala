@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
+import cats.data.NonEmptyList
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
@@ -13,6 +15,7 @@ import io.circe.{Json, JsonObject}
 import java.time.Instant
 import java.util.UUID
 import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.reflect.ClassTag
 import scala.util.Try
 
 trait JsonLdDecoder[A] { self =>
@@ -117,6 +120,12 @@ object JsonLdDecoder {
 
   implicit def listJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[List[A]] =
     cursor => cursor.downList.values.flatMap(innerCursors => innerCursors.traverse(dec(_)))
+
+  implicit def nonEmptyListsonLdDecoder[A: JsonLdDecoder](implicit A: ClassTag[A]): JsonLdDecoder[NonEmptyList[A]] =
+    listJsonLdDecoder[A].flatMap {
+      case Nil          => Left(ParsingFailure(s"Expected a NonEmptyList[${A.simpleName}], but the current list is empty"))
+      case head :: tail => Right(NonEmptyList(head, tail))
+    }
 
   implicit def optionJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Option[A]] =
     cursor =>

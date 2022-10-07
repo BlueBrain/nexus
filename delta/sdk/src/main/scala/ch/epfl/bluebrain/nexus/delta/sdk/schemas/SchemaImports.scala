@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas
 
+import cats.data.NonEmptyList
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.owl
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.InvalidSchemaResolution
@@ -62,7 +62,7 @@ final class SchemaImports(resolveSchema: Resolve[Schema], resolveResource: Resol
           lookupInBatch(resourcesToResolve, resolveResource(_, projectRef, caller))
         nonOntologies                          = detectNonOntology(resourceSuccess)
         _                                     <- rejectOnLookupFailures(schemaRejections, resourceRejections, nonOntologies)
-      } yield schemaSuccess.values.flatMap(_.expanded.value) ++ resourceSuccess.values.map(_.expanded)
+      } yield schemaSuccess.values.flatMap(_.expanded.toList) ++ resourceSuccess.values.map(_.expanded)
 
     val imports   = expanded.cursor.downField(owl.imports).get[Set[ResourceRef]]
     val toResolve = imports.getOrElse(Set.empty)

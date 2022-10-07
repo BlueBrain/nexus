@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.schemas.model
 
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.Triple.Triple
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
@@ -57,7 +58,7 @@ final case class Schema(
 
   private def graph(filteredTypes: Set[Iri] => Boolean): Graph = {
     implicit val api: JsonLdApi = JsonLdJavaApi.lenient
-    val filtered                = expanded.value.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
+    val filtered                = expanded.filter(expanded => expanded.cursor.getTypes.exists(filteredTypes))
     val triples                 = filtered.map(_.toGraph.toOption.get).foldLeft(Set.empty[Triple])((acc, g) => acc ++ g.triples)
     Graph.empty(id).add(triples)
   }

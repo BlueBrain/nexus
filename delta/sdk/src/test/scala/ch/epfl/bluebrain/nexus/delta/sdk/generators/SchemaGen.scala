@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.generators
 
+import cats.data.NonEmptyList
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.SchemaResource
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptyList, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectBase}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaState}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._

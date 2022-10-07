@@ -169,7 +169,7 @@ final class ResolverResolution[R](
       )
 
     val initial: ResolverResolutionResult[R] = ResolverFailedReport(resolver.id, VectorMap.empty) -> None
-    projects.value.foldLeftM(initial) { (previous, projectRef) =>
+    projects.foldLeftM(initial) { (previous, projectRef) =>
       previous match {
         // We were able to resolve with this resolver, we keep that result
         case (s: ResolverSuccessReport, r) => IO.pure(s -> r)
