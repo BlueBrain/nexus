@@ -79,8 +79,8 @@ object ValidateCompositeView {
     }
 
     val validateProjection: CompositeViewProjection => IO[CompositeViewRejection, Unit] = {
-      case (sparql: SparqlProjection)    => validatePermission(sparql.permission)
-      case (es: ElasticSearchProjection) =>
+      case sparql: SparqlProjection    => validatePermission(sparql.permission)
+      case es: ElasticSearchProjection =>
         validatePermission(es.permission) >>
           validateIndex(es, CompositeViews.index(es, uuid, rev, prefix))
     }
