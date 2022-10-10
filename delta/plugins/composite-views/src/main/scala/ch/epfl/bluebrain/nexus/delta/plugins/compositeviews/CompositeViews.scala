@@ -574,8 +574,8 @@ object CompositeViews {
     */
   def projectionIds(view: CompositeView, rev: Int): Set[(Iri, Iri, CompositeViewProjectionId)] =
     for {
-      s: CompositeViewSource <- view.sources.toSortedSet.toSet
-      p                      <- view.projections.toList
+      s <- view.sources.toSortedSet
+      p <- view.projections.toSortedSet
     } yield (s.id, p.id, projectionId(sourceProjection(s, rev), p, rev))
 
   import cats.implicits.catsKernelStdOrderForTuple2
