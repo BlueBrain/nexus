@@ -33,13 +33,13 @@ object ValidateAggregate {
       missing => ifUnknown(missing.map { case (p, id) => ViewRef(p, id) }),
       xas
     ) >> references.value.toList
-      .foldLeftM(references.value.size) { (acc, ref) =>
+      .foldLeftM(references.length) { (acc, ref) =>
         EntityDependencyStore.recursiveList(ref.project, ref.viewId, xas).map { r =>
           acc + r.size
         }
       }
       .flatMap { totalRefs =>
-        IO.raiseWhen(totalRefs > maxViewRefs)(ifTooManyRefs(totalRefs.toInt, maxViewRefs))
+        IO.raiseWhen(totalRefs > maxViewRefs)(ifTooManyRefs(totalRefs, maxViewRefs))
       }
 
 }

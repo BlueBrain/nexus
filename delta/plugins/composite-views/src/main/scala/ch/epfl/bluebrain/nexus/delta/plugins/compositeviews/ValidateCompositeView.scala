@@ -86,9 +86,9 @@ object ValidateCompositeView {
     }
 
     for {
-      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.size.toInt, maxSources))
+      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.length, maxSources))
       _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
-                      TooManyProjections(value.projections.size.toInt, maxProjections)
+                      TooManyProjections(value.projections.length, maxProjections)
                     )
       allIds      = value.sources.value.toList.map(_.id) ++ value.projections.value.toList.map(_.id)
       distinctIds = allIds.distinct
