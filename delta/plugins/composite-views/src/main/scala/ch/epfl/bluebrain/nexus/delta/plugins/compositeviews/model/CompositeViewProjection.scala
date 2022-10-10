@@ -94,9 +94,6 @@ sealed trait CompositeViewProjection extends Product with Serializable {
 
 object CompositeViewProjection {
 
-//  implicit def compositeViewProjectionOrdering[A <: CompositeViewProjection]: Ordering[A] = Ordering.by(_.id)
-//  implicit def compositeViewProjectionOrder[A <: CompositeViewProjection]: Order[A]       = Order.fromOrdering
-
   /**
     * The templating id for the projection query
     */
