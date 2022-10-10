@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.{EveryNode, SingleNode}
 
 /**
@@ -12,22 +12,16 @@ sealed trait ExecutionStrategy extends Product with Serializable {
   /**
     * True if the projection must run on all the nodes or if the hash of the projection name modulo number of nodes
     * matches the current node.
+    *
     * @param name
     *   the name of the projection
-    * @param config
-    *   the projection config
+    *
+    * @param cluster
+    *   the cluster configuration
     */
-  def shouldRun(name: String, config: ProjectionConfig): Boolean = this match {
-    case SingleNode(_) => name.hashCode % config.clusterSize == config.nodeIndex
+  def shouldRun(name: String, cluster: ClusterConfig): Boolean = this match {
+    case _: SingleNode => name.hashCode % cluster.size == cluster.nodeIndex
     case EveryNode     => true
-  }
-
-  /**
-    * True if the projection is being run on a single node and should persist its offsets.
-    */
-  def shouldPersist: Boolean = this match {
-    case SingleNode(persistOffsets) => persistOffsets
-    case EveryNode                  => false
   }
 }
 
@@ -35,10 +29,20 @@ object ExecutionStrategy {
 
   /**
     * Strategy for projections that must run on a single node with optional offset persistence.
-    * @param persistOffsets
-    *   whether offsets should be persisted
     */
-  final case class SingleNode(persistOffsets: Boolean) extends ExecutionStrategy
+  sealed trait SingleNode extends ExecutionStrategy
+
+  /**
+    * Strategy for projections that must run on a single node without persisting the offset.
+    */
+  final case object TransientSingleNode extends SingleNode
+  type TransientSingleNode = TransientSingleNode.type
+
+  /**
+    * Strategy for projections that must run on a single node persisting the offset.
+    */
+  final case object PersistentSingleNode extends SingleNode
+  type PersistentSingleNode = PersistentSingleNode.type
 
   /**
     * Strategy for projections that must run on all the nodes, useful for populating caches.

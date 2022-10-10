@@ -4,6 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
+import shapeless.Typeable
 
 import java.time.Instant
 
@@ -17,12 +18,6 @@ sealed trait Elem[+A] extends Product with Serializable {
 
   /**
     * @return
-    *   the element contextual information
-    */
-  def ctx: ElemCtx
-
-  /**
-    * @return
     *   the underlying entity type
     */
   def tpe: EntityType
@@ -31,13 +26,7 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @return
     *   the underlying entity id
     */
-  def id: Iri
-
-  /**
-    * @return
-    *   the underlying entity revision
-    */
-  def rev: Int
+  def id: String
 
   /**
     * @return
@@ -52,45 +41,23 @@ sealed trait Elem[+A] extends Product with Serializable {
   def offset: Offset
 
   /**
-    * Constructs a new [[Elem]] of the same type as this with the provided `ctx` value.
-    * @param ctx
-    *   the new context
-    */
-  def withCtx(ctx: ElemCtx): Elem[A] = this match {
-    case e: SuccessElem[A] => e.copy(ctx = ctx)
-    case e: FailedElem     => e.copy(ctx = ctx)
-    case e: DroppedElem    => e.copy(ctx = ctx)
-  }
-
-  /**
     * Produces a new [[FailedElem]] with the provided reason copying the common properties
-    * @param reason
-    *   the reason why the element processing failed
+    * @param throwable
+    *   the error why the element processing failed
     */
-  def failed(reason: String): FailedElem =
-    FailedElem(ctx, tpe, id, rev, instant, offset, reason)
+  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, instant, offset, throwable)
 
   /**
     * Produces a new [[SuccessElem]] with the provided value copying the common properties.
     * @param value
     *   the value of the element
     */
-  def success[B](value: B): SuccessElem[B] =
-    SuccessElem(ctx, tpe, id, rev, instant, offset, value)
+  def success[B](value: B): SuccessElem[B] = SuccessElem(tpe, id, instant, offset, value)
 
   /**
     * Produces a new [[DroppedElem]] copying the common properties.
     */
-  def dropped: DroppedElem =
-    DroppedElem(ctx, tpe, id, rev, instant, offset)
-
-  /**
-    * Produces a ProjectionOffset given the current value and this elem ctx and offset.
-    * @param current
-    *   the current projection offset
-    */
-  def projectionOffset(current: ProjectionOffset): ProjectionOffset =
-    current.add(ctx, offset)
+  def dropped: DroppedElem = DroppedElem(tpe, id, instant, offset)
 
   /**
     * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
@@ -99,6 +66,13 @@ sealed trait Elem[+A] extends Product with Serializable {
     */
   def map[B](f: A => B): Elem[B] = this match {
     case e: SuccessElem[A] => e.copy(value = f(e.value))
+    case e: FailedElem     => e
+    case e: DroppedElem    => e
+  }
+
+  def cast[B](implicit typeable: Typeable[B]): Elem[B] = this match {
+    case e: SuccessElem[A] =>
+      typeable.cast(e.value).fold[Elem[B]](e.failed(new ClassCastException(s"Element of type '$tpe' with id '$id' can not be casted to ${typeable.describe}")))(e.success)
     case e: FailedElem     => e
     case e: DroppedElem    => e
   }
@@ -120,8 +94,6 @@ object Elem {
     *   the underlying entity type
     * @param id
     *   the underlying entity id
-    * @param rev
-    *   the underlying entity revision
     * @param instant
     *   the instant when the element was produced
     * @param offset
@@ -132,14 +104,21 @@ object Elem {
     *   the value type of the element
     */
   final case class SuccessElem[+A](
-      ctx: ElemCtx,
       tpe: EntityType,
-      id: Iri,
-      rev: Int,
+      id: String,
       instant: Instant,
       offset: Offset,
       value: A
   ) extends Elem[A]
+
+  object SuccessElem {
+    def apply[A](tpe: EntityType,
+                 id: Iri,
+                 instant: Instant,
+                 offset: Offset,
+                 value: A): SuccessElem[A] =
+      SuccessElem(tpe, id.toString, instant, offset, value)
+  }
 
   /**
     * An element that has suffered a processing failure.
@@ -149,23 +128,19 @@ object Elem {
     *   the underlying entity type
     * @param id
     *   the underlying entity id
-    * @param rev
-    *   the underlying entity revision
     * @param instant
     *   the instant when the element was produced
     * @param offset
     *   the element offset
-    * @param reason
-    *   a human readable reason for why processing has failed for this element
+    * @param throwable
+    *   the error responsible for this element to fail
     */
   final case class FailedElem(
-      ctx: ElemCtx,
       tpe: EntityType,
-      id: Iri,
-      rev: Int,
+      id: String,
       instant: Instant,
       offset: Offset,
-      reason: String
+      throwable: Throwable
   ) extends Elem[Nothing]
 
   /**
@@ -184,10 +159,8 @@ object Elem {
     *   the element offset
     */
   final case class DroppedElem(
-      ctx: ElemCtx,
       tpe: EntityType,
-      id: Iri,
-      rev: Int,
+      id: String,
       instant: Instant,
       offset: Offset
   ) extends Elem[Nothing]

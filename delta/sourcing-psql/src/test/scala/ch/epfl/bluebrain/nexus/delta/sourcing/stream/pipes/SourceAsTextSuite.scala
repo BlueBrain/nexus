@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import io.circe.Json
 
@@ -29,24 +29,21 @@ class SourceAsTextSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val uniformState =
-    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
+  private val graph = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(SourceAsText)
 
   test("Embed the source to the metadata graph") {
     val elem             = SuccessElem(
-      ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
-      rev = 1,
       instant = instant,
       offset = Offset.at(1L),
-      value = uniformState
+      value = graph
     )
-    val newMetadataGraph = uniformState.metadataGraph.add(nxv.originalSource.iri, uniformState.source.noSpaces)
-    val expected         = elem.copy(value = uniformState.copy(metadataGraph = newMetadataGraph, source = Json.obj()))
+    val newMetadataGraph = graph.metadataGraph.add(nxv.originalSource.iri, graph.source.noSpaces)
+    val expected         = elem.copy(value = graph.copy(metadataGraph = newMetadataGraph, source = Json.obj()))
 
     val pipe = registry
       .lookupA[SourceAsText.type](SourceAsText.reference)

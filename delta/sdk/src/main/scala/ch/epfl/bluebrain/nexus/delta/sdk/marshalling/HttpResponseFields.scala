@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.marshalling
 
 import akka.http.scaladsl.model.{HttpHeader, StatusCode, StatusCodes}
-import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, IndexingFailed, ScopeInitializationFailed, UnknownSseLabel}
+import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.{AuthorizationFailed, FetchContextFailed, IndexingFailed, ScopeInitializationFailed, UnknownSseLabel}
 import ch.epfl.bluebrain.nexus.delta.sdk.error.{IdentityError, ServiceError}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 
@@ -70,6 +70,7 @@ object HttpResponseFields {
   implicit val responseFieldsServiceError: HttpResponseFields[ServiceError] =
     HttpResponseFields {
       case AuthorizationFailed          => StatusCodes.Forbidden
+      case FetchContextFailed(_)        => StatusCodes.InternalServerError
       case ScopeInitializationFailed(_) => StatusCodes.InternalServerError
       case IndexingFailed(_, _)         => StatusCodes.InternalServerError
       case UnknownSseLabel(_)           => StatusCodes.InternalServerError

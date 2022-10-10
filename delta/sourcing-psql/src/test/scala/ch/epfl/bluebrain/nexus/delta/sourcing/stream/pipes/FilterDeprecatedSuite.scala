@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 
 import java.time.Instant
@@ -27,8 +27,8 @@ class FilterDeprecatedSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val uniformState =
-    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
+
+  private val graph = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(FilterDeprecated)
@@ -42,13 +42,11 @@ class FilterDeprecatedSuite extends BioSuite {
 
   test("Drop deprecated elements") {
     val elem = SuccessElem(
-      ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
-      rev = 1,
       instant = instant,
       offset = Offset.at(1L),
-      value = uniformState.copy(deprecated = true)
+      value = graph.copy(deprecated = true)
     )
 
     pipe(elem).assert(elem.dropped)
@@ -56,13 +54,11 @@ class FilterDeprecatedSuite extends BioSuite {
 
   test("Preserve non-deprecated elements") {
     val elem = SuccessElem(
-      ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
-      rev = 1,
       instant = instant,
       offset = Offset.at(1L),
-      value = uniformState
+      value = graph
     )
 
     pipe(elem).assert(elem)

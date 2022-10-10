@@ -60,9 +60,9 @@ object ProjectionErr {
     * @param self
     *   the source to be chained with the pipe
     * @param that
-    *   the pipe to attach to the source
+    *   the operation to attach to the source
     */
-  final case class SourceOutPipeInMatchErr(self: Source, that: Pipe) extends ProjectionErr {
+  final case class SourceOutPipeInMatchErr(self: Source, that: Operation) extends ProjectionErr {
     override def reason: String =
       s"Unable to match Out type '${self.outType.describe}' of source '${self.name}' to the In type '${that.inType.describe}' of pipe '${that.name}'"
   }
@@ -93,13 +93,13 @@ object ProjectionErr {
     * Two pipes can be merged if the Out type of the first is identical to the In type of the second. This error signals
     * a failed attempt to merge two pipes with incompatible Out and In types.
     * @param self
-    *   the pipe to be merged with that pipe
+    *   the operation to be merged with that pipe
     * @param that
-    *   the pipe being merged with self
+    *   the operation being merged with self
     */
-  final case class PipeInOutMatchErr(self: Pipe, that: Pipe) extends ProjectionErr {
+  final case class OperationInOutMatchErr(self: Operation, that: Operation) extends ProjectionErr {
     override def reason: String =
-      s"Unable to match Out type '${self.outType.describe}' of pipe '${self.name}' to the In type '${that.inType.describe}' of pipe '${that.name}'"
+      s"Unable to match Out type '${self.outType.describe}' of operation '${self.name}' to the In type '${that.inType.describe}' of operation '${that.name}'"
   }
 
   /**
@@ -141,7 +141,7 @@ object ProjectionErr {
     * @param self
     *   the pipe that was expected to have an Out type of Unit
     */
-  final case class PipeChainOutNotUnitErr(self: Pipe) extends ProjectionErr {
+  final case class PipeChainOutNotUnitErr(self: Operation) extends ProjectionErr {
     override def reason: String = s"The pipe ${self.name} does not have its terminal output type Unit"
   }
 

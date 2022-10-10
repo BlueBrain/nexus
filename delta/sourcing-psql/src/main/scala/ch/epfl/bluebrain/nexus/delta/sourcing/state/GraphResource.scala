@@ -6,8 +6,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Res
 import io.circe.Json
 
 /**
-  * Common representation of a scoped resource state.
-  *
+  * Common representation of a scoped resource as [[Graph].
+    *
   * @param tpe
   *   the resource type
   * @param project
@@ -29,15 +29,13 @@ import io.circe.Json
   * @param source
   *   the original json representation of the resource
   */
-final case class UniformScopedState(
-    tpe: EntityType,
-    project: ProjectRef,
-    id: Iri,
-    rev: Int,
-    deprecated: Boolean,
-    schema: ResourceRef,
-    types: Set[Iri],
-    graph: Graph,
-    metadataGraph: Graph,
-    source: Json
-)
+final case class GraphResource(tpe: EntityType,
+                                project: ProjectRef,
+                                id: Iri,
+                                rev: Int,
+                                deprecated: Boolean,
+                                schema: ResourceRef,
+                                types: Set[Iri],
+                                graph: Graph,
+                                metadataGraph: Graph,
+                                source: Json)

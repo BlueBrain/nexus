@@ -8,10 +8,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.PullR
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.UniformScopedState
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.FilterByType.FilterByTypeConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 
 import java.time.Instant
@@ -29,21 +29,18 @@ class FilterByTypeSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val uniformState =
-    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
+  private val graph = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(FilterByType)
 
-  def element(types: Set[Iri]): SuccessElem[UniformScopedState] =
+  def element(types: Set[Iri]): SuccessElem[GraphResource] =
     SuccessElem(
-      ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
-      rev = 1,
       instant = instant,
       offset = Offset.at(1L),
-      value = uniformState.copy(types = types)
+      value = graph.copy(types = types)
     )
 
   def pipe(types: Set[Iri]): FilterByType =

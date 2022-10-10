@@ -1,21 +1,17 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
-import cats.data.NonEmptyChain
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchClient, IndexLabel}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.Indexing
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.{InvalidElasticSearchIndexPayload, InvalidPipeline, InvalidViewReferences, PermissionIsNotDefined, TooManyViewReferences, WrappedElasticSearchClientError}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.{AggregateElasticSearchViewValue, IndexingElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, noopPipeDef, ElasticSearchViewRejection, ElasticSearchViewValue}
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{defaultElasticsearchMapping, defaultElasticsearchSettings, ElasticSearchViewRejection, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient.HttpResult
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ValidateAggregate
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionErr}
 import io.circe.JsonObject
 import monix.bio.{IO, UIO}
 
@@ -32,7 +28,7 @@ trait ValidateElasticSearchView {
 object ValidateElasticSearchView {
 
   def apply(
-      registry: ReferenceRegistry,
+      validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
       permissions: Permissions,
       client: ElasticSearchClient,
       prefix: String,
@@ -40,7 +36,7 @@ object ValidateElasticSearchView {
       xas: Transactors
   ): ValidateElasticSearchView =
     apply(
-      registry,
+      validatePipeChain,
       permissions.fetchPermissionSet,
       client.createIndex(_, _, _).void,
       prefix,
@@ -49,7 +45,7 @@ object ValidateElasticSearchView {
     )
 
   def apply(
-      registry: ReferenceRegistry,
+      validatePipeChain: PipeChain => Either[ProjectionErr, Unit],
       fetchPermissionSet: UIO[Set[Permission]],
       createIndex: (IndexLabel, Option[JsonObject], Option[JsonObject]) => HttpResult[Unit],
       prefix: String,
@@ -65,22 +61,6 @@ object ValidateElasticSearchView {
       xas
     )
 
-    private val dummyId      = iri"http://localhost"
-    private val dummyProject = ProjectRef.unsafe("org", "proj")
-
-    // TODO: find a better way to validate a pipeline
-    private def dummyProjection(uuid: UUID, rev: Int, value: IndexingElasticSearchViewValue) =
-      Indexing
-        .projectionDefFor(value, dummyProject, dummyId, rev, uuid, prefix)
-        .copy(pipes =
-          NonEmptyChain(
-            PipeChain(
-              dummyId,
-              NonEmptyChain(noopPipeDef.reference -> ExpandedJsonLd.empty)
-            )
-          )
-        )
-
     private def validateIndexing(uuid: UUID, rev: Int, value: IndexingElasticSearchViewValue) =
       for {
         defaultMapping  <- defaultElasticsearchMapping
@@ -88,7 +68,7 @@ object ValidateElasticSearchView {
         _               <- fetchPermissionSet.flatMap { set =>
                              IO.raiseUnless(set.contains(value.permission))(PermissionIsNotDefined(value.permission))
                            }
-        _               <- IO.fromEither(dummyProjection(uuid, rev, value).compile(registry)).mapError(InvalidPipeline)
+        _               <- IO.fromEither(value.pipeChain.traverse(validatePipeChain)).mapError(InvalidPipeline)
         _               <- createIndex(
                              IndexLabel.fromView(prefix, uuid, rev),
                              value.mapping.orElse(Some(defaultMapping)),

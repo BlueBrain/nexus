@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.tombstone
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ResourceRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie._
@@ -20,8 +21,8 @@ object TombstoneStore {
   /**
     * Saves a tombstone for the given entity for the provided tag so that indexing processes can take it into account
     */
-  def save[Id, S <: ScopedState](tpe: EntityType, id: Id, state: S, removedTag: Tag)(implicit
-      putId: Put[Id]
+  def save[Id, S <: ScopedState](tpe: EntityType, id: Id, state: S, removedTag: UserTag)(implicit
+                                                                                         putId: Put[Id]
   ): ConnectionIO[Unit] =
     sql"""
          | INSERT INTO public.scoped_tombstones (
@@ -38,7 +39,7 @@ object TombstoneStore {
          |  ${state.organization},
          |  ${state.project.project},
          |  $id,
-         |  $removedTag,
+         |  ${removedTag.value},
          |  ${Json.obj()},
          |  ${state.updatedAt}
          | )""".stripMargin.update.run.void

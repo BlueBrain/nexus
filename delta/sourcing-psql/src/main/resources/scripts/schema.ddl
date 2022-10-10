@@ -102,9 +102,13 @@ CREATE INDEX IF NOT EXISTS entity_dependencies_reverse_idx ON public.entity_depe
 --
 CREATE TABLE if NOT EXISTS public.projection_offsets(
     name         text,
+    module       text,
     project      text,
     resource_id  text,
-    value        JSONB       NOT NULL,
+    ordering     bigint      NOT NULL,
+    processed    bigint      NOT NULL,
+    discarded    bigint      NOT NULL,
+    failed       bigint      NOT NULL,
     created_at   timestamptz NOT NULL,
     updated_at   timestamptz NOT NULL,
     PRIMARY KEY(name)

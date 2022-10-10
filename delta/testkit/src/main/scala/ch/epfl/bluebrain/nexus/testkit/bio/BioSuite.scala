@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.testkit.bio
 
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import monix.bio.IO
 import monix.execution.Scheduler
 import munit.FunSuite
@@ -13,12 +14,13 @@ abstract class BioSuite
     with BioAssertions
     with StreamAssertions
     with CollectionAssertions
-    with EitherAssertions {
+    with EitherAssertions
+    with IOFixedClock {
 
   implicit protected val scheduler: Scheduler     = Scheduler.global
   implicit protected val classLoader: ClassLoader = getClass.getClassLoader
 
-  protected val ioTimeout: FiniteDuration = 5.seconds
+  protected val ioTimeout: FiniteDuration = 20.seconds
 
   override def munitValueTransforms: List[ValueTransform] =
     super.munitValueTransforms ++ List(munitIOTransform)

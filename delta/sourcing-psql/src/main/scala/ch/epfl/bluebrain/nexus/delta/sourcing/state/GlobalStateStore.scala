@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie._
 import doobie.implicits._
@@ -126,13 +126,14 @@ object GlobalStateStore {
         }
 
     private def states(offset: Offset, strategy: RefreshStrategy): EnvelopeStream[Id, S] =
-      Envelope.stream(
+      StreamingQuery[Envelope[Id, S]](
         offset,
         offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_states
                        |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                        |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
-        xas,
-        config.copy(refreshStrategy = strategy)
+        _.offset,
+        config.copy(refreshStrategy = strategy),
+        xas
       )
 
     override def currentStates(offset: Offset): EnvelopeStream[Id, S] = states(offset, RefreshStrategy.Stop)

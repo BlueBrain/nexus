@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceId
 import fs2.Stream
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
@@ -27,8 +26,8 @@ class Strings(override val id: Iri, length: Int, until: Int, sleepAtEnd: FiniteD
   override def label: Label              = Strings.label
   override def outType: Typeable[String] = Typeable[String]
 
-  override def apply(offset: ProjectionOffset): Stream[Task, Elem[String]] =
-    offset.forSource(this) match {
+  override def apply(offset: Offset): Stream[Task, Elem[String]] =
+    offset match {
       case Offset.Start     => buildStream(0)
       case Offset.At(value) => buildStream(value.toInt)
     }
@@ -42,10 +41,8 @@ class Strings(override val id: Iri, length: Int, until: Int, sleepAtEnd: FiniteD
 
   private def elemFor(idx: Int): Elem[String] =
     SuccessElem[String](
-      SourceId(id),
       EntityType("String"),
       iri"http://localhost/$idx",
-      1,
       Instant.now(),
       Offset.at(idx.toLong),
       genString(length)
