@@ -8,7 +8,9 @@ sealed trait ProjectionId extends Product with Serializable {
 
 object ProjectionId {
 
-  implicit def projectionIdOrder[A <: ProjectionId]: Order[A] = Order.by(_.value)
+  implicit def projectionIdOrdering[A <: ProjectionId]: Ordering[A] = Ordering.by(_.value)
+
+  implicit def projectionIdOrder[A <: ProjectionId]: Order[A] = Order.fromOrdering
 
   final case class CacheProjectionId(value: String) extends ProjectionId
 
