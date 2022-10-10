@@ -61,7 +61,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                 }
               // nothing resolved, pick the first error and return
               case ((file, error) :: rest, Nil) =>
-                IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest.toSet.toList: _*)))
+                IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest: _*)))
               // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
               case (errors, loaded)             =>
                 UIO.delay {
