@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewC
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.CrossProjectSource
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
@@ -498,8 +498,8 @@ object CompositeViews {
         for {
           value <- CompositeViewValue(
                      c.value,
-                     s.value.sources.value.map(source => source.id -> source.uuid).toMap,
-                     s.value.projections.value.map(projection => projection.id -> projection.uuid).toMap,
+                     s.value.sources.map(source => source.id -> source.uuid).toList.toMap,
+                     s.value.projections.map(projection => projection.id -> projection.uuid).toList.toMap,
                      c.projectBase
                    )
           newRev = s.rev + 1
@@ -574,9 +574,11 @@ object CompositeViews {
     */
   def projectionIds(view: CompositeView, rev: Int): Set[(Iri, Iri, CompositeViewProjectionId)] =
     for {
-      s <- view.sources.value
-      p <- view.projections.value
+      s: CompositeViewSource <- view.sources.toSortedSet.toSet
+      p                      <- view.projections.toList
     } yield (s.id, p.id, projectionId(sourceProjection(s, rev), p, rev))
+
+  import cats.implicits.catsKernelStdOrderForTuple2
 
   /**
     * The [[CompositeViewProjectionId]] s of a view projection.
@@ -593,7 +595,7 @@ object CompositeViews {
       source: CompositeViewSource,
       rev: Int
   ): Set[(Iri, CompositeViewProjectionId)] =
-    view.projections.value.map(projection => projection.id -> projectionId(source, projection, rev))
+    view.projections.map(projection => projection.id -> projectionId(source, projection, rev)).toSortedSet
 
   /**
     * The [[CompositeViewProjectionId]] s of a view projection.
@@ -610,7 +612,7 @@ object CompositeViews {
       projection: CompositeViewProjection,
       rev: Int
   ): Set[(Iri, CompositeViewProjectionId)] =
-    view.sources.value.map(source => source.id -> projectionId(source, projection, rev))
+    view.sources.value.map(source => source.id -> projectionId(source, projection, rev)).toSortedSet
 
   /**
     * The [[CompositeViewProjectionId]] of a view projection.

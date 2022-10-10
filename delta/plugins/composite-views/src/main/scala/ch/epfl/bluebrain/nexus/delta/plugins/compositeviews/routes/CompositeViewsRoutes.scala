@@ -351,8 +351,8 @@ class CompositeViewsRoutes(
 
   private def viewStatistics(viewRes: ViewResource) = {
     val entries = for {
-      source     <- viewRes.value.sources.value
-      projection <- viewRes.value.projections.value
+      source: CompositeViewSource         <- viewRes.value.sources.toSortedSet.toList
+      projection: CompositeViewProjection <- viewRes.value.projections.toSortedSet.toSet
     } yield (source, projection)
     statisticsFor(viewRes, entries)
   }
@@ -360,15 +360,15 @@ class CompositeViewsRoutes(
   private def projectionStatistics(projRes: ViewProjectionResource) = {
     val (view, projection) = projRes.value
     val viewRes            = projRes.map { case (view, _) => view }
-    val entries            = view.sources.value.map(source => (source, projection))
-    statisticsFor(viewRes, entries)
+    val entries            = view.sources.map(source => (source, projection))
+    statisticsFor(viewRes, entries.toSortedSet)
   }
 
   private def sourceStatistics(sourceRes: ViewSourceResource) = {
     val (view, source) = sourceRes.value
     val viewRes        = sourceRes.map { case (view, _) => view }
-    val entries        = view.projections.value.map(projection => (source, projection))
-    statisticsFor(viewRes, entries)
+    val entries        = view.projections.map(projection => (source, projection))
+    statisticsFor(viewRes, entries.toSortedSet)
   }
 
   private def statisticsFor(

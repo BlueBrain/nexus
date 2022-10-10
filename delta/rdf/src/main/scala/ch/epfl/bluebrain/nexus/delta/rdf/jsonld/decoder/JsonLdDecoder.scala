@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder
 
-import cats.data.NonEmptyList
+import cats.Order
+import cats.data.{NonEmptyList, NonEmptySet}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode
@@ -117,6 +118,16 @@ object JsonLdDecoder {
 
   implicit def setJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[Set[A]] =
     cursor => cursor.values.flatMap(innerCursors => innerCursors.traverse(dec(_))).map(_.toSet)
+
+  implicit def nonEmptySetJsonLdDecoder[A: JsonLdDecoder: Order](implicit
+      A: ClassTag[A]
+  ): JsonLdDecoder[NonEmptySet[A]] =
+    setJsonLdDecoder[A].flatMap { s =>
+      s.toList match {
+        case ::(head, tail) => Right(NonEmptySet.of(head, tail: _*))
+        case Nil            => Left(ParsingFailure(s"Expected a NonEmptySet[${A.simpleName}], but the current set is empty"))
+      }
+    }
 
   implicit def listJsonLdDecoder[A](implicit dec: JsonLdDecoder[A]): JsonLdDecoder[List[A]] =
     cursor => cursor.downList.values.flatMap(innerCursors => innerCursors.traverse(dec(_)))

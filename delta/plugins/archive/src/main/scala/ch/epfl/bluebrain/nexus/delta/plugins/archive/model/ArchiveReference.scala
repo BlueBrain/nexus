@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.{CompactedJsonLd, SourceJson}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -192,5 +193,7 @@ object ArchiveReference {
         )
     }
   }
+
+  implicit def archiveReferenceOrder[A <: ArchiveReference]: Order[A] = Order.by(_.ref.iri)
 
 }

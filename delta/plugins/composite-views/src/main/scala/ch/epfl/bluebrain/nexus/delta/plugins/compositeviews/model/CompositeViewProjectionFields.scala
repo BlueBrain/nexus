@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.TemplateSparqlConstructQuery._
@@ -84,6 +85,9 @@ sealed trait CompositeViewProjectionFields {
 }
 
 object CompositeViewProjectionFields {
+
+  implicit def compositeViewProjectionFieldsOrder[A <: CompositeViewProjectionFields]: Order[A] =
+    Order.by(_.id)
 
   /**
     * Necessary fields to create/update an ElasticSearch projection.

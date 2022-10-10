@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.Secret
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectBase
 import io.circe.generic.extras.Configuration
 import io.circe.{Codec, Decoder, Encoder}
@@ -17,6 +17,7 @@ import monix.bio.UIO
 
 import java.util.UUID
 import scala.annotation.nowarn
+import scala.collection.immutable.SortedSet
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
@@ -46,14 +47,14 @@ object CompositeViewValue {
       currentProjections: Map[Iri, UUID],
       projectBase: ProjectBase
   )(implicit uuidF: UUIDF): UIO[CompositeViewValue] = {
-    val sources                                         = UIO.traverse(fields.sources.value) { source =>
+    val sources                                         = UIO.traverse(fields.sources.toList) { source =>
       val currentUuid = source.id.flatMap(currentSources.get)
       for {
         uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
         generatedId = projectBase.iri / uuid.toString
       } yield source.toSource(uuid, generatedId)
     }
-    val projections: UIO[List[CompositeViewProjection]] = UIO.traverse(fields.projections.value) { projection =>
+    val projections: UIO[List[CompositeViewProjection]] = UIO.traverse(fields.projections.toList) { projection =>
       val currentUuid = projection.id.flatMap(currentProjections.get)
       for {
         uuid       <- currentUuid.fold(uuidF())(UIO.delay(_))
@@ -63,7 +64,11 @@ object CompositeViewValue {
     for {
       s <- sources
       p <- projections
-    } yield CompositeViewValue(NonEmptySet(s.toSet), NonEmptySet(p.toSet), fields.rebuildStrategy)
+    } yield CompositeViewValue(
+      NonEmptySet.fromSetUnsafe(SortedSet.from(s)),
+      NonEmptySet.fromSetUnsafe(SortedSet.from(p)),
+      fields.rebuildStrategy
+    )
   }
 
   @SuppressWarnings(Array("TryGet"))

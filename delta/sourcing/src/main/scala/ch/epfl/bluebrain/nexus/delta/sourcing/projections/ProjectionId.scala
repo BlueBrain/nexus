@@ -1,10 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.projections
 
+import cats.Order
+
 sealed trait ProjectionId extends Product with Serializable {
   def value: String
 }
 
 object ProjectionId {
+
+  implicit def projectionIdOrder[A <: ProjectionId]: Order[A] = Order.by(_.value)
 
   final case class CacheProjectionId(value: String) extends ProjectionId
 

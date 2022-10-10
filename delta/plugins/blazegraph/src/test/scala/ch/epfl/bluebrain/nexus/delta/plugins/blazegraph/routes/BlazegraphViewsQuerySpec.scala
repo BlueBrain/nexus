@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri
 import akka.testkit.TestKit
+import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig.AlwaysGiveUp
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF

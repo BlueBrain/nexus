@@ -1,11 +1,11 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.Interval
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import org.scalatest.Inspectors

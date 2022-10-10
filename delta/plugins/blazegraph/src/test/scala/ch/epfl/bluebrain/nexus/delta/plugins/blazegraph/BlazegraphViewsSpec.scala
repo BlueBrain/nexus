@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViewsGen.resourceFor
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._

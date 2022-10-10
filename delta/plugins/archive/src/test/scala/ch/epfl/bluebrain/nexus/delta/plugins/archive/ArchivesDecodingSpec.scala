@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.{FileReference, ResourceReference}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.{DecodingFailed, InvalidJsonLdFormat, UnexpectedArchiveId}
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepres
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}

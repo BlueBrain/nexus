@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveReference.ResourceReference
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ResourceAlreadyExists
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepresentation.SourceJson
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.{ArchiveCreated, Arch
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, User}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

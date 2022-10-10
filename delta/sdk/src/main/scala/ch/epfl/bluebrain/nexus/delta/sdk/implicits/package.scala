@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax.{ClassTagSyntax, InstantSyntax, KamonSyntax, TaskSyntax}
 import ch.epfl.bluebrain.nexus.delta.rdf.instances.{SecretInstances, TripleInstances, UriInstances}
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.{IriSyntax, IterableSyntax, JsonLdEncoderSyntax, JsonSyntax, PathSyntax, UriSyntax}
-import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, IdentityInstances, IriInstances, OffsetJsonLdInstances, ProjectRefInstances}
+import ch.epfl.bluebrain.nexus.delta.sdk.instances.{CredentialsInstances, EntityDependencyInstances, IdentityInstances, IriInstances, OffsetJsonLdInstances, ProjectRefInstances}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax.{EventLogSyntax, HttpRequestSyntax, HttpResponseFieldsSyntax, IOSyntax, IriEncodingSyntax}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.stream.CancelableStreamSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.syntax.{OffsetSyntax, ProjectionStreamSyntax}
@@ -21,6 +21,7 @@ package object implicits
     with IdentityInstances
     with IriInstances
     with ProjectRefInstances
+    with EntityDependencyInstances
     with EventLogSyntax
     with JsonSyntax
     with IriSyntax

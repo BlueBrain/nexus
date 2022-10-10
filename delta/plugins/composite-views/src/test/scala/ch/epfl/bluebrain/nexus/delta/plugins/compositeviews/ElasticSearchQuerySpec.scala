@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews
 
 import akka.http.scaladsl.model.HttpRequest
 import akka.http.scaladsl.model.Uri.Query
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.permissions
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.{AuthorizationFailed, ProjectionNotFound, ViewIsDeprecated}

@@ -2,12 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
+import cats.data.NonEmptySet
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.CacheConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{RealmGen, WellKnownGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpUnexpectedError
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{AccessTokenDoesNotContainAnIssuer, AccessTokenDoesNotContainSubject, GetGroupsFromOidcError, InvalidAccessToken, InvalidAccessTokenFormat, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
@@ -70,7 +71,7 @@ class IdentitiesImplSpec
       else csb.claim("groups", set.toArray)
     }
 
-    aud.foreach(audiences => csb.audience(audiences.value.toList.asJava))
+    aud.foreach(audiences => csb.audience(audiences.toList.asJava))
 
     preferredUsername.foreach(pu => csb.claim("preferred_username", pu))
 
