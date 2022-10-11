@@ -33,6 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.NonEmptySetUtils._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -498,8 +499,8 @@ object CompositeViews {
         for {
           value <- CompositeViewValue(
                      c.value,
-                     s.value.sources.map(source => source.id -> source.uuid).toList.toMap,
-                     s.value.projections.map(projection => projection.id -> projection.uuid).toList.toMap,
+                     s.value.sources.map(source => source.id -> source.uuid).toMap,
+                     s.value.projections.map(projection => projection.id -> projection.uuid).toMap,
                      c.projectBase
                    )
           newRev = s.rev + 1
