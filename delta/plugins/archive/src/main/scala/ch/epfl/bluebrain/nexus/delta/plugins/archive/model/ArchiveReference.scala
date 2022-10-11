@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
@@ -194,6 +195,7 @@ object ArchiveReference {
     }
   }
 
-  implicit def archiveReferenceOrder[A <: ArchiveReference]: Order[A] = Order.by(_.ref.iri)
+  implicit def archiveReferenceOrder[A <: ArchiveReference]: Order[A] =
+    Order.by { archiveRef => (archiveRef.project, archiveRef.ref.iri) }
 
 }
