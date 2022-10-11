@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSear
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.NonEmptySetUtils._
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.NonEmptySetImplicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
