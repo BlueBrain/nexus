@@ -15,7 +15,7 @@ trait ProjectRefInstances {
   }
 
   implicit final val projectRefOrder: Order[ProjectRef] = Order.by { projectRef =>
-    (projectRef.project.value, projectRef.organization.value)
+    (projectRef.organization.value, projectRef.project.value)
   }
 
 }
