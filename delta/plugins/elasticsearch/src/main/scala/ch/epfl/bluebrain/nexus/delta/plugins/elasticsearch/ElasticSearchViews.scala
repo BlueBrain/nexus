@@ -549,7 +549,7 @@ object ElasticSearchViews {
       { s =>
         s.value match {
           case a: AggregateElasticSearchViewValue =>
-            Some(a.views.value.map { v => EntityDependency(v.project, v.viewId.toString) })
+            Some(a.views.map { v => EntityDependency(v.project, v.viewId.toString) }.toSortedSet)
           case _                                  => None
         }
       },

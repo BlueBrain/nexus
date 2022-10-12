@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.search
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewFields
@@ -13,7 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.ScopeInitialization
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationFailed
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import cats.data.NonEmptySet
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.InvalidResourceCollection
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
@@ -7,7 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto.deriveConfigJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 
 import scala.annotation.nowarn
 
@@ -40,7 +40,7 @@ object ArchiveValue {
     def validatePath(path: AbsolutePath) =
       path.value.getFileName.toString.length < 100 && path.value.getParent.toString.length < 155
 
-    val (_, duplicates, invalids, longIds) = resources.value.foldLeft(
+    val (_, duplicates, invalids, longIds) = resources.foldLeft(
       (Set.empty[AbsolutePath], Set.empty[AbsolutePath], Set.empty[AbsolutePath], Set.empty[Iri])
     ) { case ((visitedPaths, duplicates, invalids, longIds), reference) =>
       (

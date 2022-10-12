@@ -1,9 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.views
 
+import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, EntityDependencyStore}
@@ -29,11 +29,11 @@ object ValidateAggregate {
   ): ValidateAggregate[Rejection] = (references: NonEmptySet[ViewRef]) =>
     EntityCheck.raiseMissingOrDeprecated[Iri, Rejection](
       entityType,
-      references.value.map { v => v.project -> v.viewId },
+      references.map { v => v.project -> v.viewId }.toSortedSet,
       missing => ifUnknown(missing.map { case (p, id) => ViewRef(p, id) }),
       xas
     ) >> references.value.toList
-      .foldLeftM(references.value.size) { (acc, ref) =>
+      .foldLeftM(references.length) { (acc, ref) =>
         EntityDependencyStore.recursiveList(ref.project, ref.viewId, xas).map { r =>
           acc + r.size
         }

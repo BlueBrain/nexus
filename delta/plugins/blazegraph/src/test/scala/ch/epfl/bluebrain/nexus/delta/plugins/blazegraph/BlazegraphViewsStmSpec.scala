@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewCommand.{CreateBlazegraphView, DeprecateBlazegraphView, TagBlazegraphView, UpdateBlazegraphView}
@@ -10,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewValu
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.{BlazegraphViewState, BlazegraphViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{NonEmptySet, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject, User}
@@ -89,7 +90,7 @@ class BlazegraphViewsStmSpec
       )
 
     val invalidView: ValidateBlazegraphView = {
-      case v: AggregateBlazegraphViewValue => IO.raiseError(InvalidViewReferences(v.views.value))
+      case v: AggregateBlazegraphViewValue => IO.raiseError(InvalidViewReferences(v.views.toSortedSet))
       case v: IndexingBlazegraphViewValue  => IO.raiseError(PermissionIsNotDefined(v.permission))
     }
 
