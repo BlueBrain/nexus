@@ -240,7 +240,7 @@ class IdentitiesImplSpec
         groups = Some(Set("group1", "group2"))
       )
 
-      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT audience rejected: [de, ca]"))
+      identities.exchange(token).rejected shouldEqual InvalidAccessToken(Some("JWT audience rejected: [ca, de]"))
     }
 
     "fail when the token is invalid" in {

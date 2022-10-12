@@ -2,13 +2,13 @@ package ch.epfl.bluebrain.nexus.delta.sdk.identities
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
+import cats.data.NonEmptySet
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.sdk.cache.{CacheConfig, KeyValueStore}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import IdentitiesImpl.{extractGroups, GroupsCache}
-import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.{AuthToken, Caller, TokenRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.TokenRejection.{GetGroupsFromOidcError, InvalidAccessToken, UnknownAccessTokenIssuer}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
@@ -48,7 +48,7 @@ class IdentitiesImpl private (
       val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
       proc.setJWSKeySelector(keySelector)
       audiences.foreach { aud =>
-        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSortedSet.asJava, null, null, null))
+        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSortedSet.toSet.asJava, null, null, null))
       }
       IO.fromEither(
         Either
