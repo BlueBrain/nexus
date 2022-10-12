@@ -48,7 +48,7 @@ class IdentitiesImpl private (
       val keySelector = new JWSVerificationKeySelector(JWSAlgorithm.RS256, new ImmutableJWKSet[SecurityContext](keySet))
       proc.setJWSKeySelector(keySelector)
       audiences.foreach { aud =>
-        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSortedSet.toSet.asJava, null, null, null))
+        proc.setJWTClaimsSetVerifier(new DefaultJWTClaimsVerifier(aud.toSet.asJava, null, null, null))
       }
       IO.fromEither(
         Either

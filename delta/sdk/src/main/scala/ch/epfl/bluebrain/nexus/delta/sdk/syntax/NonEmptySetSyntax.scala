@@ -14,4 +14,10 @@ final class NonEmptySetOps[A](private val nes: NonEmptySet[A]) extends AnyVal {
   def toMap[K, V](f: A => (K, V)): Map[K, V] =
     nes.foldLeft(Map.empty[K, V]) { case (m, a) => m + f(a) }
 
+  /**
+    * Converts a NonEmptySet into a Set
+    */
+  def toSet: Set[A]                          =
+    nes.foldLeft(Set.empty[A]) { case (s, a) => s + a }
+
 }
