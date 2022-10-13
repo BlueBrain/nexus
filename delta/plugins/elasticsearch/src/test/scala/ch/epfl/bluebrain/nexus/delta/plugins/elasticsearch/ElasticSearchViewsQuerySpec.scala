@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
+import cats.data.NonEmptySet
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.{ElasticSearchBulk, IndexLabel}

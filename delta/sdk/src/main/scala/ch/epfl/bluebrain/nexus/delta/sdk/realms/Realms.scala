@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptySet
 import cats.effect.Clock
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.RealmResource
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmCommand.{CreateRealm, DeprecateRealm, UpdateRealm}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists}

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -12,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef

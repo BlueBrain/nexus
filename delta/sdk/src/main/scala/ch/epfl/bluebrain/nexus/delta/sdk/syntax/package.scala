@@ -27,3 +27,4 @@ package object syntax
     with ProjectionStreamSyntax
     with InstantSyntax
     with CancelableStreamSyntax
+    with NonEmptySetSyntax

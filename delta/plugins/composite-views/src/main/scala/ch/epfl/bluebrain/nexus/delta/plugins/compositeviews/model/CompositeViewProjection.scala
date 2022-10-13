@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewProjection.{ElasticSearchProjection, SparqlProjection}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
@@ -158,5 +159,11 @@ object CompositeViewProjection {
     )
     deriveConfiguredEncoder[CompositeViewProjection]
   }
+
+  implicit final def compositeViewProjectionOrdering[A <: CompositeViewProjection]: Ordering[A] =
+    Ordering.by(_.id)
+
+  implicit final def compositeViewProjectionOrder[A <: CompositeViewProjection]: Order[A] =
+    Order.by(_.id)
 
 }

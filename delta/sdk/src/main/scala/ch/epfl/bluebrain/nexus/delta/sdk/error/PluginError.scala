@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.error
 
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
+import cats.data.NonEmptyList
+import cats.implicits._
 
 import java.io.File
 
@@ -55,13 +56,13 @@ object PluginError {
     * @param errors
     *   the non empty collection of failures
     */
-  final case class PluginLoadErrors(errors: NonEmptySet[(File, PluginError)])
+  final case class PluginLoadErrors(errors: NonEmptyList[(File, PluginError)])
       extends PluginError(
         "Some plugins could not be loaded.",
         Some(
-          errors.value
+          errors
             .map { case (file, error) => s"\t - Plugin: $file\n\t - Cause: ${error.getMessage}" }
-            .mkString("\n")
+            .mkString_("\n")
         )
       )
 }

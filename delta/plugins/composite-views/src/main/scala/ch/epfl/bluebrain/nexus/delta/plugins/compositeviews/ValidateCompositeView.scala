@@ -79,16 +79,16 @@ object ValidateCompositeView {
     }
 
     val validateProjection: CompositeViewProjection => IO[CompositeViewRejection, Unit] = {
-      case (sparql: SparqlProjection)    => validatePermission(sparql.permission)
-      case (es: ElasticSearchProjection) =>
+      case sparql: SparqlProjection    => validatePermission(sparql.permission)
+      case es: ElasticSearchProjection =>
         validatePermission(es.permission) >>
           validateIndex(es, CompositeViews.index(es, uuid, rev, prefix))
     }
 
     for {
-      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.value.size, maxSources))
+      _          <- IO.raiseWhen(value.sources.value.size > maxSources)(TooManySources(value.sources.length, maxSources))
       _          <- IO.raiseWhen(value.projections.value.size > maxProjections)(
-                      TooManyProjections(value.projections.value.size, maxProjections)
+                      TooManyProjections(value.projections.length, maxProjections)
                     )
       allIds      = value.sources.value.toList.map(_.id) ++ value.projections.value.toList.map(_.id)
       distinctIds = allIds.distinct

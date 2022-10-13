@@ -354,7 +354,8 @@ object IriOrBNode {
     implicit val iriKeyEncoder: KeyEncoder[Iri] = KeyEncoder.encodeKeyString.contramap(_.toString)
     implicit val iriKeyDecoder: KeyDecoder[Iri] = KeyDecoder.instance(absolute(_).toOption)
 
-    implicit final val iriOrder: Order[Iri] = Order.by(_.toString)
+    implicit final val iriOrdering: Ordering[Iri] = Ordering.by(_.toString)
+    implicit final val iriOrder: Order[Iri]       = Order.fromOrdering
   }
 
   /**

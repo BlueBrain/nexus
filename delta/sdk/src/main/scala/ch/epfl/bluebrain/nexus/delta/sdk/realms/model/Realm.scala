@@ -1,11 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm.Metadata
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import io.circe._

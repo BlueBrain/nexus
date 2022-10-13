@@ -1,12 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView.RebuildStrategy
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 

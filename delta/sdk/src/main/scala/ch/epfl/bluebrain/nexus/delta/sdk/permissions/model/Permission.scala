@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.permissions.model
 
+import cats.Order
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
@@ -53,5 +54,7 @@ object Permission {
     cursor
       .get[String]
       .flatMap(str => Permission(str).leftMap(_ => ParsingFailure("Json", str, cursor.history)))
+
+  implicit final val permissionOrder: Order[Permission] = Order.by(_.value)
 
 }

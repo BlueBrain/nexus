@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.search
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
+import cats.data.NonEmptySet
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeView
@@ -23,7 +24,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, NonEmptySet, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Group, User}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label

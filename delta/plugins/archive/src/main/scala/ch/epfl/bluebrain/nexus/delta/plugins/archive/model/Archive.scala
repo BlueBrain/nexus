@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.Archive.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.generic.extras.Configuration
 import io.circe.{Encoder, Json, JsonObject}

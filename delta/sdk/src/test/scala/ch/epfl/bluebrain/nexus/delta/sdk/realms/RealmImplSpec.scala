@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.RealmGen.{realm, resourceFor}
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.WellKnownGen
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.Pagination.FromPagination
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.ResultEntry.UnscoredResultEntry
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.RealmSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.UnscoredSearchResults
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, NonEmptySet, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Name, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.Realm
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmRejection.{IncorrectRev, RealmAlreadyDeprecated, RealmAlreadyExists, RealmNotFound, RealmOpenIdConfigAlreadyExists, RevisionNotFound, UnsuccessfulOpenIdConfigResponse}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.plugin
 
+import cats.data.NonEmptyList
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugin.PluginsLoader.PluginLoaderConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError
 import ch.epfl.bluebrain.nexus.delta.sdk.error.PluginError.{ClassNotFoundError, MultiplePluginDefClassesFound, PluginLoadErrors}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import com.typesafe.scalalogging.Logger
 import io.github.classgraph.ClassGraph
@@ -61,7 +61,7 @@ class PluginsLoader(loaderConfig: PluginLoaderConfig) {
                 }
               // nothing resolved, pick the first error and return
               case ((file, error) :: rest, Nil) =>
-                IO.raiseError(PluginLoadErrors(NonEmptySet((file, error), rest.toSet)))
+                IO.raiseError(PluginLoadErrors(NonEmptyList.of((file, error), rest: _*)))
               // some new plugins were loaded, but not all, adding the loaded ones and executing another pass
               case (errors, loaded)             =>
                 UIO.delay {

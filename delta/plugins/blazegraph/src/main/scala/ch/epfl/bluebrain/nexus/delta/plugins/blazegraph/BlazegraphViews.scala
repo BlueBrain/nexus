@@ -487,7 +487,7 @@ object BlazegraphViews {
       { s =>
         s.value match {
           case a: AggregateBlazegraphViewValue =>
-            Some(a.views.value.map { v => EntityDependency(v.project, v.viewId.toString) })
+            Some(a.views.map { v => EntityDependency(v.project, v.viewId.toString) }.toSortedSet)
           case _                               => None
         }
       },

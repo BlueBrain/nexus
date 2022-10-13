@@ -1,9 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.realms.model
 
 import akka.http.scaladsl.model.Uri
+import cats.data.NonEmptySet
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ClassUtils
 import ch.epfl.bluebrain.nexus.delta.sdk.SerializationSuite
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{Name, NonEmptySet}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.Name
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.GrantType._
 import ch.epfl.bluebrain.nexus.delta.sdk.realms.model.RealmEvent.{RealmCreated, RealmDeprecated, RealmUpdated}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder.SseData
