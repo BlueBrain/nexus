@@ -1,371 +1,187 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.data.{Chain, NonEmptyChain}
-import cats.effect.Resource
 import cats.effect.concurrent.Ref
-import cats.implicits._
-import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset.Start
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.SourceIdPipeChainId
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Naturals.NaturalsConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.PersistentSingleNode
 import ch.epfl.bluebrain.nexus.testkit.TestHelpers
-import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
+import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import fs2.Stream
 import monix.bio.Task
 import munit.AnyFixture
 
+import java.time.Instant
 import scala.concurrent.duration._
 
-class SupervisionSuite
-    extends BioSuite
-    with ProjectionFixture
-    with Doobie.Fixture
-    with Doobie.Assertions
-    with TestHelpers {
+class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.Assertions with TestHelpers {
 
-  override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
+  implicit val patienceConfig: PatienceConfig = PatienceConfig(100.millis, 10.millis)
 
-  private lazy val xas = doobie()
+  private lazy val (sv, projectionStore) = supervisor()
+  // name1 should run on the node with index 1 in a 3-node cluster
+  private val projection1 = ProjectionMetadata("test", "name1", None, None)
+  // name2 should NOT run on the node with index 1 of a 3-node cluster
+  private val projection2 = ProjectionMetadata("test", "name2", None, None)
 
-  private val qc: QueryConfig = QueryConfig(10, RefreshStrategy.Stop)
-  private lazy val store      = ProjectionStore(xas, qc)
+  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
-  private val cfg = ProjectionConfig(3, 1, 10.millis, 10.millis, qc)
+  private def evalStream(start: Task[Unit]) =
+    (_: Offset) =>
+      Stream.eval(start) >> Stream.range(1, 21)
+        .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), ()) }
 
-  override def beforeEach(context: BeforeEach): Unit = {
-    super.beforeEach(context)
-    store.entries.evalTap(row => store.delete(row.name)).compile.drain.runSyncUnsafe()
+  test("Ignore a projection when it is meant to run on another node") {
+      for {
+        flag      <- Ref.of[Task, Boolean](false)
+        projection =
+          CompiledProjection.fromStream(projection2, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
+        _    <- sv.run(projection).assert(ExecutionStatus.Ignored)
+        _    <- Task.sleep(100.millis)
+        _    <- projectionStore.offset(projection2.name).assertNone
+        _    <- flag.get.assert(false)
+      } yield ()
   }
 
-  def supervisorResource: Resource[Task, Supervisor] =
-    Resource.make(Supervisor(store, cfg))(s => s.stop())
-
-  private def stopOnceWhen(
-      compiled: CompiledProjection,
-      stopped: Ref[Task, Boolean],
-      f: Elem[Unit] => Boolean
-  ): CompiledProjection =
-    compiled.copy(
-      streamF = offset =>
-        status =>
-          signal =>
-            compiled.streamF(offset)(status)(signal).evalTap { elem =>
-              stopped.get.ifM(
-                ifTrue = Task.unit,
-                ifFalse = if (f(elem)) stopped.set(true) >> status.update(_.stopped) >> signal.set(true) else Task.unit
-              )
-            }
-    )
-
-  private def failOnceWhen(
-      compiled: CompiledProjection,
-      failed: Ref[Task, Boolean],
-      f: Elem[Unit] => Boolean
-  ): CompiledProjection =
-    compiled.copy(
-      streamF = offset =>
-        status =>
-          signal =>
-            compiled.streamF(offset)(status)(signal).evalTap { elem =>
-              failed.get.ifM(
-                ifTrue = Task.unit,
-                ifFalse =
-                  if (f(elem))
-                    failed.set(true) >> Task.raiseError(new RuntimeException(s"Throw error for elem '${elem.offset}'"))
-                  else Task.unit
-              )
-            }
-    )
-
-  // get a name that hashcode modulo cluster size is equal to the node index
-  private def currentNodeIndexName: Task[String] = Stream
-    .repeatEval(Task.delay(genString()))
-    .filter(_.hashCode % cfg.clusterSize == cfg.nodeIndex)
-    .take(1)
-    .compile
-    .toList
-    .map(_.head)
-
-  projections.test("Restart projections when they stop") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 1.millis).toJsonLd,
-        Chain()
+  test("Describe an ignored projection") {
+    sv.describe(projection2.name).assertSome(
+      SupervisedDescription(
+        projection2,
+        ExecutionStrategy.TransientSingleNode,
+        0,
+        ExecutionStatus.Ignored,
+        ProjectionProgress.NoProgress
       )
     )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-    val defined = ProjectionDef("naturals", None, None, sources, pipes)
-
-    val compiled = defined.compile(ctx.registry).rightValue
-    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(10L))
-
-    supervisorResource.use { supervisor =>
-      for {
-        stopped  <- Ref.of[Task, Boolean](false)
-        stopsOnce = stopOnceWhen(compiled, stopped, elem => elem.offset == Offset.at(4L))
-        _        <- stopsOnce.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems    <- ctx.waitForNElements(11, 100.millis)
-        _         = assertEquals(elems.size, 11, "Should have observed at 11 elements")
-        _        <- Task.sleep(100.millis)
-        elems    <- ctx.currentElements
-        _         = assert(elems.size >= 3, "Should have observed at least another 3 elements")
-        _        <- supervisor.status("naturals").assertSome(ExecutionStatus.Completed(offset))
-      } yield ()
-    }
   }
 
-  projections.test("Restart projections when they fail") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 1.millis).toJsonLd,
-        Chain()
-      )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-    val defined = ProjectionDef("naturals", None, None, sources, pipes)
-
-    val compiled = defined.compile(ctx.registry).rightValue
-    val offset   = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(10L))
-
-    supervisorResource.use { supervisor =>
-      for {
-        failed   <- Ref.of[Task, Boolean](false)
-        failsOnce = failOnceWhen(compiled, failed, elem => elem.offset == Offset.at(4L))
-        _        <- failsOnce.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems    <- ctx.waitForNElements(15, 100.millis) // the log pipe sees already the 5L when 4L fails
-        _         = assertEquals(elems.size, 15, "Should have observed exactly 14 elements")
-        _        <- Task.sleep(100.millis)
-        elems    <- ctx.currentElements
-        _         = assert(elems.isEmpty, "Should not observe any more elements")
-        _        <- supervisor.status("naturals").assertSome(ExecutionStatus.Completed(offset))
-      } yield ()
-    }
+  test("Destroy an ignored projection") {
+    sv.destroy(projection2.name).assertSome(ExecutionStatus.Ignored)
   }
 
-  projections.test("Stop running projections") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 50.millis).toJsonLd,
-        Chain()
-      )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-
-    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(ctx.registry).rightValue
-
-    supervisorResource.use { supervisor =>
-      for {
-        _     <- compiled.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems <- ctx.waitForNElements(1, 50.millis)
-        _      = assert(elems.nonEmpty, "Should have observed at least an element")
-        _     <- supervisor.stop()
-        _     <- Task.sleep(50.millis)
-        elems <- ctx.currentElements
-        _      = assert(elems.size < 9, "Should have observed less than 10 total elements")
-      } yield ()
-    }
+  test("Destroy an unknown projection") {
+    sv.destroy("""xxx""").assertNone
   }
 
-  projections.test("Ignore projections that do not match the node index") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 50.millis).toJsonLd,
-        Chain()
+  test("Run a projection when it is meant to run on every node") {
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection2, ExecutionStrategy.EveryNode, evalStream(flag.set(true)))
+      _    <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _   <- flag.get.eventually(true)
+      _   <- sv.describe(projection2.name).eventuallySome(
+        SupervisedDescription(
+          projection2,
+          ExecutionStrategy.EveryNode,
+          0,
+          ExecutionStatus.Completed,
+          ProjectionProgress(
+            Offset.at(20L),
+            Instant.EPOCH,
+            20,
+            0,
+            0
+          )
+        )
       )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-
-    supervisorResource.use { supervisor =>
-      for {
-        name    <- Stream // get a name that hashcode modulo cluster size is different than the node index
-                     .repeatEval(Task.delay(genString()))
-                     .filter(_.hashCode % cfg.clusterSize != cfg.nodeIndex)
-                     .take(1)
-                     .compile
-                     .toList
-                     .map(_.head)
-        defined  = ProjectionDef(name, None, None, sources, pipes)
-        compiled = defined.compile(ctx.registry).rightValue
-        _       <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = false))
-        elems   <- ctx.waitForNElements(1, 50.millis)
-        _        = assert(elems.isEmpty, "Should not observe any elements")
-        _       <- supervisor.status(name).assertSome(ExecutionStatus.Ignored)
-      } yield ()
-    }
+      _    <- projectionStore.offset(projection2.name).assertNone
+    } yield ()
   }
 
-  projections.test("Run projections that match the node index") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 50.millis).toJsonLd,
-        Chain()
-      )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-
-    supervisorResource.use { supervisor =>
-      for {
-        name    <- currentNodeIndexName
-        defined  = ProjectionDef(name, None, None, sources, pipes)
-        compiled = defined.compile(ctx.registry).rightValue
-        _       <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = false))
-        elems   <- ctx.waitForNElements(1, 50.millis)
-        _        = assert(elems.nonEmpty, "Should observe at least an element")
-      } yield ()
-    }
+  test("Destroy a projection running on every node") {
+    sv.destroy(projection2.name).assertSome(ExecutionStatus.Stopped)
   }
 
-  projections.test("Run projections from the persisted offset") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 100.millis).toJsonLd,
-        Chain()
-      )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-
-    supervisorResource.use { supervisor =>
+  test("Run a transient projection when it is meant to run on this node") {
       for {
-        name    <- currentNodeIndexName
-        defined  = ProjectionDef(name, None, None, sources, pipes)
-        compiled = defined.compile(ctx.registry).rightValue
-        initial  = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(5L))
-        _       <- store.save(name, compiled.project, compiled.resourceId, initial)
-        _       <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = true))
-        elems   <- ctx.waitForNElements(4, 50.millis)
-        _        = assert(elems.size == 4, "Should observe exactly 4 elements")
-        _       <- Task.sleep(150.millis)
-        elems   <- ctx.currentElements
-        _        = assert(elems.size == 1, "Should observe exactly 1 element")
-        written <- store.offset(name)
-        nine     = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(9L))
-        ten      = ProjectionOffset(SourceIdPipeChainId(iri"https://naturals", iri"https://log"), Offset.at(10L))
-        _        = assert(written == nine || written == ten, "The new persisted offset should be either 9 or 10")
+        flag      <- Ref.of[Task, Boolean](false)
+        projection =
+          CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
+        _   <- sv.run(projection).eventually(ExecutionStatus.Running)
+        _   <- flag.get.eventually(true)
+        _   <- sv.describe(projection1.name).eventuallySome(
+          SupervisedDescription(
+            projection1,
+            ExecutionStrategy.TransientSingleNode,
+            0,
+            ExecutionStatus.Completed,
+            ProjectionProgress(
+              Offset.at(20L),
+              Instant.EPOCH,
+              20,
+              0,
+              0
+            )
+          )
+        )
+        _    <- projectionStore.offset(projection1.name).assertNone
       } yield ()
-    }
   }
 
-  projections.test("UnSupervise projections") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 300.millis).toJsonLd,
-        Chain()
-      )
-    )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
-      )
-    )
-
-    val defined  = ProjectionDef("naturals", None, None, sources, pipes)
-    val compiled = defined.compile(ctx.registry).rightValue
-
-    supervisorResource.use { supervisor =>
-      for {
-        _     <- compiled.supervise(supervisor, ExecutionStrategy.EveryNode)
-        elems <- ctx.waitForNElements(1, 50.millis)
-        _      = assertEquals(elems.size, 1, s"Should have observed exactly one element")
-        _     <- supervisor.unSupervise("naturals")
-        _     <- supervisor.status("naturals").assertNone
-        _      = assert(elems.nonEmpty, "Should have observed at least an element")
-        _     <- Task.sleep(300.millis)
-        elems <- ctx.currentElements
-        _      = assert(
-                   elems.size < 9,
-                   s"Should have observed less than 10 total elements, but after the first there another ${elems.size}"
-                 )
-      } yield ()
-    }
+  test("Destroy a registered transient projection") {
+    for {
+      _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+      _ <- sv.describe(projection1.name).assertNone
+    } yield ()
   }
 
-  projections.test("Run setup and teardown fns") { ctx =>
-    val sources = NonEmptyChain(
-      SourceChain(
-        Naturals.reference,
-        iri"https://naturals",
-        NaturalsConfig(10, 50.millis).toJsonLd,
-        Chain()
-      )
+  test("Run a persistent projection when it is meant to run on this node") {
+    val expectedProgress = ProjectionProgress(
+      Offset.at(20L),
+      Instant.EPOCH,
+      20,
+      0,
+      0
     )
-    val pipes   = NonEmptyChain(
-      PipeChain(
-        iri"https://log",
-        NonEmptyChain(ctx.intToStringPipe, ctx.logPipe)
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection1, PersistentSingleNode, evalStream(flag.set(true)))
+      _    <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _   <- flag.get.eventually(true)
+      _   <- sv.describe(projection1.name).eventuallySome(
+        SupervisedDescription(
+          projection1,
+          PersistentSingleNode,
+          0,
+          ExecutionStatus.Completed,
+          expectedProgress
+        )
       )
-    )
+      _    <- projectionStore.offset(projection1.name).assertSome(expectedProgress)
+    } yield ()
+  }
 
-    supervisorResource.use { supervisor =>
-      for {
-        name       <- currentNodeIndexName
-        defined     = ProjectionDef(name, None, None, sources, pipes)
-        compiled    = defined.compile(ctx.registry).rightValue
-        initRef    <- Ref[Task].of(0)
-        incrementFn = initRef.update(_ + 1) // init task
-        decrementFn = initRef.update(_ - 1) // finalizer task
-        _          <- compiled.supervise(supervisor, ExecutionStrategy.SingleNode(persistOffsets = true), incrementFn)
-        elems      <- ctx.waitForNElements(1, 50.millis)
-        _           = assert(elems.nonEmpty, "Should have observed at least an element")
-        _          <- initRef.get.assert(1)
-        _          <- Task.sleep(cfg.persistOffsetInterval + 50.millis) // wait for the offset to be persisted
-        offset     <- store.offset(name)
-        _           = assert(offset.toMap.exists { case (_, o) => o != Start }, "An offset should have been persisted")
-        _          <- supervisor.unSupervise(name, decrementFn, deleteOffset = true)
-        _          <- initRef.get.assert(0)
-        offset     <- store.offset(name)
-        _           = assert(offset.toMap.forall { case (_, o) => o == Start }, "Offset should have been deleted")
-      } yield ()
-    }
+  test("Destroy a registered persistent projection") {
+    for {
+      _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+      _ <- sv.describe(projection1.name).assertNone
+      _ <- projectionStore.offset(projection1.name).assertNone
+    } yield ()
+  }
+
+  test("Should restart a failing projection") {
+    val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      _ <- projectionStore.offset(projection1.name).assertNone
+      projection =
+        CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)).map(_ >> Stream.raiseError[Task](expectedException)))
+      _     <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _     <- flag.get.eventually(true)
+      _  <- sv.describe(projection1.name).map(_.exists(_.restarts > 0)).eventually(true)
+    } yield ()
+  }
+
+  test("Destroy a failing projection") {
+    for {
+      _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+      _ <- sv.describe(projection1.name).eventuallyNone
+      _ <- projectionStore.offset(projection1.name).assertNone
+    } yield ()
   }
 
 }

@@ -1,17 +1,18 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemCtx.{SourceId, SourceIdPipeChainId}
+import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import munit.AnyFixture
 
-class ProjectionStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Assertions {
+import java.time.Instant
+
+class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
@@ -22,21 +23,13 @@ class ProjectionStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Asse
   private val name     = "offset"
   private val project  = ProjectRef.unsafe("org", "proj")
   private val resource = iri"https://resource"
-  private val sid      = iri"https://source"
-  private val pid      = iri"https://pipe"
-  private val offset   = ProjectionOffset(
-    Map(
-      SourceId(sid)                 -> Offset.at(1L),
-      SourceIdPipeChainId(sid, pid) -> Offset.at(2L)
-    )
-  )
-  private val and      = ProjectionOffset(SourceId(iri"https://and"), Offset.at(3L))
+
+  private val metadata = ProjectionMetadata("test", name, Some(project), Some(resource))
+  private val progress   = ProjectionProgress(Offset.At(42L), Instant.EPOCH, 5, 2, 1)
+  private val newProgress = progress.copy(offset = Offset.At(100L), processed = 100L)
 
   test("Return an empty offset when not found") {
-    for {
-      offset <- store.offset("not found")
-      _       = assertEquals(offset, ProjectionOffset.empty)
-    } yield ()
+    store.offset("not found").assertNone
   }
 
   test("Return no entries") {
@@ -48,38 +41,34 @@ class ProjectionStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Asse
 
   test("Create an offset") {
     for {
-      _       <- store.save(name, Some(project), Some(resource), offset)
-      read    <- store.offset(name)
-      _        = assertEquals(read, offset)
+      _       <- store.save(metadata, progress)
+      _       <- store.offset(name).assertSome(progress)
       entries <- store.entries.compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals((r.name, r.project, r.resourceId, r.offset), (name, Some(project), Some(resource), offset))
+      _        = assertEquals((r.name, r.project, r.resourceId, r.progress), (name, Some(project), Some(resource), progress))
       _        = assert(r.createdAt == r.updatedAt, "Created and updated at values are not identical after creation")
     } yield ()
   }
 
   test("Update an offset") {
+    val newMetadata = ProjectionMetadata("test", name, None, None)
     for {
-      read    <- store.offset(name)
-      _        = assertEquals(read, offset)
-      _       <- store.save(name, None, None, offset |+| and)
-      again   <- store.offset(name)
-      _        = assertEquals(again, offset |+| and)
+      _       <- store.offset(name).assertSome(progress)
+      _       <- store.save(newMetadata, newProgress)
+      _       <- store.offset(name).assertSome(newProgress)
       entries <- store.entries.compile.toList
       r        = entries.assertOneElem
-      _        = assertEquals((r.name, r.project, r.resourceId, r.offset), (name, None, None, offset |+| and))
+      _        = assertEquals((r.name, r.project, r.resourceId, r.progress), (name, None, None, newProgress))
     } yield ()
   }
 
   test("Delete an offset") {
     for {
-      read    <- store.offset(name)
-      _        = assertEquals(read, offset |+| and)
+      _    <- store.offset(name).assertSome(newProgress)
       _       <- store.delete(name)
       entries <- store.entries.compile.toList
       _        = entries.assertEmpty()
-      again   <- store.offset(name)
-      _        = assertEquals(again, ProjectionOffset.empty)
+      _   <- store.offset(name).assertNone
     } yield ()
   }
 

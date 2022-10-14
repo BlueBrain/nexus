@@ -40,6 +40,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -153,7 +154,7 @@ class ElasticSearchViewsRoutesSpec
     fetchContext,
     ResolverContextResolution(rcr),
     ValidateElasticSearchView(
-      registry,
+      PipeChain.validate(_, registry),
       UIO.pure(allowedPerms),
       (_, _, _) => IO.unit,
       "prefix",

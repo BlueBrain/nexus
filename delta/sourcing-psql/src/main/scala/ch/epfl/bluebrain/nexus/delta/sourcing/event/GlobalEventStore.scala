@@ -2,12 +2,12 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.event
 
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Envelope, EnvelopeStream}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.circe.jsonb.implicits._
@@ -107,13 +107,14 @@ object GlobalEventStore {
       }
 
       private def events(offset: Offset, strategy: RefreshStrategy): Stream[Task, Envelope[Id, E]] =
-        Envelope.stream[Id, E](
+        StreamingQuery[Envelope[Id, E]](
           offset,
           offset => sql"""SELECT type, id, value, rev, instant, ordering FROM public.global_events
                          |${Fragments.whereAndOpt(Some(fr"type = $tpe"), offset.asFragment)}
                          |ORDER BY ordering""".stripMargin.query[Envelope[Id, E]],
-          xas,
-          config.copy(refreshStrategy = strategy)
+          _.offset,
+          config.copy(refreshStrategy = strategy),
+          xas
         )
 
       override def currentEvents(offset: Offset): Stream[Task, Envelope[Id, E]] = events(offset, RefreshStrategy.Stop)

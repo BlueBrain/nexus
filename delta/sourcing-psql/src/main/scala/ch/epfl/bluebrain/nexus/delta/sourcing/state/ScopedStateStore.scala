@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.{RefreshStrategy, StreamingQuery}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
@@ -257,15 +257,16 @@ object ScopedStateStore {
         offset: Offset,
         strategy: RefreshStrategy
     ): EnvelopeStream[Id, S] =
-      Envelope.stream(
+      StreamingQuery[Envelope[Id, S]](
         offset,
         offset =>
           // format: off
           sql"""SELECT type, id, value, rev, instant, ordering FROM public.scoped_states
                |${Fragments.whereAndOpt(Some(fr"type = $tpe"), predicate.asFragment, Some(fr"tag = $tag"), offset.asFragment)}
                |ORDER BY ordering""".stripMargin.query[Envelope[Id, S]],
-        xas,
-        config.copy(refreshStrategy = strategy)
+        _.offset,
+        config.copy(refreshStrategy = strategy),
+        xas
       )
 
     override def currentStates(predicate: Predicate, tag: Tag, offset: Offset): EnvelopeStream[Id, S] =

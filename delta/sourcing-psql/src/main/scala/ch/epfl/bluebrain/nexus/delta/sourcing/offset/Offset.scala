@@ -12,6 +12,8 @@ import scala.annotation.nowarn
 
 sealed trait Offset extends Product with Serializable {
 
+  def value: Long
+
   def asFragment: Option[Fragment]
 
   def ordering: Long = this match {
@@ -26,8 +28,13 @@ object Offset {
     * To fetch all rows from the beginning
     */
   final case object Start extends Offset {
+
+    override val value: Long = 0L
+
     override def asFragment: Option[Fragment] = None
   }
+
+  def from(value: Long): Offset = if(value > 0L) Offset.at(value) else Offset.Start
 
   /**
     * To fetch rows from the given offset

@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import monix.bio.Task
 import shapeless.Typeable
 

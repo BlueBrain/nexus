@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -52,6 +53,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[DatabaseConfig].from(appCfg.database)
   make[FusionConfig].from { appCfg.fusion }
   make[ProjectsConfig].from { appCfg.projects }
+  make[QueryConfig].from { appCfg.projections.query }
   make[BaseUri].from { appCfg.http.baseUri }
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
   make[ServiceAccount].from { appCfg.serviceAccount.value }

@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.SelectPredicates.SelectPredicatesConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ElemCtx, ReferenceRegistry}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 
 import java.time.Instant
@@ -32,8 +32,7 @@ class SelectPredicatesSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val uniformState =
-    PullRequestState.uniformScopedStateEncoder(base).toUniformScopedState(state).runSyncUnsafe(ioTimeout)
+  private val graph = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(SelectPredicates)
@@ -41,13 +40,11 @@ class SelectPredicatesSuite extends BioSuite {
 
   private val element =
     SuccessElem(
-      ElemCtx.SourceId(base),
       tpe = PullRequest.entityType,
       id = base / "id",
-      rev = 1,
       instant = instant,
       offset = Offset.at(1L),
-      value = uniformState
+      value = graph
     )
 
   def pipe(predicates: Set[Iri]): SelectPredicates =

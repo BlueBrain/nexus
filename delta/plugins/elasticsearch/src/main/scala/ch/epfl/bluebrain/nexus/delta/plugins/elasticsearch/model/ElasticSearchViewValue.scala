@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
-import cats.data.NonEmptySet
+import cats.data.{NonEmptyChain, NonEmptySet}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewValue.IndexingElasticSearchViewValue
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
@@ -10,6 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
 import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, DiscardMetadata, FilterDeprecated}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, PipeRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
 
@@ -66,6 +68,14 @@ object ElasticSearchViewValue {
       permission: Permission
   ) extends ElasticSearchViewValue {
     override val tpe: ElasticSearchViewType = ElasticSearchViewType.ElasticSearch
+
+    def pipeChain: Option[PipeChain] =
+      NonEmptyChain.fromSeq(pipeline).map { steps =>
+        val pipes = steps.map { step =>
+          (PipeRef(step.name), step.config.getOrElse(ExpandedJsonLd.empty))
+        }
+        PipeChain(pipes)
+      }
   }
 
   object IndexingElasticSearchViewValue {

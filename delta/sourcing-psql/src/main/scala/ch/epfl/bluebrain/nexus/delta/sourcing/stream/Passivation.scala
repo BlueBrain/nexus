@@ -64,7 +64,7 @@ object Passivation {
         lastElemTs <- ref.get
         currentTs  <- nowInMillis
         shouldStop  = currentTs - lastElemTs > inactiveInterval.toMillis
-        _          <- if (shouldStop) status.update(_.passivated) >> stopFn()
+        _          <- if (shouldStop) status.update(_ => ExecutionStatus.Passivated) >> stopFn()
                       else Task.unit
       } yield ()
     }

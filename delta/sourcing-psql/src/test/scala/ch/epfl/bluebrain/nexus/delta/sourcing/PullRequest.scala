@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{nxv, rdfs, schemas}
 import ch.epfl.bluebrain.nexus.delta.rdf.graph.Graph
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.{IriOrBNode, Vocabulary}
-import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand.{Boom, Create, Merge, Never, TagPR, Update}
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestCommand._
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestEvent.{PullRequestCreated, PullRequestMerged, PullRequestTagged, PullRequestUpdated}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestRejection.{AlreadyExists, NotFound, PullRequestAlreadyClosed}
 import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest.PullRequestState.{PullRequestActive, PullRequestClosed}
@@ -13,8 +13,8 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.Latest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model._
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.{UniformScopedState, UniformScopedStateEncoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredCodec
 import io.circe.{Codec, Json}
@@ -224,12 +224,8 @@ object PullRequest {
       Serializer(_.id)
     }
 
-    def uniformScopedStateEncoder(base: Iri): UniformScopedStateEncoder[PullRequestState] =
-      UniformScopedStateEncoder.fromSerializer(
-        serializer,
-        entityType,
-        state =>
-          UniformScopedState(
+    def toGraphResource(state: PullRequestState, base: Iri): GraphResource =
+          GraphResource(
             PullRequest.entityType,
             state.project,
             base / state.id.value,
@@ -241,7 +237,6 @@ object PullRequest {
             state.metadataGraph(base),
             state.source
           )
-      )
   }
 
 }

@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model
 
 import cats.data.NonEmptySet
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.Metadata
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
@@ -10,7 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
@@ -243,4 +246,13 @@ object ElasticSearchView {
 
   implicit val elasticSearchMetadataJsonLdEncoder: JsonLdEncoder[Metadata] =
     JsonLdEncoder.computeFromCirce(ContextValue(contexts.elasticsearchMetadata))
+
+  def graphResourceEncoder(defaultMapping: JsonObject, defaultSettings: JsonObject)(implicit
+      baseUri: BaseUri
+  ): GraphResourceEncoder[ElasticSearchViewState, ElasticSearchView, Metadata] =
+    GraphResourceEncoder.withMetadata[ElasticSearchViewState, ElasticSearchView, Metadata](
+      ElasticSearchViews.entityType,
+      (context, state) => state.toResource(context.apiMappings, context.base, defaultMapping, defaultSettings),
+      value => JsonLdContent(value, value.value.source, Some(value.value.metadata))
+    )
 }

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.semiauto.deriveJsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import io.circe.{Json, JsonObject}
 import monix.bio.Task
 import shapeless.Typeable
@@ -24,7 +25,7 @@ class FailEveryN(failEvery: Int) extends Pipe {
     if (countSinceLastFail == failEvery - 1)
       Task.delay {
         countSinceLastFail = 0
-        element.failed(s"Fail every $failEvery elements")
+        element.failed(new IllegalStateException(s"Fail every $failEvery elements"))
       }
     else
       Task.delay {

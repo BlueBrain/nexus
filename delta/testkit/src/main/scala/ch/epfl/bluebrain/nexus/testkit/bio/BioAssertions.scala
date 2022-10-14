@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.testkit.bio
 import monix.bio.Cause.{Error, Termination}
 import monix.bio.{IO, UIO}
 import munit.{Assertions, Location}
+import retry._
+import retry.syntax.all._
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import scala.concurrent.duration.FiniteDuration
@@ -54,6 +56,28 @@ trait BioAssertions { self: Assertions =>
       },
       a => assertEquals(a, expected, clue)
     )
+
+    def eventually(expected: A, retryWhen: Throwable => Boolean)(implicit patience: PatienceConfig): UIO[Unit] = {
+      assert(expected, patience.timeout).absorb
+        .retryingOnSomeErrors(
+          isWorthRetrying = retryWhen,
+          policy = RetryPolicies.limitRetriesByCumulativeDelay(
+            patience.timeout,
+            RetryPolicies.constantDelay(patience.interval)
+          ),
+          onError = (_, _) => UIO.unit
+        )
+        .hideErrors
+    }
+
+    def eventually(expected: A)(implicit patience: PatienceConfig): UIO[Unit] =
+      eventually(
+        expected,
+        {
+          case _: AssertionError => true
+          case _                 => false
+        }
+      )
 
     def assert(expected: A, timeout: FiniteDuration): UIO[Unit] =
       io.timeout(timeout).assertSome(expected)
@@ -111,6 +135,10 @@ trait BioAssertions { self: Assertions =>
 
   implicit class MonixBioAssertionsOptionOps[E, A](io: IO[E, Option[A]])(implicit E: ClassTag[E], loc: Location) {
     def assertSome(expected: A): UIO[Unit] = io.assert(Some(expected))
+
+    def eventuallySome(expected: A)(implicit patience: PatienceConfig): UIO[Unit] = io.eventually(Some(expected))
+
+    def eventuallyNone(implicit patience: PatienceConfig): UIO[Unit] = io.eventually(None)
 
     def assertNone: UIO[Unit] = io.assert(None)
   }

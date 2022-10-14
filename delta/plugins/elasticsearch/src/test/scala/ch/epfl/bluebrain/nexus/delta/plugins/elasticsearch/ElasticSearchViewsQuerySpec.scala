@@ -157,7 +157,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       fetchContext,
       ResolverContextResolution(rcr),
       ValidateElasticSearchView(
-        registry,
+        _ => Right(()),
         UIO.pure(Set(queryPermissions)),
         esClient.createIndex(_, _, _).void,
         "prefix",

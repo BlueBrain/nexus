@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -35,6 +35,13 @@ object ServiceError {
     *   the underlying cause for the failure
     */
   final case class ScopeInitializationFailed(override val reason: String) extends ServiceError(reason)
+
+  /**
+    * Signals when fetch a project context for a given project
+    * @param project
+    */
+  final case class FetchContextFailed(project: ProjectRef)
+      extends ServiceError(s"Fetching the context for the project '$project' failed.")
 
   sealed abstract class IndexingActionFailed(override val reason: String, val resource: ResourceF[Unit])
       extends ServiceError(reason)

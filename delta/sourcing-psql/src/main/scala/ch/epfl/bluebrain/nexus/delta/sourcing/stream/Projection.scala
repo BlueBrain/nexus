@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ProgressConfig
 import fs2.concurrent.SignallingRef
-import monix.bio.{Fiber, Task}
+import monix.bio.{Fiber, Task, UIO}
 
 /**
   * A reference to a projection that has been started.
@@ -21,6 +23,7 @@ import monix.bio.{Fiber, Task}
 final class Projection private[stream] (
     val name: String,
     status: Ref[Task, ExecutionStatus],
+    progress: Ref[Task, ProjectionProgress],
     signal: SignallingRef[Task, Boolean],
     fiber: Ref[Task, Fiber[Throwable, Unit]]
 ) {
@@ -32,12 +35,7 @@ final class Projection private[stream] (
   def executionStatus: Task[ExecutionStatus] =
     status.get
 
-  /**
-    * @return
-    *   the last observed offset of this projection
-    */
-  def offset: Task[ProjectionOffset] =
-    executionStatus.map(_.offset)
+  def currentProgress: Task[ProjectionProgress] = progress.get
 
   /**
     * @return
@@ -52,8 +50,42 @@ final class Projection private[stream] (
   def stop(): Task[Unit] =
     for {
       f <- fiber.get
-      _ <- status.update(_.stopped)
+      _ <- status.update(_ => ExecutionStatus.Stopped)
       _ <- signal.set(true)
       _ <- f.join
     } yield ()
+}
+
+object Projection {
+    def apply(projection: CompiledProjection,
+              fetchProgress: UIO[Option[ProjectionProgress]],
+              saveProgress: ProjectionProgress => UIO[Unit])(implicit progressConfig: ProgressConfig): Task[Projection] =
+      for {
+        status    <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Pending)
+        signal   <- SignallingRef[Task, Boolean](false)
+        progress <- fetchProgress.map(_.getOrElse(ProjectionProgress.NoProgress))
+        progressRef <- Ref[Task].of(progress)
+        stream    = projection.streamF
+          .apply(progress.offset)(status)(signal)
+          .interruptWhen(signal)
+          .onFinalizeCaseWeak {
+            case ExitCase.Error(th) => status.update(_.failed(th))
+            case ExitCase.Completed => Task.unit // streams stopped through a signal still finish as Completed
+            case ExitCase.Canceled  => Task.unit // the status is updated by the logic that cancels the stream
+          }.mapAccumulate(progress) {
+          case (acc, msg) if msg.offset.value > progress.offset.value => (acc + msg, msg)
+          case (acc, msg)                                  => (acc, msg)
+        }.groupWithin(progressConfig.maxElements, progressConfig.maxInterval).evalTap { elements =>
+          elements.last.fold(Task.unit) { case (newProgress, _) =>
+            progressRef.set(newProgress) >> saveProgress(newProgress)
+          }
+        }
+          .compile
+          .drain
+        // update status to Running at the beginning and to Completed at the end if it's still running
+        task      = status.update(_ => ExecutionStatus.Running) >> stream >> status.update(s => if (s.isRunning) ExecutionStatus.Completed else s)
+        fiber    <- task.start
+        fiberRef <- Ref[Task].of(fiber)
+      } yield new Projection(projection.metadata.name, status, progressRef, signal, fiberRef)
+
 }

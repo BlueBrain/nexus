@@ -30,13 +30,11 @@ class StreamSource[A: Typeable](
   override type Out = A
   override def outType: Typeable[A] = Typeable[A]
 
-  override def apply(offset: ProjectionOffset): Stream[Task, Elem[A]] =
-    streamFn(offset.forSource(this)).map { envelope =>
+  override def apply(offset: Offset): Stream[Task, Elem[A]] =
+    streamFn(offset).map { envelope =>
       SuccessElem(
-        ctx = ElemCtx.SourceId(id),
         tpe = envelope.tpe,
-        id = envelope.id,
-        rev = envelope.rev,
+        id = envelope.id.toString,
         instant = envelope.instant,
         offset = envelope.offset,
         value = envelope.value
