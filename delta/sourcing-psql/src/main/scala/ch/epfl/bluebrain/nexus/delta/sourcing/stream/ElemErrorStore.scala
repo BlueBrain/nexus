@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
-import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
@@ -13,7 +12,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
-import monix.bio.Task
+import monix.bio.{Task, UIO}
 
 import java.io.{PrintWriter, StringWriter}
 import java.time.Instant
@@ -23,7 +22,7 @@ trait ElemErrorStore {
   /**
     * Save one error
     */
-  def save(metadata: ProjectionMetadata, failure: FailedElem): ConnectionIO[Unit]
+  def save(metadata: ProjectionMetadata, failure: FailedElem): UIO[Unit]
 
   /**
     * Get all errors for a given projection id
@@ -75,7 +74,7 @@ object ElemErrorStore {
       override def save(
           metadata: ProjectionMetadata,
           failure: FailedElem
-      ): ConnectionIO[Unit] =
+      ): UIO[Unit] =
         sql"""
                | INSERT INTO public.elem_errors (
                |  projection_name,
@@ -100,7 +99,10 @@ object ElemErrorStore {
                |  ${failure.throwable.getClass.getCanonicalName},
                |  ${failure.throwable.getMessage},
                |  ${stackTraceAsString(failure.throwable)}
-               | )""".stripMargin.update.run.void
+               | )""".stripMargin.update.run
+          .transact(xas.write)
+          .void
+          .hideErrors
     }
 
   /**
