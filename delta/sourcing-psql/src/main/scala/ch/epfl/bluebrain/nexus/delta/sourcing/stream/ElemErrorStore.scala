@@ -4,7 +4,7 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemErrorStore.ElemErrorRow
@@ -104,7 +104,7 @@ object ElemErrorStore {
 
   final case class ElemErrorRow(
       projectionMetadata: ProjectionMetadata,
-      entityType: String,
+      entityType: EntityType,
       elemOffset: Long,
       elemId: String,
       errorType: String,
@@ -116,7 +116,20 @@ object ElemErrorStore {
   object ElemErrorRow {
     implicit val projectionErrorRow: Read[ElemErrorRow] = {
       Read[
-        (Long, String, String, Option[ProjectRef], Option[Iri], String, Long, String, String, String, String, Instant)
+        (
+            Long,
+            String,
+            String,
+            Option[ProjectRef],
+            Option[Iri],
+            EntityType,
+            Long,
+            String,
+            String,
+            String,
+            String,
+            Instant
+        )
       ].map {
         case (
               _,
