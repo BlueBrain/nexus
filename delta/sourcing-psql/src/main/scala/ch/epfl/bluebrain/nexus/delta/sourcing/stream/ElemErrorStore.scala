@@ -53,7 +53,7 @@ object ElemErrorStore {
         sql"""SELECT * from public.elem_errors
              |WHERE projection_project = $projectionProject
              |AND projection_id = $projectionId
-             |AND ordering >= ${offset.value}
+             |AND ordering >= $offset
              |ORDER BY ordering DESC""".stripMargin
           .query[ElemErrorRow]
           .streamWithChunkSize(config.batchSize)
@@ -65,7 +65,7 @@ object ElemErrorStore {
       ): Stream[Task, ElemErrorRow] =
         sql"""SELECT * from public.elem_errors
              |WHERE projection_name = $projectionName
-             |AND ordering >= ${offset.value}
+             |AND ordering >= $offset
              |ORDER BY ordering DESC""".stripMargin
           .query[ElemErrorRow]
           .streamWithChunkSize(config.batchSize)
@@ -94,7 +94,7 @@ object ElemErrorStore {
                |  ${metadata.project},
                |  ${metadata.resourceId},
                |  ${failure.tpe.value},
-               |  ${failure.offset.value},
+               |  ${failure.offset},
                |  ${failure.id},
                |  ${failure.throwable.getClass.toString},
                |  ${failure.throwable.getMessage},
@@ -105,7 +105,7 @@ object ElemErrorStore {
   final case class ElemErrorRow(
       projectionMetadata: ProjectionMetadata,
       entityType: EntityType,
-      elemOffset: Long,
+      elemOffset: Offset,
       elemId: String,
       errorType: String,
       message: String,
@@ -123,7 +123,7 @@ object ElemErrorStore {
             Option[ProjectRef],
             Option[Iri],
             EntityType,
-            Long,
+            Offset,
             String,
             String,
             String,

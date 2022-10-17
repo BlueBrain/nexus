@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.offset
 
 import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import doobie._
 import doobie.implicits._
 import doobie.util.fragment.Fragment
 import io.circe.Codec
@@ -34,7 +35,7 @@ object Offset {
     override def asFragment: Option[Fragment] = None
   }
 
-  def from(value: Long): Offset = if(value > 0L) Offset.at(value) else Offset.Start
+  def from(value: Long): Offset = if (value > 0L) Offset.at(value) else Offset.Start
 
   /**
     * To fetch rows from the given offset
@@ -60,4 +61,7 @@ object Offset {
       Configuration.default.withDiscriminator(keywords.tpe)
     deriveConfiguredCodec[Offset]
   }
+
+  implicit final val offsetGet: Get[Offset] = Get[Long].map(from)
+  implicit final val offsetPut: Put[Offset] = Put[Long].contramap(_.value)
 }
