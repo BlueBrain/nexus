@@ -103,6 +103,7 @@ object ElemErrorStore {
     }
 
   final case class ElemErrorRow(
+      ordering: Offset,
       projectionMetadata: ProjectionMetadata,
       entityType: EntityType,
       elemOffset: Offset,
@@ -117,7 +118,7 @@ object ElemErrorStore {
     implicit val projectionErrorRow: Read[ElemErrorRow] = {
       Read[
         (
-            Long,
+            Offset,
             String,
             String,
             Option[ProjectRef],
@@ -132,7 +133,7 @@ object ElemErrorStore {
         )
       ].map {
         case (
-              _,
+              ordering,
               name,
               module,
               project,
@@ -146,6 +147,7 @@ object ElemErrorStore {
               instant
             ) =>
           ElemErrorRow(
+            ordering,
             ProjectionMetadata(module, name, project, resourceId),
             entityType,
             elemOffset,
