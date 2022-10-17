@@ -100,7 +100,7 @@ CREATE INDEX IF NOT EXISTS entity_dependencies_reverse_idx ON public.entity_depe
 --
 -- Table for projection offsets
 --
-CREATE TABLE if NOT EXISTS public.projection_offsets(
+CREATE TABLE IF NOT EXISTS public.projection_offsets(
     name         text,
     module       text,
     project      text,
@@ -113,5 +113,25 @@ CREATE TABLE if NOT EXISTS public.projection_offsets(
     updated_at   timestamptz NOT NULL,
     PRIMARY KEY(name)
 );
-CREATE INDEX IF NOT EXISTS projection_offsets_project_idx on public.projection_offsets(project);
-CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx on public.projection_offsets(resource_id);
+CREATE INDEX IF NOT EXISTS projection_offsets_project_idx ON public.projection_offsets(project);
+CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx ON public.projection_offsets(resource_id);
+
+--
+-- Table for elem errors
+--
+CREATE TABLE IF NOT EXISTS public.elem_errors(
+    ordering            bigserial,
+    projection_name     text        NOT NULL,
+    projection_module   text        NOT NULL,
+    projection_project  text,
+    projection_id       text,
+    entity_type         text        NOT NULL,
+    elem_offset         bigint      NOT NULL,
+    elem_id             text        NOT NULL,
+    message             text        NOT NULL,
+    stack_trace         text        NOT NULL,
+    instant             timestamptz DEFAULT NOW(),
+    PRIMARY KEY(ordering)
+);
+--CREATE INDEX IF NOT EXISTS elem_errors_projection_name_idx ON public.elem_errors(projection_name);
+--CREATE INDEX IF NOT EXISTS elem_errors_projection_idx ON public.elem_errors(projection_project, projection_id);

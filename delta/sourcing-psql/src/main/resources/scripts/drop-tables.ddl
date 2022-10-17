@@ -5,5 +5,6 @@ DROP TABLE    IF EXISTS public.scoped_events;
 DROP TABLE    IF EXISTS public.scoped_states;
 DROP TABLE    IF EXISTS public.entity_dependencies;
 DROP TABLE    IF EXISTS public.projection_offsets;
+DROP TABLE    IF EXISTS public.elem_errors;
 DROP SEQUENCE IF EXISTS public.event_offset;
 DROP SEQUENCE IF EXISTS public.state_offset;
