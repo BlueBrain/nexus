@@ -93,7 +93,7 @@ object ElemErrorStore {
                |  ${metadata.module},
                |  ${metadata.project},
                |  ${metadata.resourceId},
-               |  ${failure.tpe.value},
+               |  ${failure.tpe},
                |  ${failure.offset},
                |  ${failure.id},
                |  ${failure.throwable.getClass.toString},
@@ -102,15 +102,19 @@ object ElemErrorStore {
                | )""".stripMargin.update.run.void
     }
 
+  final protected case class FailedElemData(
+      id: String,
+      entityType: EntityType,
+      offset: Offset,
+      errorType: String,
+      message: String,
+      stackTrace: String
+  )
+
   final case class ElemErrorRow(
       ordering: Offset,
       projectionMetadata: ProjectionMetadata,
-      entityType: EntityType,
-      elemOffset: Offset,
-      elemId: String,
-      errorType: String,
-      message: String,
-      stackTrace: String,
+      failedElemData: FailedElemData,
       instant: Instant
   )
 
@@ -149,12 +153,7 @@ object ElemErrorStore {
           ElemErrorRow(
             ordering,
             ProjectionMetadata(module, name, project, resourceId),
-            entityType,
-            elemOffset,
-            elemId,
-            errorType,
-            message,
-            stackTrace,
+            FailedElemData(elemId, entityType, elemOffset, errorType, message, stackTrace),
             instant
           )
       }
