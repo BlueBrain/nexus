@@ -15,6 +15,7 @@ import doobie.postgres.implicits._
 import fs2.Stream
 import monix.bio.Task
 
+import java.io.{PrintWriter, StringWriter}
 import java.time.Instant
 
 trait ElemErrorStore {
@@ -96,11 +97,20 @@ object ElemErrorStore {
                |  ${failure.tpe},
                |  ${failure.offset},
                |  ${failure.id},
-               |  ${failure.throwable.getClass.toString},
+               |  ${failure.throwable.getClass.getCanonicalName},
                |  ${failure.throwable.getMessage},
-               |  ${failure.throwable.getStackTrace.map(_.toString).toString}
+               |  ${stackTraceAsString(failure.throwable)}
                | )""".stripMargin.update.run.void
     }
+
+  /**
+    * Outputs readable stack trace for the given throwable.
+    */
+  def stackTraceAsString(t: Throwable): String = {
+    val sw = new StringWriter
+    t.printStackTrace(new PrintWriter(sw))
+    sw.toString
+  }
 
   final protected case class FailedElemData(
       id: String,
