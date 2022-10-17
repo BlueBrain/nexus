@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ElemErrorStore.ElemErrorRow
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.FailedElemLogStore.FailedElemLogRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import doobie._
 import doobie.implicits._
@@ -17,7 +17,7 @@ import monix.bio.{Task, UIO}
 import java.io.{PrintWriter, StringWriter}
 import java.time.Instant
 
-trait ElemErrorStore {
+trait FailedElemLogStore {
 
   /**
     * Save one error
@@ -31,43 +31,43 @@ trait ElemErrorStore {
       projectionProject: ProjectRef,
       projectionId: Iri,
       offset: Offset
-  ): Stream[Task, ElemErrorRow]
+  ): Stream[Task, FailedElemLogRow]
 
   /**
     * Get all errors start from the given offset
     */
-  def entries(projectionName: String, offset: Offset): Stream[Task, ElemErrorRow]
+  def entries(projectionName: String, offset: Offset): Stream[Task, FailedElemLogRow]
 
 }
 
-object ElemErrorStore {
+object FailedElemLogStore {
 
-  def apply(xas: Transactors, config: QueryConfig): ElemErrorStore =
-    new ElemErrorStore {
+  def apply(xas: Transactors, config: QueryConfig): FailedElemLogStore =
+    new FailedElemLogStore {
 
       override def entries(
           projectionProject: ProjectRef,
           projectionId: Iri,
           offset: Offset
-      ): Stream[Task, ElemErrorRow] =
-        sql"""SELECT * from public.elem_errors
+      ): Stream[Task, FailedElemLogRow] =
+        sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_project = $projectionProject
              |AND projection_id = $projectionId
              |AND ordering >= $offset
              |ORDER BY ordering DESC""".stripMargin
-          .query[ElemErrorRow]
+          .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
 
       override def entries(
           projectionName: String,
           offset: Offset
-      ): Stream[Task, ElemErrorRow] =
-        sql"""SELECT * from public.elem_errors
+      ): Stream[Task, FailedElemLogRow] =
+        sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_name = $projectionName
              |AND ordering >= $offset
              |ORDER BY ordering DESC""".stripMargin
-          .query[ElemErrorRow]
+          .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
 
@@ -76,7 +76,7 @@ object ElemErrorStore {
           failure: FailedElem
       ): UIO[Unit] =
         sql"""
-               | INSERT INTO public.elem_errors (
+               | INSERT INTO public.failed_elem_logs (
                |  projection_name,
                |  projection_module,
                |  projection_project,
@@ -114,6 +114,9 @@ object ElemErrorStore {
     sw.toString
   }
 
+  /**
+    * Helper case class to structure the
+    */
   final protected case class FailedElemData(
       id: String,
       entityType: EntityType,
@@ -123,15 +126,15 @@ object ElemErrorStore {
       stackTrace: String
   )
 
-  final case class ElemErrorRow(
+  final case class FailedElemLogRow(
       ordering: Offset,
       projectionMetadata: ProjectionMetadata,
       failedElemData: FailedElemData,
       instant: Instant
   )
 
-  object ElemErrorRow {
-    implicit val projectionErrorRow: Read[ElemErrorRow] = {
+  object FailedElemLogRow {
+    implicit val failedElemLogRow: Read[FailedElemLogRow] = {
       Read[
         (
             Offset,
@@ -162,7 +165,7 @@ object ElemErrorStore {
               stackTrace,
               instant
             ) =>
-          ElemErrorRow(
+          FailedElemLogRow(
             ordering,
             ProjectionMetadata(module, name, project, resourceId),
             FailedElemData(elemId, entityType, elemOffset, errorType, message, stackTrace),

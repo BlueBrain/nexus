@@ -13,13 +13,13 @@ import munit.AnyFixture
 
 import java.time.Instant
 
-class ElemErrorStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
+class FailedElemLogStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture with Doobie.Assertions {
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(doobie)
 
   private lazy val xas = doobie()
 
-  private lazy val store = ElemErrorStore(xas, QueryConfig(10, RefreshStrategy.Stop))
+  private lazy val store = FailedElemLogStore(xas, QueryConfig(10, RefreshStrategy.Stop))
 
   private val name     = "errors"
   private val project  = ProjectRef.unsafe("org", "proj")

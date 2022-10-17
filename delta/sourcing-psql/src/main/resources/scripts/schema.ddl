@@ -119,7 +119,7 @@ CREATE INDEX IF NOT EXISTS projection_offsets_resource_id_idx ON public.projecti
 --
 -- Table for elem errors
 --
-CREATE TABLE IF NOT EXISTS public.elem_errors(
+CREATE TABLE IF NOT EXISTS public.failed_elem_logs(
     ordering            bigserial,
     projection_name     text        NOT NULL,
     projection_module   text        NOT NULL,
@@ -134,5 +134,5 @@ CREATE TABLE IF NOT EXISTS public.elem_errors(
     instant             timestamptz DEFAULT NOW(),
     PRIMARY KEY(ordering)
 );
---CREATE INDEX IF NOT EXISTS elem_errors_projection_name_idx ON public.elem_errors(projection_name);
---CREATE INDEX IF NOT EXISTS elem_errors_projection_idx ON public.elem_errors(projection_project, projection_id);
+--CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_name_idx ON public.failed_elem_logs(projection_name);
+--CREATE INDEX IF NOT EXISTS failed_elem_logs_projection_idx ON public.failed_elem_logs(projection_project, projection_id);
