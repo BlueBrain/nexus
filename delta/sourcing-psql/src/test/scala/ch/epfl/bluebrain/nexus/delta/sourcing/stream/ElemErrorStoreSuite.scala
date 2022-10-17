@@ -29,7 +29,7 @@ class ElemErrorStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixture
 
   private val metadata = ProjectionMetadata("test", name, Some(project), Some(resource))
 
-  private val error = new Throwable("boom")
+  private val error = new RuntimeException("boom")
   private val fail1 = FailedElem(EntityType("ACL"), "id", Instant.EPOCH, Offset.At(42L), error)
   private val fail2 = FailedElem(EntityType("Schema"), "id", Instant.now, Offset.At(43L), error)
   private val fail3 = FailedElem(EntityType("Entity"), "id", Instant.now, Offset.At(44L), error)

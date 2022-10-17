@@ -84,6 +84,7 @@ object ElemErrorStore {
                |  entity_type,
                |  elem_offset,
                |  elem_id,
+               |  error_type,
                |  message,
                |  stack_trace
                | )
@@ -95,6 +96,7 @@ object ElemErrorStore {
                |  ${failure.tpe.value},
                |  ${failure.offset.value},
                |  ${failure.id},
+               |  ${failure.throwable.getClass.toString},
                |  ${failure.throwable.getMessage},
                |  ${failure.throwable.getStackTrace.map(_.toString).toString}
                | )""".stripMargin.update.run.void
@@ -108,6 +110,7 @@ object ElemErrorStore {
       entityType: String,
       elemOffset: Long,
       elemId: String,
+      errorType: String,
       message: String,
       stackTrace: String,
       instant: Instant
@@ -115,8 +118,23 @@ object ElemErrorStore {
 
   object ElemErrorRow {
     implicit val projectionErrorRow: Read[ElemErrorRow] = {
-      Read[(Long, String, String, Option[ProjectRef], Option[Iri], String, Long, String, String, String, Instant)].map {
-        case (_, name, module, project, resourceId, entityType, elemOffset, elemId, message, stackTrace, instant) =>
+      Read[
+        (Long, String, String, Option[ProjectRef], Option[Iri], String, Long, String, String, String, String, Instant)
+      ].map {
+        case (
+              _,
+              name,
+              module,
+              project,
+              resourceId,
+              entityType,
+              elemOffset,
+              elemId,
+              errorType,
+              message,
+              stackTrace,
+              instant
+            ) =>
           ElemErrorRow(
             name,
             module,
@@ -125,6 +143,7 @@ object ElemErrorStore {
             entityType,
             elemOffset,
             elemId,
+            errorType,
             message,
             stackTrace,
             instant

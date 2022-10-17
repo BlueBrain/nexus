@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS public.elem_errors(
     entity_type         text        NOT NULL,
     elem_offset         bigint      NOT NULL,
     elem_id             text        NOT NULL,
+    error_type          text        NOT NULL,
     message             text        NOT NULL,
     stack_trace         text        NOT NULL,
     instant             timestamptz DEFAULT NOW(),
