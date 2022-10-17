@@ -51,7 +51,8 @@ object ElemErrorStore {
           offset: Offset
       ): Stream[Task, ElemErrorRow] =
         sql"""SELECT * from public.elem_errors
-             |WHERE projection_id = $projectionId
+             |WHERE projection_project = $projectionProject
+             |AND projection_id = $projectionId
              |AND ordering >= ${offset.value}
              |ORDER BY ordering DESC""".stripMargin
           .query[ElemErrorRow]
