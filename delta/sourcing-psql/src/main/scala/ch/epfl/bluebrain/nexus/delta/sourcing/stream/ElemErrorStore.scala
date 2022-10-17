@@ -28,7 +28,7 @@ trait ElemErrorStore {
     * Get all errors for a given projection id
     */
   def entries(
-      projectionProject: Option[ProjectRef],
+      projectionProject: ProjectRef,
       projectionId: String,
       offset: Offset
   ): Stream[Task, ElemErrorRow]
@@ -46,7 +46,7 @@ object ElemErrorStore {
     new ElemErrorStore {
 
       override def entries(
-          projectionProject: Option[ProjectRef],
+          projectionProject: ProjectRef,
           projectionId: String,
           offset: Offset
       ): Stream[Task, ElemErrorRow] =
