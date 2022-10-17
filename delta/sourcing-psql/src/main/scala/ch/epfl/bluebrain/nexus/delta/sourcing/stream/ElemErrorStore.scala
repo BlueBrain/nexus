@@ -84,8 +84,7 @@ object ElemErrorStore {
                |  elem_offset,
                |  elem_id,
                |  message,
-               |  stack_trace,
-               |  instant
+               |  stack_trace
                | )
                | VALUES (
                |  ${metadata.name},
@@ -96,8 +95,7 @@ object ElemErrorStore {
                |  ${failure.offset.value},
                |  ${failure.id},
                |  ${failure.throwable.getMessage},
-               |  ${failure.throwable.getStackTrace.map(_.toString).toString},
-               |  ${failure.instant}
+               |  ${failure.throwable.getStackTrace.map(_.toString).toString}
                | )""".stripMargin.update.run.void
     }
 
