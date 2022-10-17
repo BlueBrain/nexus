@@ -29,7 +29,7 @@ trait ElemErrorStore {
     */
   def entries(
       projectionProject: ProjectRef,
-      projectionId: String,
+      projectionId: Iri,
       offset: Offset
   ): Stream[Task, ElemErrorRow]
 
@@ -47,7 +47,7 @@ object ElemErrorStore {
 
       override def entries(
           projectionProject: ProjectRef,
-          projectionId: String,
+          projectionId: Iri,
           offset: Offset
       ): Stream[Task, ElemErrorRow] =
         sql"""SELECT * from public.elem_errors
