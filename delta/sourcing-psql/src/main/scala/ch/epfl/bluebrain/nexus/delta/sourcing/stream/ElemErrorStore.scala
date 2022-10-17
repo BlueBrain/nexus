@@ -103,10 +103,7 @@ object ElemErrorStore {
     }
 
   final case class ElemErrorRow(
-      projectionName: String,
-      projectionModule: String,
-      projectionProject: Option[ProjectRef],
-      projectionId: Option[Iri],
+      projectionMetadata: ProjectionMetadata,
       entityType: String,
       elemOffset: Long,
       elemId: String,
@@ -136,10 +133,7 @@ object ElemErrorStore {
               instant
             ) =>
           ElemErrorRow(
-            name,
-            module,
-            project,
-            resourceId,
+            ProjectionMetadata(module, name, project, resourceId),
             entityType,
             elemOffset,
             elemId,
