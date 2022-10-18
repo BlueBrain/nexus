@@ -16,6 +16,9 @@ import shapeless.Typeable
   * Pipe implementation for UniformScopedState that embeds the resource source into the metadata graph.
   */
 class SourceAsText extends Pipe {
+
+  private val empty = Json.obj()
+
   override type In  = GraphResource
   override type Out = GraphResource
   override def label: Label                          = SourceAsText.label
@@ -24,7 +27,7 @@ class SourceAsText extends Pipe {
 
   override def apply(element: SuccessElem[GraphResource]): Task[Elem[GraphResource]] = {
     val graph = element.value.metadataGraph.add(nxv.originalSource.iri, element.value.source.noSpaces)
-    Task.pure(element.map(state => state.copy(metadataGraph = graph, source = Json.obj())))
+    Task.pure(element.map(state => state.copy(metadataGraph = graph, source = empty)))
   }
 
 }

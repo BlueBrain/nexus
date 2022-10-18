@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -8,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
-import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
@@ -50,12 +50,12 @@ abstract class GraphResourceEncoder[State <: ScopedState, B, M](
       graph             <- valueJsonLdEncoder.graph(resource.value)
       rootGraph          = graph.replaceRootNode(id)
       resourceMetaGraph <- resourceFJsonLdEncoder.graph(resource.void)
-      metaGraph         <- encodeMetadata(metadata)
+      metaGraph         <- encodeMetadata(id, metadata)
       rootMetaGraph      = metaGraph.fold(resourceMetaGraph)(_ ++ resourceMetaGraph)
       typesGraph         = rootMetaGraph.rootTypesGraph
       finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
     } yield GraphResource(
-      tpe = Resources.entityType,
+      tpe = entityType,
       project = state.project,
       id = id,
       rev = state.rev,
@@ -68,9 +68,9 @@ abstract class GraphResourceEncoder[State <: ScopedState, B, M](
     )
   }
 
-  private def encodeMetadata(metadata: Option[M])(implicit cr: RemoteContextResolution) =
+  private def encodeMetadata(id: Iri, metadata: Option[M])(implicit cr: RemoteContextResolution) =
     (metadata, metadataEncoder) match {
-      case (Some(m), Some(e)) => e.graph(m).map(Some(_))
+      case (Some(m), Some(e)) => e.graph(m).map { g => Some(g.replaceRootNode(id)) }
       case (_, _)             => UIO.none
     }
 

@@ -61,6 +61,7 @@ class ElasticSearchScopeInitializationSpec
     ResolverContextResolution(rcr),
     alwaysValidate,
     eventLogConfig,
+    "prefix",
     xas
   ).accepted
 

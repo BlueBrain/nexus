@@ -5,7 +5,9 @@ import doobie.{Get, Put}
 /**
   * Entity type
   */
-final case class EntityType(value: String) extends AnyVal
+final case class EntityType(value: String) extends AnyVal {
+  override def toString: String = value
+}
 
 object EntityType {
   implicit val entityTypeGet: Get[EntityType] = Get[String].map(EntityType(_))

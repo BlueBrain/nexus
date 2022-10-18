@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Pipe
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import monix.bio.Task
 import shapeless.Typeable
 
@@ -25,7 +26,7 @@ class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: Remot
 
   private val defaultContext = ContextValue(contexts.elasticsearchIndexing, contexts.indexingMetadata)
 
-  implicit private[indexing] val api: JsonLdApi = JsonLdJavaApi.lenient
+  implicit private val api: JsonLdApi = JsonLdJavaApi.lenient
 
   override def apply(element: SuccessElem[GraphResource]): Task[Elem[Json]] = {
     val mergedContext = context.fold(defaultContext) { defaultContext.merge(_) }
@@ -33,15 +34,13 @@ class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: Remot
     if (element.value.source.isEmpty())
       graph
         .toCompactedJsonLd(mergedContext)
-        .map(ld => element.map(_ => ld.json))
-        .onErrorHandle(err => element.failed(err))
+        .map(ld => element.map(_ => ld.obj.asJson))
     else
       (graph -- graph.rootTypesGraph)
         .replaceRootNode(BNode.random) // This is done to get rid of the @id in order to avoid overriding the source @id
         .toCompactedJsonLd(mergedContext)
         .map(ld => mergeJsonLd(element.value.source, ld.json).removeAllKeys(keywords.context))
         .map(json => if (json.isEmpty()) element.dropped else element.success(json))
-        .onErrorHandle(err => element.failed(err))
   }
 
   private def mergeJsonLd(a: Json, b: Json): Json =
@@ -52,6 +51,6 @@ class GraphResourceToDocument(context: Option[ContextObject])(implicit cr: Remot
 
 object GraphResourceToDocument {
 
-  val label: Label = Label.unsafe("uniform-scoped-state-to-document")
+  val label: Label = Label.unsafe("graph-resource-to-document")
 
 }

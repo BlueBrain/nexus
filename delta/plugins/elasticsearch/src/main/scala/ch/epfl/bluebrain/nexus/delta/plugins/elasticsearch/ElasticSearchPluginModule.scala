@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchOnEventInstant
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchOnEventInstant}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, schema => viewsSchemaId, ElasticSearchViewEvent}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -28,9 +28,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
 import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
 import monix.execution.Scheduler
@@ -88,8 +89,29 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
         contextResolution,
         validateElasticSearchView,
         config.eventLog,
+        config.prefix,
         xas
       )(api, clock, uuidF)
+  }
+
+  make[ElasticSearchCoordinator].fromEffect {
+    (
+        views: ElasticSearchViews,
+        graphStream: GraphResourceStream,
+        registry: ReferenceRegistry,
+        supervisor: Supervisor,
+        client: ElasticSearchClient,
+        config: ElasticSearchViewsConfig,
+        cr: RemoteContextResolution @Id("aggregate")
+    ) =>
+      ElasticSearchCoordinator(
+        views,
+        graphStream,
+        registry,
+        supervisor,
+        client,
+        config.batch
+      )(cr)
   }
 
   make[ElasticSearchViewsQuery].from {
@@ -211,4 +233,12 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
 
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
+
+  many[GraphResourceEncoder[_, _, _]].addEffect { (base: BaseUri) =>
+    for {
+      defaultMapping  <- defaultElasticsearchMapping
+      defaultSettings <- defaultElasticsearchSettings
+    } yield ElasticSearchView.graphResourceEncoder(defaultMapping, defaultSettings)(base)
+  }
+
 }

@@ -20,7 +20,7 @@ abstract class BioSuite
   implicit protected val scheduler: Scheduler     = Scheduler.global
   implicit protected val classLoader: ClassLoader = getClass.getClassLoader
 
-  protected val ioTimeout: FiniteDuration = 20.seconds
+  protected val ioTimeout: FiniteDuration = 45.seconds
 
   override def munitValueTransforms: List[ValueTransform] =
     super.munitValueTransforms ++ List(munitIOTransform)

@@ -139,8 +139,6 @@ object PullRequest {
     def updatedAt: Instant
     def updatedBy: Subject
 
-    override def deprecated: Boolean = false
-
     override def schema: ResourceRef = Latest(schemas + "pull-request.json")
 
     override def types: Set[IriOrBNode.Iri] = Set(nxv + "PullRequest")
@@ -204,7 +202,9 @@ object PullRequest {
         createdBy: Subject,
         updatedAt: Instant,
         updatedBy: Subject
-    ) extends PullRequestState
+    ) extends PullRequestState {
+      override def deprecated: Boolean = false
+    }
 
     final case class PullRequestClosed(
         id: Label,
@@ -214,7 +214,9 @@ object PullRequest {
         createdBy: Subject,
         updatedAt: Instant,
         updatedBy: Subject
-    ) extends PullRequestState
+    ) extends PullRequestState {
+      override def deprecated: Boolean = true
+    }
 
     @nowarn("cat=unused")
     val serializer: Serializer[Label, PullRequestState] = {

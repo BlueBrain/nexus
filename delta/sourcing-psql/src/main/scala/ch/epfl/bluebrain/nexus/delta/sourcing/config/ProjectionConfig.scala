@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.config
 
 import ch.epfl.bluebrain.nexus.delta.kernel.RetryStrategyConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.{ClusterConfig, ProgressConfig}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ClusterConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
@@ -12,7 +12,7 @@ import scala.concurrent.duration.FiniteDuration
   *
   * @param cluster
   *   a configuration defining the cluster the current node operates in
-  * @param progress
+  * @param batch
   *   a configuration definition how often we must persist the progress and errors of projections
   * @param retry
   *   a configuration defining the retry policy to apply when a projection fails
@@ -22,7 +22,7 @@ import scala.concurrent.duration.FiniteDuration
   *   a configuration for how to interact with the underlying store
   */
 final case class ProjectionConfig(cluster: ClusterConfig,
-                                  progress: ProgressConfig,
+                                  batch: BatchConfig,
                                   retry: RetryStrategyConfig,
                                   supervisionCheckInterval: FiniteDuration,
                                   query: QueryConfig
@@ -48,22 +48,6 @@ object ProjectionConfig {
   object ClusterConfig {
     implicit final val clusterConfigReader: ConfigReader[ClusterConfig] =
       deriveReader[ClusterConfig]
-  }
-
-  /**
-    * The progress configuration.
-    *
-    * @param maxElements
-    *   the maximum number of elements to take into account at once when saving the progress
-    * @param maxInterval
-    *   the maximum interval to wait for before saving the progress
-    */
-  final case class ProgressConfig(maxElements: Int,
-                                  maxInterval: FiniteDuration)
-
-  object ProgressConfig {
-    implicit final val progressConfigReader: ConfigReader[ProgressConfig] =
-      deriveReader[ProgressConfig]
   }
 
 }

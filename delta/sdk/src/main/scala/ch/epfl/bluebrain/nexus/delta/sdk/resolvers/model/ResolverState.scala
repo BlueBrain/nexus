@@ -101,7 +101,7 @@ final case class ResolverState(
 
 object ResolverState {
   @nowarn("cat=unused")
-  val serializer: Serializer[Iri, ResolverState] = {
+  implicit val serializer: Serializer[Iri, ResolverState] = {
     import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.IdentityResolution.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration                      = Serializer.circeConfiguration

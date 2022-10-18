@@ -139,8 +139,8 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
     }
 
     "wait until in project view is indexed" in eventually {
-      deltaClient.get[Json](s"/views/$fullId", ScoobyDoo) { (json, response) =>
-        _total.getOption(json).value shouldEqual 4
+      deltaClient.get[Json](s"/views/$fullId?type=nxv%3AElasticSearchView", ScoobyDoo) { (json, response) =>
+        _total.getOption(json).value shouldEqual 2
         response.status shouldEqual StatusCodes.OK
       }
     }

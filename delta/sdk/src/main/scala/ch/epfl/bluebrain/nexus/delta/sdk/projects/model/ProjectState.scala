@@ -119,7 +119,7 @@ final case class ProjectState(
 object ProjectState {
 
   @nowarn("cat=unused")
-  val serializer: Serializer[ProjectRef, ProjectState] = {
+  implicit val serializer: Serializer[ProjectRef, ProjectState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     implicit val configuration: Configuration = Serializer.circeConfiguration
 

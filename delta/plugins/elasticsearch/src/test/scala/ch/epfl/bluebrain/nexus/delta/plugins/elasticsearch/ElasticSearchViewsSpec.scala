@@ -153,6 +153,7 @@ class ElasticSearchViewsSpec
         xas
       ),
       eventLogConfig,
+      "prefix",
       xas
     ).accepted
 

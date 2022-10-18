@@ -6,7 +6,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ExecutionStrategy.PersistentSingleNode
-import ch.epfl.bluebrain.nexus.testkit.TestHelpers
 import ch.epfl.bluebrain.nexus.testkit.bio.{BioSuite, PatienceConfig}
 import ch.epfl.bluebrain.nexus.testkit.postgres.Doobie
 import fs2.Stream
@@ -16,17 +15,17 @@ import munit.AnyFixture
 import java.time.Instant
 import scala.concurrent.duration._
 
-class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.Assertions with TestHelpers {
+class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie.Assertions {
 
   implicit val patienceConfig: PatienceConfig = PatienceConfig(100.millis, 10.millis)
 
-  private lazy val (sv, projectionStore) = supervisor()
+  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor3_1)
+
+  private lazy val (sv, projectionStore) = supervisor3_1()
   // name1 should run on the node with index 1 in a 3-node cluster
   private val projection1 = ProjectionMetadata("test", "name1", None, None)
   // name2 should NOT run on the node with index 1 of a 3-node cluster
   private val projection2 = ProjectionMetadata("test", "name2", None, None)
-
-  override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
   private def evalStream(start: Task[Unit]) =
     (_: Offset) =>

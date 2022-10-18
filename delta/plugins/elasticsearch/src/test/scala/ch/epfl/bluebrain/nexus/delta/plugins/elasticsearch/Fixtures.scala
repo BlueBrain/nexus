@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch
 
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.{elasticsearch, elasticsearchMetadata}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, ElasticSearchViewValue}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
@@ -8,12 +9,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObje
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import ch.epfl.bluebrain.nexus.testkit.IOValues
 import monix.bio.IO
 
 import java.util.UUID
 
-trait Fixtures extends IOValues {
+trait Fixtures {
   implicit private val cl: ClassLoader = getClass.getClassLoader
 
   def alwaysValidate: ValidateElasticSearchView = (_: UUID, _: Int, _: ElasticSearchViewValue) => IO.unit
@@ -28,30 +28,32 @@ trait Fixtures extends IOValues {
       "contexts/schemas-metadata.json",
       "contexts/elasticsearch-metadata.json",
       "contexts/metadata.json"
-    ).foldLeft(ContextValue.empty)(_ merge ContextValue.fromFile(_).accepted)
+    ).foldLeftM(ContextValue.empty) { case (acc, file) =>
+      ContextValue.fromFile(file).map(acc.merge)
+    }
 
-  private val indexingMetadataCtx = listingsMetadataCtx.visit(obj = { case ContextObject(obj) =>
+  private val indexingMetadataCtx = listingsMetadataCtx.map(_.visit(obj = { case ContextObject(obj) =>
     ContextObject(obj.filterKeys(_.startsWith("_")))
-  })
+  }))
 
   implicit val api: JsonLdApi = JsonLdJavaApi.strict
 
-  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixed(
-    elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json").accepted,
-    elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json").accepted,
-    contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json").accepted,
+  implicit val rcr: RemoteContextResolution = RemoteContextResolution.fixedIOResource(
+    elasticsearch                  -> ContextValue.fromFile("contexts/elasticsearch.json"),
+    elasticsearchMetadata          -> ContextValue.fromFile("contexts/elasticsearch-metadata.json"),
+    contexts.elasticsearchIndexing -> ContextValue.fromFile("/contexts/elasticsearch-indexing.json"),
     contexts.searchMetadata        -> listingsMetadataCtx,
     contexts.indexingMetadata      -> indexingMetadataCtx,
-    Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json").accepted,
-    Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json").accepted,
-    Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json").accepted,
-    Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json").accepted,
-    Vocabulary.contexts.shacl      -> ContextValue.fromFile("contexts/shacl.json").accepted,
-    Vocabulary.contexts.statistics -> ContextValue.fromFile("/contexts/statistics.json").accepted,
-    Vocabulary.contexts.offset     -> ContextValue.fromFile("/contexts/offset.json").accepted,
-    Vocabulary.contexts.pipeline   -> ContextValue.fromFile("contexts/pipeline.json").accepted,
-    Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json").accepted,
-    Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json").accepted
+    Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json"),
+    Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json"),
+    Vocabulary.contexts.metadata   -> ContextValue.fromFile("contexts/metadata.json"),
+    Vocabulary.contexts.error      -> ContextValue.fromFile("contexts/error.json"),
+    Vocabulary.contexts.shacl      -> ContextValue.fromFile("contexts/shacl.json"),
+    Vocabulary.contexts.statistics -> ContextValue.fromFile("/contexts/statistics.json"),
+    Vocabulary.contexts.offset     -> ContextValue.fromFile("/contexts/offset.json"),
+    Vocabulary.contexts.pipeline   -> ContextValue.fromFile("contexts/pipeline.json"),
+    Vocabulary.contexts.tags       -> ContextValue.fromFile("contexts/tags.json"),
+    Vocabulary.contexts.search     -> ContextValue.fromFile("contexts/search.json")
   )
 
   val registry: ReferenceRegistry = {

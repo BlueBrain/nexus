@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.Uri.Query
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientError.HttpClientStatusError
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.ServiceDescription
@@ -28,7 +28,7 @@ class ElasticSearchClientSpec(override val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("ElasticSearchClientSpec"))
     with AnyWordSpecLike
     with Matchers
-    with ElasticSearchClientSetup
+    with ScalaTestElasticSearchClientSetup
     with EitherValuable
     with CirceLiteral
     with TestHelpers

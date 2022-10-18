@@ -9,7 +9,7 @@ object ResourceFixture {
 
   final class FixtureNotInstantiatedException(name: String)
       extends Exception(
-        s"The fixture `$name` was not instantiated. Override `munitFixtures` and include a reference to this fixture."
+        s"The fixture `$name` was not instantiated. Override `munitFixtures` and include a reference to this fixture. A lazy initialisation may also be missing on one of the values relying on the requested resource."
       )
 
   def testLocal[A](name: String, resource: Resource[Task, A]): TaskFixture[A] =

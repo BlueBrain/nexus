@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.Organizations
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects._
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectEvent}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, Project, ProjectEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectRejection.WrappedOrganizationRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.provisioning.ProjectProvisioning
 import ch.epfl.bluebrain.nexus.delta.sdk.quotas.Quotas
@@ -130,6 +130,10 @@ object ProjectsModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: ProjectsRoutes) =>
     PriorityRoute(pluginsMaxPriority + 7, route.routes, requiresStrictEntity = true)
+  }
+
+  many[GraphResourceEncoder[_, _, _]].add { (mappings: ApiMappingsCollection, base: BaseUri) =>
+    Project.graphResourceEncoder(mappings.merge)(base)
   }
 
 }

@@ -9,25 +9,19 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityType, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.StreamingQuery
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import com.typesafe.scalalogging.Logger
 import io.circe.{DecodingFailure, Json}
 import monix.bio.{Task, UIO}
 
 import scala.concurrent.duration._
 
-final class GraphResourceStream private (
-    decodeValue: (EntityType, Json) => Task[GraphResource],
-    qc: QueryConfig,
-    xas: Transactors
-) {
+trait GraphResourceStream {
 
-  def apply(project: ProjectRef, tag: Tag, start: Offset): fs2.Stream[Task, Elem[GraphResource]] =
-    StreamingQuery.elems(project, tag, start, qc, xas, decodeValue)
+  def apply(project: ProjectRef, tag: Tag, start: Offset): ElemStream[GraphResource]
 
 }
 
@@ -61,7 +55,7 @@ object GraphResourceStream {
       xas: Transactors,
       encoders: Set[GraphResourceEncoder[_, _, _]]
   )(implicit cr: RemoteContextResolution): GraphResourceStream = {
-    val encodersMap = encoders.map { encoder => encoder.entityType -> encoder }.toMap
+    val encodersMap                                                          = encoders.map { encoder => encoder.entityType -> encoder }.toMap
     def decodeValue(entityType: EntityType, json: Json): Task[GraphResource] = {
       for {
         decoder <- Task.fromEither(
@@ -71,9 +65,11 @@ object GraphResourceStream {
                    )
         result  <- decoder.encode(json, fetchContext)
       } yield result
-
+    }.tapError { err =>
+      UIO.delay(logger.error(s"Entity of type '$entityType' could not be decoded", err))
     }
-    new GraphResourceStream(decodeValue, qc, xas)
+
+    (project: ProjectRef, tag: Tag, start: Offset) => StreamingQuery.elems(project, tag, start, qc, xas, decodeValue)
   }
 
 }

@@ -55,7 +55,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
     with CirceLiteral
     with CancelAfterFailure
     with Inspectors
-    with ElasticSearchClientSetup
+    with ScalaTestElasticSearchClientSetup
     with OptionValues
     with ConfigFixtures
     with Eventually
@@ -160,11 +160,12 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
         _ => Right(()),
         UIO.pure(Set(queryPermissions)),
         esClient.createIndex(_, _, _).void,
-        "prefix",
+        prefix,
         10,
         xas
       ),
       eventLogConfig,
+      prefix,
       xas
     ).accepted
 
@@ -205,7 +206,7 @@ class ElasticSearchViewsQuerySpec(override val docker: ElasticSearchDocker)
       indexingViews
         .foldLeftM(Seq.empty[ElasticSearchBulk]) { case (bulk, ref) =>
           views.fetchIndexingView(ref.viewId, ref.project).flatMap { view =>
-            val index = IndexLabel.unsafe(ElasticSearchViews.index(view, prefix))
+            val index = IndexLabel.unsafe(ElasticSearchViews.index(view.value.uuid, view.rev.toInt, prefix).value)
             createDocuments(ref).map { docs =>
               docs.map(ElasticSearchBulk.Index(index, genString(), _)) ++ bulk
             }

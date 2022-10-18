@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ProjectionConfig.ProgressConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task, UIO}
 
@@ -59,7 +59,7 @@ final class Projection private[stream] (
 object Projection {
     def apply(projection: CompiledProjection,
               fetchProgress: UIO[Option[ProjectionProgress]],
-              saveProgress: ProjectionProgress => UIO[Unit])(implicit progressConfig: ProgressConfig): Task[Projection] =
+              saveProgress: ProjectionProgress => UIO[Unit])(implicit batch: BatchConfig): Task[Projection] =
       for {
         status    <- Ref[Task].of[ExecutionStatus](ExecutionStatus.Pending)
         signal   <- SignallingRef[Task, Boolean](false)
@@ -75,7 +75,7 @@ object Projection {
           }.mapAccumulate(progress) {
           case (acc, msg) if msg.offset.value > progress.offset.value => (acc + msg, msg)
           case (acc, msg)                                  => (acc, msg)
-        }.groupWithin(progressConfig.maxElements, progressConfig.maxInterval).evalTap { elements =>
+        }.groupWithin(batch.maxElements, batch.maxInterval).evalTap { elements =>
           elements.last.fold(Task.unit) { case (newProgress, _) =>
             progressRef.set(newProgress) >> saveProgress(newProgress)
           }
