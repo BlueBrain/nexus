@@ -55,7 +55,7 @@ object StreamingQuery {
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
       .evalMapChunk {
         case success: SuccessElem[Json] => decodeValue(success.tpe, success.value).map(success.success).onErrorHandleWith { err =>
-          Task.delay(s"An error occurred while decoding value with id '${success.id}' of type '${success.tpe}' in project '$project'.")
+          Task.delay(logger.error(s"An error occurred while decoding value with id '${success.id}' of type '${success.tpe}' in project '$project'.", err))
             .as(success.failed(err))
         }
         case dropped: DroppedElem => Task.pure(dropped)

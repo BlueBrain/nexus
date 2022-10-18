@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchB
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel.IndexGroup
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchClientSetup, Fixtures}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{Fixtures, ScalaTestElasticSearchClientSetup}
 import ch.epfl.bluebrain.nexus.delta.plugins.search.Search.{ListProjections, TargetProjection}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue.ContextObject
@@ -51,7 +51,7 @@ class SearchSpec
     with TestHelpers
     with CancelAfterFailure
     with Inspectors
-    with ElasticSearchClientSetup
+    with ScalaTestElasticSearchClientSetup
     with ConfigFixtures
     with IOValues
     with Eventually

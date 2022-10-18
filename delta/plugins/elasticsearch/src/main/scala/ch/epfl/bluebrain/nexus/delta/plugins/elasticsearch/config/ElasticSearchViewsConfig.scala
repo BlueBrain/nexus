@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient.Refresh
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.PaginationConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{BatchConfig, EventLogConfig}
 import com.typesafe.config.Config
 import pureconfig.error.{CannotConvert, FailureReason}
 import pureconfig.generic.semiauto.deriveReader
@@ -28,6 +28,8 @@ import scala.concurrent.duration._
   *   configuration of the event log
   * @param pagination
   *   configuration for how pagination should behave in listing operations
+  * @param batch
+  *   a configuration definition how often we want to push to Elasticsearch
   * @param prefix
   *   prefix for indices
   * @param maxViewRefs
@@ -38,9 +40,6 @@ import scala.concurrent.duration._
   *   the value for `refresh` Elasticsearch parameter for synchronous indexing
   * @param maxIndexPathLength
   *   the maximum length of the URL path for elasticsearch queries
-  * @param maxBatchSize
-  *   the maximum batching size, corresponding to the maximum number of Elasticsearch documents uploaded on a bulk
-  *   request
   */
 final case class ElasticSearchViewsConfig(
     base: Uri,
@@ -48,12 +47,12 @@ final case class ElasticSearchViewsConfig(
     client: HttpClientConfig,
     eventLog: EventLogConfig,
     pagination: PaginationConfig,
+    batch: BatchConfig,
     prefix: String,
     maxViewRefs: Int,
     idleTimeout: Duration,
     syncIndexingRefresh: Refresh,
-    maxIndexPathLength: Int,
-    maxBatchSize: Int
+    maxIndexPathLength: Int
 )
 
 object ElasticSearchViewsConfig {

@@ -21,8 +21,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.{ResolverContextResolution, Resolvers}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.SchemaRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.{Schema, SchemaEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.{SchemaImports, Schemas, SchemasImpl}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -107,5 +107,9 @@ object SchemasModule extends ModuleDef {
 
   many[PriorityRoute].add { (route: SchemasRoutes) =>
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
+  }
+
+  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri) =>
+    Schema.graphResourceEncoder(base)
   }
 }

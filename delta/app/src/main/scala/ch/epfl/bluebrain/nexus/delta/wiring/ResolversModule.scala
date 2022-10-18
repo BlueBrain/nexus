@@ -20,8 +20,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverEvent
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverEvent}
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.bio.UIO
@@ -111,5 +111,9 @@ object ResolversModule extends ModuleDef {
   )
   many[PriorityRoute].add { (route: ResolversRoutes) =>
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
+  }
+
+  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri) =>
+    Resolver.graphResourceEncoder(base)
   }
 }

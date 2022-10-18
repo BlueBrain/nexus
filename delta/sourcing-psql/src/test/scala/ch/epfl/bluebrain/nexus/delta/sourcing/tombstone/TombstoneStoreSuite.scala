@@ -25,14 +25,9 @@ class TombstoneStoreSuite extends BioSuite with Doobie.Fixture {
 
   private lazy val xas = doobie()
 
-  val state = SimpleResource(
+  private val state = SimpleResource(
     Set(nxv + "SimpleResource", nxv + "SimpleResource2", nxv + "SimpleResource3"),
     Latest(nxv + "schema")
-  )
-
-  val newState3 = SimpleResource(
-    Set(nxv + "SimpleResource2"),
-    Latest(nxv + "schema2")
   )
 
   private def select(id: String, tag: Tag) =

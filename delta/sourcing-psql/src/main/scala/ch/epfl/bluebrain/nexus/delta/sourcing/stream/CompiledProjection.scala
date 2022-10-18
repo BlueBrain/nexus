@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.effect.concurrent.Ref
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.{Pipe, Sink}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Operation.Sink
 import fs2.Stream
 import fs2.concurrent.SignallingRef
 import monix.bio.Task
@@ -53,12 +53,10 @@ object CompiledProjection {
   def compile(metadata: ProjectionMetadata,
               executionStrategy: ExecutionStrategy,
               source: Source,
-              pipeChain: NonEmptyChain[Pipe],
+              chain: NonEmptyChain[Operation],
               sink: Sink): Either[ProjectionErr, CompiledProjection] =
     for {
-      operations   <- (pipeChain ++ NonEmptyChain.one(sink)).tail.foldLeftM[Either[ProjectionErr, *], Operation](pipeChain.head) { case (acc, e) =>
-        acc.andThen(e)
-      }
+      operations   <- Operation.merge(chain ++ NonEmptyChain.one(sink))
       result          <- source.through(operations)
     } yield CompiledProjection(metadata, executionStrategy, offset => _ => _ => result.apply(offset).map(_.void))
 

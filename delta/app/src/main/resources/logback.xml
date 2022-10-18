@@ -25,12 +25,9 @@
         <appender-ref ref="STDOUT" />
     </logger>
 
-    <logger name="slick" level="INFO"/>
     <logger name="com.zaxxer.hikari" level="WARN"/>
     <logger name="akka.http.impl.engine.client" level="INFO"/>
     <logger name="org.eclipse.jetty" level="INFO"/>
-    <logger name="akka.remote" level="WARN" />
-    <logger name="akka.cluster" level="WARN" />
     <logger name="com.datastax.oss.driver" level="WARN" />
     <logger name="org.apache.jena" level="WARN" />
     <!-- silent warnings: https://github.com/scalate/scalate/issues/218 -->

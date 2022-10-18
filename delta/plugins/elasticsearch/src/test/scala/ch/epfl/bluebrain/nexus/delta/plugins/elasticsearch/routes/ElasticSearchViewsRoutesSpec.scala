@@ -162,6 +162,7 @@ class ElasticSearchViewsRoutesSpec
       xas
     ),
     eventLogConfig,
+    "prefix",
     xas
   ).accepted
 

@@ -141,7 +141,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
     EntityCheck
       .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
         entityType,
-        Set(project1 -> id1, project1 -> id2),
+        Set(project1 -> id2, project2 -> id1),
         identity,
         xas
       )
@@ -150,7 +150,7 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
 
   test("Check that the non existing ids are returned") {
     val unknowns: Set[(ProjectRef, Label)] =
-      Set(project1 -> Label.unsafe("xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
+      Set(project1 -> id1, project1 -> Label.unsafe("xxx"), ProjectRef.unsafe("xxx", "xxx") -> id4)
     EntityCheck
       .raiseMissingOrDeprecated[Label, Set[(ProjectRef, Label)]](
         entityType,

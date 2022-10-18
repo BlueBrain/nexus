@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.Uri
 import akka.persistence.query.{Offset, Sequence}
 import akka.testkit.TestKit
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchClientSetup
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ScalaTestElasticSearchClientSetup
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStream.EventStream
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing.GraphAnalyticsIndexingStreamSpec.OtherEvent
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, ResourceParser}
@@ -52,7 +52,7 @@ class GraphAnalyticsIndexingStreamSpec(val docker: ElasticSearchDocker)
     extends TestKit(ActorSystem("GraphAnalyticsIndexingStreamSpec"))
     with AnyWordSpecLike
     with EitherValuable
-    with ElasticSearchClientSetup
+    with ScalaTestElasticSearchClientSetup
     with Matchers
     with TestHelpers
     with IOValues

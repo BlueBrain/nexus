@@ -6,6 +6,4 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 final case class ProjectionMetadata(module: String,
                                     name: String,
                                     project: Option[ProjectRef],
-                                    resourceId: Option[Iri]) {
-
-}
+                                    resourceId: Option[Iri])

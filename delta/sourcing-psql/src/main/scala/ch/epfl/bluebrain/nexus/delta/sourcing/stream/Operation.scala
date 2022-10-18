@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.syntax.all._
+import cats.data.NonEmptyChain
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionErr.OperationInOutMatchErr
@@ -92,6 +94,14 @@ sealed trait Operation { self =>
 
 object Operation {
 
+  def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
+    merge(NonEmptyChain(first, others:_*))
+
+  def merge(operations: NonEmptyChain[Operation]): Either[ProjectionErr, Operation] =
+    operations.tail.foldLeftM[Either[ProjectionErr, *], Operation](operations.head) { case (acc, e) =>
+      acc.andThen(e)
+    }
+
   private[stream] val logger: Logger = Logger[Operation]
 
   /**
@@ -127,8 +137,17 @@ object Operation {
         s.pull.uncons1.flatMap {
           case Some((head, tail)) =>
             partitionSuccess(head) match {
-              case Right(value) => Pull.eval(apply(value)).flatMap(Pull.output1) >> go(tail)
-              case Left(other)  => Pull.output1(other) >> go(tail)
+              case Right(value) =>
+                Pull.eval(
+                  apply(value)
+                    .onErrorHandleWith {
+                      err => Task.delay(
+                        logger.error(s"Error while applying pipe $name on element ${value.id}", err)
+                      ).as(value.failed(err))
+                    }
+                ).flatMap(Pull.output1) >> go(tail)
+              case Left(other)  =>
+                Pull.output1(other) >> go(tail)
             }
           case None               => Pull.done
         }

@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
+import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
-import shapeless.Typeable
 
 import java.time.Instant
 
@@ -70,13 +70,6 @@ sealed trait Elem[+A] extends Product with Serializable {
     case e: DroppedElem    => e
   }
 
-  def cast[B](implicit typeable: Typeable[B]): Elem[B] = this match {
-    case e: SuccessElem[A] =>
-      typeable.cast(e.value).fold[Elem[B]](e.failed(new ClassCastException(s"Element of type '$tpe' with id '$id' can not be casted to ${typeable.describe}")))(e.success)
-    case e: FailedElem     => e
-    case e: DroppedElem    => e
-  }
-
   /**
     * Discard the underlying element value if present.
     */
@@ -88,8 +81,6 @@ object Elem {
 
   /**
     * An element that has a value of type [[A]] that has been previously successfully processed.
-    * @param ctx
-    *   the element contextual information
     * @param tpe
     *   the underlying entity type
     * @param id
@@ -122,8 +113,6 @@ object Elem {
 
   /**
     * An element that has suffered a processing failure.
-    * @param ctx
-    *   the element contextual information
     * @param tpe
     *   the underlying entity type
     * @param id
@@ -164,4 +153,25 @@ object Elem {
       instant: Instant,
       offset: Offset
   ) extends Elem[Nothing]
+
+  implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {
+    override def traverse[G[_]: Applicative, A, B](fa: Elem[A])(f: A => G[B]): G[Elem[B]] =
+      fa match {
+        case s: SuccessElem[A] => Applicative[G].map(f(s.value))(s.success)
+        case dropped: DroppedElem    => Applicative[G].pure(dropped)
+        case failed: FailedElem    => Applicative[G].pure(failed)
+      }
+
+    override def foldLeft[A, B](fa: Elem[A], b: B)(f: (B, A) => B): B =
+      fa match {
+        case s: SuccessElem[A] => f(b, s.value)
+        case _ => b
+      }
+
+    override def foldRight[A, B](fa: Elem[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] =
+      fa match {
+        case s: SuccessElem[A] => f(s.value, lb)
+        case _    => lb
+      }
+  }
 }

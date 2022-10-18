@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.IndexingViewDef
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchView.{AggregateElasticSearchView, IndexingElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewEvent._
@@ -32,9 +33,10 @@ import ch.epfl.bluebrain.nexus.delta.sourcing._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, EnvelopeStream, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
 
@@ -48,7 +50,8 @@ final class ElasticSearchViews private (
     fetchContext: FetchContext[ElasticSearchViewRejection],
     sourceDecoder: ElasticSearchViewJsonLdSourceDecoder,
     defaultElasticsearchMapping: JsonObject,
-    defaultElasticsearchSettings: JsonObject
+    defaultElasticsearchSettings: JsonObject,
+    prefix: String
 )(implicit uuidF: UUIDF) {
 
   implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
@@ -336,8 +339,21 @@ final class ElasticSearchViews private (
     ).span("listElasticSearchViews")
   }
 
-  def states(start: Offset): EnvelopeStream[Iri, ElasticSearchViewState] =
-    log.states(Predicate.Root, start)
+  def indexingViews(start: Offset): ElemStream[IndexingViewDef] =
+    log.states(Predicate.Root, start).evalMapFilter { envelope =>
+      Task.pure(
+        IndexingViewDef(envelope.value, defaultElasticsearchMapping, defaultElasticsearchSettings, prefix).map {
+          viewDef =>
+            SuccessElem(
+              tpe = envelope.tpe,
+              id = envelope.id,
+              instant = envelope.instant,
+              offset = envelope.offset,
+              value = viewDef
+            )
+        }
+      )
+    }
 
   private def eval(
       cmd: ElasticSearchViewCommand,
@@ -390,12 +406,6 @@ object ElasticSearchViews {
   def projectionId(uuid: UUID, rev: Int): ViewProjectionId =
     ViewProjectionId(s"elasticsearch-${uuid}_$rev")
 
-  /**
-    * Constructs the index name for an Elasticsearch view
-    */
-  def index(view: IndexingViewResource, prefix: String): String =
-    index(view.value.uuid, view.rev.toInt, prefix).value
-
   def index(uuid: UUID, rev: Int, prefix: String): IndexLabel =
     IndexLabel.fromView(prefix, uuid, rev)
 
@@ -404,6 +414,7 @@ object ElasticSearchViews {
       contextResolution: ResolverContextResolution,
       validate: ValidateElasticSearchView,
       eventLogConfig: EventLogConfig,
+      prefix: String,
       xas: Transactors
   )(implicit api: JsonLdApi, clock: Clock[UIO], uuidF: UUIDF): Task[ElasticSearchViews] = {
     for {
@@ -419,7 +430,8 @@ object ElasticSearchViews {
       fetchContext,
       sourceDecoder,
       defaultMapping,
-      defaultSettings
+      defaultSettings,
+      prefix
     )
   }
 

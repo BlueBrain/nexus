@@ -92,7 +92,7 @@ object RemoteContextResolution {
     */
   final def fixedIOResource(f: (Iri, IO[ClasspathResourceError, ContextValue])*): RemoteContextResolution =
     fixedIO(f.map { case (iri, io) =>
-      iri -> io.mapError {
+      iri -> io.memoizeOnSuccess.mapError {
         case _: InvalidJson | _: InvalidJsonObject => RemoteContextWrongPayload(iri)
         case _: ResourcePathNotFound               => RemoteContextNotFound(iri)
       }

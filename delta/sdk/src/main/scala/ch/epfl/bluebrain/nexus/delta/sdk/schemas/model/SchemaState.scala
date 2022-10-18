@@ -93,7 +93,7 @@ final case class SchemaState(
 object SchemaState {
 
   @nowarn("cat=unused")
-  val serializer: Serializer[Iri, SchemaState] = {
+  implicit val serializer: Serializer[Iri, SchemaState] = {
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._

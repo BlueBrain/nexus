@@ -11,7 +11,10 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Json
@@ -83,4 +86,12 @@ object Schema {
       override def context(value: Schema): ContextValue =
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))
     }
+
+  def graphResourceEncoder(implicit baseUri: BaseUri): GraphResourceEncoder[SchemaState, Schema, Nothing] =
+    GraphResourceEncoder.apply[SchemaState, Schema](
+      Schemas.entityType,
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, value.value.source, None)
+    )
+
 }

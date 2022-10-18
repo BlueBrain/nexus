@@ -356,6 +356,18 @@ object KeyValueStore {
   }
 
   /**
+    * Constructs a local key-value store
+    */
+  final def apply[K, V](): UIO[KeyValueStore[K, V]] =
+    UIO.delay {
+      val cache: Cache[K, V] =
+        Caffeine
+          .newBuilder()
+          .build[K, V]()
+      new LocalLruCache(cache)
+    }
+
+  /**
     * Constructs a local key-value store following a LRU policy
     *
     * @param config

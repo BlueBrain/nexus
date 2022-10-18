@@ -33,7 +33,7 @@ sealed trait ElasticSearchViewValue extends Product with Serializable {
     this.asJsonObject.add(keywords.id, iri.asJson).asJson.deepDropNullValues
   }
 
-  def asIndexingElasticSearchViewValue: Option[IndexingElasticSearchViewValue] = this match {
+  def asIndexingValue: Option[IndexingElasticSearchViewValue] = this match {
     case v: IndexingElasticSearchViewValue => Some(v)
     case _                                 => None
   }

@@ -12,9 +12,4 @@
     <root level="${LOG_LEVEL:-ERROR}">
         <appender-ref ref="STDOUT" />
     </root>
-
-    <logger name="akka.event" level="WARN" />
-    <logger name="akka.remote" level="WARN" />
-    <logger name="akka.cluster" level="WARN" />
-
 </configuration>

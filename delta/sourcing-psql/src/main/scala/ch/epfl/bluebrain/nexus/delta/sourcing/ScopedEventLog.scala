@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import ch.epfl.bluebrain.nexus.delta.sourcing.tombstone.TombstoneStore
+import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.sqlstate
@@ -177,6 +178,8 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
 
 object ScopedEventLog {
 
+  private val logger: Logger       = Logger[ScopedEventLog.type]
+
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
   def apply[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
@@ -258,7 +261,7 @@ object ScopedEventLog {
             EntityDependencyStore.delete(ref, id) >> EntityDependencyStore.save(ref, id, dependencies)
           }
 
-        def persist(event: E, original: Option[S], newState: S) =
+        def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] =
           saveTag(event, newState).flatMap { tagQuery =>
             val queries = for {
               _ <- TombstoneStore.save(entityType, id, original, newState)
@@ -270,9 +273,14 @@ object ScopedEventLog {
             } yield ()
             queries
               .attemptSomeSqlState {
-                case sqlstate.class23.UNIQUE_VIOLATION => onUniqueViolation(id, command)
-              }.transact(xas.write).hideErrors
-          }.void
+                case sqlstate.class23.UNIQUE_VIOLATION =>
+                    onUniqueViolation(id, command)
+              }.transact(xas.write)
+          }.hideErrors.flatMap {
+            IO.fromEither(_).tapError {
+              _ => UIO.delay(logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}."))
+            }
+          }
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))
