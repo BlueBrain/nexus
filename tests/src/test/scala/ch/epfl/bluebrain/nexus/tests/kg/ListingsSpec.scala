@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.tests.BaseSpec
 import ch.epfl.bluebrain.nexus.tests.Identity.listings.{Alice, Bob}
 import ch.epfl.bluebrain.nexus.tests.Identity.{Anonymous, Delta}
 import ch.epfl.bluebrain.nexus.tests.Optics.{filterMetadataKeys, filterSearchMetadata, listing}
-import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources}
+import ch.epfl.bluebrain.nexus.tests.iam.types.Permission.{Organizations, Resources, Views}
 import io.circe.Json
 import org.scalatest.Inspectors
 
@@ -36,6 +36,7 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         _ <- adminDsl.createOrganization(org2, org2, Bob)
         _ <- adminDsl.createProject(org2, proj21, kgDsl.projectJson(name = proj21), Bob)
         _ <- aclDsl.addPermission(s"/$ref12", Alice, Resources.Read)
+        _ <- aclDsl.addPermission(s"/$ref12", Alice, Views.Query)
       } yield succeed
     }
 
@@ -218,8 +219,10 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
       )
 
       deltaClient.get[Json](s"/resources?type=$testResourceType", Bob) { (json, response) =>
-        response.status shouldEqual StatusCodes.OK
-        filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        eventually {
+          response.status shouldEqual StatusCodes.OK
+          filterSearchMetadata(json) should equalIgnoreArrayOrder(expected)
+        }
       }
     }
 

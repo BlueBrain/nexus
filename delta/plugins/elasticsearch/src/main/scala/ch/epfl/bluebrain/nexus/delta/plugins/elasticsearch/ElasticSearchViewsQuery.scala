@@ -213,7 +213,11 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
   )(implicit caller: Caller): IO[ElasticSearchViewRejection, SearchResults[JsonObject]] =
     for {
       view              <- viewStore.fetchDefaultViews(predicate)
-      accessibleIndices <- aclFilter(view)
+      accessibleIndices <- aclCheck.mapFilter[IndexingView, String](
+                             view.views,
+                             v => ProjectAcl(v.ref.project) -> permissions.read,
+                             _.index
+                           )
       search            <-
         client
           .search(params, accessibleIndices, Uri.Query.Empty)(pagination, sort)
@@ -272,17 +276,16 @@ final class ElasticSearchViewsQueryImpl private[elasticsearch] (
       indices <- view match {
                    case v: IndexingView  =>
                      aclCheck.authorizeForOr(v.ref.project, v.permission)(AuthorizationFailed).as(Set(v.index))
-                   case v: AggregateView => aclFilter(v)
+                   case v: AggregateView =>
+                     aclCheck.mapFilter[IndexingView, String](
+                       v.views,
+                       v => ProjectAcl(v.ref.project) -> v.permission,
+                       _.index
+                     )
                  }
       search  <- client.search(query, indices, qp)(SortList.empty).mapError(WrappedElasticSearchClientError)
     } yield search
   }
-
-  private def aclFilter(aggregate: AggregateView)(implicit caller: Caller) = aclCheck.mapFilter[IndexingView, String](
-    aggregate.views,
-    v => ProjectAcl(v.ref.project) -> v.permission,
-    _.index
-  )
 
   private def expandResourceRef(
       segment: IdSegment,
