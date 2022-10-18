@@ -115,7 +115,7 @@ object FailedElemLogStore {
   }
 
   /**
-    * Helper case class to structure the
+    * Helper case class to structure FailedElemLogRow
     */
   final protected case class FailedElemData(
       id: String,
@@ -126,6 +126,9 @@ object FailedElemLogStore {
       stackTrace: String
   )
 
+  /**
+    * The row of the failed_elem_log table
+    */
   final case class FailedElemLogRow(
       ordering: Offset,
       projectionMetadata: ProjectionMetadata,
