@@ -22,39 +22,41 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
 
   private lazy val (sv, projectionStore) = supervisor()
   // name1 should run on the node with index 1 in a 3-node cluster
-  private val projection1 = ProjectionMetadata("test", "name1", None, None)
+  private val projection1                = ProjectionMetadata("test", "name1", None, None)
   // name2 should NOT run on the node with index 1 of a 3-node cluster
-  private val projection2 = ProjectionMetadata("test", "name2", None, None)
+  private val projection2                = ProjectionMetadata("test", "name2", None, None)
 
   override def munitFixtures: Seq[AnyFixture[_]] = List(supervisor)
 
   private def evalStream(start: Task[Unit]) =
     (_: Offset) =>
-      Stream.eval(start) >> Stream.range(1, 21)
+      Stream.eval(start) >> Stream
+        .range(1, 21)
         .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), ()) }
 
   test("Ignore a projection when it is meant to run on another node") {
-      for {
-        flag      <- Ref.of[Task, Boolean](false)
-        projection =
-          CompiledProjection.fromStream(projection2, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
-        _    <- sv.run(projection).assert(ExecutionStatus.Ignored)
-        _    <- Task.sleep(100.millis)
-        _    <- projectionStore.offset(projection2.name).assertNone
-        _    <- flag.get.assert(false)
-      } yield ()
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection2, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
+      _         <- sv.run(projection).assert(ExecutionStatus.Ignored)
+      _         <- Task.sleep(100.millis)
+      _         <- projectionStore.offset(projection2.name).assertNone
+      _         <- flag.get.assert(false)
+    } yield ()
   }
 
   test("Describe an ignored projection") {
-    sv.describe(projection2.name).assertSome(
-      SupervisedDescription(
-        projection2,
-        ExecutionStrategy.TransientSingleNode,
-        0,
-        ExecutionStatus.Ignored,
-        ProjectionProgress.NoProgress
+    sv.describe(projection2.name)
+      .assertSome(
+        SupervisedDescription(
+          projection2,
+          ExecutionStrategy.TransientSingleNode,
+          0,
+          ExecutionStatus.Ignored,
+          ProjectionProgress.NoProgress
+        )
       )
-    )
   }
 
   test("Destroy an ignored projection") {
@@ -70,24 +72,25 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       flag      <- Ref.of[Task, Boolean](false)
       projection =
         CompiledProjection.fromStream(projection2, ExecutionStrategy.EveryNode, evalStream(flag.set(true)))
-      _    <- sv.run(projection).eventually(ExecutionStatus.Running)
-      _   <- flag.get.eventually(true)
-      _   <- sv.describe(projection2.name).eventuallySome(
-        SupervisedDescription(
-          projection2,
-          ExecutionStrategy.EveryNode,
-          0,
-          ExecutionStatus.Completed,
-          ProjectionProgress(
-            Offset.at(20L),
-            Instant.EPOCH,
-            20,
-            0,
-            0
-          )
-        )
-      )
-      _    <- projectionStore.offset(projection2.name).assertNone
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.describe(projection2.name)
+                     .eventuallySome(
+                       SupervisedDescription(
+                         projection2,
+                         ExecutionStrategy.EveryNode,
+                         0,
+                         ExecutionStatus.Completed,
+                         ProjectionProgress(
+                           Offset.at(20L),
+                           Instant.EPOCH,
+                           20,
+                           0,
+                           0
+                         )
+                       )
+                     )
+      _         <- projectionStore.offset(projection2.name).assertNone
     } yield ()
   }
 
@@ -96,29 +99,30 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   }
 
   test("Run a transient projection when it is meant to run on this node") {
-      for {
-        flag      <- Ref.of[Task, Boolean](false)
-        projection =
-          CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
-        _   <- sv.run(projection).eventually(ExecutionStatus.Running)
-        _   <- flag.get.eventually(true)
-        _   <- sv.describe(projection1.name).eventuallySome(
-          SupervisedDescription(
-            projection1,
-            ExecutionStrategy.TransientSingleNode,
-            0,
-            ExecutionStatus.Completed,
-            ProjectionProgress(
-              Offset.at(20L),
-              Instant.EPOCH,
-              20,
-              0,
-              0
-            )
-          )
-        )
-        _    <- projectionStore.offset(projection1.name).assertNone
-      } yield ()
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)))
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.describe(projection1.name)
+                     .eventuallySome(
+                       SupervisedDescription(
+                         projection1,
+                         ExecutionStrategy.TransientSingleNode,
+                         0,
+                         ExecutionStatus.Completed,
+                         ProjectionProgress(
+                           Offset.at(20L),
+                           Instant.EPOCH,
+                           20,
+                           0,
+                           0
+                         )
+                       )
+                     )
+      _         <- projectionStore.offset(projection1.name).assertNone
+    } yield ()
   }
 
   test("Destroy a registered transient projection") {
@@ -140,18 +144,19 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
       flag      <- Ref.of[Task, Boolean](false)
       projection =
         CompiledProjection.fromStream(projection1, PersistentSingleNode, evalStream(flag.set(true)))
-      _    <- sv.run(projection).eventually(ExecutionStatus.Running)
-      _   <- flag.get.eventually(true)
-      _   <- sv.describe(projection1.name).eventuallySome(
-        SupervisedDescription(
-          projection1,
-          PersistentSingleNode,
-          0,
-          ExecutionStatus.Completed,
-          expectedProgress
-        )
-      )
-      _    <- projectionStore.offset(projection1.name).assertSome(expectedProgress)
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.describe(projection1.name)
+                     .eventuallySome(
+                       SupervisedDescription(
+                         projection1,
+                         PersistentSingleNode,
+                         0,
+                         ExecutionStatus.Completed,
+                         expectedProgress
+                       )
+                     )
+      _         <- projectionStore.offset(projection1.name).assertSome(expectedProgress)
     } yield ()
   }
 
@@ -167,12 +172,16 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     val expectedException = new IllegalStateException("The stream crashed unexpectedly.")
     for {
       flag      <- Ref.of[Task, Boolean](false)
-      _ <- projectionStore.offset(projection1.name).assertNone
+      _         <- projectionStore.offset(projection1.name).assertNone
       projection =
-        CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, evalStream(flag.set(true)).map(_ >> Stream.raiseError[Task](expectedException)))
-      _     <- sv.run(projection).eventually(ExecutionStatus.Running)
-      _     <- flag.get.eventually(true)
-      _  <- sv.describe(projection1.name).map(_.exists(_.restarts > 0)).eventually(true)
+        CompiledProjection.fromStream(
+          projection1,
+          ExecutionStrategy.TransientSingleNode,
+          evalStream(flag.set(true)).map(_ >> Stream.raiseError[Task](expectedException))
+        )
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.describe(projection1.name).map(_.exists(_.restarts > 0)).eventually(true)
     } yield ()
   }
 
