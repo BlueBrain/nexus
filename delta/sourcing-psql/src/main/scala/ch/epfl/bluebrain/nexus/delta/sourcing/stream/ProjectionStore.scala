@@ -59,18 +59,19 @@ trait ProjectionStore {
   def entries: Stream[Task, ProjectionProgressRow]
 
   /**
-    * Saves a FailedElem
-    *
-    * @param metadata
-    *   the metadata of the projection
-    * @param failure
-    *   the FailedElem to save
+    * Saves a failed elem
+    * @param metadata the metadata of the projection
+    * @param failure the FailedElem to save
     */
   def saveFailedElem(metadata: ProjectionMetadata, failure: FailedElem): UIO[Unit]
 
   /**
-    * Get all errors for a given projection (project, iri) pair
-    */
+   * Get available failed elem entries for a given projection (provided
+   * by project and id), starting from a failed elem offset.
+   * @param projectionProject the project the projection belongs to
+   * @param projectionId IRI of the projection
+   * @param offset failed elem offset
+   */
   def failedElemEntries(
       projectionProject: ProjectRef,
       projectionId: Iri,
@@ -78,8 +79,12 @@ trait ProjectionStore {
   ): Stream[Task, FailedElemLogRow]
 
   /**
-    * Get all errors start from the given offset
-    */
+   * Get available failed elem entries for a given projection
+   * by projection name, starting from a failed elem offset.
+   * @param projectionName the name of the projection
+   * @param offset failed elem offset
+   * @return
+   */
   def failedElemEntries(
       projectionName: String,
       offset: Offset
