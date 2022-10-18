@@ -93,7 +93,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
 
   test("Insert failed elem") {
     for {
-      _       <- store.saveFailedElem(metadata, fail1)
+      _       <- store.saveFailedElems(metadata, List(fail1))
       entries <- store.failedElemEntries(name, Offset.At(1L)).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.projectionMetadata, metadata)
@@ -107,10 +107,8 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
   }
 
   test("Insert several failed elem") {
-    val saveErrors =
-      store.saveFailedElem(metadata, fail1) >> store.saveFailedElem(metadata, fail2)
     for {
-      _       <- saveErrors
+      _       <- store.saveFailedElems(metadata, List(fail1, fail2))
       entries <- store.failedElemEntries(name, Offset.At(1L)).compile.toList
       _        = entries.assertSize(3)
     } yield ()

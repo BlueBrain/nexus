@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.Clock
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
@@ -59,19 +60,30 @@ trait ProjectionStore {
   def entries: Stream[Task, ProjectionProgressRow]
 
   /**
-    * Saves a failed elem
-    * @param metadata the metadata of the projection
-    * @param failure the FailedElem to save
+    * Saves a list of failed elems
+    *
+    * @param metadata
+    *   the metadata of the projection
+    * @param failure
+    *   the FailedElem to save
     */
-  def saveFailedElem(metadata: ProjectionMetadata, failure: FailedElem): UIO[Unit]
+  def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
 
   /**
-   * Get available failed elem entries for a given projection (provided
-   * by project and id), starting from a failed elem offset.
-   * @param projectionProject the project the projection belongs to
-   * @param projectionId IRI of the projection
-   * @param offset failed elem offset
-   */
+    * Saves one failed elem
+    */
+  protected def saveFailedElem(metadata: ProjectionMetadata, failure: FailedElem): ConnectionIO[Unit]
+
+  /**
+    * Get available failed elem entries for a given projection (provided by project and id), starting from a failed elem
+    * offset.
+    * @param projectionProject
+    *   the project the projection belongs to
+    * @param projectionId
+    *   IRI of the projection
+    * @param offset
+    *   failed elem offset
+    */
   def failedElemEntries(
       projectionProject: ProjectRef,
       projectionId: Iri,
@@ -79,12 +91,13 @@ trait ProjectionStore {
   ): Stream[Task, FailedElemLogRow]
 
   /**
-   * Get available failed elem entries for a given projection
-   * by projection name, starting from a failed elem offset.
-   * @param projectionName the name of the projection
-   * @param offset failed elem offset
-   * @return
-   */
+    * Get available failed elem entries for a given projection by projection name, starting from a failed elem offset.
+    * @param projectionName
+    *   the name of the projection
+    * @param offset
+    *   failed elem offset
+    * @return
+    */
   def failedElemEntries(
       projectionName: String,
       offset: Offset
@@ -169,10 +182,20 @@ object ProjectionStore {
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
 
-      override def saveFailedElem(
+      override def saveFailedElems(
+          metadata: ProjectionMetadata,
+          failures: List[FailedElem]
+      ): UIO[Unit] =
+        failures
+          .traverse(elem => saveFailedElem(metadata, elem))
+          .transact(xas.write)
+          .void
+          .hideErrors
+
+      override protected def saveFailedElem(
           metadata: ProjectionMetadata,
           failure: FailedElem
-      ): UIO[Unit] =
+      ): ConnectionIO[Unit] =
         sql"""
              | INSERT INTO public.failed_elem_logs (
              |  projection_name,
@@ -197,11 +220,7 @@ object ProjectionStore {
              |  ${failure.throwable.getClass.getCanonicalName},
              |  ${failure.throwable.getMessage},
              |  ${stackTraceAsString(failure.throwable)}
-             | )""".stripMargin.update.run
-          .transact(xas.write)
-          .void
-          .hideErrors
-
+             | )""".stripMargin.update.run.void
     }
 
   final case class ProjectionProgressRow(
