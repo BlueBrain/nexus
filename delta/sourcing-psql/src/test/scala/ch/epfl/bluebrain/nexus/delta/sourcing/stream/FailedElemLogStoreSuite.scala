@@ -29,12 +29,65 @@ class FailedElemLogStoreSuite extends BioSuite with IOFixedClock with Doobie.Fix
 
   private val error = new RuntimeException("boom")
   private val fail1 = FailedElem(EntityType("ACL"), "id", Instant.EPOCH, Offset.At(42L), error)
+  private val fail2 = FailedElem(EntityType("Schema"), "id", Instant.EPOCH, Offset.At(42L), error)
 
-  test("Insert errors") {
+  test("Return no entries by name") {
+    for {
+      entries <- store.entries(name, Offset.At(1L)).compile.toList
+      _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  test("Return no entries by (project, id)") {
+    for {
+      entries <- store.entries(project, resource, Offset.At(1L)).compile.toList
+      _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  test("Insert error") {
     for {
       _       <- store.save(metadata, fail1)
       entries <- store.entries(name, Offset.At(1L)).compile.toList
-      _        = entries.assertSize(1)
+      r        = entries.assertOneElem
+      _        = assertEquals(r.projectionMetadata, metadata)
+      _        = assertEquals(r.ordering, Offset.At(1L))
+      elem     = r.failedElemData
+      _        = assertEquals(elem.offset, Offset.At(42L))
+      _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
+      _        = assertEquals(elem.id, "id")
+      _        = assertEquals(elem.entityType, EntityType("ACL"))
+    } yield ()
+  }
+
+  test("Insert several errors") {
+    val saveErrors =
+      store.save(metadata, fail1) >> store.save(metadata, fail2)
+    for {
+      _       <- saveErrors
+      entries <- store.entries(name, Offset.At(1L)).compile.toList
+      _        = entries.assertSize(3)
+    } yield ()
+  }
+
+  test("Return entries by (project, id)") {
+    for {
+      entries <- store.entries(project, resource, Offset.At(1L)).compile.toList
+      _        = entries.assertSize(3)
+    } yield ()
+  }
+
+  test("Return empty if not found by name") {
+    for {
+      entries <- store.entries("other", Offset.At(1L)).compile.toList
+      _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  test("Return empty if not found by (project, id)") {
+    for {
+      entries <- store.entries(project, iri"https://example.com", Offset.At(1L)).compile.toList
+      _        = entries.assertEmpty()
     } yield ()
   }
 
