@@ -66,7 +66,7 @@ object PullRequestStream {
         id = "failed",
         Instant.EPOCH,
         Offset.at(4L),
-        new IllegalStateException("Something got wrong :(")
+        new IllegalStateException("This is an error message")
       )
     )
   }
