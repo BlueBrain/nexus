@@ -39,7 +39,7 @@ class FailedElemPersistenceSuite extends BioSuite {
   private val cpPersistentNodeFailures  =
     CompiledProjection.fromStream(projection1, ExecutionStrategy.PersistentSingleNode, failureStream)
   private val cpEveryNodeFailures       =
-    CompiledProjection.fromStream(projection1, ExecutionStrategy.TransientSingleNode, failureStream)
+    CompiledProjection.fromStream(projection1, ExecutionStrategy.EveryNode, failureStream)
   private val cpPersistentNodeSuccesses =
     CompiledProjection.fromStream(projection1, ExecutionStrategy.PersistentSingleNode, successStream)
 
