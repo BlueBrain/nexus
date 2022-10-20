@@ -11,10 +11,13 @@ import monix.bio.Task
 import org.scalatest.Assertion
 
 import java.io.File
+import java.nio.file.attribute.PosixFilePermissions
 import java.nio.file.{Files, Paths}
 import scala.reflect.io.Directory
 
 class RemoteStorageSpec extends StorageSpec {
+
+  private val rwx = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwxrwxrwx"))
 
   override def storageName: String = "external"
 
@@ -30,7 +33,7 @@ class RemoteStorageSpec extends StorageSpec {
   override def beforeAll(): Unit = {
     super.beforeAll()
     // Create folder for remote storage
-    Files.createDirectories(Paths.get(s"/tmp/storage/$remoteFolder/protected"))
+    Files.createDirectories(Paths.get(s"/tmp/storage/$remoteFolder/protected"), rwx)
     ()
   }
 
@@ -136,6 +139,79 @@ class RemoteStorageSpec extends StorageSpec {
 
       deltaClient.post[Json](s"/storages/$fullId", filterKey("folder")(payload), Coyote) { (_, response) =>
         response.status shouldEqual StatusCodes.BadRequest
+      }
+    }
+  }
+
+  s"Linking in Remote storage" should {
+    "link an existing file" in {
+      val mydir            = genString()
+      val remoteFolderPath = Paths.get(s"/tmp/storage/$remoteFolder")
+      val directory        = Files.createDirectory(remoteFolderPath.resolve(mydir), rwx)
+      val file             = directory.resolve("file.txt")
+      Files.createFile(file, rwx)
+      file.toFile.setWritable(true, false)
+      Files.writeString(file, "file content")
+
+      List(remoteFolderPath, directory).foreach { path =>
+        path.toFile.setWritable(true, false)
+      }
+
+      val payload = Json.obj(
+        "filename"  -> Json.fromString("file.txt"),
+        "path"      -> Json.fromString(s"$mydir/file.txt"),
+        "mediaType" -> Json.fromString("text/plain")
+      )
+
+      val expected = jsonContentOf(
+        "/kg/files/remote-linked.json",
+        replacements(
+          Coyote,
+          "id"          -> s"${config.deltaUri}/resources/$fullId/_/file.txt",
+          "filename"    -> "file.txt",
+          "storageId"   -> s"${storageId}2",
+          "storageType" -> storageType,
+          "projId"      -> s"$fullId",
+          "project"     -> s"${config.deltaUri}/projects/$fullId"
+        ): _*
+      )
+
+      deltaClient.put[Json](s"/files/$fullId/file.txt?storage=nxv:${storageId}2", payload, Coyote) { (json, response) =>
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+        response.status shouldEqual StatusCodes.Created
+      }
+    }
+
+    "fetch eventually a linked file with updated attributes" in eventually {
+      val expected = jsonContentOf(
+        "/kg/files/remote-updated-linked.json",
+        replacements(
+          Coyote,
+          "id"          -> s"${config.deltaUri}/resources/$fullId/_/file.txt",
+          "filename"    -> "file.txt",
+          "storageId"   -> s"${storageId}2",
+          "storageType" -> storageType,
+          "projId"      -> s"$fullId",
+          "project"     -> s"${config.deltaUri}/projects/$fullId"
+        ): _*
+      )
+
+      deltaClient.get[Json](s"/files/$fullId/file.txt", Coyote) { (json, response) =>
+        response.status shouldEqual StatusCodes.OK
+        filterMetadataKeys.andThen(filterKey("_location"))(json) shouldEqual expected
+      }
+    }
+
+    "fail to link a nonexistent file" in {
+      val payload = Json.obj(
+        "filename"  -> Json.fromString("logo.png"),
+        "path"      -> Json.fromString("non/existent.png"),
+        "mediaType" -> Json.fromString("image/png")
+      )
+
+      deltaClient.put[Json](s"/files/$fullId/nonexistent.png?storage=nxv:${storageId}2", payload, Coyote) {
+        (_, response) =>
+          response.status shouldEqual StatusCodes.BadRequest
       }
     }
   }

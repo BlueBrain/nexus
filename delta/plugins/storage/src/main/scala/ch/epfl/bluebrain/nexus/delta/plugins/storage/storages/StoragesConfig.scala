@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.storages
 
 import akka.http.scaladsl.model.Uri
 import cats.implicits.toBifunctorOps
-import ch.epfl.bluebrain.nexus.delta.kernel.Secret
+import ch.epfl.bluebrain.nexus.delta.kernel.{RetryStrategyConfig, Secret}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{AbsolutePath, DigestAlgorithm, StorageType}
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClientConfig
@@ -194,6 +194,8 @@ object StoragesConfig {
     *   the default maximum allowed file size (in bytes) for uploaded files
     * @param client
     *   configuration of the remote disk client
+    * @param digestComputation
+    *   retry configuration for the digest computation task
     */
   final case class RemoteDiskStorageConfig(
       digestAlgorithm: DigestAlgorithm,
@@ -203,7 +205,8 @@ object StoragesConfig {
       defaultWritePermission: Permission,
       showLocation: Boolean,
       defaultMaxFileSize: Long,
-      client: HttpClientConfig
+      client: HttpClientConfig,
+      digestComputation: RetryStrategyConfig
   ) extends StorageTypeEntryConfig
 
   implicit private val uriConverter: ConfigConvert[Uri] =

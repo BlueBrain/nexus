@@ -134,14 +134,10 @@ object Elem {
 
   /**
     * An element that was discarded through filtering.
-    * @param ctx
-    *   the element contextual information
     * @param tpe
     *   the underlying entity type
     * @param id
     *   the underlying entity id
-    * @param rev
-    *   the underlying entity revision
     * @param instant
     *   the instant when the element was produced
     * @param offset
@@ -153,6 +149,14 @@ object Elem {
       instant: Instant,
       offset: Offset
   ) extends Elem[Nothing]
+
+  object DroppedElem {
+    def apply(tpe: EntityType,
+                 id: Iri,
+                 instant: Instant,
+                 offset: Offset): DroppedElem =
+      DroppedElem(tpe, id.toString, instant, offset)
+  }
 
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {
     override def traverse[G[_]: Applicative, A, B](fa: Elem[A])(f: A => G[B]): G[Elem[B]] =

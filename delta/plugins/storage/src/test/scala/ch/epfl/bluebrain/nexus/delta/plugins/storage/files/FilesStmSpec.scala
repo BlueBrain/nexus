@@ -3,12 +3,12 @@ package ch.epfl.bluebrain.nexus.delta.plugins.storage.files
 import akka.http.scaladsl.model.{ContentTypes, Uri}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files.{evaluate, next}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.{ComputedDigest, NotComputedDigest}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{Digest, FileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileCommand.{CreateFile, DeleteFileTag, DeprecateFile, TagFile, UpdateFile, UpdateFileAttributes}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileEvent.{FileAttributesUpdated, FileCreated, FileDeprecated, FileTagAdded, FileTagDeleted, FileUpdated}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType.{DiskStorage => DiskStorageType, RemoteDiskStorage => RemoteStorageType}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestNotComputed, FileIsDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.{DigestAlreadyComputed, DigestNotComputed, FileIsDeprecated, FileNotFound, IncorrectRev, ResourceAlreadyExists, RevisionNotFound}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
@@ -78,7 +78,8 @@ class FilesStmSpec
 
       "create a new event from a UpdateFileAttributes command" in {
         val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
-        val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
+        val current       =
+          FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1, digest = Digest.NotComputedDigest))
 
         evaluate(Some(current), updateAttrCmd).accepted shouldEqual
           FileAttributesUpdated(id, projectRef, mediaType, 10, dig, 2, epoch, alice)
@@ -164,6 +165,13 @@ class FilesStmSpec
         val current = FileGen.state(id, projectRef, storageRef, attributes.copy(digest = NotComputedDigest))
         val cmd     = UpdateFile(id, projectRef, storageRef, DiskStorageType, attributes, 1, alice)
         evaluate(Some(current), cmd).rejected shouldEqual DigestNotComputed(id)
+      }
+
+      "reject with DigestAlreadyComputed" in {
+        val updateAttrCmd = UpdateFileAttributes(id, projectRef, mediaType, 10, dig, 1, alice)
+        val current       = FileGen.state(id, projectRef, remoteStorageRef, attributes.copy(bytes = 1))
+
+        evaluate(Some(current), updateAttrCmd).rejected shouldEqual DigestAlreadyComputed(id)
       }
 
     }

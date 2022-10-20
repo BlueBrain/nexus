@@ -95,7 +95,7 @@ final case class FileState(
 object FileState {
 
   @nowarn("cat=unused")
-  val serializer: Serializer[Iri, FileState] = {
+  implicit val serializer: Serializer[Iri, FileState] = {
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.CompactedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd.Database._
     import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Database._

@@ -34,8 +34,9 @@ import io.circe.{Encoder, JsonObject}
   *   a descriptive message as to why the rejection occurred
   */
 sealed abstract class FileRejection(val reason: String, val loggedDetails: Option[String] = None)
-    extends Product
-    with Serializable
+    extends Exception {
+  override def getMessage: String = reason
+}
 
 object FileRejection {
 
