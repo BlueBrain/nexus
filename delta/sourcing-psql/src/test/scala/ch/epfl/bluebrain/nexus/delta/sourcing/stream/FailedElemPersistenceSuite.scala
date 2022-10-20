@@ -61,7 +61,7 @@ class FailedElemPersistenceSuite extends BioSuite {
     } yield ()
   }
 
-  test("FailedElems are saved (transient single node)") {
+  test("FailedElems are saved (every node)") {
     val failedElems = MutableSet.empty[FailedElem]
     for {
       projection <- Projection.apply(cpEveryNodeFailures, UIO.none, _ => UIO.unit, saveFailedElems(failedElems))
