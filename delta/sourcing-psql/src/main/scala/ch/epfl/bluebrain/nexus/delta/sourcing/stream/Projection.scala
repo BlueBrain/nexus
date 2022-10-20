@@ -96,23 +96,15 @@ object Projection {
                        }
                        .evalTap {
                          case (None, _)                        => UIO.unit
-                         case (Some(newProgress), Nil)         =>
-                           UIO.delay(
-                             logger.debug(
-                               s"[${projection.metadata.name}] Progress: ${newProgress.offset.value}. No failed elems to saved."
-                             )
-                           ) >>
-                             progressRef.set(newProgress) >>
-                             saveProgress(newProgress)
                          case (Some(newProgress), failedElems) =>
                            UIO.delay(
                              logger.debug(
-                               s"[${projection.metadata.name}] Progress: ${newProgress.offset.value}. There are ${failedElems.length} failed elems to save"
+                               s"[${projection.metadata.name}] Progress: ${newProgress.offset.value}. ${failedElems.length} failed elems to save."
                              )
                            ) >>
                              progressRef.set(newProgress) >>
                              saveProgress(newProgress) >>
-                             saveFailedElems(failedElems)
+                             UIO.when(failedElems.nonEmpty)(saveFailedElems(failedElems))
                        }
                        .compile
                        .drain
