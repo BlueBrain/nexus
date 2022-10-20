@@ -65,7 +65,7 @@ trait ProjectionStore {
     *
     * @param metadata
     *   the metadata of the projection
-    * @param failure
+    * @param failures
     *   the FailedElem to save
     */
   def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
