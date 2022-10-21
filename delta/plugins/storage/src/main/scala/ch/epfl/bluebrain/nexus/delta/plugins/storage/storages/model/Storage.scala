@@ -15,10 +15,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.OrderingFields
 import ch.epfl.bluebrain.nexus.delta.sdk.crypto.Crypto
 import ch.epfl.bluebrain.nexus.delta.sdk.http.HttpClient
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Tags
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.{GraphResourceEncoder, OrderingFields}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import com.typesafe.scalalogging.Logger
 import io.circe.syntax._
@@ -217,5 +218,15 @@ object Storage {
     OrderingFields { case "_algorithm" =>
       Ordering[String] on (_.storageValue.algorithm.value)
     }
+
+  def graphResourceEncoder(implicit
+      baseUri: BaseUri,
+      crypto: Crypto
+  ): GraphResourceEncoder[StorageState, Storage, Metadata] =
+    GraphResourceEncoder.withMetadata[StorageState, Storage, Metadata](
+      Storages.entityType,
+      (context, state) => state.toResource(context.apiMappings, context.base),
+      value => JsonLdContent(value, Storage.encryptSourceUnsafe(value.value.source, crypto), None)
+    )
 
 }

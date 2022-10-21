@@ -32,7 +32,7 @@ trait StorageFixtures extends TestHelpers with CirceLiteral {
   implicit val config: StorageTypeConfig = StorageTypeConfig(
     disk = DiskStorageConfig(diskVolume, Set(diskVolume,tmpVolume), DigestAlgorithm.default, permissions.read, permissions.write, showLocation = false, Some(5000), 50),
     amazon = Some(S3StorageConfig(DigestAlgorithm.default, Some("localhost"), Some(Secret("accessKey")), Some(Secret("secretKey")), permissions.read, permissions.write, showLocation = false, 60)),
-    remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, httpConfig)),
+    remoteDisk = Some(RemoteDiskStorageConfig(DigestAlgorithm.default, BaseUri("http://localhost", Label.unsafe("v1")), None, permissions.read, permissions.write, showLocation = false, 70, httpConfig, RetryStrategyConfig.AlwaysGiveUp)),
   )
   val crypto: Crypto = EncryptionConfig(Secret("changeme"), Secret("salt")).crypto
 

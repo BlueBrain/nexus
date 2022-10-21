@@ -77,11 +77,7 @@ object StreamingQuery {
     )
 
     def onError(th: Throwable) =  Task.delay(
-      logger.error(
-        "Single evaluation of query '{}' failed due to '{}'.",
-        query(start).sql,
-        th.getMessage
-      )
+      logger.error(s"Single evaluation of query '${query(start).sql}' failed.", th)
     )
 
     def onCancel() =  Task.delay(

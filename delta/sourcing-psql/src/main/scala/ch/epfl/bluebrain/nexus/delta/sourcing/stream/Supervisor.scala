@@ -212,10 +212,10 @@ object Supervisor {
       val metadata = projection.metadata
       val strategy = projection.executionStrategy
       if (!strategy.shouldRun(metadata.name, cfg.cluster))
-        Task.delay(log.debug(s"Ignoring projection '${metadata.module}/${metadata.name}' with strategy $strategy")) >>
+        Task.delay(log.debug(s"Ignoring '${metadata.module}/${metadata.name}' with strategy '$strategy'.")) >>
           Task.pure(ignored)
       else
-        Task.delay(log.info(s"Starting projection '${metadata.module}/${metadata.name}'  with strategy $strategy}")) >>
+        Task.delay(log.info(s"Starting '${metadata.module}/${metadata.name}'  with strategy '$strategy'.")) >>
           init >>
           startProjection(projection).map { p =>
             Control(

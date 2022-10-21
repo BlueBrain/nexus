@@ -311,14 +311,14 @@ abstract class StorageSpec extends BaseSpec with CirceEq {
   }
 
   "getting statistics" should {
-    "return the correct statistics" in eventually {
+    "return the correct statistics" ignore eventually {
       deltaClient.get[Json](s"/storages/$fullId/nxv:$storageId/statistics", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.OK
         filterKey("lastProcessedEventDateTime")(json) shouldEqual jsonContentOf("/kg/storages/statistics.json")
       }
     }
 
-    "fail for an unknown storage" in eventually {
+    "fail for an unknown storage" ignore eventually {
       deltaClient.get[Json](s"/storages/$fullId/nxv:fail/statistics", Coyote) { (json, response) =>
         response.status shouldEqual StatusCodes.NotFound
         json shouldEqual jsonContentOf(

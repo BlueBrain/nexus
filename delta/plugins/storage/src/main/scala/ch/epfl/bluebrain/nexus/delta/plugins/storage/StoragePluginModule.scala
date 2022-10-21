@@ -8,12 +8,12 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.contexts.{files => fileCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{FileEvent, FileRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileEvent, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.schemas.{files => filesSchemaId}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StoragesConfig.StorageTypeConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.contexts.{storages => storageCtxId, storagesMetadata => storageMetaCtxId}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{StorageEvent, StorageRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.{Storage, StorageEvent, StorageRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.StorageAccess
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.operations.remote.client.RemoteDiskStorageClient
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.routes.StoragesRoutes
@@ -39,9 +39,10 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Supervisor
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
-import monix.bio.UIO
+import monix.bio.{Task, UIO}
 import monix.execution.Scheduler
 
 /**
@@ -132,8 +133,12 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       }
   }
 
+  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri, crypto: Crypto) =>
+    Storage.graphResourceEncoder(base, crypto)
+  }
+
   make[Files]
-    .from {
+    .fromEffect {
       (
           cfg: StoragePluginConfig,
           storageTypeConfig: StorageTypeConfig,
@@ -141,6 +146,7 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           aclCheck: AclCheck,
           fetchContext: FetchContext[ContextRejection],
           storages: Storages,
+          supervisor: Supervisor,
           storagesStatistics: StoragesStatistics,
           xas: Transactors,
           clock: Clock[UIO],
@@ -148,21 +154,27 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
           as: ActorSystem[Nothing],
           scheduler: Scheduler
       ) =>
-        Files(
-          fetchContext.mapRejection(FileRejection.ProjectContextRejection),
-          aclCheck,
-          storages,
-          storagesStatistics,
-          xas,
-          storageTypeConfig,
-          cfg.files
-        )(
-          clock,
-          client,
-          uuidF,
-          scheduler,
-          as
-        )
+        Task
+          .delay(
+            Files(
+              fetchContext.mapRejection(FileRejection.ProjectContextRejection),
+              aclCheck,
+              storages,
+              storagesStatistics,
+              xas,
+              storageTypeConfig,
+              cfg.files
+            )(
+              clock,
+              client,
+              uuidF,
+              scheduler,
+              as
+            )
+          )
+          .tapEval { files =>
+            Files.startDigestStream(files, supervisor, storageTypeConfig)
+          }
     }
 
   make[FilesRoutes].from {
@@ -188,6 +200,10 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
         ordering,
         fusionConfig
       )
+  }
+
+  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
+    File.graphResourceEncoder(base, storageTypeConfig)
   }
 
   many[ServiceDependency].addSet {

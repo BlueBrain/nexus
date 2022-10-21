@@ -110,7 +110,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       (_, _) => IO.unit,
       crypto,
       xas,
-      StoragesConfig(eventLogConfig, pagination, config),
+      StoragesConfig(eventLogConfig, pagination, cfg),
       ServiceAccount(User("nexus-sa", Label.unsafe("sa")))
     ).accepted
     lazy val files: Files       = Files(
@@ -282,10 +282,14 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "succeed" in {
-        val tempAttr = attributes("myfile.txt")
-        val attr     =
+        val tempAttr  = attributes("myfile.txt")
+        val attr      =
           tempAttr.copy(location = s"file:///app/nexustest/nexus/${tempAttr.path}", origin = Storage)
-        files.updateAttributes(file2, projectRef).accepted shouldEqual
+        val updatedF2 = for {
+          _ <- files.updateAttributes(file2, projectRef)
+          f <- files.fetch(file2, projectRef)
+        } yield f
+        updatedF2.accepted shouldEqual
           FileGen.resourceFor(
             file2,
             projectRef,
@@ -354,49 +358,16 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
     }
 
-    "updating file attributes" should {
-
-      val attr = attributes()
-
-      "succeed" in {
-        val attr = attributes(size = 20)
-        files
-          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 2)
-          .accepted shouldEqual
-          FileGen.resourceFor(file1, projectRef, diskRev, attr, rev = 3, createdBy = bob, updatedBy = bob)
-      }
-
-      "reject if file doesn't exists" in {
-        files
-          .updateAttributes(nxv + "other", projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
-          .rejectedWith[FileNotFound]
-      }
-
-      "reject if project does not exist" in {
-        val projectRef = ProjectRef(org, Label.unsafe("other"))
-
-        files
-          .updateAttributes("file1", projectRef, attr.mediaType, attr.bytes, attr.digest, 3)
-          .rejectedWith[ProjectContextRejection]
-      }
-
-      "reject if project is deprecated" in {
-        files
-          .updateAttributes("file1", deprecatedProject.ref, attr.mediaType, attr.bytes, attr.digest, 3)
-          .rejectedWith[ProjectContextRejection]
-      }
-    }
-
     "tagging a file" should {
 
       "succeed" in {
-        files.tag(file1, projectRef, tag, tagRev = 1, 3).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 1, 2).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
-            attributes(size = 20),
-            rev = 4,
+            attributes(),
+            rev = 3,
             tags = Tags(tag -> 1),
             createdBy = bob,
             updatedBy = bob
@@ -404,7 +375,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "reject if file doesn't exists" in {
-        files.tag(nxv + "other", projectRef, tag, tagRev = 1, 4).rejectedWith[FileNotFound]
+        files.tag(nxv + "other", projectRef, tag, tagRev = 1, 3).rejectedWith[FileNotFound]
       }
 
       "reject if project does not exist" in {
@@ -420,13 +391,13 @@ class FilesSpec(docker: RemoteStorageDocker)
 
     "deleting a tag" should {
       "succeed" in {
-        files.deleteTag(file1, projectRef, tag, 4).accepted shouldEqual
+        files.deleteTag(file1, projectRef, tag, 3).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
-            attributes(size = 20),
-            rev = 5,
+            attributes(),
+            rev = 4,
             createdBy = bob,
             updatedBy = bob
           )
@@ -435,7 +406,7 @@ class FilesSpec(docker: RemoteStorageDocker)
         files.deleteTag(nxv + "other", projectRef, tag, 1).rejectedWith[FileNotFound]
       }
       "reject if the revision passed is incorrect" in {
-        files.deleteTag(file1, projectRef, tag, 4).rejected shouldEqual IncorrectRev(expected = 5, provided = 4)
+        files.deleteTag(file1, projectRef, tag, 3).rejected shouldEqual IncorrectRev(expected = 4, provided = 3)
       }
       "reject if the tag doesn't exist" in {
         files.deleteTag(file1, projectRef, UserTag.unsafe("unknown"), 5).rejected
@@ -445,13 +416,13 @@ class FilesSpec(docker: RemoteStorageDocker)
     "deprecating a file" should {
 
       "succeed" in {
-        files.deprecate(file1, projectRef, 5).accepted shouldEqual
+        files.deprecate(file1, projectRef, 4).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
-            attributes(size = 20),
-            rev = 6,
+            attributes(),
+            rev = 5,
             deprecated = true,
             createdBy = bob,
             updatedBy = bob
@@ -464,7 +435,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if the revision passed is incorrect" in {
         files.deprecate(file1, projectRef, 3).rejected shouldEqual
-          IncorrectRev(provided = 3, expected = 6)
+          IncorrectRev(provided = 3, expected = 5)
       }
 
       "reject if project does not exist" in {
@@ -478,13 +449,13 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "allow tagging after deprecation" in {
-        files.tag(file1, projectRef, tag, tagRev = 4, 6).accepted shouldEqual
+        files.tag(file1, projectRef, tag, tagRev = 4, 5).accepted shouldEqual
           FileGen.resourceFor(
             file1,
             projectRef,
             diskRev,
-            attributes(size = 20),
-            rev = 7,
+            attributes(),
+            rev = 6,
             tags = Tags(tag -> 4),
             createdBy = bob,
             updatedBy = bob,
@@ -502,9 +473,9 @@ class FilesSpec(docker: RemoteStorageDocker)
         file1,
         projectRef,
         diskRev,
-        attributes(size = 20),
+        attributes(),
         rev = 4,
-        tags = Tags(tag -> 1),
+        tags = Tags.empty,
         createdBy = bob,
         updatedBy = bob
       )
@@ -513,8 +484,8 @@ class FilesSpec(docker: RemoteStorageDocker)
         file1,
         projectRef,
         diskRev,
-        attributes(size = 20),
-        rev = 7,
+        attributes(),
+        rev = 6,
         tags = Tags(tag -> 4),
         deprecated = true,
         createdBy = bob,
@@ -530,7 +501,7 @@ class FilesSpec(docker: RemoteStorageDocker)
       }
 
       "succeed by rev" in {
-        files.fetch(IdSegmentRef(file1, 7), projectRef).accepted shouldEqual resourceRev6
+        files.fetch(IdSegmentRef(file1, 6), projectRef).accepted shouldEqual resourceRev6
         files.fetch(IdSegmentRef(file1, 1), projectRef).accepted shouldEqual resourceRev1
       }
 
@@ -541,7 +512,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if revision does not exist" in {
         files.fetch(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 8, current = 7)
+          RevisionNotFound(provided = 8, current = 6)
       }
 
       "fail if it doesn't exist" in {
@@ -588,7 +559,7 @@ class FilesSpec(docker: RemoteStorageDocker)
 
       "reject if revision does not exist" in {
         files.fetchContent(IdSegmentRef(file1, 8), projectRef).rejected shouldEqual
-          RevisionNotFound(provided = 8, current = 7)
+          RevisionNotFound(provided = 8, current = 6)
       }
 
       "fail if it doesn't exist" in {

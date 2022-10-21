@@ -130,7 +130,7 @@ services:
   storage-service:
     image: bluebrain/nexus-storage:latest
     entrypoint: [ "./bin/storage",
-                  "-Xmx192m",
+                  "-Xmx256m",
                   "-Dapp.instance.interface=0.0.0.0",
                   "-Dapp.http.interface=0.0.0.0",
                   "-Dapp.http.public-uri=http://storage.tests.nexus.ocp.bbp.epfl.ch",
