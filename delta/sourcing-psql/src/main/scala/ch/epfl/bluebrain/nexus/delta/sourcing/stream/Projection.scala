@@ -99,7 +99,7 @@ object Projection {
   /**
     * Given a chuck of (progress, elem) saves the last progress and any failed elems.
     * @param chunk
-    *   An fs2.Chunk
+    *   a fs2.Chunk of (progress, elem) tuples
     * @param progressRef
     *   progress referenece
     * @param saveProgress
