@@ -198,7 +198,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for the coordinator projection before the signal") {
     for {
-      entries <- projectionStore.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(1L)).compile.toList
+      entries <- projectionStore.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "https://bluebrain.github.io/nexus/vocabulary/view3")
     } yield ()
@@ -206,7 +206,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 1") {
     for {
-      entries <- projectionStore.failedElemEntries(view1.projection, Offset.At(1L)).compile.toList
+      entries <- projectionStore.failedElemEntries(view1.projection, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.failedElemData.id, "failed")
       _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
@@ -216,14 +216,14 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
 
   test("There is one error for view 2") {
     for {
-      entries <- projectionStore.failedElemEntries(view2.projection, Offset.At(1L)).compile.toList
+      entries <- projectionStore.failedElemEntries(view2.projection, Offset.start).compile.toList
       _        = entries.assertOneElem
     } yield ()
   }
 
   test("There are no errors for view 3") {
     for {
-      entries <- projectionStore.failedElemEntries(view3.projection, Offset.At(1L)).compile.toList
+      entries <- projectionStore.failedElemEntries(view3.projection, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
