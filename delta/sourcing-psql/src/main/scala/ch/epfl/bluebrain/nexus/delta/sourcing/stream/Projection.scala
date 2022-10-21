@@ -97,11 +97,11 @@ object Projection {
     } yield new Projection(projection.metadata.name, status, progressRef, signal, fiberRef)
 
   /**
-    * Given a chuck of (progress, elem) saves the last progress and any failed elems.
+    * Given a chunk of (progress, elem) saves the last progress and any failed elems.
     * @param chunk
     *   a fs2.Chunk of (progress, elem) tuples
     * @param progressRef
-    *   progress referenece
+    *   progress reference
     * @param saveProgress
     *   function to save the progress
     * @param saveFailedElems
