@@ -113,10 +113,7 @@ object Projection {
       saveProgress: ProjectionProgress => UIO[Unit],
       saveFailedElems: List[FailedElem] => UIO[Unit]
   ): Task[Unit] = {
-    val failedElems = chunk.mapFilter {
-      case (_, elem: FailedElem) => Some(elem)
-      case _                     => None
-    }.toList
+    val failedElems = chunk.collect { case (_, elem: FailedElem) => elem }.toList
 
     chunk.last.traverse { case (newProgress, _) =>
       progressRef.set(newProgress) >>
