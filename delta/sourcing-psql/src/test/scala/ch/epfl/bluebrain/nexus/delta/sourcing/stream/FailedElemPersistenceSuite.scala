@@ -43,21 +43,12 @@ class FailedElemPersistenceSuite extends BioSuite {
   private val cpPersistentNodeSuccesses =
     CompiledProjection.fromStream(projection1, ExecutionStrategy.PersistentSingleNode, successStream)
 
-  private val expectedProgress: ProjectionProgress = ProjectionProgress(
-    Offset.at(10L),
-    Instant.EPOCH,
-    processed = 10,
-    discarded = 0,
-    failed = 10
-  )
-
   test("FailedElems are saved (persistent single node)") {
     val failedElems = MutableSet.empty[FailedElem]
     for {
       projection <- Projection.apply(cpPersistentNodeFailures, UIO.none, _ => UIO.unit, saveFailedElems(failedElems))
       _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
       _           = assertEquals(failedElems.size, 10)
-      _           = projection.currentProgress.assert(expectedProgress)
     } yield ()
   }
 
@@ -67,7 +58,6 @@ class FailedElemPersistenceSuite extends BioSuite {
       projection <- Projection.apply(cpEveryNodeFailures, UIO.none, _ => UIO.unit, saveFailedElems(failedElems))
       _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
       _           = assertEquals(failedElems.size, 10)
-      _           = projection.currentProgress.assert(expectedProgress)
     } yield ()
   }
 
