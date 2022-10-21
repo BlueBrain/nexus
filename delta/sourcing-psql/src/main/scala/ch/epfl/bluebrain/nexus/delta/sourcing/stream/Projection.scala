@@ -2,9 +2,10 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.effect.ExitCase
 import cats.effect.concurrent.Ref
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.BatchConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
-import com.typesafe.scalalogging.Logger
+import fs2.Chunk
 import fs2.concurrent.SignallingRef
 import monix.bio.{Fiber, Task, UIO}
 
@@ -60,8 +61,6 @@ final class Projection private[stream] (
 
 object Projection {
 
-  private val logger: Logger = Logger[Projection]
-
   def apply(
       projection: CompiledProjection,
       fetchProgress: UIO[Option[ProjectionProgress]],
@@ -86,26 +85,7 @@ object Projection {
                          case (acc, msg)                                             => (acc, msg)
                        }
                        .groupWithin(batch.maxElements, batch.maxInterval)
-                       .map { elements =>
-                         elements.foldLeft((Option.empty[ProjectionProgress], List.empty[FailedElem])) {
-                           case ((_, failedElems), (newProgress, elem: FailedElem)) =>
-                             (Some(newProgress), failedElems :+ elem)
-                           case ((_, failedElems), (newProgress, _))                =>
-                             (Some(newProgress), failedElems)
-                         }
-                       }
-                       .evalTap {
-                         case (None, _)                        => UIO.unit
-                         case (Some(newProgress), failedElems) =>
-                           UIO.delay(
-                             logger.debug(
-                               s"[${projection.metadata.name}] Progress: ${newProgress.offset.value}. ${failedElems.length} failed elems to save."
-                             )
-                           ) >>
-                             progressRef.set(newProgress) >>
-                             saveProgress(newProgress) >>
-                             UIO.when(failedElems.nonEmpty)(saveFailedElems(failedElems))
-                       }
+                       .evalTap(chunk => saveProgressAndFailedElems(chunk, progressRef, saveProgress, saveFailedElems))
                        .compile
                        .drain
       // update status to Running at the beginning and to Completed at the end if it's still running
@@ -116,4 +96,32 @@ object Projection {
       fiberRef    <- Ref[Task].of(fiber)
     } yield new Projection(projection.metadata.name, status, progressRef, signal, fiberRef)
 
+  /**
+    * Given a chuck of (progress, elem) saves the last progress and any failed elems.
+    * @param chunk
+    *   An fs2.Chunk
+    * @param progressRef
+    *   progress referenece
+    * @param saveProgress
+    *   function to save the progress
+    * @param saveFailedElems
+    *   function to save failed elems
+    */
+  private def saveProgressAndFailedElems(
+      chunk: Chunk[(ProjectionProgress, Elem[Unit])],
+      progressRef: Ref[Task, ProjectionProgress],
+      saveProgress: ProjectionProgress => UIO[Unit],
+      saveFailedElems: List[FailedElem] => UIO[Unit]
+  ): Task[Unit] = {
+    val failedElems = chunk.mapFilter {
+      case (_, elem: FailedElem) => Some(elem)
+      case _                     => None
+    }.toList
+
+    chunk.last.traverse { case (newProgress, _) =>
+      progressRef.set(newProgress) >>
+        saveProgress(newProgress) >>
+        UIO.when(failedElems.nonEmpty)(saveFailedElems(failedElems))
+    }.void
+  }
 }
