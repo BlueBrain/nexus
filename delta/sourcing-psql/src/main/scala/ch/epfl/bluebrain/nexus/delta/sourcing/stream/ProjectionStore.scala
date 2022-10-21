@@ -188,7 +188,7 @@ object ProjectionStore {
           metadata: ProjectionMetadata,
           failures: List[FailedElem]
       ): UIO[Unit] = {
-        val log  = UIO(logger.debug(s"[${metadata.name}] Saving ${failures.length} failed elems."))
+        val log  = UIO(logger.debug(s"[{}] Saving {} failed elems.", metadata.name, failures.length))
         val save = failures.traverse(elem => saveFailedElem(metadata, elem)).transact(xas.write).void.hideErrors
         log >> save
       }
