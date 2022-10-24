@@ -79,14 +79,22 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
 
   test("Return no failed elem entries by name") {
     for {
-      entries <- store.failedElemEntries(name, Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(name, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
 
   test("Return no failed elem entries by (project, id)") {
     for {
-      entries <- store.failedElemEntries(project, resource, Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(project, resource, Offset.start).compile.toList
+      _        = entries.assertEmpty()
+    } yield ()
+  }
+
+  test("Insert empty list of failed elem") {
+    for {
+      _       <- store.saveFailedElems(metadata, List.empty)
+      entries <- store.failedElemEntries(name, Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
@@ -94,7 +102,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
   test("Insert failed elem") {
     for {
       _       <- store.saveFailedElems(metadata, List(fail1))
-      entries <- store.failedElemEntries(name, Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(name, Offset.start).compile.toList
       r        = entries.assertOneElem
       _        = assertEquals(r.projectionMetadata, metadata)
       _        = assertEquals(r.ordering, Offset.At(1L))
@@ -109,28 +117,28 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
   test("Insert several failed elem") {
     for {
       _       <- store.saveFailedElems(metadata, List(fail1, fail2))
-      entries <- store.failedElemEntries(name, Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(name, Offset.start).compile.toList
       _        = entries.assertSize(3)
     } yield ()
   }
 
   test("Return failed elem entries by (project, id)") {
     for {
-      entries <- store.failedElemEntries(project, resource, Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(project, resource, Offset.start).compile.toList
       _        = entries.assertSize(3)
     } yield ()
   }
 
   test("Return empty if no failed elem is found by name") {
     for {
-      entries <- store.failedElemEntries("other", Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries("other", Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }
 
   test("Return empty if not found by (project, id)") {
     for {
-      entries <- store.failedElemEntries(project, iri"https://example.com", Offset.At(1L)).compile.toList
+      entries <- store.failedElemEntries(project, iri"https://example.com", Offset.start).compile.toList
       _        = entries.assertEmpty()
     } yield ()
   }

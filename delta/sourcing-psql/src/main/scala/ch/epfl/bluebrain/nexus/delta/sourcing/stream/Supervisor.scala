@@ -227,13 +227,17 @@ object Supervisor {
     }
 
     private def startProjection(projection: CompiledProjection): Task[Projection] = {
-      val (fetchProgress, saveProgress) = projection.executionStrategy match {
+      val (fetchProgress, saveProgress, saveFailedElems) = projection.executionStrategy match {
         case PersistentSingleNode            =>
-          (store.offset(projection.metadata.name), store.save(projection.metadata, _))
+          (
+            store.offset(projection.metadata.name),
+            store.save(projection.metadata, _),
+            store.saveFailedElems(projection.metadata, _)
+          )
         case TransientSingleNode | EveryNode =>
-          (UIO.none, (_: ProjectionProgress) => UIO.unit)
+          (UIO.none, (_: ProjectionProgress) => UIO.unit, store.saveFailedElems(projection.metadata, _))
       }
-      Projection(projection, fetchProgress, saveProgress)(cfg.batch)
+      Projection(projection, fetchProgress, saveProgress, saveFailedElems)(cfg.batch)
     }
 
     override def destroy(name: String, clear: Task[Unit]): Task[Option[ExecutionStatus]] = {
@@ -251,7 +255,9 @@ object Supervisor {
                               _      <- stopProjection(s)
                               _      <- Task.when(s.executionStrategy == PersistentSingleNode)(store.delete(name))
                               _      <- clear
-                              status <- s.control.status.restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped).timeout(3.seconds)
+                              status <- s.control.status
+                                          .restartUntil(e => e == ExecutionStatus.Completed || e == ExecutionStatus.Stopped)
+                                          .timeout(3.seconds)
                             } yield status.getOrElse(ExecutionStatus.Stopped)
                           }
                         }

@@ -207,7 +207,7 @@ class IndexingViewDefSuite extends BioSuite with CirceLiteral with Fixtures {
                       compiled.metadata,
                       ProjectionMetadata(ElasticSearchViews.entityType.value, v.projection, Some(projectRef), Some(id))
                     )
-      projection <- Projection(compiled, UIO.none, _ => UIO.unit)
+      projection <- Projection(compiled, UIO.none, _ => UIO.unit, _ => UIO.unit)
       _          <- projection.executionStatus.eventually(ExecutionStatus.Completed)
       _          <- projection.currentProgress.assert(expectedProgress)
     } yield ()

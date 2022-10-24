@@ -6,6 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLd
 import ch.epfl.bluebrain.nexus.delta.sdk.views.ViewRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.PullRequest
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -116,7 +117,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
     ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = ElasticSearchViews.entityType,
-        id = "failed",
+        id = "failed_coord",
         Instant.EPOCH,
         Offset.at(5L),
         new IllegalStateException("Something got wrong :(")
@@ -190,8 +191,40 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       _ <- projectionStore.offset(view3.projection).assertNone
       _  = assert(
              !createdIndices.contains(view3.index),
-             s"The index for '${view2.ref.viewId}' should not have been created."
+             s"The index for '${view3.ref.viewId}' should not have been created."
            )
+    } yield ()
+  }
+
+  test("There is one error for the coordinator projection before the signal") {
+    for {
+      entries <- projectionStore.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.start).compile.toList
+      r        = entries.assertOneElem
+      _        = assertEquals(r.failedElemData.id, "https://bluebrain.github.io/nexus/vocabulary/view3")
+    } yield ()
+  }
+
+  test("There is one error for view 1") {
+    for {
+      entries <- projectionStore.failedElemEntries(view1.projection, Offset.start).compile.toList
+      r        = entries.assertOneElem
+      _        = assertEquals(r.failedElemData.id, "failed")
+      _        = assertEquals(r.failedElemData.entityType, PullRequest.entityType)
+      _        = assertEquals(r.failedElemData.offset, Offset.At(4))
+    } yield ()
+  }
+
+  test("There is one error for view 2") {
+    for {
+      entries <- projectionStore.failedElemEntries(view2.projection, Offset.start).compile.toList
+      _        = entries.assertOneElem
+    } yield ()
+  }
+
+  test("There are no errors for view 3") {
+    for {
+      entries <- projectionStore.failedElemEntries(view3.projection, Offset.start).compile.toList
+      _        = entries.assertEmpty()
     } yield ()
   }
 
@@ -232,6 +265,22 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
              createdIndices.contains(updatedView2.index),
              s"The new index for '${updatedView2.ref.viewId}' should have been created."
            )
+    } yield ()
+  }
+
+  test("Coordinator projection should have one error after failed elem offset 4") {
+    for {
+      entries <- projectionStore.failedElemEntries(ElasticSearchCoordinator.metadata.name, Offset.At(4L)).compile.toList
+      r        = entries.assertOneElem
+      _        = assertEquals(r.failedElemData.id, "failed_coord")
+    } yield ()
+  }
+
+  test("View 2_2 projection should have one error after failed elem offset 4") {
+    for {
+      entries <- projectionStore.failedElemEntries(updatedView2.projection, Offset.At(4L)).compile.toList
+      r        = entries.assertOneElem
+      _        = assertEquals(r.failedElemData.id, "failed")
     } yield ()
   }
 

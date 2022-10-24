@@ -14,6 +14,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.implicits.IriInstances._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore.FailedElemLogRow.FailedElemData
+import com.typesafe.scalalogging.Logger
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
@@ -64,7 +65,7 @@ trait ProjectionStore {
     *
     * @param metadata
     *   the metadata of the projection
-    * @param failure
+    * @param failures
     *   the FailedElem to save
     */
   def saveFailedElems(metadata: ProjectionMetadata, failures: List[FailedElem]): UIO[Unit]
@@ -106,6 +107,7 @@ trait ProjectionStore {
 }
 
 object ProjectionStore {
+  private val logger: Logger = Logger[ProjectionStore]
 
   def apply(xas: Transactors, config: QueryConfig)(implicit clock: Clock[UIO]): ProjectionStore =
     new ProjectionStore {
@@ -185,12 +187,11 @@ object ProjectionStore {
       override def saveFailedElems(
           metadata: ProjectionMetadata,
           failures: List[FailedElem]
-      ): UIO[Unit] =
-        failures
-          .traverse(elem => saveFailedElem(metadata, elem))
-          .transact(xas.write)
-          .void
-          .hideErrors
+      ): UIO[Unit] = {
+        val log  = UIO(logger.debug(s"[{}] Saving {} failed elems.", metadata.name, failures.length))
+        val save = failures.traverse(elem => saveFailedElem(metadata, elem)).transact(xas.write).void.hideErrors
+        log >> save
+      }
 
       override protected def saveFailedElem(
           metadata: ProjectionMetadata,
