@@ -30,6 +30,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json, JsonObject}
@@ -65,6 +66,7 @@ final class ElasticSearchViewsRoutes(
     views: ElasticSearchViews,
     viewsQuery: ElasticSearchViewsQuery,
     progresses: ProgressesStatistics,
+    projectionStore: ProjectionStore,
     restartView: RestartView,
     resourcesToSchemas: ResourceToSchemaMappings,
     schemeDirectives: DeltaSchemeDirectives,
@@ -385,6 +387,7 @@ object ElasticSearchViewsRoutes {
       views: ElasticSearchViews,
       viewsQuery: ElasticSearchViewsQuery,
       progresses: ProgressesStatistics,
+      projectionStore: ProjectionStore,
       restartView: RestartView,
       resourcesToSchemas: ResourceToSchemaMappings,
       schemeDirectives: DeltaSchemeDirectives,
@@ -403,6 +406,7 @@ object ElasticSearchViewsRoutes {
       views,
       viewsQuery,
       progresses,
+      projectionStore,
       restartView,
       resourcesToSchemas,
       schemeDirectives,
