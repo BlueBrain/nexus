@@ -1,14 +1,14 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Last-Event-ID`}
+import akka.http.scaladsl.model.{MediaTypes, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.persistence.query.Sequence
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.contexts.searchMetadata
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{permissions => esPermissions, schema => elasticSearchSchema, ElasticSearchViewRejection}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{ElasticSearchViewRejection, permissions => esPermissions, schema => elasticSearchSchema}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.DummyElasticSearchViewsQuery._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, Fixtures, ValidateElasticSearchView}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
@@ -36,11 +36,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectSta
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
 import ch.epfl.bluebrain.nexus.delta.sdk.{ConfigFixtures, IndexingActionDummy, ProgressesStatistics}
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject, User}
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.PipeChain
+import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.FailedElem
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionMetadata, ProjectionStore}
 import ch.epfl.bluebrain.nexus.testkit._
 import io.circe.syntax._
 import io.circe.{Json, JsonObject}
@@ -168,6 +172,8 @@ class ElasticSearchViewsRoutesSpec
 
   private lazy val viewsQuery = new DummyElasticSearchViewsQuery(views)
 
+  private lazy val store = ProjectionStore(xas, QueryConfig(10, RefreshStrategy.Stop))
+
   private lazy val routes =
     Route.seal(
       ElasticSearchViewsRoutes(
@@ -176,6 +182,7 @@ class ElasticSearchViewsRoutesSpec
         views,
         viewsQuery,
         statisticsProgress,
+        store,
         restart,
         resourceToSchemaMapping,
         groupDirectives,
@@ -584,6 +591,51 @@ class ElasticSearchViewsRoutesSpec
         )
       }
     }
+
+    val name     = "offset"
+    val resource = iri"https://bluebrain.github.io/nexus/vocabulary/myid"
+    val metadata = ProjectionMetadata("test", name, Some(projectRef), Some(resource))
+    val error    = new Exception("boom")
+    val fail1    = FailedElem(EntityType("ACL"), "myid", Instant.EPOCH, Offset.At(42L), error)
+    val fail2    = FailedElem(EntityType("Schema"), "myid", Instant.EPOCH, Offset.At(42L), error)
+
+    "return no elasticsearch projection failures without write permission" in {
+      aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        response.status shouldBe StatusCodes.Forbidden
+        response.asJson shouldEqual jsonContentOf("/routes/errors/authorization-failed.json")
+      }
+    }
+
+    "not return any failures if there aren't any" in {
+      aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldBe ""
+      }
+    }
+
+    "return all available failures when no LastEventID is provided" in {
+      store.saveFailedElems(metadata, List(fail1, fail2)).runSyncUnsafe()
+
+      Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(2).strip shouldEqual contentOf("/responses/failures-1-2.txt")
+      }
+    }
+
+    "return failures only from the given LastEventID" in {
+      Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("2") ~> routes ~> check {
+        mediaType shouldBe MediaTypes.`text/event-stream`
+        response.status shouldBe StatusCodes.OK
+        chunksStream.asString(3).strip shouldEqual contentOf("/responses/failure-2.txt")
+      }
+    }
+
   }
 
   private def elasticSearchViewMetadata(
