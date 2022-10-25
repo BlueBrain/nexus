@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.model.StatusCodes.OK
-import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive1, MalformedHeaderRejection, Route}
+import akka.http.scaladsl.server.{Directive1, Route}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.{emit, lastEventId}
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.UriDirectives._
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.{AuthDirectives, DeltaSchemeDirectives}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
@@ -16,7 +15,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.events
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEventLog
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.execution.Scheduler
 
@@ -46,23 +44,6 @@ class EventsRoutes(
 
   import baseUri.prefixSegment
   import schemeDirectives._
-
-  /**
-    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[Offset.Start]]. An invalid value
-    * will result in an [[MalformedHeaderRejection]].
-    */
-  private def lastEventId: Directive1[Offset] =
-    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
-      case Some(value) =>
-        value.id.toLongOption match {
-          case None    =>
-            val msg =
-              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
-            reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
-          case Some(o) => provide(Offset.at(o))
-        }
-      case None        => provide(Offset.Start)
-    }
 
   private def resolveSelector: Directive1[Label] =
     label.flatMap { l =>
