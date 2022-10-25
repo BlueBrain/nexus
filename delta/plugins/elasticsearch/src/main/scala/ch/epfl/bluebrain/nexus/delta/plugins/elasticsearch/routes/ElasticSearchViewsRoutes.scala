@@ -190,7 +190,7 @@ final class ElasticSearchViewsRoutes(
                     }
                   }
                 },
-                // Fetch elastic search view failures
+                // Fetch elastic search view indexing failures
                 lastEventId { offset =>
                   (pathPrefix("failures") & get & pathEndOrSingleSlash) {
                     operationName(s"$prefixSegment/views/{org}/{project}/{id}/failures") {
@@ -205,7 +205,7 @@ final class ElasticSearchViewsRoutes(
                                   felem.failedElemData.toCompactedJsonLd.map { compactJson =>
                                     ServerSentEvent(
                                       defaultPrinter.print(compactJson.json),
-                                      "failure",
+                                      "IndexingFailure",
                                       felem.ordering.value.toString
                                     )
                                   }

@@ -623,7 +623,7 @@ class ElasticSearchViewsRoutesSpec
       Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(2).strip shouldEqual contentOf("/responses/failures-1-2.txt")
+        chunksStream.asString(2).strip shouldEqual contentOf("/responses/indexing-failures-1-2.txt")
       }
     }
 
@@ -631,7 +631,7 @@ class ElasticSearchViewsRoutesSpec
       Get("/v1/views/myorg/myproject/myid/failures") ~> `Last-Event-ID`("2") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
         response.status shouldBe StatusCodes.OK
-        chunksStream.asString(3).strip shouldEqual contentOf("/responses/failure-2.txt")
+        chunksStream.asString(3).strip shouldEqual contentOf("/responses/indexing-failure-2.txt")
       }
     }
 
