@@ -394,6 +394,12 @@ where...
 - `instant` - timestamp of the last event processed by the view
 - `value` - the value of the offset
 
+## Fetch failures
+
+
+
+
+
 ## Restart indexing
 
 This endpoint restarts the view indexing process. It does not delete the created indices but it overrides the resource
@@ -410,3 +416,49 @@ Request
 
 Response
 :   @@snip [restart.json](../assets/views/elasticsearch/restart.json)
+
+## Server Sent Events
+
+The server sent events response contains a series of events, represented in the following way
+
+```
+data:{payload}
+event:{type}
+id:{id}
+```
+
+where...
+
+- `{payload}`: Json - is the actual payload of the current event
+- `{type}`: String - is a type identifier for the current event. Possible types are related to core resource types (Resouce, Schema, Resolver) and available plugin types
+- `{id}`: String - is the identifier of the resource event. It can be used in the `Last-Event-Id` query parameter
+
+### Fetch failures
+
+```
+GET /v1/views/{org_label}/{project_label}/{view_id}/failures
+```
+
+**Example**
+
+Request
+:   @@snip [failures.sh](../assets/views/elasticsearch/failures.sh)
+
+Response
+:   @@snip [failures.json](../assets/views/elasticsearch/failures.json)
+
+
+
+
+
+[//]: # (**Example**)
+
+[//]: # ()
+[//]: # (Request)
+
+[//]: # (:   @@snip [sse.sh]&#40;assets/events/sse.sh&#41;)
+
+[//]: # ()
+[//]: # (Response)
+
+[//]: # (:   @@snip [sse.json]&#40;assets/events/sse.json&#41;)
