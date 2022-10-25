@@ -172,7 +172,7 @@ object ProjectionStore {
              |WHERE projection_project = $projectionProject
              |AND projection_id = $projectionId
              |AND ordering >= $offset
-             |ORDER BY ordering DESC""".stripMargin
+             |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
@@ -184,7 +184,7 @@ object ProjectionStore {
         sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_name = $projectionName
              |AND ordering >= $offset
-             |ORDER BY ordering DESC""".stripMargin
+             |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
