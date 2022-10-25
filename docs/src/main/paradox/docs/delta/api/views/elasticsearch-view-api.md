@@ -394,12 +394,6 @@ where...
 - `instant` - timestamp of the last event processed by the view
 - `value` - the value of the offset
 
-## Fetch failures
-
-
-
-
-
 ## Restart indexing
 
 This endpoint restarts the view indexing process. It does not delete the created indices but it overrides the resource
