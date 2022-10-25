@@ -618,7 +618,7 @@ class ElasticSearchViewsRoutesSpec
     }
 
     "return all available failures when no LastEventID is provided" in {
-      store.saveFailedElems(metadata, List(fail1, fail2)).runSyncUnsafe()
+      store.saveFailedElems(metadata, List(fail1, fail2)).accepted
 
       Get("/v1/views/myorg/myproject/myid/failures") ~> routes ~> check {
         mediaType shouldBe MediaTypes.`text/event-stream`
