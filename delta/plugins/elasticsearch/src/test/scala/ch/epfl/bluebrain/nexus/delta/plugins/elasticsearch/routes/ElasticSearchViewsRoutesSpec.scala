@@ -592,9 +592,8 @@ class ElasticSearchViewsRoutesSpec
       }
     }
 
-    val name     = "offset"
     val resource = iri"https://bluebrain.github.io/nexus/vocabulary/myid"
-    val metadata = ProjectionMetadata("test", name, Some(projectRef), Some(resource))
+    val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(resource))
     val error    = new Exception("boom")
     val fail1    = FailedElem(EntityType("ACL"), "myid", Instant.EPOCH, Offset.At(42L), error)
     val fail2    = FailedElem(EntityType("Schema"), "myid", Instant.EPOCH, Offset.At(42L), error)
