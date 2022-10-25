@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes
 
 import akka.http.scaladsl.model.StatusCodes.Created
+import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.persistence.query.NoOffset
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchV
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.{ElasticSearchViews, ElasticSearchViewsQuery}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
@@ -91,6 +93,8 @@ final class ElasticSearchViewsRoutes(
 
   implicit private val viewStatisticJsonLdEncoder: JsonLdEncoder[ProgressStatistics] =
     JsonLdEncoder.computeFromCirce(ContextValue(Vocabulary.contexts.statistics))
+
+  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   def routes: Route =
     (baseUriPrefix(baseUri.prefix) & replaceUri("views", schema.iri)) {
@@ -183,6 +187,32 @@ final class ElasticSearchViewsRoutes(
                           .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )
+                    }
+                  }
+                },
+                // Fetch elastic search view failures
+                lastEventId { offset =>
+                  (pathPrefix("failures") & get & pathEndOrSingleSlash) {
+                    operationName(s"$prefixSegment/views/{org}/{project}/{id}/failures") {
+                      authorizeFor(ref, Write).apply {
+                        emit(
+                          views
+                            .fetch(id, ref)
+                            .map { view =>
+                              projectionStore
+                                .failedElemEntries(view.value.project, view.value.id, offset)
+                                .evalMap { felem =>
+                                  felem.failedElemData.toCompactedJsonLd.map { compactJson =>
+                                    ServerSentEvent(
+                                      defaultPrinter.print(compactJson.json),
+                                      "failure",
+                                      felem.ordering.value.toString
+                                    )
+                                  }
+                                }
+                            }
+                        )
+                      }
                     }
                   }
                 },
