@@ -446,19 +446,3 @@ Request
 
 Response
 :   @@snip [failures.json](../assets/views/elasticsearch/failures.json)
-
-
-
-
-
-[//]: # (**Example**)
-
-[//]: # ()
-[//]: # (Request)
-
-[//]: # (:   @@snip [sse.sh]&#40;assets/events/sse.sh&#41;)
-
-[//]: # ()
-[//]: # (Response)
-
-[//]: # (:   @@snip [sse.json]&#40;assets/events/sse.json&#41;)
