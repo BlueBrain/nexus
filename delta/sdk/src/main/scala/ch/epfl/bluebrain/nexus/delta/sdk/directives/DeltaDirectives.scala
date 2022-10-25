@@ -162,7 +162,7 @@ trait DeltaDirectives extends UriDirectives {
         value.id.toLongOption match {
           case None    =>
             val msg =
-              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected either a Long value or a TimeBasedUUID."
+              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected a Long value."
             reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
           case Some(o) => provide(Offset.at(o))
         }
