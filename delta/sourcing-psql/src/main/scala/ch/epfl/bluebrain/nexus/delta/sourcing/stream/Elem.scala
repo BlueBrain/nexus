@@ -110,12 +110,7 @@ object Elem {
   ) extends Elem[A]
 
   object SuccessElem {
-    def apply[A](tpe: EntityType,
-                 id: Iri,
-                 instant: Instant,
-                 offset: Offset,
-                 value: A,
-                 revision: Int): SuccessElem[A] =
+    def apply[A](tpe: EntityType, id: Iri, instant: Instant, offset: Offset, value: A, revision: Int): SuccessElem[A] =
       SuccessElem(tpe, id.toString, instant, offset, value, revision)
   }
 
@@ -161,11 +156,7 @@ object Elem {
   ) extends Elem[Nothing]
 
   object DroppedElem {
-    def apply(tpe: EntityType,
-              id: Iri,
-              instant: Instant,
-              offset: Offset,
-              revision: Int): DroppedElem =
+    def apply(tpe: EntityType, id: Iri, instant: Instant, offset: Offset, revision: Int): DroppedElem =
       DroppedElem(tpe, id.toString, instant, offset, revision)
   }
 
