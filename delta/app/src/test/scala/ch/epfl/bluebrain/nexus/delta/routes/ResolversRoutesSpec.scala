@@ -7,32 +7,32 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv, schema, schemas}
-import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingActionDummy, _}
+import ch.epfl.bluebrain.nexus.delta.sdk.IndexingActionDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ProjectGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.ResourceNotFound
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverType.{CrossProject, InProject}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{ResolverRejection, ResolverType, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.resolvers._
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.model.Resource
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.model.Schema
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group, Subject}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef, ResourceRef}
 import io.circe.Json
 import io.circe.syntax._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
@@ -78,18 +78,18 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   )
   private val resourceFS     = SchemaGen.resourceFor(schemaResource)
 
-  def fetchResource: (ResourceRef, ProjectRef) => IO[ResourceNotFound, DataResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  def fetchResource: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Resource, Nothing]]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Latest(`resourceId`) => IO.pure(resourceFR)
-        case _                    => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Latest(`resourceId`) => UIO.some(JsonLdContent(resourceFR, resourceFR.value.source, None))
+        case _                    => UIO.none
       }
 
-  def fetchSchema: (ResourceRef, ProjectRef) => IO[ResourceNotFound, SchemaResource] =
-    (ref: ResourceRef, p: ProjectRef) =>
+  def fetchSchema: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Schema, Nothing]]] =
+    (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Revision(_, `schemaId`, 5L) => IO.pure(resourceFS)
-        case _                           => IO.raiseError(ResourceNotFound(ref.iri, p))
+        case Revision(_, `schemaId`, 5L) => UIO.some(JsonLdContent(resourceFS, resourceFS.value.source, None))
+        case _                           => UIO.none
       }
 
   private lazy val resolvers = ResolversImpl(
@@ -108,10 +108,11 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   private lazy val resolverResolution = ResolverResolution(
     aclCheck,
     resolvers,
-    List(
-      ReferenceExchange[Resource](fetchResource, _.source),
-      ReferenceExchange[Schema](fetchSchema, _.source)
-    )
+    (ref: ResourceRef, project: ProjectRef) =>
+      fetchResource(ref, project).flatMap {
+        case Some(c) => UIO.some(c)
+        case None    => fetchSchema(ref, project)
+      }
   )
 
   private val fetchContext    = FetchContextDummy[ResolverRejection](List(project, project2), ProjectContextRejection)

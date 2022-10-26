@@ -51,16 +51,16 @@ object ResolversModule extends ModuleDef {
       )(api, clock, uuidF)
   }
 
-  // TODO fix with the same approach as indexing / SSE
   make[MultiResolution].from {
     (
         aclCheck: AclCheck,
         fetchContext: FetchContext[ContextRejection],
-        resolvers: Resolvers
+        resolvers: Resolvers,
+        shifts: ResourceShifts
     ) =>
       MultiResolution(
         fetchContext.mapRejection(ProjectContextRejection),
-        ResolverResolution(aclCheck, resolvers, null)
+        ResolverResolution(aclCheck, resolvers, shifts)
       )
   }
 
@@ -113,7 +113,7 @@ object ResolversModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 9, route.routes, requiresStrictEntity = true)
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri) =>
-    Resolver.graphResourceEncoder(base)
+  many[ResourceShift[_, _, _]].add { (resolvers: Resolvers, base: BaseUri) =>
+    Resolver.shift(resolvers)(base)
   }
 }

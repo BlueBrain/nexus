@@ -17,9 +17,9 @@ import java.time.Instant
 
 class DiscardMetadataSuite extends BioSuite {
 
-  private val base         = iri"http://localhost"
-  private val instant      = Instant.now()
-  private val state        = PullRequestActive(
+  private val base    = iri"http://localhost"
+  private val instant = Instant.now()
+  private val state   = PullRequestActive(
     id = Label.unsafe("id"),
     project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
     rev = 1,
@@ -28,7 +28,7 @@ class DiscardMetadataSuite extends BioSuite {
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val graph = PullRequestState.toGraphResource(state, base)
+  private val graph   = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(DiscardMetadata)

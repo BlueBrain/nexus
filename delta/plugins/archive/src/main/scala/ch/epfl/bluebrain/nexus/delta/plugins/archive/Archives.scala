@@ -1,58 +1,58 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
-import akka.actor.typed.ActorSystem
 import cats.effect.Clock
+import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
+import ch.epfl.bluebrain.nexus.delta.kernel.kamon.KamonMetricComponent
 import ch.epfl.bluebrain.nexus.delta.kernel.syntax._
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{expandIri, moduleType}
+import ch.epfl.bluebrain.nexus.delta.plugins.archive.Archives.{entityType, expandIri, ArchiveLog}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection._
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveState.{Current, Initial}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.ResourceIdCheck.IdAvailability
+import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
+import ch.epfl.bluebrain.nexus.delta.sdk.instances._
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdSourceProcessor.JsonLdSourceDecoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
-import ch.epfl.bluebrain.nexus.delta.sdk.{AkkaSource, ResourceIdCheck}
-import ch.epfl.bluebrain.nexus.delta.sourcing.TransientEventDefinition
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.processor.ShardedAggregate
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.{EphemeralDefinition, EphemeralLog}
 import io.circe.Json
 import monix.bio.{IO, UIO}
-
-import scala.annotation.unused
 
 /**
   * Archives module.
   *
-  * @param aggregate
-  *   the underlying aggregate
+  * @param log
+  *   the underlying ephemeral log
   * @param fetchContext
   *   to fetch the project context
   * @param archiveDownload
   *   the archive download logic
   * @param sourceDecoder
   *   a source decoder for [[ArchiveValue]]
-  * @param cfg
-  *   the archive plugin config
+  * @param config
+  *   the log config
   * @param uuidF
   *   the uuid generator
   * @param rcr
   *   the archive remote context resolution
   */
 class Archives(
-    aggregate: ArchiveAggregate,
+    log: ArchiveLog,
     fetchContext: FetchContext[ArchiveRejection],
     archiveDownload: ArchiveDownload,
     sourceDecoder: JsonLdSourceDecoder[ArchiveRejection, ArchiveValue],
-    cfg: ArchivePluginConfig
+    config: EphemeralLogConfig
 )(implicit uuidF: UUIDF, rcr: RemoteContextResolution) {
+
+  implicit private val kamonComponent: KamonMetricComponent = KamonMetricComponent(entityType.value)
 
   /**
     * Creates an archive with a system generated id.
@@ -91,7 +91,7 @@ class Archives(
       p   <- fetchContext.onRead(project)
       iri <- expandIri(id, p)
       res <- eval(CreateArchive(iri, project, value, subject), p)
-    } yield res).named("createArchive", moduleType)
+    } yield res).span("createArchive")
 
   /**
     * Creates an archive from a json-ld representation. If an id is detected in the source document it will be used.
@@ -109,7 +109,7 @@ class Archives(
       p            <- fetchContext.onRead(project)
       (iri, value) <- sourceDecoder(p, source)
       res          <- eval(CreateArchive(iri, project, value, subject), p)
-    } yield res).named("createArchive", moduleType)
+    } yield res).span("createArchive")
 
   /**
     * Creates an archive from a json-ld representation with a user specified id. If an id is also detected in the source
@@ -135,7 +135,7 @@ class Archives(
       iri   <- expandIri(id, p)
       value <- sourceDecoder(p, iri, source)
       res   <- eval(CreateArchive(iri, project, value, subject), p)
-    } yield res).named("createArchive", moduleType)
+    } yield res).span("createArchive")
 
   /**
     * Fetches an existing archive.
@@ -149,9 +149,9 @@ class Archives(
     (for {
       p     <- fetchContext.onRead(project)
       iri   <- expandIri(id, p)
-      state <- currentState(project, iri)
-      res   <- IO.fromOption(state.toResource(p.apiMappings, p.base, cfg.ttl), ArchiveNotFound(iri, project))
-    } yield res).named("fetchArchive", moduleType)
+      state <- log.stateOr(project, iri, ArchiveNotFound(iri, project))
+      res    = state.toResource(p.apiMappings, p.base, config.ttl)
+    } yield res).span("fetchArchive")
 
   /**
     * Provides an [[AkkaSource]] for streaming an archive content.
@@ -172,29 +172,24 @@ class Archives(
       resource <- fetch(id, project)
       value     = resource.value
       source   <- archiveDownload(value.value, project, ignoreNotFound)
-    } yield source).named("downloadArchive", moduleType)
+    } yield source).span("downloadArchive")
 
   private def eval(cmd: CreateArchive, pc: ProjectContext): IO[ArchiveRejection, ArchiveResource] =
-    for {
-      result    <- aggregate.evaluate(identifier(cmd.project, cmd.id), cmd).mapError(_.value)
-      (am, base) = pc.apiMappings -> pc.base
-      resource  <- IO.fromOption(result.state.toResource(am, base, cfg.ttl), UnexpectedInitialState(cmd.id, cmd.project))
-    } yield resource
-
-  private def currentState(project: ProjectRef, iri: Iri): UIO[ArchiveState] =
-    aggregate.state(identifier(project, iri)).named("currentState", moduleType)
-
-  private def identifier(project: ProjectRef, id: Iri): String =
-    s"${project}_$id"
-
+    log.evaluate(cmd.project, cmd.id, cmd).map {
+      _.toResource(pc.apiMappings, pc.base, config.ttl)
+    }
 }
 
 object Archives {
 
-  /**
-    * The archive module type.
-    */
-  final val moduleType: String = "archive"
+  final val entityType: EntityType = EntityType("archive")
+
+  type ArchiveLog = EphemeralLog[
+    Iri,
+    ArchiveState,
+    CreateArchive,
+    ArchiveRejection
+  ]
 
   /**
     * Iri expansion logic for archives.
@@ -213,45 +208,31 @@ object Archives {
       fetchContext: FetchContext[ArchiveRejection],
       archiveDownload: ArchiveDownload,
       cfg: ArchivePluginConfig,
-      resourceIdCheck: ResourceIdCheck
+      xas: Transactors
   )(implicit
       api: JsonLdApi,
-      as: ActorSystem[Nothing],
       uuidF: UUIDF,
       rcr: RemoteContextResolution,
       clock: Clock[UIO]
-  ): UIO[Archives] = {
-    val idAvailability: IdAvailability[ResourceAlreadyExists] = (project, id) =>
-      resourceIdCheck.isAvailableOr(project, id)(ResourceAlreadyExists(id, project))
-    apply(fetchContext, archiveDownload, cfg, idAvailability)
-  }
+  ): Archives = new Archives(
+    EphemeralLog(
+      definition,
+      cfg.ephemeral,
+      xas
+    ),
+    fetchContext,
+    archiveDownload,
+    sourceDecoder,
+    cfg.ephemeral
+  )
 
-  private[archive] def apply(
-      fetchContext: FetchContext[ArchiveRejection],
-      archiveDownload: ArchiveDownload,
-      cfg: ArchivePluginConfig,
-      idAvailability: IdAvailability[ResourceAlreadyExists]
-  )(implicit
-      api: JsonLdApi,
-      as: ActorSystem[Nothing],
-      uuidF: UUIDF,
-      rcr: RemoteContextResolution,
-      clock: Clock[UIO]
-  ): UIO[Archives] = {
-    val aggregate = ShardedAggregate.transientSharded(
-      definition = TransientEventDefinition(
-        entityType = moduleType,
-        initialState = ArchiveState.Initial,
-        next = next,
-        evaluate = evaluate(idAvailability),
-        stopStrategy = cfg.aggregate.stopStrategy.transientStrategy
-      ),
-      config = cfg.aggregate.processor
+  private def definition(implicit clock: Clock[UIO]) =
+    EphemeralDefinition(
+      entityType,
+      evaluate,
+      ArchiveState.serializer,
+      onUniqueViolation = (id: Iri, c: CreateArchive) => ResourceAlreadyExists(id, c.project)
     )
-    aggregate.map { agg =>
-      new Archives(agg, fetchContext, archiveDownload, sourceDecoder, cfg)
-    }
-  }
 
   private[archive] def sourceDecoder(implicit
       api: JsonLdApi,
@@ -259,27 +240,11 @@ object Archives {
   ): JsonLdSourceDecoder[ArchiveRejection, ArchiveValue] =
     new JsonLdSourceDecoder[ArchiveRejection, ArchiveValue](contexts.archives, uuidF)
 
-  private[archive] def next(@unused state: ArchiveState, event: ArchiveCreated): ArchiveState =
-    Current(
-      id = event.id,
-      project = event.project,
-      value = event.value,
-      createdAt = event.instant,
-      createdBy = event.subject
-    )
-
-  private[archive] def evaluate(idAvailability: IdAvailability[ResourceAlreadyExists])(
-      state: ArchiveState,
+  private[archive] def evaluate(
       command: CreateArchive
-  )(implicit clock: Clock[UIO]): IO[ArchiveRejection, ArchiveCreated] =
-    state match {
-      case Initial    =>
-        idAvailability(command.project, command.id) >>
-          IOUtils.instant.map { instant =>
-            ArchiveCreated(command.id, command.project, command.value, instant, command.subject)
-          }
-      case _: Current =>
-        IO.raiseError(ResourceAlreadyExists(command.id, command.project))
+  )(implicit clock: Clock[UIO]): IO[ArchiveRejection, ArchiveState] =
+    IOUtils.instant.map { instant =>
+      ArchiveState(command.id, command.project, command.value.resources, instant, command.subject)
     }
 
 }

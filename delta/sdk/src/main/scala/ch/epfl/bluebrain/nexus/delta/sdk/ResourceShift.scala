@@ -10,14 +10,15 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
 import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
-abstract class GraphResourceEncoder[State <: ScopedState, B, M](
+abstract class ResourceShift[State <: ScopedState, B, M](
     val entityType: EntityType,
+    fetchResource: (ResourceRef, ProjectRef) => UIO[Option[ResourceF[B]]],
     valueEncoder: JsonLdEncoder[B],
     metadataEncoder: Option[JsonLdEncoder[M]]
 )(implicit serializer: Serializer[_, State], baseUri: BaseUri) {
@@ -28,22 +29,25 @@ abstract class GraphResourceEncoder[State <: ScopedState, B, M](
 
   def toResourceF(context: ProjectContext, state: State): ResourceF[B]
 
-  def toJsonLdContent(value: ResourceF[B]): JsonLdContent[B, M]
+  def toJsonLdContent(reference: ResourceRef, project: ProjectRef): UIO[Option[JsonLdContent[B, M]]] =
+    fetchResource(reference, project).map(_.map(resourceToContent))
 
-  def encode(json: Json, fetchContext: ProjectRef => UIO[ProjectContext])(implicit
+  protected def resourceToContent(value: ResourceF[B]): JsonLdContent[B, M]
+
+  def toGraphResource(json: Json, fetchContext: ProjectRef => UIO[ProjectContext])(implicit
       cr: RemoteContextResolution
   ): Task[GraphResource] =
     for {
       state   <- Task.fromEither(serializer.codec.decodeJson(json))
       context <- fetchContext(state.project)
-      graph   <- toGraph(context, state)
+      graph   <- toGraphResource(context, state)
     } yield graph
 
-  def toGraph(context: ProjectContext, state: State)(implicit
+  private def toGraphResource(context: ProjectContext, state: State)(implicit
       cr: RemoteContextResolution
   ): IO[RdfError, GraphResource] = {
     val resource = toResourceF(context, state)
-    val content  = toJsonLdContent(resource)
+    val content  = resourceToContent(resource)
     val metadata = content.metadata
     val id       = resource.resolvedId
     for {
@@ -76,38 +80,49 @@ abstract class GraphResourceEncoder[State <: ScopedState, B, M](
 
 }
 
-object GraphResourceEncoder {
+object ResourceShift {
 
   def withMetadata[State <: ScopedState, B, M](
       entityType: EntityType,
-      toResource: (ProjectContext, State) => ResourceF[B],
+      fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[B]],
+      stateToResource: (ProjectContext, State) => ResourceF[B],
       toContent: ResourceF[B] => JsonLdContent[B, M]
   )(implicit
       serializer: Serializer[_, State],
       valueEncoder: JsonLdEncoder[B],
       metadataEncoder: JsonLdEncoder[M],
       baseUri: BaseUri
-  ): GraphResourceEncoder[State, B, M] =
-    new GraphResourceEncoder[State, B, M](entityType, valueEncoder, Some(metadataEncoder)) {
+  ): ResourceShift[State, B, M] =
+    new ResourceShift[State, B, M](
+      entityType,
+      fetchResource(_, _).redeem(_ => None, Some(_)),
+      valueEncoder,
+      Some(metadataEncoder)
+    ) {
 
-      override def toResourceF(context: ProjectContext, state: State): ResourceF[B] = toResource(context, state)
+      override def toResourceF(context: ProjectContext, state: State): ResourceF[B] = stateToResource(context, state)
 
-      override def toJsonLdContent(value: ResourceF[B]): JsonLdContent[B, M] = toContent(value)
+      override protected def resourceToContent(value: ResourceF[B]): JsonLdContent[B, M] = toContent(value)
     }
 
   def apply[State <: ScopedState, B](
       entityType: EntityType,
+      fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[B]],
       toResource: (ProjectContext, State) => ResourceF[B],
       toContent: ResourceF[B] => JsonLdContent[B, Nothing]
   )(implicit
       serializer: Serializer[_, State],
       valueEncoder: JsonLdEncoder[B],
       baseUri: BaseUri
-  ): GraphResourceEncoder[State, B, Nothing] =
-    new GraphResourceEncoder[State, B, Nothing](entityType, valueEncoder, None) {
-
+  ): ResourceShift[State, B, Nothing] =
+    new ResourceShift[State, B, Nothing](
+      entityType,
+      fetchResource(_, _).redeem(_ => None, Some(_)),
+      valueEncoder,
+      None
+    ) {
       override def toResourceF(context: ProjectContext, state: State): ResourceF[B] = toResource(context, state)
 
-      override def toJsonLdContent(value: ResourceF[B]): JsonLdContent[B, Nothing] = toContent(value)
+      override protected def resourceToContent(value: ResourceF[B]): JsonLdContent[B, Nothing] = toContent(value)
     }
 }

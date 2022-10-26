@@ -27,12 +27,14 @@ object StreamingQuery {
 
   private val newState = "newState"
 
-  def elems[A](project: ProjectRef,
-               tag: Tag,
-               start: Offset,
-               cfg: QueryConfig,
-               xas: Transactors,
-               decodeValue: (EntityType, Json) => Task[A]): Stream[Task, Elem[A]] = {
+  def elems[A](
+      project: ProjectRef,
+      tag: Tag,
+      start: Offset,
+      cfg: QueryConfig,
+      xas: Transactors,
+      decodeValue: (EntityType, Json) => Task[A]
+  ): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
       sql"""((SELECT 'newState', type, id, value, instant, ordering
@@ -47,40 +49,48 @@ object StreamingQuery {
            |ORDER BY ordering)
            |""".stripMargin.query[(String, EntityType, String, Option[Json], Instant, Long)].map {
         case (`newState`, entityType, id, Some(json), instant, offset) =>
-            SuccessElem(entityType, id, instant, Offset.at(offset), json)
-        case (_, entityType, id, _, instant, offset) =>
+          SuccessElem(entityType, id, instant, Offset.at(offset), json)
+        case (_, entityType, id, _, instant, offset)                   =>
           DroppedElem(entityType, id, instant, Offset.at(offset))
       }
     }
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
       .evalMapChunk {
-        case success: SuccessElem[Json] => decodeValue(success.tpe, success.value).map(success.success).onErrorHandleWith { err =>
-          Task.delay(logger.error(s"An error occurred while decoding value with id '${success.id}' of type '${success.tpe}' in project '$project'.", err))
-            .as(success.failed(err))
-        }
-        case dropped: DroppedElem => Task.pure(dropped)
-        case failed: FailedElem => Task.pure(failed)
+        case success: SuccessElem[Json] =>
+          decodeValue(success.tpe, success.value).map(success.success).onErrorHandleWith { err =>
+            Task
+              .delay(
+                logger.error(
+                  s"An error occurred while decoding value with id '${success.id}' of type '${success.tpe}' in project '$project'.",
+                  err
+                )
+              )
+              .as(success.failed(err))
+          }
+        case dropped: DroppedElem       => Task.pure(dropped)
+        case failed: FailedElem         => Task.pure(failed)
       }
   }
 
-
-  def apply[A](start: Offset,
-               query: Offset => Query0[A],
-               extractOffset: A => Offset,
-               cfg: QueryConfig,
-               xas: Transactors): Stream[Task, A] = {
-    def onComplete() =  Task.delay(
+  def apply[A](
+      start: Offset,
+      query: Offset => Query0[A],
+      extractOffset: A => Offset,
+      cfg: QueryConfig,
+      xas: Transactors
+  ): Stream[Task, A] = {
+    def onComplete() = Task.delay(
       logger.debug(
         "Reached the end of the single evaluation of query '{}'.",
         query(start).sql
       )
     )
 
-    def onError(th: Throwable) =  Task.delay(
+    def onError(th: Throwable) = Task.delay(
       logger.error(s"Single evaluation of query '${query(start).sql}' failed.", th)
     )
 
-    def onCancel() =  Task.delay(
+    def onCancel() = Task.delay(
       logger.debug(
         "Reached the end of the single evaluation of query '{}'.",
         query(start).sql
@@ -119,6 +129,5 @@ object StreamingQuery {
         }
     }
   }
-
 
 }

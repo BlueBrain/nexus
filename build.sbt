@@ -681,8 +681,7 @@ lazy val archivePlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk           % Provided,
-    storagePlugin % "provided;test->test",
-    sdkTestkit    % "test;test->test"
+    storagePlugin % "provided;test->test"
   )
   .settings(
     name                       := "delta-archive-plugin",

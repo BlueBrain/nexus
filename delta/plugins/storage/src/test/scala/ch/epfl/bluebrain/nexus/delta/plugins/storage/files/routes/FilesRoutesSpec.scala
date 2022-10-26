@@ -473,7 +473,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       "project"     -> ref,
       "id"          -> id,
       "rev"         -> rev,
-      "storages"    -> storage.iri,
+      "storage"     -> storage.iri,
       "storageType" -> storageType,
       "storageRev"  -> storage.rev,
       "bytes"       -> attributes.bytes,

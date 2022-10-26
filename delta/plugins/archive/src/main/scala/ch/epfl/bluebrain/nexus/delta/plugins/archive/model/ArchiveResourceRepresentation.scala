@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive.model
 
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import io.circe.Encoder
@@ -86,4 +87,6 @@ object ArchiveResourceRepresentation {
     Encoder.encodeString.contramap {
       _.toString
     }
+
+  implicit val archiveResourceRepresentationOrder: Order[ArchiveResourceRepresentation] = Order.by(_.toString)
 }

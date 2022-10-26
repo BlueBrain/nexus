@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.{ResolverResolutionGen, ResourceGen, SchemaGen}
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegmentRef, ResourceF}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
@@ -52,13 +52,13 @@ class MultiResolutionSpec
   private val unknownResourceId  = nxv + "xxx"
   private val unknownResourceRef = Latest(unknownResourceId)
 
-  private def referenceExchangeValue[R](resource: ResourceF[R], source: Json)(implicit enc: JsonLdEncoder[R]) =
-    ReferenceExchangeValue(resource, source, enc)
+  private def content[R](resource: ResourceF[R], source: Json)(implicit enc: JsonLdEncoder[R]) =
+    JsonLdContent(resource, source, None)
 
-  private val resourceValue = referenceExchangeValue(resourceFR, resourceFR.value.source)
-  private val schemaValue   = referenceExchangeValue(resourceFS, resourceFS.value.source)
+  private val resourceValue = content(resourceFR, resourceFR.value.source)
+  private val schemaValue   = content(resourceFS, resourceFS.value.source)
 
-  def fetch: (ResourceRef, ProjectRef) => Fetch[ReferenceExchangeValue[_]] =
+  def fetch: (ResourceRef, ProjectRef) => Fetch[JsonLdContent[_, _]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
         case Latest(`resourceId`)       => IO.some(resourceValue)

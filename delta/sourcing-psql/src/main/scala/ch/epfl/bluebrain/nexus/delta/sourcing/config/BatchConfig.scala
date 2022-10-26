@@ -13,8 +13,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param maxInterval
   *   the maximum interval to wait for before saving the progress
   */
-final case class BatchConfig(maxElements: Int,
-                             maxInterval: FiniteDuration)
+final case class BatchConfig(maxElements: Int, maxInterval: FiniteDuration)
 
 object BatchConfig {
   implicit final val batchConfigReader: ConfigReader[BatchConfig] =

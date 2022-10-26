@@ -10,11 +10,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoderError.ParsingFailure
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.configuration.semiauto._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.{Configuration, JsonLdDecoder}
-import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ProjectRef, ResourceRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.Encoder
 
 import scala.annotation.nowarn
@@ -76,6 +74,13 @@ object ArchiveReference {
     def defaultFileName = s"${UrlUtils.encode(ref.original.toString)}${representationOrDefault.extension}"
   }
 
+  object ResourceReference {
+    implicit val resourceReferenceOrder: Order[ResourceReference] =
+      Order.by { resourceReference =>
+        (resourceReference.ref, resourceReference.project, resourceReference.path, resourceReference.representation)
+      }
+  }
+
   /**
     * An archive file reference.
     *
@@ -92,6 +97,13 @@ object ArchiveReference {
       path: Option[AbsolutePath]
   ) extends ArchiveReference {
     override val tpe: ArchiveReferenceType = ArchiveReferenceType.File
+  }
+
+  object FileReference {
+    implicit val fileReferenceOrder: Order[FileReference] =
+      Order.by { fileReference =>
+        (fileReference.ref, fileReference.project, fileReference.path)
+      }
   }
 
   sealed private trait ReferenceInput extends Product with Serializable
@@ -195,7 +207,11 @@ object ArchiveReference {
     }
   }
 
-  implicit def archiveReferenceOrder[A <: ArchiveReference]: Order[A] =
-    Order.by { archiveRef => (archiveRef.project, archiveRef.ref.iri) }
+  implicit val archiveReferenceOrder: Order[ArchiveReference] = Order.from {
+    case (_: ResourceReference, _: FileReference)       => -1
+    case (r1: ResourceReference, r2: ResourceReference) => ResourceReference.resourceReferenceOrder.compare(r1, r2)
+    case (_: FileReference, _: ResourceReference)       => 1
+    case (f1: FileReference, f2: FileReference)         => FileReference.fileReferenceOrder.compare(f1, f2)
+  }
 
 }

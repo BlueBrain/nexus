@@ -11,9 +11,9 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteCon
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.{CompactedJsonLd, ExpandedJsonLd}
 import ch.epfl.bluebrain.nexus.delta.rdf.shacl.ShaclShapesGraph
-import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.schemas.Schemas
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
@@ -87,9 +87,10 @@ object Schema {
         value.source.topContextValueOrEmpty.merge(ContextValue(contexts.shacl))
     }
 
-  def graphResourceEncoder(implicit baseUri: BaseUri): GraphResourceEncoder[SchemaState, Schema, Nothing] =
-    GraphResourceEncoder.apply[SchemaState, Schema](
+  def shift(schemas: Schemas)(implicit baseUri: BaseUri): ResourceShift[SchemaState, Schema, Nothing] =
+    ResourceShift.apply[SchemaState, Schema](
       Schemas.entityType,
+      (ref, project) => schemas.fetch(IdSegmentRef(ref), project),
       (context, state) => state.toResource(context.apiMappings, context.base),
       value => JsonLdContent(value, value.value.source, None)
     )

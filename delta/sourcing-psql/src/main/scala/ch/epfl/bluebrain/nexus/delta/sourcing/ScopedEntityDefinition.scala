@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
-import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType}
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.State
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
 import doobie.{Get, Put}
 
 /**
@@ -24,7 +24,7 @@ import doobie.{Get, Put}
   * @param onUniqueViolation
   *   to handle gracefully unique constraint violations in database by a rejection
   */
-final case class ScopedEntityDefinition[Id, S <: State, Command, E <: Event, Rejection](
+final case class ScopedEntityDefinition[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
     tpe: EntityType,
     stateMachine: StateMachine[S, Command, E, Rejection],
     eventSerializer: Serializer[Id, E],
@@ -39,7 +39,7 @@ object ScopedEntityDefinition {
   /**
     * Creates an entity definition which is not meant to be tagged
     */
-  def untagged[Id, S <: State, Command, E <: Event, Rejection](
+  def untagged[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection](
       tpe: EntityType,
       stateMachine: StateMachine[S, Command, E, Rejection],
       eventSerializer: Serializer[Id, E],

@@ -63,8 +63,14 @@ sealed trait State extends Product with Serializable {
 
 object State {
 
+  /**
+    * State for entities that are transversal to all projects
+    */
   trait GlobalState extends State
 
+  /**
+    * State for entities living inside a project
+    */
   trait ScopedState extends State {
 
     /**
@@ -79,6 +85,20 @@ object State {
       */
     def organization: Label = project.organization
 
+  }
+
+  /**
+    * State for immutable entities living inside a project and that will be purged after a given period
+    */
+  trait EphemeralState extends ScopedState {
+
+    def deprecated: Boolean = false
+
+    def rev: Int = 1
+
+    def updatedAt: Instant = createdAt
+
+    def updatedBy: Subject = createdBy
   }
 
 }

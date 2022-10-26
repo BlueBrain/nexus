@@ -103,11 +103,7 @@ object Elem {
   ) extends Elem[A]
 
   object SuccessElem {
-    def apply[A](tpe: EntityType,
-                 id: Iri,
-                 instant: Instant,
-                 offset: Offset,
-                 value: A): SuccessElem[A] =
+    def apply[A](tpe: EntityType, id: Iri, instant: Instant, offset: Offset, value: A): SuccessElem[A] =
       SuccessElem(tpe, id.toString, instant, offset, value)
   }
 
@@ -151,31 +147,28 @@ object Elem {
   ) extends Elem[Nothing]
 
   object DroppedElem {
-    def apply(tpe: EntityType,
-                 id: Iri,
-                 instant: Instant,
-                 offset: Offset): DroppedElem =
+    def apply(tpe: EntityType, id: Iri, instant: Instant, offset: Offset): DroppedElem =
       DroppedElem(tpe, id.toString, instant, offset)
   }
 
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {
     override def traverse[G[_]: Applicative, A, B](fa: Elem[A])(f: A => G[B]): G[Elem[B]] =
       fa match {
-        case s: SuccessElem[A] => Applicative[G].map(f(s.value))(s.success)
-        case dropped: DroppedElem    => Applicative[G].pure(dropped)
-        case failed: FailedElem    => Applicative[G].pure(failed)
+        case s: SuccessElem[A]    => Applicative[G].map(f(s.value))(s.success)
+        case dropped: DroppedElem => Applicative[G].pure(dropped)
+        case failed: FailedElem   => Applicative[G].pure(failed)
       }
 
     override def foldLeft[A, B](fa: Elem[A], b: B)(f: (B, A) => B): B =
       fa match {
         case s: SuccessElem[A] => f(b, s.value)
-        case _ => b
+        case _                 => b
       }
 
     override def foldRight[A, B](fa: Elem[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] =
       fa match {
         case s: SuccessElem[A] => f(s.value, lb)
-        case _    => lb
+        case _                 => lb
       }
   }
 }

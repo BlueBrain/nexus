@@ -14,8 +14,8 @@ import scala.concurrent.duration._
 final class CacheSink[A: Typeable] extends Sink {
 
   val successes: mutable.Map[String, A] = TrieMap.empty[String, A]
-  val dropped: MutableSet[String] = MutableSet.empty[String]
-  val failed: MutableSet[String] = MutableSet.empty[String]
+  val dropped: MutableSet[String]       = MutableSet.empty[String]
+  val failed: MutableSet[String]        = MutableSet.empty[String]
 
   override type In = A
 
@@ -26,10 +26,10 @@ final class CacheSink[A: Typeable] extends Sink {
       case s: SuccessElem[A] =>
         successes.put(s.id, s.value)
         s.void
-      case d: DroppedElem       =>
+      case d: DroppedElem    =>
         dropped.add(d.id)
         d
-      case f: FailedElem                  =>
+      case f: FailedElem     =>
         failed.add(f.id)
         f
     }

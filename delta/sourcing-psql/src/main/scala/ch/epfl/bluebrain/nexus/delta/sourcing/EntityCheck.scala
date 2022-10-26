@@ -2,14 +2,24 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import doobie._
 import doobie.implicits._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import scala.annotation.nowarn
 
 object EntityCheck {
+
+  def findType[Id](id: Id, project: ProjectRef, xas: Transactors)(implicit putId: Put[Id]): UIO[Option[EntityType]] =
+    sql"""
+         | SELECT type
+         | FROM public.scoped_states
+         | WHERE org = ${project.organization}
+         | AND project = ${project.project}
+         | AND id = $id
+         | AND tag = ${Tag.latest}
+         |""".stripMargin.query[EntityType].option.transact(xas.read).hideErrors
 
   def raiseMissingOrDeprecated[Id, E](
       tpe: EntityType,

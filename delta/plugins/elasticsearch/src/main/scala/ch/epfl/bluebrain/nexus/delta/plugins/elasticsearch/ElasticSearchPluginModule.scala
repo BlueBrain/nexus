@@ -236,11 +236,11 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   make[ElasticSearchOnEventInstant]
   many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 
-  many[GraphResourceEncoder[_, _, _]].addEffect { (base: BaseUri) =>
+  many[ResourceShift[_, _, _]].addEffect { (views: ElasticSearchViews, base: BaseUri) =>
     for {
       defaultMapping  <- defaultElasticsearchMapping
       defaultSettings <- defaultElasticsearchSettings
-    } yield ElasticSearchView.graphResourceEncoder(defaultMapping, defaultSettings)(base)
+    } yield ElasticSearchView.shift(views, defaultMapping, defaultSettings)(base)
   }
 
 }

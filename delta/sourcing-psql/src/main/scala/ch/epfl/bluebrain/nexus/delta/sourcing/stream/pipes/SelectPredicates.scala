@@ -24,7 +24,7 @@ import shapeless.Typeable
 class SelectPredicates(config: SelectPredicatesConfig) extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                          = SelectPredicates.label
+  override def label: Label                     = SelectPredicates.label
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 

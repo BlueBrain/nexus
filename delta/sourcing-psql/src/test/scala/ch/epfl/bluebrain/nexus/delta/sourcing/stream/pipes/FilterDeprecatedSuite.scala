@@ -16,9 +16,9 @@ import java.time.Instant
 
 class FilterDeprecatedSuite extends BioSuite {
 
-  private val base         = iri"http://localhost"
-  private val instant      = Instant.now()
-  private val state        = PullRequestActive(
+  private val base    = iri"http://localhost"
+  private val instant = Instant.now()
+  private val state   = PullRequestActive(
     id = Label.unsafe("id"),
     project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
     rev = 1,

@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
-import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.{ExpandIri, JsonLdContent}
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{IdSegment, IdSegmentRef}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
@@ -21,7 +20,7 @@ import monix.bio.IO
   */
 final class MultiResolution(
     fetchProject: ProjectRef => IO[ResolverRejection, ProjectContext],
-    resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
+    resourceResolution: ResolverResolution[JsonLdContent[_, _]]
 ) {
 
   private val expandResourceIri = new ExpandIri(InvalidResolvedResourceId.apply)
@@ -91,7 +90,7 @@ object MultiResolution {
     */
   def apply(
       fetchContext: FetchContext[ResolverRejection],
-      resourceResolution: ResolverResolution[ReferenceExchangeValue[_]]
+      resourceResolution: ResolverResolution[JsonLdContent[_, _]]
   ): MultiResolution =
     new MultiResolution(fetchContext.onRead, resourceResolution)
 
