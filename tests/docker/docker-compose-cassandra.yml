@@ -94,11 +94,12 @@ services:
           memory: 512M
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.4.3
     environment:
       ES_JAVA_OPTS: "-Xmx256m"
       discovery.type: "single-node"
       bootstrap.memory_lock: "true"
+      ingest.geoip.downloader.enabled: "false"
       ELASTIC_PASSWORD: "password"
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]

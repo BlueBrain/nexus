@@ -9,7 +9,6 @@
     "hits": [
       {
         "_index": "prefix_myorg%2fmyproject_graph_analytics",
-        "_type": "_doc",
         "_id": "http://localhost/resource1",
         "_score": 1.0,
         "_source": {
@@ -132,7 +131,6 @@
       },
       {
         "_index": "prefix_myorg%2fmyproject_graph_analytics",
-        "_type": "_doc",
         "_id": "http://localhost/resource2",
         "_score": 1.0,
         "_source": {
