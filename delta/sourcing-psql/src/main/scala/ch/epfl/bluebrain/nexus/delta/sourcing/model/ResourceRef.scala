@@ -137,6 +137,9 @@ object ResourceRef {
   implicit val resourceRefDecoder: Decoder[ResourceRef]  = Iri.iriDecoder.map(apply)
   implicit val jsonLdDecoder: JsonLdDecoder[ResourceRef] = JsonLdDecoder.iriJsonLdDecoder.map(apply)
 
+  /**
+    * Defines an order instance such as [[Latest]] > [[Tag]] > [[Revision]]
+    */
   implicit val resourceRefOrder: Order[ResourceRef] = Order.from {
     case (_: Revision, _: Latest) => -1
     case (_: Revision, _: Tag) => -1

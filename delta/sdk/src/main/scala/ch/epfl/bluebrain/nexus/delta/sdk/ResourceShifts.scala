@@ -13,10 +13,19 @@ import com.typesafe.scalalogging.Logger
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
+/**
+  * Aggregates the different [[ResourceShift]] to perform operations on resources indepently of their types
+  */
 trait ResourceShifts {
 
+  /**
+    * Fetch a resource as a [[JsonLdContent]]
+    */
   def fetch(reference: ResourceRef, project: ProjectRef): UIO[Option[JsonLdContent[_, _]]]
 
+  /**
+    * Return a function to decode a json to a [[GraphResource]] according to its [[EntityType]]
+    */
   def decodeGraphResource(fetchContext: ProjectRef => UIO[ProjectContext]): (EntityType, Json) => Task[GraphResource]
 
 }
@@ -44,7 +53,7 @@ object ResourceShifts {
       for {
         entityType <- EntityCheck.findType(reference.iri, project, xas)
         shift      <- entityType.traverse(findShift)
-        resource   <- shift.flatTraverse(_.toJsonLdContent(reference, project))
+        resource   <- shift.flatTraverse(_.fetch(reference, project))
       } yield resource
 
     override def decodeGraphResource(

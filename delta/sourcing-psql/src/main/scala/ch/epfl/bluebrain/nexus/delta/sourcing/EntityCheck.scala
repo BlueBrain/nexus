@@ -11,6 +11,9 @@ import scala.annotation.nowarn
 
 object EntityCheck {
 
+  /**
+    * Allows to find the [[EntityType]] of the resource with the given [[Id]] in the given project
+    */
   def findType[Id](id: Id, project: ProjectRef, xas: Transactors)(implicit putId: Put[Id]): UIO[Option[EntityType]] =
     sql"""
          | SELECT type
@@ -21,6 +24,13 @@ object EntityCheck {
          | AND tag = ${Tag.latest}
          |""".stripMargin.query[EntityType].option.transact(xas.read).hideErrors
 
+  /**
+    * Raises the defined error if at least one of the provided references does not exist
+    * or is deprecated
+    * @param tpe the type of the different resources
+    * @param refs the references to test
+    * @param onUnknownOrDeprecated the error to raise on the failiing references
+    */
   def raiseMissingOrDeprecated[Id, E](
       tpe: EntityType,
       refs: Set[(ProjectRef, Id)],

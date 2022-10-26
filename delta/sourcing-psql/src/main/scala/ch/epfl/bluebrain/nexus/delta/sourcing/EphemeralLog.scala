@@ -51,6 +51,9 @@ trait EphemeralLog[Id, S <: EphemeralState, Command, Rejection] {
 
 object EphemeralLog {
 
+  /**
+    * Creates on a ephemeral log for the given definition and config
+    */
   def apply[Id, S <: EphemeralState, Command, Rejection](
       definition: EphemeralDefinition[Id, S, Command, Rejection],
       config: EphemeralLogConfig,
