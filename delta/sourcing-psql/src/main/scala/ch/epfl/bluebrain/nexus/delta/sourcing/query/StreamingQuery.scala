@@ -35,21 +35,21 @@ object StreamingQuery {
                decodeValue: (EntityType, Json) => Task[A]): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
-      sql"""((SELECT 'newState', type, id, value, instant, ordering
+      sql"""((SELECT 'newState', type, id, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where
            |ORDER BY ordering)
            |UNION
-           |(SELECT 'tombstone', type, id, null, instant, ordering
+           |(SELECT 'tombstone', type, id, null, instant, ordering, -1
            |FROM public.scoped_tombstones
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
-           |""".stripMargin.query[(String, EntityType, String, Option[Json], Instant, Long)].map {
-        case (`newState`, entityType, id, Some(json), instant, offset) =>
-            SuccessElem(entityType, id, instant, Offset.at(offset), json)
-        case (_, entityType, id, _, instant, offset) =>
-          DroppedElem(entityType, id, instant, Offset.at(offset))
+           |""".stripMargin.query[(String, EntityType, String, Option[Json], Instant, Long, Int)].map {
+        case (`newState`, entityType, id, Some(json), instant, offset, rev) =>
+            SuccessElem(entityType, id, instant, Offset.at(offset), json, rev)
+        case (_, entityType, id, _, instant, offset, rev) =>
+          DroppedElem(entityType, id, instant, Offset.at(offset), rev)
       }
     }
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)

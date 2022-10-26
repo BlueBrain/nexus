@@ -39,7 +39,8 @@ class DiscardMetadataSuite extends BioSuite {
       id = base / "id",
       instant = instant,
       offset = Offset.at(1L),
-      value = graph
+      value = graph,
+      revision = 1
     )
     val expected = elem.copy(value = graph.copy(metadataGraph = Graph.empty(base / "id")))
 

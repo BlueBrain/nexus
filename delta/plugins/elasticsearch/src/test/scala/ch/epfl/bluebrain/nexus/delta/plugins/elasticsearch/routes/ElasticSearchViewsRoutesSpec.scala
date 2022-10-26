@@ -595,8 +595,9 @@ class ElasticSearchViewsRoutesSpec
     val resource = iri"https://bluebrain.github.io/nexus/vocabulary/myid"
     val metadata = ProjectionMetadata("testModule", "testName", Some(projectRef), Some(resource))
     val error    = new Exception("boom")
-    val fail1    = FailedElem(EntityType("ACL"), "myid", Instant.EPOCH, Offset.At(42L), error)
-    val fail2    = FailedElem(EntityType("Schema"), "myid", Instant.EPOCH, Offset.At(42L), error)
+    val rev      = 1
+    val fail1    = FailedElem(EntityType("ACL"), "myid", Instant.EPOCH, Offset.At(42L), error, rev)
+    val fail2    = FailedElem(EntityType("Schema"), "myid", Instant.EPOCH, Offset.At(42L), error, rev)
 
     "return no elasticsearch projection failures without write permission" in {
       aclCheck.subtract(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted

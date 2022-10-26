@@ -29,7 +29,9 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
   private val brian = ("brian", json"""{"name": "Brian", "age": 19 }""")
   private val judy  = ("judy", json"""{"name": "Judy", "age": 47 }""")
 
-  val members = Set(alice, bob, brian, judy)
+  private val members = Set(alice, bob, brian, judy)
+
+  val rev = 1
 
   test("Create the index") {
     client.createIndex(index, None, None).assert(true)
@@ -37,7 +39,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
 
   test("Index a chunk of documents and retrieve them") {
     val chunk = Chunk.iterable(members).zipWithIndex.map { case ((id, json), index) =>
-      SuccessElem(membersEntity, id, Instant.EPOCH, Offset.at(index.toLong + 1), json)
+      SuccessElem(membersEntity, id, Instant.EPOCH, Offset.at(index.toLong + 1), json, rev)
     }
 
     for {
@@ -52,7 +54,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
 
   test("Delete dropped items from the index") {
     val chunk = Chunk(brian, alice).map { case (id, _) =>
-      DroppedElem(membersEntity, id, Instant.EPOCH, Offset.at(members.size.toLong + 1))
+      DroppedElem(membersEntity, id, Instant.EPOCH, Offset.at(members.size.toLong + 1), rev)
     }
 
     for {
@@ -67,7 +69,7 @@ class ElasticSearchSinkSuite extends BioSuite with ElasticSearchClientSetup.Fixt
 
   test("Report errors when a invalid json is submitted") {
     val chunk = Chunk(("xxx", json"""{"name": 112, "age": "xxx"}"""), alice).map { case (id, json) =>
-      SuccessElem(membersEntity, id, Instant.EPOCH, Offset.at(members.size.toLong + 1), json)
+      SuccessElem(membersEntity, id, Instant.EPOCH, Offset.at(members.size.toLong + 1), json, rev)
     }
 
     for {

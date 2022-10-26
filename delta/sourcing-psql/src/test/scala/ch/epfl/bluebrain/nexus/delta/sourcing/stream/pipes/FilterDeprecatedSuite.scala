@@ -46,7 +46,8 @@ class FilterDeprecatedSuite extends BioSuite {
       id = base / "id",
       instant = instant,
       offset = Offset.at(1L),
-      value = graph.copy(deprecated = true)
+      value = graph.copy(deprecated = true),
+      revision = 1
     )
 
     pipe(elem).assert(elem.dropped)
@@ -58,7 +59,8 @@ class FilterDeprecatedSuite extends BioSuite {
       id = base / "id",
       instant = instant,
       offset = Offset.at(1L),
-      value = graph
+      value = graph,
+      revision = 1
     )
 
     pipe(elem).assert(elem)

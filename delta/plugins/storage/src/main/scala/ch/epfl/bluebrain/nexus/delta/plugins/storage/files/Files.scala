@@ -470,9 +470,9 @@ final class Files(
                          .map { envelope =>
                            envelope.value match {
                              case f if f.storageType == StorageType.RemoteDiskStorage && !f.attributes.digest.computed =>
-                               SuccessElem(entityType, envelope.id, envelope.instant, envelope.offset, f)
+                               SuccessElem(entityType, envelope.id, envelope.instant, envelope.offset, f, envelope.rev)
                              case _                                                                                    =>
-                               DroppedElem(entityType, envelope.id, envelope.instant, envelope.offset)
+                               DroppedElem(entityType, envelope.id, envelope.instant, envelope.offset, envelope.rev)
                            }
                          }
                          .evalMap {

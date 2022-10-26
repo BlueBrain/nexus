@@ -349,7 +349,8 @@ final class ElasticSearchViews private (
               id = envelope.id,
               instant = envelope.instant,
               offset = envelope.offset,
-              value = viewDef
+              value = viewDef,
+              revision = envelope.rev
             )
         }
       )
@@ -391,7 +392,7 @@ object ElasticSearchViews {
     projectionName(state.project, state.id, state.rev)
 
   def projectionName(project: ProjectRef, id: Iri, rev: Int): String = {
-    s"elasticsearch-${project}-$id-$rev"
+    s"elasticsearch-$project-$id-$rev"
   }
 
   /**

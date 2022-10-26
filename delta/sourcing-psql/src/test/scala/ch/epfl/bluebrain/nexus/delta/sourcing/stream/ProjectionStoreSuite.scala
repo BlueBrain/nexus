@@ -74,8 +74,9 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
   }
 
   private val error = new RuntimeException("boom")
-  private val fail1 = FailedElem(EntityType("ACL"), "id", Instant.EPOCH, Offset.At(42L), error)
-  private val fail2 = FailedElem(EntityType("Schema"), "id", Instant.EPOCH, Offset.At(42L), error)
+  private val rev   = 1
+  private val fail1 = FailedElem(EntityType("ACL"), "id", Instant.EPOCH, Offset.At(42L), error, rev)
+  private val fail2 = FailedElem(EntityType("Schema"), "id", Instant.EPOCH, Offset.At(42L), error, rev)
 
   test("Return no failed elem entries by name") {
     for {
