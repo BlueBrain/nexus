@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.delta.sdk.directives
 import akka.http.scaladsl.model.MediaTypes.{`application/json`, `text/html`}
 import akka.http.scaladsl.model.StatusCodes.{Redirection, SeeOther}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.Accept
+import akka.http.scaladsl.model.headers.{`Last-Event-ID`, Accept}
 import akka.http.scaladsl.server.ContentNegotiator.Alternative
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegmentRef.{Latest, Revision, Tag}
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.HeadersUtils
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.Encoder
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
@@ -149,5 +150,22 @@ trait DeltaDirectives extends UriDirectives {
         emitRedirect(SeeOther, fusionUri)
       } else
         emitDelta
+    }
+
+  /**
+    * Extracts an [[Offset]] value from the ''Last-Event-ID'' header, defaulting to [[Offset.Start]]. An invalid value
+    * will result in an [[MalformedHeaderRejection]].
+    */
+  def lastEventId: Directive1[Offset] =
+    optionalHeaderValueByName(`Last-Event-ID`.name).map(_.map(id => `Last-Event-ID`(id))).flatMap {
+      case Some(value) =>
+        value.id.toLongOption match {
+          case None    =>
+            val msg =
+              s"Invalid '${`Last-Event-ID`.name}' header value '${value.id}', expected a Long value."
+            reject(MalformedHeaderRejection(`Last-Event-ID`.name, msg))
+          case Some(o) => provide(Offset.at(o))
+        }
+      case None        => provide(Offset.Start)
     }
 }

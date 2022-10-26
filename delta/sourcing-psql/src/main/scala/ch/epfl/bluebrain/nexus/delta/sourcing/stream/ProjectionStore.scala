@@ -6,6 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.IOUtils
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.ThrowableUtils._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
@@ -19,6 +22,8 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
+import io.circe.generic.semiauto.deriveEncoder
+import io.circe.Encoder
 import monix.bio.{Task, UIO}
 
 import java.time.Instant
@@ -167,7 +172,7 @@ object ProjectionStore {
              |WHERE projection_project = $projectionProject
              |AND projection_id = $projectionId
              |AND ordering >= $offset
-             |ORDER BY ordering DESC""".stripMargin
+             |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
@@ -179,7 +184,7 @@ object ProjectionStore {
         sql"""SELECT * from public.failed_elem_logs
              |WHERE projection_name = $projectionName
              |AND ordering >= $offset
-             |ORDER BY ordering DESC""".stripMargin
+             |ORDER BY ordering ASC""".stripMargin
           .query[FailedElemLogRow]
           .streamWithChunkSize(config.batchSize)
           .transact(xas.streaming)
@@ -289,6 +294,13 @@ object ProjectionStore {
         message: String,
         stackTrace: String
     )
+
+    implicit val failedElemDataEncoder: Encoder.AsObject[FailedElemData] =
+      deriveEncoder[FailedElemData]
+        .mapJsonObject(_.remove("stackTrace"))
+        .mapJsonObject(_.remove("entityType"))
+    implicit val failedElemDataJsonLdEncoder: JsonLdEncoder[FailedElemData]            =
+      JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
     implicit val failedElemLogRow: Read[FailedElemLogRow] = {
       Read[Row].map {
