@@ -5,7 +5,7 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -35,21 +35,21 @@ object StreamingQuery {
                decodeValue: (EntityType, Json) => Task[A]): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
-      sql"""((SELECT 'newState', type, id, project, value, instant, ordering, rev
+      sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where
            |ORDER BY ordering)
            |UNION
-           |(SELECT 'tombstone', type, id, project, null, instant, ordering, -1
+           |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
-           |""".stripMargin.query[(String, EntityType, String, ProjectRef, Option[Json], Instant, Long, Int)].map {
-        case (`newState`, entityType, id, project, Some(json), instant, offset, rev) =>
-            SuccessElem(entityType, id, Some(project), instant, Offset.at(offset), json, rev)
-        case (_, entityType, id, project, _, instant, offset, rev) =>
-          DroppedElem(entityType, id, Some(project), instant, Offset.at(offset), rev)
+           |""".stripMargin.query[(String, EntityType, String, Label, Label, Option[Json], Instant, Long, Int)].map {
+        case (`newState`, entityType, id, org, project, Some(json), instant, offset, rev) =>
+            SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), json, rev)
+        case (_, entityType, id, org, project, _, instant, offset, rev) =>
+          DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
       }
     }
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
