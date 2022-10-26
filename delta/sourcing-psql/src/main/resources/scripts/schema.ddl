@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS public.failed_elem_logs(
     entity_type         text        NOT NULL,
     elem_offset         bigint      NOT NULL,
     elem_id             text        NOT NULL,
+    elem_project        text,
     rev                 integer     NOT NULL,
     error_type          text        NOT NULL,
     message             text        NOT NULL,
