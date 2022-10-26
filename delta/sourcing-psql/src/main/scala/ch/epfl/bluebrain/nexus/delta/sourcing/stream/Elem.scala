@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
 
 import cats.{Applicative, Eval, Traverse}
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
 
@@ -30,6 +30,12 @@ sealed trait Elem[+A] extends Product with Serializable {
 
   /**
     * @return
+    *   the underlying project if there is one
+    */
+  def project: Option[ProjectRef]
+
+  /**
+    * @return
     *   the instant when the element was produced
     */
   def instant: Instant
@@ -51,19 +57,19 @@ sealed trait Elem[+A] extends Product with Serializable {
     * @param throwable
     *   the error why the element processing failed
     */
-  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, instant, offset, throwable, revision)
+  def failed(throwable: Throwable): FailedElem = FailedElem(tpe, id, project, instant, offset, throwable, revision)
 
   /**
     * Produces a new [[SuccessElem]] with the provided value copying the common properties.
     * @param value
     *   the value of the element
     */
-  def success[B](value: B): SuccessElem[B] = SuccessElem(tpe, id, instant, offset, value, revision)
+  def success[B](value: B): SuccessElem[B] = SuccessElem(tpe, id, project, instant, offset, value, revision)
 
   /**
     * Produces a new [[DroppedElem]] copying the common properties.
     */
-  def dropped: DroppedElem = DroppedElem(tpe, id, instant, offset, revision)
+  def dropped: DroppedElem = DroppedElem(tpe, id, project, instant, offset, revision)
 
   /**
     * Maps the underlying element value if this is a [[Elem.SuccessElem]] using f.
@@ -103,6 +109,7 @@ object Elem {
   final case class SuccessElem[+A](
       tpe: EntityType,
       id: String,
+      project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
       value: A,
@@ -110,8 +117,16 @@ object Elem {
   ) extends Elem[A]
 
   object SuccessElem {
-    def apply[A](tpe: EntityType, id: Iri, instant: Instant, offset: Offset, value: A, revision: Int): SuccessElem[A] =
-      SuccessElem(tpe, id.toString, instant, offset, value, revision)
+    def apply[A](
+        tpe: EntityType,
+        id: Iri,
+        project: Option[ProjectRef],
+        instant: Instant,
+        offset: Offset,
+        value: A,
+        revision: Int
+    ): SuccessElem[A] =
+      SuccessElem(tpe, id.toString, project, instant, offset, value, revision)
   }
 
   /**
@@ -130,6 +145,7 @@ object Elem {
   final case class FailedElem(
       tpe: EntityType,
       id: String,
+      project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
       throwable: Throwable,
@@ -150,14 +166,22 @@ object Elem {
   final case class DroppedElem(
       tpe: EntityType,
       id: String,
+      project: Option[ProjectRef],
       instant: Instant,
       offset: Offset,
       revision: Int
   ) extends Elem[Nothing]
 
   object DroppedElem {
-    def apply(tpe: EntityType, id: Iri, instant: Instant, offset: Offset, revision: Int): DroppedElem =
-      DroppedElem(tpe, id.toString, instant, offset, revision)
+    def apply(
+        tpe: EntityType,
+        id: Iri,
+        project: Option[ProjectRef],
+        instant: Instant,
+        offset: Offset,
+        revision: Int
+    ): DroppedElem =
+      DroppedElem(tpe, id.toString, project, instant, offset, revision)
   }
 
   implicit val traverseElem: Traverse[Elem] = new Traverse[Elem] {

@@ -347,6 +347,7 @@ final class ElasticSearchViews private (
             SuccessElem(
               tpe = envelope.tpe,
               id = envelope.id,
+              project = Some(envelope.value.project),
               instant = envelope.instant,
               offset = envelope.offset,
               value = viewDef,

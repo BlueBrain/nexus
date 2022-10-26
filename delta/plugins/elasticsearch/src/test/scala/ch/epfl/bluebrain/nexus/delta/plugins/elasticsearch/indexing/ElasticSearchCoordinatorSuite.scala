@@ -90,6 +90,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view1.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
         value = view1,
@@ -98,6 +99,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       DroppedElem(
         tpe = ElasticSearchViews.entityType,
         id = "dropped",
+        project = Some(project),
         Instant.EPOCH,
         Offset.at(2L),
         revision = 1
@@ -105,6 +107,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view2.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
         value = view2,
@@ -113,6 +116,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view3.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
         value = view3,
@@ -122,6 +126,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       FailedElem(
         tpe = ElasticSearchViews.entityType,
         id = "failed_coord",
+        project = Some(project),
         Instant.EPOCH,
         Offset.at(5L),
         new IllegalStateException("Something got wrong :("),
@@ -130,6 +135,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = deprecatedView1.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(6L),
         value = deprecatedView1,
@@ -138,6 +144,7 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = updatedView2.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(7L),
         value = updatedView2,

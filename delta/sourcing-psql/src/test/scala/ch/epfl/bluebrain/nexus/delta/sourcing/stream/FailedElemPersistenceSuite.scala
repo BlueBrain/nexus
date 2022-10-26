@@ -25,14 +25,14 @@ class FailedElemPersistenceSuite extends BioSuite {
       Stream
         .range(1, 11)
         .map { value =>
-          FailedElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), new RuntimeException("boom"), rev)
+          FailedElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), new RuntimeException("boom"), rev)
         }
 
   private def successStream =
     (_: Offset) =>
       Stream
         .range(1, 11)
-        .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), (), rev) }
+        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
 
   private val saveFailedElems: MutableSet[FailedElem] => List[FailedElem] => UIO[Unit] =
     failedElemStore => failedElems => UIO.delay { failedElems.foreach(failedElemStore.add) }

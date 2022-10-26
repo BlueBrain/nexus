@@ -50,16 +50,16 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     xas
   )
 
-  private val alice = User("Alice", Label.unsafe("Wonderland"))
-  private val project1 = ProjectRef.unsafe("org", "proj1")
-  private val project2 = ProjectRef.unsafe("org", "proj2")
-  private val project3 = ProjectRef.unsafe("org2", "proj2")
-  private val id1 = Label.unsafe("1")
-  private val id2 = Label.unsafe("2")
-  private val id3 = Label.unsafe("3")
-  private val id4 = Label.unsafe("4")
+  private val alice     = User("Alice", Label.unsafe("Wonderland"))
+  private val project1  = ProjectRef.unsafe("org", "proj1")
+  private val project2  = ProjectRef.unsafe("org", "proj2")
+  private val project3  = ProjectRef.unsafe("org2", "proj2")
+  private val id1       = Label.unsafe("1")
+  private val id2       = Label.unsafe("2")
+  private val id3       = Label.unsafe("3")
+  private val id4       = Label.unsafe("4")
   private val customTag = UserTag.unsafe("v0.1")
-  private val rev = 1
+  private val rev       = 1
 
   private val prState11 = PullRequestActive(id1, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
   private val prState12 = PullRequestActive(id2, project1, rev, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
@@ -76,8 +76,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     Task.fromEither {
       entityType match {
         case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id.value)
-        case Release.entityType => Release.serializer.codec.decodeJson(json).map(_.id)
-        case _ => Left(DecodingFailure(s"No decoding is available for entity type $entityType", List.empty))
+        case Release.entityType     => Release.serializer.codec.decodeJson(json).map(_.id)
+        case _                      => Left(DecodingFailure(s"No decoding is available for entity type $entityType", List.empty))
       }
     }
 
@@ -110,12 +110,12 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val result = StreamingQuery.elems[String](project1, Tag.Latest, Offset.start, qc, xas, decodeValue)
     result.compile.toList.assert(
       List(
-        SuccessElem(PullRequest.entityType, id1.value, Instant.EPOCH, Offset.at(1L), id1.value, rev),
-        SuccessElem(PullRequest.entityType, id2.value, Instant.EPOCH, Offset.at(2L), id2.value, rev),
-        SuccessElem(Release.entityType, release11.id, Instant.EPOCH, Offset.at(3L), release11.id, rev),
-        SuccessElem(PullRequest.entityType, id3.value, Instant.EPOCH, Offset.at(7L), id3.value, rev),
-        SuccessElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(8L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id4.value, Instant.EPOCH, Offset.at(15L), id4.value, rev)
+        SuccessElem(PullRequest.entityType, id1.value, Some(project1), Instant.EPOCH, Offset.at(1L), id1.value, rev),
+        SuccessElem(PullRequest.entityType, id2.value, Some(project1), Instant.EPOCH, Offset.at(2L), id2.value, rev),
+        SuccessElem(Release.entityType, release11.id, Some(project1), Instant.EPOCH, Offset.at(3L), release11.id, rev),
+        SuccessElem(PullRequest.entityType, id3.value, Some(project1), Instant.EPOCH, Offset.at(7L), id3.value, rev),
+        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
+        SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(15L), id4.value, rev)
       )
     )
   }
@@ -124,9 +124,9 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val result = StreamingQuery.elems[String](project1, Tag.Latest, Offset.at(3L), qc, xas, decodeValue)
     result.compile.toList.assert(
       List(
-        SuccessElem(PullRequest.entityType, id3.value, Instant.EPOCH, Offset.at(7L), id3.value, rev),
-        SuccessElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(8L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id4.value, Instant.EPOCH, Offset.at(15L), id4.value, rev)
+        SuccessElem(PullRequest.entityType, id3.value, Some(project1), Instant.EPOCH, Offset.at(7L), id3.value, rev),
+        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(8L), release12.id, rev),
+        SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(15L), id4.value, rev)
       )
     )
   }
@@ -135,14 +135,14 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val result = StreamingQuery.elems[String](project1, customTag, Offset.start, qc, xas, decodeValue)
     result.compile.toList.assert(
       List(
-        SuccessElem(PullRequest.entityType, id1.value, Instant.EPOCH, Offset.at(6L), id1.value, rev),
-        SuccessElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(9L), release12.id, rev),
-        SuccessElem(PullRequest.entityType, id3.value, Instant.EPOCH, Offset.at(10L), id3.value, rev),
-        DroppedElem(PullRequest.entityType, id3.value, Instant.EPOCH, Offset.at(11L), -1),
-        SuccessElem(PullRequest.entityType, id2.value, Instant.EPOCH, Offset.at(12L), id2.value, rev),
-        DroppedElem(PullRequest.entityType, id1.value, Instant.EPOCH, Offset.at(14L), -1),
-        DroppedElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(16L), -1),
-        SuccessElem(PullRequest.entityType, id4.value, Instant.EPOCH, Offset.at(17L), id4.value, rev)
+        SuccessElem(PullRequest.entityType, id1.value, Some(project1), Instant.EPOCH, Offset.at(6L), id1.value, rev),
+        SuccessElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(9L), release12.id, rev),
+        SuccessElem(PullRequest.entityType, id3.value, Some(project1), Instant.EPOCH, Offset.at(10L), id3.value, rev),
+        DroppedElem(PullRequest.entityType, id3.value, Some(project1), Instant.EPOCH, Offset.at(11L), -1),
+        SuccessElem(PullRequest.entityType, id2.value, Some(project1), Instant.EPOCH, Offset.at(12L), id2.value, rev),
+        DroppedElem(PullRequest.entityType, id1.value, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
+        DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
+        SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(17L), id4.value, rev)
       )
     )
   }
@@ -151,34 +151,51 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     val result = StreamingQuery.elems[String](project1, customTag, Offset.at(11L), qc, xas, decodeValue)
     result.compile.toList.assert(
       List(
-        SuccessElem(PullRequest.entityType, id2.value, Instant.EPOCH, Offset.at(12L), id2.value, rev),
-        DroppedElem(PullRequest.entityType, id1.value, Instant.EPOCH, Offset.at(14L), -1),
-        DroppedElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(16L), -1),
-        SuccessElem(PullRequest.entityType, id4.value, Instant.EPOCH, Offset.at(17L), id4.value, rev)
+        SuccessElem(PullRequest.entityType, id2.value, Some(project1), Instant.EPOCH, Offset.at(12L), id2.value, rev),
+        DroppedElem(PullRequest.entityType, id1.value, Some(project1), Instant.EPOCH, Offset.at(14L), -1),
+        DroppedElem(Release.entityType, release12.id, Some(project1), Instant.EPOCH, Offset.at(16L), -1),
+        SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(17L), id4.value, rev)
       )
     )
   }
 
   test("Running a stream on latest states on project 1 from the beginning with an incomplete decode function") {
 
-    def decodingFailure(entityType: EntityType) = DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
+    def decodingFailure(entityType: EntityType)              =
+      DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
     def incompleteDecode(entityType: EntityType, json: Json) =
       Task.fromEither {
         entityType match {
           case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id.value)
-          case _ => Left(decodingFailure(entityType))
+          case _                      => Left(decodingFailure(entityType))
         }
       }
 
     val result = StreamingQuery.elems[String](project1, Tag.Latest, Offset.start, qc, xas, incompleteDecode)
     result.compile.toList.assert(
       List(
-        SuccessElem(PullRequest.entityType, id1.value, Instant.EPOCH, Offset.at(1L), id1.value, rev),
-        SuccessElem(PullRequest.entityType, id2.value, Instant.EPOCH, Offset.at(2L), id2.value, rev),
-        FailedElem(Release.entityType, release11.id, Instant.EPOCH, Offset.at(3L), decodingFailure(Release.entityType), rev),
-        SuccessElem(PullRequest.entityType, id3.value, Instant.EPOCH, Offset.at(7L), id3.value, rev),
-        FailedElem(Release.entityType, release12.id, Instant.EPOCH, Offset.at(8L), decodingFailure(Release.entityType), rev),
-        SuccessElem(PullRequest.entityType, id4.value, Instant.EPOCH, Offset.at(15L), id4.value, rev)
+        SuccessElem(PullRequest.entityType, id1.value, Some(project1), Instant.EPOCH, Offset.at(1L), id1.value, rev),
+        SuccessElem(PullRequest.entityType, id2.value, Some(project1), Instant.EPOCH, Offset.at(2L), id2.value, rev),
+        FailedElem(
+          Release.entityType,
+          release11.id,
+          Some(project1),
+          Instant.EPOCH,
+          Offset.at(3L),
+          decodingFailure(Release.entityType),
+          rev
+        ),
+        SuccessElem(PullRequest.entityType, id3.value, Some(project1), Instant.EPOCH, Offset.at(7L), id3.value, rev),
+        FailedElem(
+          Release.entityType,
+          release12.id,
+          Some(project1),
+          Instant.EPOCH,
+          Offset.at(8L),
+          decodingFailure(Release.entityType),
+          rev
+        ),
+        SuccessElem(PullRequest.entityType, id4.value, Some(project1), Instant.EPOCH, Offset.at(15L), id4.value, rev)
       )
     )
   }

@@ -31,7 +31,7 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   private def evalStream(start: Task[Unit]) =
     (_: Offset) =>
       Stream.eval(start) >> Stream.range(1, 21)
-        .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), (), rev) }
+        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
 
   test("Ignore a projection when it is meant to run on another node") {
       for {

@@ -12,25 +12,26 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.DataConstructQuery.DataConstructQueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{ReferenceRegistry, pipes}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{pipes, ReferenceRegistry}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
 
 import java.time.Instant
 
 class DataConstructQuerySuite extends BioSuite {
 
-  private val base         = iri"http://localhost"
-  private val instant      = Instant.now()
-  private val state        = PullRequestActive(
+  private val base    = iri"http://localhost"
+  private val instant = Instant.now()
+  private val project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj"))
+  private val state   = PullRequestActive(
     id = Label.unsafe("id"),
-    project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
+    project = project,
     rev = 1,
     createdAt = instant,
     createdBy = Anonymous,
     updatedAt = instant,
     updatedBy = Anonymous
   )
-  private val graph = PullRequestState.toGraphResource(state, base)
+  private val graph   = PullRequestState.toGraphResource(state, base)
 
   private val registry = new ReferenceRegistry
   registry.register(DataConstructQuery)
@@ -39,6 +40,7 @@ class DataConstructQuerySuite extends BioSuite {
     SuccessElem(
       tpe = PullRequest.entityType,
       id = base / "id",
+      project = Some(project),
       instant = instant,
       offset = Offset.at(1L),
       value = graph,
