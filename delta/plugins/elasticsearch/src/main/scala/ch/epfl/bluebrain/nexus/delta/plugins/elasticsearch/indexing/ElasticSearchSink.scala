@@ -32,7 +32,7 @@ final class ElasticSearchSink(
           ElasticSearchBulk.Index(index, id, json) :: acc
       case (acc, Elem.DroppedElem(_, id, _, _, _, _))       =>
         ElasticSearchBulk.Delete(index, id) :: acc
-      case (acc, _: Elem.FailedElem)                  => acc
+      case (acc, _: Elem.FailedElem)                        => acc
     }
 
     if (bulk.nonEmpty) {
