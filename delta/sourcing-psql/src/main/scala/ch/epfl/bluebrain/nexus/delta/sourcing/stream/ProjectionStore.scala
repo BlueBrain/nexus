@@ -211,6 +211,7 @@ object ProjectionStore {
              |  entity_type,
              |  elem_offset,
              |  elem_id,
+             |  rev,
              |  error_type,
              |  message,
              |  stack_trace
@@ -223,6 +224,7 @@ object ProjectionStore {
              |  ${failure.tpe},
              |  ${failure.offset},
              |  ${failure.id},
+             |  ${failure.revision},
              |  ${failure.throwable.getClass.getCanonicalName},
              |  ${failure.throwable.getMessage},
              |  ${stackTraceAsString(failure.throwable)}
@@ -277,6 +279,7 @@ object ProjectionStore {
           EntityType,
           Offset,
           String,
+          Int,
           String,
           String,
           String,
@@ -290,6 +293,7 @@ object ProjectionStore {
         id: String,
         entityType: EntityType,
         offset: Offset,
+        revision: Int,
         errorType: String,
         message: String,
         stackTrace: String
@@ -313,6 +317,7 @@ object ProjectionStore {
               entityType,
               elemOffset,
               elemId,
+              revision,
               errorType,
               message,
               stackTrace,
@@ -321,7 +326,7 @@ object ProjectionStore {
           FailedElemLogRow(
             ordering,
             ProjectionMetadata(module, name, project, resourceId),
-            FailedElemData(elemId, entityType, elemOffset, errorType, message, stackTrace),
+            FailedElemData(elemId, entityType, elemOffset, revision, errorType, message, stackTrace),
             instant
           )
       }

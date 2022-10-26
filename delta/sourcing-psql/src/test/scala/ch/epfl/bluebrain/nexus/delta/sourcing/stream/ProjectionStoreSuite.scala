@@ -112,6 +112,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
       _        = assertEquals(elem.errorType, "java.lang.RuntimeException")
       _        = assertEquals(elem.id, "id")
       _        = assertEquals(elem.entityType, EntityType("ACL"))
+      _        = assertEquals(elem.revision, rev)
     } yield ()
   }
 
