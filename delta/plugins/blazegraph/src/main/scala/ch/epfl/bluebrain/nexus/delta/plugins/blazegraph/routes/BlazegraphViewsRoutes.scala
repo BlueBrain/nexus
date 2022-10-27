@@ -229,7 +229,7 @@ class BlazegraphViewsRoutes(
                                 emit(
                                   Created,
                                   views
-                                    .tag(id, ref, tag, tagRev.toInt, rev)
+                                    .tag(id, ref, tag, tagRev, rev)
                                     .tapEval(index(ref, _, mode))
                                     .mapValue(_.metadata)
                                     .rejectOn[ViewNotFound]

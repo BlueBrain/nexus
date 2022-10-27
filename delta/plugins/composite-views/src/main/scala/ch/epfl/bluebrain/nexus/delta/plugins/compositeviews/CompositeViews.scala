@@ -271,7 +271,7 @@ final class CompositeViews private (
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
                    case Revision(_, rev) =>
-                     log.stateOr(project, iri, rev.toInt, notFound, RevisionNotFound)
+                     log.stateOr(project, iri, rev, notFound, RevisionNotFound)
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
