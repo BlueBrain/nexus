@@ -292,7 +292,7 @@ object ProjectionStore {
     /**
       * Helper case class to structure FailedElemLogRow
       */
-    case class FailedElemData(
+    final case class FailedElemData(
         id: String,
         project: Option[ProjectRef],
         entityType: EntityType,
