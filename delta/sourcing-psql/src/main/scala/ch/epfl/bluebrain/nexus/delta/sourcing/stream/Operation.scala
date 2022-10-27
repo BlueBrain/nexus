@@ -95,7 +95,7 @@ sealed trait Operation { self =>
 object Operation {
 
   def merge(first: Operation, others: Operation*): Either[ProjectionErr, Operation] =
-    merge(NonEmptyChain(first, others:_*))
+    merge(NonEmptyChain(first, others: _*))
 
   def merge(operations: NonEmptyChain[Operation]): Either[ProjectionErr, Operation] =
     operations.tail.foldLeftM[Either[ProjectionErr, *], Operation](operations.head) { case (acc, e) =>
@@ -138,14 +138,18 @@ object Operation {
           case Some((head, tail)) =>
             partitionSuccess(head) match {
               case Right(value) =>
-                Pull.eval(
-                  apply(value)
-                    .onErrorHandleWith {
-                      err => Task.delay(
-                        logger.error(s"Error while applying pipe $name on element ${value.id}", err)
-                      ).as(value.failed(err))
-                    }
-                ).flatMap(Pull.output1) >> go(tail)
+                Pull
+                  .eval(
+                    apply(value)
+                      .onErrorHandleWith { err =>
+                        Task
+                          .delay(
+                            logger.error(s"Error while applying pipe $name on element ${value.id}", err)
+                          )
+                          .as(value.failed(err))
+                      }
+                  )
+                  .flatMap(Pull.output1) >> go(tail)
               case Left(other)  =>
                 Pull.output1(other) >> go(tail)
             }
@@ -156,7 +160,7 @@ object Operation {
     }
   }
 
-  trait Sink  extends Operation {
+  trait Sink extends Operation {
 
     type Out = Unit
     def outType: Typeable[Out] = Typeable[Unit]
@@ -167,11 +171,12 @@ object Operation {
 
     def apply(elements: Chunk[Elem[In]]): Task[Chunk[Elem[Unit]]]
 
-    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] = {
-      in =>
-        in.groupWithin(chunkSize, maxWindow).evalMapChunk { chunk =>
+    protected[stream] def asFs2: fs2.Pipe[Task, Elem[In], Elem[Unit]] = { in =>
+      in.groupWithin(chunkSize, maxWindow)
+        .evalMapChunk { chunk =>
           apply(chunk)
-        }.flatMap(Stream.chunk)
+        }
+        .flatMap(Stream.chunk)
     }
   }
 

@@ -15,8 +15,8 @@ import shapeless.Typeable
   * [[ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset]]. Its elements are wrapped in an [[Elem]] that augments the
   * value with contextual information, like for example whether an element was dropped, its offset etc.
   *
-  * A [[Projection]] may make use of multiple [[Source]] s (at least one) that will be further chained with [[Operation]] s
-  * and ultimately merged together.
+  * A [[Projection]] may make use of multiple [[Source]] s (at least one) that will be further chained with
+  * [[Operation]] s and ultimately merged together.
   */
 trait Source { self =>
 
@@ -64,7 +64,7 @@ trait Source { self =>
                   case Some(value) => e.success(value)
                   case None        => e.failed(SourceOutPipeInMatchErr(self, operation))
                 }
-              case e                                        => e.asInstanceOf[Elem[operation.In]]
+              case e                                  => e.asInstanceOf[Elem[operation.In]]
             }
             .through(operation.asFs2)
       },
@@ -87,13 +87,15 @@ trait Source { self =>
                   case Some(_) => e.asInstanceOf[SuccessElem[Out]]
                   case None    => e.failed(SourceOutMatchErr(self, that))
                 }
-              case e                                        => e.asInstanceOf[Elem[Out]]
+              case e                                  => e.asInstanceOf[Elem[Out]]
             })
       },
       SourceOutMatchErr(self, that)
     )
 
-  private[stream] def broadcastThrough(operations: NonEmptyChain[Operation]): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
+  private[stream] def broadcastThrough(
+      operations: NonEmptyChain[Operation]
+  ): Either[SourceOutPipeInMatchErr, Source.Aux[Unit]] =
     operations
       .traverse { operation =>
         Either.cond(

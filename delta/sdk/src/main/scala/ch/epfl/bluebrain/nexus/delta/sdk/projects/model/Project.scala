@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.Projects
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project.{Metadata, Source}
-import ch.epfl.bluebrain.nexus.delta.sdk.{GraphResourceEncoder, OrderingFields}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.Encoder
 import io.circe.generic.extras.Configuration
@@ -158,11 +158,13 @@ object Project {
       case "_markedForDeletion" => Ordering[Boolean] on (_.markedForDeletion)
     }
 
-  def graphResourceEncoder(
+  def shift(
+      projects: Projects,
       defaultMappings: ApiMappings
-  )(implicit baseUri: BaseUri): GraphResourceEncoder[ProjectState, Project, Metadata] =
-    GraphResourceEncoder.withMetadata[ProjectState, Project, Metadata](
+  )(implicit baseUri: BaseUri): ResourceShift[ProjectState, Project, Metadata] =
+    ResourceShift.withMetadata[ProjectState, Project, Metadata](
       Projects.entityType,
+      (_, ref) => projects.fetch(ref),
       (_, state) => state.toResource(defaultMappings),
       value => JsonLdContent(value, value.value.asJson, Some(value.value.metadata))
     )

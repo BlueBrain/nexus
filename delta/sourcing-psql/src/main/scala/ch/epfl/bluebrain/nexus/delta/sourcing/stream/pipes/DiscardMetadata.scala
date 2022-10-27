@@ -16,7 +16,7 @@ import shapeless.Typeable
 class DiscardMetadata extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                          = DiscardMetadata.label
+  override def label: Label                     = DiscardMetadata.label
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 

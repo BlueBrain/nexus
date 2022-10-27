@@ -83,6 +83,21 @@ CREATE TABLE IF NOT EXISTS public.scoped_tombstones(
 CREATE INDEX IF NOT EXISTS scoped_tombstones_idx ON public.scoped_tombstones(org, project, tag, id);
 
 --
+-- Table for ephemeral scoped states that belongs to a project
+--
+CREATE TABLE IF NOT EXISTS public.ephemeral_states(
+    type       text         NOT NULL,
+    org        text         NOT NULL,
+    project    text         NOT NULL,
+    id         text         NOT NULL,
+    value      JSONB        NOT NULL,
+    instant    timestamptz  NOT NULL,
+    expires    timestamptz  NOT NULL,
+    PRIMARY KEY(type, org, project, id),
+    UNIQUE (org, project, id)
+);
+
+--
 -- Table for entity dependencies
 --
 CREATE TABLE IF NOT EXISTS public.entity_dependencies(

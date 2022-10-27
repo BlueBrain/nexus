@@ -227,18 +227,18 @@ object PullRequest {
     }
 
     def toGraphResource(state: PullRequestState, base: Iri): GraphResource =
-          GraphResource(
-            PullRequest.entityType,
-            state.project,
-            base / state.id.value,
-            state.rev,
-            state.deprecated,
-            state.schema,
-            state.types,
-            state.graph(base),
-            state.metadataGraph(base),
-            state.source
-          )
+      GraphResource(
+        PullRequest.entityType,
+        state.project,
+        base / state.id.value,
+        state.rev,
+        state.deprecated,
+        state.schema,
+        state.types,
+        state.graph(base),
+        state.metadataGraph(base),
+        state.source
+      )
   }
 
 }

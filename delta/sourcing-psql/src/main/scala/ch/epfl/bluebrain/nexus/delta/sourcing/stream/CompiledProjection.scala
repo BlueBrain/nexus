@@ -27,9 +27,11 @@ final case class CompiledProjection private (
 
 object CompiledProjection {
 
-  def fromStream(metadata: ProjectionMetadata,
-                 executionStrategy: ExecutionStrategy,
-                 stream: Offset => Stream[Task, Elem[Unit]]): CompiledProjection =
+  def fromStream(
+      metadata: ProjectionMetadata,
+      executionStrategy: ExecutionStrategy,
+      stream: Offset => Stream[Task, Elem[Unit]]
+  ): CompiledProjection =
     CompiledProjection(metadata, executionStrategy, offset => _ => _ => stream(offset))
 
   /**
@@ -37,9 +39,11 @@ object CompiledProjection {
     * @param registry
     *   the registry for looking up source and pipe references
     */
-  def compile(definition: ProjectionDef,
-              executionStrategy: ExecutionStrategy,
-              registry: ReferenceRegistry): Either[ProjectionErr, CompiledProjection] =
+  def compile(
+      definition: ProjectionDef,
+      executionStrategy: ExecutionStrategy,
+      registry: ReferenceRegistry
+  ): Either[ProjectionErr, CompiledProjection] =
     for {
       compiledSources <- definition.sources.traverse(_.compile(registry))
       mergedSources   <- compiledSources.tail.foldLeftM(compiledSources.head)((acc, e) => acc.merge(e))
@@ -50,14 +54,16 @@ object CompiledProjection {
   /**
     * Attempts to compile the projection definition that can be later managed.
     */
-  def compile(metadata: ProjectionMetadata,
-              executionStrategy: ExecutionStrategy,
-              source: Source,
-              chain: NonEmptyChain[Operation],
-              sink: Sink): Either[ProjectionErr, CompiledProjection] =
+  def compile(
+      metadata: ProjectionMetadata,
+      executionStrategy: ExecutionStrategy,
+      source: Source,
+      chain: NonEmptyChain[Operation],
+      sink: Sink
+  ): Either[ProjectionErr, CompiledProjection] =
     for {
-      operations   <- Operation.merge(chain ++ NonEmptyChain.one(sink))
-      result          <- source.through(operations)
+      operations <- Operation.merge(chain ++ NonEmptyChain.one(sink))
+      result     <- source.through(operations)
     } yield CompiledProjection(metadata, executionStrategy, offset => _ => _ => result.apply(offset).map(_.void))
 
 }

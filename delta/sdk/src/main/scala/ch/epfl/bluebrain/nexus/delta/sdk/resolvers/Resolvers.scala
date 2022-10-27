@@ -133,7 +133,7 @@ trait Resolvers {
   ): IO[ResolverRejection, ResolverResource]
 
   /**
-    * Fetch the last version of a resolver
+    * Fetch the resolver at the requested version
     * @param id
     *   the identifier that will be expanded to the Iri of the resolver with its optional rev/tag
     * @param projectRef

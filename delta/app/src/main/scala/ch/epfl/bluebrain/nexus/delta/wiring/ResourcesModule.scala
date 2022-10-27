@@ -94,8 +94,8 @@ object ResourcesModule extends ModuleDef {
     PriorityRoute(pluginsMinPriority - 1, route.routes, requiresStrictEntity = true)
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri) =>
-    Resource.graphResourceEncoder(base)
+  many[ResourceShift[_, _, _]].add { (resources: Resources, base: BaseUri) =>
+    Resource.shift(resources)(base)
   }
 
 }

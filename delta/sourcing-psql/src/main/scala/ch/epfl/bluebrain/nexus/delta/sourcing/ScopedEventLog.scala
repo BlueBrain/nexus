@@ -178,7 +178,7 @@ trait ScopedEventLog[Id, S <: ScopedState, Command, E <: ScopedEvent, Rejection]
 
 object ScopedEventLog {
 
-  private val logger: Logger       = Logger[ScopedEventLog.type]
+  private val logger: Logger = Logger[ScopedEventLog.type]
 
   private val noop: ConnectionIO[Unit] = ().pure[ConnectionIO]
 
@@ -262,25 +262,28 @@ object ScopedEventLog {
           }
 
         def persist(event: E, original: Option[S], newState: S): IO[Rejection, Unit] =
-          saveTag(event, newState).flatMap { tagQuery =>
-            val queries = for {
-              _ <- TombstoneStore.save(entityType, id, original, newState)
-              _ <- eventStore.save(event)
-              _ <- stateStore.save(newState)
-              _ <- tagQuery
-              _ <- deleteTag(event, newState)
-              _ <- updateDependencies(newState)
-            } yield ()
-            queries
-              .attemptSomeSqlState {
-                case sqlstate.class23.UNIQUE_VIOLATION =>
-                    onUniqueViolation(id, command)
-              }.transact(xas.write)
-          }.hideErrors.flatMap {
-            IO.fromEither(_).tapError {
-              _ => UIO.delay(logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}."))
+          saveTag(event, newState)
+            .flatMap { tagQuery =>
+              val queries = for {
+                _ <- TombstoneStore.save(entityType, id, original, newState)
+                _ <- eventStore.save(event)
+                _ <- stateStore.save(newState)
+                _ <- tagQuery
+                _ <- deleteTag(event, newState)
+                _ <- updateDependencies(newState)
+              } yield ()
+              queries
+                .attemptSomeSqlState { case sqlstate.class23.UNIQUE_VIOLATION =>
+                  onUniqueViolation(id, command)
+                }
+                .transact(xas.write)
             }
-          }
+            .hideErrors
+            .flatMap {
+              IO.fromEither(_).tapError { _ =>
+                UIO.delay(logger.info(s"An event for the '$id' in project '$ref' already exists for rev ${event.rev}."))
+              }
+            }
 
         for {
           originalState <- stateStore.get(ref, id).redeem(_ => None, Some(_))

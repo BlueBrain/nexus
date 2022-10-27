@@ -6,9 +6,9 @@ import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.StorageType
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
-import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShift
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import io.circe.syntax._
@@ -55,12 +55,13 @@ object File {
   implicit def fileJsonLdEncoder(implicit config: StorageTypeConfig): JsonLdEncoder[File] =
     JsonLdEncoder.computeFromCirce(_.id, Files.context)
 
-  def graphResourceEncoder(implicit
+  def shift(files: Files)(implicit
       baseUri: BaseUri,
       config: StorageTypeConfig
-  ): GraphResourceEncoder[FileState, File, Nothing] =
-    GraphResourceEncoder.apply[FileState, File](
+  ): ResourceShift[FileState, File, Nothing] =
+    ResourceShift.apply[FileState, File](
       Files.entityType,
+      (ref, project) => files.fetch(IdSegmentRef(ref), project),
       (context, state) => state.toResource(context.apiMappings, context.base),
       value => JsonLdContent(value, value.value.asJson, None)
     )

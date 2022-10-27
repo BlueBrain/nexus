@@ -15,7 +15,7 @@ import shapeless.Typeable
 class FilterDeprecated extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                          = FilterDeprecated.label
+  override def label: Label                     = FilterDeprecated.label
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 

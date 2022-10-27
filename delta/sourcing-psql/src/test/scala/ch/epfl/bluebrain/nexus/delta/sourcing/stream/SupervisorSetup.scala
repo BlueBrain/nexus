@@ -16,18 +16,23 @@ object SupervisorSetup {
 
   val defaultQueryConfig: QueryConfig = QueryConfig(10, RefreshStrategy.Stop)
 
-  def resource(cluster: ClusterConfig)(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, ProjectionStore)] = {
+  def resource(
+      cluster: ClusterConfig
+  )(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, ProjectionStore)] = {
     val config: ProjectionConfig = ProjectionConfig(
       cluster,
       BatchConfig(3, 50.millis),
       RetryStrategyConfig.AlwaysGiveUp,
+      10.millis,
       10.millis,
       defaultQueryConfig
     )
     resource(config)
   }
 
-  def resource(config: ProjectionConfig)(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, ProjectionStore)] =
+  def resource(
+      config: ProjectionConfig
+  )(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): Resource[Task, (Supervisor, ProjectionStore)] =
     Doobie.resource().flatMap { xas =>
       val projectionStore = ProjectionStore(xas, config.query)
       Resource.make(
@@ -35,12 +40,18 @@ object SupervisorSetup {
       )(s => s._1.stop())
     }
 
-  def suiteLocalFixture(name: String, cluster: ClusterConfig)(implicit clock: Clock[UIO], s: Scheduler, cl: ClassLoader): ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)] =
+  def suiteLocalFixture(name: String, cluster: ClusterConfig)(implicit
+      clock: Clock[UIO],
+      s: Scheduler,
+      cl: ClassLoader
+  ): ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)] =
     ResourceFixture.suiteLocal(name, resource(cluster))
 
   trait Fixture { self: BioSuite =>
-    val supervisor: ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)] = SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0))
-    val supervisor3_1: ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)] = SupervisorSetup.suiteLocalFixture("supervisor3", ClusterConfig(3, 1))
+    val supervisor: ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)]    =
+      SupervisorSetup.suiteLocalFixture("supervisor", ClusterConfig(1, 0))
+    val supervisor3_1: ResourceFixture.TaskFixture[(Supervisor, ProjectionStore)] =
+      SupervisorSetup.suiteLocalFixture("supervisor3", ClusterConfig(3, 1))
   }
 
 }

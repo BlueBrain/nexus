@@ -1,0 +1,194 @@
+package ch.epfl.bluebrain.nexus.delta.sdk
+
+import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
+import ch.epfl.bluebrain.nexus.delta.rdf.RdfError
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, ResourceF}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectContext
+import ch.epfl.bluebrain.nexus.delta.sourcing.Serializer
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, ResourceRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.GraphResource
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.ScopedState
+import io.circe.Json
+import monix.bio.{IO, Task, UIO}
+
+/**
+  * Defines common operations to retrieve the different resources in a common format for tasks like indexing or
+  * resolving operations.
+  *
+  * Plugins can provide implementations for the resource types they introduce so that they can also be handled properly.
+  *
+  * @param entityType
+  *   the entity type for the current resource
+  * @param fetchResource
+  *   how to fetch this resource given a reference
+  * @param valueEncoder
+  *   how to encode it in JSON-LD
+  * @param metadataEncoder
+  *   how to encode its metadata in Json-LD if any
+  * @param serializer
+  *   how to decode its states from the database
+  * @tparam State
+  *   the state associated to the resource
+  * @tparam A
+  *   the resource type
+  * @tparam M
+  *   the resource metadata type
+  */
+abstract class ResourceShift[State <: ScopedState, A, M](
+    val entityType: EntityType,
+    fetchResource: (ResourceRef, ProjectRef) => UIO[Option[ResourceF[A]]],
+    valueEncoder: JsonLdEncoder[A],
+    metadataEncoder: Option[JsonLdEncoder[M]]
+)(implicit serializer: Serializer[_, State], baseUri: BaseUri) {
+
+  implicit private val api: JsonLdApi                                         = JsonLdJavaApi.lenient
+  implicit private val valueJsonLdEncoder: JsonLdEncoder[A]                   = valueEncoder
+  implicit private val resourceFJsonLdEncoder: JsonLdEncoder[ResourceF[Unit]] = ResourceF.defaultResourceFAJsonLdEncoder
+
+  protected def toResourceF(context: ProjectContext, state: State): ResourceF[A]
+
+  /**
+    * Fetch the resource from its reference
+    *
+    * @return
+    *   the resource with its original source, its metadata and its encoder
+    */
+  def fetch(reference: ResourceRef, project: ProjectRef): UIO[Option[JsonLdContent[A, M]]] =
+    fetchResource(reference, project).map(_.map(resourceToContent))
+
+  protected def resourceToContent(value: ResourceF[A]): JsonLdContent[A, M]
+
+  /**
+    * Retrieves a [[GraphResource]] from the json payload stored in database.
+    */
+  def toGraphResource(json: Json, fetchContext: ProjectRef => UIO[ProjectContext])(implicit
+      cr: RemoteContextResolution
+  ): Task[GraphResource] =
+    for {
+      state   <- Task.fromEither(serializer.codec.decodeJson(json))
+      context <- fetchContext(state.project)
+      graph   <- toGraphResource(context, state)
+    } yield graph
+
+  private def toGraphResource(context: ProjectContext, state: State)(implicit
+      cr: RemoteContextResolution
+  ): IO[RdfError, GraphResource] = {
+    val resource = toResourceF(context, state)
+    val content  = resourceToContent(resource)
+    val metadata = content.metadata
+    val id       = resource.resolvedId
+    for {
+      graph             <- valueJsonLdEncoder.graph(resource.value)
+      rootGraph          = graph.replaceRootNode(id)
+      resourceMetaGraph <- resourceFJsonLdEncoder.graph(resource.void)
+      metaGraph         <- encodeMetadata(id, metadata)
+      rootMetaGraph      = metaGraph.fold(resourceMetaGraph)(_ ++ resourceMetaGraph)
+      typesGraph         = rootMetaGraph.rootTypesGraph
+      finalRootGraph     = rootGraph -- rootMetaGraph ++ typesGraph
+    } yield GraphResource(
+      tpe = entityType,
+      project = state.project,
+      id = id,
+      rev = state.rev,
+      deprecated = state.deprecated,
+      schema = state.schema,
+      types = state.types,
+      graph = finalRootGraph,
+      metadataGraph = rootMetaGraph,
+      source = content.source
+    )
+  }
+
+  private def encodeMetadata(id: Iri, metadata: Option[M])(implicit cr: RemoteContextResolution) =
+    (metadata, metadataEncoder) match {
+      case (Some(m), Some(e)) => e.graph(m).map { g => Some(g.replaceRootNode(id)) }
+      case (_, _)             => UIO.none
+    }
+
+}
+
+object ResourceShift {
+
+  /**
+    * Create a [[ResourceShift]] for a resource defining custom metadata
+    * @param entityType
+    *   the entity type of the resource
+    * @param fetchResource
+    *   how to fetch this resource from a reference
+    * @param stateToResource
+    *   the function to pass from its state to a [[ResourceF[A]] ]
+    * @param asContent
+    *   the function to pass from a [[ResourceF[A]] ] to a common [[JsonLdContent]]
+    * @param serializer
+    *   the database serializer
+    * @param valueEncoder
+    *   the JSON-LD encoder for the resource
+    * @param metadataEncoder
+    *   the JSON-LD encoder for its metadata
+    */
+  def withMetadata[State <: ScopedState, A, M](
+      entityType: EntityType,
+      fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[A]],
+      stateToResource: (ProjectContext, State) => ResourceF[A],
+      asContent: ResourceF[A] => JsonLdContent[A, M]
+  )(implicit
+      serializer: Serializer[_, State],
+      valueEncoder: JsonLdEncoder[A],
+      metadataEncoder: JsonLdEncoder[M],
+      baseUri: BaseUri
+  ): ResourceShift[State, A, M] =
+    new ResourceShift[State, A, M](
+      entityType,
+      fetchResource(_, _).redeem(_ => None, Some(_)),
+      valueEncoder,
+      Some(metadataEncoder)
+    ) {
+
+      override protected def toResourceF(context: ProjectContext, state: State): ResourceF[A] =
+        stateToResource(context, state)
+
+      override protected def resourceToContent(value: ResourceF[A]): JsonLdContent[A, M] = asContent(value)
+    }
+
+  /**
+    * Create a [[ResourceShift]] for a resource without any custom metadata
+    * @param entityType
+    *   the entity type of the resource
+    * @param fetchResource
+    *   how to fetch this resource from a reference
+    * @param stateToResource
+    *   the function to pass from its state to a [[ResourceF[A]] ]
+    * @param asContent
+    *   the function to pass from a [[ResourceF[A]] ] to a common [[JsonLdContent]]
+    * @param serializer
+    *   the database serializer
+    * @param valueEncoder
+    *   the JSON-LD encoder for the resource
+    */
+  def apply[State <: ScopedState, B](
+      entityType: EntityType,
+      fetchResource: (ResourceRef, ProjectRef) => IO[_, ResourceF[B]],
+      stateToResource: (ProjectContext, State) => ResourceF[B],
+      asContent: ResourceF[B] => JsonLdContent[B, Nothing]
+  )(implicit
+      serializer: Serializer[_, State],
+      valueEncoder: JsonLdEncoder[B],
+      baseUri: BaseUri
+  ): ResourceShift[State, B, Nothing] =
+    new ResourceShift[State, B, Nothing](
+      entityType,
+      fetchResource(_, _).redeem(_ => None, Some(_)),
+      valueEncoder,
+      None
+    ) {
+      override protected def toResourceF(context: ProjectContext, state: State): ResourceF[B] =
+        stateToResource(context, state)
+
+      override protected def resourceToContent(value: ResourceF[B]): JsonLdContent[B, Nothing] = asContent(value)
+    }
+}

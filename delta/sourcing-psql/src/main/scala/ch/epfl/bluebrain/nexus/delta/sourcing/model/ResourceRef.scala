@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
 import akka.http.scaladsl.model.Uri.Query
+import cats.Order
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.decoder.JsonLdDecoder
 import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
@@ -41,6 +42,10 @@ object ResourceRef {
     override def original: Iri = iri
   }
 
+  object Latest {
+    implicit val latestOrder: Order[Latest] = Order.by { latest => latest.iri }
+  }
+
   /**
     * A reference annotated with a revision.
     *
@@ -78,6 +83,8 @@ object ResourceRef {
       val optRev   = original.query().get("rev").flatMap(_.toLongOption)
       optRev.map(ResourceRef.Revision(original, iriNoRev, _)).toRight("Expected Long value 'rev' query parameter")
     }
+
+    implicit val revisionOrder: Order[Revision] = Order.by { revision => (revision.iri, revision.rev) }
   }
 
   /**
@@ -104,6 +111,9 @@ object ResourceRef {
       */
     final def apply(iri: Iri, tag: UserTag): Tag =
       Tag(iri"$iri?tag=$tag", iri, tag)
+
+
+    implicit val tagOrder: Order[Tag] = Order.by { tag => (tag.iri, tag.tag.value) }
   }
 
   /**
@@ -126,5 +136,20 @@ object ResourceRef {
   implicit val resourceRefEncoder: Encoder[ResourceRef]  = Encoder.encodeString.contramap(_.toString)
   implicit val resourceRefDecoder: Decoder[ResourceRef]  = Iri.iriDecoder.map(apply)
   implicit val jsonLdDecoder: JsonLdDecoder[ResourceRef] = JsonLdDecoder.iriJsonLdDecoder.map(apply)
+
+  /**
+    * Defines an order instance such as [[Latest]] > [[Tag]] > [[Revision]]
+    */
+  implicit val resourceRefOrder: Order[ResourceRef] = Order.from {
+    case (_: Revision, _: Latest) => -1
+    case (_: Revision, _: Tag) => -1
+    case (r1: Revision, r2: Revision) => Revision.revisionOrder.compare(r1, r2)
+    case (_: Tag, _: Latest) => -1
+    case (_: Tag, _: Revision) => 1
+    case (t1: Tag, t2: Tag) => Tag.tagOrder.compare(t1, t2)
+    case (_: Latest, _: Revision) => 1
+    case (_: Latest, _: Tag) => 1
+    case (l1: Latest, l2: Latest) => Latest.latestOrder.compare(l1, l2)
+  }
 
 }
