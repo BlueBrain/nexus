@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.persistence.query.NoOffset
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphView._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model.BlazegraphViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.model._
@@ -32,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchR
 import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegment, ProgressStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.{IndexingAction, ProgressesStatistics}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -208,7 +208,7 @@ class BlazegraphViewsRoutes(
                               views
                                 .fetchIndexingView(id, ref)
                                 .flatMap { r => restartView(r.value.id, r.value.project) }
-                                .as(NoOffset)
+                                .as(Offset.start)
                                 .rejectOn[ViewNotFound]
                             )
                           }

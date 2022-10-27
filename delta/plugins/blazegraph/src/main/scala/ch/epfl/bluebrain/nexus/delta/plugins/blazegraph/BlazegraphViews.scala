@@ -34,7 +34,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.config.EventLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
 
@@ -325,14 +324,14 @@ object BlazegraphViews {
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(view: IndexingViewResource): ViewProjectionId =
+  def projectionId(view: IndexingViewResource): String =
     projectionId(view.value.uuid, view.rev.toInt)
 
   /**
     * Constructs a projectionId for a blazegraph view
     */
-  def projectionId(uuid: UUID, rev: Int): ViewProjectionId =
-    ViewProjectionId(s"blazegraph-${uuid}_$rev")
+  def projectionId(uuid: UUID, rev: Int): String =
+    s"blazegraph-${uuid}_$rev"
 
   /**
     * Constructs the namespace for a Blazegraph view

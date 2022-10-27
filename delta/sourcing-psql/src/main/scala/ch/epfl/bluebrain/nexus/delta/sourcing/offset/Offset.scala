@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.offset
 
 import cats.Order
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import doobie._
 import doobie.implicits._
 import doobie.util.fragment.Fragment
@@ -64,4 +67,8 @@ object Offset {
 
   implicit final val offsetGet: Get[Offset] = Get[Long].map(from)
   implicit final val offsetPut: Put[Offset] = Put[Long].contramap(_.value)
+
+  implicit val offsetJsonLdEncoder: JsonLdEncoder[Offset] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.offset))
+
 }

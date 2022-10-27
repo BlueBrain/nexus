@@ -18,8 +18,6 @@ val scalaCompilerVersion   = "2.13.8"
 val akkaHttpVersion                 = "10.2.9"
 val akkaHttpCirceVersion            = "1.39.2"
 val akkaCorsVersion                 = "1.1.3"
-val akkaPersistenceCassandraVersion = "1.0.5"
-val akkaPersistenceJdbcVersion      = "5.0.4"
 val akkaVersion                     = "2.6.19"
 val alpakkaVersion                  = "3.0.4"
 val apacheCompressVersion           = "1.21"
@@ -36,7 +34,6 @@ val distageVersion                  = "1.0.10"
 val doobieVersion                   = "0.13.4"
 val fs2Version                      = "2.5.11"
 val googleAuthClientVersion         = "1.33.3"
-val h2Version                       = "1.4.200"
 val jenaVersion                     = "4.2.0"
 val jsonldjavaVersion               = "0.13.4"
 val kamonVersion                    = "2.5.1"
@@ -71,18 +68,6 @@ lazy val akkaHttpCors    = "ch.megard"         %% "akka-http-cors"    % akkaCors
 lazy val akkaHttpTestKit = "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion
 lazy val akkaHttpXml     = "com.typesafe.akka" %% "akka-http-xml"     % akkaHttpVersion
 
-lazy val akkaPersistenceTyped   = "com.typesafe.akka" %% "akka-persistence-typed"   % akkaVersion
-lazy val akkaPersistenceTestKit = "com.typesafe.akka" %% "akka-persistence-testkit" % akkaVersion
-
-lazy val akkaPersistenceCassandra = "com.typesafe.akka" %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
-
-lazy val akkaPersistenceJdbc = Seq(
-  "com.lightbend.akka" %% "akka-persistence-jdbc" % akkaPersistenceJdbcVersion,
-  "com.typesafe.slick" %% "slick"                 % slickVersion,
-  "com.typesafe.slick" %% "slick-hikaricp"        % slickVersion
-)
-
-lazy val akkaPersistenceQuery = "com.typesafe.akka"            %% "akka-persistence-query"   % akkaVersion
 lazy val akkaSlf4j            = "com.typesafe.akka"            %% "akka-slf4j"               % akkaVersion
 lazy val akkaStream           = "com.typesafe.akka"            %% "akka-stream"              % akkaVersion
 lazy val akkaTestKit          = "com.typesafe.akka"            %% "akka-testkit"             % akkaVersion
@@ -117,7 +102,6 @@ lazy val doobie               = Seq(
 lazy val fs2                  = "co.fs2"                       %% "fs2-core"                 % fs2Version
 lazy val fs2io                = "co.fs2"                       %% "fs2-io"                   % fs2Version
 lazy val googleAuthClient     = "com.google.oauth-client"       % "google-oauth-client"      % googleAuthClientVersion
-lazy val h2                   = "com.h2database"                % "h2"                       % h2Version
 lazy val jenaArq              = "org.apache.jena"               % "jena-arq"                 % jenaVersion
 lazy val jsonldjava           = "com.github.jsonld-java"        % "jsonld-java"              % jsonldjavaVersion
 lazy val kamonAkkaHttp        = "io.kamon"                     %% "kamon-akka-http"          % kamonVersion
@@ -200,7 +184,6 @@ lazy val docs = project
       val contextDirs                        = Seq(
         (rdf / Compile / resourceDirectory).value / "contexts",
         (sdk / Compile / resourceDirectory).value / "contexts",
-        (sdkViews / Compile / resourceDirectory).value / "contexts",
         (archivePlugin / Compile / resourceDirectory).value / "contexts",
         (blazegraphPlugin / Compile / resourceDirectory).value / "contexts",
         (graphAnalyticsPlugin / Compile / resourceDirectory).value / "contexts",
@@ -254,40 +237,6 @@ lazy val testkit = project
       testContainers
     ),
     addCompilerPlugin(kindProjector)
-  )
-
-lazy val sourcing = project
-  .in(file("delta/sourcing"))
-  .dependsOn(kernel, testkit % "test->compile")
-  .settings(
-    name       := "delta-sourcing",
-    moduleName := "delta-sourcing"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .settings(
-    coverageMinimumStmtTotal := 10,
-    libraryDependencies     ++= Seq(
-      akkaActorTyped,
-      akkaClusterTyped,
-      akkaClusterShardingTyped,
-      akkaPersistenceTyped,
-      akkaPersistenceCassandra,
-      akkaPersistenceQuery,
-      catsCore,
-      circeCore,
-      circeGenericExtras,
-      circeParser,
-      distageCore,
-      fs2,
-      fs2io,
-      kryo,
-      monixBio,
-      akkaPersistenceTestKit % Test,
-      akkaSlf4j              % Test,
-      catsEffectLaws         % Test,
-      logback                % Test
-    ),
-    Test / fork              := true
   )
 
 lazy val sourcingPsql = project
@@ -353,7 +302,7 @@ lazy val sdk = project
     name       := "delta-sdk",
     moduleName := "delta-sdk"
   )
-  .dependsOn(kernel, sourcing, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
+  .dependsOn(kernel, sourcingPsql % "compile->compile;test->test", rdf % "compile->compile;test->test", testkit % "test->compile")
   .settings(shared, compilation, assertJavaVersion, coverage, release)
   .settings(
     coverageFailOnMinimum := false,
@@ -362,7 +311,6 @@ lazy val sdk = project
       akkaDistributedData,
       akkaHttp,
       akkaHttpXml,
-      akkaPersistenceQuery, // To have access to the Offset type
       caffeine,
       circeLiteral,
       circeGenericExtras,
@@ -380,42 +328,6 @@ lazy val sdk = project
     addCompilerPlugin(betterMonadicFor)
   )
 
-lazy val sdkTestkit = project
-  .in(file("delta/sdk-testkit"))
-  .settings(
-    name       := "delta-sdk-testkit",
-    moduleName := "delta-sdk-testkit"
-  )
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .dependsOn(rdf, sdk % "compile->compile;test->test", testkit)
-  .settings(
-    libraryDependencies ++= Seq(
-      akkaTestKitTyped,
-      scalaTest % Test
-    ) ++ akkaPersistenceJdbc,
-    addCompilerPlugin(betterMonadicFor)
-  )
-
-lazy val sdkViews = project
-  .in(file("delta/sdk-views"))
-  .settings(
-    name       := "delta-sdk-views",
-    moduleName := "delta-sdk-views"
-  )
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
-  .settings(shared, compilation, assertJavaVersion, coverage, release)
-  .settings(
-    coverageFailOnMinimum := false,
-    libraryDependencies  ++= Seq(
-      akkaTestKitTyped % Test,
-      akkaHttpTestKit  % Test,
-      scalaTest        % Test
-    ),
-    addCompilerPlugin(kindProjector),
-    addCompilerPlugin(betterMonadicFor),
-    Test / fork           := true
-  )
-
 lazy val app = project
   .in(file("delta/app"))
   .settings(
@@ -424,7 +336,7 @@ lazy val app = project
   )
   .enablePlugins(UniversalPlugin, JavaAppPackaging, JavaAgent, DockerPlugin, BuildInfoPlugin)
   .settings(shared, compilation, servicePackaging, assertJavaVersion, kamonSettings, coverage, release)
-  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile", sdkViews)
+  .dependsOn(sdk % "compile->compile;test->test", testkit % "test->compile")
   .settings(Test / compile := (Test / compile).dependsOn(testPlugin / assembly).value)
   .settings(
     libraryDependencies  ++= Seq(
@@ -520,8 +432,7 @@ lazy val elasticsearchPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk      % "provided;test->test",
-    sdkViews % "provided;test->test"
+    sdk      % "provided;test->test"
   )
   .settings(
     name                       := "delta-elasticsearch-plugin",
@@ -532,7 +443,6 @@ lazy val elasticsearchPlugin = project
       kamonAkkaHttp    % Provided,
       akkaTestKitTyped % Test,
       akkaSlf4j        % Test,
-      h2               % Test,
       logback          % Test,
       scalaTest        % Test
     ),
@@ -550,8 +460,7 @@ lazy val blazegraphPlugin = project
   .enablePlugins(BuildInfoPlugin)
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
-    sdk      % "provided;test->test",
-    sdkViews % "provided;test->test"
+    sdk      % "provided;test->test"
   )
   .settings(
     name                       := "delta-blazegraph-plugin",
@@ -559,7 +468,6 @@ lazy val blazegraphPlugin = project
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -579,7 +487,6 @@ lazy val compositeViewsPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk                 % "provided;test->test",
-    sdkViews            % "provided;test->test",
     elasticsearchPlugin % "provided;test->test",
     blazegraphPlugin    % "provided;test->test"
   )
@@ -593,7 +500,6 @@ lazy val compositeViewsPlugin = project
       ),
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -614,7 +520,6 @@ lazy val searchPlugin = project
   .settings(shared, compilation, assertJavaVersion, discardModuleInfoAssemblySettings, coverage, release)
   .dependsOn(
     sdk                  % "provided;test->test",
-    sdkViews             % Provided,
     blazegraphPlugin     % "provided;test->compile;test->test",
     elasticsearchPlugin  % "provided;test->compile;test->test",
     compositeViewsPlugin % "provided;test->compile;test->test"
@@ -625,7 +530,6 @@ lazy val searchPlugin = project
     libraryDependencies       ++= Seq(
       kamonAkkaHttp % Provided,
       akkaSlf4j     % Test,
-      h2            % Test,
       logback       % Test,
       scalaTest     % Test
     ),
@@ -736,8 +640,6 @@ lazy val graphAnalyticsPlugin = project
   .dependsOn(
     sdk                 % Provided,
     storagePlugin       % "provided;test->test",
-    sdkViews            % "provided;test->test",
-    sdkTestkit          % "test;test->test",
     elasticsearchPlugin % "provided;test->test"
   )
   .settings(
@@ -805,7 +707,7 @@ lazy val plugins = project
 lazy val delta = project
   .in(file("delta"))
   .settings(shared, compilation, noPublish)
-  .aggregate(kernel, testkit, sourcing, rdf, sdk, sdkTestkit, sdkViews, app, plugins)
+  .aggregate(kernel, testkit, sourcingPsql, rdf, sdk, app, plugins)
 
 lazy val cargo = taskKey[(File, String)]("Run Cargo to build 'nexus-fixer'")
 

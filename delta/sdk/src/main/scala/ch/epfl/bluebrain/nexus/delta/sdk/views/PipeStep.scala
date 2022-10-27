@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.delta.sdk.views.pipe
+package ch.epfl.bluebrain.nexus.delta.sdk.views
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.{contexts, nxv}

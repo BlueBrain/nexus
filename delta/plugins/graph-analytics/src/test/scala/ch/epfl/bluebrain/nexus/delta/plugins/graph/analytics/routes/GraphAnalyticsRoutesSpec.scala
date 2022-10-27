@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGrap
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, ContextFixtures, GraphAnalytics}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, contexts}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
@@ -28,17 +28,17 @@ import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
 import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.{Anonymous, Authenticated, Group}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import monix.bio.IO
 import org.scalatest.CancelAfterFailure
 
 import java.time.Instant
 import java.util.UUID
 
-class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure with ContextFixtures {
+class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure {
 
   // TODO: sort out how we handle this in tests
-  implicit override val rcr: RemoteContextResolution =
+  implicit override def rcr: RemoteContextResolution =
     RemoteContextResolution.fixed(
       contexts.relationships         -> jsonContentOf("contexts/relationships.json").topContextValueOrEmpty,
       contexts.properties            -> jsonContentOf("contexts/properties.json").topContextValueOrEmpty,
@@ -81,7 +81,7 @@ class GraphAnalyticsRoutesSpec extends BaseRouteSpec with CancelAfterFailure wit
   }
 
   private val viewsProgressesCache   =
-    KeyValueStore.localLRU[ProjectionId, ProjectionProgress[Unit]](10L).accepted
+    KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
   private val graphAnalyticsProgress = new ProgressesStatistics(
     viewsProgressesCache,
     ioFromMap(project.ref -> ProjectStatistics(10, 10, Instant.EPOCH))

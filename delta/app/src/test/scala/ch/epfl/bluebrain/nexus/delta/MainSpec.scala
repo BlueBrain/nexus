@@ -54,9 +54,6 @@ class MainSpec
     System.setProperty("plugins.elasticsearch.credentials.username", "elastic")
     System.setProperty("plugins.elasticsearch.credentials.password", "password")
 
-    //TODO Remove the lines where plugins are migrated
-    System.setProperty("plugins.archive.enabled", "false")
-
     //TODO Enable these plugins again after migration
     System.setProperty("plugins.graph-analytics.enabled", "false")
     System.setProperty("plugins.search.enabled", "true")
@@ -75,8 +72,6 @@ class MainSpec
     System.clearProperty("akka.actor.testkit.typed.throw-on-shutdown-timeout")
     System.clearProperty("plugins.elasticsearch.credentials.username")
     System.clearProperty("plugins.elasticsearch.credentials.password")
-
-    System.clearProperty("plugins.archive.enabled")
 
     System.clearProperty("plugins.graph-analytics.enabled.enabled")
     System.clearProperty("plugins.search.enabled")

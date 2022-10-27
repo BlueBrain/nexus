@@ -35,7 +35,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{ElemStream, EntityDependency, EntityType, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.SuccessElem
 import io.circe.{Json, JsonObject}
 import monix.bio.{IO, Task, UIO}
@@ -387,24 +386,15 @@ object ElasticSearchViews {
     */
   val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
 
+  def projectionName(resource: IndexingViewResource): String =
+    projectionName(resource.value.project, resource.id, resource.rev.toInt)
+
   def projectionName(state: ElasticSearchViewState): String =
     projectionName(state.project, state.id, state.rev)
 
   def projectionName(project: ProjectRef, id: Iri, rev: Int): String = {
     s"elasticsearch-${project}-$id-$rev"
   }
-
-  /**
-    * Constructs a projectionId for an elasticsearch view
-    */
-  def projectionId(view: IndexingViewResource): ViewProjectionId =
-    projectionId(view.value.uuid, view.rev.toInt)
-
-  /**
-    * Constructs a projectionId for an elasticsearch view
-    */
-  def projectionId(uuid: UUID, rev: Int): ViewProjectionId =
-    ViewProjectionId(s"elasticsearch-${uuid}_$rev")
 
   def index(uuid: UUID, rev: Int, prefix: String): IndexLabel =
     IndexLabel.fromView(prefix, uuid, rev)
