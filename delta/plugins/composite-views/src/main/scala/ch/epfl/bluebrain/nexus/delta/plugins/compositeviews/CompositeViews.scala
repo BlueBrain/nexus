@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.syntax.kamonSyntax
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.{IOUtils, UUIDF}
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.BlazegraphViews
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.CompositeViews._
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.config.CompositeViewsConfig
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewCommand._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewEvent._
@@ -17,7 +18,6 @@ import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewS
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.ProjectionType.{ElasticSearchProjectionType, SparqlProjectionType}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.serialization.CompositeViewFieldsJsonLdSourceDecoder
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.IndexLabel
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.JsonLdApi
@@ -38,7 +38,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.ScopedEntityDefinition.Tagger
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityDependency, EntityType, ProjectRef}
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.{CompositeViewProjectionId, SourceProjectionId}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{Predicate, ScopedEntityDefinition, ScopedEventLog, StateMachine}
 import io.circe.Json
 import monix.bio.{IO, Task, UIO}
@@ -650,10 +649,10 @@ object CompositeViews {
       rev: Int
   ): CompositeViewProjectionId =
     projection match {
-      case p: ElasticSearchProjection =>
-        CompositeViewProjectionId(sourceId, ElasticSearchViews.projectionId(p.uuid, rev))
+      case _: ElasticSearchProjection =>
+        CompositeViewProjectionId(sourceId, ViewProjectionId("TODO"))
       case p: SparqlProjection        =>
-        CompositeViewProjectionId(sourceId, BlazegraphViews.projectionId(p.uuid, rev))
+        CompositeViewProjectionId(sourceId, ViewProjectionId(BlazegraphViews.projectionId(p.uuid, rev)))
     }
 
   /**

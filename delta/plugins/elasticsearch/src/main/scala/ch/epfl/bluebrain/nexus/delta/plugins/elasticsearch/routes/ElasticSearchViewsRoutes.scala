@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.persistence.query.NoOffset
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.permissions.{read => Read, write => Write}
@@ -32,6 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.routes.Tag
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{PaginationConfig, SearchResults}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionStore
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
@@ -184,7 +184,7 @@ final class ElasticSearchViewsRoutes(
                       emit(
                         views
                           .fetchIndexingView(id, ref)
-                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionId(v)))
+                          .flatMap(v => progresses.statistics(ref, ElasticSearchViews.projectionName(v)))
                           .rejectWhen(decodingFailedOrViewNotFound)
                       )
                     }
@@ -225,7 +225,7 @@ final class ElasticSearchViewsRoutes(
                         emit(
                           views
                             .fetchIndexingView(id, ref)
-                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionId(v)))
+                            .flatMap(v => progresses.offset(ElasticSearchViews.projectionName(v)))
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
                       },
@@ -235,7 +235,7 @@ final class ElasticSearchViewsRoutes(
                           views
                             .fetchIndexingView(id, ref)
                             .flatMap { v => restartView(v.id, v.value.project) }
-                            .as(NoOffset)
+                            .as(Offset.start)
                             .rejectWhen(decodingFailedOrViewNotFound)
                         )
                       }

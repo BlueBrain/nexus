@@ -1,13 +1,12 @@
 package ch.epfl.bluebrain.nexus.delta.sdk
 
-import akka.actor.typed.ActorSystem
-import akka.persistence.query.{NoOffset, Offset}
 import ch.epfl.bluebrain.nexus.delta.sdk.ProgressesStatistics.ProgressesCache
-import ch.epfl.bluebrain.nexus.delta.sdk.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.delta.sdk.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ProgressStatistics
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ProjectStatistics
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.{ProjectionId, ProjectionProgress}
+import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
+import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ProjectionProgress
 import com.typesafe.scalalogging.Logger
 import monix.bio.UIO
 
@@ -35,7 +34,7 @@ class ProgressesStatistics(
     * @param projectionId
     *   the projection id for which the statistics are computed
     */
-  def statistics(project: ProjectRef, projectionId: ProjectionId): UIO[ProgressStatistics] =
+  def statistics(project: ProjectRef, projectionId: String): UIO[ProgressStatistics] =
     projectsStatistics(project).flatMap {
       case Some(count) => statistics(count, projectionId)
       case None        =>
@@ -51,7 +50,7 @@ class ProgressesStatistics(
     * @param projectionId
     *   the projection id for which the statistics are computed
     */
-  def statistics(count: ProjectStatistics, projectionId: ProjectionId): UIO[ProgressStatistics] =
+  def statistics(count: ProjectStatistics, projectionId: String): UIO[ProgressStatistics] =
     progressCache.get(projectionId).map {
       case None           => ProgressStatistics(0, 0, 0, count.events, Some(count.lastEventTime), None)
       case Some(progress) =>
@@ -61,7 +60,7 @@ class ProgressesStatistics(
           progress.failed,
           count.events,
           Some(count.lastEventTime),
-          Some(progress.timestamp)
+          Some(progress.instant)
         )
     }
 
@@ -70,19 +69,11 @@ class ProgressesStatistics(
     * progress does not exist an empty Offset is returned
     * @return
     */
-  def offset(projection: ProjectionId): UIO[Offset] =
-    progressCache.get(projection).map(_.fold[Offset](NoOffset)(_.offset))
+  def offset(projection: String): UIO[Offset] =
+    progressCache.get(projection).map(_.fold[Offset](Offset.start)(_.offset))
 }
 
 object ProgressesStatistics {
-  type ProgressesCache = KeyValueStore[ProjectionId, ProjectionProgress[Unit]]
-
-  /**
-    * Creates a progress cache backed by Akka Distributed data with a default clock
-    * @param id
-    *   the identifier of the cache
-    */
-  def cache(id: String)(implicit as: ActorSystem[Nothing], config: KeyValueStoreConfig): ProgressesCache =
-    KeyValueStore.distributedWithDefaultClock[ProjectionId, ProjectionProgress[Unit]](id)
+  type ProgressesCache = KeyValueStore[String, ProjectionProgress]
 
 }

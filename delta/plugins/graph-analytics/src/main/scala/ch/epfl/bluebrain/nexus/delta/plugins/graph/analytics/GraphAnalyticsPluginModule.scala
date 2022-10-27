@@ -1,9 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics
 
-import akka.actor.typed.ActorSystem
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.config.GraphAnalyticsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.indexing._
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.routes.GraphAnalyticsRoutes
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.Files
@@ -16,11 +14,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
-import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, Projects, ProjectsStatistics}
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.{FetchContext, ProjectsStatistics}
 import ch.epfl.bluebrain.nexus.delta.sdk.resources.Resources
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
-import ch.epfl.bluebrain.nexus.delta.sourcing.EventLog
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.Projection
 import izumi.distage.model.definition.{Id, ModuleDef}
 import monix.execution.Scheduler
 
@@ -33,53 +28,12 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
 
   make[GraphAnalyticsConfig].from { GraphAnalyticsConfig.load _ }
 
-  make[ProgressesCache].named("graph-analytics-progresses").from {
-    (cfg: GraphAnalyticsConfig, as: ActorSystem[Nothing]) =>
-      ProgressesStatistics.cache(
-        "graph-analytics-progresses"
-      )(as, cfg.keyValueStore)
-  }
-
   make[ResourceParser].from((resources: Resources, files: Files) => ResourceParser(resources, files))
-
-  make[GraphAnalyticsIndexingStream].from {
-    (
-        client: ElasticSearchClient,
-        projects: Projects,
-        eventLog: EventLog[Envelope[Event]],
-        resourceAnalyzer: ResourceParser,
-        projection: Projection[Unit],
-        cache: ProgressesCache @Id("graph-analytics-progresses"),
-        config: GraphAnalyticsConfig,
-        scheduler: Scheduler
-    ) =>
-      GraphAnalyticsIndexingStream(
-        client,
-        projects,
-        eventLog,
-        resourceAnalyzer,
-        cache,
-        config.indexing,
-        projection
-      )(
-        scheduler
-      )
-  }
-
-  make[GraphAnalyticsIndexingCleanup].from {
-    (
-        client: ElasticSearchClient,
-        cache: ProgressesCache @Id("graph-analytics-progresses"),
-        projection: Projection[Unit]
-    ) =>
-      new GraphAnalyticsIndexingCleanup(client, cache, projection)
-  }
 
   make[GraphAnalytics]
     .fromEffect {
       (client: ElasticSearchClient, fetchContext: FetchContext[ContextRejection], config: GraphAnalyticsConfig) =>
         GraphAnalytics(client, fetchContext.mapRejection(ProjectContextRejection))(
-          config.indexing,
           config.termAggregations
         )
     }
@@ -128,7 +82,4 @@ class GraphAnalyticsPluginModule(priority: Int) extends ModuleDef {
   many[PriorityRoute].add { (route: GraphAnalyticsRoutes) =>
     PriorityRoute(priority, route.routes, requiresStrictEntity = true)
   }
-
-  make[GraphAnalyticsOnEventInstant]
-  many[OnEventInstant].ref[GraphAnalyticsOnEventInstant]
 }

@@ -38,7 +38,7 @@ class CompositeViewsSpec
   implicit private val scheduler: Scheduler = Scheduler.global
   implicit private val baseUri: BaseUri     = BaseUri("http://localhost", Label.unsafe("v1"))
 
-  "CompositeViews" should {
+  "CompositeViews" ignore {
     val apiMappings       = ApiMappings("nxv" -> nxv.base)
     val base              = nxv.base
     val project           = ProjectGen.project("org", "proj", base = base, mappings = apiMappings)

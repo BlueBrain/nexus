@@ -25,11 +25,13 @@ object EntityCheck {
          |""".stripMargin.query[EntityType].option.transact(xas.read).hideErrors
 
   /**
-    * Raises the defined error if at least one of the provided references does not exist
-    * or is deprecated
-    * @param tpe the type of the different resources
-    * @param refs the references to test
-    * @param onUnknownOrDeprecated the error to raise on the failiing references
+    * Raises the defined error if at least one of the provided references does not exist or is deprecated
+    * @param tpe
+    *   the type of the different resources
+    * @param refs
+    *   the references to test
+    * @param onUnknownOrDeprecated
+    *   the error to raise on the failiing references
     */
   def raiseMissingOrDeprecated[Id, E](
       tpe: EntityType,

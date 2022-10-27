@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.kernel.utils.UUIDF
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.client.ElasticSearchClient
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.config.ElasticSearchViewsConfig
-import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.{ElasticSearchCoordinator, ElasticSearchOnEventInstant}
+import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.indexing.ElasticSearchCoordinator
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.ElasticSearchViewRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.model.{contexts, defaultElasticsearchMapping, defaultElasticsearchSettings, schema => viewsSchemaId, ElasticSearchView, ElasticSearchViewEvent}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsRoutes
@@ -29,7 +29,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.ResolverContextResolution
 import ch.epfl.bluebrain.nexus.delta.sdk.sse.SseEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sdk.views.indexing.OnEventInstant
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{PipeChain, ProjectionStore, ReferenceRegistry, Supervisor}
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -232,9 +231,6 @@ class ElasticSearchPluginModule(priority: Int) extends ModuleDef {
   many[IndexingAction].addValue {
     new ElasticSearchIndexingAction()
   }
-
-  make[ElasticSearchOnEventInstant]
-  many[OnEventInstant].ref[ElasticSearchOnEventInstant]
 
   many[ResourceShift[_, _, _]].addEffect { (views: ElasticSearchViews, base: BaseUri) =>
     for {

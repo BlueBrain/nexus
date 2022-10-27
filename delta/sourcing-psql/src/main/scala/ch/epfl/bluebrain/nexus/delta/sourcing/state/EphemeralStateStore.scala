@@ -75,7 +75,8 @@ object EphemeralStateStore {
           .transact(xas.read)
           .flatMap {
             _.traverse { json => IO.fromEither(json.as[S]) }
-          }.hideErrors
+          }
+          .hideErrors
     }
 
 }

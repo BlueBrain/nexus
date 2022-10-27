@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.error.ServiceError.ScopeInitializationF
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.ServiceAccount
 import ch.epfl.bluebrain.nexus.delta.sdk.organizations.model.Organization
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.Project
-import ch.epfl.bluebrain.nexus.delta.sdk.views.pipe.PipeStep
+import ch.epfl.bluebrain.nexus.delta.sdk.views.PipeStep
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes.{DefaultLabelPredicates, SourceAsText}

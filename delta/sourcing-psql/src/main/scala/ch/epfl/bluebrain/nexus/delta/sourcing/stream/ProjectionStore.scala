@@ -303,11 +303,11 @@ object ProjectionStore {
         stackTrace: String
     )
 
-    implicit val failedElemDataEncoder: Encoder.AsObject[FailedElemData] =
+    implicit val failedElemDataEncoder: Encoder.AsObject[FailedElemData]    =
       deriveEncoder[FailedElemData]
         .mapJsonObject(_.remove("stackTrace"))
         .mapJsonObject(_.remove("entityType"))
-    implicit val failedElemDataJsonLdEncoder: JsonLdEncoder[FailedElemData]            =
+    implicit val failedElemDataJsonLdEncoder: JsonLdEncoder[FailedElemData] =
       JsonLdEncoder.computeFromCirce(ContextValue(contexts.error))
 
     implicit val failedElemLogRow: Read[FailedElemLogRow] = {

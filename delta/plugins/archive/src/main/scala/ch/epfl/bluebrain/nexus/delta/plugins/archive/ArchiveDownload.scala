@@ -94,7 +94,7 @@ object ArchiveDownload {
                        case ref: ResourceReference => resourceEntry(ref, project, ignoreNotFound)
                        case ref: FileReference     => fileEntry(ref, project, ignoreNotFound)
                      }
-          sorted   = entries.sortBy(_._1.filePath)
+          sorted   = entries.sortBy { case (tarArchive, _) => tarArchive.filePath }
         } yield Source(sorted).via(Archive.tar())
       }
 

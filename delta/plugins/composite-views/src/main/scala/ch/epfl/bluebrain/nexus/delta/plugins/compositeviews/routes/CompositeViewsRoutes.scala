@@ -4,13 +4,14 @@ import akka.http.scaladsl.model.StatusCodes.Created
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes.BlazegraphViewsDirectives
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.CompositeViewProjectionId
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewSource.{CrossProjectSource, ProjectSource, RemoteProjectSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model._
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.permissions.{read => Read, write => Write}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes.CompositeViewsRoutes.{RestartProjections, RestartView}
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{BlazegraphQuery, CompositeViews, ElasticSearchQuery, ProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.routes.ElasticSearchViewsDirectives
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
@@ -32,8 +33,6 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchResults.searchResultsJsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.CompositeViewProjectionId
 import io.circe.{Json, JsonObject}
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.{IO, UIO}
@@ -389,13 +388,16 @@ class CompositeViewsRoutes(
         deltaClient
           .projectCount(source)
           .flatMap(count =>
-            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
+            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
           )
           .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
       case source: ProjectSource       =>
-        progresses.statistics(viewRes.value.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
+        progresses.statistics(
+          viewRes.value.project,
+          CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value
+        )
       case source: CrossProjectSource  =>
-        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt))
+        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
     }
     statsIO.map { stats => ProjectionStatistics(source.id, projection.id, stats) }
   }

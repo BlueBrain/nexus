@@ -10,13 +10,13 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalytic
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
+import ch.epfl.bluebrain.nexus.delta.sdk.ConfigFixtures
 import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.http.{HttpClient, HttpClientConfig, HttpClientWorthRetry}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit.ConfigFixtures
-import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchContainer._
+import ch.epfl.bluebrain.nexus.testkit.elasticsearch.ElasticSearchDocker
 import ch.epfl.bluebrain.nexus.testkit.{IOFixedClock, IOValues, TestHelpers}
 import monix.execution.Scheduler
 import org.scalatest.DoNotDiscover
@@ -41,11 +41,10 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
 
-  implicit val sc: Scheduler             = Scheduler.global
-  implicit val cfg: HttpClientConfig     =
+  implicit val sc: Scheduler         = Scheduler.global
+  implicit val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  implicit private val externalIdxConfig = externalIndexing
-  implicit private val aggCfg            = TermAggregationsConfig(100, 300)
+  implicit private val aggCfg        = TermAggregationsConfig(100, 300)
 
   private val project      = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
   private val fetchContext = FetchContextDummy[GraphAnalyticsRejection](

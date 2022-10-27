@@ -17,9 +17,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.ExpandIri
 import ch.epfl.bluebrain.nexus.delta.sdk.model.IdSegment
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.ExternalIndexingConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
-import ch.epfl.bluebrain.nexus.delta.sourcing.projections.ProjectionId.ViewProjectionId
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, JsonObject}
 import monix.bio.{IO, Task}
@@ -43,7 +41,7 @@ object GraphAnalytics {
   final def apply(
       client: ElasticSearchClient,
       fetchContext: FetchContext[GraphAnalyticsRejection]
-  )(implicit indexingCfg: ExternalIndexingConfig, aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
+  )(implicit aggCfg: TermAggregationsConfig): Task[GraphAnalytics] =
     for {
       script <- scriptContent
       _      <- client.createScript(updateRelationshipsScriptId, script)
@@ -125,14 +123,11 @@ object GraphAnalytics {
       case _                     => Left("Empty Path")
     }
 
-  private[analytics] def idx(projectRef: ProjectRef)(implicit config: ExternalIndexingConfig): IndexLabel =
-    if (config.prefix.isEmpty)
-      IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
-    else
-      IndexLabel.unsafe(s"${config.prefix}_${UrlUtils.encode(projectRef.toString)}_graph_analytics")
+  private[analytics] def idx(projectRef: ProjectRef): IndexLabel =
+    IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
 
-  private[analytics] def projectionId(projectRef: ProjectRef): ViewProjectionId =
-    ViewProjectionId(s"graph_analytics-$projectRef")
+  private[analytics] def projectionId(projectRef: ProjectRef): String =
+    s"graph_analytics-$projectRef"
 
   private[analytics] def name(iri: Iri): String =
     (iri.fragment orElse iri.lastSegment) getOrElse iri.toString

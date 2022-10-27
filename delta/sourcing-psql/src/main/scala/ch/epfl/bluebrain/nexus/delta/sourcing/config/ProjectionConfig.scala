@@ -24,12 +24,12 @@ import scala.concurrent.duration.FiniteDuration
   *   a configuration for how to interact with the underlying store
   */
 final case class ProjectionConfig(
-                                   cluster: ClusterConfig,
-                                   batch: BatchConfig,
-                                   retry: RetryStrategyConfig,
-                                   supervisionCheckInterval: FiniteDuration,
-                                   deleteExpiredEvery: FiniteDuration,
-                                   query: QueryConfig
+    cluster: ClusterConfig,
+    batch: BatchConfig,
+    retry: RetryStrategyConfig,
+    supervisionCheckInterval: FiniteDuration,
+    deleteExpiredEvery: FiniteDuration,
+    query: QueryConfig
 )
 
 object ProjectionConfig {
