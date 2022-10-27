@@ -113,6 +113,7 @@ class ProjectionStoreSuite extends BioSuite with IOFixedClock with Doobie.Fixtur
       _        = assertEquals(elem.id, "id")
       _        = assertEquals(elem.entityType, EntityType("ACL"))
       _        = assertEquals(elem.revision, rev)
+      _        = assertEquals(elem.project, Some(project))
     } yield ()
   }
 
