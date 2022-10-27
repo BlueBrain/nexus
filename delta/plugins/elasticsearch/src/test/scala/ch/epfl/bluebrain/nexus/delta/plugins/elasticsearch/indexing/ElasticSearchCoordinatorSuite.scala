@@ -90,51 +90,65 @@ class ElasticSearchCoordinatorSuite extends BioSuite with SupervisorSetup.Fixtur
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view1.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(1L),
-        value = view1
+        value = view1,
+        revision = 1
       ),
       DroppedElem(
         tpe = ElasticSearchViews.entityType,
         id = "dropped",
+        project = Some(project),
         Instant.EPOCH,
-        Offset.at(2L)
+        Offset.at(2L),
+        revision = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view2.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(3L),
-        value = view2
+        value = view2,
+        revision = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = view3.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(4L),
-        value = view3
+        value = view3,
+        revision = 1
       )
     ) ++ Stream.never[Task].interruptWhen(resumeSignal) ++ Stream(
       FailedElem(
         tpe = ElasticSearchViews.entityType,
         id = "failed_coord",
+        project = Some(project),
         Instant.EPOCH,
         Offset.at(5L),
-        new IllegalStateException("Something got wrong :(")
+        new IllegalStateException("Something got wrong :("),
+        revision = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = deprecatedView1.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(6L),
-        value = deprecatedView1
+        value = deprecatedView1,
+        revision = 1
       ),
       SuccessElem(
         tpe = ElasticSearchViews.entityType,
         id = updatedView2.ref.viewId,
+        project = Some(project),
         instant = Instant.EPOCH,
         offset = Offset.at(7L),
-        value = updatedView2
+        value = updatedView2,
+        revision = 1
       )
     )
 

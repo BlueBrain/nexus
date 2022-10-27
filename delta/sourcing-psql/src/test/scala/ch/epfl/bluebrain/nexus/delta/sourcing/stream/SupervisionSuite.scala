@@ -26,12 +26,13 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
   private val projection1                = ProjectionMetadata("test", "name1", None, None)
   // name2 should NOT run on the node with index 1 of a 3-node cluster
   private val projection2                = ProjectionMetadata("test", "name2", None, None)
+  private val rev                        = 1
 
   private def evalStream(start: Task[Unit]) =
     (_: Offset) =>
       Stream.eval(start) >> Stream
         .range(1, 21)
-        .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), ()) }
+        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
 
   test("Ignore a projection when it is meant to run on another node") {
     for {

@@ -44,29 +44,37 @@ object PullRequestStream {
       SuccessElem(
         tpe = PullRequest.entityType,
         id = pr1.id.value,
+        project = Some(projectRef),
         instant = pr1.updatedAt,
         offset = Offset.at(1L),
-        value = PullRequestState.toGraphResource(pr1, base)
+        value = PullRequestState.toGraphResource(pr1, base),
+        revision = 1
       ),
       DroppedElem(
         tpe = PullRequest.entityType,
         id = "dropped",
+        project = Some(projectRef),
         Instant.EPOCH,
-        Offset.at(2L)
+        Offset.at(2L),
+        revision = 1
       ),
       SuccessElem(
         tpe = PullRequest.entityType,
         id = pr2.id.value,
+        project = Some(projectRef),
         instant = pr2.updatedAt,
         offset = Offset.at(3L),
-        value = PullRequestState.toGraphResource(pr2, base)
+        value = PullRequestState.toGraphResource(pr2, base),
+        revision = 1
       ),
       FailedElem(
         tpe = PullRequest.entityType,
         id = "failed",
+        project = Some(projectRef),
         Instant.EPOCH,
         Offset.at(4L),
-        new IllegalStateException("This is an error message")
+        new IllegalStateException("This is an error message"),
+        revision = 1
       )
     )
   }

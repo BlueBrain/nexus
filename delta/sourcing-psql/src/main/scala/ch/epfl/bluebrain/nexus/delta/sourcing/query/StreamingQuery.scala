@@ -5,7 +5,7 @@ import cats.effect.concurrent.Ref
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.Predicate.Project
 import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, ProjectRef, Tag}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.Elem.{DroppedElem, FailedElem, SuccessElem}
@@ -31,22 +31,27 @@ object StreamingQuery {
   private val newState = "newState"
 
   /**
-    * Streams states and tombstones as [[Elem]]s.
+    * Streams states and tombstones as [[Elem]] s.
     *
-    * State values are decoded via the provided function.
-    * If the function succeeds they will be streamed as [[SuccessElem[A]]].
-    * If the function fails, they will be streames as [[FailedElem]]
+    * State values are decoded via the provided function. If the function succeeds they will be streamed as
+    * [[SuccessElem[A]] ]. If the function fails, they will be streames as [[FailedElem]]
     *
     * Tombstones are translated as [[DroppedElem]].
     *
     * The stream termination depends on the provided [[QueryConfig]]
     *
-    * @param project the project of the states / tombstones
-    * @param tag the tag to follow
-    * @param start the offset to start with
-    * @param cfg the query config
-    * @param xas the transactors
-    * @param decodeValue the function to decode states
+    * @param project
+    *   the project of the states / tombstones
+    * @param tag
+    *   the tag to follow
+    * @param start
+    *   the offset to start with
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
+    * @param decodeValue
+    *   the function to decode states
     */
   def elems[A](
       project: ProjectRef,
@@ -58,21 +63,21 @@ object StreamingQuery {
   ): Stream[Task, Elem[A]] = {
     def query(offset: Offset): Query0[Elem[Json]] = {
       val where = Fragments.whereAndOpt(Project(project).asFragment, Some(fr"tag = $tag"), offset.asFragment)
-      sql"""((SELECT 'newState', type, id, value, instant, ordering
+      sql"""((SELECT 'newState', type, id, org, project, value, instant, ordering, rev
            |FROM public.scoped_states
            |$where
            |ORDER BY ordering)
            |UNION
-           |(SELECT 'tombstone', type, id, null, instant, ordering
+           |(SELECT 'tombstone', type, id, org, project, null, instant, ordering, -1
            |FROM public.scoped_tombstones
            |$where
            |ORDER BY ordering)
            |ORDER BY ordering)
-           |""".stripMargin.query[(String, EntityType, String, Option[Json], Instant, Long)].map {
-        case (`newState`, entityType, id, Some(json), instant, offset) =>
-          SuccessElem(entityType, id, instant, Offset.at(offset), json)
-        case (_, entityType, id, _, instant, offset)                   =>
-          DroppedElem(entityType, id, instant, Offset.at(offset))
+           |""".stripMargin.query[(String, EntityType, String, Label, Label, Option[Json], Instant, Long, Int)].map {
+        case (`newState`, entityType, id, org, project, Some(json), instant, offset, rev) =>
+          SuccessElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), json, rev)
+        case (_, entityType, id, org, project, _, instant, offset, rev)                   =>
+          DroppedElem(entityType, id, Some(ProjectRef(org, project)), instant, Offset.at(offset), rev)
       }
     }
     StreamingQuery[Elem[Json]](start, query, _.offset, cfg, xas)
@@ -98,11 +103,16 @@ object StreamingQuery {
     *
     * The stream termination depends on the provided [[QueryConfig]].
     *
-    * @param start the offset to start with
-    * @param query the query to execute depending on the offset
-    * @param extractOffset how to extract the offset from an [[A]] to be able to pursue the stream
-    * @param cfg the query config
-    * @param xas the transactors
+    * @param start
+    *   the offset to start with
+    * @param query
+    *   the query to execute depending on the offset
+    * @param extractOffset
+    *   how to extract the offset from an [[A]] to be able to pursue the stream
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
     */
   def apply[A](
       start: Offset,

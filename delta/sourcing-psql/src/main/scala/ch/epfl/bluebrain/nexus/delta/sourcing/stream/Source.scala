@@ -59,7 +59,7 @@ trait Source { self =>
           self
             .apply(offset)
             .map {
-              case e @ SuccessElem(_, _, _, _, value) =>
+              case e @ SuccessElem(_, _, _, _, _, value, _) =>
                 operation.inType.cast(value) match {
                   case Some(value) => e.success(value)
                   case None        => e.failed(SourceOutPipeInMatchErr(self, operation))
@@ -82,7 +82,7 @@ trait Source { self =>
           self
             .apply(offset)
             .merge(that.apply(offset).map {
-              case e @ SuccessElem(_, _, _, _, value) =>
+              case e @ SuccessElem(_, _, _, _, _, value, _) =>
                 self.outType.cast(value) match {
                   case Some(_) => e.asInstanceOf[SuccessElem[Out]]
                   case None    => e.failed(SourceOutMatchErr(self, that))

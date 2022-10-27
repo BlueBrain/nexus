@@ -20,9 +20,10 @@ class SourceAsTextSuite extends BioSuite {
 
   private val base    = iri"http://localhost"
   private val instant = Instant.now()
+  private val project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj"))
   private val state   = PullRequestActive(
     id = Label.unsafe("id"),
-    project = ProjectRef(Label.unsafe("org"), Label.unsafe("proj")),
+    project = project,
     rev = 1,
     createdAt = instant,
     createdBy = Anonymous,
@@ -38,9 +39,11 @@ class SourceAsTextSuite extends BioSuite {
     val elem             = SuccessElem(
       tpe = PullRequest.entityType,
       id = base / "id",
+      project = Some(project),
       instant = instant,
       offset = Offset.at(1L),
-      value = graph
+      value = graph,
+      revision = 1
     )
     val newMetadataGraph = graph.metadataGraph.add(nxv.originalSource.iri, graph.source.noSpaces)
     val expected         = elem.copy(value = graph.copy(metadataGraph = newMetadataGraph, source = Json.obj()))

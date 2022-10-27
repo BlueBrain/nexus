@@ -18,20 +18,21 @@ class FailedElemPersistenceSuite extends BioSuite {
   implicit private val patienceConfig: PatienceConfig = PatienceConfig(500.millis, 10.millis)
 
   private val projection1 = ProjectionMetadata("test", "name1", None, None)
+  private val rev         = 1
 
   private def failureStream =
     (_: Offset) =>
       Stream
         .range(1, 11)
         .map { value =>
-          FailedElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), new RuntimeException("boom"))
+          FailedElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), new RuntimeException("boom"), rev)
         }
 
   private def successStream =
     (_: Offset) =>
       Stream
         .range(1, 11)
-        .map { value => SuccessElem(EntityType("entity"), "id", Instant.EPOCH, Offset.at(value.toLong), ()) }
+        .map { value => SuccessElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), (), rev) }
 
   private val saveFailedElems: MutableSet[FailedElem] => List[FailedElem] => UIO[Unit] =
     failedElemStore => failedElems => UIO.delay { failedElems.foreach(failedElemStore.add) }

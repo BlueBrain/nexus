@@ -25,14 +25,14 @@ final class ElasticSearchSink(
 
   override def apply(elements: Chunk[Elem[Json]]): Task[Chunk[Elem[Unit]]] = {
     val bulk = elements.foldLeft(List.empty[ElasticSearchBulk]) {
-      case (acc, Elem.SuccessElem(_, id, _, _, json)) =>
+      case (acc, Elem.SuccessElem(_, id, _, _, _, json, _)) =>
         if (json.isEmpty()) {
           ElasticSearchBulk.Delete(index, id) :: acc
         } else
           ElasticSearchBulk.Index(index, id, json) :: acc
-      case (acc, Elem.DroppedElem(_, id, _, _))       =>
+      case (acc, Elem.DroppedElem(_, id, _, _, _, _))       =>
         ElasticSearchBulk.Delete(index, id) :: acc
-      case (acc, _: Elem.FailedElem)                  => acc
+      case (acc, _: Elem.FailedElem)                        => acc
     }
 
     if (bulk.nonEmpty) {
