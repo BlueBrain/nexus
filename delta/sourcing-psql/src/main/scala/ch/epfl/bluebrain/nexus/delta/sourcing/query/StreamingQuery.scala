@@ -31,22 +31,27 @@ object StreamingQuery {
   private val newState = "newState"
 
   /**
-    * Streams states and tombstones as [[Elem]]s.
+    * Streams states and tombstones as [[Elem]] s.
     *
-    * State values are decoded via the provided function.
-    * If the function succeeds they will be streamed as [[SuccessElem[A]]].
-    * If the function fails, they will be streames as [[FailedElem]]
+    * State values are decoded via the provided function. If the function succeeds they will be streamed as
+    * [[SuccessElem[A]] ]. If the function fails, they will be streames as [[FailedElem]]
     *
     * Tombstones are translated as [[DroppedElem]].
     *
     * The stream termination depends on the provided [[QueryConfig]]
     *
-    * @param project the project of the states / tombstones
-    * @param tag the tag to follow
-    * @param start the offset to start with
-    * @param cfg the query config
-    * @param xas the transactors
-    * @param decodeValue the function to decode states
+    * @param project
+    *   the project of the states / tombstones
+    * @param tag
+    *   the tag to follow
+    * @param start
+    *   the offset to start with
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
+    * @param decodeValue
+    *   the function to decode states
     */
   def elems[A](
       project: ProjectRef,
@@ -98,11 +103,16 @@ object StreamingQuery {
     *
     * The stream termination depends on the provided [[QueryConfig]].
     *
-    * @param start the offset to start with
-    * @param query the query to execute depending on the offset
-    * @param extractOffset how to extract the offset from an [[A]] to be able to pursue the stream
-    * @param cfg the query config
-    * @param xas the transactors
+    * @param start
+    *   the offset to start with
+    * @param query
+    *   the query to execute depending on the offset
+    * @param extractOffset
+    *   how to extract the offset from an [[A]] to be able to pursue the stream
+    * @param cfg
+    *   the query config
+    * @param xas
+    *   the transactors
     */
   def apply[A](
       start: Offset,

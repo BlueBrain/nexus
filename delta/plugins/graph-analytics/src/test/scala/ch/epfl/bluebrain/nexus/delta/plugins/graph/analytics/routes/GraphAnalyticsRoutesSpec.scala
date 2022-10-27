@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.AnalyticsGrap
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.GraphAnalyticsRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.PropertiesStatistics.Metadata
 import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.model.{AnalyticsGraph, GraphAnalyticsRejection, PropertiesStatistics}
-import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{GraphAnalytics, contexts}
+import ch.epfl.bluebrain.nexus.delta.plugins.graph.analytics.{contexts, GraphAnalytics}
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.schema
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution

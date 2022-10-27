@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.util.ByteString

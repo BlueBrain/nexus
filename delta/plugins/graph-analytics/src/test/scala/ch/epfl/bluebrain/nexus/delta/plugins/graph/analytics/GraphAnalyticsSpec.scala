@@ -41,10 +41,10 @@ class GraphAnalyticsSpec(docker: ElasticSearchDocker)
 
   implicit override def patienceConfig: PatienceConfig = PatienceConfig(10.seconds, Span(10, Millis))
 
-  implicit val sc: Scheduler             = Scheduler.global
-  implicit val cfg: HttpClientConfig     =
+  implicit val sc: Scheduler         = Scheduler.global
+  implicit val cfg: HttpClientConfig =
     HttpClientConfig(RetryStrategyConfig.AlwaysGiveUp, HttpClientWorthRetry.never, true)
-  implicit private val aggCfg            = TermAggregationsConfig(100, 300)
+  implicit private val aggCfg        = TermAggregationsConfig(100, 300)
 
   private val project      = ProjectGen.project("org", "project", uuid = UUID.randomUUID(), orgUuid = UUID.randomUUID())
   private val fetchContext = FetchContextDummy[GraphAnalyticsRejection](

@@ -124,8 +124,7 @@ object GraphAnalytics {
     }
 
   private[analytics] def idx(projectRef: ProjectRef): IndexLabel =
-      IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
-
+    IndexLabel.unsafe(s"${UrlUtils.encode(projectRef.toString)}_graph_analytics")
 
   private[analytics] def projectionId(projectRef: ProjectRef): String =
     s"graph_analytics-$projectRef"

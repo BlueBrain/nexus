@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.routes
 
 import akka.http.scaladsl.model.MediaTypes.`text/html`
-import akka.http.scaladsl.model.headers.{Accept, Location, OAuth2BearerToken, `Content-Type`}
+import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
 import akka.http.scaladsl.model.{HttpEntity, StatusCodes, Uri}
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import akka.util.ByteString
@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.blazegraph.client.SparqlQueryClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.ProjectionId.{CompositeViewProjectionId, SourceProjectionId, ViewProjectionId}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.client.DeltaClient
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.CompositeViewRejection.ProjectContextRejection
-import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{CompositeViewRejection, CompositeViewSource, permissions}
+import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.model.{permissions, CompositeViewRejection, CompositeViewSource}
 import ch.epfl.bluebrain.nexus.delta.plugins.compositeviews.{CompositeViews, CompositeViewsFixture, Fixtures}
 import ch.epfl.bluebrain.nexus.delta.plugins.elasticsearch.ElasticSearchViews
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.{BNode, Iri}
@@ -124,7 +124,10 @@ class CompositeViewsRoutesSpec
   private val blazeId = iri"http://example.com/blazegraph-projection"
 
   private val esProjectionId       =
-    CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ViewProjectionId(ElasticSearchViews.projectionName(projectRef, esId, 3)))
+    CompositeViewProjectionId(
+      SourceProjectionId(s"${uuid}_3"),
+      ViewProjectionId(ElasticSearchViews.projectionName(projectRef, esId, 3))
+    )
   private val blazeProjectionId    =
     CompositeViewProjectionId(SourceProjectionId(s"${uuid}_3"), ViewProjectionId(BlazegraphViews.projectionId(uuid, 3)))
   private val viewsProgressesCache = KeyValueStore.localLRU[String, ProjectionProgress](10L).accepted
@@ -404,7 +407,10 @@ class CompositeViewsRoutesSpec
       val viewOffsets       =
         jsonContentOf("routes/responses/view-offsets.json").replaceKeyWithValue("offset", Offset.start.asJson)
       val projectionOffsets =
-        jsonContentOf("routes/responses/view-offsets-projection.json").replaceKeyWithValue("offset", Offset.start.asJson)
+        jsonContentOf("routes/responses/view-offsets-projection.json").replaceKeyWithValue(
+          "offset",
+          Offset.start.asJson
+        )
 
       restartedView shouldEqual None
       Delete(s"/v1/views/myorg/myproj/$uuid/offset") ~> asBob ~> routes ~> check {

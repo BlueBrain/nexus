@@ -112,7 +112,6 @@ object ResourceRef {
     final def apply(iri: Iri, tag: UserTag): Tag =
       Tag(iri"$iri?tag=$tag", iri, tag)
 
-
     implicit val tagOrder: Order[Tag] = Order.by { tag => (tag.iri, tag.tag.value) }
   }
 
@@ -141,15 +140,15 @@ object ResourceRef {
     * Defines an order instance such as [[Latest]] > [[Tag]] > [[Revision]]
     */
   implicit val resourceRefOrder: Order[ResourceRef] = Order.from {
-    case (_: Revision, _: Latest) => -1
-    case (_: Revision, _: Tag) => -1
+    case (_: Revision, _: Latest)     => -1
+    case (_: Revision, _: Tag)        => -1
     case (r1: Revision, r2: Revision) => Revision.revisionOrder.compare(r1, r2)
-    case (_: Tag, _: Latest) => -1
-    case (_: Tag, _: Revision) => 1
-    case (t1: Tag, t2: Tag) => Tag.tagOrder.compare(t1, t2)
-    case (_: Latest, _: Revision) => 1
-    case (_: Latest, _: Tag) => 1
-    case (l1: Latest, l2: Latest) => Latest.latestOrder.compare(l1, l2)
+    case (_: Tag, _: Latest)          => -1
+    case (_: Tag, _: Revision)        => 1
+    case (t1: Tag, t2: Tag)           => Tag.tagOrder.compare(t1, t2)
+    case (_: Latest, _: Revision)     => 1
+    case (_: Latest, _: Tag)          => 1
+    case (l1: Latest, l2: Latest)     => Latest.latestOrder.compare(l1, l2)
   }
 
 }

@@ -392,7 +392,10 @@ class CompositeViewsRoutes(
           )
           .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
       case source: ProjectSource       =>
-        progresses.statistics(viewRes.value.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
+        progresses.statistics(
+          viewRes.value.project,
+          CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value
+        )
       case source: CrossProjectSource  =>
         progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
     }
