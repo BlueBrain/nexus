@@ -64,7 +64,7 @@ class DeltaDirectivesSpec
   implicit private val s: Scheduler = Scheduler.global
 
   private val id                = nxv + "myresource"
-  private val resource          = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resource          = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
   private val resourceFusionUri = Uri(
     "https://bbp.epfl.ch/nexus/web/org/proj/resources/https:%2F%2Fbluebrain.github.io%2Fnexus%2Fvocabulary%2Fid"
   )
@@ -140,7 +140,7 @@ class DeltaDirectivesSpec
               emitOrFusionRedirect(ref, Latest(nxv + "id"), emit(resource))
             },
             path("redirectFusionRev") {
-              emitOrFusionRedirect(ref, Revision(nxv + "id", 7L), emit(resource))
+              emitOrFusionRedirect(ref, Revision(nxv + "id", 7), emit(resource))
             },
             path("redirectFusionTag") {
               emitOrFusionRedirect(ref, Tag(nxv + "id", UserTag.unsafe("my-tag")), emit(resource))
@@ -518,7 +518,7 @@ class DeltaDirectivesSpec
 }
 
 object DeltaDirectivesSpec {
-  final case class SimpleResource2(id: Iri, rev: Long)
+  final case class SimpleResource2(id: Iri, rev: Int)
 
   object SimpleResource2 extends CirceLiteral {
 

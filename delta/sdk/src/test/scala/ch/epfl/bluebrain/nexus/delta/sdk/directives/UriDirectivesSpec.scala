@@ -302,7 +302,7 @@ class UriDirectivesSpec
     }
   }
 
-  def resourceF(createdBy: Subject, rev: Long, deprecated: Boolean, idx: Int): ResourceF[Int] =
+  def resourceF(createdBy: Subject, rev: Int, deprecated: Boolean, idx: Int): ResourceF[Int] =
     ResourceF(
       iri"http://localhost/${UUID.randomUUID()}",
       ResourceUris.permissions,

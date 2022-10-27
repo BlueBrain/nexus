@@ -27,7 +27,7 @@ trait Search {
 
 object Search {
 
-  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Long)
+  final case class TargetProjection(projection: ElasticSearchProjection, view: CompositeView, rev: Int)
 
   private[search] type ListProjections = () => UIO[Seq[TargetProjection]]
 

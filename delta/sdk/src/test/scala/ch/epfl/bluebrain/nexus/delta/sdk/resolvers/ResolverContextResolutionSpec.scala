@@ -42,7 +42,7 @@ class ResolverContextResolutionSpec extends AnyWordSpecLike with IOValues with T
   private val resource = ResourceF(
     id = resourceId,
     uris = ResourceUris(Uri("/id")),
-    rev = 5L,
+    rev = 5,
     types = Set(nxv + "Resource"),
     deprecated = false,
     createdAt = Instant.now(),

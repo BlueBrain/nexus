@@ -21,7 +21,7 @@ class ResolverSerializationSuite extends SerializationSuite {
   private val sseEncoder = ResolverEvent.sseEncoder
 
   val instant: Instant = Instant.EPOCH
-  val rev: Long        = 1L
+  val rev: Int         = 1
 
   val realm: Label = Label.unsafe("myrealm")
 

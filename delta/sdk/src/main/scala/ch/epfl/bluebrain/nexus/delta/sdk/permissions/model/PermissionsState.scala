@@ -48,7 +48,7 @@ final case class PermissionsState(
     ResourceF(
       id = ResourceUris.permissions.relativeAccessUri.toIri,
       uris = ResourceUris.permissions,
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       deprecated = deprecated,
       createdAt = createdAt,

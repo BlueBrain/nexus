@@ -98,7 +98,7 @@ final case class BlazegraphViewState(
     ResourceF(
       id = id,
       uris = ResourceUris("views", project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,
       createdAt = createdAt,

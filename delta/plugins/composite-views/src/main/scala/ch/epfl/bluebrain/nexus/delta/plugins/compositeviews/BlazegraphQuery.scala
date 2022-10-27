@@ -121,7 +121,7 @@ object BlazegraphQuery {
           _          <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           permissions = viewRes.value.projections.map(_.permission)
           _          <- aclCheck.authorizeForEveryOr(project, permissions.toSortedSet)(AuthorizationFailed)
-          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev.toInt, prefix)
+          namespace   = BlazegraphViews.namespace(viewRes.value.uuid, viewRes.rev, prefix)
           result     <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -137,7 +137,7 @@ object BlazegraphQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          namespace          = CompositeViews.namespace(projection, view, viewRes.rev.toInt, prefix)
+          namespace          = CompositeViews.namespace(projection, view, viewRes.rev, prefix)
           result            <- client.query(Set(namespace), query, responseType).mapError(WrappedBlazegraphClientError)
         } yield result
 
@@ -157,7 +157,7 @@ object BlazegraphQuery {
 
       private def allowedProjections(
           view: CompositeView,
-          rev: Long,
+          rev: Int,
           project: ProjectRef
       )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
         aclCheck
@@ -165,7 +165,7 @@ object BlazegraphQuery {
             view.projections.value.collect { case p: SparqlProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.namespace(p, view, rev.toInt, prefix)
+            p => CompositeViews.namespace(p, view, rev, prefix)
           )
           .tapEval { namespaces => IO.raiseWhen(namespaces.isEmpty)(AuthorizationFailed) }
     }

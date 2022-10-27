@@ -108,9 +108,9 @@ class SearchSpec
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
   private val projectionProj1 =
-    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1L)
+    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1)
   private val projectionProj2 =
-    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1L)
+    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1)
 
   private val projections = Seq(
     projectionProj1,

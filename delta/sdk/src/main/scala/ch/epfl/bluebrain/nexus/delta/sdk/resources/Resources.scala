@@ -263,7 +263,7 @@ object Resources {
       if (schemaRef == Latest(schemas.resources) || schemaRef == ResourceRef.Revision(schemas.resources, 1))
         IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id)) >>
           toGraph(id, expanded) >>
-          IO.pure((ResourceRef.Revision(schemas.resources, 1L), projectRef))
+          IO.pure((ResourceRef.Revision(schemas.resources, 1), projectRef))
       else
         for {
           _        <- IO.raiseWhen(id.startsWith(contexts.base))(ReservedResourceId(id))

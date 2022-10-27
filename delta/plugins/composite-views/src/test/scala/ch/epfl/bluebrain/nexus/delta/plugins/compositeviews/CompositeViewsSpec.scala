@@ -82,7 +82,7 @@ class CompositeViewsSpec
       ResourceF(
         id,
         ResourceUris("views", projectRef, id)(project.apiMappings, project.base),
-        rev.toLong,
+        rev,
         Set(nxv.View, compositeViewType),
         deprecated,
         createdAt,

@@ -112,7 +112,7 @@ class ArchivesDecodingSpec
             }"""
         val (_, value) = decoder(context, source).accepted
         val expected   =
-          ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(SourceJson))
+          ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(SourceJson))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -134,7 +134,7 @@ class ArchivesDecodingSpec
             }"""
         val (_, value) = decoder(context, source).accepted
         val expected   =
-          ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(CompactedJsonLd))
+          ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(CompactedJsonLd))
         value.resources shouldEqual NonEmptySet.of(expected)
       }
 
@@ -164,7 +164,7 @@ class ArchivesDecodingSpec
               }"""
           val (_, value) = decoder(context, source).accepted
           val expected   =
-            ResourceReference(Revision(resourceId, 1L), Some(ref), Some(path), Some(expFormat))
+            ResourceReference(Revision(resourceId, 1), Some(ref), Some(path), Some(expFormat))
           value.resources shouldEqual NonEmptySet.of(expected)
         }
       }

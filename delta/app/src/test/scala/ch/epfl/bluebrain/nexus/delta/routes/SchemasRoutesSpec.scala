@@ -150,7 +150,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = idx + 2L)
+          response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = idx + 2)
         }
       }
     }
@@ -168,7 +168,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       Put("/v1/schemas/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/schemas/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 3L)
+          jsonContentOf("/schemas/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -184,7 +184,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(schemas.write)).accepted
       Delete("/v1/schemas/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = 4L, deprecated = true)
+        response.asJson shouldEqual schemaMetadata(projectRef, myId, rev = 4, deprecated = true)
       }
     }
 
@@ -359,7 +359,7 @@ class SchemasRoutesSpec extends BaseRouteSpec {
   private def schemaMetadata(
       ref: ProjectRef,
       id: Iri,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

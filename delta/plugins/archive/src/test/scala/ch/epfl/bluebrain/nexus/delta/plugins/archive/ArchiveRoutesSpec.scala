@@ -95,7 +95,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
-  private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5L)
+  private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
 
   private val fileId                = iri"http://localhost/${genString()}"
   private val encodedFileId         = UrlUtils.encode(fileId.toString)
@@ -154,7 +154,7 @@ class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValue
   private def archiveMetadata(
       id: Iri,
       ref: ProjectRef,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = subject,
       updatedBy: Subject = subject,

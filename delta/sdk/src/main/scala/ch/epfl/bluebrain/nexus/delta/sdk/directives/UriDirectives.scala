@@ -37,9 +37,9 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     */
   def searchParams(implicit
       base: BaseUri
-  ): Directive[(Option[Boolean], Option[Long], Option[Subject], Option[Subject])] =
+  ): Directive[(Option[Boolean], Option[Int], Option[Subject], Option[Subject])] =
     parameter("deprecated".as[Boolean].?) &
-      parameter("rev".as[Long].?) &
+      parameter("rev".as[Int].?) &
       parameter("createdBy".as[Subject].?) &
       parameter("updatedBy".as[Subject].?)
 
@@ -164,7 +164,7 @@ trait UriDirectives extends QueryParamsUnmarshalling {
     * Consumes the rev/tag query parameter and generates an [[IdSegmentRef]]
     */
   def idSegmentRef(id: IdSegment): Directive1[IdSegmentRef] =
-    (parameter("rev".as[Long].?) & parameter("tag".as[UserTag].?)).tflatMap {
+    (parameter("rev".as[Int].?) & parameter("tag".as[UserTag].?)).tflatMap {
       case (Some(_), Some(_)) => reject(simultaneousTagAndRevRejection)
       case (Some(rev), _)     => provide(IdSegmentRef(id, rev))
       case (_, Some(tag))     => provide(IdSegmentRef(id, tag))

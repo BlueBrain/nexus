@@ -25,7 +25,15 @@ class FailedElemPersistenceSuite extends BioSuite {
       Stream
         .range(1, 11)
         .map { value =>
-          FailedElem(EntityType("entity"), "id", None, Instant.EPOCH, Offset.at(value.toLong), new RuntimeException("boom"), rev)
+          FailedElem(
+            EntityType("entity"),
+            "id",
+            None,
+            Instant.EPOCH,
+            Offset.at(value.toLong),
+            new RuntimeException("boom"),
+            rev
+          )
         }
 
   private def successStream =

@@ -81,8 +81,8 @@ object SparqlLink {
         link         <- SparqlExternalLink(bindings)
         project      <-
           bindings.get(nxv.project.prefix).map(_.value).flatMap(Iri.absolute(_).toOption).flatMap(projectRefFromId)
-        rev          <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => Try(v.toLong).toOption)
-        deprecated   <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => Try(v.toBoolean).toOption)
+        rev          <- bindings.get(nxv.rev.prefix).map(_.value).flatMap(v => v.toIntOption)
+        deprecated   <- bindings.get(nxv.deprecated.prefix).map(_.value).flatMap(v => v.toBooleanOption)
         created      <- bindings.get(nxv.createdAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
         updated      <- bindings.get(nxv.updatedAt.prefix).map(_.value).flatMap(v => Try(Instant.parse(v)).toOption)
         createdByIri <- bindings.get(nxv.createdBy.prefix).map(_.value).flatMap(Iri.absolute(_).toOption)

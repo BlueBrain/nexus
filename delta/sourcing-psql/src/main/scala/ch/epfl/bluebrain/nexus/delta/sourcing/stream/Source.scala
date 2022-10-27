@@ -64,7 +64,7 @@ trait Source { self =>
                   case Some(value) => e.success(value)
                   case None        => e.failed(SourceOutPipeInMatchErr(self, operation))
                 }
-              case e                                  => e.asInstanceOf[Elem[operation.In]]
+              case e                                        => e.asInstanceOf[Elem[operation.In]]
             }
             .through(operation.asFs2)
       },
@@ -87,7 +87,7 @@ trait Source { self =>
                   case Some(_) => e.asInstanceOf[SuccessElem[Out]]
                   case None    => e.failed(SourceOutMatchErr(self, that))
                 }
-              case e                                  => e.asInstanceOf[Elem[Out]]
+              case e                                        => e.asInstanceOf[Elem[Out]]
             })
       },
       SourceOutMatchErr(self, that)

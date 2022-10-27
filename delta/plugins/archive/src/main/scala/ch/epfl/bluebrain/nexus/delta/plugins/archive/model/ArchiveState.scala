@@ -47,7 +47,7 @@ final case class ArchiveState(
     ResourceF(
       id = id,
       uris = ResourceUris.ephemeral("archives", project, id)(mappings, base),
-      rev = this.rev.toLong,
+      rev = this.rev,
       types = this.types,
       deprecated = this.deprecated,
       createdAt = createdAt,

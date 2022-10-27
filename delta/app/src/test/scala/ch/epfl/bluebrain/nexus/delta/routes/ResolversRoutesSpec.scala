@@ -88,8 +88,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
   def fetchSchema: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[Schema, Nothing]]] =
     (ref: ResourceRef, _: ProjectRef) =>
       ref match {
-        case Revision(_, `schemaId`, 5L) => UIO.some(JsonLdContent(resourceFS, resourceFS.value.source, None))
-        case _                           => UIO.none
+        case Revision(_, `schemaId`, 5) => UIO.some(JsonLdContent(resourceFS, resourceFS.value.source, None))
+        case _                          => UIO.none
       }
 
   private lazy val resolvers = ResolversImpl(
@@ -249,7 +249,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
         ) ~> asBob ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           response.asJson shouldEqual
-            resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2L, createdBy = bob, updatedBy = bob)
+            resolverMetadata(nxv + "in-project-put", InProject, project.ref, rev = 2, createdBy = bob, updatedBy = bob)
         }
       }
 
@@ -263,7 +263,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             nxv + "cross-project-use-current-put",
             CrossProject,
             project2.ref,
-            rev = 2L,
+            rev = 2,
             createdBy = alice,
             updatedBy = alice
           )
@@ -278,7 +278,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             nxv + "cross-project-provided-entities-put",
             CrossProject,
             project2.ref,
-            rev = 2L,
+            rev = 2,
             createdBy = alice,
             updatedBy = alice
           )
@@ -293,8 +293,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           status shouldEqual StatusCodes.Conflict
           response.asJson shouldEqual jsonContentOf(
             "/resolvers/errors/incorrect-rev.json",
-            "provided" -> 5L,
-            "expected" -> 2L
+            "provided" -> 5,
+            "expected" -> 2
           )
         }
       }
@@ -343,7 +343,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
             nxv + "in-project-put",
             InProject,
             project.ref,
-            rev = 3L,
+            rev = 3,
             createdBy = bob,
             updatedBy = alice
           )
@@ -371,7 +371,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
               nxv + "in-project-put",
               InProject,
               project.ref,
-              rev = 4L,
+              rev = 4,
               deprecated = true,
               createdBy = bob,
               updatedBy = alice
@@ -420,7 +420,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
               nxv + "in-project-put",
               InProject,
               project.ref,
-              rev = 5L,
+              rev = 5,
               deprecated = true,
               createdBy = bob,
               updatedBy = alice
@@ -445,8 +445,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
 
     def inProject(
         id: Iri,
-        priority: Long,
-        rev: Long = 1,
+        priority: Int,
+        rev: Int = 1,
         deprecated: Boolean = false,
         createdBy: Subject = bob,
         updatedBy: Subject = bob
@@ -472,7 +472,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           nxv + "cross-project-use-current-put",
           CrossProject,
           project2.ref,
-          rev = 2L,
+          rev = 2,
           createdBy = alice,
           updatedBy = alice
         )
@@ -486,7 +486,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           nxv + "cross-project-provided-entities-put",
           CrossProject,
           project2.ref,
-          rev = 2L,
+          rev = 2,
           createdBy = alice,
           updatedBy = alice
         )
@@ -637,8 +637,8 @@ class ResolversRoutesSpec extends BaseRouteSpec {
           status shouldEqual StatusCodes.NotFound
           response.asJson shouldEqual jsonContentOf(
             "/errors/revision-not-found.json",
-            "provided" -> 10L,
-            "current"  -> 5L
+            "provided" -> 10,
+            "current"  -> 5
           )
         }
       }
@@ -833,7 +833,7 @@ class ResolversRoutesSpec extends BaseRouteSpec {
       id: Iri,
       resolverType: ResolverType,
       projectRef: ProjectRef,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

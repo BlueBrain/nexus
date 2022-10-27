@@ -52,7 +52,7 @@ class ResolverResolutionSpec extends AnyWordSpecLike with Matchers with IOValues
   private val resource = ResourceF(
     id = nxv + "example1",
     uris = ResourceUris(Uri("/example1")),
-    rev = 5L,
+    rev = 5,
     types = Set(nxv + "ResourceExample", nxv + "ResourceExample2"),
     deprecated = false,
     createdAt = Instant.now(),

@@ -206,7 +206,7 @@ class FilesRoutesSpec extends BaseRouteSpec with CancelAfterFailure with Storage
           status shouldEqual StatusCodes.OK
           val attr = attributes(filename)
           response.asJson shouldEqual
-            fileMetadata(projectRef, file1, attr, diskIdRev, rev = idx + 2L, createdBy = alice)
+            fileMetadata(projectRef, file1, attr, diskIdRev, rev = idx + 2, createdBy = alice)
         }
       }
     }
@@ -462,7 +462,7 @@ object FilesRoutesSpec extends TestHelpers with RouteFixtures {
       attributes: FileAttributes,
       storage: ResourceRef.Revision,
       storageType: StorageType = StorageType.DiskStorage,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous,

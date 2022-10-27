@@ -112,7 +112,7 @@ object ArchiveReference {
       resourceId: Iri,
       project: Option[ProjectRef],
       tag: Option[UserTag],
-      rev: Option[Long],
+      rev: Option[Int],
       path: Option[AbsolutePath],
       originalSource: Option[Boolean],
       format: Option[ArchiveResourceRepresentation]
@@ -122,13 +122,13 @@ object ArchiveReference {
       resourceId: Iri,
       project: Option[ProjectRef],
       tag: Option[UserTag],
-      rev: Option[Long],
+      rev: Option[Int],
       path: Option[AbsolutePath]
   ) extends ReferenceInput
 
   @nowarn("cat=unused")
   implicit final val referenceInputJsonLdDecoder: JsonLdDecoder[ArchiveReference] = {
-    def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Long]): ResourceRef =
+    def refOf(resourceId: Iri, tag: Option[UserTag], rev: Option[Int]): ResourceRef =
       (tag, rev) match {
         case (Some(tagLabel), None) => Tag(resourceId, tagLabel)
         case (None, Some(revision)) => Revision(resourceId, revision)
@@ -142,7 +142,7 @@ object ArchiveReference {
     implicit val cfg: Configuration = Configuration.default.copy(context = ctx)
 
     deriveConfigJsonLdDecoder[ReferenceInput].flatMap {
-      case ResourceInput(_, _, Some(_: UserTag), Some(_: Long), _, _, _)                          =>
+      case ResourceInput(_, _, Some(_: UserTag), Some(_: Int), _, _, _)                           =>
         Left(ParsingFailure("An archive resource reference cannot use both 'rev' and 'tag' fields."))
       case ResourceInput(_, _, _, _, _, Some(_: Boolean), Some(_: ArchiveResourceRepresentation)) =>
         Left(ParsingFailure("An archive resource reference cannot use both 'originalSource' and 'format' fields."))
@@ -155,7 +155,7 @@ object ArchiveReference {
           case _                => None
         }
         Right(ResourceReference(ref, project, path, repr))
-      case FileInput(_, _, Some(_: UserTag), Some(_: Long), _)                                    =>
+      case FileInput(_, _, Some(_: UserTag), Some(_: Int), _)                                     =>
         Left(ParsingFailure("An archive file reference cannot use both 'rev' and 'tag' fields."))
       case FileInput(resourceId, project, tag, rev, path)                                         =>
         val ref = refOf(resourceId, tag, rev)
@@ -180,7 +180,7 @@ object ArchiveReference {
       case _              => None
     }
 
-    def revOf(ref: ResourceRef): Option[Long] = ref match {
+    def revOf(ref: ResourceRef): Option[Int] = ref match {
       case Revision(_, _, rev) => Some(rev)
       case _                   => None
     }

@@ -100,7 +100,7 @@ object ElasticSearchQuery {
           _                 <- IO.raiseWhen(viewRes.deprecated)(ViewIsDeprecated(viewRes.id))
           (view, projection) = viewRes.value
           _                 <- aclCheck.authorizeForOr(project, projection.permission)(AuthorizationFailed)
-          index              = CompositeViews.index(projection, view, viewRes.rev.toInt, prefix).value
+          index              = CompositeViews.index(projection, view, viewRes.rev, prefix).value
           search            <- elasticSearchQuery(query, Set(index), qp).mapError(WrappedElasticSearchClientError)
         } yield search
 
@@ -120,7 +120,7 @@ object ElasticSearchQuery {
 
       private def allowedProjections(
           view: CompositeView,
-          rev: Long,
+          rev: Int,
           project: ProjectRef
       )(implicit caller: Caller): IO[AuthorizationFailed, Set[String]] =
         aclCheck
@@ -128,7 +128,7 @@ object ElasticSearchQuery {
             view.projections.collect { case p: ElasticSearchProjection => p },
             project,
             p => p.permission,
-            p => CompositeViews.index(p, view, rev.toInt, prefix).value
+            p => CompositeViews.index(p, view, rev, prefix).value
           )
           .tapEval { indices => IO.raiseWhen(indices.isEmpty)(AuthorizationFailed) }
     }

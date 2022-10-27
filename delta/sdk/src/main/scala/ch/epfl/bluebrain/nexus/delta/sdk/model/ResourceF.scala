@@ -53,7 +53,7 @@ import java.time.Instant
 final case class ResourceF[A](
     id: Iri,
     uris: ResourceUris,
-    rev: Long,
+    rev: Int,
     types: Set[Iri],
     deprecated: Boolean,
     createdAt: Instant,
@@ -101,7 +101,7 @@ object ResourceF {
   final def sortBy[A](field: String)(implicit orderingValueFields: OrderingFields[A]): Option[Ordering[ResourceF[A]]] =
     field match {
       case "@id"            => Some(Ordering[Iri] on (_.id))
-      case "_rev"           => Some(Ordering[Long] on (_.rev))
+      case "_rev"           => Some(Ordering[Int] on (_.rev))
       case "_deprecated"    => Some(Ordering[Boolean] on (_.deprecated))
       case "_createdAt"     => Some(defaultSort)
       case "_createdBy"     => Some(IriEncoder.ordering[Subject] on (_.createdBy))
@@ -113,7 +113,7 @@ object ResourceF {
 
   final private case class ResourceMetadata(
       uris: ResourceUris,
-      rev: Long,
+      rev: Int,
       deprecated: Boolean,
       createdAt: Instant,
       createdBy: Subject,

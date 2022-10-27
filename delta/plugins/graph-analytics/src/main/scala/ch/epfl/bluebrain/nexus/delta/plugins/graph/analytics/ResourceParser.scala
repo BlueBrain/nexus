@@ -31,7 +31,7 @@ object ResourceParser {
   /**
     * The document to be serialized and push in the Elasticsearch index
     */
-  final case class GraphDocument(id: Iri, rev: Long, types: Set[Iri], value: JsonLdDocument)
+  final case class GraphDocument(id: Iri, rev: Int, types: Set[Iri], value: JsonLdDocument)
 
   object GraphDocument {
 

@@ -140,7 +140,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.Created
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 1L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 1)
         )
       }
     }
@@ -157,7 +157,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
               projectUuid,
               "org1",
               orgUuid,
-              rev = 1L,
+              rev = 1,
               createdBy = alice,
               updatedBy = alice
             )
@@ -204,7 +204,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef.unsafe("org1", "proj")
         response.asJson should equalIgnoreArrayOrder(
-          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 2L)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 2)
         )
       }
     }
@@ -225,7 +225,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
       Put("/v1/projects/org1/proj?rev=42", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson should equalIgnoreArrayOrder(
-          jsonContentOf("/projects/errors/incorrect-rev.json", "provided" -> 42L, "expected" -> 2L)
+          jsonContentOf("/projects/errors/incorrect-rev.json", "provided" -> 42, "expected" -> 2)
         )
       }
     }
@@ -244,7 +244,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.OK
         val ref = ProjectRef(Label.unsafe("org1"), Label.unsafe("proj"))
         response.asJson should equalIgnoreArrayOrder(
-          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 3L, deprecated = true)
+          projectMetadata(ref, "proj", projectUuid, "org1", orgUuid, rev = 3, deprecated = true)
         )
       }
     }
@@ -362,8 +362,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "/errors/revision-not-found.json",
-          "provided" -> 42L,
-          "current"  -> 3L
+          "provided" -> 42,
+          "current"  -> 3
         )
       }
     }
@@ -373,8 +373,8 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
         status shouldEqual StatusCodes.NotFound
         response.asJson shouldEqual jsonContentOf(
           "/errors/revision-not-found.json",
-          "provided" -> 42L,
-          "current"  -> 3L
+          "provided" -> 42,
+          "current"  -> 3
         )
       }
     }
@@ -523,7 +523,7 @@ class ProjectsRoutesSpec extends BaseRouteSpec {
       uuid: UUID,
       organizationLabel: String,
       organizationUuid: UUID,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       markedForDeletion: Boolean = false,
       createdBy: Subject = Anonymous,

@@ -333,13 +333,13 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
         _ <- deltaClient
                .post[Json](
                  s"/resources/$id1/test-schema/test-resource:1/tags?rev=2&indexing=sync",
-                 tag("v1.0.0", 1L),
+                 tag("v1.0.0", 1),
                  Rick
                ) { (_, response) =>
                  response.status shouldEqual StatusCodes.Created
                }
         _ <- deltaClient
-               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag("v1.0.1", 2L), Rick) {
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=3&indexing=sync", tag("v1.0.1", 2), Rick) {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }
@@ -348,7 +348,7 @@ class ResourcesSpec extends BaseSpec with EitherValuable with CirceEq {
                  response.status shouldEqual StatusCodes.OK
                }
         _ <- deltaClient
-               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=5&indexing=sync", tag("v1.0.2", 5L), Rick) {
+               .post[Json](s"/resources/$id1/_/test-resource:1/tags?rev=5&indexing=sync", tag("v1.0.2", 5), Rick) {
                  (_, response) =>
                    response.status shouldEqual StatusCodes.Created
                }

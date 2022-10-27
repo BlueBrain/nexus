@@ -118,7 +118,7 @@ class EventsSpec extends BaseSpec with Inspectors {
         //ResourceTagAdded event
         _ <- deltaClient.post[Json](
                s"/resources/$id/_/test-resource:1/tags?rev=2",
-               tag("v1.0.0", 1L),
+               tag("v1.0.0", 1),
                BugsBunny
              ) { (_, response) =>
                response.status shouldEqual StatusCodes.Created

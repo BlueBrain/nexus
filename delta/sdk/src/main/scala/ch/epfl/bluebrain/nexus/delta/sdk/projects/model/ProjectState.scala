@@ -93,7 +93,7 @@ final case class ProjectState(
     ResourceF(
       id = uris.relativeAccessUri.toIri,
       uris = uris,
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       deprecated = deprecated,
       createdAt = createdAt,

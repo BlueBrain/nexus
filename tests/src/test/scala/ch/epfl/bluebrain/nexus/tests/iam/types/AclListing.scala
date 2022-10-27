@@ -6,7 +6,7 @@ import io.circe.generic.extras.semiauto._
 
 final case class AclListing(_results: List[Acl], _total: Long)
 
-final case class Acl(acl: List[AclEntry], _path: String, _rev: Long)
+final case class Acl(acl: List[AclEntry], _path: String, _rev: Int)
 
 final case class AclEntry(identity: Identity, permissions: Set[Permission])
 

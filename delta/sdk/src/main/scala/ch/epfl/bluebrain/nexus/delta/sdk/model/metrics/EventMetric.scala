@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.model.metrics
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.JsonLdContext.keywords
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.model.Event.ProjectScopedEvent
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.ScopedEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.Label
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Label, ProjectRef}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.syntax.EncoderOps
@@ -35,7 +34,7 @@ sealed trait EventMetric extends Product with Serializable {
     * @return
     *   the revision this events generates
     */
-  def rev: Long
+  def rev: Int
 
   /**
     * @return
@@ -82,7 +81,7 @@ object EventMetric {
   final case class UnscopedMetric(
       instant: Instant,
       subject: Subject,
-      rev: Long,
+      rev: Int,
       action: Label,
       resourceId: Iri,
       types: Set[Iri],
@@ -97,7 +96,7 @@ object EventMetric {
   final case class OrganizationMetric(
       instant: Instant,
       subject: Subject,
-      rev: Long,
+      rev: Int,
       action: Label,
       organization: Label,
       resourceId: Iri,
@@ -113,7 +112,7 @@ object EventMetric {
   final case class ProjectScopedMetric(
       instant: Instant,
       subject: Subject,
-      rev: Long,
+      rev: Int,
       action: Label,
       project: ProjectRef,
       organization: Label,
@@ -125,7 +124,7 @@ object EventMetric {
   }
 
   object ProjectScopedMetric {
-    def from[E <: ProjectScopedEvent](
+    def from[E <: ScopedEvent](
         event: E,
         action: Label,
         id: Iri,
@@ -138,7 +137,7 @@ object EventMetric {
         event.rev,
         action,
         event.project,
-        event.organizationLabel,
+        event.project.organization,
         id,
         types,
         additionalFields

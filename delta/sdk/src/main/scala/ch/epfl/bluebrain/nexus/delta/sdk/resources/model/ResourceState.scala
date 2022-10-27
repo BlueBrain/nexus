@@ -72,7 +72,7 @@ final case class ResourceState(
     ResourceF(
       id = id,
       uris = ResourceUris.resource(project, schemaProject, id, schema)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       schema = schema,
       deprecated = deprecated,

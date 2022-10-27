@@ -23,7 +23,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
     val searchWithAllParams = RealmSearchParams(
       issuer = Some(issuer),
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
       r => UIO.pure(r.name == resource.value.name)
@@ -39,7 +39,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
       forAll(
         List(
           resource.copy(deprecated = true),
-          resource.copy(rev = 2L),
+          resource.copy(rev = 2),
           resource.map(_.copy(issuer = "other")),
           resource.map(_.copy(name = Name.unsafe("other")))
         )
@@ -52,7 +52,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
   "An OrganizationSearchParams" should {
     val searchWithAllParams = OrganizationSearchParams(
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myorg"),
@@ -66,7 +66,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
           searchWithAllParams,
           OrganizationSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
           OrganizationSearchParams(filter = _ => UIO.pure(true)),
-          OrganizationSearchParams(rev = Some(1L), filter = _ => UIO.pure(true))
+          OrganizationSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
         )
       ) { search =>
         search.matches(resource).accepted shouldEqual true
@@ -91,7 +91,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
     val searchWithAllParams = ProjectSearchParams(
       organization = Some(org),
       deprecated = Some(false),
-      rev = Some(1L),
+      rev = Some(1),
       createdBy = Some(subject),
       updatedBy = Some(subject),
       label = Some("myproj"),
@@ -105,7 +105,7 @@ class SearchParamsSpec extends AnyWordSpecLike with IOValues with Matchers with 
           searchWithAllParams,
           ProjectSearchParams(label = Some("my"), filter = _ => UIO.pure(true)),
           ProjectSearchParams(filter = _ => UIO.pure(true)),
-          ProjectSearchParams(rev = Some(1L), filter = _ => UIO.pure(true))
+          ProjectSearchParams(rev = Some(1), filter = _ => UIO.pure(true))
         )
       ) { search =>
         search.matches(resource).accepted shouldEqual true

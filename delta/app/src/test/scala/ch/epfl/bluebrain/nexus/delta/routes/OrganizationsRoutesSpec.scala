@@ -61,7 +61,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
     "description" -> org1.description.value
   ) deepMerge org1CreatedMeta.removeKeys("@context")
 
-  private val org1UpdatedMeta = orgMetadata(org1.label, fixedUuid, rev = 2L)
+  private val org1UpdatedMeta = orgMetadata(org1.label, fixedUuid, rev = 2)
   private val org1Updated     =
     org1Created deepMerge json"""{"description": "updated"}""" deepMerge org1UpdatedMeta.removeKeys("@context")
 
@@ -74,7 +74,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   ).removeKeys("description") deepMerge org2CreatedMeta.removeKeys("@context")
 
   private val org2DeprecatedMeta =
-    orgMetadata(org2.label, fixedUuid, rev = 2L, deprecated = true, createdBy = alice, updatedBy = alice)
+    orgMetadata(org2.label, fixedUuid, rev = 2, deprecated = true, createdBy = alice, updatedBy = alice)
 
   "An OrganizationsRoute" should {
 
@@ -233,7 +233,7 @@ class OrganizationsRoutesSpec extends BaseRouteSpec {
   def orgMetadata(
       label: Label,
       uuid: UUID,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

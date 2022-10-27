@@ -153,14 +153,14 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       ).runSyncUnsafe()
     }
 
-  def deletePermission(path: String, target: Authenticated, revision: Long, permission: Permission): Task[Assertion] = {
-    deletePermissions(path, target, revision, Set(permission))
+  def deletePermission(path: String, target: Authenticated, rev: Int, permission: Permission): Task[Assertion] = {
+    deletePermissions(path, target, rev, Set(permission))
   }
 
   def deletePermissions(
       path: String,
       target: Authenticated,
-      revision: Long,
+      rev: Int,
       permissions: Set[Permission]
   ): Task[Assertion] = {
     val body = jsonContentOf(
@@ -169,7 +169,7 @@ class AclDsl(cl: HttpClient) extends TestHelpers with CirceUnmarshalling with Op
       "sub"   -> target.name,
       "perms" -> permissions.map(_.value).mkString("""","""")
     )
-    cl.patch[Json](s"/acls$path?rev=$revision", body, Identity.ServiceAccount) { (_, response) =>
+    cl.patch[Json](s"/acls$path?rev=$rev", body, Identity.ServiceAccount) { (_, response) =>
       response.status shouldEqual StatusCodes.OK
     }
   }
