@@ -23,8 +23,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Event log for global entities that can be controlled through commands;
   *
-  * Successful commands result in state transitions. If we use a persistent implementation, new events are also appended
-  * to the event log.
+  * Successful commands result in state transitions. Events are also appended to the event log.
   *
   * Unsuccessful commands result in rejections returned to the caller context without any events being generated or
   * state transitions applied.

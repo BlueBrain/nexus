@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.delta.sdk.resolvers
 
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
-import ch.epfl.bluebrain.nexus.delta.sdk.ReferenceExchange.ReferenceExchangeValue
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
 import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.SearchParams.ResolverSearchParams
 import ch.epfl.bluebrain.nexus.delta.sdk.model.search.{Pagination, ResultEntry}
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.Resolver.{CrossProjectR
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverResolutionRejection.{ProjectAccessDenied, ResolutionFetchRejection, ResourceTypesDenied, WrappedResolverRejection}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResourceResolutionReport.{ResolverFailedReport, ResolverReport, ResolverSuccessReport}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.{Resolver, ResolverRejection, ResourceResolutionReport}
-import ch.epfl.bluebrain.nexus.delta.sdk.{ReferenceExchange, ResolverResource}
+import ch.epfl.bluebrain.nexus.delta.sdk.{ResolverResource, ResourceShifts}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef, ResourceRef}
 import monix.bio.{IO, UIO}
 
@@ -243,20 +243,21 @@ object ResolverResolution {
     *   how to check acls
     * @param resolvers
     *   a resolvers instance
-    * @param exchanges
+    * @param shifts
     *   how to fetch the resource
     */
   def apply(
       aclCheck: AclCheck,
       resolvers: Resolvers,
-      exchanges: List[ReferenceExchange]
-  ): ResolverResolution[ReferenceExchangeValue[_]] = {
-    val fetch = (ref: ResourceRef, project: ProjectRef) =>
-      UIO.tailRecM(exchanges) { // try all reference exchanges one at a time until there's a result
-        case Nil              => UIO.pure(Right(None))
-        case exchange :: rest => exchange.fetch(project, ref).map(_.toRight(rest).map(Some.apply))
-      }
-    apply[ReferenceExchangeValue[_]](aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read)
-  }
+      shifts: ResourceShifts
+  ): ResolverResolution[JsonLdContent[_, _]] =
+    apply(aclCheck, resolvers, shifts.fetch, _.resource.types, Permissions.resources.read)
+
+  def apply(
+      aclCheck: AclCheck,
+      resolvers: Resolvers,
+      fetch: (ResourceRef, ProjectRef) => UIO[Option[JsonLdContent[_, _]]]
+  ): ResolverResolution[JsonLdContent[_, _]] =
+    apply(aclCheck, resolvers, fetch, _.resource.types, Permissions.resources.read)
 
 }

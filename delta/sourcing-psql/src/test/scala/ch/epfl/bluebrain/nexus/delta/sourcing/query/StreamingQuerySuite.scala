@@ -50,14 +50,14 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     xas
   )
 
-  private val alice = User("Alice", Label.unsafe("Wonderland"))
-  private val project1 = ProjectRef.unsafe("org", "proj1")
-  private val project2 = ProjectRef.unsafe("org", "proj2")
-  private val project3 = ProjectRef.unsafe("org2", "proj2")
-  private val id1 = Label.unsafe("1")
-  private val id2 = Label.unsafe("2")
-  private val id3 = Label.unsafe("3")
-  private val id4 = Label.unsafe("4")
+  private val alice     = User("Alice", Label.unsafe("Wonderland"))
+  private val project1  = ProjectRef.unsafe("org", "proj1")
+  private val project2  = ProjectRef.unsafe("org", "proj2")
+  private val project3  = ProjectRef.unsafe("org2", "proj2")
+  private val id1       = Label.unsafe("1")
+  private val id2       = Label.unsafe("2")
+  private val id3       = Label.unsafe("3")
+  private val id4       = Label.unsafe("4")
   private val customTag = UserTag.unsafe("v0.1")
 
   private val prState11 = PullRequestActive(id1, project1, 1, Instant.EPOCH, Anonymous, Instant.EPOCH, alice)
@@ -75,8 +75,8 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
     Task.fromEither {
       entityType match {
         case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id.value)
-        case Release.entityType => Release.serializer.codec.decodeJson(json).map(_.id)
-        case _ => Left(DecodingFailure(s"No decoding is available for entity type $entityType", List.empty))
+        case Release.entityType     => Release.serializer.codec.decodeJson(json).map(_.id)
+        case _                      => Left(DecodingFailure(s"No decoding is available for entity type $entityType", List.empty))
       }
     }
 
@@ -160,12 +160,13 @@ class StreamingQuerySuite extends BioSuite with Doobie.Fixture {
 
   test("Running a stream on latest states on project 1 from the beginning with an incomplete decode function") {
 
-    def decodingFailure(entityType: EntityType) = DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
+    def decodingFailure(entityType: EntityType)              =
+      DecodingFailure(s"No decoding is available for entity type $entityType", List.empty)
     def incompleteDecode(entityType: EntityType, json: Json) =
       Task.fromEither {
         entityType match {
           case PullRequest.entityType => PullRequestState.serializer.codec.decodeJson(json).map(_.id.value)
-          case _ => Left(decodingFailure(entityType))
+          case _                      => Left(decodingFailure(entityType))
         }
       }
 

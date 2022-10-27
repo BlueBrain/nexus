@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveResourceRepres
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.AbsolutePath
 import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.delta.rdf.implicits._
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.api.{JsonLdApi, JsonLdJavaApi}
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.{ApiMappings, ProjectContext}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef.{Latest, Revision, Tag}
@@ -29,7 +30,8 @@ class ArchivesDecodingSpec
     with TestHelpers
     with RemoteContextResolutionFixture {
 
-  implicit private val uuidF: UUIDF = UUIDF.random
+  implicit private val uuidF: UUIDF   = UUIDF.random
+  implicit private val api: JsonLdApi = JsonLdJavaApi.strict
 
   private val context = ProjectContext.unsafe(
     ApiMappings.empty,

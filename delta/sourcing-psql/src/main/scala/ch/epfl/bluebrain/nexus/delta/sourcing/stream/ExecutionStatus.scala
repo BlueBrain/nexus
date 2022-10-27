@@ -4,6 +4,7 @@ package ch.epfl.bluebrain.nexus.delta.sourcing.stream
   * Enumeration of projection execution statuses.
   */
 sealed trait ExecutionStatus extends Product with Serializable {
+
   /**
     * @param th
     *   the error to set on the failed status

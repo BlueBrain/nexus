@@ -1,113 +1,86 @@
 package ch.epfl.bluebrain.nexus.delta.plugins.archive
 
 import akka.actor.typed.ActorSystem
+import akka.http.scaladsl.model.ContentTypes.`text/plain(UTF-8)`
 import akka.http.scaladsl.model.MediaRanges.`*/*`
 import akka.http.scaladsl.model.MediaTypes.`application/x-tar`
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{`Content-Type`, Accept, Location, OAuth2BearerToken}
-import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.stream.alpakka.file.scaladsl.Archive
-import akka.stream.scaladsl.FileIO
+import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
+import akka.http.scaladsl.server.Route
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import ch.epfl.bluebrain.nexus.delta.kernel.utils.UrlUtils
-import ch.epfl.bluebrain.nexus.delta.plugins.archive.ArchiveDownload.ArchiveDownloadImpl
+import ch.epfl.bluebrain.nexus.delta.kernel.utils.{StatefulUUIDF, UUIDF, UrlUtils}
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.model.ArchiveRejection.ProjectContextRejection
 import ch.epfl.bluebrain.nexus.delta.plugins.archive.routes.ArchiveRoutes
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.Digest.ComputedDigest
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileAttributes.FileAttributesOrigin.Client
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.FileRejection.FileNotFound
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.model.{File, FileAttributes, FileRejection}
 import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.routes.FilesRoutesSpec
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{FileFixtures, Files}
-import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.{StorageFixtures, Storages}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.files.{schemas, FileGen}
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.StorageFixtures
+import ch.epfl.bluebrain.nexus.delta.plugins.storage.storages.model.DigestAlgorithm
 import ch.epfl.bluebrain.nexus.delta.rdf.IriOrBNode.Iri
 import ch.epfl.bluebrain.nexus.delta.rdf.RdfMediaTypes.`application/ld+json`
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
-import ch.epfl.bluebrain.nexus.delta.sdk.AkkaSource
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclSimpleCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
-import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaSchemeDirectives
+import ch.epfl.bluebrain.nexus.delta.sdk.directives.{DeltaSchemeDirectives, FileResponse}
+import ch.epfl.bluebrain.nexus.delta.sdk.generators.ProjectGen
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.IdentitiesDummy
 import ch.epfl.bluebrain.nexus.delta.sdk.identities.model.Caller
 import ch.epfl.bluebrain.nexus.delta.sdk.implicits._
-import ch.epfl.bluebrain.nexus.delta.sdk.marshalling.{RdfExceptionHandler, RdfRejectionHandler}
-import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
+import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
+import ch.epfl.bluebrain.nexus.delta.sdk.model.ResourceF
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions
+import ch.epfl.bluebrain.nexus.delta.sdk.permissions.model.Permission
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContextDummy
-import ch.epfl.bluebrain.nexus.delta.sdk.testkit._
-import ch.epfl.bluebrain.nexus.delta.sdk.utils.RouteHelpers
+import ch.epfl.bluebrain.nexus.delta.sdk.projects.model.ApiMappings
+import ch.epfl.bluebrain.nexus.delta.sdk.utils.BaseRouteSpec
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.EphemeralLogConfig
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Identity.Subject
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, Label, ProjectRef, ResourceRef}
-import ch.epfl.bluebrain.nexus.testkit.IOFixedClock
-import com.typesafe.config.Config
 import io.circe.Json
 import io.circe.parser.parse
+import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 import monix.execution.Scheduler
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.{BeforeAndAfterAll, Inspectors, TryValues}
-import slick.jdbc.JdbcBackend
+import org.scalatest.TryValues
 
-import java.nio.file.{Files => JFiles}
 import java.util.UUID
-import scala.annotation.nowarn
+import scala.concurrent.duration._
 
-class ArchiveRoutesSpec
-    extends AnyWordSpecLike
-    with BeforeAndAfterAll
-    with Matchers
-    with ScalaFutures
-    with ScalatestRouteTest
-    with TryValues
-    with Inspectors
-    with ConfigFixtures
-    with StorageFixtures
-    with FileFixtures
-    with RemoteContextResolutionFixture
-    with IOFixedClock
-    with RouteHelpers {
+class ArchiveRoutesSpec extends BaseRouteSpec with StorageFixtures with TryValues {
 
-  override def testConfig: Config = AbstractDBSpec.config
+  implicit private val scheduler: Scheduler = Scheduler.global
+
+  private val uuid                          = UUID.fromString("8249ba90-7cc6-4de5-93a1-802c04200dcc")
+  implicit private val uuidF: StatefulUUIDF = UUIDF.stateful(uuid).accepted
+
+  implicit override def rcr: RemoteContextResolution = RemoteContextResolutionFixture.rcr
 
   import akka.actor.typed.scaladsl.adapter._
   implicit private val typedSystem: ActorSystem[Nothing] = system.toTyped
-  implicit private val scheduler: Scheduler              = Scheduler.global
 
-  private var db: JdbcBackend.Database = _
-
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    db = AbstractDBSpec.beforeAll
-    ()
-  }
-
-  override protected def afterAll(): Unit = {
-    AbstractDBSpec.afterAll(db)
-    super.afterAll()
-  }
-
-  implicit private val baseUri: BaseUri   = BaseUri("http://localhost", Label.unsafe("v1"))
   private val subject: Subject            = Identity.User("user", Label.unsafe("realm"))
   implicit private val caller: Caller     = Caller.unsafe(subject)
   private val subjectNoFilePerms: Subject = Identity.User("nofileperms", Label.unsafe("realm"))
   private val callerNoFilePerms: Caller   = Caller.unsafe(subjectNoFilePerms)
+
+  private val project    =
+    ProjectGen.project("org", "proj", base = nxv.base, mappings = ApiMappings("file" -> schemas.files))
+  private val projectRef = project.ref
 
   implicit private val jsonKeyOrdering: JsonKeyOrdering =
     JsonKeyOrdering.default(topKeys =
       List("@context", "@id", "@type", "reason", "details", "sourceId", "projectionId", "_total", "_results")
     )
 
-  implicit private val rejectionHandler: RejectionHandler = RdfRejectionHandler.apply
-  implicit private val exceptionHandler: ExceptionHandler = RdfExceptionHandler.apply
+  private val archivesConfig = ArchivePluginConfig(1, EphemeralLogConfig(5.seconds, 5.hours))
 
-  @nowarn("cat=unused")
-  private val cfg            = config.copy(
-    disk = config.disk.copy(defaultMaxFileSize = 500, allowedVolumes = config.disk.allowedVolumes + path)
-  )
-  private val archivesConfig = ArchivePluginConfig.load(ArchivesSpec.config).accepted
-
-  override val allowedPerms = Seq(
-    diskFields.readPermission.value,
-    diskFields.writePermission.value,
+  private val perms = Seq(
     Permissions.resources.write,
     Permissions.resources.read,
     model.permissions.read,
@@ -122,27 +95,57 @@ class ArchiveRoutesSpec
   private val fetchContext    = FetchContextDummy(List(project))
   private val groupDirectives = DeltaSchemeDirectives(fetchContext, _ => UIO.none, _ => UIO.none)
 
-  // TODO Update when migrating archives plugin
-  private val files: Files       = null
-  private val storages: Storages = null
+  private val storageRef = ResourceRef.Revision(iri"http://localhost/${genString()}", 5L)
 
-  lazy val routes = {
+  private val fileId                = iri"http://localhost/${genString()}"
+  private val encodedFileId         = UrlUtils.encode(fileId.toString)
+  private val fileContent           = "file content"
+  private val fileAttributes        = FileAttributes(
+    uuid,
+    "http://localhost/file.txt",
+    Uri.Path("file.txt"),
+    "myfile",
+    Some(`text/plain(UTF-8)`),
+    12L,
+    ComputedDigest(DigestAlgorithm.default, "digest"),
+    Client
+  )
+  private val file: ResourceF[File] =
+    FileGen.resourceFor(fileId, projectRef, storageRef, fileAttributes, createdBy = subject, updatedBy = subject)
+
+  private val generatedId = project.base.iri / uuid.toString
+
+  val fetchResource: (Iri, ProjectRef) => UIO[Option[JsonLdContent[_, _]]] = {
+    case (`fileId`, `projectRef`) =>
+      UIO.some(JsonLdContent(file, file.value.asJson, None))
+    case _                        =>
+      UIO.none
+  }
+
+  val fetchFileContent: (Iri, ProjectRef, Caller) => IO[FileRejection, FileResponse] = (id, p, c) => {
+    val s = c.subject
+    (id, p, s) match {
+      case (_, _, `subjectNoFilePerms`) =>
+        IO.raiseError(FileRejection.AuthorizationFailed(AclAddress.Project(p), Permission.unsafe("disk/read")))
+      case (`fileId`, `projectRef`, _)  =>
+        IO.pure(FileResponse("file.txt", ContentTypes.`text/plain(UTF-8)`, 12L, Source.single(ByteString(fileContent))))
+      case (id, ref, _)                 =>
+        IO.raiseError(FileNotFound(id, ref))
+    }
+  }
+
+  private lazy val routes = {
     for {
       aclCheck       <- AclSimpleCheck(
-                          (subject, AclAddress.Root, allowedPerms.toSet),
-                          (
-                            subjectNoFilePerms,
-                            AclAddress.Root,
-                            allowedPerms.toSet - diskFields.readPermission.value - diskFields.writePermission.value
-                          )
+                          (subject, AclAddress.Root, perms.toSet),
+                          (subjectNoFilePerms, AclAddress.Root, perms.toSet)
                         )
-      storageJson     = diskFieldsJson.map(_ deepMerge json"""{"maxFileSize": 300, "volume": "$path"}""")
-      _              <- storages.create(diskId, projectRef, storageJson)
-      // TODO Update when migrating archives plugin
-      //archiveDownload = new ArchiveDownloadImpl(List(Files.referenceExchange(files)), aclCheck, files)
-      archiveDownload = new ArchiveDownloadImpl(List.empty, aclCheck, files)
-      archives       <-
-        Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, (_, _) => IO.unit)
+      archiveDownload = ArchiveDownload(
+                          aclCheck,
+                          (id: ResourceRef, ref: ProjectRef) => fetchResource(id.iri, ref),
+                          (id: ResourceRef, ref: ProjectRef, c: Caller) => fetchFileContent(id.iri, ref, c)
+                        )
+      archives        = Archives(fetchContext.mapRejection(ProjectContextRejection), archiveDownload, archivesConfig, xas)
       identities      = IdentitiesDummy(caller, callerNoFilePerms)
       r               = Route.seal(new ArchiveRoutes(archives, identities, aclCheck, groupDirectives).routes)
     } yield r
@@ -170,35 +173,8 @@ class ArchiveRoutesSpec
       "expiresInSeconds" -> expiresInSeconds.toString
     )
 
-  private def lastSegment(iri: Iri) =
-    iri.toString.substring(iri.toString.lastIndexOf("/") + 1)
-
-  private def archiveMapOf(source: AkkaSource): Map[String, String] = {
-    val path   = JFiles.createTempFile("test", ".tar")
-    source.runWith(FileIO.toPath(path)).futureValue
-    val result = FileIO
-      .fromPath(path)
-      .via(Archive.tarReader())
-      .mapAsync(1) { case (metadata, source) =>
-        source
-          .runFold(ByteString.empty) { case (bytes, elem) =>
-            bytes ++ elem
-          }
-          .map { bytes =>
-            (metadata.filePath, bytes.utf8String)
-          }
-      }
-      .runFold(Map.empty[String, String]) { case (map, elem) =>
-        map + elem
-      }
-      .futureValue
-    result
-  }
-
   "The ArchiveRoutes" should {
-    val fileId        = iri"http://localhost/${genString()}"
-    val encodedFileId = UrlUtils.encode(fileId.toString)
-    val notFoundId    = iri"http://localhost/${genString()}"
+    val notFoundId = iri"http://localhost/${genString()}"
 
     val archive =
       json"""{
@@ -223,10 +199,6 @@ class ArchiveRoutesSpec
           }"""
 
     val archiveCtxJson = jsonContentOf("responses/archive-resource-context.json")
-
-    "create required file" in {
-      files.create(fileId, Some(diskId), project.ref, entity()).accepted
-    }
 
     "create an archive without specifying an id" in {
       Post(s"/v1/archives/$projectRef", archive.toEntity) ~> asSubject ~> acceptMeta ~> routes ~> check {
@@ -265,9 +237,11 @@ class ArchiveRoutesSpec
     "fetch an archive json representation" in {
       Get(s"/v1/archives/$projectRef/$uuid") ~> asSubject ~> acceptMeta ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual archiveMetadata(generatedId, project.ref)
-          .deepMerge(archive)
-          .deepMerge(archiveCtxJson)
+        response.asJson should equalIgnoreArrayOrder(
+          archiveMetadata(generatedId, project.ref)
+            .deepMerge(archive)
+            .deepMerge(archiveCtxJson)
+        )
       }
     }
 
@@ -276,32 +250,28 @@ class ArchiveRoutesSpec
         Get(s"/v1/archives/$projectRef/$uuid?ignoreNotFound=true") ~> asSubject ~> accept ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           header[`Content-Type`].value.value() shouldEqual `application/x-tar`.value
-          val result    = archiveMapOf(responseEntity.dataBytes)
-          val attr      = attributes()
-          val diskIdRev = ResourceRef.Revision(diskId, 1)
-          val metadata  =
-            FilesRoutesSpec.fileMetadata(
-              projectRef,
-              fileId,
-              attr,
-              diskIdRev,
-              createdBy = subject,
-              updatedBy = subject,
-              label = Some(encodedFileId.replaceAll("%3A", ":"))
-            )
+          val result = TarUtils.mapOf(responseEntity.dataBytes)
+
           result.keySet shouldEqual Set(
             s"${project.ref}/file/file.txt",
             s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json"
           )
 
-          val expectedContent = content
+          val expectedContent = fileContent
           val actualContent   = result.get(s"${project.ref}/file/file.txt").value
           actualContent shouldEqual expectedContent
 
-          val expectedMetadata = metadata
-          val actualMetadata   =
-            parse(result.get(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json").value).rightValue
-          actualMetadata shouldEqual expectedMetadata
+          val expectedMetadata = FilesRoutesSpec.fileMetadata(
+            projectRef,
+            fileId,
+            file.value.attributes,
+            storageRef,
+            createdBy = subject,
+            updatedBy = subject,
+            label = Some(encodedFileId.replaceAll("%3A", ":"))
+          )
+          val actualMetadata   = result.get(s"${project.ref}/compacted/${UrlUtils.encode(fileId.toString)}.json").value
+          parse(actualMetadata).rightValue shouldEqual expectedMetadata
         }
       }
     }

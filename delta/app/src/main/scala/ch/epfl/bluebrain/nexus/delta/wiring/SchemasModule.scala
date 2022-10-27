@@ -109,7 +109,7 @@ object SchemasModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 8, route.routes, requiresStrictEntity = true)
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri) =>
-    Schema.graphResourceEncoder(base)
+  many[ResourceShift[_, _, _]].add { (schemas: Schemas, base: BaseUri) =>
+    Schema.shift(schemas)(base)
   }
 }

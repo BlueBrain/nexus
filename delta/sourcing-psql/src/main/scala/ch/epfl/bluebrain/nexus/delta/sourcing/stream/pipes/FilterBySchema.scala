@@ -22,7 +22,7 @@ import shapeless.Typeable
 class FilterBySchema(config: FilterBySchemaConfig) extends Pipe {
   override type In  = GraphResource
   override type Out = GraphResource
-  override def label: Label                          = FilterBySchema.label
+  override def label: Label                     = FilterBySchema.label
   override def inType: Typeable[GraphResource]  = Typeable[GraphResource]
   override def outType: Typeable[GraphResource] = Typeable[GraphResource]
 
@@ -55,7 +55,7 @@ object FilterBySchema extends PipeDef {
       )
     )
   }
-  object FilterBySchemaConfig                              {
+  object FilterBySchemaConfig                            {
     implicit val filterBySchemaConfigJsonLdDecoder: JsonLdDecoder[FilterBySchemaConfig] = deriveJsonLdDecoder
   }
 }

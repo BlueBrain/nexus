@@ -9,7 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import scala.concurrent.duration._
 
-class NoopSink [A: Typeable] extends Sink {
+class NoopSink[A: Typeable] extends Sink {
 
   override type In = A
 

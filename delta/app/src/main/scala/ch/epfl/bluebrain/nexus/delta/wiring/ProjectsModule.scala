@@ -132,8 +132,8 @@ object ProjectsModule extends ModuleDef {
     PriorityRoute(pluginsMaxPriority + 7, route.routes, requiresStrictEntity = true)
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (mappings: ApiMappingsCollection, base: BaseUri) =>
-    Project.graphResourceEncoder(mappings.merge)(base)
+  many[ResourceShift[_, _, _]].add { (projects: Projects, mappings: ApiMappingsCollection, base: BaseUri) =>
+    Project.shift(projects, mappings.merge)(base)
   }
 
 }

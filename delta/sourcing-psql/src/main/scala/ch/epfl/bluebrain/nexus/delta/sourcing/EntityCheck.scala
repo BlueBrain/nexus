@@ -2,15 +2,35 @@ package ch.epfl.bluebrain.nexus.delta.sourcing
 
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.Latest
-import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef}
+import ch.epfl.bluebrain.nexus.delta.sourcing.model.{EntityType, Label, ProjectRef, Tag}
 import doobie._
 import doobie.implicits._
-import monix.bio.IO
+import monix.bio.{IO, UIO}
 
 import scala.annotation.nowarn
 
 object EntityCheck {
 
+  /**
+    * Allows to find the [[EntityType]] of the resource with the given [[Id]] in the given project
+    */
+  def findType[Id](id: Id, project: ProjectRef, xas: Transactors)(implicit putId: Put[Id]): UIO[Option[EntityType]] =
+    sql"""
+         | SELECT type
+         | FROM public.scoped_states
+         | WHERE org = ${project.organization}
+         | AND project = ${project.project}
+         | AND id = $id
+         | AND tag = ${Tag.latest}
+         |""".stripMargin.query[EntityType].option.transact(xas.read).hideErrors
+
+  /**
+    * Raises the defined error if at least one of the provided references does not exist
+    * or is deprecated
+    * @param tpe the type of the different resources
+    * @param refs the references to test
+    * @param onUnknownOrDeprecated the error to raise on the failiing references
+    */
   def raiseMissingOrDeprecated[Id, E](
       tpe: EntityType,
       refs: Set[(ProjectRef, Id)],

@@ -6,11 +6,11 @@ import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.sdk.instances.IdentityInstances
 import ch.epfl.bluebrain.nexus.delta.sdk.jsonld.JsonLdContent
-import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, Tags}
+import ch.epfl.bluebrain.nexus.delta.sdk.model.{BaseUri, IdSegmentRef, Tags}
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.Resolvers
 import ch.epfl.bluebrain.nexus.delta.sdk.resolvers.model.ResolverValue.{CrossProjectValue, InProjectValue}
 import ch.epfl.bluebrain.nexus.delta.sdk.syntax._
-import ch.epfl.bluebrain.nexus.delta.sdk.{GraphResourceEncoder, OrderingFields}
+import ch.epfl.bluebrain.nexus.delta.sdk.{OrderingFields, ResourceShift}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Identity, ProjectRef}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
@@ -99,9 +99,10 @@ object Resolver {
 
   implicit val resolverOrderingFields: OrderingFields[Resolver] = OrderingFields.empty
 
-  def graphResourceEncoder(implicit baseUri: BaseUri): GraphResourceEncoder[ResolverState, Resolver, Nothing] =
-    GraphResourceEncoder.apply[ResolverState, Resolver](
+  def shift(resolvers: Resolvers)(implicit baseUri: BaseUri): ResourceShift[ResolverState, Resolver, Nothing] =
+    ResourceShift.apply[ResolverState, Resolver](
       Resolvers.entityType,
+      (ref, project) => resolvers.fetch(IdSegmentRef(ref), project),
       (context, state) => state.toResource(context.apiMappings, context.base),
       value => JsonLdContent(value, value.value.source, None)
     )

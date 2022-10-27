@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.{Latest, UserTag}
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.{Envelope, Label, ProjectRef}
 import ch.epfl.bluebrain.nexus.delta.sourcing.offset.Offset
 import ch.epfl.bluebrain.nexus.delta.sourcing.query.RefreshStrategy
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore
 import ch.epfl.bluebrain.nexus.delta.sourcing.state.ScopedStateStore.StateNotFound.{TagNotFound, UnknownState}
 import ch.epfl.bluebrain.nexus.delta.sourcing.{EntityCheck, Predicate, PullRequest}
 import ch.epfl.bluebrain.nexus.testkit.bio.BioSuite
@@ -159,6 +158,36 @@ class ScopedStateStoreSuite extends BioSuite with Doobie.Fixture with Doobie.Ass
         xas
       )
       .error(unknowns)
+  }
+
+  test("Get the entity type for id1 in project 1") {
+    EntityCheck
+      .findType(
+        id1,
+        project1,
+        xas
+      )
+      .assertSome(PullRequest.entityType)
+  }
+
+  test("Get no entity type for an unknown id") {
+    EntityCheck
+      .findType(
+        Label.unsafe("xxx"),
+        project1,
+        xas
+      )
+      .assertNone
+  }
+
+  test("Get no entity type for an unknown project") {
+    EntityCheck
+      .findType(
+        id1,
+        ProjectRef.unsafe("org", "xxx"),
+        xas
+      )
+      .assertNone
   }
 
   test("Delete state 2 successfully") {

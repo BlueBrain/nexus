@@ -22,7 +22,7 @@ object TombstoneStore {
     * Saves a tombstone for the given entity for the provided tag so that indexing processes can take it into account
     */
   def save[Id, S <: ScopedState](tpe: EntityType, id: Id, state: S, removedTag: UserTag)(implicit
-                                                                                         putId: Put[Id]
+      putId: Put[Id]
   ): ConnectionIO[Unit] =
     sql"""
          | INSERT INTO public.scoped_tombstones (

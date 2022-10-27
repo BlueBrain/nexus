@@ -1,17 +1,19 @@
 package ch.epfl.bluebrain.nexus.delta.wiring
 
+import cats.effect.Clock
 import ch.epfl.bluebrain.nexus.delta.config.AppConfig
 import ch.epfl.bluebrain.nexus.delta.kernel.database.Transactors
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
-import ch.epfl.bluebrain.nexus.delta.sdk.GraphResourceEncoder
+import ch.epfl.bluebrain.nexus.delta.sdk.ResourceShifts
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.FetchContext.ContextRejection
 import ch.epfl.bluebrain.nexus.delta.sdk.stream.GraphResourceStream
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.DeleteExpired
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.ReferenceRegistry.LazyReferenceRegistry
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream._
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.pipes._
-import izumi.distage.model.definition.{Id, ModuleDef}
+import izumi.distage.model.definition.ModuleDef
+import monix.bio.UIO
 
 /**
   * Indexing specific wiring.
@@ -23,10 +25,9 @@ object StreamModule extends ModuleDef {
         fetchContext: FetchContext[ContextRejection],
         qc: QueryConfig,
         xas: Transactors,
-        encoders: Set[GraphResourceEncoder[_, _, _]],
-        rcr: RemoteContextResolution @Id("aggregate")
+        shifts: ResourceShifts
     ) =>
-      GraphResourceStream(fetchContext, qc, xas, encoders)(rcr)
+      GraphResourceStream(fetchContext, qc, xas, shifts)
   }
 
   many[PipeDef].add(DiscardMetadata)
@@ -54,4 +55,8 @@ object StreamModule extends ModuleDef {
     Supervisor(store, cfg.projections)
   }
 
+  make[DeleteExpired].fromEffect {
+    (supervisor: Supervisor, config: ProjectionConfig, xas: Transactors, clock: Clock[UIO]) =>
+      DeleteExpired(supervisor, config, xas)(clock)
+  }
 }

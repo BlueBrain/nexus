@@ -27,7 +27,7 @@ import ch.epfl.bluebrain.nexus.delta.sdk.model.ComponentDescription.PluginDescri
 import ch.epfl.bluebrain.nexus.delta.sdk.model._
 import ch.epfl.bluebrain.nexus.delta.sdk.plugin.PluginDef
 import ch.epfl.bluebrain.nexus.delta.sdk.projects.{OwnerPermissionsScopeInitialization, ProjectsConfig}
-import ch.epfl.bluebrain.nexus.delta.sourcing.config.QueryConfig
+import ch.epfl.bluebrain.nexus.delta.sourcing.config.{ProjectionConfig, QueryConfig}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.typesafe.config.Config
 import izumi.distage.model.definition.{Id, ModuleDef}
@@ -53,6 +53,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   make[DatabaseConfig].from(appCfg.database)
   make[FusionConfig].from { appCfg.fusion }
   make[ProjectsConfig].from { appCfg.projects }
+  make[ProjectionConfig].from { appCfg.projections }
   make[QueryConfig].from { appCfg.projections.query }
   make[BaseUri].from { appCfg.http.baseUri }
   make[StrictEntity].from { appCfg.http.strictEntityTimeout }
@@ -137,6 +138,11 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
 
   make[Vector[Route]].from { (pluginsRoutes: Set[PriorityRoute]) =>
     pluginsRoutes.toVector.sorted.map(_.route)
+  }
+
+  make[ResourceShifts].from {
+    (shifts: Set[ResourceShift[_, _, _]], xas: Transactors, rcr: RemoteContextResolution @Id("aggregate")) =>
+      ResourceShifts(shifts, xas)(rcr)
   }
 
   include(PermissionsModule)

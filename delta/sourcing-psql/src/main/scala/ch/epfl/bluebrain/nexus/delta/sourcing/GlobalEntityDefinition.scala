@@ -1,8 +1,8 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing
 
-import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event
+import ch.epfl.bluebrain.nexus.delta.sourcing.event.Event.GlobalEvent
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.EntityType
-import ch.epfl.bluebrain.nexus.delta.sourcing.state.State
+import ch.epfl.bluebrain.nexus.delta.sourcing.state.State.GlobalState
 import doobie.{Get, Put}
 
 /**
@@ -18,7 +18,7 @@ import doobie.{Get, Put}
   * @param onUniqueViolation
   *   to handle gracefully unique constraint violations in database by a rejection
   */
-final case class GlobalEntityDefinition[Id, S <: State, Command, E <: Event, Rejection](
+final case class GlobalEntityDefinition[Id, S <: GlobalState, Command, E <: GlobalEvent, Rejection](
     tpe: EntityType,
     stateMachine: StateMachine[S, Command, E, Rejection],
     eventSerializer: Serializer[Id, E],

@@ -133,8 +133,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       }
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri, crypto: Crypto) =>
-    Storage.graphResourceEncoder(base, crypto)
+  many[ResourceShift[_, _, _]].add { (storages: Storages, base: BaseUri, crypto: Crypto) =>
+    Storage.shift(storages)(base, crypto)
   }
 
   make[Files]
@@ -202,8 +202,8 @@ class StoragePluginModule(priority: Int) extends ModuleDef {
       )
   }
 
-  many[GraphResourceEncoder[_, _, _]].add { (base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
-    File.graphResourceEncoder(base, storageTypeConfig)
+  many[ResourceShift[_, _, _]].add { (files: Files, base: BaseUri, storageTypeConfig: StorageTypeConfig) =>
+    File.shift(files)(base, storageTypeConfig)
   }
 
   many[ServiceDependency].addSet {

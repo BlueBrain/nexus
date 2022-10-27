@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.delta.sourcing.model
 
+import cats.Order
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.ExpandedJsonLdCursor
 import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.ContextValue
@@ -52,5 +53,9 @@ object ProjectRef {
     JsonLdEncoder.computeFromCirce(ContextValue.empty)
   implicit val projectRefJsonLdDecoder: JsonLdDecoder[ProjectRef] =
     (cursor: ExpandedJsonLdCursor) => cursor.get[String].flatMap { parse(_).leftMap { e => ParsingFailure(e) } }
+
+  implicit val projectRefOrder: Order[ProjectRef] = Order.by { projectRef =>
+    (projectRef.organization.value, projectRef.project.value)
+  }
 
 }
