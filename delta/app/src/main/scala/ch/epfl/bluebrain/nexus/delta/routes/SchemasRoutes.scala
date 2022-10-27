@@ -148,7 +148,7 @@ final class SchemasRoutes(
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                schemas.tag(id, ref, tag, tagRev.toInt, rev).tapEval(index(ref, _, mode)).map(_.void)
+                                schemas.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)).map(_.void)
                               )
                             }
                           }

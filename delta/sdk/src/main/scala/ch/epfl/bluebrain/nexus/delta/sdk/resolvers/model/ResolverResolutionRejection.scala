@@ -60,7 +60,7 @@ object ResolverResolutionRejection {
     def apply(resourceRef: ResourceRef, projectRef: ProjectRef): ResolutionFetchRejection =
       resourceRef match {
         case ResourceRef.Latest(iri)         => ResourceNotFound(iri, projectRef)
-        case ResourceRef.Revision(_, _, rev) => RevisionNotFound(rev.toInt)
+        case ResourceRef.Revision(_, _, rev) => RevisionNotFound(rev)
         case ResourceRef.Tag(_, _, tag)      => TagNotFound(tag)
       }
 

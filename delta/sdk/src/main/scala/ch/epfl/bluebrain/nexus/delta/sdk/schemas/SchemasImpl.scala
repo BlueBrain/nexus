@@ -123,7 +123,7 @@ final class SchemasImpl private (
       state <- id match {
                  case Latest(_)        => log.stateOr(projectRef, iri, SchemaNotFound(iri, projectRef))
                  case Revision(_, rev) =>
-                   log.stateOr(projectRef, iri, rev.toInt, SchemaNotFound(iri, projectRef), RevisionNotFound)
+                   log.stateOr(projectRef, iri, rev, SchemaNotFound(iri, projectRef), RevisionNotFound)
                  case Tag(_, tag)      =>
                    log.stateOr(projectRef, iri, tag, SchemaNotFound(iri, projectRef), TagNotFound(tag))
                }

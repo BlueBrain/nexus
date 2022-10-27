@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ResourceRef
 final case class ResourcesSearchParams(
     id: Option[Iri] = None,
     deprecated: Option[Boolean] = None,
-    rev: Option[Long] = None,
+    rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: List[Type] = List.empty,

@@ -109,7 +109,7 @@ final case class ElasticSearchViewState(
     ResourceF(
       id = id,
       uris = ResourceUris("views", project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       deprecated = deprecated,
       createdAt = createdAt,

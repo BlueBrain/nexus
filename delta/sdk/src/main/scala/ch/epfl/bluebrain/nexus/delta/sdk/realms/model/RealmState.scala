@@ -124,7 +124,7 @@ final case class RealmState(
     ResourceF(
       id = uris.relativeAccessUri.toIri,
       uris = uris,
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       deprecated = deprecated,
       createdAt = createdAt,

@@ -108,9 +108,9 @@ class SearchSpec
   )
   private val compViewProj2   = compViewProj1.copy(project = project2.ref, uuid = UUID.randomUUID())
   private val projectionProj1 =
-    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1L)
+    TargetProjection(compViewProj1.projections.value.head.asElasticSearch.value, compViewProj1, 1)
   private val projectionProj2 =
-    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1L)
+    TargetProjection(compViewProj2.projections.value.head.asElasticSearch.value, compViewProj2, 1)
 
   private val projections = Seq(
     projectionProj1,
@@ -148,7 +148,7 @@ class SearchSpec
 
     "index documents" in {
       val bulkSeq = projections.foldLeft(Seq.empty[ElasticSearchBulk]) { (bulk, p) =>
-        val index   = CompositeViews.index(p.projection, p.view, p.rev.toInt, prefix)
+        val index   = CompositeViews.index(p.projection, p.view, p.rev, prefix)
         esClient.createIndex(index, Some(mappings), None).accepted
         val newBulk = createDocuments(p).zipWithIndex.map { case (json, idx) =>
           ElasticSearchBulk.Index(index, idx.toString, json)

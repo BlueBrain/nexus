@@ -58,9 +58,9 @@ final class ListingsSpec extends BaseSpec with Inspectors with EitherValuable wi
         _ <- deltaClient.put[Json](s"/resources/$ref21/_/resource21", resourcePayload, Bob)(expectCreated)
         // Tag
         _ <-
-          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1L), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref11/_/resource11/tags?rev=1", tag("v1.0.0", 1), Bob)(expectCreated)
         _ <-
-          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1L), Bob)(expectCreated)
+          deltaClient.post[Json](s"/resources/$ref21/_/resource21/tags?rev=1", tag("v1.0.1", 1), Bob)(expectCreated)
         // Deprecate
         _ <- deltaClient.delete[Json](s"/resources/$ref12/_/resource12?rev=1", Bob)(expectOk)
       } yield succeed

@@ -76,7 +76,7 @@ final case class StorageState(
     ResourceF(
       id = id,
       uris = ResourceUris("storages", project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,
       createdAt = createdAt,

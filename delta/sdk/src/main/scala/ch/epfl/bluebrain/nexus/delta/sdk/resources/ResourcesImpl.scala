@@ -137,7 +137,7 @@ final class ResourcesImpl private (
       state        <- id match {
                         case Latest(_)        => log.stateOr(projectRef, iri, notFound)
                         case Revision(_, rev) =>
-                          log.stateOr(projectRef, iri, rev.toInt, notFound, RevisionNotFound)
+                          log.stateOr(projectRef, iri, rev, notFound, RevisionNotFound)
                         case Tag(_, tag)      =>
                           log.stateOr(projectRef, iri, tag, notFound, TagNotFound(tag))
                       }

@@ -76,7 +76,7 @@ class ArchiveDownloadSpec
   private val aclCheck    = AclSimpleCheck((subject, AclAddress.Root, permissions)).accepted
 
   "An ArchiveDownload" should {
-    val storageRef                                    = ResourceRef.Revision(iri"http://localhost/${genString()}", 5L)
+    val storageRef                                    = ResourceRef.Revision(iri"http://localhost/${genString()}", 5)
     def fileAttributes(filename: String, bytes: Long) = FileAttributes(
       UUID.fromString("8049ba90-7cc6-4de5-93a1-802c04200dcc"),
       "http://localhost/file.txt",

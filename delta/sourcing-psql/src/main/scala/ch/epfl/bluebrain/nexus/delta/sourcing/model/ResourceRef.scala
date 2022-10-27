@@ -8,8 +8,6 @@ import ch.epfl.bluebrain.nexus.delta.rdf.syntax.iriStringContextSyntax
 import ch.epfl.bluebrain.nexus.delta.sourcing.model.Tag.UserTag
 import io.circe.{Decoder, Encoder}
 
-import scala.util.Try
-
 /**
   * A resource reference.
   */
@@ -56,7 +54,7 @@ object ResourceRef {
     * @param rev
     *   the reference revision
     */
-  final case class Revision(original: Iri, iri: Iri, rev: Long) extends ResourceRef
+  final case class Revision(original: Iri, iri: Iri, rev: Int) extends ResourceRef
 
   object Revision {
 
@@ -68,20 +66,16 @@ object ResourceRef {
       * @param rev
       *   the reference revision
       */
-    final def apply(iri: Iri, rev: Long): Revision =
-      Revision(iri"$iri?rev=$rev", iri, rev)
-
-    // TODO Migrate to Int
     final def apply(iri: Iri, rev: Int): Revision =
-      Revision(iri"$iri?rev=$rev", iri, rev.toLong)
+      Revision(iri"$iri?rev=$rev", iri, rev)
 
     implicit val resRefRevEncoder: Encoder[ResourceRef.Revision] = Encoder.encodeString.contramap(_.original.toString)
 
     implicit val resRefRevDecoder: Decoder[ResourceRef.Revision] = Decoder.decodeString.emap { str =>
       val original = iri"$str"
       val iriNoRev = original.removeQueryParams("rev")
-      val optRev   = original.query().get("rev").flatMap(_.toLongOption)
-      optRev.map(ResourceRef.Revision(original, iriNoRev, _)).toRight("Expected Long value 'rev' query parameter")
+      val optRev   = original.query().get("rev").flatMap(_.toIntOption)
+      optRev.map(ResourceRef.Revision(original, iriNoRev, _)).toRight("Expected Int value 'rev' query parameter")
     }
 
     implicit val revisionOrder: Order[Revision] = Order.by { revision => (revision.iri, revision.rev) }
@@ -120,8 +114,8 @@ object ResourceRef {
     */
   final def apply(iri: Iri): ResourceRef = {
 
-    def extractTagRev(map: Query): Option[Either[UserTag, Long]] = {
-      def rev = map.get("rev").flatMap(s => Try(s.toLong).filter(_ > 0).toOption)
+    def extractTagRev(map: Query): Option[Either[UserTag, Int]] = {
+      def rev = map.get("rev").flatMap(s => s.toIntOption.filter(_ > 0))
       def tag = map.get("tag").flatMap(s => Option.when(s.nonEmpty)(s)).flatMap(UserTag(_).toOption)
       rev.map(Right.apply) orElse tag.map(Left.apply)
     }

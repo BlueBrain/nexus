@@ -189,7 +189,7 @@ final class ResourcesRoutes(
                                   emit(
                                     Created,
                                     resources
-                                      .tag(id, ref, schemaOpt, tag, tagRev.toInt, rev)
+                                      .tag(id, ref, schemaOpt, tag, tagRev, rev)
                                       .tapEval(index(ref, _, mode))
                                       .map(_.void)
                                       .rejectWhen(wrongJsonOrNotFound)

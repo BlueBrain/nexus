@@ -245,7 +245,7 @@ class ElasticSearchViewsSpec extends BaseSpec with EitherValuable with CirceEq {
         val unprefixedId = id.stripPrefix("https://bbp.epfl.ch/nexus/v0/data/bbp/experiment/patchedcell/v0.1.0/")
         deltaClient.post[Json](
           s"/resources/$fullId/resource/patchedcell:$unprefixedId/tags?rev=1",
-          Json.obj("rev" -> Json.fromLong(1L), "tag" -> Json.fromString("one")),
+          Json.obj("rev" -> Json.fromInt(1), "tag" -> Json.fromString("one")),
           ScoobyDoo
         ) { (_, response) =>
           response.status shouldEqual StatusCodes.Created

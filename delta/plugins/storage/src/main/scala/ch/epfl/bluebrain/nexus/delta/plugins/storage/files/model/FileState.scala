@@ -80,7 +80,7 @@ final case class FileState(
     ResourceF(
       id = id,
       uris = ResourceUris("files", project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = types,
       deprecated = deprecated,
       createdAt = createdAt,

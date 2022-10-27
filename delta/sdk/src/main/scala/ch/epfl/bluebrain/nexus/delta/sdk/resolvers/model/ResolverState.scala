@@ -87,7 +87,7 @@ final case class ResolverState(
     ResourceF(
       id = id,
       uris = ResourceUris.resolver(project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = value.tpe.types,
       deprecated = deprecated,
       createdAt = createdAt,

@@ -170,10 +170,10 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.write)).accepted
       val encodedSchema = UrlUtils.encode(schemas.resources.toString)
       val endpoints     = List(
-        "/v1/resources/myorg/myproject/_/myid"               -> 1L,
-        s"/v1/resources/myorg/myproject/_/$myIdEncoded"      -> 2L,
-        "/v1/resources/myorg/myproject/resource/myid"        -> 3L,
-        s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4L
+        "/v1/resources/myorg/myproject/_/myid"               -> 1,
+        s"/v1/resources/myorg/myproject/_/$myIdEncoded"      -> 2,
+        "/v1/resources/myorg/myproject/resource/myid"        -> 3,
+        s"/v1/resources/myorg/myproject/$encodedSchema/myid" -> 4
       )
       forAll(endpoints) { case (endpoint, rev) =>
         Put(s"$endpoint?rev=$rev", payloadUpdated.toEntity(Printer.noSpaces)) ~> routes ~> check {
@@ -197,7 +197,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       Put("/v1/resources/myorg/myproject/_/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 5L)
+          jsonContentOf("/resources/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 5)
       }
     }
 
@@ -214,7 +214,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       Delete("/v1/resources/myorg/myproject/_/myid?rev=5") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         response.asJson shouldEqual
-          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 6L)
+          resourceMetadata(projectRef, myId, schemas.resources, (nxv + "Custom").toString, deprecated = true, rev = 6)
       }
     }
 
@@ -236,7 +236,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       val payload = json"""{"tag": "mytag", "rev": 1}"""
       Post("/v1/resources/myorg/myproject/_/myid2/tags?rev=1", payload.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 2L)
+        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 2)
       }
     }
 
@@ -261,7 +261,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       aclCheck.append(AclAddress.Root, Anonymous -> Set(resources.read)).accepted
       Get("/v1/resources/myorg/myproject/_/myid") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6L)
+        val meta = resourceMetadata(projectRef, myId, schemas.resources, "Custom", deprecated = true, rev = 6)
         response.asJson shouldEqual payloadUpdated.dropNullValues.deepMerge(meta).deepMerge(resourceCtx)
       }
     }
@@ -275,7 +275,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
         s"/v1/resources/$uuid/$uuid/_/myid2?tag=mytag"
       )
       val payload   = jsonContentOf("resources/resource.json", "id" -> myId2)
-      val meta      = resourceMetadata(projectRef, myId2, schema1.id, "Custom", rev = 1L)
+      val meta      = resourceMetadata(projectRef, myId2, schema1.id, "Custom", rev = 1)
       forAll(endpoints) { endpoint =>
         Get(endpoint) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
@@ -342,7 +342,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
           myId,
           schemas.resources,
           (nxv + "Custom").toString,
-          rev = 7L,
+          rev = 7,
           deprecated = true
         )
       }
@@ -351,7 +351,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
     "delete a tag on resource" in {
       Delete("/v1/resources/myorg/myproject/_/myid2/tags/mytag?rev=2") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3L)
+        response.asJson shouldEqual resourceMetadata(projectRef, myId2, schema1.id, (nxv + "Custom").toString, rev = 3)
       }
     }
 
@@ -384,7 +384,7 @@ class ResourcesRoutesSpec extends BaseRouteSpec {
       id: Iri,
       schema: Iri,
       tpe: String,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

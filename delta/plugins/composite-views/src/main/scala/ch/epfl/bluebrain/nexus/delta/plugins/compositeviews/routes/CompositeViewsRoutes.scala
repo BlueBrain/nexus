@@ -149,7 +149,7 @@ class CompositeViewsRoutes(
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
                               emit(
                                 Created,
-                                views.tag(id, ref, tag, tagRev.toInt, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
+                                views.tag(id, ref, tag, tagRev, rev).mapValue(_.metadata).rejectOn[ViewNotFound]
                               )
                             }
                           }
@@ -207,7 +207,7 @@ class CompositeViewsRoutes(
                             (delete & authorizeFor(ref, Write)) {
                               emit(
                                 views.fetch(id, ref).flatMap { v =>
-                                  val projectionIds = CompositeViews.projectionIds(v.value, v.rev.toInt).map(_._3)
+                                  val projectionIds = CompositeViews.projectionIds(v.value, v.rev).map(_._3)
                                   restartProjections(v.id, v.value.project, projectionIds) >> resetOffsets(v)
                                 }
                               )
@@ -239,7 +239,7 @@ class CompositeViewsRoutes(
                                   .flatMap { v =>
                                     val (view, projection) = v.value
                                     val projectionIds      =
-                                      CompositeViews.projectionIds(view, projection, v.rev.toInt).map(_._2)
+                                      CompositeViews.projectionIds(view, projection, v.rev).map(_._2)
                                     restartProjections(v.id, ref, projectionIds) >> resetProjectionOffsets(v)
                                   }
                               )
@@ -342,11 +342,11 @@ class CompositeViewsRoutes(
   private def fetchOffsets(viewRes: ViewResource) = {
     //TODO: migrate project statistics
     val fetchOffset = (_: ProjectionId) => UIO.pure(Offset.Start)
-    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev.toInt))(fetchOffset)
+    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(fetchOffset)
   }
 
   private def resetOffsets(viewRes: ViewResource) =
-    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev.toInt))(_ => UIO.pure(Offset.Start))
+    offsets(CompositeViews.projectionIds(viewRes.value, viewRes.rev))(_ => UIO.pure(Offset.Start))
 
   private def viewStatistics(viewRes: ViewResource) = {
     val entries = for {
@@ -388,16 +388,16 @@ class CompositeViewsRoutes(
         deltaClient
           .projectCount(source)
           .flatMap(count =>
-            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
+            progresses.statistics(count, CompositeViews.projectionId(source, projection, viewRes.rev).value)
           )
           .mapError(clientError => InvalidRemoteProjectSource(source, clientError))
       case source: ProjectSource       =>
         progresses.statistics(
           viewRes.value.project,
-          CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value
+          CompositeViews.projectionId(source, projection, viewRes.rev).value
         )
       case source: CrossProjectSource  =>
-        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev.toInt).value)
+        progresses.statistics(source.project, CompositeViews.projectionId(source, projection, viewRes.rev).value)
     }
     statsIO.map { stats => ProjectionStatistics(source.id, projection.id, stats) }
   }
@@ -406,14 +406,14 @@ class CompositeViewsRoutes(
     //TODO: migrate project statistics
     val fetchOffset        = (_: ProjectionId) => UIO.pure(Offset.Start)
     val (view, projection) = viewRes.value
-    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev.toInt).map { case (sId, compositeProjectionId) =>
+    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
       (sId, projection.id, compositeProjectionId)
     })(fetchOffset)
   }
 
   private def resetProjectionOffsets(viewRes: ViewProjectionResource) = {
     val (view, projection) = viewRes.value
-    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev.toInt).map { case (sId, compositeProjectionId) =>
+    offsets(CompositeViews.projectionIds(view, projection, viewRes.rev).map { case (sId, compositeProjectionId) =>
       (sId, projection.id, compositeProjectionId)
     })(_ => UIO.pure(Offset.Start))
   }

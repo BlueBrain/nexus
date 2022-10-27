@@ -161,7 +161,7 @@ final class FilesRoutes(
                         (post & parameter("rev".as[Int]) & pathEndOrSingleSlash) { rev =>
                           authorizeFor(ref, Write).apply {
                             entity(as[Tag]) { case Tag(tagRev, tag) =>
-                              emit(Created, files.tag(id, ref, tag, tagRev.toInt, rev).tapEval(index(ref, _, mode)))
+                              emit(Created, files.tag(id, ref, tag, tagRev, rev).tapEval(index(ref, _, mode)))
                             }
                           }
                         },

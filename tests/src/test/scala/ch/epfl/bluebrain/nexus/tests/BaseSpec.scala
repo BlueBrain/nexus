@@ -241,7 +241,7 @@ trait BaseSpec
 
   private[tests] def expectOk[A] = expect(StatusCodes.OK)
 
-  private[tests] def tag(name: String, rev: Long) = json"""{"tag": "$name", "rev": $rev}"""
+  private[tests] def tag(name: String, rev: Int) = json"""{"tag": "$name", "rev": $rev}"""
 }
 
 object BaseSpec {

@@ -630,7 +630,8 @@ lazy val projectDeletionPlugin = project
     assembly / assemblyOption  := (assembly / assemblyOption).value.withIncludeScala(false),
     assembly / test            := {},
     addArtifact(Artifact("delta-project-deletion-plugin", "plugin"), assembly),
-    Test / fork                := true
+    Test / fork                := true,
+    coverageFailOnMinimum      := false
   )
 
 lazy val graphAnalyticsPlugin = project

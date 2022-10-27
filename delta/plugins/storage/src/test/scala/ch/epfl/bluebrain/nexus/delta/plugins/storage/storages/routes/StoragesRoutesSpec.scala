@@ -184,7 +184,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
         // the starting revision is 2 because this storage has been updated to default = false
         Put(s"$endpoint?rev=${idx + 2}", s3FieldsJson.value.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3L)
+          response.asJson shouldEqual storageMetadata(projectRef, s3Id, StorageType.S3Storage, rev = idx + 3)
         }
       }
     }
@@ -201,7 +201,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       Put("/v1/storages/myorg/myproject/s3-storage?rev=10", s3FieldsJson.value.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/storages/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 4L)
+          jsonContentOf("/storages/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 4)
       }
     }
 
@@ -415,7 +415,7 @@ class StoragesRoutesSpec extends BaseRouteSpec with TryValues with StorageFixtur
       ref: ProjectRef,
       id: Iri,
       storageType: StorageType,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

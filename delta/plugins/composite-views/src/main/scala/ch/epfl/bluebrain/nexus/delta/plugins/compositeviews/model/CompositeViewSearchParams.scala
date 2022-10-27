@@ -29,7 +29,7 @@ import monix.bio.UIO
 final case class CompositeViewSearchParams(
     project: Option[ProjectRef] = None,
     deprecated: Option[Boolean] = None,
-    rev: Option[Long] = None,
+    rev: Option[Int] = None,
     createdBy: Option[Subject] = None,
     updatedBy: Option[Subject] = None,
     types: Set[Iri] = Set.empty,

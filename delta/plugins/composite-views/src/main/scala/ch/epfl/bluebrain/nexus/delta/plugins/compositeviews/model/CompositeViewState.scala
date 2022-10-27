@@ -84,7 +84,7 @@ final case class CompositeViewState(
     ResourceF(
       id = id,
       uris = ResourceUris("views", project, id)(mappings, base),
-      rev = rev.toLong,
+      rev = rev,
       types = Set(nxv.View, compositeViewType),
       deprecated = deprecated,
       createdAt = createdAt,

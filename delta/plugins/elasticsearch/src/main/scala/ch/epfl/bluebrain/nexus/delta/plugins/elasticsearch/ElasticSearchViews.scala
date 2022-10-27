@@ -275,7 +275,7 @@ final class ElasticSearchViews private (
       state   <- id match {
                    case Latest(_)        => log.stateOr(project, iri, notFound)
                    case Revision(_, rev) =>
-                     log.stateOr(project, iri, rev.toInt, notFound, RevisionNotFound)
+                     log.stateOr(project, iri, rev, notFound, RevisionNotFound)
                    case Tag(_, tag)      =>
                      log.stateOr(project, iri, tag, notFound, TagNotFound(tag))
                  }
@@ -389,7 +389,7 @@ object ElasticSearchViews {
   val mappings: ApiMappings = ApiMappings("view" -> schema.original, "documents" -> defaultViewId)
 
   def projectionName(resource: IndexingViewResource): String =
-    projectionName(resource.value.project, resource.id, resource.rev.toInt)
+    projectionName(resource.value.project, resource.id, resource.rev)
 
   def projectionName(state: ElasticSearchViewState): String =
     projectionName(state.project, state.id, state.rev)

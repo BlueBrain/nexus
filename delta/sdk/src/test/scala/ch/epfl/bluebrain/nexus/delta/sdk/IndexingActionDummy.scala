@@ -6,13 +6,12 @@ import ch.epfl.bluebrain.nexus.delta.sourcing.model.ProjectRef
 import ch.epfl.bluebrain.nexus.testkit.IORef
 import monix.bio.UIO
 
-class IndexingActionDummy(private val values: IORef[Map[(ProjectRef, Iri, Long), IndexingMode]])
-    extends IndexingAction {
+class IndexingActionDummy(private val values: IORef[Map[(ProjectRef, Iri, Int), IndexingMode]]) extends IndexingAction {
 
   override def apply[A](project: ProjectRef, res: ResourceF[A], indexingMode: IndexingMode): UIO[Unit] =
     values.update(_.updated((project, res.id, res.rev), indexingMode))
 
-  def valueFor(projectRef: ProjectRef, id: Iri, rev: Long): UIO[Option[IndexingMode]] =
+  def valueFor(projectRef: ProjectRef, id: Iri, rev: Int): UIO[Option[IndexingMode]] =
     values.get.map(_.get((projectRef, id, rev)))
 }
 

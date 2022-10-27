@@ -261,7 +261,7 @@ class ElasticSearchViewsRoutesSpec
       forAll(endpoints.zipWithIndex) { case (endpoint, idx) =>
         Put(s"$endpoint?rev=${idx + 1}", payloadUpdated.toEntity) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
-          response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2L)
+          response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = idx + 2)
         }
       }
     }
@@ -279,7 +279,7 @@ class ElasticSearchViewsRoutesSpec
       Put("/v1/views/myorg/myproject/myid?rev=10", payloadUpdated.toEntity) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         response.asJson shouldEqual
-          jsonContentOf("/routes/errors/incorrect-rev.json", "provided" -> 10L, "expected" -> 3L)
+          jsonContentOf("/routes/errors/incorrect-rev.json", "provided" -> 10, "expected" -> 3)
       }
     }
 
@@ -295,7 +295,7 @@ class ElasticSearchViewsRoutesSpec
       aclCheck.append(AclAddress.Root, Anonymous -> Set(esPermissions.write)).accepted
       Delete("/v1/views/myorg/myproject/myid?rev=3") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4L, deprecated = true)
+        response.asJson shouldEqual elasticSearchViewMetadata(myId, rev = 4, deprecated = true)
       }
     }
 
@@ -637,7 +637,7 @@ class ElasticSearchViewsRoutesSpec
 
   private def elasticSearchViewMetadata(
       id: Iri,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous
@@ -657,7 +657,7 @@ class ElasticSearchViewsRoutesSpec
   private def elasticSearchView(
       id: Iri,
       includeDeprecated: Boolean = false,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

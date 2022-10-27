@@ -183,7 +183,7 @@ final class ResolversRoutes(
                               emit(
                                 Created,
                                 resolvers
-                                  .tag(id, ref, tag, tagRev.toInt, rev)
+                                  .tag(id, ref, tag, tagRev, rev)
                                   .tapEval(index(ref, _, mode))
                                   .map(_.void)
                               )

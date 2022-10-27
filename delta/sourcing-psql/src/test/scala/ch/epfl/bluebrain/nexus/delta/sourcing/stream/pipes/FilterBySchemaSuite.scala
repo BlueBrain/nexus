@@ -60,12 +60,12 @@ class FilterBySchemaSuite extends BioSuite {
   }
 
   test("Do not filter elements if the schema intersection is not void") {
-    val elem = element(Revision(iri"http://localhost/schema1", 2L))
+    val elem = element(Revision(iri"http://localhost/schema1", 2))
     pipe(Set(iri"http://localhost/schema1", iri"http://localhost/schema2")).apply(elem).assert(elem)
   }
 
   test("Filter elements if the type intersection is void") {
-    val elem = element(Revision(iri"http://localhost/schema1", 2L))
+    val elem = element(Revision(iri"http://localhost/schema1", 2))
     pipe(Set(iri"http://localhost/schema2", iri"http://localhost/schema3")).apply(elem).assert(elem.dropped)
   }
 }

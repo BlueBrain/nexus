@@ -74,7 +74,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       "acl"   -> Json.fromValues(acl.value.map { case (id, p) => aclEntryJson(id, p) })
     )
 
-  def expectedResponse(total: Long, acls: Seq[(Acl, Long)]): Json = {
+  def expectedResponse(total: Long, acls: Seq[(Acl, Int)]): Json = {
     val results = acls.map { case (acl, rev) =>
       val meta = aclMetadata(acl.address, rev, createdBy = user, updatedBy = user).removeKeys(keywords.context)
       aclJson(acl) deepMerge meta
@@ -130,7 +130,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       val patch = aclJson(groupAcl(Root)).removeKeys("_path") deepMerge Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=1", patch.toEntity) ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual aclMetadata(address, rev = 2L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 2, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -141,7 +141,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         Json.obj("@type" -> Json.fromString("Append"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=2", patch.toEntity) ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual aclMetadata(address, rev = 3L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 3, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -150,7 +150,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "get ACL self = true" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path") ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(1L, Seq((selfAcls(address), 3L)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((selfAcls(address), 3)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -159,7 +159,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "get ACL self = false" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path?self=false") ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(1L, Seq((allAcls(address), 3L)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((allAcls(address), 3)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -168,7 +168,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "get ACL self = true and rev = 1" in {
       forAll(paths) { case (path, address) =>
         Get(s"/v1/acls$path?rev=1") ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual expectedResponse(1L, Seq((userAcl(address), 1L)))
+          response.asJson shouldEqual expectedResponse(1L, Seq((userAcl(address), 1)))
           status shouldEqual StatusCodes.OK
         }
       }
@@ -179,14 +179,14 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.append(groupAcl(myOrg2), 1).accepted
       acls.append(group2Acl(myOrg2), 2).accepted
       Get(s"/v1/acls/*") ~> asUser ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(2L, Seq((selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L)))
+        response.asJson shouldEqual expectedResponse(2L, Seq((selfAcls(myOrg), 3), (selfAcls(myOrg2), 3)))
         status shouldEqual StatusCodes.OK
       }
     }
 
     "get ACL self = false with org path containing *" in {
       Get(s"/v1/acls/*?self=false") ~> asUser ~> routes ~> check {
-        response.asJson shouldEqual expectedResponse(2L, Seq((allAcls(myOrg), 3L), (allAcls(myOrg2), 3L)))
+        response.asJson shouldEqual expectedResponse(2L, Seq((allAcls(myOrg), 3), (allAcls(myOrg2), 3)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -198,7 +198,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       acls.append(group2Acl(myOrg3), 0).accepted
       Get(s"/v1/acls/myorg/*") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(2L, Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L)))
+          expectedResponse(2L, Seq((selfAcls(myOrgMyProj), 3), (selfAcls(myOrgMyProj2), 3)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -206,7 +206,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "get ACL self = false with project path containing *" in {
       Get(s"/v1/acls/myorg/*?self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(2L, Seq((allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L)))
+          expectedResponse(2L, Seq((allAcls(myOrgMyProj), 3), (allAcls(myOrgMyProj2), 3)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -219,7 +219,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual
           expectedResponse(
             3L,
-            Seq((selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L), (selfAcls(myOrg2MyProj2), 3L))
+            Seq((selfAcls(myOrgMyProj), 3), (selfAcls(myOrgMyProj2), 3), (selfAcls(myOrg2MyProj2), 3))
           )
         status shouldEqual StatusCodes.OK
       }
@@ -230,7 +230,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual
           expectedResponse(
             3L,
-            Seq((allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L), (allAcls(myOrg2MyProj2), 3L))
+            Seq((allAcls(myOrgMyProj), 3), (allAcls(myOrgMyProj2), 3), (allAcls(myOrg2MyProj2), 3))
           )
         status shouldEqual StatusCodes.OK
       }
@@ -241,7 +241,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual
           expectedResponse(
             4L,
-            Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrgMyProj), 3L), (selfAcls(myOrgMyProj2), 3L))
+            Seq((selfAcls(Root), 3), (selfAcls(myOrg), 3), (selfAcls(myOrgMyProj), 3), (selfAcls(myOrgMyProj2), 3))
           )
         status shouldEqual StatusCodes.OK
       }
@@ -252,7 +252,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual
           expectedResponse(
             4L,
-            Seq((allAcls(Root), 3L), (allAcls(myOrg), 3L), (allAcls(myOrgMyProj), 3L), (allAcls(myOrgMyProj2), 3L))
+            Seq((allAcls(Root), 3), (allAcls(myOrg), 3), (allAcls(myOrgMyProj), 3), (allAcls(myOrgMyProj2), 3))
           )
         status shouldEqual StatusCodes.OK
       }
@@ -262,7 +262,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       Get(s"/v1/acls/*?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           3L,
-          Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrg2), 3L))
+          Seq((selfAcls(Root), 3), (selfAcls(myOrg), 3), (selfAcls(myOrg2), 3))
         )
         status shouldEqual StatusCodes.OK
       }
@@ -272,7 +272,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
       Get(s"/v1/acls/*?ancestors=true&self=false") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual expectedResponse(
           4L,
-          Seq((allAcls(Root), 3L), (allAcls(myOrg), 3L), (allAcls(myOrg2), 3L), (group2Acl(myOrg3), 1L))
+          Seq((allAcls(Root), 3), (allAcls(myOrg), 3), (allAcls(myOrg2), 3), (group2Acl(myOrg3), 1))
         )
         status shouldEqual StatusCodes.OK
       }
@@ -283,12 +283,12 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual expectedResponse(
           6L,
           Seq(
-            (selfAcls(Root), 3L),
-            (selfAcls(myOrg), 3L),
-            (selfAcls(myOrgMyProj), 3L),
-            (selfAcls(myOrgMyProj2), 3L),
-            (selfAcls(myOrg2), 3L),
-            (selfAcls(myOrg2MyProj2), 3L)
+            (selfAcls(Root), 3),
+            (selfAcls(myOrg), 3),
+            (selfAcls(myOrgMyProj), 3),
+            (selfAcls(myOrgMyProj2), 3),
+            (selfAcls(myOrg2), 3),
+            (selfAcls(myOrg2MyProj2), 3)
           )
         )
         status shouldEqual StatusCodes.OK
@@ -300,13 +300,13 @@ class AclsRoutesSpec extends BaseRouteSpec {
         response.asJson shouldEqual expectedResponse(
           7L,
           Seq(
-            (allAcls(Root), 3L),
-            (allAcls(myOrg), 3L),
-            (allAcls(myOrgMyProj), 3L),
-            (allAcls(myOrgMyProj2), 3L),
-            (allAcls(myOrg2), 3L),
-            (allAcls(myOrg2MyProj2), 3L),
-            (group2Acl(myOrg3), 1L)
+            (allAcls(Root), 3),
+            (allAcls(myOrg), 3),
+            (allAcls(myOrgMyProj), 3),
+            (allAcls(myOrgMyProj2), 3),
+            (allAcls(myOrg2), 3),
+            (allAcls(myOrg2MyProj2), 3),
+            (group2Acl(myOrg3), 1)
           )
         )
         status shouldEqual StatusCodes.OK
@@ -323,7 +323,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "get ACL self = true and ancestors = true" in {
       Get(s"/v1/acls/myorg/myproj?ancestors=true") ~> asUser ~> routes ~> check {
         response.asJson shouldEqual
-          expectedResponse(3L, Seq((selfAcls(Root), 3L), (selfAcls(myOrg), 3L), (selfAcls(myOrgMyProj), 3L)))
+          expectedResponse(3, Seq((selfAcls(Root), 3), (selfAcls(myOrg), 3), (selfAcls(myOrgMyProj), 3)))
         status shouldEqual StatusCodes.OK
       }
     }
@@ -333,7 +333,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
         Json.obj("@type" -> Json.fromString("Subtract"))
       forAll(paths) { case (path, address) =>
         Patch(s"/v1/acls$path?rev=3", patch.toEntity) ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual aclMetadata(address, rev = 4L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 4, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -342,7 +342,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
     "delete ACL" in {
       forAll(paths) { case (path, address) =>
         Delete(s"/v1/acls$path?rev=4") ~> asUser ~> routes ~> check {
-          response.asJson shouldEqual aclMetadata(address, rev = 5L, createdBy = user, updatedBy = user)
+          response.asJson shouldEqual aclMetadata(address, rev = 5, createdBy = user, updatedBy = user)
           status shouldEqual StatusCodes.OK
         }
       }
@@ -359,7 +359,7 @@ class AclsRoutesSpec extends BaseRouteSpec {
 
   def aclMetadata(
       address: AclAddress,
-      rev: Long = 1L,
+      rev: Int = 1,
       deprecated: Boolean = false,
       createdBy: Subject = Anonymous,
       updatedBy: Subject = Anonymous

@@ -6,7 +6,7 @@ import io.circe.generic.semiauto._
 
 import java.time.Instant
 
-final case class SimpleResource(id: Iri, rev: Long, createdAt: Instant, name: String, age: Int)
+final case class SimpleResource(id: Iri, rev: Int, createdAt: Instant, name: String, age: Int)
 object SimpleResource {
   implicit val simpleResourceEncoder: Encoder.AsObject[SimpleResource] = deriveEncoder[SimpleResource]
   implicit val simpleResourceDecoder: Decoder[SimpleResource]          = deriveDecoder[SimpleResource]

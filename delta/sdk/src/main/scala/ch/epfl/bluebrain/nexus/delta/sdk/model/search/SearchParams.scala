@@ -18,7 +18,7 @@ import monix.bio.UIO
 // TODO update rev to Int
 trait SearchParams[A] {
   def deprecated: Option[Boolean]
-  def rev: Option[Long]
+  def rev: Option[Int]
   def createdBy: Option[Subject]
   def updatedBy: Option[Subject]
   def types: Set[Iri]
@@ -65,7 +65,7 @@ object SearchParams {
   final case class RealmSearchParams(
       issuer: Option[String] = None,
       deprecated: Option[Boolean] = None,
-      rev: Option[Long] = None,
+      rev: Option[Int] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       filter: Realm => UIO[Boolean] = _ => UIO.pure(true)
@@ -103,7 +103,7 @@ object SearchParams {
     */
   final case class OrganizationSearchParams(
       deprecated: Option[Boolean] = None,
-      rev: Option[Long] = None,
+      rev: Option[Int] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       label: Option[String] = None,
@@ -138,7 +138,7 @@ object SearchParams {
   final case class ProjectSearchParams(
       organization: Option[Label] = None,
       deprecated: Option[Boolean] = None,
-      rev: Option[Long] = None,
+      rev: Option[Int] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       label: Option[String] = None,
@@ -178,7 +178,7 @@ object SearchParams {
   final case class ResolverSearchParams(
       project: Option[ProjectRef] = None,
       deprecated: Option[Boolean] = None,
-      rev: Option[Long] = None,
+      rev: Option[Int] = None,
       createdBy: Option[Subject] = None,
       updatedBy: Option[Subject] = None,
       types: Set[Iri] = Set(nxv.Resolver),

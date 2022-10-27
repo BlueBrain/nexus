@@ -32,7 +32,7 @@ class RdfMarshallingSpec
     )
 
   private val id       = nxv + "myresource"
-  private val resource = SimpleResource(id, 1L, Instant.EPOCH, "Maria", 20)
+  private val resource = SimpleResource(id, 1, Instant.EPOCH, "Maria", 20)
 
   "Converting JsonLd into an HttpResponse" should {
     val compacted = resource.toCompactedJsonLd.accepted

@@ -42,8 +42,8 @@ class FilesStmSpec
 
   private val id               = nxv + "files"
   private val myTag            = UserTag.unsafe("myTag")
-  private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1L)
-  private val remoteStorageRef = ResourceRef.Revision(nxv + "remote?rev=1", nxv + "remote", 1L)
+  private val storageRef       = ResourceRef.Revision(nxv + "disk?rev=1", nxv + "disk", 1)
+  private val remoteStorageRef = ResourceRef.Revision(nxv + "remote?rev=1", nxv + "remote", 1)
   private val mediaType        = Some(ContentTypes.`text/plain(UTF-8)`)
   private val dig              = ComputedDigest(DigestAlgorithm.default, "something")
   private val attributes       = FileAttributes(
