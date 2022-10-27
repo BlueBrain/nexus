@@ -39,11 +39,11 @@ object EntityCheck {
       onUnknownOrDeprecated: Set[(ProjectRef, Id)] => E,
       xas: Transactors
   )(implicit @nowarn("cat=unused") getId: Get[Id], putId: Put[Id]): IO[E, Unit] = {
-    val or: Fragment = refs
-      .map { case (p, id) =>
-        fr"org = ${p.organization} AND project = ${p.project}  AND id = $id AND tag = ${Latest.value} AND deprecated = false"
-      }
-      .reduceLeft(Fragments.or(_, _))
+    val fragments: Seq[Fragment] = refs.map { case (p, id) =>
+      fr"org = ${p.organization} AND project = ${p.project}  AND id = $id AND tag = ${Latest.value} AND deprecated = false"
+    }.toSeq
+    val or: Fragment             = Fragments.or(fragments: _*)
+
     sql"""SELECT org, project, id FROM public.scoped_states WHERE type = $tpe and $or"""
       .query[(Label, Label, Id)]
       .map { case (org, proj, id) =>

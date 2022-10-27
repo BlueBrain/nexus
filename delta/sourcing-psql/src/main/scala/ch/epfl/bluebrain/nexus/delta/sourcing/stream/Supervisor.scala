@@ -153,7 +153,7 @@ object Supervisor {
       .drain
   }
 
-  private case class Supervised(
+  final private case class Supervised(
       metadata: ProjectionMetadata,
       executionStrategy: ExecutionStrategy,
       restarts: Int,
@@ -173,7 +173,7 @@ object Supervisor {
       )
   }
 
-  private case class Control(
+  final private case class Control(
       status: Task[ExecutionStatus],
       progress: Task[ProjectionProgress],
       stop: Task[Unit]

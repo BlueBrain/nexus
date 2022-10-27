@@ -54,11 +54,11 @@ object EphemeralLog {
   /**
     * Creates on a ephemeral log for the given definition and config
     */
-  def apply[Id, S <: EphemeralState, Command, Rejection](
+  def apply[Id: Put, S <: EphemeralState, Command, Rejection](
       definition: EphemeralDefinition[Id, S, Command, Rejection],
       config: EphemeralLogConfig,
       xas: Transactors
-  )(implicit get: Get[Id], put: Put[Id]): EphemeralLog[Id, S, Command, Rejection] = {
+  ): EphemeralLog[Id, S, Command, Rejection] = {
     val stateStore = EphemeralStateStore(definition.tpe, definition.stateSerializer, config.ttl, xas)
     new EphemeralLog[Id, S, Command, Rejection] {
 

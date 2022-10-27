@@ -13,7 +13,6 @@ import io.circe.Json
 import io.circe.syntax.EncoderOps
 import monix.bio.{IO, UIO}
 
-import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -34,12 +33,12 @@ trait EphemeralStateStore[Id, S <: EphemeralState] {
 
 object EphemeralStateStore {
 
-  def apply[Id, S <: EphemeralState](
+  def apply[Id: Put, S <: EphemeralState](
       tpe: EntityType,
       serializer: Serializer[Id, S],
       ttl: FiniteDuration,
       xas: Transactors
-  )(implicit @nowarn("cat=unused") getId: Get[Id], putId: Put[Id]): EphemeralStateStore[Id, S] =
+  ): EphemeralStateStore[Id, S] =
     new EphemeralStateStore[Id, S] {
 
       import serializer._
