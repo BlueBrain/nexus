@@ -206,6 +206,10 @@ object Permissions {
     final val read: Permission = Permission.unsafe("quotas/read")
   }
 
+  object supervision {
+    final val read: Permission = Permission.unsafe("supervision/read")
+  }
+
   private[delta] def next(
       minimum: Set[Permission]
   )(state: PermissionsState, event: PermissionsEvent): PermissionsState = {
