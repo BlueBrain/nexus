@@ -158,6 +158,7 @@ class DeltaModule(appCfg: AppConfig, config: Config)(implicit classLoader: Class
   include(QuotasModule)
   include(EventsModule)
   include(StreamModule)
+  include(SupervisionModule)
 }
 
 object DeltaModule {
