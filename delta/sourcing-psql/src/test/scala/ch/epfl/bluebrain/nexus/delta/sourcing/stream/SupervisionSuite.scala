@@ -193,4 +193,40 @@ class SupervisionSuite extends BioSuite with SupervisorSetup.Fixture with Doobie
     } yield ()
   }
 
+  test("Obtain the correct running projection") {
+    val expectedProgress = ProjectionProgress(
+      Offset.at(20L),
+      Instant.EPOCH,
+      20,
+      0,
+      0
+    )
+    for {
+      flag      <- Ref.of[Task, Boolean](false)
+      projection =
+        CompiledProjection.fromStream(projection1, PersistentSingleNode, evalStream(flag.set(true)))
+      _         <- sv.run(projection).eventually(ExecutionStatus.Running)
+      _         <- flag.get.eventually(true)
+      _         <- sv.getRunningProjections
+                     .eventually(
+                       List(
+                         SupervisedDescription(
+                           projection1,
+                           PersistentSingleNode,
+                           0,
+                           ExecutionStatus.Completed,
+                           expectedProgress
+                         )
+                       )
+                     )
+      _ <- sv.destroy(projection1.name).assertSome(ExecutionStatus.Stopped)
+    } yield ()
+  }
+
+  test("No running projections are found when none are running") {
+    for {
+      _ <- sv.getRunningProjections.eventually(List.empty)
+    } yield ()
+  }
+
 }
