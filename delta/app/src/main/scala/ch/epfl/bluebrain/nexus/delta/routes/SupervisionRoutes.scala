@@ -2,8 +2,11 @@ package ch.epfl.bluebrain.nexus.delta.routes
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.RemoteContextResolution
+import ch.epfl.bluebrain.nexus.delta.rdf.Vocabulary.contexts
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.context.{ContextValue, RemoteContextResolution}
+import ch.epfl.bluebrain.nexus.delta.rdf.jsonld.encoder.JsonLdEncoder
 import ch.epfl.bluebrain.nexus.delta.rdf.utils.JsonKeyOrdering
+import ch.epfl.bluebrain.nexus.delta.routes.SupervisionRoutes.RunningProjections
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.AclCheck
 import ch.epfl.bluebrain.nexus.delta.sdk.acls.model.AclAddress
 import ch.epfl.bluebrain.nexus.delta.sdk.directives.DeltaDirectives.emit
@@ -13,6 +16,8 @@ import ch.epfl.bluebrain.nexus.delta.sdk.identities.Identities
 import ch.epfl.bluebrain.nexus.delta.sdk.model.BaseUri
 import ch.epfl.bluebrain.nexus.delta.sdk.permissions.Permissions.supervision
 import ch.epfl.bluebrain.nexus.delta.sourcing.stream.{SupervisedDescription, Supervisor}
+import io.circe.Encoder
+import io.circe.generic.semiauto.deriveEncoder
 import kamon.instrumentation.akka.http.TracingDirectives.operationName
 import monix.bio.Task
 import monix.execution.Scheduler
@@ -37,7 +42,7 @@ class SupervisionRoutes(
           (get & pathEndOrSingleSlash) {
             operationName(s"$prefixSegment/supervision") {
               authorizeFor(AclAddress.Root, supervision.read).apply {
-                emit(supervised.hideErrors)
+                emit(supervised.hideErrors.map(RunningProjections))
               }
             }
           }
@@ -48,6 +53,13 @@ class SupervisionRoutes(
 }
 
 object SupervisionRoutes {
+
+  case class RunningProjections(runningProjections: List[SupervisedDescription])
+
+  implicit final val runningProjectionsEncoder: Encoder[RunningProjections] =
+    deriveEncoder
+  implicit val runningProjectionsJsonLdEncoder: JsonLdEncoder[RunningProjections] =
+    JsonLdEncoder.computeFromCirce(ContextValue(contexts.supervision))
 
   final def apply(
       identities: Identities,
