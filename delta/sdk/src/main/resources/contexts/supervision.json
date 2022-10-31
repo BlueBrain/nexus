@@ -1,7 +1,7 @@
 {
   "@context": {
     "@vocab": "https://bluebrain.github.io/nexus/vocabulary/",
-    "runningProjections": {
+    "projections": {
       "@container": "@list"
     }
   },

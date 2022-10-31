@@ -54,7 +54,7 @@ class SupervisionRoutes(
 
 object SupervisionRoutes {
 
-  case class SupervisionBundle(runningProjections: List[SupervisedDescription])
+  case class SupervisionBundle(projections: List[SupervisedDescription])
 
   implicit final val runningProjectionsEncoder: Encoder[SupervisionBundle]       =
     deriveEncoder
